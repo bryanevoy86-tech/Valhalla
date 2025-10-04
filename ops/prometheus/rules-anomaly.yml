@@ -1,0 +1,18 @@
+groups:
+- name: valhalla-anomaly
+  interval: 1m
+  rules:
+  # p95 latency per path (already available from CHUNK 90 rules)
+  - record: valhalla:http_p95_5m
+    expr: histogram_quantile(0.95, sum by (le,path)(rate(valhalla_http_request_duration_seconds_bucket[5m])))
+
+  # Rolling baseline & stddev over a day
+  - record: valhalla:http_p95_baseline_24h
+    expr: avg_over_time(valhalla:http_p95_5m[24h])
+  - record: valhalla:http_p95_stddev_24h
+    expr: stddev_over_time(valhalla:http_p95_5m[24h])
+
+  # Z-score of current vs baseline (per path)
+  - record: valhalla:http_p95_zscore
+    expr: (valhalla:http_p95_5m - on(path) group_left valhalla:http_p95_baseline_24h)
+          / ignoring(le) (valhalla:http_p95_stddev_24h + 1e-6)

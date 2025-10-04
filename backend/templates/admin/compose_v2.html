@@ -1,0 +1,356 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<div class="panel">
+  <div class="flex items-center justify-between">
+    <span class="badge">Compose Wizard v2</span>
+    <small class="muted">Build → Validate → Enqueue</small>
+  </div>
+
+  <!-- Step 1: choose type -->
+  <div class="panel">
+    <b>1) Task type</b>
+    <select id="task_type">
+      <option value="spec">Spec (model + CRUD + routes)</option>
+      <option value="job">Job (shell / python)</option>
+      <option value="publish">Publish bundle</option>
+      <option value="bundle">Bundle (list of tasks)</option>
+      <option value="schedule">Schedule (cron + a task)</option>
+    </select>
+    <label class="checkbox mt-4" title="If ON for a Spec, the wizard will show & can enqueue the expanded tasks instead of a single 'spec' task.">
+      <input type="checkbox" id="expand_spec" checked /> Expand Spec before enqueue (recommended)
+    </label>
+  </div>
+
+  <!-- Step 2: task fields -->
+  <div class="panel">
+    <b>2) Configure</b>
+
+    <!-- SPEC -->
+    <div id="sec_spec">
+      <div class="grid">
+        <div><label>Name</label><input id="spec_name" placeholder="customer"/></div>
+        <div><label>Storage</label>
+          <select id="spec_storage"><option>memory</option><option>db</option></select>
+        </div>
+      </div>
+      <label class="mt-4">Fields (JSON array)</label>
+      <textarea id="spec_fields" rows="6" placeholder='[{"name":"email","type":"text","not_null":true},{"name":"joined_at","type":"timestamptz","default":"now()"}]'></textarea>
+
+      <details class="mt-4"><summary>Optional</summary>
+        <div class="grid mt-4">
+          <div><label>Table (db only)</label><input id="spec_table" placeholder="customers"/></div>
+          <div><label>Extra routes (JSON array)</label>
+            <textarea id="spec_routes" rows="4" placeholder='[{"name":"ping","method":"GET","path":"/customers/ping","response":{"ok":true}}]'></textarea>
+          </div>
+        </div>
+      </details>
+    </div>
+
+    <!-- JOB -->
+    <div id="sec_job" style="display:none;">
+      <div class="grid">
+        <div><label>Name</label><input id="job_name" placeholder="daily_report"/></div>
+        <div><label>Mode</label>
+          <select id="job_mode"><option>shell</option><option>python</option></select>
+        </div>
+      </div>
+      <label class="mt-4">Code</label>
+      <textarea id="job_code" rows="8" placeholder='echo "hello"'></textarea>
+      <div class="grid mt-4">
+        <div><label>Timeout (sec)</label><input id="job_timeout" type="number" value="300"/></div>
+        <div><label>Sandbox</label><select id="job_sandbox"><option>true</option><option>false</option></select></div>
+      </div>
+      <div class="grid mt-4">
+        <div><label>CPU seconds</label><input id="job_cpu" type="number" value="0"/></div>
+        <div><label>Memory MB</label><input id="job_mem" type="number" value="0"/></div>
+      </div>
+      <details class="mt-4"><summary>Advanced</summary>
+        <div class="grid mt-4">
+          <div><label>CWD (optional)</label><input id="job_cwd" placeholder="."/></div>
+          <div><label>Env (JSON object)</label><textarea id="job_env" rows="4" placeholder='{"FOO":"bar"}'></textarea></div>
+        </div>
+      </details>
+    </div>
+
+    <!-- PUBLISH -->
+    <div id="sec_publish" style="display:none;">
+      <div class="grid">
+        <div><label>Name</label><input id="pub_name" placeholder="bundle"/></div>
+        <div><label>Note</label><input id="pub_note" placeholder="Release candidate"/></div>
+      </div>
+      <label class="mt-4">Preset</label>
+      <select id="pub_preset">
+        <option value="default">Default sources (config)</option>
+        <option value="job">Latest job</option>
+        <option value="globs">Custom globs</option>
+      </select>
+
+      <div id="pub_job_fields" class="mt-4" style="display:none;">
+        <label>Job name</label><input id="pub_from_job" placeholder="api_smoke"/>
+        <label class="checkbox mt-2"><input type="checkbox" id="pub_out"/> include stdout</label>
+        <label class="checkbox"><input type="checkbox" id="pub_err"/> include stderr</label>
+      </div>
+
+      <div id="pub_globs_fields" class="mt-4" style="display:none;">
+        <label>Sources (one per line)</label>
+        <textarea id="pub_sources" rows="5" placeholder="backend/generated_routes/**/*.py&#10;migrations/generated/**/*.sql"></textarea>
+        <label class="mt-2">Strip prefixes (one per line)</label>
+        <textarea id="pub_strip" rows="3" placeholder="backend/&#10;migrations/"></textarea>
+      </div>
+    </div>
+
+    <!-- BUNDLE -->
+    <div id="sec_bundle" style="display:none;">
+      <label>Tasks (YAML array)</label>
+      <textarea id="bundle_yaml" rows="10" placeholder='- {type: job, name: hello, shell: "echo hi"}&#10;- {type: publish, name: bundle}'></textarea>
+    </div>
+
+    <!-- SCHEDULE -->
+    <div id="sec_schedule" style="display:none;">
+      <div class="grid">
+        <div><label>Name</label><input id="sch_name" placeholder="nightly_publish"/></div>
+        <div><label>Timezone</label><input id="sch_tz" placeholder="America/Toronto"/></div>
+      </div>
+      <label class="mt-4">Cron (JSON; keys like minute, hour, day, month, day_of_week)</label>
+      <textarea id="sch_cron" rows="4" placeholder='{"hour":3,"minute":15}'></textarea>
+      <div class="mt-4">
+        <i>Embedded task:</i>
+        <select id="sch_task_kind">
+          <option value="job">job</option>
+          <option value="publish">publish</option>
+          <option value="spec">spec</option>
+        </select>
+      </div>
+      <small class="muted">Fill the relevant section above first, then select the same type here — we’ll reuse that definition for the embedded task.</small>
+    </div>
+  </div>
+
+  <!-- Step 3: Preview & validate -->
+  <div class="panel">
+    <b>3) Preview & Validate</b>
+    <div class="mt-4">
+      <button class="btn" id="btn_preview">Build JSON</button>
+      <button class="btn" id="btn_validate">Validate</button>
+      <button class="btn" id="btn_enqueue">Enqueue</button>
+      <span id="status" class="muted ml-4"></span>
+    </div>
+    <div class="grid mt-4">
+      <div>
+        <label>Task JSON</label>
+        <textarea id="preview_json" rows="14" spellcheck="false"></textarea>
+      </div>
+      <div>
+        <label>Spec Expansion (preview)</label>
+        <textarea id="preview_expand" rows="14" spellcheck="false" placeholder="Only for type: spec"></textarea>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const byId = (id)=>document.getElementById(id);
+  const show = (id, on)=>{ byId(id).style.display = on ? '' : 'none'; };
+  const typeSel = byId('task_type');
+
+  function refreshType(){
+    const t = typeSel.value;
+    show('sec_spec', t==='spec');
+    show('sec_job', t==='job');
+    show('sec_publish', t==='publish');
+    show('sec_bundle', t==='bundle');
+    show('sec_schedule', t==='schedule');
+  }
+  typeSel.addEventListener('change', refreshType);
+  refreshType();
+
+  byId('pub_preset').addEventListener('change',()=>{
+    const p = byId('pub_preset').value;
+    show('pub_job_fields', p==='job');
+    show('pub_globs_fields', p==='globs');
+  });
+
+  function linesToList(txt){
+    return (txt||'').split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+  }
+  function parsedOrEmptyJSON(txt, fallback){
+    if(!txt) return fallback;
+    try { return JSON.parse(txt); } catch(e){ return fallback; }
+  }
+  function parsedYAMLOrEmpty(txt,fallback){
+    try { return jsyaml.load(txt) || fallback; } catch(e){ return fallback; }
+  }
+
+  // Minimal YAML shim for bundle; if not present we do naive parse.
+  // Lightweight inline YAML (only needs arrays/objects used here).
+})();
+</script>
+
+<!-- very small YAML lib (js-yaml UMD min) could be included; for simplicity we embed a tiny loader -->
+<script>
+// tiny YAML-ish loader (supports a list of inline objects only) as fallback
+window.jsyaml = {
+  load: function(txt){
+    // if it starts with '-' assume list items separated by lines
+    if (!txt || !txt.trim()) return [];
+    if (txt.trim().startsWith('[') || txt.trim().startsWith('{')) {
+      // try JSON as a fallback
+      try { return JSON.parse(txt); } catch(e){}
+    }
+    const out = [];
+    txt.split(/\r?\n/).forEach(line=>{
+      line=line.trim();
+      if(!line || !line.startsWith('-')) return;
+      const jsonish = line.replace(/^-+\s*/, '').replace(/([a-zA-Z0-9_]+)\s*:/g, '"$1":').replace(/'/g, '"');
+      try { out.push(JSON.parse('{'+jsonish.replace(/^\{|\}$/g,'')+'}')); } catch(e){}
+    });
+    return out;
+  }
+};
+</script>
+
+<script>
+(function(){
+  const st = document.getElementById('status');
+
+  function buildTask(){
+    const t = document.getElementById('task_type').value;
+    if (t === 'spec') {
+      return {
+        type: 'spec',
+        name: (document.getElementById('spec_name').value || '').trim(),
+        resource: (document.getElementById('spec_name').value || '').trim(),
+        storage: document.getElementById('spec_storage').value,
+        table: (document.getElementById('spec_table').value || '').trim() || undefined,
+        fields: (function(){
+          const raw = document.getElementById('spec_fields').value;
+          try { return JSON.parse(raw || '[]'); } catch(e){ return []; }
+        })(),
+        routes: (function(){
+          const raw = document.getElementById('spec_routes').value;
+          try { return JSON.parse(raw || '[]'); } catch(e){ return []; }
+        })()
+      };
+    }
+    if (t === 'job') {
+      const mode = document.getElementById('job_mode').value;
+      const task = {
+        type: 'job',
+        name: (document.getElementById('job_name').value || '').trim(),
+        timeout: parseInt(document.getElementById('job_timeout').value || '0', 10) || undefined,
+        sandbox: document.getElementById('job_sandbox').value === 'true',
+        cpu_seconds: parseInt(document.getElementById('job_cpu').value || '0', 10) || undefined,
+        memory_mb: parseInt(document.getElementById('job_mem').value || '0', 10) || undefined
+      };
+      if (mode === 'shell') task.shell = document.getElementById('job_code').value || '';
+      else task.python = document.getElementById('job_code').value || '';
+      const envRaw = document.getElementById('job_env').value;
+      try { const env = JSON.parse(envRaw || '{}'); if (env && typeof env === 'object') task.env = env; } catch(e){}
+      const cwd = (document.getElementById('job_cwd').value || '').trim(); if (cwd) task.cwd = cwd;
+      return task;
+    }
+    if (t === 'publish') {
+      const preset = document.getElementById('pub_preset').value;
+      const task = { type: 'publish',
+        name: (document.getElementById('pub_name').value || '').trim(),
+        note: (document.getElementById('pub_note').value || '').trim()
+      };
+      if (preset === 'job') {
+        task.from_job = (document.getElementById('pub_from_job').value || '').trim();
+        task.include_stdout = document.getElementById('pub_out').checked;
+        task.include_stderr = document.getElementById('pub_err').checked;
+      } else if (preset === 'globs') {
+        task.sources = linesToList(document.getElementById('pub_sources').value);
+        task.strip_prefixes = linesToList(document.getElementById('pub_strip').value);
+      }
+      return task;
+    }
+    if (t === 'bundle') {
+      const arr = window.jsyaml.load(document.getElementById('bundle_yaml').value || '') || [];
+      return { type: 'bundle', tasks: Array.isArray(arr) ? arr : [] };
+    }
+    if (t === 'schedule') {
+      const kind = document.getElementById('sch_task_kind').value;
+      const cron = (function(){
+        try { return JSON.parse(document.getElementById('sch_cron').value || '{}'); } catch(e){ return {}; }
+      })();
+      // Reuse the current task definition from above sections to embed
+      let embedded = {};
+      if (kind === 'job') embedded = buildTaskFrom('job');
+      else if (kind === 'publish') embedded = buildTaskFrom('publish');
+      else if (kind === 'spec') embedded = buildTaskFrom('spec');
+      return {
+        type: 'schedule',
+        name: (document.getElementById('sch_name').value || '').trim(),
+        timezone: (document.getElementById('sch_tz').value || '').trim() || undefined,
+        cron: cron,
+        task: embedded
+      };
+    }
+    return {};
+  }
+
+  function buildTaskFrom(kind){
+    const save = document.getElementById('task_type').value;
+    document.getElementById('task_type').value = kind;
+    const t = buildTask();
+    document.getElementById('task_type').value = save;
+    refreshType();
+    return t;
+  }
+
+  async function doValidate(task){
+    const res = await fetch(tlink('/admin/heimdall/compose/validate'), {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ task, expand_spec: document.getElementById('expand_spec').checked })
+    });
+    return await res.json();
+  }
+
+  async function doEnqueue(task){
+    const res = await fetch(tlink('/admin/heimdall/compose/enqueue'), {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ task, expand_spec: document.getElementById('expand_spec').checked })
+    });
+    return await res.json();
+  }
+
+  document.getElementById('btn_preview').onclick = async ()=>{
+    const task = buildTask();
+    document.getElementById('preview_json').value = JSON.stringify(task, null, 2);
+    document.getElementById('preview_expand').value = '';
+    st.textContent = 'Built. Now Validate to check.';
+  };
+
+  document.getElementById('btn_validate').onclick = async ()=>{
+    st.textContent = 'Validating…';
+    const task = buildTask();
+    const js = await doValidate(task);
+    if (!js.ok) {
+      st.textContent = '⚠️ Not valid';
+    } else {
+      st.textContent = '✅ Valid';
+    }
+    document.getElementById('preview_json').value = JSON.stringify(task, null, 2);
+    document.getElementById('preview_expand').value = js.preview && js.preview.expanded_tasks ? JSON.stringify(js.preview.expanded_tasks, null, 2) : '';
+  };
+
+  document.getElementById('btn_enqueue').onclick = async ()=>{
+    st.textContent = 'Enqueueing…';
+    const task = buildTask();
+    const js = await doEnqueue(task);
+    if (js.ok) {
+      st.innerHTML = `✅ Enqueued ${js.written.length} file(s). <a href="#" onclick="location.href=tlink('/admin/heimdall/ui/queue')">View Queue</a>`;
+    } else {
+      st.textContent = '❌ ' + (js.errors ? JSON.stringify(js.errors) : 'enqueue failed');
+    }
+  };
+})();
+</script>
+
+<style>
+  .panel{ margin: 10px 0; padding: 12px; border:1px solid #ddd; border-radius:8px; }
+  textarea{ width:100%; border-radius:6px; border:1px solid #ddd; padding:8px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+  select,input{ width:100%; border-radius:6px; border:1px solid #ddd; padding:8px; }
+</style>
+{% endblock %}

@@ -1,0 +1,54 @@
+{
+  "uid": "valhalla-slo",
+  "title": "Valhalla — SLO & Error Budget",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "tags": ["valhalla","slo"],
+  "panels": [
+    { "type": "stat", "title": "SLO target (availability)",
+      "gridPos": {"h":4,"w":6,"x":0,"y":0},
+      "targets":[{"expr":"valhalla:slo_target"}] },
+    { "type": "gauge", "title": "Success (last 30m)",
+      "gridPos": {"h":4,"w":6,"x":6,"y":0},
+      "fieldConfig": {"defaults":{"min":0,"max":1}},
+      "targets":[{"expr":"valhalla:slo_availability_ratio:30m"}] },
+    { "type": "gauge", "title": "Success (last 24h)",
+      "gridPos": {"h":4,"w":6,"x":12,"y":0},
+      "fieldConfig": {"defaults":{"min":0,"max":1}},
+      "targets":[{"expr":"valhalla:slo_availability_ratio:24h"}] },
+    { "type": "stat", "title": "Error budget (fraction)",
+      "gridPos": {"h":4,"w":6,"x":18,"y":0},
+      "targets":[{"expr":"valhalla:error_budget"}] },
+    { "type": "timeseries", "title": "Burn rate (5m / 30m)",
+      "gridPos": {"h":8,"w":12,"x":0,"y":4},
+      "targets":[
+        {"expr":"valhalla:burnrate:5m"},
+        {"expr":"valhalla:burnrate:30m"}
+      ],
+      "legend":{"show":true} },
+    { "type": "timeseries", "title": "Burn rate (2h / 24h)",
+      "gridPos": {"h":8,"w":12,"x":12,"y":4},
+      "targets":[
+        {"expr":"valhalla:burnrate:2h"},
+        {"expr":"valhalla:burnrate:24h"}
+      ],
+      "legend":{"show":true} },
+    { "type": "timeseries", "title": "Availability success ratio",
+      "gridPos": {"h":8,"w":12,"x":0,"y":12},
+      "targets":[
+        {"expr":"valhalla:slo_availability_ratio:5m"},
+        {"expr":"valhalla:slo_availability_ratio:30m"},
+        {"expr":"valhalla:slo_availability_ratio:2h"},
+        {"expr":"valhalla:slo_availability_ratio:24h"}
+      ],
+      "legend":{"show":true} },
+    { "type": "timeseries", "title": "Latency pass ratio (p95<thr)",
+      "gridPos": {"h":8,"w":12,"x":12,"y":12},
+      "targets":[
+        {"expr":"valhalla:slo_latency_ratio:30m"},
+        {"expr":"valhalla:slo_latency_ratio:2h"}
+      ],
+      "legend":{"show":true} }
+  ]
+}

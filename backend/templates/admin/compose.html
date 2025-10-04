@@ -1,0 +1,70 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<div class="panel">
+  <div><span class="badge">Task Composer</span></div>
+  <p>Paste a Heimdall task (YAML). Click <b>Lint</b> to validate, then <b>Enqueue</b> to drop it into the queue.</p>
+
+  <details style="margin:10px 0;">
+    <summary>Insert sample…</summary>
+    <div style="display:grid;gap:10px;margin-top:10px">
+      <button type="button" onclick="fill('route')">scaffold_route</button>
+      <button type="button" onclick="fill('model')">scaffold_model</button>
+      <button type="button" onclick="fill('crud_mem')">scaffold_crud (memory)</button>
+      <button type="button" onclick="fill('crud_db')">scaffold_crud (db)</button>
+      <button type="button" onclick="fill('spec')">spec (model+migration+crud)</button>
+    </div>
+  </details>
+
+  <form id="compose" method="post" action="/admin/heimdall/ui/compose">
+    <textarea name="yaml_text" id="yaml_text" rows="18" style="width:100%;font-family:ui-monospace,Consolas,monospace"></textarea>
+    <div style="display:flex;gap:10px;margin-top:10px;">
+      <button type="button" id="lintBtn">Lint</button>
+      <button type="submit" id="enqueueBtn" disabled>Enqueue</button>
+      <a href="/admin/heimdall/ui/queue" style="margin-left:auto">View Queue →</a>
+    </div>
+  </form>
+
+  <div id="lintOut" style="margin-top:12px"></div>
+<script>
+const samples = {
+  route: `type: scaffold_route\nname: hello\nmethod: GET\npath: /hello\nresponse: {"msg": "hi"}`,
+  model: `type: scaffold_model\nname: widget\ntable: widgets\ncolumns:\n  - { name: id, type: bigserial, primary_key: true }\n  - { name: name, type: text, not_null: true }\n  - { name: created_at, type: timestamptz, not_null: true, default: now() }`,
+  crud_mem: `type: scaffold_crud\nresource: todo\nstorage: memory\nfields:\n  - { name: title, type: text }\n  - { name: done,  type: bool, default: false }`,
+  crud_db: `type: scaffold_crud\nresource: todo\nstorage: db\ntable: todos\nfields:\n  - { name: title, type: text }\n  - { name: done,  type: bool, default: false }`,
+  spec: `type: spec\nname: todo\nresource: todo\nstorage: db\ntable: todos\nfields:\n  - { name: title, type: text, not_null: true }\n  - { name: done,  type: bool, not_null: true, default: false }\nroutes:\n  - { name: todo_stats, method: GET, path: /todos/stats, response: {"total": 0, "done": 0} }`
+};
+
+function fill(key){ document.getElementById('yaml_text').value = samples[key]; setStatus(null); }
+
+function setStatus(res){
+  const out = document.getElementById('lintOut');
+  const btn = document.getElementById('enqueueBtn');
+  if(!res){ out.innerHTML = ''; btn.disabled = true; return; }
+  let html = '';
+  if(res.ok){
+    html += `<div class="ok">✔ Lint ok</div>`;
+    if(res.warnings?.length){ html += `<div class="warn">Warnings:<pre>${JSON.stringify(res.warnings, null, 2)}</pre></div>`; }
+    btn.disabled = false;
+  } else {
+    html += `<div class="err">✖ Lint failed</div>`;
+    html += `<pre>${JSON.stringify(res.errors, null, 2)}</pre>`;
+    if(res.warnings?.length){ html += `<div class="warn">Warnings:<pre>${JSON.stringify(res.warnings, null, 2)}</pre></div>`; }
+    btn.disabled = true;
+  }
+  out.innerHTML = html;
+}
+
+document.getElementById('lintBtn').onclick = async () => {
+  const yaml_text = document.getElementById('yaml_text').value;
+  const headers = {'Content-Type':'application/json'};
+  if(window._heimdallToken){ headers['x-heimdall-token'] = window._heimdallToken; }
+  const r = await fetch('/admin/lint' + (window._heimdallToken ? ('?token='+encodeURIComponent(window._heimdallToken)) : ''), {
+    method:'POST', headers, body: JSON.stringify({yaml_text})
+  });
+  const res = await r.json();
+  setStatus(res);
+};
+
+// Keep form posts carrying token in the URL so middleware accepts it
+document.getElementById('compose').action = tlink('/admin/heimdall/ui/compose');
+</script>

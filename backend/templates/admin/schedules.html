@@ -1,0 +1,21 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<div class="panel">
+  <div><span class="badge">Schedules</span></div>
+  <table class="table">
+    <thead><tr><th>Name</th><th>Timezone</th><th>Cron</th><th>Task Type</th><th>Raw</th></tr></thead>
+    <tbody>
+    {% for s in schedules %}
+      <tr>
+        <td>{{ s.name }}</td>
+        <td>{{ s.timezone or "-" }}</td>
+        <td><pre>{{ s.cron }}</pre></td>
+        <td>{{ s.task_type }}</td>
+        <td><a href="#" onclick="window.open(tlink('/admin/heimdall/ui/raw?rel={{ s.file|urlencode }}'),'_blank')">file</a></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% if schedules|length == 0 %}<small class="warn">No schedules configured.</small>{% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,15 @@
+type: schedule
+name: nightly_echo
+action: upsert
+timezone: America/Toronto
+cron:
+  minute: 0
+  hour: 3
+task:
+  type: job
+  name: echo_hello
+  shell: |
+    echo "=== nightly hello ==="
+    date
+    echo "cwd: $(pwd)"
+  timeout: 60

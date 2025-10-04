@@ -1,0 +1,47 @@
+groups:
+- name: valhalla-sli-slo
+  interval: 30s
+  rules:
+  - record: valhalla:http_requests:rate1m
+    expr: sum by (path) (rate(valhalla_http_requests_total[1m]))
+  - record: valhalla:http_good_requests:rate1m
+    expr: sum by (path) (rate(valhalla_http_requests_total{status!~"5.."}[1m]))
+  - record: valhalla:http_p95:rate5m
+    expr: histogram_quantile(
+            0.95,
+            sum by (le, path) (rate(valhalla_http_request_duration_seconds_bucket[5m]))
+          )
+  - record: valhalla:http_requests_total:rate1m
+    expr: sum(valhalla:http_requests:rate1m)
+  - record: valhalla:http_good_total:rate1m
+    expr: sum(valhalla:http_good_requests:rate1m)
+  - record: valhalla:http_error_rate
+    expr: clamp_min(valhalla_http_requests_total:rate1m - valhalla:http_good_total:rate1m, 0)
+  - record: valhalla:http_latency_pass
+    expr: sum( (valhalla:http_p95:rate5m < 0.5) )
+  - record: valhalla:http_latency_total
+    expr: count(valhalla:http_p95:rate5m)
+  - record: valhalla:slo_availability_ratio:5m
+    expr: sum_over_time(valhalla:http_good_total:rate1m[5m]) / sum_over_time(valhalla:http_requests_total:rate1m[5m])
+  - record: valhalla:slo_availability_ratio:30m
+    expr: sum_over_time(valhalla:http_good_total:rate1m[30m]) / sum_over_time(valhalla:http_requests_total:rate1m[30m])
+  - record: valhalla:slo_availability_ratio:2h
+    expr: sum_over_time(valhalla:http_good_total:rate1m[2h]) / sum_over_time(valhalla:http_requests_total:rate1m[2h])
+  - record: valhalla:slo_availability_ratio:24h
+    expr: sum_over_time(valhalla:http_good_total:rate1m[24h]) / sum_over_time(valhalla:http_requests_total:rate1m[24h])
+  - record: valhalla:slo_latency_ratio:30m
+    expr: sum_over_time(valhalla:http_latency_pass[30m]) / sum_over_time(valhalla:http_latency_total[30m])
+  - record: valhalla:slo_latency_ratio:2h
+    expr: sum_over_time(valhalla:http_latency_pass[2h]) / sum_over_time(valhalla:http_latency_total[2h])
+  - record: valhalla:slo_target
+    expr: 0.999
+  - record: valhalla:error_budget
+    expr: (1 - valhalla:slo_target)
+  - record: valhalla:burnrate:5m
+    expr: (1 - valhalla:slo_availability_ratio:5m) / valhalla:error_budget
+  - record: valhalla:burnrate:30m
+    expr: (1 - valhalla:slo_availability_ratio:30m) / valhalla:error_budget
+  - record: valhalla:burnrate:2h
+    expr: (1 - valhalla:slo_availability_ratio:2h) / valhalla:error_budget
+  - record: valhalla:burnrate:24h
+    expr: (1 - valhalla:slo_availability_ratio:24h) / valhalla:error_budget

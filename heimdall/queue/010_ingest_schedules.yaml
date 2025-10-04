@@ -1,0 +1,35 @@
+type: bundle
+tasks:
+  # Hourly RSS & docs
+  - type: schedule
+    name: knowledge_ingest_hourly
+    timezone: America/Toronto
+    cron: { minute: 7 }
+    task:
+      type: job
+      name: ingest_sources
+      shell: |
+        python scripts/ingest/ingest_sources.py
+      sandbox: false
+      timeout: 300
+
+  # Daily (refresh arXiv, GitHub)
+  - type: schedule
+    name: knowledge_ingest_daily
+    timezone: America/Toronto
+    cron: { hour: 2, minute: 21 }
+    task:
+      type: job
+      name: ingest_sources_daily
+      shell: |
+        python scripts/ingest/ingest_sources.py
+      sandbox: false
+      timeout: 600
+
+  # Kick once now
+  - type: job
+    name: ingest_sources_boot
+    shell: |
+      python scripts/ingest/ingest_sources.py
+    sandbox: false
+    timeout: 300

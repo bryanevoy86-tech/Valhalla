@@ -1,0 +1,28 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "API (Uvicorn)",
+      "type": "python",
+      "request": "launch",
+      "module": "uvicorn",
+      "args": ["app.main:app", "--reload", "--port", "8000"],
+      "justMyCode": true
+    },
+    {
+      "name": "Pytest (Debug failed)",
+      "type": "python",
+      "request": "launch",
+      "module": "pytest",
+      "args": ["-q", "--maxfail=1", "-k", "not e2e"]
+    },
+    {
+      "name": "Worker (Heimdall queue)",
+      "type": "python",
+      "request": "launch",
+      "module": "app.workers.export_worker",
+      "args": [],
+      "justMyCode": true
+    }
+  ]
+}

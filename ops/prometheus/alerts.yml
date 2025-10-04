@@ -1,0 +1,138 @@
+# ...existing code...
+  - alert: LatencyAnomalyP95
+    expr: valhalla:http_p95_zscore > 3
+    for: 10m
+    labels: { severity: warning }
+    annotations:
+      summary: "Latency anomaly on {{ $labels.path }}"
+      description: "p95 latency z-score > 3 vs 24h baseline (10m). Possible regression."
+      runbook_url: "https://your.docs/runbooks/latency-anomaly-p95"
+
+  - alert: LatencyAnomalySevere
+    expr: valhalla:http_p95_zscore > 6
+    for: 5m
+    labels: { severity: critical }
+    annotations:
+      summary: "SEVERE latency spike on {{ $labels.path }}"
+      description: "p95 z-score > 6 vs baseline (5m). Roll back recent changes or investigate."
+      runbook_url: "https://your.docs/runbooks/latency-anomaly-severe"
+
+  - alert: EndpointBurnHigh
+    expr: (valhalla:burnrate:30m:by_endpoint > 14) and (valhalla:burnrate:2h:by_endpoint > 6)
+    for: 15m
+    labels: { severity: critical }
+    annotations:
+      summary: "SLO burn ({{ $labels.slo_name }})"
+      description: "Burn rate >14x (30m) & >6x (2h) for {{ $labels.slo_name }}."
+      runbook_url: "https://your.docs/runbooks/endpoint-burn-high"
+
+  - alert: EndpointLatencyBreach
+    expr: (1 - valhalla:slo_latency_ratio:30m:by_endpoint) > (1 - on(slo_name) group_left valhalla:slo_target:availability)
+    for: 30m
+    labels: { severity: warning }
+    annotations:
+      summary: "Latency degrading ({{ $labels.slo_name }})"
+      description: "p95 latency fail ratio is breaching for {{ $labels.slo_name }}."
+      runbook_url: "https://your.docs/runbooks/endpoint-latency-breach"
+
+  - alert: SyntheticProbeFailing
+    expr: probe_success == 0
+    for: 2m
+    labels: { severity: critical }
+    annotations:
+      summary: "Synthetic check failing ({{ $labels.instance }})"
+      description: "Blackbox probe to {{ $labels.instance }} is failing."
+      runbook_url: "https://your.docs/runbooks/synthetic-probe-failing"
+groups:
+- name: valhalla-alerts
+  rules:
+  # Backend down (no metrics)
+  # ===== Availability SLO burn-rate =====
+  # Target = 99.9% (error budget 0.1%). Tune thresholds per traffic.
+  # Page quickly if we're on track to exhaust in ~1h (aggressive)
+  - alert: SLOAvailabilityBurnFast
+    expr: (valhalla:burnrate:5m > 14) and (valhalla:burnrate:30m > 14)
+    for: 10m
+    labels: { severity: critical }
+    annotations:
+      summary: "SLO burn (fast): availability"
+      description: "Burn rate >14x over 5m & 30m (consuming 0.1% E.B. in ~1h). Investigate now."
+      runbook_url: "https://your.docs/runbooks/slo-burn-fast"
+  # Ticket if exhausting in ~6–24h (sustained but slower)
+  - alert: SLOAvailabilityBurnSlow
+    expr: (valhalla:burnrate:2h > 6) and (valhalla:burnrate:24h > 1)
+    for: 30m
+    labels: { severity: warning }
+    annotations:
+      summary: "SLO burn (slow): availability"
+      description: "Sustained burn >6x (2h) and >1x (24h). Error budget at risk within a day."
+      runbook_url: "https://your.docs/runbooks/slo-burn-slow"
+  # ===== Latency SLO breach (p95 > threshold for many paths) =====
+  - alert: SLOLatencyDegrading
+    expr: (1 - valhalla:slo_latency_ratio:30m) > (1 - 0.99)
+    for: 20m
+    labels: { severity: warning }
+    annotations:
+      summary: "Latency SLO degrading"
+      description: "Service-wide p95 pass ratio < 99% over 30m. Investigate hotspots."
+      runbook_url: "https://your.docs/runbooks/slo-latency-degrading"
+  - alert: SLOLatencyBreach
+    expr: (1 - valhalla:slo_latency_ratio:2h) > (1 - 0.99)
+    for: 30m
+    labels: { severity: critical }
+    annotations:
+      summary: "Latency SLO breach"
+      description: "Service-wide p95 pass ratio < 99% over 2h."
+      runbook_url: "https://your.docs/runbooks/slo-latency-breach"
+groups:
+- name: valhalla-alerts
+  rules:
+  # Backend down (no metrics)
+  - alert: BackendNoMetrics
+    expr: absent(valhalla_http_requests_total)
+    for: 2m
+    labels: { severity: critical }
+    annotations:
+      summary: "Backend metrics absent"
+      description: "Prometheus cannot see backend metrics at /admin/metrics."
+      runbook_url: "https://your.docs/runbooks/backend-no-metrics"
+
+  # High 5xx error rate on any path
+  - alert: HighErrorRate
+    expr: sum by (path)(rate(valhalla_http_errors_total[5m])) > 0.1
+    for: 5m
+    labels: { severity: critical }
+    annotations:
+      summary: "High 5xx rate on {{ $labels.path }}"
+      description: "5xx error rate > 0.1/s for 5m on {{ $labels.path }}."
+      runbook_url: "https://github.com/valhalla/runbooks/blob/main/HighErrorRate.md"
+
+  # Slow p95 latency
+  - alert: SlowP95Latency
+    expr: valhalla:http_latency_p95 > 0.5
+    for: 10m
+    labels: { severity: warning }
+    annotations:
+      summary: "p95 latency high on {{ $labels.path }}"
+      description: "p95 > 500ms for 10m on {{ $labels.path }}."
+      runbook_url: "https://your.docs/runbooks/slow-p95-latency"
+
+  # Jobs taking too long (last observed)
+  - alert: JobSlow
+    expr: valhalla:job_last_seconds{status="OK"} > 60
+    for: 10m
+    labels: { severity: warning }
+    annotations:
+      summary: "Job slowdown: {{ $labels.job_type }}"
+      description: "Last {{ $labels.job_type }} duration {{ $value }}s > 60s for 10m."
+      runbook_url: "https://your.docs/runbooks/job-slow"
+
+  # Jobs failing repeatedly
+  - alert: JobFailuresSpiking
+    expr: sum by (job_type)(rate(valhalla_jobs_runs_total{status="ERROR"}[5m])) > 0.05
+    for: 10m
+    labels: { severity: critical }
+    annotations:
+      summary: "Job failures spiking: {{ $labels.job_type }}"
+      description: "ERROR run rate > 0.05/s for 10m."
+      runbook_url: "https://your.docs/runbooks/job-failures-spiking"

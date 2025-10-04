@@ -1,0 +1,43 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<div class="panel">
+  <div class="flex items-center justify-between">
+    <span class="badge">Knowledge</span>
+    <div>
+      <button class="btn" id="run">Ingest now</button>
+      <a class="btn" href="#" onclick="location.href=tlink('/admin/heimdall/ui/artifacts')">Artifacts</a>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div>
+      <h3>Stats</h3>
+      <pre id="stats" class="muted">Loading…</pre>
+    </div>
+    <div>
+      <h3>Catalog</h3>
+      <pre class="muted">Edit: heimdall/sources/catalog.yaml (max 10 per category)</pre>
+    </div>
+  </div>
+</div>
+
+<script>
+(async function(){
+  async function load(){
+    const r = await fetch(tlink('/admin/heimdall/api/knowledge/stats'));
+    const js = await r.json();
+    document.getElementById('stats').textContent = JSON.stringify(js, null, 2);
+  }
+  document.getElementById('run').onclick = async ()=>{
+    const res = await fetch(tlink('/admin/heimdall/compose/enqueue'), {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ task: {type:'job', name:'ingest_sources_now', shell:'python scripts/ingest/ingest_sources.py', sandbox:false, timeout:300 } })
+    });
+    const js = await res.json();
+    if (js.ok) alert('Ingest enqueued. Refresh in a minute.');
+    else alert('Failed: ' + JSON.stringify(js));
+  };
+  load();
+})();
+</script>
+{% endblock %}

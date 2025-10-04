@@ -1,0 +1,8 @@
+kind: frontend
+name: audit
+actions:
+  - type: create_page
+    path: frontend/pages/AuditViewer.autogen.jsx
+    route: "/audit"
+    requiresRole: ["viewer","operator","admin","owner"]
+notes: "Full API in backend/routers/audit.py; autogen page is a placeholder."

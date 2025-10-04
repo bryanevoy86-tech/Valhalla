@@ -1,0 +1,146 @@
+{
+  "rate_limit": {
+    "max_concurrent_jobs": 2,
+    "throttle_pending_max": 200,
+    "paused_file": "heimdall/state/queue_paused.flag"
+  },
+  "jobs": {
+    "enabled": true,
+    "jobs_dir": "generated/jobs",
+    "max_seconds": 900,
+    "env_allowlist": ["PATH", "PYTHONPATH", "DATABASE_URL"],
+    "cpu_seconds": 0,
+    "memory_mb": 0,
+    "sandbox_default": true,
+    "stdout_max_bytes": 2097152,
+    "stderr_max_bytes": 2097152,
+  "tail_bytes_default": 4000,
+    "autopr": {
+      "per_job_runs": 30,
+      "per_job_zip_keep": 50,
+      "per_job_overrides": {
+        "heavy_ingest": { "runs": 10, "zips": 20 }
+      },
+      "zip_dir": "dist/job_artifacts"
+    }
+  },
+  // ...other config keys...
+  "previews": {
+    "enabled": true,
+    "mount_prefix": "/preview",
+    "state_file": "heimdall/state/previews.json",
+    "default_ttl_seconds": 3600,
+    "max_routes_per_preview": 50
+  },
+  "smoke": {
+    "enabled": true,
+    "timeout_seconds": 8,
+    "base_url": "http://localhost:8000",
+    "targets": [
+      {"name": "readyz", "method": "GET", "url": "/readyz", "expect_status": 200},
+      {"name": "docs_api", "method": "GET", "url": "/admin/heimdall/api/docs", "expect_status": 200},
+      {"name": "knowledge_stats", "method": "GET", "url": "/admin/heimdall/api/knowledge/stats", "expect_status": 200}
+    ],
+    "report_file": "dist/docs/smoke_report.md",
+    "last_result_file": "heimdall/state/smoke_last.json"
+  },
+  "dry_run": true,
+  "enable_scheduler": true,
+  "admin_auth": { "read_only": false },
+
+  "artifacts": {
+    "dir": "dist/artifacts",
+    "retention": 20,
+    "default_sources": [
+      "generated/**/*",
+      "backend/generated_routes/**/*.py",
+      "backend/generated_models/**/*.py",
+      "migrations/generated/**/*.sql",
+      "generated/jobs/*/*/artifacts/**/*",
+      "knowledge/**/*",
+      "dist/docs/**/*"
+
+    ]
+  },
+  "vault": {
+    "enabled": true,
+    "file": "heimdall/state/secrets.vault",
+    "key_env": "HEIMDALL_VAULT_KEY",
+    "encryption": "fernet",
+    "audit_file": "heimdall/state/vault_audit.jsonl",
+    "mask_keep": 4,
+    "allow_api_reveal": false
+  },
+  "flags": {
+    "enabled": true,
+    "env": "dev",
+    "file": "heimdall/state/flags.json",
+    "audit_file": "heimdall/state/flags_audit.jsonl",
+    "report_file": "dist/docs/flags.md",
+    "header_override": "X-FF-Force",
+    "cookie_prefix": "ff_",
+    "default_fallthrough": false
+  },
+    "git_auto_commit": true,
+    "git_branch_prefix": "heimdall/autopilot/",
+
+    "alerts": {
+      "enabled": true,
+      "interval_seconds": 60,
+      "backlog_pending_warn": 150,
+      "error_events_window_minutes": 10,
+      "error_events_warn": 5,
+      "heartbeat_max_age_warn_seconds": 120,
+      "repeat_suppress_seconds": 900
+    },
+
+    "autopr": {
+      "enabled": true,
+      "respect_global_dry_run": true,
+      "branch_prefix": "heimdall/autopilot/",
+      "main_branch": "main",
+      "remote_name": "origin",
+      "allowed_paths": [
+        "backend/generated_routes/**/*.py",
+        "backend/generated_models/**/*.py",
+        "migrations/generated/**/*.sql",
+        "generated/**/*",
+        "knowledge/**/*",
+        "dist/docs/**/*",
+        "dist/artifacts/**/*"
+      ],
+      "commit_message": "Heimdall autopilot update: {{YYYY}}-{{MM}}-{{DD}} {{hh}}:{{mm}}",
+      "pr": {
+        "create": true,
+        "draft": true,
+        "title": "Heimdall autopilot: {{YYYY}}-{{MM}}-{{DD}}",
+        "body": "Automated update (safe mode). Includes generated code, docs, knowledge, and artifacts.",
+        "labels": ["heimdall", "autopilot"]
+      },
+      "status_file": "dist/docs/auto_pr_status.json"
+    },
+    "triage": {
+      "enabled": true,
+      "group_window_days": 7,
+      "auto_retry": {
+        "enabled": true,
+        "max": 3,
+        "backoff_seconds": [60, 300, 1800]
+      },
+      "quarantine": {
+        "enabled": true,
+        "after_errors": 5,
+        "dir": "heimdall/quarantine",
+        "ttl_hours": 48
+      },
+      "deferred": {
+        "dir": "heimdall/deferred"
+      },
+      "ignore_patterns": [
+        "connection reset by peer",
+        "deadline exceeded",
+        "temporary network failure"
+      ],
+      "state_file": "heimdall/state/error_triage.json"
+    }
+  }

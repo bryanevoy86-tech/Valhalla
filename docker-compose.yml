@@ -1,0 +1,175 @@
+version: '3.8'
+services:
+  blackbox:
+    image: prom/blackbox-exporter:v0.25.0
+    command:
+      - "--config.file=/etc/blackbox/blackbox.yml"
+    volumes:
+      - ./ops/blackbox/blackbox.yml:/etc/blackbox/blackbox.yml:ro
+    ports:
+      - "9115:9115"
+    depends_on:
+      - api
+  api:
+    build:
+      context: .
+      dockerfile: services/api/Dockerfile
+  # working_dir and command removed to use Dockerfile defaults
+    environment:
+      - PYTHONUNBUFFERED=1
+    ports:
+      - "8000:8000"
+  ngrok:
+    image: ngrok/ngrok:latest
+    restart: unless-stopped
+    environment:
+      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
+    command: "http api:8000"
+    depends_on:
+      - api
+    ports:
+      - "4040:4040" # Ngrok web interface
+  vector:
+    image: timberio/vector:0.43.0-debian
+    environment:
+      - VECTOR_ENABLED=${VECTOR_ENABLED}
+      - VECTOR_DATA_DIR=${VECTOR_DATA_DIR}
+      - VECTOR_LOG_PATH_GLOB=${VECTOR_LOG_PATH_GLOB}
+      - VECTOR_TRACES_PATH_GLOB=${VECTOR_TRACES_PATH_GLOB}
+      - VECTOR_HOSTNAME=${VECTOR_HOSTNAME}
+      - VECTOR_S3_ENABLE=${VECTOR_S3_ENABLE}
+      - VECTOR_S3_BUCKET=${VECTOR_S3_BUCKET}
+      - VECTOR_S3_REGION=${VECTOR_S3_REGION}
+      - VECTOR_S3_PREFIX=${VECTOR_S3_PREFIX}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN}
+      - VECTOR_OS_ENABLE=${VECTOR_OS_ENABLE}
+      - VECTOR_OS_ENDPOINT=${VECTOR_OS_ENDPOINT}
+      - VECTOR_OS_INDEX_PREFIX=${VECTOR_OS_INDEX_PREFIX}
+      - VECTOR_OS_USER=${VECTOR_OS_USER}
+      - VECTOR_OS_PASS=${VECTOR_OS_PASS}
+      - VECTOR_BUFFER_MB=${VECTOR_BUFFER_MB}
+      - VECTOR_RETRY_MAX_ATTEMPTS=${VECTOR_RETRY_MAX_ATTEMPTS}
+      - VECTOR_RETRY_INITIAL_BACKOFF_SECS=${VECTOR_RETRY_INITIAL_BACKOFF_SECS}
+      - VECTOR_RETRY_MAX_BACKOFF_SECS=${VECTOR_RETRY_MAX_BACKOFF_SECS}
+    volumes:
+      - ./ops/vector/vector.yaml:/etc/vector/vector.yaml:ro
+      - logs_data:/data
+      - traces_data:/data
+      - vector_state:/var/lib/vector
+    command: ["--config", "/etc/vector/vector.yaml", "--watch-config"]
+    ports:
+      - "8686:8686"
+    depends_on:
+      - api
+  otel-collector:
+    image: otel/opentelemetry-collector:0.101.0
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes:
+      - ./ops/otel-collector/config.yaml:/etc/otelcol/config.yaml:ro
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+    depends_on:
+      - tempo
+  tempo:
+    image: grafana/tempo:2.5.0
+    command: ["-config.file=/etc/tempo.yaml"]
+    volumes:
+      - ./ops/tempo/tempo.yaml:/etc/tempo.yaml:ro
+      - tempo_data:/var/tempo
+    ports:
+      - "3200:3200"
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_DB: valhalla
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+  heimdall:
+    image: python:3.11-slim
+    command: ["sleep", "infinity"]
+    environment:
+      GIT_AUTHOR_NAME: "Heimdall Bot"
+      GIT_AUTHOR_EMAIL: "heimdall@example.com"
+      HEIMDALL_ADMIN_TOKEN: ${HEIMDALL_ADMIN_TOKEN:-}
+      HEIMDALL_VIEWER_TOKEN: ${HEIMDALL_VIEWER_TOKEN:-}
+      GENERIC_WEBHOOK_URL: ${GENERIC_WEBHOOK_URL:-}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      DISCORD_WEBHOOK_URL: ${DISCORD_WEBHOOK_URL}
+      GITHUB_TOKEN: ${GITHUB_TOKEN}
+    volumes:
+      - .:/app
+    depends_on:
+      - api
+      - db
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    volumes:
+      - ./ops/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./ops/prometheus/rules.yml:/etc/prometheus/rules.yml:ro
+      - ./ops/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    depends_on:
+      - api
+  grafana:
+    image: grafana/grafana:11.2.0
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GF_SECURITY_ADMIN_PASSWORD}
+      - GF_USERS_VIEWERS_CAN_EDIT=false
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
+      - GF_AUTH_BASIC_ENABLED=true
+      - GF_AUTH_BASIC_USERS_ADMIN_PASSWORD=${GF_AUTH_BASIC_USERS_ADMIN_PASSWORD}
+      - GF_AUTH_BASIC_USERS_VIEWER_PASSWORD=${GF_AUTH_BASIC_USERS_VIEWER_PASSWORD}
+      - GF_SMTP_ENABLED=${GF_SMTP_ENABLED}
+      - GF_SMTP_HOST=${GF_SMTP_HOST}
+      - GF_SMTP_PORT=${GF_SMTP_PORT}
+      - GF_SMTP_USER=${GF_SMTP_USER}
+      - GF_SMTP_PASSWORD=${GF_SMTP_PASSWORD}
+      - GF_SMTP_FROM_ADDRESS=${GF_SMTP_FROM_ADDRESS}
+      - GF_SMTP_TO_ADDRESS=${GF_SMTP_TO_ADDRESS}
+      - GF_SMTP_SUBJECT=${GF_SMTP_SUBJECT}
+      - GF_SMTP_BODY=${GF_SMTP_BODY}
+      - GF_SMTP_ENABLE_TLS=${GF_SMTP_ENABLE_TLS}
+      - GF_SMTP_SKIP_VERIFY=${GF_SMTP_SKIP_VERIFY}
+      - GF_LOG_LEVEL=${GF_LOG_LEVEL}
+      - GF_LOG_MODE=${GF_LOG_MODE}
+      - GF_PATHS_HOME=/usr/share/grafana
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel,grafana-worldmap-panel
+    volumes:
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+      - tempo
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    command: ["--config.file=/etc/alertmanager/alertmanager.yml", "--log.level=info"]
+    volumes:
+      - ./ops/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager_data:/alertmanager
+    ports:
+      - "9093:9093"
+    depends_on:
+      - prometheus
+volumes:
+  logs_data:
+  traces_data:
+  vector_state:
+  pgdata:
+  prometheus_data:
+  grafana_data:
+  alertmanager_data:
+  tempo_data:

@@ -1,0 +1,15 @@
+from fastapi import APIRouter, Depends
+from typing import Any, Dict
+from backend.deps.guards import role_guard, legacy_access
+
+router = APIRouter(prefix="{{prefix}}", tags=["autogen"])
+
+{{#each endpoints}}
+@router.{{this.method}}("{{this.path}}")
+def {{this.name}}(
+    payload: Dict[str, Any] | None = None,
+    user = Depends(role_guard({{{json this.roles}}})),
+    legacy = Depends(legacy_access("legacy_id"))
+):
+    return {"ok": True, "message": "{{this.description}}", "legacy": getattr(legacy, "slug", getattr(legacy, "id", None))}
+{{/each}}

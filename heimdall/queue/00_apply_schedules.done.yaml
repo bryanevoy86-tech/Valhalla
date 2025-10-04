@@ -1,0 +1,23 @@
+# Fires once; persists schedules that will run while you're away.
+type: bundle
+tasks:
+  - type: schedule
+    name: hourly_echo
+    timezone: America/Toronto
+    cron: { minute: "*/30" }   # every 30 minutes
+    task:
+      type: job
+      name: echo_tick
+      shell: |
+        echo "tick $(date)" && mkdir -p artifacts && date > artifacts/when.txt
+      sandbox: true
+      timeout: 60
+
+  - type: schedule
+    name: nightly_publish
+    timezone: America/Toronto
+    cron: { hour: 3, minute: 15 }  # nightly at ~03:15 Toronto time
+    task:
+      type: publish
+      name: nightly_bundle
+      note: "nightly bundle (safe even in dry_run)"

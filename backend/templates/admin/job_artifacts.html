@@ -1,0 +1,61 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<div class="panel">
+  <div class="flex items-center justify-between">
+    <span class="badge">Run Artifacts</span>
+    <small class="muted"><code>{{ name }}</code> @ <code>{{ ts }}</code></small>
+  </div>
+  <table class="table">
+    <thead><tr><th>File</th><th>Size</th><th>Actions</th></tr></thead>
+    <tbody>
+      {% for it in items %}
+        <tr>
+          <td><code>{{ it.file }}</code></td>
+          <td>{{ it.size }} B</td>
+          <td><a href="#" onclick="window.open(tlink('/admin/heimdall/ui/download?rel={{ it.file | urlencode }}'),'_blank')">download</a></td>
+        </tr>
+      {% endfor %}
+      {% if items|length == 0 %}
+        <tr><td colspan="3"><small class="muted">No files in artifacts/ for this run.</small></td></tr>
+      {% endif %}
+    </tbody>
+  </table>
+
+  <div class="mt-6">
+    {% if request.state.role == 'admin' %}
+    <button class="btn" id="zip">ZIP this run</button>
+    <span id="status" class="muted ml-4"></span>
+    {% else %}
+    <small class="muted">Viewer role: read-only</small>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+(function(){
+  const name = {{ name | tojson }};
+  const ts = {{ ts | tojson }};
+  const btn = document.getElementById('zip');
+  const st = document.getElementById('status');
+  if(btn){
+    btn.onclick = async () => {
+      st.textContent = 'Zipping…';
+      try{
+        const res = await fetch(tlink('/admin/heimdall/job-zip-run'), {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({name, ts})
+        });
+        const js = await res.json();
+        if(js.ok){
+          st.innerHTML = `✅ Created <code>${js.zip}</code> — <a href="${tlink('/admin/heimdall/ui/download?rel='+encodeURIComponent(js.zip))}" target="_blank">download</a>`;
+        }else{
+          st.innerHTML = `⚠️ ${js.error || 'failed'}`;
+        }
+      }catch(e){
+        st.textContent = '❌ '+e;
+      }
+    };
+  }
+})();
+</script>
+{% endblock %}

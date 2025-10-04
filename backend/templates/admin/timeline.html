@@ -1,0 +1,19 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<div class="panel">
+  <div><span class="badge">Timeline</span> <small class="muted">Newest first</small></div>
+  <table class="table">
+    <thead><tr><th>When</th><th>Kind</th><th>Details</th></tr></thead>
+    <tbody>
+    {% for e in events %}
+      <tr>
+        <td><small>{{ e.ts }}</small></td>
+        <td><code>{{ e.kind }}</code></td>
+        <td><pre>{{ e | tojson(indent=2) }}</pre></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% if events|length == 0 %}<small class="warn">No events yet.</small>{% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,8 @@
+type: job
+name: echo_hello
+shell: |
+  echo "=== hello from Heimdall ==="
+  uname -a || ver
+  echo "repo root: $(pwd)"
+  ls -1
+timeout: 30

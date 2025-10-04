@@ -1,0 +1,61 @@
+version: 1
+defaults:
+  per_source_keep: 200     # keep last N docs per source
+  user_agent: "HeimdallBot/1.0 (+contact: you@example.com)"
+  timeout_seconds: 12
+  politeness_delay_ms: 600 # sleep between requests
+
+# Add or edit categories + up to 10 sources each.
+categories:
+
+  architecture:
+    - {name: "martinfowler.com", type: rss, url: "https://martinfowler.com/feed.atom"}
+    - {name: "thoughtworks-radar", type: web, url: "https://www.thoughtworks.com/radar"}
+    - {name: "software-architecture-digest", type: rss, url: "https://blog.pragmaticengineer.com/rss/"}
+    - {name: "yegor256", type: rss, url: "https://www.yegor256.com/rss.xml"}
+
+  backend:
+    - {name: "cloudflare-blog", type: rss, url: "https://blog.cloudflare.com/rss/"}
+    - {name: "stripe-engineering", type: rss, url: "https://engineering.stripe.com/feed.xml"}
+    - {name: "github-engineering", type: rss, url: "https://github.blog/engineering/feed/"}
+    - {name: "fastapi", type: rss, url: "https://fastapi.tiangolo.com/atom.xml"}
+    - {name: "python-release-notes", type: rss, url: "https://docs.python.org/whatsnew/3.12.rss"}
+
+  devops:
+    - {name: "kubernetes-blog", type: rss, url: "https://kubernetes.io/feed.xml"}
+    - {name: "aws-news", type: rss, url: "https://aws.amazon.com/blogs/aws/feed/"}
+    - {name: "terraform-blog", type: rss, url: "https://www.hashicorp.com/blog/feed.xml"}
+    - {name: "nginx-blog", type: rss, url: "https://www.nginx.com/feed/"}
+
+  security:
+    - {name: "owasp-blog", type: rss, url: "https://owasp.org/www-blog/feed.xml"}
+    - {name: "google-project-zero", type: rss, url: "https://googleprojectzero.blogspot.com/feeds/posts/default"}
+    - {name: "nvd-cve", type: rss, url: "https://nvd.nist.gov/feeds/xml/cve/misc/nvd-rss.xml"}
+    - {name: "latacora", type: rss, url: "https://latacora.micro.blog/feed.xml"}
+
+  databases:
+    - {name: "postgresql-news", type: rss, url: "https://www.postgresql.org/list/announce.rss"}
+    - {name: "neon-tech", type: rss, url: "https://neon.tech/blog/rss.xml"}
+    - {name: "planet-postgres", type: rss, url: "https://planet.postgresql.org/rss20.xml"}
+
+  apis:
+    - {name: "apisyouwonthate", type: rss, url: "https://apisyouwonthate.com/blog/rss.xml"}
+    - {name: "openapi-initiative", type: rss, url: "https://www.openapis.org/feed"}
+
+  testing:
+    - {name: "cypress-blog", type: rss, url: "https://www.cypress.io/blog/feed.xml"}
+    - {name: "testing-martin-thompson", type: rss, url: "https://mechanical-sympathy.blogspot.com/feeds/posts/default"}
+
+  product_ux:
+    - {name: "nngroup", type: rss, url: "https://www.nngroup.com/articles/rss/"}
+    - {name: "aarron-walter", type: rss, url: "https://aarronwalter.com/feed.xml"}
+
+  ai_ml:
+    - {name: "openai-research", type: rss, url: "https://openai.com/blog/rss"}
+    - {name: "deepmind", type: rss, url: "https://deepmind.google/discover/rss/"}
+    - {name: "arxiv-ml", type: arxiv, query: "cat:cs.LG OR cat:cs.AI", max_results: 20}
+
+  github_watch:
+    - {name: "fastapi/fastapi", type: github, branch: "master"}
+    - {name: "tiangolo/sqlmodel", type: github, branch: "main"}
+    - {name: "encode/httpx", type: github, branch: "master"}

@@ -1,0 +1,26 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<div class="panel">
+  <div><span class="badge">Artifacts</span></div>
+  <table class="table">
+    <thead><tr><th>File</th><th>Size</th><th>Created</th><th>Note</th><th>Actions</th></tr></thead>
+    <tbody>
+    {% for a in items %}
+      <tr>
+        <td><code>{{ a.file }}</code></td>
+        <td>{{ a.size }} B</td>
+        <td>{{ a.created }}</td>
+        <td>{{ a.note or "" }}</td>
+        <td>
+          <a href="#" onclick="window.open(tlink('/admin/heimdall/ui/download?rel={{ a.file|urlencode }}'),'_blank')">download</a>
+          {% if a.manifest %}
+            · <a href="#" onclick="window.open(tlink('/admin/heimdall/ui/raw?rel={{ a.manifest|urlencode }}'),'_blank')">manifest</a>
+          {% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% if items|length == 0 %}<small class="warn">No artifacts yet.</small>{% endif %}
+</div>
+{% endblock %}

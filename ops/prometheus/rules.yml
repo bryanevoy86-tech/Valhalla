@@ -1,0 +1,33 @@
+groups:
+- name: valhalla-recording
+  interval: 30s
+  rules:
+  # --- Requests per second (RPS) per path
+  - record: valhalla:http_rps
+    expr: sum by (path)(
+            rate(valhalla_http_requests_total[1m])
+          )
+
+  # --- Error rate (5xx) per path
+  - record: valhalla:http_error_rate
+    expr: sum by (path)(
+            rate(valhalla_http_errors_total[5m])
+          )
+
+  # --- p95 latency per path (histogram)
+  - record: valhalla:http_latency_p95
+    expr: histogram_quantile(
+            0.95,
+            sum by (le, path)(
+              rate(valhalla_http_request_duration_seconds_bucket[5m])
+            )
+          )
+
+  # --- Job run rate and last duration per job_type
+  - record: valhalla:job_rps
+    expr: sum by (job_type)(
+            rate(valhalla_jobs_runs_total[1m])
+          )
+
+  - record: valhalla:job_last_seconds
+    expr: max by (job_type, status)(valhalla_job_last_duration_seconds)

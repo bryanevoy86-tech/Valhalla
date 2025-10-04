@@ -1,0 +1,76 @@
+# Render Blueprint — Valhalla API + Worker + Postgres
+# Place this file at the repo root and create from "New > Blueprint" in Render.
+
+databases:
+  - name: valhalla-prod
+    databaseName: valhalla
+    user: valhalla_app
+    plan: starter
+    region: oregon
+    ipAllowList: []   # private by default
+
+services:
+  - type: web
+    name: valhalla-api
+  runtime: python
+    plan: starter
+    region: oregon
+    autoDeploy: true
+    buildCommand: pip install -r requirements.txt
+    startCommand: >
+      gunicorn -k uvicorn.workers.UvicornWorker services.api.main:app
+      -b 0.0.0.0:10000 -w 2 --timeout 120
+    healthCheckPath: /healthz
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: valhalla-prod
+          property: internalConnectionString
+      - key: CORS_ALLOWED_ORIGINS
+        # comma-separated list; update after your WeWeb site is published
+        value: https://YOUR-WEWEB-DOMAIN
+      - key: WEWEB_SHARED_SECRET
+        # set the real value in the Render dashboard after first deploy
+        value: CHANGE_ME
+      # S3/R2 (optional for exports)
+      - key: S3_ENDPOINT
+        value: https://YOUR-S3-ENDPOINT
+      - key: S3_REGION
+        value: us-east-1
+      - key: S3_BUCKET
+        value: valhalla-exports
+      - key: S3_ACCESS_KEY_ID
+        value: CHANGE_ME
+      - key: S3_SECRET_ACCESS_KEY
+        value: CHANGE_ME
+
+
+  - type: worker
+    name: valhalla-worker
+  runtime: python
+    plan: starter
+    region: oregon
+    autoDeploy: true
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -m services.api.export_worker
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: valhalla-prod
+          property: internalConnectionString
+      - key: WEWEB_SHARED_SECRET
+        value: CHANGE_ME
+      - key: S3_ENDPOINT
+        value: https://YOUR-S3-ENDPOINT
+      - key: S3_REGION
+        value: us-east-1
+      - key: S3_BUCKET
+        value: valhalla-exports
+      - key: S3_ACCESS_KEY_ID
+        value: CHANGE_ME
+      - key: S3_SECRET_ACCESS_KEY
+        value: CHANGE_ME

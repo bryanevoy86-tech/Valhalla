@@ -1,0 +1,101 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<div class="panel">
+  <span class="badge">System</span>
+  <span id="hb" class="muted">checking…</span>
+</div>
+<div class="panel">
+  <div class="flex items-center justify-between">
+    <span class="badge">Alerts</span>
+    <button class="btn" id="alert_test">Send test</button>
+  </div>
+  <div id="alert_info" class="mt-2 muted">Loading…</div>
+</div>
+<div class="panel">
+  <div class="flex items-center justify-between">
+    <span class="badge">Auto-PR</span>
+    <div>
+      <button class="btn" id="autopr_run">Run now</button>
+    </div>
+  </div>
+  <div id="autopr_info" class="muted mt-2">Loading…</div>
+</div>
+<script>
+(async function(){
+  async function load(){
+    try{
+      const r = await fetch('/admin/heimdall/api/autopr/status');
+      const js = await r.json();
+      const st = js.status || {};
+      const c  = js.config || {};
+      let lines = [];
+      lines.push(`enabled: ${c.enabled ? 'yes' : 'no'} · respect_global_dry_run: ${c.respect_global_dry_run ? 'yes' : 'no'}`);
+      if (st.timestamp) lines.push(`last: ${st.timestamp}`);
+      if (st.branch) lines.push(`branch: ${st.branch}`);
+      if (st.commit) lines.push(`commit: ${st.commit.substring(0,7)}`);
+      if (st.pr_url) lines.push(`PR: ${st.pr_url}`);
+      if (st.note) lines.push(st.note);
+      if (st.error) lines.push('error: '+st.error);
+      document.getElementById('autopr_info').textContent = lines.join(' · ') || '(no status yet)';
+    }catch(e){
+      document.getElementById('autopr_info').textContent = '❌ could not load auto-PR status';
+    }
+  }
+  document.getElementById('autopr_run').onclick = async ()=>{
+    try{
+      const r = await fetch('/admin/heimdall/autopr/run', {method:'POST'});
+      const js = await r.json();
+      if (js.ok) { alert('Auto-PR job enqueued.'); setTimeout(load, 2000); }
+      else alert('Failed: '+JSON.stringify(js));
+    }catch(e){ alert('❌ '+e); }
+  };
+  load(); setInterval(load, 8000);
+})();
+</script>
+<script>
+(async function(){
+  async function load(){
+    try{
+      const r = await fetch('/admin/heimdall/api/alerts/status');
+      const js = await r.json();
+      const c = js.config || {};
+      const st = js.state || {};
+      const txt = [
+        `enabled: ${c.enabled ? 'yes' : 'no'}`,
+        `interval: ${c.interval_seconds || 60}s`,
+        `backlog warn ≥ ${c.backlog_pending_warn || '—'}`,
+        `error burst (last ${c.error_events_window_minutes || 10}m) ≥ ${c.error_events_warn || '—'}`,
+        `hb stale > ${c.heartbeat_max_age_warn_seconds || '—'}s`,
+        st.last_summary ? `last: ${st.last_summary}` : 'last: (none)'
+      ].join(' · ');
+      document.getElementById('alert_info').textContent = txt;
+    }catch(e){
+      document.getElementById('alert_info').textContent = '❌ could not load alert status';
+    }
+  }
+  document.getElementById('alert_test').onclick = async ()=>{
+    try{
+      const r = await fetch('/admin/heimdall/api/alerts/test', {method:'POST'});
+      const js = await r.json();
+      alert(js.delivered ? '✅ Test alert delivered (Discord).' : 'ℹ️ Test alert logged (no webhook set).');
+    }catch(e){ alert('❌ '+e); }
+  };
+  load(); setInterval(load, 10000);
+})();
+</script>
+<script>
+(async function(){
+  try {
+    const r = await fetch('/readyz');
+    const js = await r.json();
+    const ok = js.ok;
+    const age = Math.round((js.worker_heartbeat_age_seconds || 0));
+    document.getElementById('hb').innerHTML = ok
+      ? `✅ ready (worker hb ${age}s)`
+      : `⚠️ not ready (hb ${age ?? 'n/a'}s)`;
+  } catch(e){
+    document.getElementById('hb').textContent = '❌ health API error';
+  }
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<div class="panel grid">
+  <div><span class="badge">Metrics</span></div>
+  <div class="kv">
+    <div>Started</div><div>{{ metrics.started_ts }}</div>
+    <div>Last processed</div><div>{{ metrics.last_processed_ts }}</div>
+    <div>Total processed</div><div class="ok">{{ metrics.processed_total }}</div>
+    <div>Total errors</div><div class="err">{{ metrics.errors_total }}</div>
+    <div>By type</div><div><pre>{{ metrics.by_type | tojson(indent=2) }}</pre></div>
+  </div>
+</div>
+
+<div class="grid" style="grid-template-columns:repeat(3,1fr);">
+  <div class="panel">
+    <div><span class="badge">Queue</span></div>
+    <h3>{{ counts.queue }} files</h3>
+    <small><a href="/admin/heimdall/ui/queue">View</a></small>
+  </div>
+  <div class="panel">
+    <div><span class="badge">Errors</span></div>
+    <h3 class="err">{{ counts.errors }} files</h3>
+    <small><a href="/admin/heimdall/ui/errors">View</a></small>
+  </div>
+  <div class="panel">
+    <div><span class="badge">Previews</span></div>
+    <h3>{{ counts.previews }} files</h3>
+    <small><a href="/admin/heimdall/ui/previews">View</a></small>
+  </div>
+</div>
+{% endblock %}

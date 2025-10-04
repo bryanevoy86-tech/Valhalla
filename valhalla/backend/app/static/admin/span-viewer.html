@@ -1,0 +1,74 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Valhalla Spans</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 16px; background:#0b0f14; color:#e6edf3}
+    .row { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px }
+    input, select, button { padding:8px; border-radius:8px; border:1px solid #2d3640; background:#0f1420; color:#e6edf3 }
+    table { width:100%; border-collapse: collapse; }
+    th, td { border-bottom:1px solid #1e2630; padding:8px; font-size:13px; }
+    .pill { padding:2px 8px; border-radius:999px; background:#13202e; border:1px solid #243040 }
+    .ok { color:#8ce99a } .err { color:#ff6b6b }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size:12px }
+  </style>
+</head>
+<body>
+  <h2>Spans</h2>
+  <div class="row">
+    <input id="name" placeholder="name filter" />
+    <select id="status">
+      <option value="">status</option>
+      <option>OK</option><option>ERROR</option><option>UNSET</option>
+    </select>
+    <input id="since" type="number" placeholder="since (unix ms)" class="mono"/>
+    <input id="limit" type="number" value="200" min="1" max="2000"/>
+    <button id="load">Load</button>
+    <button id="export">Export JSONL</button>
+  </div>
+  <table>
+    <thead><tr><th>Name</th><th>Status</th><th>Kind</th><th>Duration ms</th><th class="mono">TraceId</th></tr></thead>
+    <tbody id="rows"></tbody>
+  </table>
+<script>
+const api = (p)=>fetch(p).then(r=>r.ok?r.json():Promise.reject(r.text()))
+function ms(nano){ return Math.max(0, Math.round((nano/1e6))) }
+function rowHTML(s){
+  const dur = ms(s.end_time_unix_nano - s.start_time_unix_nano)
+  const st = s.status?.status_code || "UNSET"
+  return `<tr>
+    <td>${s.name}</td>
+    <td><span class="pill ${st==='ERROR'?'err':'ok'}">${st}</span></td>
+    <td>${s.kind}</td>
+    <td>${dur}</td>
+    <td class="mono">${s.trace_id.slice(0,16)}…</td>
+  </tr>`
+}
+document.getElementById('load').onclick = async ()=>{
+  const q = new URLSearchParams()
+  const name = document.getElementById('name').value.trim()
+  const status = document.getElementById('status').value.trim()
+  const since = document.getElementById('since').value.trim()
+  const limit = document.getElementById('limit').value.trim()
+  if(name) q.set('name', name)
+  if(status) q.set('status', status)
+  if(since) q.set('since_ms', since)
+  if(limit) q.set('limit', limit)
+  const data = await api(`/admin/observability/spans?`+q.toString())
+  document.getElementById('rows').innerHTML = data.items.map(rowHTML).join('')
+}
+document.getElementById('export').onclick = async ()=>{
+  const r = await fetch('/admin/observability/spans/export')
+  if(!r.ok){ alert('No export file yet. Trigger some traffic.'); return }
+  const txt = await r.text()
+  const blob = new Blob([txt], {type:'application/json'})
+  const a = document.createElement('a')
+  a.href = URL.createObjectURL(blob)
+  a.download = 'traces.jsonl'
+  a.click()
+}
+</script>
+</body>
+</html>

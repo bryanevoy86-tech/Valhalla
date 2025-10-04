@@ -1,0 +1,136 @@
+data_dir: ${VECTOR_DATA_DIR:-/var/lib/vector}
+api:
+  enabled: true
+  address: "0.0.0.0:8686"
+
+# -------------------------
+# Sources
+# -------------------------
+sources:
+  # App logs (JSONL from CHUNK 92)
+  app_logs:
+    type: file
+    include:
+      - ${VECTOR_LOG_PATH_GLOB:-/data/app.jsonl*}
+    read_from: end
+    fingerprint_strategy: device_and_inode
+
+  # Traces file (optional, CHUNK 89 JSONL)
+  otel_traces_file:
+    type: file
+    include:
+      - ${VECTOR_TRACES_PATH_GLOB:-/data/traces.jsonl*}
+    read_from: end
+    fingerprint_strategy: device_and_inode
+
+# -------------------------
+# Transforms
+# -------------------------
+transforms:
+  # Ensure app logs are structured, add host & service
+  app_logs_json:
+    type: remap
+    inputs: [app_logs]
+    source: |
+      . = parse_json!(.message) ?? object!(.)
+      .host = get_env!("VECTOR_HOSTNAME")
+      .service = "valhalla-backend"
+      .stream = "app"
+      # Normalize ts to RFC3339 if provided as millis
+      if exists(.ts) && is_integer(.ts) { .@timestamp = to_timestamp!(.ts / 1000) }
+      else if exists(.time) && is_string(.time) { .@timestamp = .time }
+      else { .@timestamp = now() }
+      # promote severity fields if present
+      if exists(.level) { .severity = .level }
+
+  # Parse OpenTelemetry JSONL spans to log-friendly docs (optional)
+  spans_json:
+    type: remap
+    inputs: [otel_traces_file]
+    source: |
+      . = parse_json!(.message) ?? object!(.)
+      .host = get_env!("VECTOR_HOSTNAME")
+      .service = "valhalla-backend"
+      .stream = "span"
+      .@timestamp = to_timestamp!(.start_time_unix_nano / 1000000000)
+      .duration_ms = (.end_time_unix_nano - .start_time_unix_nano) / 1000000
+
+  # Merge app + spans into a single stream for routing
+  merged_stream:
+    type: merge
+    inputs: [app_logs_json, spans_json]
+
+    pii_sanitizer:
+      type: remap
+      inputs: [merged_stream]
+      source: |
+        . = object!(.)
+        .message = to_string(.message) ?? ""
+        # basic masks (fast paths)
+  .message = replace!(.message, r'(?i)(authorization|api[-_ ]?key|token)\s*[:=]\s*([A-Za-z0-9_\-\.]{8,})', string!(.captures[1]) + "=" + string!("***REDACTED***"))
+        .message = replace!(.message, r'(?i)[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}', "***REDACTED***")
+        .message = replace!(.message, r'(?<!\\d)(\\d[ -]?){13,19}(?!\\d)', "***REDACTED***")
+        # also scrub common structured fields
+        if exists(.headers) { .headers = map_values!(.headers, |v, k| if match!(to_string(k), r'(?i)authorization|cookie|token|secret|set-cookie') { "***REDACTED***" } else { v }) }
+
+  # Route based on destination flags
+  to_s3:
+     type: filter
+     inputs: [pii_sanitizer]
+     condition: 'get_env!("VECTOR_S3_ENABLE") == "true"'
+
+  to_os:
+     type: filter
+     inputs: [pii_sanitizer]
+     condition: 'get_env!("VECTOR_OS_ENABLE") == "true"'
+
+# -------------------------
+# Sinks
+# -------------------------
+sinks:
+  # ---- S3 Sink (partitioned by day) ----
+  s3_logs:
+    type: aws_s3
+    inputs: [to_s3]
+    bucket: ${VECTOR_S3_BUCKET}
+    region: ${VECTOR_S3_REGION}
+    key_prefix: ${VECTOR_S3_PREFIX}
+    encoding:
+      codec: json
+    compression: gzip
+    batch:
+      max_bytes: 5242880
+      timeout_secs: 30
+    buffer:
+      type: memory
+      max_events: 10000
+      when_full: block
+    acknowledgements: true
+    filename_append_uuid: true
+
+  # ---- OpenSearch Sink ----
+  os_logs:
+    type: elasticsearch
+    inputs: [to_os]
+    endpoints: ["${VECTOR_OS_ENDPOINT}"]
+    mode: bulk
+    index: "${VECTOR_OS_INDEX_PREFIX}-%Y.%m.%d"
+    auth:
+      strategy: basic
+      user: ${VECTOR_OS_USER}
+      password: ${VECTOR_OS_PASS}
+    tls:
+      verify_certificate: false
+      verify_hostname: false
+    batch:
+      max_events: 2000
+      timeout_secs: 5
+    buffer:
+      type: memory
+      max_events: ${VECTOR_BUFFER_MB:-128}000
+      when_full: block
+    request:
+      retry_max_attempts: ${VECTOR_RETRY_MAX_ATTEMPTS:-12}
+      retry_initial_backoff_secs: ${VECTOR_RETRY_INITIAL_BACKOFF_SECS:-1}
+      retry_max_backoff_secs: ${VECTOR_RETRY_MAX_BACKOFF_SECS:-30}
+    timestamp_key: "@timestamp"

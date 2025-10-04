@@ -1,0 +1,46 @@
+type: bundle
+tasks:
+  # Every 15 minutes: generate more work from the roadmap
+  - type: schedule
+    name: autopilot_build_loop
+    timezone: America/Toronto
+    cron: { minute: "*/15" }
+    task:
+      type: job
+      name: generate_from_manifest
+      shell: |
+        python scripts/generate_from_manifest.py
+      sandbox: false
+      timeout: 120
+
+  # Every 30 minutes: a tiny heartbeat job so you see activity
+  - type: schedule
+    name: autopilot_heartbeat
+    timezone: America/Toronto
+    cron: { minute: "*/30" }
+    task:
+      type: job
+      name: echo_tick
+      shell: |
+        echo "tick $(date) — Heimdall autopilot alive"
+        mkdir -p artifacts && date > artifacts/when.txt
+      sandbox: true
+      timeout: 60
+
+  # Nightly publish bundle of generated outputs
+  - type: schedule
+    name: nightly_publish
+    timezone: America/Toronto
+    cron: { hour: 3, minute: 15 }
+    task:
+      type: publish
+      name: nightly_bundle
+      note: "nightly autopilot bundle"
+
+  # Kick it off immediately once
+  - type: job
+    name: generate_from_manifest_boot
+    shell: |
+      python scripts/generate_from_manifest.py
+    sandbox: false
+    timeout: 120

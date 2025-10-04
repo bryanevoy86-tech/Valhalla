@@ -1,0 +1,21 @@
+type: bundle
+tasks:
+  - type: schedule
+    name: autopr_nightly
+    timezone: America/Toronto
+    cron: { hour: 4, minute: 5 }
+    task:
+      type: job
+      name: autopr_nightly
+      shell: |
+        python scripts/ci/auto_pr.py
+      sandbox: false
+      timeout: 240
+
+  # kick once now so a status file exists
+  - type: job
+    name: autopr_boot
+    shell: |
+      python scripts/ci/auto_pr.py
+    sandbox: false
+    timeout: 240

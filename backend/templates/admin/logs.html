@@ -1,0 +1,12 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<div class="panel">
+  <div><span class="badge">Heimdall Logs</span></div>
+  <form method="get" action="/admin/heimdall/ui/logs" style="margin:10px 0;">
+    <label>Lines: <input name="lines" value="{{ lines }}" style="width:70px"></label>
+    <button type="submit">Refresh</button>
+    <small>File: {{ log_file }}</small>
+  </form>
+  <pre>{{ content }}</pre>
+</div>
+{% endblock %}

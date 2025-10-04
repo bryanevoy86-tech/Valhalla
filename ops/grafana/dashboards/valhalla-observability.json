@@ -1,0 +1,26 @@
+{
+  "id": null,
+  "uid": "valhalla-obsv",
+  "title": "Valhalla — RED/USE Overview",
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "tags": ["valhalla","observability"],
+  "panels": [
+    {"type": "stat","title": "RPS (total)","gridPos": {"h":4,"w":6,"x":0,"y":0},"targets":[{"expr":"sum(valhalla:http_rps)"}]},
+    {"type": "stat","title": "5xx rate (sum)","gridPos": {"h":4,"w":6,"x":6,"y":0},"targets":[{"expr":"sum(valhalla:http_error_rate)"}]},
+    {"type": "stat","title": "Active jobs","gridPos": {"h":4,"w":6,"x":12,"y":0},"targets":[{"expr":"sum(valhalla_jobs_active)"}]},
+    {"type": "timeseries","title": "RPS by path","gridPos": {"h":8,"w":12,"x":0,"y":4},"targets":[{"expr":"valhalla:http_rps"}],"legend": {"show": true}},
+    {"type": "timeseries","title": "p95 latency by path (s)","gridPos": {"h":8,"w":12,"x":12,"y":4},"targets":[{"expr":"valhalla:http_latency_p95"}],"legend": {"show": true}},
+    {"type": "timeseries","title": "5xx error rate by path","gridPos": {"h":8,"w":12,"x":0,"y":12},"targets":[{"expr":"valhalla:http_error_rate"}],"legend": {"show": true}},
+    {"type": "timeseries","title": "Job runs by type (rps)","gridPos": {"h":8,"w":12,"x":12,"y":12},"targets":[{"expr":"valhalla:job_rps"}],"legend": {"show": true}},
+    {"type": "timeseries","title": "Last job duration (s)","gridPos": {"h":8,"w":24,"x":0,"y":20},"targets":[{"expr":"valhalla:job_last_seconds"}],"legend": {"show": true}}
+  ],
+  "templating": {
+    "list": [
+      {"name": "path","type": "query","datasource": "Prometheus","query": "label_values(valhalla_http_requests_total, path)","includeAll": true,"multi": true,"refresh": 1},
+      {"name": "job_type","type": "query","datasource": "Prometheus","query": "label_values(valhalla_jobs_runs_total, job_type)","includeAll": true,"multi": true,"refresh": 1}
+    ]
+  }
+}

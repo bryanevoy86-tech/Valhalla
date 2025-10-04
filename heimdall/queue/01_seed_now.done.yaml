@@ -1,0 +1,12 @@
+type: bundle
+tasks:
+  # A couple of quick jobs so you can see activity in Jobs/Timeline immediately
+  - { type: job, name: hello_1, shell: 'echo "hello #1" && sleep 2 && echo done', sandbox: true, timeout: 60 }
+  - { type: job, name: hello_2, shell: 'echo "hello #2" && python -V', sandbox: true, timeout: 60 }
+
+  # Safe route scaffolds (become previews tonight; will write real files when dry_run=false)
+  - { type: scaffold_route, name: ping, method: GET, path: /ping, response: { ok: true, pong: true } }
+  - { type: scaffold_route, name: status, method: GET, path: /status, response: { ok: true, up: true } }
+
+  # One publish right now (creates a ZIP in dist/artifacts even if dry_run=true)
+  - { type: publish, name: seed_bundle, note: "seed bundle" }
