@@ -12,4 +12,4 @@ COPY . ./
 
 # Healthcheck endpoint assumed at /healthz
 EXPOSE 10000
-CMD ["gunicorn", "-k", "uvicorn.workers.UvicornWorker", "valhalla.services.api.main:app", "-b", "0.0.0.0:10000", "-w", "2", "--timeout", "120"]
+ CMD /bin/sh -c "python -m uvicorn valhalla.services.api.main:app --host 0.0.0.0 --port ${PORT}"
