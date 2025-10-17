@@ -1,30 +1,35 @@
 
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+from loguru import logger
 import os
-from fastapi import FastAPI, Request, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
 
-app = FastAPI()
+APP_NAME = "Valhalla Backend"
+VERSION = "v3.0"
 
-origins = [o.strip() for o in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",") if o.strip()]
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["Authorization", "Content-Type", "X-Requested-With"],
-)
+app = FastAPI(title=APP_NAME, version=VERSION)
 
-@app.get("/healthz")
-def healthz():
-    return {"ok": True}
+class Command(BaseModel):
+    action: str
+    payload: dict | None = None
 
-@app.get("/")
-def read_root():
-    return {"message": "Valhalla API online"}
+@app.get("/api/health")
+def health():
+    return {"ok": True, "app": APP_NAME, "version": VERSION}
 
-try:
-    from valhalla.services.api.routers.features import router as features_router
-    app.include_router(features_router)
-except Exception:
-    pass
+@app.post("/heimdall/command")
+def heimdall_command(cmd: Command):
+    logger.info(f"Heimdall received: {cmd.action}")
+    # TODO: route to agent skills
+    if cmd.action == "ping":
+        return {"reply": "pong", "received": cmd.model_dump()}
+    return {"reply": "ack", "received": cmd.model_dump()}
+
+@app.post("/builder/deploy")
+def builder_deploy():
+    # TODO: implement builder pipeline (scaffold pages, connectors, checks)
+    token = os.getenv("BUILDER_TOKEN", "")
+    if not token:
+        raise HTTPException(status_code=401, detail="BUILDER_TOKEN missing")
+    return {"status": "queued", "message": "Builder deployment scheduled"}
 
