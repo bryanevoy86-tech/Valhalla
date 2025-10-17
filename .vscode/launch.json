@@ -24,5 +24,16 @@
       "args": [],
       "justMyCode": true
     }
+    ,
+    {
+      "name": "FastAPI: Debug",
+      "type": "python",
+      "request": "launch",
+      "module": "uvicorn",
+      "args": ["app.main:app", "--reload", "--port", "4000"],
+      "jinja": true,
+      "env": { "ENV": "dev" },
+      "console": "integratedTerminal"
+    }
   ]
 }
