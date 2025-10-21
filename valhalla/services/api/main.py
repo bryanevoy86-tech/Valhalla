@@ -1,8 +1,17 @@
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from loguru import logger
 import os
+
+# Prefer loguru if available, but fall back to the standard library logger so
+# the app still starts when loguru isn't installed (like in a minimal container).
+try:
+    from loguru import logger
+except Exception:  # pragma: no cover - runtime fallback
+    import logging
+
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger("valhalla")
 
 APP_NAME = "Valhalla Backend"
 VERSION = "v3.0"
