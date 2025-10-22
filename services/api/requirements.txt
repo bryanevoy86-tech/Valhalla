@@ -4,6 +4,7 @@ pydantic
 python-dotenv
 loguru
 httpx==0.27.2
+python-slugify==8.0.4
 
 # Dev/test/tools
 pytest
