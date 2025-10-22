@@ -20,9 +20,15 @@ from valhalla.services.api.app.models.intake import CapitalIntake
 
 config = context.config
 
-# Pull DATABASE_URL from environment for Render
-section = config.get_section(config.config_ini_section) or {}
-section["sqlalchemy.url"] = os.getenv("DATABASE_URL") or section.get("sqlalchemy.url")
+# Pull DATABASE_URL from environment for Render and force-set it on the config
+db_url = os.getenv("DATABASE_URL")
+if db_url:
+    # Ensure Alembic uses the env var rather than the fallback in alembic.ini
+    config.set_main_option("sqlalchemy.url", db_url)
+else:
+    # Fall back to value from alembic.ini section if env var not set
+    section = config.get_section(config.config_ini_section) or {}
+    # no-op: section already contains sqlalchemy.url from alembic.ini
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
