@@ -12,15 +12,15 @@ databases:
 services:
   - type: web
     name: valhalla-api
-  runtime: python
+    runtime: python
     plan: starter
     region: oregon
     autoDeploy: true
     buildCommand: pip install -r requirements.txt
     startCommand: >
-      gunicorn -k uvicorn.workers.UvicornWorker services.api.main:app
+      cd services/api && gunicorn -k uvicorn.workers.UvicornWorker main:app
       -b 0.0.0.0:10000 -w 2 --timeout 120
-    healthCheckPath: /healthz
+    healthCheckPath: /api/health
     envVars:
       - key: APP_ENV
         value: production
