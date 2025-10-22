@@ -36,7 +36,9 @@ try:
     try:
         from app.routers.builder import router as builder_router
         BUILDER_AVAILABLE = True
+        BUILDER_ERROR = None
     except Exception as e:
+        BUILDER_ERROR = str(e)
         print(f"WARNING: Could not import builder router (app.*): {e}")
         BUILDER_AVAILABLE = False
         builder_router = None
@@ -50,7 +52,9 @@ except Exception:
     try:
         from valhalla.services.api.app.routers.builder import router as builder_router
         BUILDER_AVAILABLE = True
+        BUILDER_ERROR = None
     except Exception as e:
+        BUILDER_ERROR = str(e)
         print(f"WARNING: Could not import builder router (valhalla.*): {e}")
         BUILDER_AVAILABLE = False
         builder_router = None
@@ -96,6 +100,7 @@ def debug_routes():
             routes.append({"path": route.path, "methods": list(route.methods)})
     return {
         "builder_available": bool('BUILDER_AVAILABLE' in globals() and BUILDER_AVAILABLE),
+        "builder_error": globals().get('BUILDER_ERROR'),
         "total_routes": len(app.routes),
         "routes": routes,
     }
