@@ -17,9 +17,7 @@ services:
     region: oregon
     autoDeploy: true
     buildCommand: pip install -r requirements.txt
-    startCommand: >
-      cd services/api && gunicorn -k uvicorn.workers.UvicornWorker main:app
-      -b 0.0.0.0:$PORT -w 2 --timeout 120
+    startCommand: cd services/api && gunicorn -k uvicorn.workers.UvicornWorker main:app -b 0.0.0.0:$PORT -w 2 --timeout 120
     healthCheckPath: /api/health
     envVars:
       - key: APP_ENV
@@ -49,7 +47,7 @@ services:
 
   - type: worker
     name: valhalla-worker
-  runtime: python
+    runtime: python
     plan: starter
     region: oregon
     autoDeploy: true
