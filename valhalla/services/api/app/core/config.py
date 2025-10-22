@@ -1,75 +1,41 @@
-from pydantic_settings import BaseSettings, SettingsConfigDictfrom pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import field_validator
+from typing import List
 
-from pydantic import field_validatorfrom typing import List
-
-from typing import Listimport os
-
-import os
 
 class Settings(BaseSettings):
+    # Load from environment and optional .env; ignore unknown envs
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
-class Settings(BaseSettings):    ENV: str = os.getenv("ENV", "prod")
-
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")    DEBUG: bool = os.getenv("DEBUG", "false").lower() == "true"
-
-    
-
-    ENV: str = "prod"    # Render injects PORT; we dont need it here but leaving for ref
-
-    DEBUG: bool = False    PORT: int = int(os.getenv("PORT", "8000"))
-
+    # Core
+    ENV: str = "prod"
+    DEBUG: bool = False
     PORT: int = 8000
 
-        # Database (Render Postgres or your own)
+    # Database (Render Postgres or local)
+    DATABASE_URL: str = "postgresql+psycopg://postgres:postgres@localhost:5432/valhalla"
 
-    # Database (Render Postgres or your own)    DATABASE_URL: str = os.getenv(
-
-    DATABASE_URL: str = "postgresql+psycopg://postgres:postgres@localhost:5432/valhalla"        "DATABASE_URL",
-
-        "postgresql+psycopg://postgres:postgres@localhost:5432/valhalla"
-
-    # CORS - will be parsed from comma-separated string    )
-
+    # CORS as comma-separated string from env; parsed via helper
     CORS_ALLOWED_ORIGINS: str = ""
 
-    # CORS
+    # Builder flags
+    HEIMDALL_BUILDER: str = "off"
+    BUILDER_SAFE_MODE: str = "on"
+    AUTO_DEPLOY: str = "off"
+    ALLOW_DESTRUCTIVE: str = "off"
+    HEIMDALL_BUILDER_API_KEY: str = ""
 
-    # Heimdall Builder flags    CORS_ALLOWED_ORIGINS: List[str] = [
-
-    HEIMDALL_BUILDER: str = "off"        o.strip() for o in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",") if o.strip()
-
-    BUILDER_SAFE_MODE: str = "on"    ] or [
-
-    AUTO_DEPLOY: str = "off"        "https://valhalla.weweb-preview.io",
-
-    ALLOW_DESTRUCTIVE: str = "off"        "https://editor.weweb.io",
-
-    HEIMDALL_BUILDER_API_KEY: str = ""        "https://preview.weweb.io",
-
-            "https://*.weweb.io",
-
-    # Builder settings    ]
-
+    # Builder guardrails
     BUILDER_ALLOWED_DIRS: List[str] = [
-
-        "services/api/app/routers",    # Heimdall Builder flags
-
-        "services/api/app/models",    HEIMDALL_BUILDER: str = os.getenv("HEIMDALL_BUILDER", "off")
-
-        "services/api/app/schemas",    BUILDER_SAFE_MODE: str = os.getenv("BUILDER_SAFE_MODE", "on")
-
-        "services/api/app/core",    AUTO_DEPLOY: str = os.getenv("AUTO_DEPLOY", "off")
-
-        "services/api/alembic/versions",    ALLOW_DESTRUCTIVE: str = os.getenv("ALLOW_DESTRUCTIVE", "off")
-
+        "services/api/app/routers",
+        "services/api/app/models",
+        "services/api/app/schemas",
+        "services/api/app/core",
+        "services/api/alembic/versions",
         "services/worker",
-
-        ".github/workflows",    HEIMDALL_BUILDER_API_KEY: str | None = os.getenv("HEIMDALL_BUILDER_API_KEY")
-
+        ".github/workflows",
     ]
-
-    BUILDER_MAX_FILE_BYTES: int = 200000  # 200KBsettings = Settings()
-
+    BUILDER_MAX_FILE_BYTES: int = 200000  # 200KB
 
     @field_validator("DEBUG", mode="before")
     @classmethod
@@ -79,7 +45,7 @@ class Settings(BaseSettings):    ENV: str = os.getenv("ENV", "prod")
         return bool(v)
 
     def get_cors_origins(self) -> List[str]:
-        """Parse CORS_ALLOWED_ORIGINS as comma-separated string"""
+        """Parse CORS_ALLOWED_ORIGINS as comma-separated string or return defaults."""
         if self.CORS_ALLOWED_ORIGINS:
             return [o.strip() for o in self.CORS_ALLOWED_ORIGINS.split(",") if o.strip()]
         return [
@@ -88,5 +54,6 @@ class Settings(BaseSettings):    ENV: str = os.getenv("ENV", "prod")
             "https://preview.weweb.io",
             "https://*.weweb.io",
         ]
+
 
 settings = Settings()
