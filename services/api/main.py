@@ -2,20 +2,11 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-# Try runtime layout (Render: from services/api, import app.*)
-# Fall back to full package path for tests/dev that import valhalla.services.api
-try:
-    from app.core.settings import settings
-    from app.routers.health import router as health_router
-    from app.routers.metrics import router as metrics_router
-    from app.routers.capital import router as capital_router
-    from app.routers.builder import router as builder_router
-except ImportError:
-    from valhalla.services.api.app.core.settings import settings
-    from valhalla.services.api.app.routers.health import router as health_router
-    from valhalla.services.api.app.routers.metrics import router as metrics_router
-    from valhalla.services.api.app.routers.capital import router as capital_router
-    from valhalla.services.api.app.routers.builder import router as builder_router
+from app.core.settings import settings
+from app.routers.health import router as health_router
+from app.routers.metrics import router as metrics_router
+from app.routers.capital import router as capital_router
+from app.routers.builder import router as builder_router
 
 
 app = FastAPI(title="Valhalla API", version="3.4")
