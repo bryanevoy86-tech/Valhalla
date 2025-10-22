@@ -17,6 +17,17 @@ class Settings(BaseModel):
     docusign_powerform_url: str = ""
     # Sentry
     sentry_dsn: str = ""
+    # Builder
+    BUILDER_ALLOWED_DIRS: list[str] = [
+        "services/api/app/routers",
+        "services/api/app/models",
+        "services/api/app/schemas",
+        "services/api/jobs",
+        "services/api/alembic/versions",
+        "web/weweb-datasources",
+        "web/weweb-widgets",
+    ]
+    BUILDER_MAX_FILE_BYTES: int = int(os.getenv("BUILDER_MAX_FILE_BYTES", "200000"))  # 200 KB/file
 
     @classmethod
     def load(cls) -> "Settings":
