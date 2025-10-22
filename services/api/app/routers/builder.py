@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from slugify import slugify
 
 from ..core.db import get_db
-from ..core.config import settings
+from ..core.settings import settings
 from ..core.dependencies import require_builder_key
 from ..models.builder import BuilderTask, BuilderEvent
 from ..schemas.builder import (

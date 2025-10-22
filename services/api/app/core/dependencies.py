@@ -1,5 +1,5 @@
 from fastapi import Depends, Header, HTTPException, status
-from .config import settings
+from .settings import settings
 
 def require_builder_key(x_api_key: str = Header(None, alias="X-API-Key")):
     if not settings.HEIMDALL_BUILDER_API_KEY:
