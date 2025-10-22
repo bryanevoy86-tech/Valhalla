@@ -19,7 +19,7 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: >
       cd services/api && gunicorn -k uvicorn.workers.UvicornWorker main:app
-      -b 0.0.0.0:10000 -w 2 --timeout 120
+      -b 0.0.0.0:$PORT -w 2 --timeout 120
     healthCheckPath: /api/health
     envVars:
       - key: APP_ENV
