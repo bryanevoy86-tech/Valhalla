@@ -1,11 +1,32 @@
 
 import os
+import sys
+from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 # Try the runtime layout used when running from services/api (Render):
 # `from app...`. If tests import the package as `valhalla.services.api`,
 # fall back to the in-repo full package path.
+"""Ensure both import layouts work (package and runtime dirs).
+
+We prefer importing via `app.*` which maps to services/api/app/* when running
+the API directly. In some environments (tests, package imports), the module
+layout is `valhalla.services.api.app.*`. To make `app.*` available even when
+this file is imported as part of the valhalla package, we add the sibling
+services/api directory to sys.path if it exists.
+"""
+try:
+    # Compute repo root relative to this file and add services/api to sys.path
+    this_file = Path(__file__).resolve()
+    repo_root = this_file.parents[3]  # .../valhalla/valhalla/services/api/main.py -> repo root
+    services_api_dir = repo_root / "services" / "api"
+    if services_api_dir.exists():
+        sys.path.insert(0, str(services_api_dir))
+except Exception as _e:
+    # Non-fatal if path math fails
+    print(f"INFO: services/api path not added: {_e}")
+
 try:
     from app.core.config import settings
     from app.routers.health import router as health_router
