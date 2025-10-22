@@ -32,6 +32,19 @@ services:
       - key: WEWEB_SHARED_SECRET
         # set the real value in the Render dashboard after first deploy
         value: CHANGE_ME
+      # Builder API configuration
+      - key: HEIMDALL_BUILDER_API_KEY
+        value: 2af3d998e1b7e2ca882291732aa40dd9
+      - key: HEIMDALL_BUILDER
+        value: on
+      - key: BUILDER_SAFE_MODE
+        value: on
+      - key: AUTO_DEPLOY
+        value: off
+      - key: ALLOW_DESTRUCTIVE
+        value: off
+      - key: HEIMDALL_TELEMETRY_SAMPLING
+        value: "0.2"
       # S3/R2 (optional for exports)
       - key: S3_ENDPOINT
         value: https://YOUR-S3-ENDPOINT
