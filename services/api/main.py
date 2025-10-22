@@ -6,7 +6,15 @@ from app.core.settings import settings
 from app.routers.health import router as health_router
 from app.routers.metrics import router as metrics_router
 from app.routers.capital import router as capital_router
-from app.routers.builder import router as builder_router
+
+# Try importing builder router with error handling
+try:
+    from app.routers.builder import router as builder_router
+    BUILDER_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import builder router: {e}")
+    BUILDER_AVAILABLE = False
+    builder_router = None
 
 
 app = FastAPI(title="Valhalla API", version="3.4")
@@ -24,7 +32,10 @@ app.add_middleware(
 app.include_router(health_router, prefix="/api")
 app.include_router(metrics_router, prefix="/api")
 app.include_router(capital_router, prefix="/api")
-app.include_router(builder_router, prefix="/api")
+if BUILDER_AVAILABLE:
+    app.include_router(builder_router, prefix="/api")
+else:
+    print("WARNING: Builder router not registered due to import error")
 
 
 @app.get("/")

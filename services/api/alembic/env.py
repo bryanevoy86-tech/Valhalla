@@ -17,6 +17,7 @@ sys.path.insert(0, repo_root)
 from valhalla.services.api.app.core.db import Base
 from valhalla.services.api.app.models.metric import Metric
 from valhalla.services.api.app.models.intake import CapitalIntake
+from valhalla.services.api.app.models.builder import BuilderTask, BuilderEvent
 
 config = context.config
 
