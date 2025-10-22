@@ -4,7 +4,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers
 revision = "ops_enablers_001"
-down_revision = "<PUT_PREVIOUS_REVISION_ID>"
+down_revision = None
 branch_labels = None
 depends_on = None
 

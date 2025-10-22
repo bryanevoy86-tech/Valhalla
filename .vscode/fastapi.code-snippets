@@ -1,0 +1,41 @@
+{
+  "fastapi_endpoint_get": {
+    "prefix": "fget",
+    "body": [
+      "@app.get(\"$1\")",
+      "def ${2:name}():",
+      "    ${0:return {\"ok\": True}}"
+    ],
+    "description": "FastAPI GET endpoint"
+  },
+  "fastapi_endpoint_post": {
+    "prefix": "fpost",
+    "body": [
+      "from pydantic import BaseModel",
+      "",
+      "class ${1:Payload}(BaseModel):",
+      "    ${2:key}: ${3:str}",
+      "",
+      "@app.post(\"$4\")",
+      "def ${5:name}(payload: ${1:Payload}):",
+      "    ${0:return payload.model_dump()}"
+    ],
+    "description": "FastAPI POST endpoint + model"
+  },
+  "fastapi_bg_task": {
+    "prefix": "fbg",
+    "body": [
+      "from fastapi import BackgroundTasks",
+      "",
+      "def ${1:worker}(data: dict):",
+      "    # TODO: do work",
+      "    pass",
+      "",
+      "@app.post(\"$2\")",
+      "def ${3:enqueue}(payload: dict, bg: BackgroundTasks):",
+      "    bg.add_task(${1:worker}, payload)",
+      "    return {\"queued\": True}"
+    ],
+    "description": "FastAPI background task pattern"
+  }
+}
