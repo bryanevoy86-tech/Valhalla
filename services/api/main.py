@@ -43,6 +43,20 @@ def root():
     return {"service": "valhalla-api", "version": "3.4"}
 
 
+@app.get("/debug/routes")
+def debug_routes():
+    """Debug endpoint to see registered routes"""
+    routes = []
+    for route in app.routes:
+        if hasattr(route, 'path') and hasattr(route, 'methods'):
+            routes.append({"path": route.path, "methods": list(route.methods)})
+    return {
+        "builder_available": BUILDER_AVAILABLE,
+        "total_routes": len(app.routes),
+        "routes": routes
+    }
+
+
 # Compatibility health endpoint for tests/runtime expecting /api/health
 @app.get("/api/health")
 def health():
