@@ -17,12 +17,20 @@ this file is imported as part of the valhalla package, we add the sibling
 services/api directory to sys.path if it exists.
 """
 try:
-    # Compute repo root relative to this file and add services/api to sys.path
+    # Add the correct services/api directory to sys.path so `import app.*` works.
+    # We search upwards for a folder that contains services/api/app
     this_file = Path(__file__).resolve()
-    repo_root = this_file.parents[3]  # .../valhalla/valhalla/services/api/main.py -> repo root
-    services_api_dir = repo_root / "services" / "api"
-    if services_api_dir.exists():
-        sys.path.insert(0, str(services_api_dir))
+    added_path = None
+    for parent in list(this_file.parents)[:6]:
+        candidate = parent / "services" / "api"
+        if (candidate / "app").exists():
+            sys.path.insert(0, str(candidate))
+            added_path = candidate
+            break
+    if not added_path:
+        print("INFO: Could not locate services/api path to add to sys.path")
+    else:
+        print(f"INFO: Added to sys.path: {added_path}")
 except Exception as _e:
     # Non-fatal if path math fails
     print(f"INFO: services/api path not added: {_e}")
