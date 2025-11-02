@@ -46,6 +46,11 @@ class Settings(BaseSettings):
     GIT_USER_EMAIL: str = "heimdall-bot@valhalla.local"
     GITHUB_TOKEN: str = ""  # optional for private repos
 
+    # --- Embeddings ---
+    EMBEDDING_PROVIDER: str = "local"  # local | (future: openai, etc.)
+    EMBEDDING_DIM: int = 256
+    EMBEDDING_BATCH_SIZE: int = 25
+
     @field_validator("DEBUG", mode="before")
     @classmethod
     def parse_debug(cls, v):

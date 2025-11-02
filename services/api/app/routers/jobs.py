@@ -4,6 +4,8 @@ from sqlalchemy.orm import Session
 from ..core.db import get_db
 from ..core.dependencies import require_builder_key
 from ..jobs.research_jobs import ingest_all_enabled
+from ..jobs.embed_jobs import embed_missing_docs
+from ..jobs.embed_jobs import embed_missing_docs
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 
@@ -43,3 +45,37 @@ def run_ingest_all_sync(
     """
     result = ingest_all_enabled()
     return result
+
+
+@router.post("/research/embed_missing")
+def run_embed_missing(
+    _: bool = Depends(require_builder_key)
+):
+    """
+    Generate embeddings for all research docs that don't have them yet.
+    Uses local deterministic embeddings by default (EMBEDDING_PROVIDER=local).
+    Processes up to 200 docs per call to avoid timeouts.
+    Requires X-API-Key authentication.
+    
+    Returns:
+        {"ok": true, "embedded": <count>}
+    """
+    n = embed_missing_docs()
+    return {"ok": True, "embedded": n}
+
+
+@router.post("/research/embed_missing")
+def run_embed_missing(
+    _: bool = Depends(require_builder_key)
+):
+    """
+    Generate embeddings for all research docs that don't have them yet.
+    Uses local deterministic embeddings by default (EMBEDDING_PROVIDER=local).
+    Processes up to 200 docs per call to avoid timeouts.
+    Requires X-API-Key authentication.
+    
+    Returns:
+        {"ok": true, "embedded": <count>}
+    """
+    n = embed_missing_docs()
+    return {"ok": True, "embedded": n}
