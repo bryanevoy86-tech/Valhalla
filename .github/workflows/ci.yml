@@ -9,20 +9,34 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: [3.11]
+    env:
+      API_BASE: ${{ secrets.VALHALLA_API_BASE }}
+      BUILDER_KEY: ${{ secrets.VALHALLA_BUILDER_KEY }}
+      P50_MAX_MS: "400"
+    
     steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.11"
+
       - name: Install dependencies
         run: |
-          python -m venv .venv
-          . .venv/bin/activate
-          python -m pip install -U pip
+          python -m pip install --upgrade pip
           pip install -r services/api/requirements.txt
-      - name: Run tests
-        run: . .venv/bin/activate && python -m pytest -q
+
+      - name: Run unit and smoke tests with coverage
+        working-directory: services/api
+        run: |
+          pytest -q --cov --cov-config=../../.coveragerc --cov-report=term-missing
+
+      - name: Run type checking with mypy
+        run: |
+          mypy services/api/app --config-file=mypy.ini
+
+      - name: Performance smoke test against Render
+        run: |
+          python tools/perf_smoke.py
