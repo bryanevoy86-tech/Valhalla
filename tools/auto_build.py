@@ -5,11 +5,15 @@ Uses the Builder API to automatically draft and apply code changes.
 This script demonstrates how Heimdall can use the Builder API to:
 1. Register as an agent
 2. Create tasks
-3. Upload code drafts
+3. Upload code drafts (single files or multi-file packs)
 4. Apply changes (with optional dry-run first)
 
 Usage:
     API_BASE=http://localhost:4000 BUILDER_KEY=test123 python tools/auto_build.py
+    
+    # Build specific pack:
+    python tools/auto_build.py reports
+    python tools/auto_build.py metrics_capital
 """
 
 import os
@@ -176,17 +180,187 @@ def synthesize_main_content():
     return current.rstrip() + "\n" + additions + "\n"
 
 
-def build_reports():
-    """Main auto-build function for reports feature"""
-    print("\n🤖 Heimdall Auto-Builder: Reports Feature")
-    print("=" * 50)
+def open_text(path):
+    """Load file content, return empty if not found"""
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return f.read()
+    except FileNotFoundError:
+        return ""
+
+
+def pack_metrics_capital():
+    """
+    Build capital/metrics/telemetry pack.
+    Returns list of file dictionaries ready for draft upload.
+    """
+    # All files already exist, return existing content
+    files = []
     
+    # Models (should already be created)
+    telemetry_model = open_text("services/api/app/models/telemetry.py")
+    if telemetry_model:
+        files.append({
+            "path": "services/api/app/models/telemetry.py",
+            "mode": "replace",
+            "content": telemetry_model
+        })
+    
+    capital_model = open_text("services/api/app/models/capital.py")
+    if capital_model:
+        files.append({
+            "path": "services/api/app/models/capital.py",
+            "mode": "replace",
+            "content": capital_model
+        })
+    
+    # Schemas
+    telemetry_schema = open_text("services/api/app/schemas/telemetry.py")
+    if telemetry_schema:
+        files.append({
+            "path": "services/api/app/schemas/telemetry.py",
+            "mode": "replace",
+            "content": telemetry_schema
+        })
+    
+    capital_schema = open_text("services/api/app/schemas/capital.py")
+    if capital_schema:
+        files.append({
+            "path": "services/api/app/schemas/capital.py",
+            "mode": "replace",
+            "content": capital_schema
+        })
+    
+    # Routers
+    metrics_router = open_text("services/api/app/routers/metrics.py")
+    if metrics_router:
+        files.append({
+            "path": "services/api/app/routers/metrics.py",
+            "mode": "replace",
+            "content": metrics_router
+        })
+    
+    telemetry_router = open_text("services/api/app/routers/telemetry.py")
+    if telemetry_router:
+        files.append({
+            "path": "services/api/app/routers/telemetry.py",
+            "mode": "replace",
+            "content": telemetry_router
+        })
+    
+    capital_router = open_text("services/api/app/routers/capital.py")
+    if capital_router:
+        files.append({
+            "path": "services/api/app/routers/capital.py",
+            "mode": "replace",
+            "content": capital_router
+        })
+    
+    # Jobs
+    forecast_jobs = open_text("services/api/app/jobs/forecast_jobs.py")
+    if forecast_jobs:
+        files.append({
+            "path": "services/api/app/jobs/forecast_jobs.py",
+            "mode": "add",
+            "content": forecast_jobs
+        })
+    
+    freeze_jobs = open_text("services/api/app/jobs/freeze_jobs.py")
+    if freeze_jobs:
+        files.append({
+            "path": "services/api/app/jobs/freeze_jobs.py",
+            "mode": "add",
+            "content": freeze_jobs
+        })
+    
+    # Update jobs router
+    jobs_router = open_text("services/api/app/routers/jobs.py")
+    if jobs_router:
+        files.append({
+            "path": "services/api/app/routers/jobs.py",
+            "mode": "replace",
+            "content": jobs_router
+        })
+    
+    # Main.py with telemetry router
+    main_py = open_text("services/api/main.py")
+    if main_py:
+        files.append({
+            "path": "services/api/main.py",
+            "mode": "replace",
+            "content": main_py
+        })
+    
+    return files
+
+
+def pack_tests():
+    """Build test pack - returns test files"""
+    files = []
+    
+    test_metrics = open_text("services/api/tests/test_metrics_capital.py")
+    if test_metrics:
+        files.append({
+            "path": "services/api/tests/test_metrics_capital.py",
+            "mode": "add",
+            "content": test_metrics
+        })
+    
+    return files
+
+
+def draft_apply(title, files, dry_run=True):
+    """
+    Helper to create task, upload files, dry-run, and apply.
+    
+    Args:
+        title: Task title
+        files: List of file dicts with path, mode, content
+        dry_run: If True, show diff before applying
+    
+    Returns:
+        Final apply result
+    """
     ensure_registered()
     
-    task_id = create_task(
-        "Add /reports/summary endpoint",
-        "services/api/app/routers/reports.py"
-    )
+    scope = ", ".join(f["path"] for f in files[:3])
+    if len(files) > 3:
+        scope += f" + {len(files)-3} more"
+    
+    task_id = create_task(title, scope)
+    upload_draft(task_id, files)
+    
+    if dry_run:
+        print("\n📋 Dry-run (preview changes)...")
+        dry_result = apply_changes(task_id, approve=False)
+        if "diff_summary" in dry_result:
+            print(f"  Changes: {dry_result['diff_summary']}")
+        
+        # Ask user to confirm
+        confirm = input("\n👉 Apply changes? [y/N]: ")
+        if confirm.lower() != 'y':
+            print("⚠ Cancelled by user")
+            return None
+    
+    print("\n✅ Applying changes...")
+    result = apply_changes(task_id, approve=True)
+    
+    print("\n" + "=" * 50)
+    print("✓ Build complete!")
+    
+    if "diff_summary" in result:
+        print(f"  Summary: {result['diff_summary']}")
+    
+    if result.get("git_pushed"):
+        print("  📤 Changes pushed to git")
+    
+    return result
+
+
+def build_reports():
+    """Build reports feature"""
+    print("\n🤖 Heimdall Auto-Builder: Reports Feature")
+    print("=" * 50)
     
     files = [
         {
@@ -206,38 +380,53 @@ def build_reports():
         }
     ]
     
-    upload_draft(task_id, files)
+    result = draft_apply("Add /reports/summary endpoint", files)
     
-    # Optional: Dry-run first to see diff
-    print("\n📋 Dry-run (preview changes)...")
-    dry_result = apply_changes(task_id, approve=False)
-    if "diff_summary" in dry_result:
-        print(f"  Changes: {dry_result['diff_summary']}")
+    if result:
+        print("\n💡 Next steps:")
+        print(f"  1. Test: curl {API}/reports/summary")
+        print("  2. Run tests: pytest services/api/tests/test_reports.py")
+
+
+def build_metrics_capital():
+    """Build capital/metrics/telemetry pack"""
+    print("\n🤖 Heimdall Auto-Builder: Capital/Metrics/Telemetry Pack")
+    print("=" * 50)
     
-    # Apply for real
-    print("\n✅ Applying changes...")
-    apply_result = apply_changes(task_id, approve=True)
+    files = pack_metrics_capital()
+    if not files:
+        print("❌ No files found to build")
+        return
     
-    print("\n" + "=" * 50)
-    print("✓ Build complete!")
+    print(f"📦 Building {len(files)} files...")
     
-    if "diff_summary" in apply_result:
-        print(f"  Summary: {apply_result['diff_summary']}")
+    result = draft_apply("Add capital intake, metrics, and telemetry system", files, dry_run=False)
     
-    if apply_result.get("git_pushed"):
-        print("  📤 Changes pushed to git")
-    
-    print("\n💡 Next steps:")
-    print(f"  1. Test: curl {API}/reports/summary")
-    print("  2. Run tests: pytest services/api/tests/test_reports.py")
-    
+    if result:
+        print("\n💡 Next steps:")
+        print(f"  1. Run migration: alembic upgrade head")
+        print(f"  2. Test metrics: curl {API}/metrics")
+        print(f"  3. Test capital: curl -H 'X-API-Key: {KEY}' {API}/capital/intake")
+        print(f"  4. Run tests: pytest services/api/tests/test_metrics_capital.py")
+
 
 if __name__ == "__main__":
+    pack = sys.argv[1] if len(sys.argv) > 1 else "reports"
+    
     try:
-        build_reports()
+        if pack == "reports":
+            build_reports()
+        elif pack in ["metrics_capital", "capital", "metrics"]:
+            build_metrics_capital()
+        else:
+            print(f"❌ Unknown pack: {pack}")
+            print("Available packs: reports, metrics_capital")
+            sys.exit(1)
     except KeyboardInterrupt:
         print("\n\n⚠ Cancelled by user")
         sys.exit(1)
     except Exception as e:
         print(f"\n\n❌ Error: {e}")
+        import traceback
+        traceback.print_exc()
         sys.exit(1)

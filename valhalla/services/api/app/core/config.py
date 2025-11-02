@@ -53,6 +53,10 @@ class Settings(BaseSettings):
     EMBEDDING_DIM: int = 256
     EMBEDDING_BATCH_SIZE: int = 25
 
+    # --- Capital / Risk ---
+    FREEZE_DRAWDOWN_PCT: float = 0.02  # 2% drawdown threshold
+    FORECAST_MONTHLY_YIELD: float = 0.04  # 4% expected monthly yield
+
     @field_validator("DEBUG", mode="before")
     @classmethod
     def parse_debug(cls, v):
