@@ -7,6 +7,7 @@ from slugify import slugify
 from ..core.db import get_db
 from ..core.settings import settings
 from ..core.dependencies import require_builder_key
+from ..core.git_utils import git_autocommit_and_push
 from ..models.builder import BuilderTask, BuilderEvent
 from ..schemas.builder import (
     RegisterIn, RegisterOut, TaskIn, TaskOut, DraftOut, FileSpec, TelemetryIn, ApplyIn
@@ -37,6 +38,34 @@ def create_task(payload: TaskIn, db: Session = Depends(get_db), _: bool = Depend
     # Empty draft (Heimdall will update via /apply with approve=false first)
     return DraftOut(task_id=t.id, files=[], diff_summary="queued")
 
+def _read_text(path: str) -> str:
+    try:
+        with open(path, "r", encoding="utf-8") as fh:
+            return fh.read()
+    except FileNotFoundError:
+        return ""
+
+def _unified_diff(old: str, new: str, path: str) -> str:
+    import difflib
+    a = old.splitlines(keepends=True)
+    b = new.splitlines(keepends=True)
+    return "".join(difflib.unified_diff(a, b, fromfile=f"a/{path}", tofile=f"b/{path}"))
+
+@router.post("/draft")
+def draft(files: List[FileSpec], _: bool = Depends(require_builder_key)):
+    # Dry-run: compute diffs without writing
+    diffs = []
+    for f in files:
+        path = f.path.strip()
+        if not _path_is_allowed(path):
+            raise HTTPException(status_code=400, detail=f"path not allowed: {path}")
+        new = f.content
+        old = _read_text(path)
+        patch = _unified_diff(old, new, path)
+        diffs.append({"path": path, "diff": patch})
+    changed = sum(1 for d in diffs if d["diff"]) 
+    return {"ok": True, "changed": changed, "files": diffs}
+
 @router.post("/apply", response_model=DraftOut)
 def apply(payload: ApplyIn, db: Session = Depends(get_db), _: bool = Depends(require_builder_key)):
     t = db.get(BuilderTask, payload.task_id)
@@ -50,7 +79,17 @@ def apply(payload: ApplyIn, db: Session = Depends(get_db), _: bool = Depends(req
         proposed = []
 
     if not payload.approve:
-        # return current draft (human review)
+        # dry-run diffs
+        diffs = []
+        for f in proposed:
+            path = f["path"].strip()
+            if not _path_is_allowed(path):
+                raise HTTPException(status_code=400, detail=f"path not allowed: {path}")
+            old = _read_text(path)
+            patch = _unified_diff(old, f["content"], path)
+            diffs.append({"path": path, "diff": patch})
+        t.diff_summary = f"{sum(1 for d in diffs if d['diff'])} files changed"
+        db.add(t); db.commit()
         return DraftOut(task_id=t.id, files=proposed, diff_summary=t.diff_summary or "")
 
     # Guardrails: write allowed files only
@@ -73,6 +112,22 @@ def apply(payload: ApplyIn, db: Session = Depends(get_db), _: bool = Depends(req
     t.status = "applied"
     db.add(BuilderEvent(kind="apply", msg=f"applied {len(wrote)} files", meta_json=json.dumps(wrote)))
     db.commit()
+
+    # Optional git autocommit/push
+    if settings.GIT_ENABLE_AUTOCOMMIT:
+        repo_dir = settings.GIT_REPO_DIR or os.getcwd()
+        msg = f"builder: apply task {t.id} ({len(wrote)} files)"
+        res = git_autocommit_and_push(
+            repo_dir=repo_dir,
+            message=msg,
+            remote=settings.GIT_REMOTE_NAME,
+            branch=settings.GIT_BRANCH,
+            user_name=settings.GIT_USER_NAME,
+            user_email=settings.GIT_USER_EMAIL,
+            token=settings.GITHUB_TOKEN,
+        )
+        db.add(BuilderEvent(kind="git", msg="autocommit", meta_json=json.dumps(res)))
+        db.commit()
     return DraftOut(task_id=t.id, files=proposed, diff_summary=f"applied {len(wrote)} files")
 
 @router.post("/telemetry")

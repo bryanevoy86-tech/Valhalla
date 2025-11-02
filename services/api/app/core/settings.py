@@ -32,6 +32,15 @@ class Settings(BaseModel):
     ]
     BUILDER_MAX_FILE_BYTES: int = int(os.getenv("BUILDER_MAX_FILE_BYTES", "200000"))  # 200 KB/file
 
+    # Git auto-commit/push flags
+    GIT_ENABLE_AUTOCOMMIT: bool = os.environ.get("GIT_ENABLE_AUTOCOMMIT", "false").lower() in ("1","true","yes")
+    GIT_REPO_DIR: str = os.environ.get("GIT_REPO_DIR", "")
+    GIT_REMOTE_NAME: str = os.environ.get("GIT_REMOTE_NAME", "origin")
+    GIT_BRANCH: str = os.environ.get("GIT_BRANCH", "main")
+    GIT_USER_NAME: str = os.environ.get("GIT_USER_NAME", "Heimdall Bot")
+    GIT_USER_EMAIL: str = os.environ.get("GIT_USER_EMAIL", "heimdall-bot@valhalla.local")
+    GITHUB_TOKEN: str = os.environ.get("GITHUB_TOKEN", "")
+
     @classmethod
     def load(cls) -> "Settings":
         flags_env = os.environ.get("FEATURE_FLAGS_JSON", "{}")

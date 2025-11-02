@@ -37,6 +37,15 @@ class Settings(BaseSettings):
     ]
     BUILDER_MAX_FILE_BYTES: int = 200000  # 200KB
 
+    # Git auto-commit/push flags
+    GIT_ENABLE_AUTOCOMMIT: bool = False
+    GIT_REPO_DIR: str = ""
+    GIT_REMOTE_NAME: str = "origin"
+    GIT_BRANCH: str = "main"
+    GIT_USER_NAME: str = "Heimdall Bot"
+    GIT_USER_EMAIL: str = "heimdall-bot@valhalla.local"
+    GITHUB_TOKEN: str = ""  # optional for private repos
+
     @field_validator("DEBUG", mode="before")
     @classmethod
     def parse_debug(cls, v):
