@@ -16,6 +16,15 @@ except Exception as e:
     BUILDER_AVAILABLE = False
     builder_router = None
 
+# Try importing reports router (will be created by builder)
+try:
+    from app.routers.reports import router as reports_router
+    REPORTS_AVAILABLE = True
+except Exception as e:
+    print(f"INFO: Reports router not yet available: {e}")
+    REPORTS_AVAILABLE = False
+    reports_router = None
+
 
 app = FastAPI(title="Valhalla API", version="3.4")
 
@@ -36,6 +45,10 @@ if BUILDER_AVAILABLE:
     app.include_router(builder_router, prefix="/api")
 else:
     print("WARNING: Builder router not registered due to import error")
+if REPORTS_AVAILABLE:
+    app.include_router(reports_router, prefix="/api")
+else:
+    print("INFO: Reports router not registered (will be available after builder creates it)")
 
 
 @app.get("/")
@@ -52,6 +65,7 @@ def debug_routes():
             routes.append({"path": route.path, "methods": list(route.methods)})
     return {
         "builder_available": BUILDER_AVAILABLE,
+        "reports_available": REPORTS_AVAILABLE,
         "total_routes": len(app.routes),
         "routes": routes
     }

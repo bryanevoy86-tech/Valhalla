@@ -50,6 +50,14 @@ try:
         print(f"WARNING: Could not import builder router (app.*): {e}")
         BUILDER_AVAILABLE = False
         builder_router = None
+    # Attempt to import reports router (optional, created by builder)
+    try:
+        from app.routers.reports import router as reports_router
+        REPORTS_AVAILABLE = True
+    except Exception as e:
+        print(f"INFO: Reports router not yet available (app.*): {e}")
+        REPORTS_AVAILABLE = False
+        reports_router = None
 except Exception:
     # fallback for test runner import path
     from valhalla.services.api.app.core.config import settings
@@ -66,6 +74,14 @@ except Exception:
         print(f"WARNING: Could not import builder router (valhalla.*): {e}")
         BUILDER_AVAILABLE = False
         builder_router = None
+    # Fallback import for reports
+    try:
+        from valhalla.services.api.app.routers.reports import router as reports_router
+        REPORTS_AVAILABLE = True
+    except Exception as e:
+        print(f"INFO: Reports router not yet available (valhalla.*): {e}")
+        REPORTS_AVAILABLE = False
+        reports_router = None
 
 
 app = FastAPI(title="Valhalla API", version="3.4")
@@ -87,11 +103,31 @@ if 'BUILDER_AVAILABLE' in globals() and BUILDER_AVAILABLE and builder_router is 
     app.include_router(builder_router, prefix="/api")
 else:
     print("WARNING: Builder router not registered (unavailable)")
+if 'REPORTS_AVAILABLE' in globals() and REPORTS_AVAILABLE and reports_router is not None:
+    app.include_router(reports_router, prefix="/api")
+else:
+    print("INFO: Reports router not registered (will be available after builder creates it)")
 
 
 @app.get("/")
 def root():
     return {"service": "valhalla-api", "version": "3.4"}
+
+
+@app.get("/debug/routes")
+def debug_routes():
+    """Debug endpoint to see registered routes"""
+    routes = []
+    for route in app.routes:
+        if hasattr(route, 'path') and hasattr(route, 'methods'):
+            routes.append({"path": route.path, "methods": list(route.methods)})
+    return {
+        "builder_available": BUILDER_AVAILABLE,
+        "builder_error": BUILDER_ERROR,
+        "reports_available": REPORTS_AVAILABLE if 'REPORTS_AVAILABLE' in globals() else False,
+        "total_routes": len(app.routes),
+        "routes": routes
+    }
 
 
 # Test-client compatibility health endpoint
