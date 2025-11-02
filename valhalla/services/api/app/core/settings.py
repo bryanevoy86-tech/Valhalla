@@ -32,6 +32,15 @@ class Settings(BaseModel):
     ]
     BUILDER_MAX_FILE_BYTES: int = int(os.getenv("BUILDER_MAX_FILE_BYTES", "200000"))  # 200 KB/file
 
+    # Git auto-commit/push flags
+    GIT_ENABLE_AUTOCOMMIT: bool = False
+    GIT_REPO_DIR: str = ""
+    GIT_REMOTE_NAME: str = "origin"
+    GIT_BRANCH: str = "main"
+    GIT_USER_NAME: str = "Heimdall Bot"
+    GIT_USER_EMAIL: str = "heimdall-bot@valhalla.local"
+    GITHUB_TOKEN: str = ""  # optional for private repos
+
     @classmethod
     def load(cls) -> "Settings":
         flags_env = os.environ.get("FEATURE_FLAGS_JSON", "{}")
@@ -54,6 +63,14 @@ class Settings(BaseModel):
             sentry_dsn=os.environ.get("SENTRY_DSN", ""),
             CORS_ALLOWED_ORIGINS=os.environ.get("CORS_ORIGINS", "").split(",") if os.environ.get("CORS_ORIGINS") else [],
             HEIMDALL_BUILDER_API_KEY=os.environ.get("HEIMDALL_BUILDER_API_KEY", ""),
+            # Git
+            GIT_ENABLE_AUTOCOMMIT=os.environ.get("GIT_ENABLE_AUTOCOMMIT", "false").lower() in ("1", "true", "yes"),
+            GIT_REPO_DIR=os.environ.get("GIT_REPO_DIR", ""),
+            GIT_REMOTE_NAME=os.environ.get("GIT_REMOTE_NAME", "origin"),
+            GIT_BRANCH=os.environ.get("GIT_BRANCH", "main"),
+            GIT_USER_NAME=os.environ.get("GIT_USER_NAME", "Heimdall Bot"),
+            GIT_USER_EMAIL=os.environ.get("GIT_USER_EMAIL", "heimdall-bot@valhalla.local"),
+            GITHUB_TOKEN=os.environ.get("GITHUB_TOKEN", ""),
         )
 
 settings = Settings.load()

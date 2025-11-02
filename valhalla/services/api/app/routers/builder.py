@@ -1,6 +1,6 @@
 import json, os
 from typing import List
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from slugify import slugify
 
@@ -59,18 +59,37 @@ def _unified_diff(old: str, new: str, path: str) -> str:
     return "".join(difflib.unified_diff(a, b, fromfile=f"a/{path}", tofile=f"b/{path}"))
 
 @router.post("/draft")
-def draft(files: List[FileSpec], _: bool = Depends(require_builder_key)):
+def draft(
+    files: List[FileSpec],
+    task_id: int = Query(..., description="Task ID to attach draft to"),
+    db: Session = Depends(get_db),
+    _: bool = Depends(require_builder_key),
+):
+    # Validate task
+    t = db.get(BuilderTask, task_id)
+    if not t:
+        raise HTTPException(status_code=404, detail="task not found")
+    # Dry-run: compute diffs without writing and persist proposed files on the task
     diffs = []
+    combined_patch_parts: List[str] = []
+    changed = 0
     for f in files:
         path = f.path.strip()
         if not _path_is_allowed(path):
             raise HTTPException(status_code=400, detail=f"path not allowed: {path}")
-        new = f.content
+        if len(f.content.encode("utf-8")) > settings.BUILDER_MAX_FILE_BYTES:
+            raise HTTPException(status_code=413, detail=f"file too large: {path}")
         old = _read_text(path)
-        patch = _unified_diff(old, new, path)
+        patch = _unified_diff(old, f.content, path)
         diffs.append({"path": path, "diff": patch})
-    changed = sum(1 for d in diffs if d["diff"]) 
-    return {"ok": True, "changed": changed, "files": diffs}
+        if patch:
+            changed += 1
+            combined_patch_parts.append(patch)
+    # Persist proposed files to the task
+    t.payload_json = json.dumps([f.__dict__ for f in files])
+    t.diff_summary = f"{changed} files changed"
+    db.add(t); db.commit()
+    return {"ok": True, "changed": changed, "files": diffs, "patch": "".join(combined_patch_parts)}
 
 @router.post("/apply", response_model=DraftOut)
 def apply(payload: ApplyIn, db: Session = Depends(get_db), _: bool = Depends(require_builder_key)):
@@ -86,6 +105,7 @@ def apply(payload: ApplyIn, db: Session = Depends(get_db), _: bool = Depends(req
 
     if not payload.approve:
         diffs = []
+        combined_patch_parts: List[str] = []
         for f in proposed:
             path = f["path"].strip()
             if not _path_is_allowed(path):
@@ -93,9 +113,12 @@ def apply(payload: ApplyIn, db: Session = Depends(get_db), _: bool = Depends(req
             old = _read_text(path)
             patch = _unified_diff(old, f["content"], path)
             diffs.append({"path": path, "diff": patch})
+            if patch:
+                combined_patch_parts.append(patch)
         t.diff_summary = f"{sum(1 for d in diffs if d['diff'])} files changed"
         db.add(t); db.commit()
-        return DraftOut(task_id=t.id, files=proposed, diff_summary=t.diff_summary or "")
+        patch_file = FileSpec(path="__DIFF__.patch", content="".join(combined_patch_parts), mode="add")
+        return DraftOut(task_id=t.id, files=[patch_file], diff_summary=t.diff_summary or "")
 
     # Guardrails: write allowed files only
     wrote = []
