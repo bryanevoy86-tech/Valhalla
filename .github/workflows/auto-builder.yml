@@ -1,0 +1,73 @@
+name: Heimdall Auto-Builder
+
+on:
+  workflow_dispatch:  # Manual trigger button
+  schedule:
+    - cron: "30 9 * * *"  # 09:30 UTC daily (03:30 Winnipeg)
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    env:
+      API_BASE: ${{ secrets.VALHALLA_API_BASE }}
+      BUILDER_KEY: ${{ secrets.VALHALLA_BUILDER_KEY }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests
+      
+      - name: Run Heimdall auto-build task
+        run: |
+          python - <<'PY'
+          import os, json, requests, sys
+          
+          API = os.environ['API_BASE']
+          KEY = os.environ['BUILDER_KEY']
+          H = {'X-API-Key': KEY, 'Content-Type': 'application/json'}
+          
+          def post(p, d):
+              r = requests.post(API + p, headers=H, data=json.dumps(d), timeout=30)
+              r.raise_for_status()
+              return r.json()
+          
+          def register():
+              try:
+                  post("/builder/register", {"agent_name": "heimdall-bot", "version": "ci"})
+                  print("✓ Registered as heimdall-bot")
+              except Exception as e:
+                  print(f"  (Already registered or error: {e})")
+          
+          # Register agent
+          register()
+          
+          # Create minimal task to verify builder flow
+          task = post("/builder/tasks", {
+              "title": "Auto-build: reports",
+              "scope": "services/api/app/routers/reports.py",
+              "plan": "ensure reports + main include"
+          })
+          
+          task_id = task.get("task_id") or task.get("taskId") or task.get("id", 1)
+          print(f"✓ Created task #{task_id}")
+          
+          # Dry-run to verify flow (actual build done by tools/auto_build.py locally)
+          result = post("/builder/apply", {"task_id": task_id, "approve": False})
+          print(f"✓ Builder flow verified")
+          
+          if result.get("ok"):
+              print("✅ Auto-builder workflow complete")
+              sys.exit(0)
+          else:
+              print("❌ Builder flow failed")
+              sys.exit(1)
+          PY

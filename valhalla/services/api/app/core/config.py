@@ -31,7 +31,9 @@ class Settings(BaseSettings):
         "services/api/app/models",
         "services/api/app/schemas",
         "services/api/app/core",
+        "services/api/app/jobs",
         "services/api/alembic/versions",
+        "services/api/main.py",
         "services/worker",
         ".github/workflows",
     ]
