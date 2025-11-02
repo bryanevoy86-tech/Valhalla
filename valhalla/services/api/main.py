@@ -65,8 +65,12 @@ try:
         from app.routers.jobs import router as jobs_router
         from app.routers.research_semantic import router as research_semantic_router
         RESEARCH_AVAILABLE = True
+        RESEARCH_ERROR = None
     except Exception as e:
+        import traceback
+        RESEARCH_ERROR = f"{str(e)}\n{traceback.format_exc()}"
         print(f"WARNING: Research/Playbooks/Jobs routers not available (app.*): {e}")
+        print(f"Full traceback: {traceback.format_exc()}")
         RESEARCH_AVAILABLE = False
         research_router = None
         playbooks_router = None
@@ -103,8 +107,12 @@ except Exception:
         from valhalla.services.api.app.routers.jobs import router as jobs_router
         from valhalla.services.api.app.routers.research_semantic import router as research_semantic_router
         RESEARCH_AVAILABLE = True
+        RESEARCH_ERROR = None
     except Exception as e:
+        import traceback
+        RESEARCH_ERROR = f"{str(e)}\n{traceback.format_exc()}"
         print(f"WARNING: Research/Playbooks/Jobs routers not available (valhalla.*): {e}")
+        print(f"Full traceback: {traceback.format_exc()}")
         RESEARCH_AVAILABLE = False
         research_router = None
         playbooks_router = None
@@ -161,6 +169,7 @@ def debug_routes():
         "builder_error": BUILDER_ERROR,
         "reports_available": REPORTS_AVAILABLE if 'REPORTS_AVAILABLE' in globals() else False,
         "research_available": RESEARCH_AVAILABLE if 'RESEARCH_AVAILABLE' in globals() else False,
+        "research_error": RESEARCH_ERROR if 'RESEARCH_ERROR' in globals() else None,
         "total_routes": len(app.routes),
         "routes": routes
     }
@@ -172,8 +181,9 @@ def api_health():
     return {"ok": True, "app": "Valhalla API", "version": "3.4"}
 
 
-@app.get("/debug/routes")
-def debug_routes():
+@app.get("/debug/status")
+def debug_status():
+    """Detailed status endpoint showing import errors"""
     routes = []
     for route in app.routes:
         if hasattr(route, 'path') and hasattr(route, 'methods'):
@@ -181,6 +191,9 @@ def debug_routes():
     return {
         "builder_available": bool('BUILDER_AVAILABLE' in globals() and BUILDER_AVAILABLE),
         "builder_error": globals().get('BUILDER_ERROR'),
+        "reports_available": bool('REPORTS_AVAILABLE' in globals() and globals().get('REPORTS_AVAILABLE')),
+        "research_available": bool('RESEARCH_AVAILABLE' in globals() and globals().get('RESEARCH_AVAILABLE')),
+        "research_error": globals().get('RESEARCH_ERROR'),
         "total_routes": len(app.routes),
         "routes": routes,
     }

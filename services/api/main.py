@@ -32,8 +32,12 @@ try:
     from app.routers.jobs import router as jobs_router
     from app.routers.research_semantic import router as research_semantic_router
     RESEARCH_AVAILABLE = True
+    RESEARCH_ERROR = None
 except Exception as e:
+    import traceback
+    RESEARCH_ERROR = f"{str(e)}\n{traceback.format_exc()}"
     print(f"WARNING: Research/Playbooks/Jobs routers not available: {e}")
+    print(f"Full traceback: {traceback.format_exc()}")
     RESEARCH_AVAILABLE = False
     research_router = None
     playbooks_router = None
@@ -89,6 +93,7 @@ def debug_routes():
         "builder_available": BUILDER_AVAILABLE,
         "reports_available": REPORTS_AVAILABLE,
         "research_available": RESEARCH_AVAILABLE,
+        "research_error": RESEARCH_ERROR if 'RESEARCH_ERROR' in globals() else None,
         "total_routes": len(app.routes),
         "routes": routes
     }
