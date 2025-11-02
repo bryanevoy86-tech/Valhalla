@@ -1,0 +1,33 @@
+name: Nightly Research Ingest
+
+on:
+  schedule:
+    # Runs at 08:15 UTC = 02:15 America/Winnipeg (CST/CDT)
+    - cron: "15 8 * * *"
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call /jobs/research/ingest_all
+        env:
+          API_BASE: ${{ secrets.VALHALLA_API_BASE }}
+          BUILDER_KEY: ${{ secrets.VALHALLA_BUILDER_KEY }}
+        run: |
+          set -e
+          echo "🔍 Starting nightly research ingestion..."
+          response=$(curl -sS -X POST "$API_BASE/api/jobs/research/ingest_all" \
+            -H "X-API-Key: $BUILDER_KEY" \
+            -H "Content-Type: application/json")
+          echo "✅ Response: $response"
+          
+          # Check if response contains "ok": true
+          if echo "$response" | grep -q '"ok".*true'; then
+            echo "✅ Ingestion job started successfully"
+            exit 0
+          else
+            echo "❌ Ingestion job failed"
+            echo "$response"
+            exit 1
+          fi

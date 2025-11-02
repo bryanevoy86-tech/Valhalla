@@ -58,6 +58,18 @@ try:
         print(f"INFO: Reports router not yet available (app.*): {e}")
         REPORTS_AVAILABLE = False
         reports_router = None
+    # Attempt to import research and playbooks routers
+    try:
+        from app.routers.research import router as research_router
+        from app.routers.playbooks import router as playbooks_router
+        from app.routers.jobs import router as jobs_router
+        RESEARCH_AVAILABLE = True
+    except Exception as e:
+        print(f"WARNING: Research/Playbooks/Jobs routers not available (app.*): {e}")
+        RESEARCH_AVAILABLE = False
+        research_router = None
+        playbooks_router = None
+        jobs_router = None
 except Exception:
     # fallback for test runner import path
     from valhalla.services.api.app.core.config import settings
@@ -82,6 +94,18 @@ except Exception:
         print(f"INFO: Reports router not yet available (valhalla.*): {e}")
         REPORTS_AVAILABLE = False
         reports_router = None
+    # Fallback import for research and playbooks
+    try:
+        from valhalla.services.api.app.routers.research import router as research_router
+        from valhalla.services.api.app.routers.playbooks import router as playbooks_router
+        from valhalla.services.api.app.routers.jobs import router as jobs_router
+        RESEARCH_AVAILABLE = True
+    except Exception as e:
+        print(f"WARNING: Research/Playbooks/Jobs routers not available (valhalla.*): {e}")
+        RESEARCH_AVAILABLE = False
+        research_router = None
+        playbooks_router = None
+        jobs_router = None
 
 
 app = FastAPI(title="Valhalla API", version="3.4")
@@ -107,6 +131,12 @@ if 'REPORTS_AVAILABLE' in globals() and REPORTS_AVAILABLE and reports_router is 
     app.include_router(reports_router, prefix="/api")
 else:
     print("INFO: Reports router not registered (will be available after builder creates it)")
+if 'RESEARCH_AVAILABLE' in globals() and RESEARCH_AVAILABLE and research_router is not None:
+    app.include_router(research_router, prefix="/api")
+    app.include_router(playbooks_router, prefix="/api")
+    app.include_router(jobs_router, prefix="/api")
+else:
+    print("INFO: Research/Playbooks/Jobs routers not registered")
 
 
 @app.get("/")
@@ -125,6 +155,7 @@ def debug_routes():
         "builder_available": BUILDER_AVAILABLE,
         "builder_error": BUILDER_ERROR,
         "reports_available": REPORTS_AVAILABLE if 'REPORTS_AVAILABLE' in globals() else False,
+        "research_available": RESEARCH_AVAILABLE if 'RESEARCH_AVAILABLE' in globals() else False,
         "total_routes": len(app.routes),
         "routes": routes
     }
