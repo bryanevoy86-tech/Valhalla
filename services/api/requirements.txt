@@ -9,6 +9,8 @@ python-slugify==8.0.4
 sqlalchemy
 alembic
 psycopg2-binary
+requests
+beautifulsoup4
 
 # Dev/test/tools
 pytest

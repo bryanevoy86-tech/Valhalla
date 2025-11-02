@@ -25,6 +25,17 @@ except Exception as e:
     REPORTS_AVAILABLE = False
     reports_router = None
 
+# Try importing research and playbooks routers
+try:
+    from app.routers.research import router as research_router
+    from app.routers.playbooks import router as playbooks_router
+    RESEARCH_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Research/Playbooks routers not available: {e}")
+    RESEARCH_AVAILABLE = False
+    research_router = None
+    playbooks_router = None
+
 
 app = FastAPI(title="Valhalla API", version="3.4")
 
@@ -49,6 +60,11 @@ if REPORTS_AVAILABLE:
     app.include_router(reports_router, prefix="/api")
 else:
     print("INFO: Reports router not registered (will be available after builder creates it)")
+if RESEARCH_AVAILABLE:
+    app.include_router(research_router, prefix="/api")
+    app.include_router(playbooks_router, prefix="/api")
+else:
+    print("INFO: Research/Playbooks routers not registered")
 
 
 @app.get("/")
@@ -66,6 +82,7 @@ def debug_routes():
     return {
         "builder_available": BUILDER_AVAILABLE,
         "reports_available": REPORTS_AVAILABLE,
+        "research_available": RESEARCH_AVAILABLE,
         "total_routes": len(app.routes),
         "routes": routes
     }

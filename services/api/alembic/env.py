@@ -18,6 +18,7 @@ from valhalla.services.api.app.core.db import Base
 from valhalla.services.api.app.models.metric import Metric
 from valhalla.services.api.app.models.intake import CapitalIntake
 from valhalla.services.api.app.models.builder import BuilderTask, BuilderEvent
+from valhalla.services.api.app.models.research import ResearchSource, ResearchDoc, ResearchQuery, Playbook
 
 config = context.config
 
