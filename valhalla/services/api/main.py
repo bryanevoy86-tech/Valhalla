@@ -40,6 +40,7 @@ try:
     from app.routers.health import router as health_router
     from app.routers.metrics import router as metrics_router
     from app.routers.capital import router as capital_router
+    from app.routers.admin import router as admin_router
     # Attempt to import builder router (optional)
     try:
         from app.routers.builder import router as builder_router
@@ -135,6 +136,7 @@ app.add_middleware(
 app.include_router(health_router, prefix="/api")
 app.include_router(metrics_router, prefix="/api")
 app.include_router(capital_router, prefix="/api")
+app.include_router(admin_router, prefix="/api")
 if 'BUILDER_AVAILABLE' in globals() and BUILDER_AVAILABLE and builder_router is not None:
     app.include_router(builder_router, prefix="/api")
 else:
