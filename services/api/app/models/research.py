@@ -33,6 +33,7 @@ class ResearchDoc(Base):
     chunk_index = Column(Integer, default=0)  # for splitting large docs
     ingested_at = Column(DateTime, default=datetime.utcnow)
     metadata_json = Column(Text, nullable=True)  # JSON for extra fields
+    embedding_json = Column(Text, nullable=True)  # JSON list of floats (vector)
 
     # Relationship
     source = relationship("ResearchSource", back_populates="docs")

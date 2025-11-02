@@ -94,3 +94,28 @@ class PlaybookOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# Embeddings & Semantic Search
+class EmbeddingUpsertIn(BaseModel):
+    doc_id: int
+    vector: list[float]  # same dimensionality across all docs
+
+
+class SemanticQueryIn(BaseModel):
+    q: Optional[str] = None  # optional raw text (ignored in this simple API)
+    top_k: int = Field(default=5, ge=1, le=50)
+    min_score: float = Field(default=0.0, ge=0.0, le=1.0)
+    vector: Optional[list[float]] = None  # Either provide a fresh vector, or the server will error if none provided
+
+
+class SemanticHit(BaseModel):
+    doc_id: int
+    url: Optional[str] = None
+    title: Optional[str] = None
+    score: float
+    preview: str
+
+
+class SemanticQueryOut(BaseModel):
+    hits: list[SemanticHit]

@@ -63,6 +63,7 @@ try:
         from app.routers.research import router as research_router
         from app.routers.playbooks import router as playbooks_router
         from app.routers.jobs import router as jobs_router
+        from app.routers.research_semantic import router as research_semantic_router
         RESEARCH_AVAILABLE = True
     except Exception as e:
         print(f"WARNING: Research/Playbooks/Jobs routers not available (app.*): {e}")
@@ -70,6 +71,7 @@ try:
         research_router = None
         playbooks_router = None
         jobs_router = None
+        research_semantic_router = None
 except Exception:
     # fallback for test runner import path
     from valhalla.services.api.app.core.config import settings
@@ -99,6 +101,7 @@ except Exception:
         from valhalla.services.api.app.routers.research import router as research_router
         from valhalla.services.api.app.routers.playbooks import router as playbooks_router
         from valhalla.services.api.app.routers.jobs import router as jobs_router
+        from valhalla.services.api.app.routers.research_semantic import router as research_semantic_router
         RESEARCH_AVAILABLE = True
     except Exception as e:
         print(f"WARNING: Research/Playbooks/Jobs routers not available (valhalla.*): {e}")
@@ -106,6 +109,7 @@ except Exception:
         research_router = None
         playbooks_router = None
         jobs_router = None
+        research_semantic_router = None
 
 
 app = FastAPI(title="Valhalla API", version="3.4")
@@ -135,6 +139,7 @@ if 'RESEARCH_AVAILABLE' in globals() and RESEARCH_AVAILABLE and research_router 
     app.include_router(research_router, prefix="/api")
     app.include_router(playbooks_router, prefix="/api")
     app.include_router(jobs_router, prefix="/api")
+    app.include_router(research_semantic_router, prefix="/api")
 else:
     print("INFO: Research/Playbooks/Jobs routers not registered")
 

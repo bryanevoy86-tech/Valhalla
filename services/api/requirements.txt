@@ -11,6 +11,7 @@ alembic
 psycopg2-binary
 requests
 beautifulsoup4
+numpy==2.1.2
 
 # Dev/test/tools
 pytest
