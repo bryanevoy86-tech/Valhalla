@@ -14,18 +14,71 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.settings import settings
+
+# Core routers (should always be available)
 from app.routers.health import router as health_router
 from app.routers.metrics import router as metrics_router
 from app.routers.capital import router as capital_router
 from app.routers.telemetry import router as telemetry_router
-from app.routers.grants import router as grants_router
-from app.routers.buyers import router as buyers_router
-from app.routers.deals import router as deals_router
-from app.routers.match import router as match_router
-from app.routers.contracts import router as contracts_router
-from app.routers.intake import router as intake_router
-from app.routers.notify import router as notify_router
 from app.routers.admin import router as admin_router
+
+# Pack routers with error handling
+GRANTS_AVAILABLE = False
+BUYERS_AVAILABLE = False
+DEALS_AVAILABLE = False
+MATCH_AVAILABLE = False
+CONTRACTS_AVAILABLE = False
+INTAKE_AVAILABLE = False
+NOTIFY_AVAILABLE = False
+
+try:
+    from app.routers.grants import router as grants_router
+    GRANTS_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import grants router: {e}")
+    grants_router = None
+
+try:
+    from app.routers.buyers import router as buyers_router
+    BUYERS_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import buyers router: {e}")
+    buyers_router = None
+
+try:
+    from app.routers.deals import router as deals_router
+    DEALS_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import deals router: {e}")
+    deals_router = None
+
+try:
+    from app.routers.match import router as match_router
+    MATCH_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import match router: {e}")
+    match_router = None
+
+try:
+    from app.routers.contracts import router as contracts_router
+    CONTRACTS_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import contracts router: {e}")
+    contracts_router = None
+
+try:
+    from app.routers.intake import router as intake_router
+    INTAKE_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import intake router: {e}")
+    intake_router = None
+
+try:
+    from app.routers.notify import router as notify_router
+    NOTIFY_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import notify router: {e}")
+    notify_router = None
 
 # Try importing builder router with error handling
 try:
@@ -88,27 +141,59 @@ app.add_middleware(
     allow_headers=["Authorization", "Content-Type", "X-Requested-With", "X-API-Key"],
 )
 
-# Routers
+# Register routers (core routers always available)
 app.include_router(health_router, prefix="/api")
 app.include_router(metrics_router, prefix="/api")
 app.include_router(capital_router, prefix="/api")
 app.include_router(telemetry_router, prefix="/api")
-app.include_router(grants_router, prefix="/api")
-app.include_router(buyers_router, prefix="/api")
-app.include_router(deals_router, prefix="/api")
-app.include_router(match_router, prefix="/api")
-app.include_router(contracts_router, prefix="/api")
-app.include_router(intake_router, prefix="/api")
-app.include_router(notify_router, prefix="/api")
 app.include_router(admin_router, prefix="/api")
+
+# Pack routers (with availability checks)
+if GRANTS_AVAILABLE:
+    app.include_router(grants_router, prefix="/api")
+else:
+    print("WARNING: Grants router not registered")
+
+if BUYERS_AVAILABLE:
+    app.include_router(buyers_router, prefix="/api")
+else:
+    print("WARNING: Buyers router not registered")
+
+if DEALS_AVAILABLE:
+    app.include_router(deals_router, prefix="/api")
+else:
+    print("WARNING: Deals router not registered")
+
+if MATCH_AVAILABLE:
+    app.include_router(match_router, prefix="/api")
+else:
+    print("WARNING: Match router not registered")
+
+if CONTRACTS_AVAILABLE:
+    app.include_router(contracts_router, prefix="/api")
+else:
+    print("WARNING: Contracts router not registered")
+
+if INTAKE_AVAILABLE:
+    app.include_router(intake_router, prefix="/api")
+else:
+    print("WARNING: Intake router not registered")
+
+if NOTIFY_AVAILABLE:
+    app.include_router(notify_router, prefix="/api")
+else:
+    print("WARNING: Notify router not registered")
+
 if BUILDER_AVAILABLE:
     app.include_router(builder_router, prefix="/api")
 else:
-    print("WARNING: Builder router not registered due to import error")
+    print("WARNING: Builder router not registered")
+    
 if REPORTS_AVAILABLE:
     app.include_router(reports_router, prefix="/api")
 else:
     print("INFO: Reports router not registered (will be available after builder creates it)")
+    
 if RESEARCH_AVAILABLE:
     app.include_router(research_router, prefix="/api")
     app.include_router(playbooks_router, prefix="/api")
