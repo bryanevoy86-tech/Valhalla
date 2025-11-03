@@ -9,6 +9,7 @@ from ..jobs.forecast_jobs import forecast_month_ahead
 from ..jobs.freeze_jobs import check_drawdown
 from ..jobs.grant_jobs import refresh_from_sources
 from ..jobs.match_jobs import sweep_top_matches
+from ..jobs.notification_jobs import dispatch_pending
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 
@@ -131,3 +132,16 @@ def run_match_sweep(_: bool = Depends(require_builder_key)):
         {"ok": true, "deals_evaluated": <int>, "buyers_evaluated": <int>, "deals_with_top_hits": <int>}
     """
     return sweep_top_matches()
+
+
+@router.post("/notify/dispatch")
+def run_notify_dispatch(_: bool = Depends(require_builder_key)):
+    """
+    Dispatch queued webhook and email notifications.
+    Processes up to 20 pending items from the outbox.
+    Requires X-API-Key authentication.
+    
+    Returns:
+        {"ok": true, "sent": <int>, "error": <int>}
+    """
+    return dispatch_pending()

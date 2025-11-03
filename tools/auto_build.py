@@ -557,6 +557,60 @@ def build_matching():
         print(f"  4. Run tests: pytest services/api/tests/test_grants.py")
 
 
+def pack_intake_notify():
+    """Build intake + notifications pack - returns all related files"""
+    def txt(p):
+        try:
+            return open(p, "r", encoding="utf-8").read()
+        except FileNotFoundError:
+            return ""
+
+    files = [
+        {"path": "services/api/app/models/intake.py", "mode": "add", "content": txt("services/api/app/models/intake.py")},
+        {"path": "services/api/app/models/notify.py", "mode": "add", "content": txt("services/api/app/models/notify.py")},
+        {"path": "services/api/app/schemas/intake.py", "mode": "add", "content": txt("services/api/app/schemas/intake.py")},
+        {"path": "services/api/app/schemas/notify.py", "mode": "add", "content": txt("services/api/app/schemas/notify.py")},
+        {"path": "services/api/app/core/normalizer.py", "mode": "add", "content": txt("services/api/app/core/normalizer.py")},
+        {"path": "services/api/app/routers/intake.py", "mode": "add", "content": txt("services/api/app/routers/intake.py")},
+        {"path": "services/api/app/routers/notify.py", "mode": "add", "content": txt("services/api/app/routers/notify.py")},
+        {"path": "services/api/app/jobs/notification_jobs.py", "mode": "add", "content": txt("services/api/app/jobs/notification_jobs.py")},
+        {"path": "services/api/app/routers/jobs.py", "mode": "replace", "content": txt("services/api/app/routers/jobs.py")},
+        {"path": "services/api/alembic/versions/20251103_v3_7_intake_notify.py", "mode": "add", "content": txt("services/api/alembic/versions/20251103_v3_7_intake_notify.py")},
+        {"path": "services/api/tests/test_intake_notify.py", "mode": "add", "content": txt("services/api/tests/test_intake_notify.py")},
+    ]
+
+    # auto-wire main.py includes if missing
+    main = txt("services/api/main.py")
+    inc = "\nfrom app.routers.intake import router as intake_router\nfrom app.routers.notify import router as notify_router\napp.include_router(intake_router, prefix=\"/api\")\napp.include_router(notify_router, prefix=\"/api\")\n"
+    if "intake_router" not in main or "notify_router" not in main:
+        main = main.rstrip() + "\n\n# AUTO-INCLUDE (intake/notify)\n" + inc
+        files.append({"path": "services/api/main.py", "mode": "replace", "content": main})
+
+    return files
+
+
+def build_intake_notify():
+    """Build intake + notifications pack"""
+    print("\n🤖 Heimdall Auto-Builder: Intake + Notifications Pack")
+    print("=" * 50)
+
+    files = pack_intake_notify()
+    if not files:
+        print("❌ No files found to build")
+        return
+
+    print(f"📦 Building {len(files)} files...")
+
+    result = draft_apply("Auto-build: intake + notifications", files, dry_run=False)
+
+    if result:
+        print("\n💡 Next steps:")
+        print(f"  1. Run migration: alembic upgrade head")
+        print(f"  2. Test lead intake: curl -H 'X-API-Key: {KEY}' -H 'Content-Type: application/json' -d '{{}}' {API}/intake/leads")
+        print(f"  3. Test notify queue: curl -H 'X-API-Key: {KEY}' -H 'Content-Type: application/json' -d '{{\"payload\":{{\"ping\":\"ok\"}}}}' {API}/notify/webhook")
+        print(f"  4. Dispatch: curl -X POST -H 'X-API-Key: {KEY}' {API}/jobs/notify/dispatch")
+        print(f"  5. Run tests: pytest services/api/tests/test_intake_notify.py")
+
 if __name__ == "__main__":
     pack = sys.argv[1] if len(sys.argv) > 1 else "reports"
     
@@ -569,9 +623,11 @@ if __name__ == "__main__":
             build_grants()
         elif pack == "matching":
             build_matching()
+        elif pack in ["intake_notify", "intake", "notify"]:
+            build_intake_notify()
         else:
             print(f"❌ Unknown pack: {pack}")
-            print("Available packs: reports, metrics_capital, grants, matching")
+            print("Available packs: reports, metrics_capital, grants, matching, intake_notify")
             sys.exit(1)
     except KeyboardInterrupt:
         print("\n\n⚠ Cancelled by user")

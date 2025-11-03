@@ -41,6 +41,14 @@ class Settings(BaseModel):
     GIT_USER_EMAIL: str = os.environ.get("GIT_USER_EMAIL", "heimdall-bot@valhalla.local")
     GITHUB_TOKEN: str = os.environ.get("GITHUB_TOKEN", "")
 
+    # --- Notifications ---
+    DEFAULT_WEBHOOK_URL: str | None = os.getenv("DEFAULT_WEBHOOK_URL")
+    SMTP_HOST: str | None = os.getenv("SMTP_HOST")
+    SMTP_PORT: int = int(os.getenv("SMTP_PORT", "587"))
+    SMTP_USER: str | None = os.getenv("SMTP_USER")
+    SMTP_PASS: str | None = os.getenv("SMTP_PASS")
+    SMTP_FROM: str | None = os.getenv("SMTP_FROM", "noreply@valhalla.local")
+
     @classmethod
     def load(cls) -> "Settings":
         flags_env = os.environ.get("FEATURE_FLAGS_JSON", "{}")

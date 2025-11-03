@@ -15,13 +15,15 @@ sys.path.insert(0, repo_root)
 # Import Base and models; prefer the in-repo 'app' package, but fall back to direct module imports if a site-packages 'app' shadows it
 try:
     from app.core.db import Base
-    from app.models.metric import Metric
-    from app.models.intake import CapitalIntake
+    # Models imported for metadata discovery
     from app.models.builder import BuilderTask, BuilderEvent
+    from app.models.capital import CapitalIntake
     from app.models.telemetry import TelemetryEvent
-    from app.models.capital import CapitalIntake as CapitalIntakeModel
     from app.models.grants import GrantSource, GrantRecord
     from app.models.match import Buyer, DealBrief
+    from app.models.contracts import ContractTemplate, ContractRecord
+    from app.models.intake import LeadIntake
+    from app.models.notify import Outbox
 except ModuleNotFoundError:
     # Fallback: import using the app/ directory directly
     app_dir = os.path.abspath(os.path.join(svc_api_parent, "app"))
@@ -33,6 +35,9 @@ except ModuleNotFoundError:
     from models.telemetry import TelemetryEvent
     from models.grants import GrantSource, GrantRecord
     from models.match import Buyer, DealBrief
+    from models.contracts import ContractTemplate, ContractRecord
+    from models.intake import LeadIntake
+    from models.notify import Outbox
 # Research models not yet created - comment out for now
 # from app.models.research import ResearchSource, ResearchDoc, ResearchQuery, Playbook
 

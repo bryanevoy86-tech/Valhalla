@@ -11,6 +11,9 @@ from app.routers.grants import router as grants_router
 from app.routers.buyers import router as buyers_router
 from app.routers.deals import router as deals_router
 from app.routers.match import router as match_router
+from app.routers.contracts import router as contracts_router
+from app.routers.intake import router as intake_router
+from app.routers.notify import router as notify_router
 from app.routers.admin import router as admin_router
 
 # Try importing builder router with error handling
@@ -83,6 +86,9 @@ app.include_router(grants_router, prefix="/api")
 app.include_router(buyers_router, prefix="/api")
 app.include_router(deals_router, prefix="/api")
 app.include_router(match_router, prefix="/api")
+app.include_router(contracts_router, prefix="/api")
+app.include_router(intake_router, prefix="/api")
+app.include_router(notify_router, prefix="/api")
 app.include_router(admin_router, prefix="/api")
 if BUILDER_AVAILABLE:
     app.include_router(builder_router, prefix="/api")
