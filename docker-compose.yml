@@ -17,6 +17,8 @@ services:
   # working_dir and command removed to use Dockerfile defaults
     environment:
       - PYTHONUNBUFFERED=1
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/valhalla
+      - HEIMDALL_BUILDER_API_KEY=${HEIMDALL_BUILDER_API_KEY:-test123}
     ports:
       - "8000:8000"
   ngrok:

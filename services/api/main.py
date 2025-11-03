@@ -7,6 +7,7 @@ from app.routers.health import router as health_router
 from app.routers.metrics import router as metrics_router
 from app.routers.capital import router as capital_router
 from app.routers.telemetry import router as telemetry_router
+from app.routers.grants import router as grants_router
 from app.routers.admin import router as admin_router
 
 # Try importing builder router with error handling
@@ -52,7 +53,7 @@ app = FastAPI(title="Valhalla API", version="3.4")
 # CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.get_cors_origins(),
+    allow_origins=getattr(settings, "CORS_ALLOWED_ORIGINS", []),
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type", "X-Requested-With", "X-API-Key"],
@@ -63,6 +64,7 @@ app.include_router(health_router, prefix="/api")
 app.include_router(metrics_router, prefix="/api")
 app.include_router(capital_router, prefix="/api")
 app.include_router(telemetry_router, prefix="/api")
+app.include_router(grants_router, prefix="/api")
 app.include_router(admin_router, prefix="/api")
 if BUILDER_AVAILABLE:
     app.include_router(builder_router, prefix="/api")

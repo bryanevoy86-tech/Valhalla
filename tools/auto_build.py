@@ -388,6 +388,76 @@ def build_reports():
         print("  2. Run tests: pytest services/api/tests/test_reports.py")
 
 
+def pack_grants():
+    """Build grants pack - returns all grants-related files"""
+    files = []
+    
+    # Models
+    grants_model = open_text("services/api/app/models/grants.py")
+    if grants_model:
+        files.append({
+            "path": "services/api/app/models/grants.py",
+            "mode": "add",
+            "content": grants_model
+        })
+    
+    # Schemas
+    grants_schema = open_text("services/api/app/schemas/grants.py")
+    if grants_schema:
+        files.append({
+            "path": "services/api/app/schemas/grants.py",
+            "mode": "add",
+            "content": grants_schema
+        })
+    
+    # Router
+    grants_router = open_text("services/api/app/routers/grants.py")
+    if grants_router:
+        files.append({
+            "path": "services/api/app/routers/grants.py",
+            "mode": "add",
+            "content": grants_router
+        })
+    
+    # Jobs
+    grant_jobs = open_text("services/api/app/jobs/grant_jobs.py")
+    if grant_jobs:
+        files.append({
+            "path": "services/api/app/jobs/grant_jobs.py",
+            "mode": "add",
+            "content": grant_jobs
+        })
+    
+    # Update jobs router
+    jobs_router = open_text("services/api/app/routers/jobs.py")
+    if jobs_router:
+        files.append({
+            "path": "services/api/app/routers/jobs.py",
+            "mode": "replace",
+            "content": jobs_router
+        })
+    
+    # Main.py with grants router
+    main_py = open_text("services/api/main.py")
+    if main_py:
+        files.append({
+            "path": "services/api/main.py",
+            "mode": "replace",
+            "content": main_py
+        })
+    
+    # Tests
+    test_grants = open_text("services/api/tests/test_grants.py")
+    if test_grants:
+        files.append({
+            "path": "services/api/tests/test_grants.py",
+            "mode": "add",
+            "content": test_grants
+        })
+    
+    return files
+
+
 def build_metrics_capital():
     """Build capital/metrics/telemetry pack"""
     print("\n🤖 Heimdall Auto-Builder: Capital/Metrics/Telemetry Pack")
@@ -410,6 +480,28 @@ def build_metrics_capital():
         print(f"  4. Run tests: pytest services/api/tests/test_metrics_capital.py")
 
 
+def build_grants():
+    """Build grants pack"""
+    print("\n🤖 Heimdall Auto-Builder: Grant Pack Generator")
+    print("=" * 50)
+    
+    files = pack_grants()
+    if not files:
+        print("❌ No files found to build")
+        return
+    
+    print(f"📦 Building {len(files)} files...")
+    
+    result = draft_apply("Add grants pack with scoring and PDF export", files, dry_run=False)
+    
+    if result:
+        print("\n💡 Next steps:")
+        print(f"  1. Run migration: alembic upgrade head")
+        print(f"  2. Test sources: curl -H 'X-API-Key: {KEY}' {API}/grants/sources")
+        print(f"  3. Test generate: curl -X POST -H 'X-API-Key: {KEY}' {API}/grants/generate")
+        print(f"  4. Run tests: pytest services/api/tests/test_grants.py")
+
+
 if __name__ == "__main__":
     pack = sys.argv[1] if len(sys.argv) > 1 else "reports"
     
@@ -418,9 +510,11 @@ if __name__ == "__main__":
             build_reports()
         elif pack in ["metrics_capital", "capital", "metrics"]:
             build_metrics_capital()
+        elif pack == "grants":
+            build_grants()
         else:
             print(f"❌ Unknown pack: {pack}")
-            print("Available packs: reports, metrics_capital")
+            print("Available packs: reports, metrics_capital, grants")
             sys.exit(1)
     except KeyboardInterrupt:
         print("\n\n⚠ Cancelled by user")

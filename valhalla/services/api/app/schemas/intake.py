@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, condecimal
+from pydantic import BaseModel, Field, ConfigDict, condecimal
 from typing import Optional
 from datetime import datetime
 
@@ -9,8 +9,7 @@ class CapitalIn(BaseModel):
     note: Optional[str] = None
 
 class CapitalOut(CapitalIn):
+    model_config = ConfigDict(from_attributes=True)
+    
     id: int
     created_at: datetime
-
-    class Config:
-        from_attributes = True

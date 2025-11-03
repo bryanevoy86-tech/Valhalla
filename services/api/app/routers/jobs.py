@@ -7,6 +7,7 @@ from ..jobs.research_jobs import ingest_all_enabled
 from ..jobs.embed_jobs import embed_missing_docs
 from ..jobs.forecast_jobs import forecast_month_ahead
 from ..jobs.freeze_jobs import check_drawdown
+from ..jobs.grant_jobs import refresh_from_sources
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 
@@ -102,3 +103,17 @@ def run_freeze_check(
     """
     result = check_drawdown(prev_balance, current_balance)
     return result
+
+
+@router.post("/grants/refresh")
+def run_grants_refresh(_: bool = Depends(require_builder_key)):
+    """
+    Refresh grant records from active sources.
+    Currently a stub - returns 0 until source handlers are implemented.
+    Requires X-API-Key authentication.
+    
+    Returns:
+        {"ok": true, "imported": <count>}
+    """
+    n = refresh_from_sources()
+    return {"ok": True, "imported": n}

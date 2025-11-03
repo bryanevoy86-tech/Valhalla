@@ -8,7 +8,7 @@ from typing import List
 from ..core.db import get_db
 from ..schemas.capital import CapitalIn, CapitalOut
 from ..models.capital import CapitalIntake
-from ..core.auth import require_builder_key
+from ..core.dependencies import require_builder_key
 
 router = APIRouter(prefix="/capital", tags=["capital"])
 

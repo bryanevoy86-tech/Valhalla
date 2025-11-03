@@ -12,13 +12,16 @@ svc_api_parent = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, svc_api_parent)
 sys.path.insert(0, repo_root)
 
-# Import models base using full package path so imports resolve when running
-# alembic from the repo root.
-from valhalla.services.api.app.core.db import Base
-from valhalla.services.api.app.models.metric import Metric
-from valhalla.services.api.app.models.intake import CapitalIntake
-from valhalla.services.api.app.models.builder import BuilderTask, BuilderEvent
-from valhalla.services.api.app.models.research import ResearchSource, ResearchDoc, ResearchQuery, Playbook
+# Import models using relative imports since we're running from services/api
+from app.core.db import Base
+from app.models.metric import Metric
+from app.models.intake import CapitalIntake
+from app.models.builder import BuilderTask, BuilderEvent
+from app.models.telemetry import TelemetryEvent
+from app.models.capital import CapitalIntake as CapitalIntakeModel
+from app.models.grants import GrantSource, GrantRecord
+# Research models not yet created - comment out for now
+# from app.models.research import ResearchSource, ResearchDoc, ResearchQuery, Playbook
 
 config = context.config
 

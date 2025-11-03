@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from ..core.db import get_db
 from ..schemas.telemetry import TelemetryIn
 from ..models.telemetry import TelemetryEvent
-from ..core.auth import require_builder_key
+from ..core.dependencies import require_builder_key
 
 router = APIRouter(prefix="/telemetry", tags=["telemetry"])
 
