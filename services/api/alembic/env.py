@@ -12,14 +12,27 @@ svc_api_parent = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, svc_api_parent)
 sys.path.insert(0, repo_root)
 
-# Import models using relative imports since we're running from services/api
-from app.core.db import Base
-from app.models.metric import Metric
-from app.models.intake import CapitalIntake
-from app.models.builder import BuilderTask, BuilderEvent
-from app.models.telemetry import TelemetryEvent
-from app.models.capital import CapitalIntake as CapitalIntakeModel
-from app.models.grants import GrantSource, GrantRecord
+# Import Base and models; prefer the in-repo 'app' package, but fall back to direct module imports if a site-packages 'app' shadows it
+try:
+    from app.core.db import Base
+    from app.models.metric import Metric
+    from app.models.intake import CapitalIntake
+    from app.models.builder import BuilderTask, BuilderEvent
+    from app.models.telemetry import TelemetryEvent
+    from app.models.capital import CapitalIntake as CapitalIntakeModel
+    from app.models.grants import GrantSource, GrantRecord
+    from app.models.match import Buyer, DealBrief
+except ModuleNotFoundError:
+    # Fallback: import using the app/ directory directly
+    app_dir = os.path.abspath(os.path.join(svc_api_parent, "app"))
+    if app_dir not in sys.path:
+        sys.path.insert(0, app_dir)
+    from core.db import Base
+    from models.builder import BuilderTask, BuilderEvent
+    from models.capital import CapitalIntake
+    from models.telemetry import TelemetryEvent
+    from models.grants import GrantSource, GrantRecord
+    from models.match import Buyer, DealBrief
 # Research models not yet created - comment out for now
 # from app.models.research import ResearchSource, ResearchDoc, ResearchQuery, Playbook
 

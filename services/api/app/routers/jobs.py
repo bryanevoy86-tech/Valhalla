@@ -8,6 +8,7 @@ from ..jobs.embed_jobs import embed_missing_docs
 from ..jobs.forecast_jobs import forecast_month_ahead
 from ..jobs.freeze_jobs import check_drawdown
 from ..jobs.grant_jobs import refresh_from_sources
+from ..jobs.match_jobs import sweep_top_matches
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 
@@ -117,3 +118,16 @@ def run_grants_refresh(_: bool = Depends(require_builder_key)):
     """
     n = refresh_from_sources()
     return {"ok": True, "imported": n}
+
+
+@router.get("/match/sweep")
+def run_match_sweep(_: bool = Depends(require_builder_key)):
+    """
+    Sweep all active deals vs active buyers and compute top matches.
+    No persistence - just returns counts and stats.
+    Requires X-API-Key authentication.
+    
+    Returns:
+        {"ok": true, "deals_evaluated": <int>, "buyers_evaluated": <int>, "deals_with_top_hits": <int>}
+    """
+    return sweep_top_matches()

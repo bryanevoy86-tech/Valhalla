@@ -480,6 +480,39 @@ def build_metrics_capital():
         print(f"  4. Run tests: pytest services/api/tests/test_metrics_capital.py")
 
 
+def pack_matching():
+    """Build matching pack - returns all buyer-deal matching files"""
+    def txt(p):
+        try:
+            return open(p, "r", encoding="utf-8").read()
+        except FileNotFoundError:
+            return ""
+    
+    files = [
+        {"path": "services/api/app/models/match.py", "mode": "add", "content": txt("services/api/app/models/match.py")},
+        {"path": "services/api/app/schemas/match.py", "mode": "add", "content": txt("services/api/app/schemas/match.py")},
+        {"path": "services/api/app/core/matcher.py", "mode": "add", "content": txt("services/api/app/core/matcher.py")},
+        {"path": "services/api/app/routers/buyers.py", "mode": "add", "content": txt("services/api/app/routers/buyers.py")},
+        {"path": "services/api/app/routers/deals.py", "mode": "add", "content": txt("services/api/app/routers/deals.py")},
+        {"path": "services/api/app/routers/match.py", "mode": "replace", "content": txt("services/api/app/routers/match.py")},
+        {"path": "services/api/app/jobs/match_jobs.py", "mode": "add", "content": txt("services/api/app/jobs/match_jobs.py")},
+        {"path": "services/api/alembic/versions/20251103_v3_6_buyer_matching.py", "mode": "add", "content": txt("services/api/alembic/versions/20251103_v3_6_buyer_matching.py")},
+        {"path": "services/api/tests/test_matching.py", "mode": "add", "content": txt("services/api/tests/test_matching.py")},
+    ]
+    
+    # Auto-wire routers in main.py
+    main = txt("services/api/main.py")
+    if "buyers_router" not in main or "deals_router" not in main or "match_router" not in main:
+        files.append({"path": "services/api/main.py", "mode": "replace", "content": main})
+    
+    # Update jobs router
+    jobs = txt("services/api/app/routers/jobs.py")
+    if jobs and "sweep_top_matches" not in jobs:
+        files.append({"path": "services/api/app/routers/jobs.py", "mode": "replace", "content": jobs})
+    
+    return files
+
+
 def build_grants():
     """Build grants pack"""
     print("\n🤖 Heimdall Auto-Builder: Grant Pack Generator")
@@ -498,6 +531,28 @@ def build_grants():
         print("\n💡 Next steps:")
         print(f"  1. Run migration: alembic upgrade head")
         print(f"  2. Test sources: curl -H 'X-API-Key: {KEY}' {API}/grants/sources")
+
+
+def build_matching():
+    """Build buyer matching engine"""
+    print("\n🤖 Heimdall Auto-Builder: Buyer Matching Engine")
+    print("=" * 50)
+    
+    files = pack_matching()
+    if not files:
+        print("❌ No files found to build")
+        return
+    
+    print(f"📦 Building {len(files)} files...")
+    
+    result = draft_apply("Add buyer-deal matching engine with fuzzy scoring", files, dry_run=False)
+    
+    if result:
+        print("\n💡 Next steps:")
+        print(f"  1. Run migration: alembic upgrade head")
+        print(f"  2. Test buyers: curl -H 'X-API-Key: {KEY}' {API}/buyers")
+        print(f"  3. Test matching: curl -X POST -H 'X-API-Key: {KEY}' {API}/match/compute")
+        print(f"  4. Run tests: pytest services/api/tests/test_matching.py")
         print(f"  3. Test generate: curl -X POST -H 'X-API-Key: {KEY}' {API}/grants/generate")
         print(f"  4. Run tests: pytest services/api/tests/test_grants.py")
 
@@ -512,9 +567,11 @@ if __name__ == "__main__":
             build_metrics_capital()
         elif pack == "grants":
             build_grants()
+        elif pack == "matching":
+            build_matching()
         else:
             print(f"❌ Unknown pack: {pack}")
-            print("Available packs: reports, metrics_capital, grants")
+            print("Available packs: reports, metrics_capital, grants, matching")
             sys.exit(1)
     except KeyboardInterrupt:
         print("\n\n⚠ Cancelled by user")

@@ -8,6 +8,9 @@ from app.routers.metrics import router as metrics_router
 from app.routers.capital import router as capital_router
 from app.routers.telemetry import router as telemetry_router
 from app.routers.grants import router as grants_router
+from app.routers.buyers import router as buyers_router
+from app.routers.deals import router as deals_router
+from app.routers.match import router as match_router
 from app.routers.admin import router as admin_router
 
 # Try importing builder router with error handling
@@ -50,6 +53,18 @@ except Exception as e:
 
 app = FastAPI(title="Valhalla API", version="3.4")
 
+# Auto-create tables on startup (dev-friendly; safe if tables already exist)
+try:
+    from app.core.db import Base, engine
+    @app.on_event("startup")
+    def startup_create_tables():
+        try:
+            Base.metadata.create_all(bind=engine)
+        except Exception as e:
+            print(f"WARNING: Failed to auto-create tables on startup: {e}")
+except Exception as e:
+    print(f"INFO: Skipping auto-create tables setup: {e}")
+
 # CORS
 app.add_middleware(
     CORSMiddleware,
@@ -65,6 +80,9 @@ app.include_router(metrics_router, prefix="/api")
 app.include_router(capital_router, prefix="/api")
 app.include_router(telemetry_router, prefix="/api")
 app.include_router(grants_router, prefix="/api")
+app.include_router(buyers_router, prefix="/api")
+app.include_router(deals_router, prefix="/api")
+app.include_router(match_router, prefix="/api")
 app.include_router(admin_router, prefix="/api")
 if BUILDER_AVAILABLE:
     app.include_router(builder_router, prefix="/api")
