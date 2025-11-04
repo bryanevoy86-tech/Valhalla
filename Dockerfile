@@ -18,14 +18,15 @@ COPY . .
 
 # Set environment
 ENV PYTHONUNBUFFERED=1
-# Make both the repo root (/app) and the API service dir importable
-ENV PYTHONPATH=/app:/app/services/api
+ENV PYTHONPATH=/app/services/api
 
-# Debug and run (works whether start command is overridden or not)
+# Change to services/api directory and run from there
+WORKDIR /app/services/api
+
+# Debug and run
 CMD echo "PWD: $(pwd)" && \
     echo "PYTHONPATH: $PYTHONPATH" && \
-    echo "Listing /app and /app/services/api:" && \
-    ls -la /app || true && \
-    ls -la /app/services/api || true && \
-    echo "Starting uvicorn (valhalla.services.api.main:app) on port ${PORT:-10000}..." && \
-    python -m uvicorn valhalla.services.api.main:app --host 0.0.0.0 --port ${PORT:-10000}
+    echo "Contents:" && \
+    ls -la && \
+    echo "Starting uvicorn (main:app) on port ${PORT:-10000}..." && \
+    python -m uvicorn main:app --host 0.0.0.0 --port ${PORT:-10000}
