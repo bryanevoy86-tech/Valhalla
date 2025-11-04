@@ -12,12 +12,12 @@ databases:
 services:
   - type: web
     name: valhalla-api
-    runtime: python
+    runtime: docker
     plan: starter
     region: oregon
     autoDeploy: true
-    buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn --chdir services/api -k uvicorn.workers.UvicornWorker main:app -b 0.0.0.0:$PORT -w 2 --timeout 120
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
     healthCheckPath: /api/health
     envVars:
       - key: APP_ENV
