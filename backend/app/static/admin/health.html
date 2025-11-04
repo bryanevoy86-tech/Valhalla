@@ -1,0 +1,10 @@
+<!doctype html><meta charset="utf-8"><title>Health</title>
+<body style="font-family:system-ui;background:#0b0f14;color:#e6edf3;padding:16px">
+<h2>Service Health</h2><div id="score" style="font-size:42px"></div>
+<a href="/admin/health/report.csv" style="color:#91c9ff">Download weekly CSV</a>
+<script>
+fetch('/admin/health/score').then(r=>r.json()).then(d=>{
+  document.getElementById('score').textContent = (d.score||0).toFixed(1)+' / 100'
+})
+</script>
+</body>

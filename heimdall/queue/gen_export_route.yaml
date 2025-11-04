@@ -1,0 +1,8 @@
+type: template
+template: backend/route.js.j2
+output: backend/routes/export_routes.js
+context:
+  name: "export"
+  auth_required: true
+post:
+  - "touch backend/__dirty.flag"
