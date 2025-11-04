@@ -61,6 +61,8 @@ scripts/
 tools/
 generated/
 
+valhalla/
+
 # Databases
 *.db
 *.sqlite
