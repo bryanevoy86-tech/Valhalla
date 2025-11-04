@@ -23,5 +23,10 @@ ENV PYTHONPATH=/app/services/api
 # Set working directory to where main.py is located
 WORKDIR /app/services/api
 
-# Run uvicorn (Render sets PORT env var to 10000)
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "10000"]
+# Debug and run
+CMD echo "PWD: $(pwd)" && \
+    echo "PYTHONPATH: $PYTHONPATH" && \
+    echo "Files in current dir:" && \
+    ls -la && \
+    echo "Starting uvicorn on port ${PORT:-10000}..." && \
+    uvicorn main:app --host 0.0.0.0 --port ${PORT:-10000}
