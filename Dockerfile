@@ -18,10 +18,10 @@ COPY . .
 
 # Set environment
 ENV PYTHONUNBUFFERED=1
-ENV PYTHONPATH=/app/valhalla/services/api
+ENV PYTHONPATH=/app/services/api
 
 # Set working directory to where main.py is located
-WORKDIR /app/valhalla/services/api
+WORKDIR /app/services/api
 
-# Run uvicorn
+# Run uvicorn (Render sets PORT env var to 10000)
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "10000"]
