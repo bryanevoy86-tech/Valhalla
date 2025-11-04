@@ -1,0 +1,78 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# Testing
+tests/
+services/api/tests/
+.pytest_cache/
+.coverage
+.coveragerc
+htmlcov/
+
+# Development
+.git/
+.github/
+.vscode/
+.venv/
+venv/
+env/
+.env
+.ruff_cache/
+.mypy_cache/
+
+# Documentation
+*.md
+AI_GUIDE.md
+AUTO_BUILDER_GUIDE.md
+BUILDER_API_EXAMPLES.md
+CAPITAL_METRICS_DEPLOYMENT.md
+DEV_WORKFLOW.md
+HEIMDALL_SEMANTIC_WORKFLOW.md
+RENDER_CREDENTIALS.md
+RESEARCH_CORE_SETUP.md
+TESTING.md
+
+# Scripts
+*.ps1
+*.sh
+example_*.py
+test_*.py
+tmp_*.py
+run_*.py
+wait_*.py
+Makefile
+
+# Other services and tools
+heimdall/
+backend/
+app/
+alembic/
+alembic.ini
+migrations/
+ops/
+scripts/
+tools/
+generated/
+
+# Databases
+*.db
+*.sqlite
+
+# Build artifacts
+docker-compose.yml
+pyproject.toml
+requirements-dev.txt
+mypy.ini
+.pre-commit-config.yaml
+.editorconfig
+builder_register.json
+builder_task.json
+heimdall_action.log
+fix-research.ps1
