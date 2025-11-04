@@ -210,12 +210,19 @@ def root():
 
 @app.get("/debug/routes")
 def debug_routes():
-    """Debug endpoint to see registered routes"""
+    """Debug endpoint to see registered routes and router availability"""
     routes = []
     for route in app.routes:
         if hasattr(route, 'path') and hasattr(route, 'methods'):
             routes.append({"path": route.path, "methods": list(route.methods)})
     return {
+        "grants_available": GRANTS_AVAILABLE,
+        "buyers_available": BUYERS_AVAILABLE,
+        "deals_available": DEALS_AVAILABLE,
+        "match_available": MATCH_AVAILABLE,
+        "contracts_available": CONTRACTS_AVAILABLE,
+        "intake_available": INTAKE_AVAILABLE,
+        "notify_available": NOTIFY_AVAILABLE,
         "builder_available": BUILDER_AVAILABLE,
         "reports_available": REPORTS_AVAILABLE,
         "research_available": RESEARCH_AVAILABLE,
