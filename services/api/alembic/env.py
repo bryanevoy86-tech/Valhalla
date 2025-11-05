@@ -5,39 +5,24 @@ from alembic import context
 import os
 import sys
 
-# Add repo root and services/api/app to path so `from app.*` imports resolve
-repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
-# parent of 'app' (services/api) — necessary so `import app` resolves
-svc_api_parent = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-sys.path.insert(0, svc_api_parent)
-sys.path.insert(0, repo_root)
+# Ensure /app/services/api is on sys.path so 'from app.*' imports resolve
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+API_DIR = os.path.abspath(os.path.join(BASE_DIR, ".."))
+if API_DIR not in sys.path:
+    sys.path.insert(0, API_DIR)
 
-# Import Base and models; prefer the in-repo 'app' package, but fall back to direct module imports if a site-packages 'app' shadows it
-try:
-    from app.core.db import Base
-    # Models imported for metadata discovery
-    from app.models.builder import BuilderTask, BuilderEvent
-    from app.models.capital import CapitalIntake
-    from app.models.telemetry import TelemetryEvent
-    from app.models.grants import GrantSource, GrantRecord
-    from app.models.match import Buyer, DealBrief
-    from app.models.contracts import ContractTemplate, ContractRecord
-    from app.models.intake import LeadIntake
-    from app.models.notify import Outbox
-except ModuleNotFoundError:
-    # Fallback: import using the app/ directory directly
-    app_dir = os.path.abspath(os.path.join(svc_api_parent, "app"))
-    if app_dir not in sys.path:
-        sys.path.insert(0, app_dir)
-    from core.db import Base
-    from models.builder import BuilderTask, BuilderEvent
-    from models.capital import CapitalIntake
-    from models.telemetry import TelemetryEvent
-    from models.grants import GrantSource, GrantRecord
-    from models.match import Buyer, DealBrief
-    from models.contracts import ContractTemplate, ContractRecord
-    from models.intake import LeadIntake
-    from models.notify import Outbox
+# Import Base from app.core.db (NOT 'valhalla')
+from app.core.db import Base
+
+# Models imported for metadata discovery
+from app.models.builder import BuilderTask, BuilderEvent
+from app.models.capital import CapitalIntake
+from app.models.telemetry import TelemetryEvent
+from app.models.grants import GrantSource, GrantRecord
+from app.models.match import Buyer, DealBrief
+from app.models.contracts import ContractTemplate, ContractRecord
+from app.models.intake import LeadIntake
+from app.models.notify import Outbox
 # Research models not yet created - comment out for now
 # from app.models.research import ResearchSource, ResearchDoc, ResearchQuery, Playbook
 
