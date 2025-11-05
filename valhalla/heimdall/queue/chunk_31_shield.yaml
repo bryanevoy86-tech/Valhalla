@@ -1,8 +1,0 @@
-kind: frontend
-name: shield
-actions:
-  - type: create_page
-    path: frontend/pages/Shield.autogen.jsx
-    route: "/shield"
-    requiresRole: ["admin","owner"]
-notes: "API in backend/app/routers/shield.py; autogen stub appears if full page not added."

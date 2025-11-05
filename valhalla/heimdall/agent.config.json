@@ -1,8 +1,0 @@
-{
-  "autonomy": true,
-  "background_build": true,
-  "max_parallel_jobs": 2,
-  "watch_directories": ["backend", "frontend", "heimdall/templates"],
-  "queue_dir": "heimdall/queue",
-  "templates_dir": "heimdall/templates"
-}
