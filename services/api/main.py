@@ -16,6 +16,7 @@ from app.routers.capital import router as capital_router
 from app.routers.telemetry import router as telemetry_router
 from app.routers.admin import router as admin_router
 from app.routers.ui_dashboard import router as ui_dashboard_router
+from app.routers.system_health import router as system_health_router
 from app.routers.alerts import router as alerts_router
 
 # Pack routers with error handling
@@ -156,6 +157,7 @@ app.include_router(capital_router, prefix="/api")
 app.include_router(telemetry_router, prefix="/api")
 app.include_router(admin_router, prefix="/api")
 app.include_router(ui_dashboard_router, prefix="/api")
+app.include_router(system_health_router, prefix="/api")
 app.include_router(alerts_router, prefix="/api")
 
 # Pack routers (with availability checks)
