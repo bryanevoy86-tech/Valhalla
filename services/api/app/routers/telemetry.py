@@ -5,20 +5,21 @@ from sqlalchemy.orm import Session
 from app.core.db import get_db
 from app.telemetry.service import TelemetryService
 from app.telemetry.schemas import TelemetryIn, TelemetryOut, TelemetryQuery
+from typing import Optional
 
 router = APIRouter(prefix='/telemetry', tags=['telemetry'])
 
 
-@router.post('', response_model=TelemetryOut)
+@router.post('/', response_model=TelemetryOut)
 async def post_event(body: TelemetryIn, db: Session = Depends(get_db)):
     return TelemetryService(db).write(body)
 
 
-@router.get('', response_model=list[TelemetryOut])
+@router.get('/', response_model=list[TelemetryOut])
 async def list_events(
-    event: str | None = None,
-    level: str | None = None,
-    actor: str | None = None,
+    event: Optional[str] = None,
+    level: Optional[str] = None,
+    actor: Optional[str] = None,
     limit: int = 100,
     offset: int = 0,
     db: Session = Depends(get_db),
