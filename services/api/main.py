@@ -18,6 +18,7 @@ from app.routers.admin import router as admin_router
 from app.routers.ui_dashboard import router as ui_dashboard_router
 from app.routers.system_health import router as system_health_router
 from app.routers.analytics import router as analytics_router
+from app.routers.roles import router as roles_router
 from app.routers.alerts import router as alerts_router
 
 # Pack routers with error handling
@@ -160,59 +161,64 @@ app.include_router(admin_router, prefix="/api")
 app.include_router(ui_dashboard_router, prefix="/api")
 app.include_router(system_health_router, prefix="/api")
 app.include_router(analytics_router, prefix="/api")
+app.include_router(roles_router, prefix="/api")
 app.include_router(alerts_router, prefix="/api")
 
 # Pack routers (with availability checks)
-if GRANTS_AVAILABLE:
+if GRANTS_AVAILABLE and "grants_router" in globals() and grants_router is not None:
     app.include_router(grants_router, prefix="/api")
 else:
     print("WARNING: Grants router not registered")
 
-if BUYERS_AVAILABLE:
+if BUYERS_AVAILABLE and "buyers_router" in globals() and buyers_router is not None:
     app.include_router(buyers_router, prefix="/api")
 else:
     print("WARNING: Buyers router not registered")
 
-if DEALS_AVAILABLE:
+if DEALS_AVAILABLE and "deals_router" in globals() and deals_router is not None:
     app.include_router(deals_router, prefix="/api")
 else:
     print("WARNING: Deals router not registered")
 
-if MATCH_AVAILABLE:
+if MATCH_AVAILABLE and "match_router" in globals() and match_router is not None:
     app.include_router(match_router, prefix="/api")
 else:
     print("WARNING: Match router not registered")
 
-if CONTRACTS_AVAILABLE:
+if CONTRACTS_AVAILABLE and "contracts_router" in globals() and contracts_router is not None:
     app.include_router(contracts_router, prefix="/api")
 else:
     print("WARNING: Contracts router not registered")
 
-if INTAKE_AVAILABLE:
+if INTAKE_AVAILABLE and "intake_router" in globals() and intake_router is not None:
     app.include_router(intake_router, prefix="/api")
 else:
     print("WARNING: Intake router not registered")
 
-if NOTIFY_AVAILABLE:
+if NOTIFY_AVAILABLE and "notify_router" in globals() and notify_router is not None:
     app.include_router(notify_router, prefix="/api")
 else:
     print("WARNING: Notify router not registered")
 
-if BUILDER_AVAILABLE:
+if BUILDER_AVAILABLE and "builder_router" in globals() and builder_router is not None:
     app.include_router(builder_router, prefix="/api")
 else:
     print("WARNING: Builder router not registered")
     
-if REPORTS_AVAILABLE:
+if REPORTS_AVAILABLE and "reports_router" in globals() and reports_router is not None:
     app.include_router(reports_router, prefix="/api")
 else:
     print("INFO: Reports router not registered (will be available after builder creates it)")
     
 if RESEARCH_AVAILABLE:
-    app.include_router(research_router, prefix="/api")
-    app.include_router(playbooks_router, prefix="/api")
-    app.include_router(jobs_router, prefix="/api")
-    app.include_router(research_semantic_router, prefix="/api")
+    if "research_router" in globals() and research_router is not None:
+        app.include_router(research_router, prefix="/api")
+    if "playbooks_router" in globals() and playbooks_router is not None:
+        app.include_router(playbooks_router, prefix="/api")
+    if "jobs_router" in globals() and jobs_router is not None:
+        app.include_router(jobs_router, prefix="/api")
+    if "research_semantic_router" in globals() and research_semantic_router is not None:
+        app.include_router(research_semantic_router, prefix="/api")
 else:
     print("INFO: Research/Playbooks/Jobs routers not registered")
 
@@ -226,8 +232,9 @@ def root():
 def debug_routes():
     """Debug endpoint to see registered routes and router availability"""
     routes = []
+    from fastapi.routing import APIRoute
     for route in app.routes:
-        if hasattr(route, 'path') and hasattr(route, 'methods'):
+        if isinstance(route, APIRoute):
             routes.append({"path": route.path, "methods": list(route.methods)})
     return {
         "grants_available": GRANTS_AVAILABLE,

@@ -10,6 +10,7 @@ from app.alerts.schemas import AlertOut
 from app.health.service import HealthCheckService
 from app.health.schemas import HealthCheckOut
 from app.analytics.schemas import UserActivityOut
+from app.roles.schemas import RoleOut
 
 
 router = APIRouter(prefix="/ui-dashboard", tags=["ui-dashboard"])
@@ -60,3 +61,9 @@ async def render_health_dashboard(request: Request):
 async def render_analytics_dashboard(request: Request):
     """Render the user analytics dashboard HTML."""
     return templates.TemplateResponse("analytics_dashboard.html", {"request": request})
+
+
+@router.get("/role-permissions-dashboard-ui", response_class=HTMLResponse)
+async def render_role_permissions_dashboard(request: Request):
+    """Render the role permissions dashboard HTML."""
+    return templates.TemplateResponse("role_permissions_dashboard.html", {"request": request})
