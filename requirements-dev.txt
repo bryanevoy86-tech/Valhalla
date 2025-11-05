@@ -1,6 +1,9 @@
-black==24.8.0
-ruff==0.6.9
-isort==5.13.2
-mypy==1.11.2
-pytest==8.3.2
-pytest-asyncio==0.23.8
+pytest>=7.4
+pytest-cov>=4.1
+pytest-asyncio>=0.23
+coverage>=7.5
+ruff>=0.6
+mypy>=1.11
+black>=24.4
+isort>=5.13
+requests>=2.32

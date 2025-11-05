@@ -1,8 +1,13 @@
 [run]
+omit =
+	*/venv/*
+	*/.venv/*
+	*/site-packages/*
 source = services/api/app
 branch = True
 
 [report]
+precision = 1
 fail_under = 95
 show_missing = True
 skip_covered = True
