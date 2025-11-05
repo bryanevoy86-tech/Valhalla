@@ -1,0 +1,8 @@
+kind: frontend
+name: billing
+actions:
+  - type: create_page
+    path: frontend/pages/Billing.autogen.jsx
+    route: "/billing"
+    requiresRole: ["owner","admin"]
+notes: "Real API in backend/routers/billing.py; autogen is a placeholder."

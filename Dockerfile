@@ -16,6 +16,10 @@ RUN git config --global --add safe.directory /app
 # Copy entire repository
 COPY . .
 
+# Copy and set executable permissions for entrypoint
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
 # Set environment
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app/services/api
@@ -23,5 +27,5 @@ ENV PYTHONPATH=/app/services/api
 # Change to services/api directory and run from there
 WORKDIR /app/services/api
 
-# Run migrations then start the API using wrapper script
-CMD alembic upgrade head && python start.py
+# Use entrypoint script
+ENTRYPOINT ["/entrypoint.sh"]

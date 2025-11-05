@@ -1,0 +1,37 @@
+[
+  {
+    "path": "web/weweb-datasources/valhalla-api.json",
+    "content": "{\n  \"name\": \"Valhalla API\",\n  \"baseUrl\": \"{{ api_base_url }}\",\n  \"auth\": {\n    \"type\": \"bearer\",\n    \"token\": \"{{ accessToken }}\"\n  },\n  \"headers\": {\n    \"Content-Type\": \"application/json\"\n  }\n}\n",
+    "mode": "add"
+  },
+  {
+    "path": "web/weweb-datasources/metrics.collection.json",
+    "content": "{\n  \"name\": \"metrics.collection\",\n  \"datasource\": \"Valhalla API\",\n  \"requests\": [\n    {\"name\":\"list_metrics\",\"method\":\"GET\",\"url\":\"/metrics\",\"cacheSeconds\": 30}\n  ]\n}\n",
+    "mode": "add"
+  },
+  {
+    "path": "web/weweb-datasources/capital_intake.collection.json",
+    "content": "{\n  \"name\": \"capital_intake.collection\",\n  \"datasource\": \"Valhalla API\",\n  \"requests\": [\n    {\"name\":\"list\",\"method\":\"GET\",\"url\":\"/capital/intake\",\"cacheSeconds\": 0},\n    {\"name\":\"create\",\"method\":\"POST\",\"url\":\"/capital/intake\",\"bodyTemplate\": {\"source\":\"\",\"amount\":0,\"currency\":\"USD\",\"note\":\"\"}}\n  ]\n}\n",
+    "mode": "add"
+  },
+  {
+    "path": "web/weweb-widgets/MetricCard.json",
+    "content": "{\n  \"name\": \"MetricCard\",\n  \"props\": {\"label\":\"string\",\"value\":\"number\",\"sub\":\"string\"},\n  \"binding\": {\n    \"label\": \"item.name\",\n    \"value\": \"item.value\",\n    \"sub\": \"item.unit\"\n  },\n  \"style\": {\"radius\":\"xl\",\"shadow\":\"md\",\"padding\":\"lg\"}\n}\n",
+    "mode": "add"
+  },
+  {
+    "path": "web/weweb-widgets/VaultCard.json",
+    "content": "{\n  \"name\": \"VaultCard\",\n  \"props\": {\"title\":\"string\",\"amount\":\"number\",\"period\":\"string\"},\n  \"binding\": {\n    \"title\": \"item.vault\",\n    \"amount\": \"item.amount\",\n    \"period\": \"global.period\"\n  },\n  \"style\": {\"radius\":\"2xl\",\"shadow\":\"lg\",\"padding\":\"xl\"}\n}\n",
+    "mode": "add"
+  },
+  {
+    "path": "web/weweb-widgets/TelemetryTable.json",
+    "content": "{\n  \"name\": \"TelemetryTable\",\n  \"columns\": [\n    {\"key\":\"ts\",\"label\":\"Time\"},\n    {\"key\":\"event\",\"label\":\"Event\"},\n    {\"key\":\"meta\",\"label\":\"Meta\"}\n  ],\n  \"dataBinding\": \"collection.result\"\n}\n",
+    "mode": "add"
+  },
+  {
+    "path": "web/weweb-readme.md",
+    "content": "# WeWeb import notes (Pack 6)\n\n1. In WeWeb, create variables: `api_base_url` (https Render URL), `accessToken` (JWT).\n2. Import each JSON in **Datasources**: `valhalla-api.json`, then the two `*.collection.json` files.\n3. Bind dashboard cards: create a collection bound to `metrics.collection.list_metrics`, then map to `MetricCard` (label/value/sub).\n4. Capital Intake page: list table bound to `capital_intake.collection.list`, and form bound to `capital_intake.collection.create`.\n5. Telemetry page: table widget using `TelemetryTable.json` bound to your telemetry endpoint collection when ready.\n",
+    "mode": "add"
+  }
+]
