@@ -60,6 +60,9 @@ GET /api/research/playbooks/onboard_vendor
 - Router now uses DB via `ResearchDB` service for sources and playbooks (search stays cached/in-memory for now).
 - Migration: `services/api/alembic/versions/20251105_v3_9_research_db.py` (runs automatically on deploy via `alembic upgrade head`).
 
+### Operational check
+- `GET /api/research/db-status` returns `{ alembic_version, tables: { research_sources, research_playbooks } }` for a quick deploy verification.
+
 ## Next Steps
 - Swap in real fetcher (e.g., scrape/parse docs, call external APIs).
 - Add semantic/vector search for richer matching.

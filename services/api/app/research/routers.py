@@ -5,6 +5,7 @@ from .service import ResearchService
 from .cache import TTLCache
 from app.core.db import get_db
 from .db_service import ResearchDB
+import sqlalchemy as sa
 
 router = APIRouter(prefix="/research", tags=["research"])
 service = ResearchService()
@@ -42,3 +43,26 @@ def get_playbook(key: str, db: Session = Depends(get_db)):
 @router.get("/playbooks", response_model=list[Playbook])
 def list_playbooks(db: Session = Depends(get_db)):
     return ResearchDB(db).list_playbooks()
+
+
+@router.get("/db-status")
+def db_status(db: Session = Depends(get_db)):
+    """Return alembic version and presence of research tables.
+    Useful for post-deploy verification.
+    """
+    conn = db.get_bind()
+    insp = sa.inspect(conn)
+    tables = set(insp.get_table_names())
+    try:
+        version = conn.execute(sa.text("SELECT version_num FROM alembic_version"))
+        row = version.first()
+        alembic_version = row[0] if row else None
+    except Exception:
+        alembic_version = None
+    return {
+        "alembic_version": alembic_version,
+        "tables": {
+            "research_sources": "research_sources" in tables,
+            "research_playbooks": "research_playbooks" in tables,
+        },
+    }
