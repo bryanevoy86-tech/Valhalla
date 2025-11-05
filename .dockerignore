@@ -78,3 +78,6 @@ builder_register.json
 builder_task.json
 heimdall_action.log
 fix-research.ps1
+
+# Allow the runtime entrypoint script (needed in Docker image)
+!entrypoint.sh
