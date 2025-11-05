@@ -1,9 +1,12 @@
+from typing import List
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
 from app.metrics.service import MetricsService
 from app.metrics.schemas import MetricsOut
+from app.alerts.service import AlertsService
+from app.alerts.schemas import AlertOut
 
 
 router = APIRouter(prefix="/ui-dashboard", tags=["ui-dashboard"])
@@ -22,3 +25,17 @@ async def get_metrics_dashboard():
 async def render_metrics_dashboard(request: Request):
     """Render the admin metrics dashboard HTML (Chart.js)."""
     return templates.TemplateResponse("metrics_dashboard.html", {"request": request})
+
+
+@router.get("/alerts-dashboard", response_model=List[AlertOut])
+async def get_alerts_dashboard():
+    """Return current alerts based on metrics thresholds."""
+    metrics = MetricsService.get_metrics()
+    alerts = AlertsService.check_thresholds(metrics)
+    return alerts
+
+
+@router.get("/alerts-dashboard-ui", response_class=HTMLResponse)
+async def render_alerts_dashboard(request: Request):
+    """Render the real-time alerts dashboard HTML."""
+    return templates.TemplateResponse("alerts_dashboard.html", {"request": request})
