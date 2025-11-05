@@ -5,6 +5,7 @@ import sys
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.telemetry.middleware import TelemetryExceptionMiddleware
+from app.metrics.middleware import MetricsMiddleware
 
 from app.core.settings import settings
 
@@ -139,6 +140,12 @@ try:
     app.add_middleware(TelemetryExceptionMiddleware)
 except Exception as _e:  # pragma: no cover
     print(f"INFO: TelemetryExceptionMiddleware not enabled: {_e}")
+
+# Runtime metrics collection (best-effort)
+try:
+    app.add_middleware(MetricsMiddleware)
+except Exception as _e:  # pragma: no cover
+    print(f"INFO: MetricsMiddleware not enabled: {_e}")
 
 # Register routers (core routers always available)
 app.include_router(health_router, prefix="/api")

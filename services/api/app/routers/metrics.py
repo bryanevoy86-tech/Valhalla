@@ -1,11 +1,14 @@
 """
-Metrics router - aggregates counts from all database tables for monitoring.
+Metrics router
+- Aggregates counts from key database tables (existing behavior)
+- Adds in-process runtime counters (requests_per_sec, error_rate, p50_latency, totals)
 """
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import func, text
 from ..core.db import get_db
+from ..metrics.service import MetricsService
 
 router = APIRouter(prefix="/metrics", tags=["metrics"])
 
@@ -74,4 +77,11 @@ async def get_metrics(db: Session = Depends(get_db)):
     except Exception:
         pass
     
+    # Merge in runtime counters
+    try:
+        runtime = MetricsService.get_metrics().model_dump()
+        metrics.update(runtime)
+    except Exception:
+        pass
+
     return metrics
