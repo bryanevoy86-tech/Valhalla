@@ -18,8 +18,8 @@ from app.routers.admin import router as admin_router
 from app.routers.ui_dashboard import router as ui_dashboard_router
 from app.routers.system_health import router as system_health_router
 from app.routers.analytics import router as analytics_router
-from app.routers.roles import router as roles_router
 from app.routers.alerts import router as alerts_router
+from app.routers.roles import router as roles_router
 
 # Pack routers with error handling
 GRANTS_AVAILABLE = False
@@ -163,6 +163,20 @@ app.include_router(system_health_router, prefix="/api")
 app.include_router(analytics_router, prefix="/api")
 app.include_router(roles_router, prefix="/api")
 app.include_router(alerts_router, prefix="/api")
+
+# Security router (Pack 17) — optional import to avoid startup failure if deps missing
+try:
+    from app.routers.security import router as security_router
+    SECURITY_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import security router: {e}")
+    SECURITY_AVAILABLE = False
+    security_router = None
+
+if SECURITY_AVAILABLE and "security_router" in globals() and security_router is not None:
+    app.include_router(security_router, prefix="/api")
+else:
+    print("INFO: Security router not registered")
 
 # Pack routers (with availability checks)
 if GRANTS_AVAILABLE and "grants_router" in globals() and grants_router is not None:
