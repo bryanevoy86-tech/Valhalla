@@ -1,0 +1,11 @@
+{
+  "name": "Valhalla API",
+  "baseUrl": "{{ api_base_url }}",
+  "auth": {
+    "type": "bearer",
+    "token": "{{ accessToken }}"
+  },
+  "headers": {
+    "Content-Type": "application/json"
+  }
+}
