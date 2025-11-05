@@ -2,7 +2,7 @@ from typing import List
 from fastapi import APIRouter
 
 from app.alerts.service import AlertsService
-from app.alerts.schemas import AlertOut
+from app.alerts.schemas import AlertOut, AlertResponseOut
 from app.metrics.service import MetricsService
 
 
@@ -19,3 +19,9 @@ async def get_alerts():
     metrics = MetricsService.get_metrics()
     alerts = AlertsService.check_thresholds(metrics)
     return alerts
+
+
+@router.post("/handle", response_model=AlertResponseOut)
+async def handle_alert(alert: AlertOut):
+    """Handle a specific alert by triggering the configured action(s)."""
+    return AlertsService.handle_alert(alert)
