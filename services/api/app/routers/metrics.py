@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, text
 from ..core.db import get_db
 from ..metrics.service import MetricsService
+from ..metrics.schemas import MetricsDashboardOut
 
 router = APIRouter(prefix="/metrics", tags=["metrics"])
 
@@ -85,3 +86,9 @@ async def get_metrics(db: Session = Depends(get_db)):
         pass
 
     return metrics
+
+
+@router.get("/dashboard/{role}", response_model=MetricsDashboardOut)
+async def get_role_dashboard(role: str):
+    """Return a role-based dashboard definition (list of metric keys)."""
+    return MetricsService.get_role_dashboard(role)

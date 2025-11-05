@@ -5,7 +5,8 @@ import time
 from collections import deque
 from typing import Deque, Dict, Optional
 
-from .schemas import MetricsOut
+from .schemas import MetricsOut, MetricsDashboardOut
+from datetime import datetime
 
 
 # In-process runtime metrics storage (thread-safe)
@@ -61,3 +62,24 @@ class MetricsService:
                 total_requests=_TOTAL_REQUESTS,
                 total_errors=_TOTAL_ERRORS,
             )
+
+    @staticmethod
+    def get_role_dashboard(role: str) -> MetricsDashboardOut:
+        """Return a simple role-based metrics dashboard definition.
+
+        This is intentionally lightweight and can be expanded to include
+        dynamic widgets or permissions.
+        """
+        role_lc = (role or "").lower()
+        if role_lc == "admin":
+            metrics = ["total_errors", "requests_per_sec", "p50_latency", "error_rate"]
+        elif role_lc == "viewer":
+            metrics = ["requests_per_sec", "error_rate"]
+        else:
+            metrics = ["requests_per_sec"]
+
+        return MetricsDashboardOut(
+            role=role_lc or "unknown",
+            metrics=metrics,
+            last_updated=datetime.utcnow().isoformat(),
+        )
