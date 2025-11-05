@@ -7,6 +7,8 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy import text
 import subprocess
 import os
+from app.metrics.service import MetricsService
+from app.metrics.schemas import MetricsOut
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -78,3 +80,9 @@ def check_database(_: bool = Depends(require_admin_key)):
         return {"ok": False, "error": str(e)}
     finally:
         db.close()
+
+
+@router.get("/metrics", response_model=MetricsOut)
+def get_admin_metrics():
+    """Return runtime metrics counters for admin overview."""
+    return MetricsService.get_metrics()

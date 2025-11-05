@@ -15,6 +15,7 @@ from app.routers.metrics import router as metrics_router
 from app.routers.capital import router as capital_router
 from app.routers.telemetry import router as telemetry_router
 from app.routers.admin import router as admin_router
+from app.routers.ui_dashboard import router as ui_dashboard_router
 
 # Pack routers with error handling
 GRANTS_AVAILABLE = False
@@ -153,6 +154,7 @@ app.include_router(metrics_router, prefix="/api")
 app.include_router(capital_router, prefix="/api")
 app.include_router(telemetry_router, prefix="/api")
 app.include_router(admin_router, prefix="/api")
+app.include_router(ui_dashboard_router, prefix="/api")
 
 # Pack routers (with availability checks)
 if GRANTS_AVAILABLE:

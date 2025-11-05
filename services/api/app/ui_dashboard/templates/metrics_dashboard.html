@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Metrics Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; margin: 24px; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
+        .card { border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px 16px; background: #fff; }
+        .card h3 { margin: 0 0 8px; font-size: 14px; color: #6b7280; font-weight: 600; }
+        .card .value { font-size: 24px; font-weight: 700; }
+        canvas { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; }
+    </style>
+    <script>
+        const API_BASE = '/api/ui-dashboard';
+        let chart;
+        let labels = [];
+        let rpsData = [];
+        let errRateData = [];
+        let p50Data = [];
+
+        async function fetchMetrics() {
+            const res = await fetch(`${API_BASE}/metrics-dashboard`);
+            if (!res.ok) return null;
+            return await res.json();
+        }
+
+        function updateCards(metrics) {
+            document.getElementById('rps').innerText = (metrics.requests_per_sec ?? 0).toFixed(3);
+            document.getElementById('err').innerText = (metrics.error_rate ?? 0).toFixed(3);
+            document.getElementById('p50').innerText = metrics.p50_latency != null ? metrics.p50_latency.toFixed(3) : '—';
+            document.getElementById('total').innerText = metrics.total_requests ?? 0;
+            document.getElementById('errors').innerText = metrics.total_errors ?? 0;
+        }
+
+        function initChart() {
+            const ctx = document.getElementById('metricsChart').getContext('2d');
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [
+                        { label: 'RPS', borderColor: 'rgba(37, 99, 235, 1)', backgroundColor: 'rgba(37, 99, 235, 0.2)', data: rpsData, tension: 0.25 },
+                        { label: 'Error Rate', borderColor: 'rgba(220, 38, 38, 1)', backgroundColor: 'rgba(220, 38, 38, 0.2)', data: errRateData, tension: 0.25 },
+                        { label: 'p50 Latency (s)', borderColor: 'rgba(16, 185, 129, 1)', backgroundColor: 'rgba(16, 185, 129, 0.2)', data: p50Data, tension: 0.25 },
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        function pushData(metrics) {
+            const ts = new Date().toLocaleTimeString();
+            labels.push(ts);
+            rpsData.push(metrics.requests_per_sec ?? 0);
+            errRateData.push(metrics.error_rate ?? 0);
+            p50Data.push(metrics.p50_latency ?? 0);
+            // keep last 60 points
+            if (labels.length > 60) {
+                labels.shift(); rpsData.shift(); errRateData.shift(); p50Data.shift();
+            }
+            chart.update('none');
+        }
+
+        async function poll() {
+            const m = await fetchMetrics();
+            if (m) { updateCards(m); pushData(m); }
+        }
+
+        window.addEventListener('load', async () => {
+            initChart();
+            await poll();
+            setInterval(poll, 2000);
+        });
+    </script>
+    </head>
+<body>
+    <div class="container">
+        <h1>Admin Dashboard: Real-time Metrics</h1>
+        <div class="cards">
+            <div class="card"><h3>Requests / sec</h3><div class="value" id="rps">0.000</div></div>
+            <div class="card"><h3>Error Rate</h3><div class="value" id="err">0.000</div></div>
+            <div class="card"><h3>p50 Latency (s)</h3><div class="value" id="p50">—</div></div>
+            <div class="card"><h3>Total Requests</h3><div class="value" id="total">0</div></div>
+            <div class="card"><h3>Total Errors</h3><div class="value" id="errors">0</div></div>
+        </div>
+        <div style="height: 420px;">
+            <canvas id="metricsChart"></canvas>
+        </div>
+    </div>
+</body>
+</html>
