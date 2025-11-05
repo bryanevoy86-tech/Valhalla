@@ -55,8 +55,12 @@ PUT /api/research/playbooks/onboard_vendor
 GET /api/research/playbooks/onboard_vendor
 ```
 
+## DB Persistence (Pack 8.1)
+- Tables: `research_sources` (adds `tags` column if missing), `research_playbooks` (new).
+- Router now uses DB via `ResearchDB` service for sources and playbooks (search stays cached/in-memory for now).
+- Migration: `services/api/alembic/versions/20251105_v3_9_research_db.py` (runs automatically on deploy via `alembic upgrade head`).
+
 ## Next Steps
 - Swap in real fetcher (e.g., scrape/parse docs, call external APIs).
-- Persist sources & playbooks to DB if needed.
 - Add semantic/vector search for richer matching.
 - Expose metrics (cache hit rate, search latency).

@@ -12,6 +12,7 @@ class ResearchSource(Base):
     name = Column(String(255), nullable=False)
     url = Column(String(2048), nullable=False)
     kind = Column(String(50), default="web")  # web, repo, api, file
+    tags = Column(String(512), default="")  # comma-separated tags (added in v3_9)
     ttl_seconds = Column(Integer, default=86400)  # cache duration
     enabled = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -60,5 +61,19 @@ class Playbook(Base):
     body_md = Column(Text, nullable=False)  # Markdown content
     tags = Column(String(512), nullable=True)  # comma-separated
     enabled = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class ResearchPlaybook(Base):
+    """Pack 8.1: Independent research playbooks storage (JSON-friendly fields)."""
+    __tablename__ = "research_playbooks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    key = Column(String(200), unique=True, index=True, nullable=False)
+    title = Column(String(300), nullable=False)
+    steps = Column(Text, nullable=False)  # JSON string of steps array
+    tags = Column(String(512), default="")  # comma-separated
+    meta = Column(Text, default="{}")  # JSON string
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
