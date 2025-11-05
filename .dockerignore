@@ -49,13 +49,13 @@ run_*.py
 wait_*.py
 Makefile
 
-# Other services and tools
+# Other services and tools (exclude root-level only, not services/api/*)
 heimdall/
 backend/
-app/
-alembic/
-alembic.ini
-migrations/
+/app/
+/alembic/
+/alembic.ini
+/migrations/
 ops/
 scripts/
 tools/

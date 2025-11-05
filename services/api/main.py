@@ -1,15 +1,7 @@
 import os
 import sys
-from pathlib import Path
 
-# CRITICAL: Set up sys.path BEFORE any app.* imports
-# This handles both local (/app/services/api) and Render (/app/valhalla/services/api) structures
-current_file = Path(__file__).resolve()
-api_dir = current_file.parent  # /app/services/api or /app/valhalla/services/api
-if api_dir not in [Path(p) for p in sys.path]:
-    sys.path.insert(0, str(api_dir))
-    print(f"INFO: Added to sys.path: {api_dir}")
-
+# PYTHONPATH is set to /app/services/api in Dockerfile, so app.* imports work directly
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
