@@ -23,11 +23,5 @@ ENV PYTHONPATH=/app/services/api
 # Change to services/api directory and run from there
 WORKDIR /app/services/api
 
-# Run migrations then start the API
-CMD echo "PWD: $(pwd)" && \
-    echo "PYTHONPATH: $PYTHONPATH" && \
-    echo "Python version:" && python --version && \
-    echo "Running migrations..." && \
-    alembic upgrade head && \
-    echo "Starting uvicorn..." && \
-    exec python -c "import sys; sys.path.insert(0, '/app/services/api'); from main import app; import uvicorn; uvicorn.run(app, host='0.0.0.0', port=${PORT:-10000})"
+# Run migrations then start the API using wrapper script
+CMD alembic upgrade head && python start.py
