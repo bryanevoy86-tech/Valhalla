@@ -19,32 +19,39 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # Create telemetry_events table
-    op.create_table(
-        'telemetry_events',
-        sa.Column('id', sa.Integer(), nullable=False),
-        sa.Column('kind', sa.String(length=80), nullable=False),
-        sa.Column('message', sa.Text(), nullable=True),
-        sa.Column('meta_json', sa.Text(), nullable=True),
-        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
-        sa.PrimaryKeyConstraint('id')
-    )
-    op.create_index(op.f('ix_telemetry_events_kind'), 'telemetry_events', ['kind'], unique=False)
-    op.create_index(op.f('ix_telemetry_events_created_at'), 'telemetry_events', ['created_at'], unique=False)
+    # Get connection to check for table existence
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    existing_tables = inspector.get_table_names()
     
-    # Create capital_intake table
-    op.create_table(
-        'capital_intake',
-        sa.Column('id', sa.Integer(), nullable=False),
-        sa.Column('source', sa.String(length=120), nullable=False),
-        sa.Column('currency', sa.String(length=12), nullable=False, server_default='CAD'),
-        sa.Column('amount', sa.Numeric(precision=18, scale=2), nullable=False),
-        sa.Column('note', sa.String(length=280), nullable=True),
-        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
-        sa.PrimaryKeyConstraint('id')
-    )
-    op.create_index(op.f('ix_capital_intake_source'), 'capital_intake', ['source'], unique=False)
-    op.create_index(op.f('ix_capital_intake_created_at'), 'capital_intake', ['created_at'], unique=False)
+    # Create telemetry_events table only if it doesn't exist
+    if 'telemetry_events' not in existing_tables:
+        op.create_table(
+            'telemetry_events',
+            sa.Column('id', sa.Integer(), nullable=False),
+            sa.Column('kind', sa.String(length=80), nullable=False),
+            sa.Column('message', sa.Text(), nullable=True),
+            sa.Column('meta_json', sa.Text(), nullable=True),
+            sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
+            sa.PrimaryKeyConstraint('id')
+        )
+        op.create_index(op.f('ix_telemetry_events_kind'), 'telemetry_events', ['kind'], unique=False)
+        op.create_index(op.f('ix_telemetry_events_created_at'), 'telemetry_events', ['created_at'], unique=False)
+    
+    # Create capital_intake table only if it doesn't exist
+    if 'capital_intake' not in existing_tables:
+        op.create_table(
+            'capital_intake',
+            sa.Column('id', sa.Integer(), nullable=False),
+            sa.Column('source', sa.String(length=120), nullable=False),
+            sa.Column('currency', sa.String(length=12), nullable=False, server_default='CAD'),
+            sa.Column('amount', sa.Numeric(precision=18, scale=2), nullable=False),
+            sa.Column('note', sa.String(length=280), nullable=True),
+            sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
+            sa.PrimaryKeyConstraint('id')
+        )
+        op.create_index(op.f('ix_capital_intake_source'), 'capital_intake', ['source'], unique=False)
+        op.create_index(op.f('ix_capital_intake_created_at'), 'capital_intake', ['created_at'], unique=False)
 
 
 def downgrade() -> None:
