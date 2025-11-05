@@ -4,6 +4,7 @@ import sys
 # PYTHONPATH is set to /app/services/api in Dockerfile, so app.* imports work directly
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from app.telemetry.middleware import TelemetryExceptionMiddleware
 
 from app.core.settings import settings
 
@@ -132,6 +133,12 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type", "X-Requested-With", "X-API-Key"],
 )
+
+# Global exception telemetry (best-effort)
+try:
+    app.add_middleware(TelemetryExceptionMiddleware)
+except Exception as _e:  # pragma: no cover
+    print(f"INFO: TelemetryExceptionMiddleware not enabled: {_e}")
 
 # Register routers (core routers always available)
 app.include_router(health_router, prefix="/api")
