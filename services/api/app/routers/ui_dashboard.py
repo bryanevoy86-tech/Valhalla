@@ -9,6 +9,7 @@ from app.alerts.service import AlertsService
 from app.alerts.schemas import AlertOut
 from app.health.service import HealthCheckService
 from app.health.schemas import HealthCheckOut
+from app.analytics.schemas import UserActivityOut
 
 
 router = APIRouter(prefix="/ui-dashboard", tags=["ui-dashboard"])
@@ -53,3 +54,9 @@ async def get_health_dashboard():
 async def render_health_dashboard(request: Request):
     """Render the system health dashboard HTML."""
     return templates.TemplateResponse("health_dashboard.html", {"request": request})
+
+
+@router.get("/analytics-dashboard-ui", response_class=HTMLResponse)
+async def render_analytics_dashboard(request: Request):
+    """Render the user analytics dashboard HTML."""
+    return templates.TemplateResponse("analytics_dashboard.html", {"request": request})
