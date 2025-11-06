@@ -30,6 +30,8 @@ CONTRACTS_AVAILABLE = False
 INTAKE_AVAILABLE = False
 NOTIFY_AVAILABLE = False
 MESSAGING_AVAILABLE = False
+PAYMENTS_AVAILABLE = False
+NEGOTIATIONS_AVAILABLE = False
 RBAC_AVAILABLE = False
 
 try:
@@ -88,6 +90,22 @@ try:
 except Exception as e:
     print(f"WARNING: Could not import messaging router: {e}")
     messaging_router = None
+
+# Payments router (Pack 27) — optional import
+try:
+    from app.routers.payments import router as payments_router
+    PAYMENTS_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import payments router: {e}")
+    payments_router = None
+
+# Negotiations router (Pack 28) — optional import
+try:
+    from app.routers.negotiations import router as negotiations_router
+    NEGOTIATIONS_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import negotiations router: {e}")
+    negotiations_router = None
 
 # Try importing RBAC router (Pack 25)
 try:
@@ -308,6 +326,16 @@ if MESSAGING_AVAILABLE and "messaging_router" in globals() and messaging_router 
 else:
     print("INFO: Messaging router not registered")
 
+if PAYMENTS_AVAILABLE and "payments_router" in globals() and payments_router is not None:
+    app.include_router(payments_router, prefix="/api")
+else:
+    print("INFO: Payments router not registered")
+
+if NEGOTIATIONS_AVAILABLE and "negotiations_router" in globals() and negotiations_router is not None:
+    app.include_router(negotiations_router, prefix="/api")
+else:
+    print("INFO: Negotiations router not registered")
+
 if RBAC_AVAILABLE and "rbac_router" in globals() and rbac_router is not None:
     app.include_router(rbac_router, prefix="/api")
 else:
@@ -358,6 +386,8 @@ def debug_routes():
         "intake_available": INTAKE_AVAILABLE,
         "notify_available": NOTIFY_AVAILABLE,
     "messaging_available": MESSAGING_AVAILABLE,
+    "payments_available": PAYMENTS_AVAILABLE,
+    "negotiations_available": NEGOTIATIONS_AVAILABLE,
         "rbac_available": RBAC_AVAILABLE,
         "builder_available": BUILDER_AVAILABLE,
         "reports_available": REPORTS_AVAILABLE,
