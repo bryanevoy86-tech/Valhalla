@@ -126,3 +126,15 @@ async def render_payments_dashboard(request: Request):
 async def render_negotiations_dashboard(request: Request):
     """Render the Negotiations dashboard HTML."""
     return templates.TemplateResponse("negotiations_dashboard.html", {"request": request})
+
+
+@router.get("/leads-dashboard-ui", response_class=HTMLResponse)
+async def render_leads_dashboard(request: Request):
+    """Render the Advanced Lead Scraper dashboard HTML."""
+    return templates.TemplateResponse("leads_dashboard.html", {"request": request})
+
+
+@router.get("/advanced-negotiation-dashboard-ui", response_class=HTMLResponse)
+async def render_advanced_negotiation_dashboard(request: Request):
+    """Render the Advanced Negotiation Techniques dashboard HTML."""
+    return templates.TemplateResponse("advanced_negotiation_dashboard.html", {"request": request})

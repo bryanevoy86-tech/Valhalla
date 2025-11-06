@@ -35,6 +35,8 @@ NEGOTIATIONS_AVAILABLE = False
 RBAC_AVAILABLE = False
 INFLUENCE_AVAILABLE = False
 NEGOTIATION_STRATEGIES_AVAILABLE = False
+LEADS_AVAILABLE = False
+ADVANCED_NEGOTIATION_AVAILABLE = False
 
 try:
     from app.routers.grants import router as grants_router
@@ -133,6 +135,22 @@ try:
 except Exception as e:
     print(f"WARNING: Could not import negotiation-strategies router: {e}")
     negotiation_strategies_router = None
+
+# Leads router (Pack 31) — optional import
+try:
+    from app.routers.leads import router as leads_router
+    LEADS_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import leads router: {e}")
+    leads_router = None
+
+# Advanced Negotiation Techniques router (Pack 32) — optional import
+try:
+    from app.routers.advanced_negotiation_techniques import router as advanced_negotiation_router
+    ADVANCED_NEGOTIATION_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import advanced-negotiation-techniques router: {e}")
+    advanced_negotiation_router = None
 
 # Try importing builder router with error handling
 try:
@@ -369,6 +387,16 @@ if NEGOTIATION_STRATEGIES_AVAILABLE and "negotiation_strategies_router" in globa
 else:
     print("INFO: Negotiation Strategies router not registered")
 
+if LEADS_AVAILABLE and "leads_router" in globals() and leads_router is not None:
+    app.include_router(leads_router, prefix="/api")
+else:
+    print("INFO: Leads router not registered")
+
+if ADVANCED_NEGOTIATION_AVAILABLE and "advanced_negotiation_router" in globals() and advanced_negotiation_router is not None:
+    app.include_router(advanced_negotiation_router, prefix="/api")
+else:
+    print("INFO: Advanced Negotiation Techniques router not registered")
+
 if BUILDER_AVAILABLE and "builder_router" in globals() and builder_router is not None:
     app.include_router(builder_router, prefix="/api")
 else:
@@ -419,6 +447,8 @@ def debug_routes():
         "rbac_available": RBAC_AVAILABLE,
         "influence_available": INFLUENCE_AVAILABLE,
         "negotiation_strategies_available": NEGOTIATION_STRATEGIES_AVAILABLE,
+        "leads_available": LEADS_AVAILABLE,
+        "advanced_negotiation_available": ADVANCED_NEGOTIATION_AVAILABLE,
         "builder_available": BUILDER_AVAILABLE,
         "reports_available": REPORTS_AVAILABLE,
         "research_available": RESEARCH_AVAILABLE,
