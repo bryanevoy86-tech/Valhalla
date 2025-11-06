@@ -41,6 +41,9 @@ BEHAVIORAL_PROFILING_AVAILABLE = False
 DEAL_ANALYZER_AVAILABLE = False
 CLOSERS_AVAILABLE = False
 WORKFLOWS_AVAILABLE = False
+AUDIT_AVAILABLE = False
+FREEZE_AVAILABLE = False
+KNOWLEDGE_AVAILABLE = False
 
 try:
     from app.routers.grants import router as grants_router
@@ -187,6 +190,30 @@ try:
 except Exception as e:
     print(f"WARNING: Could not import workflows router: {e}")
     workflows_router = None
+
+# Integrity Ledger / Audit router (Pack 37)
+try:
+    from app.routers.audit import router as audit_router
+    AUDIT_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import audit router: {e}")
+    audit_router = None
+
+# Freeze Rules router (Pack 38)
+try:
+    from app.routers.freeze import router as freeze_router
+    FREEZE_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import freeze router: {e}")
+    freeze_router = None
+
+# Knowledge router (Pack 39)
+try:
+    from app.routers.knowledge import router as knowledge_router
+    KNOWLEDGE_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import knowledge router: {e}")
+    knowledge_router = None
 
 # Try importing builder router with error handling
 try:
@@ -453,6 +480,21 @@ if WORKFLOWS_AVAILABLE and "workflows_router" in globals() and workflows_router 
 else:
     print("INFO: Workflows router not registered")
 
+if AUDIT_AVAILABLE and "audit_router" in globals() and audit_router is not None:
+    app.include_router(audit_router, prefix="/api")
+else:
+    print("INFO: Audit router not registered")
+
+if FREEZE_AVAILABLE and "freeze_router" in globals() and freeze_router is not None:
+    app.include_router(freeze_router, prefix="/api")
+else:
+    print("INFO: Freeze router not registered")
+
+if KNOWLEDGE_AVAILABLE and "knowledge_router" in globals() and knowledge_router is not None:
+    app.include_router(knowledge_router, prefix="/api")
+else:
+    print("INFO: Knowledge router not registered")
+
 if BUILDER_AVAILABLE and "builder_router" in globals() and builder_router is not None:
     app.include_router(builder_router, prefix="/api")
 else:
@@ -509,6 +551,9 @@ def debug_routes():
         "deal_analyzer_available": DEAL_ANALYZER_AVAILABLE,
     "ai_closers_available": CLOSERS_AVAILABLE,
     "workflows_available": WORKFLOWS_AVAILABLE,
+    "audit_available": AUDIT_AVAILABLE,
+    "freeze_available": FREEZE_AVAILABLE,
+    "knowledge_available": KNOWLEDGE_AVAILABLE,
         "builder_available": BUILDER_AVAILABLE,
         "reports_available": REPORTS_AVAILABLE,
         "research_available": RESEARCH_AVAILABLE,
