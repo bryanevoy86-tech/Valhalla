@@ -39,6 +39,8 @@ LEADS_AVAILABLE = False
 ADVANCED_NEGOTIATION_AVAILABLE = False
 BEHAVIORAL_PROFILING_AVAILABLE = False
 DEAL_ANALYZER_AVAILABLE = False
+CLOSERS_AVAILABLE = False
+WORKFLOWS_AVAILABLE = False
 
 try:
     from app.routers.grants import router as grants_router
@@ -169,6 +171,22 @@ try:
 except Exception as e:
     print(f"WARNING: Could not import deal-analyzer router: {e}")
     deal_analyzer_router = None
+
+# AI Closers router (Pack 35) — optional import
+try:
+    from app.routers.closers import router as closers_router
+    CLOSERS_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import ai-closers router: {e}")
+    closers_router = None
+
+# Workflows router (Pack 36) — optional import
+try:
+    from app.routers.workflows import router as workflows_router
+    WORKFLOWS_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import workflows router: {e}")
+    workflows_router = None
 
 # Try importing builder router with error handling
 try:
@@ -425,6 +443,16 @@ if DEAL_ANALYZER_AVAILABLE and "deal_analyzer_router" in globals() and deal_anal
 else:
     print("INFO: Deal Analyzer router not registered")
 
+if CLOSERS_AVAILABLE and "closers_router" in globals() and closers_router is not None:
+    app.include_router(closers_router, prefix="/api")
+else:
+    print("INFO: AI Closers router not registered")
+
+if WORKFLOWS_AVAILABLE and "workflows_router" in globals() and workflows_router is not None:
+    app.include_router(workflows_router, prefix="/api")
+else:
+    print("INFO: Workflows router not registered")
+
 if BUILDER_AVAILABLE and "builder_router" in globals() and builder_router is not None:
     app.include_router(builder_router, prefix="/api")
 else:
@@ -479,6 +507,8 @@ def debug_routes():
         "advanced_negotiation_available": ADVANCED_NEGOTIATION_AVAILABLE,
         "behavioral_profiling_available": BEHAVIORAL_PROFILING_AVAILABLE,
         "deal_analyzer_available": DEAL_ANALYZER_AVAILABLE,
+    "ai_closers_available": CLOSERS_AVAILABLE,
+    "workflows_available": WORKFLOWS_AVAILABLE,
         "builder_available": BUILDER_AVAILABLE,
         "reports_available": REPORTS_AVAILABLE,
         "research_available": RESEARCH_AVAILABLE,

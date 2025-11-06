@@ -150,3 +150,15 @@ async def render_behavioral_profiling_dashboard(request: Request):
 async def render_deal_analyzer_dashboard(request: Request):
     """Render the Automated Deal Analyzer dashboard HTML."""
     return templates.TemplateResponse("deal_analyzer_dashboard.html", {"request": request})
+
+
+@router.get("/ai-closers-dashboard-ui", response_class=HTMLResponse)
+async def render_ai_closers_dashboard(request: Request):
+    """Render the AI Closers & Negotiators dashboard HTML."""
+    return templates.TemplateResponse("closers_dashboard.html", {"request": request})
+
+
+@router.get("/workflows-dashboard-ui", response_class=HTMLResponse)
+async def render_workflows_dashboard(request: Request):
+    """Render the Automated Workflow Orchestration dashboard HTML."""
+    return templates.TemplateResponse("workflows_dashboard.html", {"request": request})
