@@ -29,6 +29,7 @@ MATCH_AVAILABLE = False
 CONTRACTS_AVAILABLE = False
 INTAKE_AVAILABLE = False
 NOTIFY_AVAILABLE = False
+MESSAGING_AVAILABLE = False
 RBAC_AVAILABLE = False
 
 try:
@@ -79,6 +80,14 @@ try:
 except Exception as e:
     print(f"WARNING: Could not import notify router: {e}")
     notify_router = None
+
+# Messaging router (Pack 26) — optional import
+try:
+    from app.routers.messaging import router as messaging_router
+    MESSAGING_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import messaging router: {e}")
+    messaging_router = None
 
 # Try importing RBAC router (Pack 25)
 try:
@@ -294,6 +303,11 @@ if NOTIFY_AVAILABLE and "notify_router" in globals() and notify_router is not No
 else:
     print("WARNING: Notify router not registered")
 
+if MESSAGING_AVAILABLE and "messaging_router" in globals() and messaging_router is not None:
+    app.include_router(messaging_router, prefix="/api")
+else:
+    print("INFO: Messaging router not registered")
+
 if RBAC_AVAILABLE and "rbac_router" in globals() and rbac_router is not None:
     app.include_router(rbac_router, prefix="/api")
 else:
@@ -343,6 +357,7 @@ def debug_routes():
         "contracts_available": CONTRACTS_AVAILABLE,
         "intake_available": INTAKE_AVAILABLE,
         "notify_available": NOTIFY_AVAILABLE,
+    "messaging_available": MESSAGING_AVAILABLE,
         "rbac_available": RBAC_AVAILABLE,
         "builder_available": BUILDER_AVAILABLE,
         "reports_available": REPORTS_AVAILABLE,

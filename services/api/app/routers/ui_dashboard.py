@@ -99,6 +99,11 @@ async def render_notifications_dashboard(request: Request):
     return templates.TemplateResponse("notifications_dashboard.html", {"request": request})
 
 
+@router.get("/messaging-dashboard-ui", response_class=HTMLResponse)
+async def render_messaging_dashboard(request: Request):
+    """Render the email/SMS messaging dashboard HTML."""
+    return templates.TemplateResponse("messaging_dashboard.html", {"request": request})
+
 @router.get("/user-profile-dashboard-ui", response_class=HTMLResponse)
 async def render_user_profile_dashboard(request: Request):
     """Render the user profile management dashboard HTML."""

@@ -209,7 +209,8 @@ class RBACService:
         user_roles = self.get_user_roles(user_id)
         
         for role in user_roles:
-            role_perms = self.get_role_permissions(role.role_name)
+            role_name_str = str(getattr(role, "role_name", ""))
+            role_perms = self.get_role_permissions(role_name_str)
             if any(p.permission_name == permission_name for p in role_perms):
                 return True
         
@@ -226,7 +227,8 @@ class RBACService:
         permissions = set()
         
         for role in user_roles:
-            role_perms = self.get_role_permissions(role.role_name)
+            role_name_str = str(getattr(role, "role_name", ""))
+            role_perms = self.get_role_permissions(role_name_str)
             permissions.update(p.permission_name for p in role_perms)
         
         return permissions
@@ -238,7 +240,7 @@ class RBACService:
             return []
         
         user_roles = self.db.query(UserRole).filter(UserRole.role_id == role.role_id).all()
-        return [ur.user_id for ur in user_roles]
+        return [int(getattr(ur, "user_id", 0)) for ur in user_roles]
     
     # ============ Bulk Operations ============
     

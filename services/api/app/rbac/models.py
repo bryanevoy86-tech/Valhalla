@@ -5,12 +5,7 @@ Includes Role, Permission, RolePermission (many-to-many), and UserRole models.
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Text
 from sqlalchemy.orm import relationship
 from datetime import datetime
-
-try:
-    from app.core.db import Base
-except ImportError:
-    from sqlalchemy.ext.declarative import declarative_base
-    Base = declarative_base()
+from app.core.db import Base
 
 
 class Role(Base):

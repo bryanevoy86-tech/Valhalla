@@ -49,6 +49,11 @@ class Settings(BaseModel):
     SMTP_PASS: str | None = os.getenv("SMTP_PASS")
     SMTP_FROM: str | None = os.getenv("SMTP_FROM", "noreply@valhalla.local")
 
+    # Twilio SMS
+    TWILIO_ACCOUNT_SID: str | None = os.getenv("TWILIO_ACCOUNT_SID")
+    TWILIO_AUTH_TOKEN: str | None = os.getenv("TWILIO_AUTH_TOKEN")
+    TWILIO_PHONE_NUMBER: str | None = os.getenv("TWILIO_PHONE_NUMBER")
+
     @classmethod
     def load(cls) -> "Settings":
         flags_env = os.environ.get("FEATURE_FLAGS_JSON", "{}")

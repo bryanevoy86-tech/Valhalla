@@ -98,7 +98,7 @@ def get_user_roles_list(user_id: int, db: Session) -> List[str]:
     """Get list of role names for a user."""
     service = RBACService(db)
     roles = service.get_user_roles(user_id)
-    return [r.role_name for r in roles]
+    return [str(getattr(r, "role_name", "")) for r in roles]
 
 
 def get_user_permissions_set(user_id: int, db: Session) -> set:
