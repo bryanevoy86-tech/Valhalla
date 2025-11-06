@@ -79,3 +79,9 @@ async def render_security_dashboard(request: Request):
 async def render_encryption_dashboard(request: Request):
     """Render the encryption dashboard HTML."""
     return templates.TemplateResponse("encryption_dashboard.html", {"request": request})
+
+
+@router.get("/logging-dashboard-ui", response_class=HTMLResponse)
+async def render_logging_dashboard(request: Request):
+    """Render the logging/audit dashboard HTML."""
+    return templates.TemplateResponse("logging_dashboard.html", {"request": request})

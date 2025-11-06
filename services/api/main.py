@@ -192,6 +192,20 @@ if ENCRYPTION_AVAILABLE and "encryption_router" in globals() and encryption_rout
 else:
     print("INFO: Encryption router not registered")
 
+# Logging router (Pack 19) — optional import
+try:
+    from app.routers.logging import router as logging_router
+    LOGGING_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import logging router: {e}")
+    LOGGING_AVAILABLE = False
+    logging_router = None
+
+if LOGGING_AVAILABLE and "logging_router" in globals() and logging_router is not None:
+    app.include_router(logging_router, prefix="/api")
+else:
+    print("INFO: Logging router not registered")
+
 # Pack routers (with availability checks)
 if GRANTS_AVAILABLE and "grants_router" in globals() and grants_router is not None:
     app.include_router(grants_router, prefix="/api")
