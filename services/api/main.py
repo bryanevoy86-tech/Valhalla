@@ -33,6 +33,8 @@ MESSAGING_AVAILABLE = False
 PAYMENTS_AVAILABLE = False
 NEGOTIATIONS_AVAILABLE = False
 RBAC_AVAILABLE = False
+INFLUENCE_AVAILABLE = False
+NEGOTIATION_STRATEGIES_AVAILABLE = False
 
 try:
     from app.routers.grants import router as grants_router
@@ -115,6 +117,22 @@ except Exception as e:
     print(f"WARNING: Could not import RBAC router: {e}")
     RBAC_AVAILABLE = False
     rbac_router = None
+
+# Influence router (Pack 29) — optional import
+try:
+    from app.routers.influence import router as influence_router
+    INFLUENCE_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import influence router: {e}")
+    influence_router = None
+
+# Negotiation Strategies router (Pack 30) — optional import
+try:
+    from app.routers.negotiation_strategies import router as negotiation_strategies_router
+    NEGOTIATION_STRATEGIES_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import negotiation-strategies router: {e}")
+    negotiation_strategies_router = None
 
 # Try importing builder router with error handling
 try:
@@ -341,6 +359,16 @@ if RBAC_AVAILABLE and "rbac_router" in globals() and rbac_router is not None:
 else:
     print("INFO: RBAC router not registered")
 
+if INFLUENCE_AVAILABLE and "influence_router" in globals() and influence_router is not None:
+    app.include_router(influence_router, prefix="/api")
+else:
+    print("INFO: Influence router not registered")
+
+if NEGOTIATION_STRATEGIES_AVAILABLE and "negotiation_strategies_router" in globals() and negotiation_strategies_router is not None:
+    app.include_router(negotiation_strategies_router, prefix="/api")
+else:
+    print("INFO: Negotiation Strategies router not registered")
+
 if BUILDER_AVAILABLE and "builder_router" in globals() and builder_router is not None:
     app.include_router(builder_router, prefix="/api")
 else:
@@ -389,6 +417,8 @@ def debug_routes():
     "payments_available": PAYMENTS_AVAILABLE,
     "negotiations_available": NEGOTIATIONS_AVAILABLE,
         "rbac_available": RBAC_AVAILABLE,
+        "influence_available": INFLUENCE_AVAILABLE,
+        "negotiation_strategies_available": NEGOTIATION_STRATEGIES_AVAILABLE,
         "builder_available": BUILDER_AVAILABLE,
         "reports_available": REPORTS_AVAILABLE,
         "research_available": RESEARCH_AVAILABLE,

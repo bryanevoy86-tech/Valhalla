@@ -114,3 +114,15 @@ async def render_user_profile_dashboard(request: Request):
 async def render_rbac_dashboard(request: Request):
     """Render the RBAC (Role-Based Access Control) dashboard HTML."""
     return templates.TemplateResponse("rbac_dashboard.html", {"request": request})
+
+
+@router.get("/payments-dashboard-ui", response_class=HTMLResponse)
+async def render_payments_dashboard(request: Request):
+    """Render the Payments dashboard HTML."""
+    return templates.TemplateResponse("payments_dashboard.html", {"request": request})
+
+
+@router.get("/negotiations-dashboard-ui", response_class=HTMLResponse)
+async def render_negotiations_dashboard(request: Request):
+    """Render the Negotiations dashboard HTML."""
+    return templates.TemplateResponse("negotiations_dashboard.html", {"request": request})

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Negotiations Dashboard</title>
+  <style>
+    body { font-family: Segoe UI, Arial, sans-serif; background: #f6f7fb; padding: 24px; }
+    .wrap { max-width: 1100px; margin: 0 auto; }
+    h1 { color: #333; }
+    .grid { display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+    .card { background: #fff; border-radius: 8px; box-shadow: 0 10px 24px rgba(0,0,0,0.06); padding: 20px; }
+    .card h2 { margin: 0 0 12px; color: #4a56e2; }
+    label { display:block; margin: 8px 0 4px; color: #444; }
+    input, select { width: 100%; padding: 10px; border: 1px solid #dfe3ee; border-radius: 6px; }
+    button { background: linear-gradient(135deg,#667eea,#764ba2); color: #fff; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; margin-top: 10px; }
+    .result { margin-top: 10px; font-size: 13px; }
+    .ok { color: #0a7a3e; }
+    .err { color: #b00020; }
+    .muted { color: #666; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>🤝 Negotiations</h1>
+    <div class="grid">
+      <div class="card">
+        <h2>Start Negotiation</h2>
+        <label>User ID</label>
+        <input id="n-user-id" placeholder="1" />
+        <label>Deal ID (optional)</label>
+        <input id="n-deal-id" placeholder="e.g., 42" />
+        <label>Tone Score (-1 to 1)</label>
+        <input id="n-tone" placeholder="0.2" />
+        <label>Sentiment Score (-1 to 1)</label>
+        <input id="n-sentiment" placeholder="0.1" />
+        <label>Stage</label>
+        <input id="n-stage" value="initial" />
+        <button onclick="startNegotiation()">Start</button>
+        <div id="n-start-result" class="result"></div>
+        <div class="muted">Last created negotiation ID: <span id="last-neg-id">-</span></div>
+      </div>
+      <div class="card">
+        <h2>Update Negotiation</h2>
+        <label>Negotiation ID</label>
+        <input id="u-id" placeholder="Use the ID above" />
+        <label>Tone Score (-1 to 1)</label>
+        <input id="u-tone" placeholder="0.4" />
+        <label>Sentiment Score (-1 to 1)</label>
+        <input id="u-sentiment" placeholder="0.3" />
+        <label>Stage</label>
+        <input id="u-stage" value="discussion" />
+        <button onclick="updateNegotiation()">Update</button>
+        <div id="n-update-result" class="result"></div>
+      </div>
+    </div>
+  </div>
+  <script>
+    const API = '/api/negotiations';
+    function show(el, ok, msg){ const d=document.getElementById(el); d.className='result '+(ok?'ok':'err'); d.textContent=msg; }
+    function setLastId(id){ document.getElementById('last-neg-id').textContent = id; document.getElementById('u-id').value = id; }
+    async function startNegotiation(){
+      const user_id = parseInt(document.getElementById('n-user-id').value);
+      const deal_id_raw = document.getElementById('n-deal-id').value;
+      const deal_id = deal_id_raw ? parseInt(deal_id_raw) : null;
+      const tone_score = parseFloat(document.getElementById('n-tone').value);
+      const sentiment_score = parseFloat(document.getElementById('n-sentiment').value);
+      const negotiation_stage = document.getElementById('n-stage').value;
+      const r = await fetch(`${API}/`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({user_id, deal_id, tone_score, sentiment_score, negotiation_stage})});
+      const j = await r.json();
+      if(r.ok){
+        setLastId(j.id);
+        show('n-start-result', true, `Started negotiation #${j.id} (stage: ${j.negotiation_stage})`);
+      } else {
+        show('n-start-result', false, j.detail || 'Error');
+      }
+    }
+    async function updateNegotiation(){
+      const negotiation_id = parseInt(document.getElementById('u-id').value);
+      const tone = parseFloat(document.getElementById('u-tone').value);
+      const sent = parseFloat(document.getElementById('u-sentiment').value);
+      const stage = document.getElementById('u-stage').value;
+      const r = await fetch(`${API}/${negotiation_id}?tone_score=${encodeURIComponent(tone)}&sentiment_score=${encodeURIComponent(sent)}&stage=${encodeURIComponent(stage)}`, {method:'PUT'});
+      const j = await r.json();
+      show('n-update-result', r.ok, r.ok?`Updated negotiation #${j.id} → stage: ${j.negotiation_stage}`:(j.detail||'Error'));
+    }
+  </script>
+</body>
+</html>

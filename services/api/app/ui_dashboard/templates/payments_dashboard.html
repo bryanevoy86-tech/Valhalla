@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Payments Dashboard</title>
+  <style>
+    body { font-family: Segoe UI, Arial, sans-serif; background: #f5f7fb; padding: 24px; }
+    .wrap { max-width: 1100px; margin: 0 auto; }
+    h1 { color: #333; }
+    .grid { display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+    .card { background: #fff; border-radius: 8px; box-shadow: 0 10px 24px rgba(0,0,0,0.06); padding: 20px; }
+    .card h2 { margin: 0 0 12px; color: #4a56e2; }
+    label { display:block; margin: 8px 0 4px; color: #444; }
+    input { width: 100%; padding: 10px; border: 1px solid #dfe3ee; border-radius: 6px; }
+    button { background: linear-gradient(135deg,#667eea,#764ba2); color: #fff; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; margin-top: 10px; }
+    .result { margin-top: 10px; font-size: 13px; }
+    .ok { color: #0a7a3e; }
+    .err { color: #b00020; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border-bottom: 1px solid #eee; padding: 8px; text-align: left; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>💳 Payments</h1>
+    <div class="grid">
+      <div class="card">
+        <h2>Create Payment</h2>
+        <label>User ID</label>
+        <input id="pay-user-id" placeholder="1" />
+        <label>Amount</label>
+        <input id="pay-amount" placeholder="49.99" />
+        <button onclick="createPayment()">Create</button>
+        <div id="pay-result" class="result"></div>
+      </div>
+      <div class="card">
+        <h2>Get User Payments</h2>
+        <label>User ID</label>
+        <input id="list-user-id" placeholder="1" />
+        <button onclick="listPayments()">List</button>
+        <div id="list-result" class="result"></div>
+        <div style="overflow:auto">
+          <table id="payments-table">
+            <thead><tr><th>ID</th><th>Amount</th><th>Status</th><th>Created</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    const API = '/api/payments';
+    function show(el, ok, msg){ const d=document.getElementById(el); d.className='result '+(ok?'ok':'err'); d.textContent=msg; }
+    async function createPayment(){
+      const user_id = parseInt(document.getElementById('pay-user-id').value);
+      const amount = parseFloat(document.getElementById('pay-amount').value);
+      const r = await fetch(`${API}/`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({user_id, amount})});
+      const j = await r.json(); show('pay-result', r.ok, r.ok?`Created payment #${j.id}`:(j.detail||'Error'));
+    }
+    async function listPayments(){
+      const user_id = parseInt(document.getElementById('list-user-id').value);
+      const r = await fetch(`${API}/user/${user_id}`);
+      const list = await r.json();
+      const tbody = document.querySelector('#payments-table tbody');
+      tbody.innerHTML = (Array.isArray(list)?list:[]).map(p=>`<tr><td>${p.id}</td><td>${p.amount}</td><td>${p.status}</td><td>${new Date(p.created_at).toLocaleString()}</td></tr>`).join('');
+      show('list-result', r.ok, r.ok?`Loaded ${Array.isArray(list)?list.length:0} payments`:'Error');
+    }
+  </script>
+</body>
+</html>
