@@ -85,3 +85,9 @@ async def render_encryption_dashboard(request: Request):
 async def render_logging_dashboard(request: Request):
     """Render the logging/audit dashboard HTML."""
     return templates.TemplateResponse("logging_dashboard.html", {"request": request})
+
+
+@router.get("/lang-dashboard-ui", response_class=HTMLResponse)
+async def render_lang_dashboard(request: Request):
+    """Render the multi-language dashboard HTML."""
+    return templates.TemplateResponse("lang_dashboard.html", {"request": request})

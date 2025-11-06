@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Language Dashboard</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; margin: 24px; }
+    .container { max-width: 900px; margin: 0 auto; }
+    .card { border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px 16px; background: #fff; margin-bottom: 12px; }
+    button { background:#111827;color:#fff;border:none;border-radius:6px;padding:8px 12px;cursor:pointer; }
+    input { padding:6px 8px; border:1px solid #e5e7eb; border-radius:6px; }
+    .row { display:flex; gap:8px; align-items:center; }
+  </style>
+  <script>
+    async function fetchLanguages() {
+      const res = await fetch('/api/languages/languages');
+      const languages = await res.json();
+      const el = document.getElementById('lang-container');
+      el.innerHTML = `<div class="card"><pre>${JSON.stringify(languages, null, 2)}</pre></div>`;
+    }
+
+    async function translateContent() {
+      const contentId = document.getElementById('content_id').value || 'content_001';
+      const langCode = document.getElementById('lang_code').value || 'es';
+      const res = await fetch(`/api/languages/translate/${contentId}/${langCode}`);
+      const translated = await res.json();
+      const el = document.getElementById('lang-container');
+      el.innerHTML += `<div class="card">Translated: <b>${translated.text}</b> (content: ${translated.content_id}, lang: ${translated.language})</div>`;
+    }
+  </script>
+</head>
+<body>
+  <div class="container">
+    <h1>Language Dashboard</h1>
+    <div class="row" style="margin-bottom: 12px;">
+      <input id="content_id" placeholder="content_001" value="content_001" />
+      <input id="lang_code" placeholder="es" value="es" />
+      <button onclick="fetchLanguages()">Get Languages</button>
+      <button onclick="translateContent()">Translate Content</button>
+    </div>
+    <div id="lang-container"></div>
+  </div>
+</body>
+</html>

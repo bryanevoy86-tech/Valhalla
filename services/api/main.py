@@ -206,6 +206,20 @@ if LOGGING_AVAILABLE and "logging_router" in globals() and logging_router is not
 else:
     print("INFO: Logging router not registered")
 
+# Languages router (Pack 21) — optional import
+try:
+    from app.routers.languages import router as languages_router
+    LANGUAGES_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import languages router: {e}")
+    LANGUAGES_AVAILABLE = False
+    languages_router = None
+
+if LANGUAGES_AVAILABLE and "languages_router" in globals() and languages_router is not None:
+    app.include_router(languages_router, prefix="/api")
+else:
+    print("INFO: Languages router not registered")
+
 # Pack routers (with availability checks)
 if GRANTS_AVAILABLE and "grants_router" in globals() and grants_router is not None:
     app.include_router(grants_router, prefix="/api")
