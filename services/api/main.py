@@ -48,6 +48,8 @@ SCHEDULED_JOBS_AVAILABLE = False
 COMPLIANCE_AVAILABLE = False
 ORCHESTRATOR_AVAILABLE = False
 FINOPS_AVAILABLE = False
+ARBITRAGE_AVAILABLE = False
+DOCS_AVAILABLE = False
 
 try:
     from app.routers.grants import router as grants_router
@@ -250,6 +252,22 @@ try:
 except Exception as e:
     print(f"WARNING: Could not import finops router: {e}")
     finops_router = None
+
+# Arbitrage router (Pack 44)
+try:
+    from app.routers.arbitrage import router as arbitrage_router
+    ARBITRAGE_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import arbitrage router: {e}")
+    arbitrage_router = None
+
+# Docs router (Pack 45)
+try:
+    from app.routers.docs import router as docs_router
+    DOCS_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import docs router: {e}")
+    docs_router = None
 
 # Try importing builder router with error handling
 try:
@@ -566,6 +584,16 @@ if FINOPS_AVAILABLE and "finops_router" in globals() and finops_router is not No
 else:
     print("INFO: FinOps router not registered")
 
+if ARBITRAGE_AVAILABLE and "arbitrage_router" in globals() and arbitrage_router is not None:
+    app.include_router(arbitrage_router, prefix="/api")
+else:
+    print("INFO: Arbitrage router not registered")
+
+if DOCS_AVAILABLE and "docs_router" in globals() and docs_router is not None:
+    app.include_router(docs_router, prefix="/api")
+else:
+    print("INFO: Docs router not registered")
+
 if BUILDER_AVAILABLE and "builder_router" in globals() and builder_router is not None:
     app.include_router(builder_router, prefix="/api")
 else:
@@ -629,6 +657,8 @@ def debug_routes():
     "compliance_available": COMPLIANCE_AVAILABLE,
     "orchestrator_available": ORCHESTRATOR_AVAILABLE,
     "finops_available": FINOPS_AVAILABLE,
+    "arbitrage_available": ARBITRAGE_AVAILABLE,
+    "docs_available": DOCS_AVAILABLE,
         "builder_available": BUILDER_AVAILABLE,
         "reports_available": REPORTS_AVAILABLE,
         "research_available": RESEARCH_AVAILABLE,

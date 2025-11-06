@@ -36,6 +36,19 @@ async def run_jobs_once() -> None:
             # Clone plans not available or failed; skip
             pass
         
+            # Bootstrap safe rules and evaluate FX metrics (Pack 44 integration)
+            try:
+                from app.arbitrage.service import bootstrap_safe_rules, evaluate_and_record_metrics
+            
+                # Ensure safe defaults exist
+                bootstrap_safe_rules(db)
+            
+                # Evaluate current metrics and enforce freeze rules
+                evaluate_and_record_metrics(db)
+            except Exception as _e:
+                # Arbitrage not available or failed; skip
+                pass
+        
         # Simple log marker
         print(f"[scheduler] Jobs completed at {datetime.now(timezone.utc).isoformat()}")
     finally:
