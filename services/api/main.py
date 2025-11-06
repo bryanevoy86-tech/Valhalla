@@ -44,6 +44,8 @@ WORKFLOWS_AVAILABLE = False
 AUDIT_AVAILABLE = False
 FREEZE_AVAILABLE = False
 KNOWLEDGE_AVAILABLE = False
+SCHEDULED_JOBS_AVAILABLE = False
+COMPLIANCE_AVAILABLE = False
 
 try:
     from app.routers.grants import router as grants_router
@@ -215,6 +217,22 @@ except Exception as e:
     print(f"WARNING: Could not import knowledge router: {e}")
     knowledge_router = None
 
+# Scheduled Jobs router (Pack 40)
+try:
+    from app.routers.scheduled_jobs import router as scheduled_jobs_router
+    SCHEDULED_JOBS_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import scheduled-jobs router: {e}")
+    scheduled_jobs_router = None
+
+# Compliance router (Pack 41)
+try:
+    from app.routers.compliance import router as compliance_router
+    COMPLIANCE_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import compliance router: {e}")
+    compliance_router = None
+
 # Try importing builder router with error handling
 try:
     from app.routers.builder import router as builder_router
@@ -266,6 +284,21 @@ try:
             print(f"WARNING: Failed to auto-create tables on startup: {e}")
 except Exception as e:
     print(f"INFO: Skipping auto-create tables setup: {e}")
+
+# Background scheduler loop (Pack 40)
+try:
+    from app.scheduler.runner import scheduler_loop
+
+    @app.on_event("startup")
+    async def startup_scheduler():
+        try:
+            import asyncio as _asyncio
+            _asyncio.create_task(scheduler_loop())
+            print("[startup] Scheduler loop started")
+        except Exception as _e:
+            print(f"INFO: Could not start scheduler loop: {_e}")
+except Exception as e:
+    print(f"INFO: Scheduler not enabled: {e}")
 
 # CORS
 app.add_middleware(
@@ -495,6 +528,16 @@ if KNOWLEDGE_AVAILABLE and "knowledge_router" in globals() and knowledge_router 
 else:
     print("INFO: Knowledge router not registered")
 
+if SCHEDULED_JOBS_AVAILABLE and "scheduled_jobs_router" in globals() and scheduled_jobs_router is not None:
+    app.include_router(scheduled_jobs_router, prefix="/api")
+else:
+    print("INFO: Scheduled Jobs router not registered")
+
+if COMPLIANCE_AVAILABLE and "compliance_router" in globals() and compliance_router is not None:
+    app.include_router(compliance_router, prefix="/api")
+else:
+    print("INFO: Compliance router not registered")
+
 if BUILDER_AVAILABLE and "builder_router" in globals() and builder_router is not None:
     app.include_router(builder_router, prefix="/api")
 else:
@@ -554,6 +597,8 @@ def debug_routes():
     "audit_available": AUDIT_AVAILABLE,
     "freeze_available": FREEZE_AVAILABLE,
     "knowledge_available": KNOWLEDGE_AVAILABLE,
+    "scheduled_jobs_available": SCHEDULED_JOBS_AVAILABLE,
+    "compliance_available": COMPLIANCE_AVAILABLE,
         "builder_available": BUILDER_AVAILABLE,
         "reports_available": REPORTS_AVAILABLE,
         "research_available": RESEARCH_AVAILABLE,
