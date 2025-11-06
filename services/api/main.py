@@ -37,6 +37,8 @@ INFLUENCE_AVAILABLE = False
 NEGOTIATION_STRATEGIES_AVAILABLE = False
 LEADS_AVAILABLE = False
 ADVANCED_NEGOTIATION_AVAILABLE = False
+BEHAVIORAL_PROFILING_AVAILABLE = False
+DEAL_ANALYZER_AVAILABLE = False
 
 try:
     from app.routers.grants import router as grants_router
@@ -151,6 +153,22 @@ try:
 except Exception as e:
     print(f"WARNING: Could not import advanced-negotiation-techniques router: {e}")
     advanced_negotiation_router = None
+
+# Behavioral Profiling router (Pack 33) — optional import
+try:
+    from app.routers.behavioral_profiles import router as behavioral_profiling_router
+    BEHAVIORAL_PROFILING_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import behavioral-profiling router: {e}")
+    behavioral_profiling_router = None
+
+# Deal Analyzer router (Pack 34) — optional import
+try:
+    from app.routers.deal_analyzer import router as deal_analyzer_router
+    DEAL_ANALYZER_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import deal-analyzer router: {e}")
+    deal_analyzer_router = None
 
 # Try importing builder router with error handling
 try:
@@ -397,6 +415,16 @@ if ADVANCED_NEGOTIATION_AVAILABLE and "advanced_negotiation_router" in globals()
 else:
     print("INFO: Advanced Negotiation Techniques router not registered")
 
+if BEHAVIORAL_PROFILING_AVAILABLE and "behavioral_profiling_router" in globals() and behavioral_profiling_router is not None:
+    app.include_router(behavioral_profiling_router, prefix="/api")
+else:
+    print("INFO: Behavioral Profiling router not registered")
+
+if DEAL_ANALYZER_AVAILABLE and "deal_analyzer_router" in globals() and deal_analyzer_router is not None:
+    app.include_router(deal_analyzer_router, prefix="/api")
+else:
+    print("INFO: Deal Analyzer router not registered")
+
 if BUILDER_AVAILABLE and "builder_router" in globals() and builder_router is not None:
     app.include_router(builder_router, prefix="/api")
 else:
@@ -449,6 +477,8 @@ def debug_routes():
         "negotiation_strategies_available": NEGOTIATION_STRATEGIES_AVAILABLE,
         "leads_available": LEADS_AVAILABLE,
         "advanced_negotiation_available": ADVANCED_NEGOTIATION_AVAILABLE,
+        "behavioral_profiling_available": BEHAVIORAL_PROFILING_AVAILABLE,
+        "deal_analyzer_available": DEAL_ANALYZER_AVAILABLE,
         "builder_available": BUILDER_AVAILABLE,
         "reports_available": REPORTS_AVAILABLE,
         "research_available": RESEARCH_AVAILABLE,

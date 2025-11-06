@@ -138,3 +138,15 @@ async def render_leads_dashboard(request: Request):
 async def render_advanced_negotiation_dashboard(request: Request):
     """Render the Advanced Negotiation Techniques dashboard HTML."""
     return templates.TemplateResponse("advanced_negotiation_dashboard.html", {"request": request})
+
+
+@router.get("/behavioral-profiling-dashboard-ui", response_class=HTMLResponse)
+async def render_behavioral_profiling_dashboard(request: Request):
+    """Render the AI Behavioral Profiling dashboard HTML."""
+    return templates.TemplateResponse("behavioral_profiling_dashboard.html", {"request": request})
+
+
+@router.get("/deal-analyzer-dashboard-ui", response_class=HTMLResponse)
+async def render_deal_analyzer_dashboard(request: Request):
+    """Render the Automated Deal Analyzer dashboard HTML."""
+    return templates.TemplateResponse("deal_analyzer_dashboard.html", {"request": request})
