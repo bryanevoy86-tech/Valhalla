@@ -29,6 +29,7 @@ MATCH_AVAILABLE = False
 CONTRACTS_AVAILABLE = False
 INTAKE_AVAILABLE = False
 NOTIFY_AVAILABLE = False
+RBAC_AVAILABLE = False
 
 try:
     from app.routers.grants import router as grants_router
@@ -78,6 +79,15 @@ try:
 except Exception as e:
     print(f"WARNING: Could not import notify router: {e}")
     notify_router = None
+
+# Try importing RBAC router (Pack 25)
+try:
+    from app.routers.rbac import router as rbac_router
+    RBAC_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import RBAC router: {e}")
+    RBAC_AVAILABLE = False
+    rbac_router = None
 
 # Try importing builder router with error handling
 try:
@@ -284,6 +294,11 @@ if NOTIFY_AVAILABLE and "notify_router" in globals() and notify_router is not No
 else:
     print("WARNING: Notify router not registered")
 
+if RBAC_AVAILABLE and "rbac_router" in globals() and rbac_router is not None:
+    app.include_router(rbac_router, prefix="/api")
+else:
+    print("INFO: RBAC router not registered")
+
 if BUILDER_AVAILABLE and "builder_router" in globals() and builder_router is not None:
     app.include_router(builder_router, prefix="/api")
 else:
@@ -328,6 +343,7 @@ def debug_routes():
         "contracts_available": CONTRACTS_AVAILABLE,
         "intake_available": INTAKE_AVAILABLE,
         "notify_available": NOTIFY_AVAILABLE,
+        "rbac_available": RBAC_AVAILABLE,
         "builder_available": BUILDER_AVAILABLE,
         "reports_available": REPORTS_AVAILABLE,
         "research_available": RESEARCH_AVAILABLE,

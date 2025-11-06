@@ -103,3 +103,9 @@ async def render_notifications_dashboard(request: Request):
 async def render_user_profile_dashboard(request: Request):
     """Render the user profile management dashboard HTML."""
     return templates.TemplateResponse("user_profile_dashboard.html", {"request": request})
+
+
+@router.get("/rbac-dashboard-ui", response_class=HTMLResponse)
+async def render_rbac_dashboard(request: Request):
+    """Render the RBAC (Role-Based Access Control) dashboard HTML."""
+    return templates.TemplateResponse("rbac_dashboard.html", {"request": request})
