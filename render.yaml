@@ -33,6 +33,30 @@ services:
       - key: WEWEB_SHARED_SECRET
         # set the real value in the Render dashboard after first deploy
         value: CHANGE_ME
+      # Pack 46: Clone & Mirror Policies
+      - key: CLONE_MIN_DAYS_BETWEEN
+        value: "7"
+      - key: CLONE_MAX_ACTIVE
+        value: "12"
+      - key: CLONE_REQUIRED_UPTIME_PCT
+        value: "98.5"
+      - key: CLONE_REQUIRED_CASH_RESERVES
+        value: "25000"
+      - key: CLONE_REQUIRED_NET_MARGIN_PCT
+        value: "18"
+      - key: CLONE_REQUIRED_AUDIT_SCORE
+        value: "90"
+      - key: CLONE_ERROR_RATE_MAX_PPM
+        value: "250"
+
+      - key: MIRROR_MIN_DAYS_BETWEEN
+        value: "14"
+      - key: MIRROR_REQUIRED_TRAFFIC_P90_RPS
+        value: "5"
+      - key: MIRROR_REQUIRED_LATENCY_P95_MS
+        value: "350"
+      - key: MIRROR_MAX_ACTIVE
+        value: "2"
       # Builder API configuration
       - key: HEIMDALL_BUILDER_API_KEY
         value: 2af3d998e1b7e2ca882291732aa40dd9
