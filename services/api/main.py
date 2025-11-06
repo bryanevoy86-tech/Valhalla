@@ -46,6 +46,8 @@ FREEZE_AVAILABLE = False
 KNOWLEDGE_AVAILABLE = False
 SCHEDULED_JOBS_AVAILABLE = False
 COMPLIANCE_AVAILABLE = False
+ORCHESTRATOR_AVAILABLE = False
+FINOPS_AVAILABLE = False
 
 try:
     from app.routers.grants import router as grants_router
@@ -232,6 +234,22 @@ try:
 except Exception as e:
     print(f"WARNING: Could not import compliance router: {e}")
     compliance_router = None
+
+# Orchestrator router (Pack 42)
+try:
+    from app.routers.orchestrator import router as orchestrator_router
+    ORCHESTRATOR_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import orchestrator router: {e}")
+    orchestrator_router = None
+
+# FinOps router (Pack 43)
+try:
+    from app.routers.finops import router as finops_router
+    FINOPS_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import finops router: {e}")
+    finops_router = None
 
 # Try importing builder router with error handling
 try:
@@ -538,6 +556,16 @@ if COMPLIANCE_AVAILABLE and "compliance_router" in globals() and compliance_rout
 else:
     print("INFO: Compliance router not registered")
 
+if ORCHESTRATOR_AVAILABLE and "orchestrator_router" in globals() and orchestrator_router is not None:
+    app.include_router(orchestrator_router, prefix="/api")
+else:
+    print("INFO: Orchestrator router not registered")
+
+if FINOPS_AVAILABLE and "finops_router" in globals() and finops_router is not None:
+    app.include_router(finops_router, prefix="/api")
+else:
+    print("INFO: FinOps router not registered")
+
 if BUILDER_AVAILABLE and "builder_router" in globals() and builder_router is not None:
     app.include_router(builder_router, prefix="/api")
 else:
@@ -599,6 +627,8 @@ def debug_routes():
     "knowledge_available": KNOWLEDGE_AVAILABLE,
     "scheduled_jobs_available": SCHEDULED_JOBS_AVAILABLE,
     "compliance_available": COMPLIANCE_AVAILABLE,
+    "orchestrator_available": ORCHESTRATOR_AVAILABLE,
+    "finops_available": FINOPS_AVAILABLE,
         "builder_available": BUILDER_AVAILABLE,
         "reports_available": REPORTS_AVAILABLE,
         "research_available": RESEARCH_AVAILABLE,
