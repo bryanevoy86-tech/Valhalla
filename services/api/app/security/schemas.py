@@ -10,3 +10,9 @@ class TwoFactorAuthOut(BaseModel):
 class RateLimitOut(BaseModel):
     request_count: int
     reset_time: str
+
+
+class EncryptedData(BaseModel):
+    data: str
+    encrypted: bool
+    encryption_key: str

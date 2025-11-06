@@ -10,6 +10,11 @@ except Exception:  # pragma: no cover - fallback stub
             return "BASE32DUMMYSECRET"
 
     pyotp = _PyOtpStub()  # type: ignore
+
+from cryptography.fernet import Fernet
+from sqlalchemy.orm import Session
+
+from .schemas import TwoFactorAuthOut, RateLimitOut, EncryptedData
 from sqlalchemy.orm import Session
 
 from .schemas import TwoFactorAuthOut, RateLimitOut
@@ -50,3 +55,26 @@ class SecurityService:
             request_count=request_count,
             reset_time=reset_time.isoformat(),
         )
+
+
+class EncryptionService:
+    def __init__(self, db: Session):
+        self.db = db
+
+    @staticmethod
+    def generate_encryption_key() -> str:
+        return Fernet.generate_key().decode()
+
+    def encrypt_data(self, data: str, key: str) -> EncryptedData:
+        f = Fernet(key)
+        encrypted_data = f.encrypt(data.encode()).decode()
+        return EncryptedData(
+            data=encrypted_data,
+            encrypted=True,
+            encryption_key=key,
+        )
+
+    def decrypt_data(self, encrypted_data: str, key: str) -> str:
+        f = Fernet(key)
+        decrypted_data = f.decrypt(encrypted_data.encode()).decode()
+        return decrypted_data

@@ -178,6 +178,20 @@ if SECURITY_AVAILABLE and "security_router" in globals() and security_router is 
 else:
     print("INFO: Security router not registered")
 
+# Encryption router (Pack 18) — optional import
+try:
+    from app.routers.encryption import router as encryption_router
+    ENCRYPTION_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import encryption router: {e}")
+    ENCRYPTION_AVAILABLE = False
+    encryption_router = None
+
+if ENCRYPTION_AVAILABLE and "encryption_router" in globals() and encryption_router is not None:
+    app.include_router(encryption_router, prefix="/api")
+else:
+    print("INFO: Encryption router not registered")
+
 # Pack routers (with availability checks)
 if GRANTS_AVAILABLE and "grants_router" in globals() and grants_router is not None:
     app.include_router(grants_router, prefix="/api")
