@@ -51,6 +51,7 @@ FINOPS_AVAILABLE = False
 ARBITRAGE_AVAILABLE = False
 DOCS_AVAILABLE = False
 POLICIES_AVAILABLE = False
+PROVIDERS_AVAILABLE = False
 
 try:
     from app.routers.grants import router as grants_router
@@ -277,6 +278,14 @@ try:
 except Exception as e:
     print(f"WARNING: Could not import policies router: {e}")
     policies_router = None
+
+# Providers router (Pack 47)
+try:
+    from app.routers.providers import router as providers_router
+    PROVIDERS_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import providers router: {e}")
+    providers_router = None
 
 # Try importing builder router with error handling
 try:
@@ -608,6 +617,11 @@ if POLICIES_AVAILABLE and "policies_router" in globals() and policies_router is 
 else:
     print("INFO: Policies router not registered")
 
+if PROVIDERS_AVAILABLE and "providers_router" in globals() and providers_router is not None:
+    app.include_router(providers_router, prefix="/api")
+else:
+    print("INFO: Providers router not registered")
+
 if BUILDER_AVAILABLE and "builder_router" in globals() and builder_router is not None:
     app.include_router(builder_router, prefix="/api")
 else:
@@ -674,6 +688,7 @@ def debug_routes():
     "arbitrage_available": ARBITRAGE_AVAILABLE,
     "docs_available": DOCS_AVAILABLE,
     "policies_available": POLICIES_AVAILABLE,
+    "providers_available": PROVIDERS_AVAILABLE,
         "builder_available": BUILDER_AVAILABLE,
         "reports_available": REPORTS_AVAILABLE,
         "research_available": RESEARCH_AVAILABLE,

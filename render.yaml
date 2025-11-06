@@ -57,6 +57,29 @@ services:
         value: "350"
       - key: MIRROR_MAX_ACTIVE
         value: "2"
+      # Pack 47: Provider Adapters
+      - key: PLAID_CLIENT_ID
+        value: your_id
+      - key: PLAID_SECRET
+        value: your_secret
+      - key: PLAID_ENV
+        value: sandbox
+      
+      - key: STRIPE_SECRET_KEY
+        value: sk_test_xxx
+      - key: STRIPE_WEBHOOK_SECRET
+        value: whsec_xxx
+      
+      - key: DOCUSIGN_INTEGRATOR_KEY
+        value: xxxx
+      - key: DOCUSIGN_USER_ID
+        value: xxxx
+      - key: DOCUSIGN_ACCOUNT_ID
+        value: xxxx
+      - key: DOCUSIGN_BASE_URI
+        value: https://demo.docusign.net
+      - key: DOCUSIGN_WEBHOOK_SECRET
+        value: whsec_docusign_xxx
       # Builder API configuration
       - key: HEIMDALL_BUILDER_API_KEY
         value: 2af3d998e1b7e2ca882291732aa40dd9

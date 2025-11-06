@@ -23,12 +23,13 @@ async def run_jobs_once() -> None:
         try:
             from app.orchestrator.models import ClonePlan
             from app.orchestrator.service import mark_clone_status
-            
+
             queued = db.query(ClonePlan).filter(ClonePlan.status == "queued").all()
             for plan in queued:
+                # plan.id is an int attribute after flush; static checker may see InstrumentedAttribute
                 mark_clone_status(
                     db,
-                    plan.id,
+                    getattr(plan, "id"),  # type: ignore[arg-type]
                     status="completed",
                     result={"note": "placeholder deploy complete"},
                 )

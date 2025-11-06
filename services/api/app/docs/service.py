@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from app.docs.models import DocTemplate, GeneratedDoc
 from app.docs import schemas
 from app.finops import service as finops_service
-from app.finops.schemas import ESignCreate
+from app.finops.schemas import ESignCreate, Recipient
 
 
 PLACEHOLDER_PATTERN = re.compile(r"\{\{(\w+)\}\}")
@@ -30,7 +30,8 @@ def generate_document(db: Session, request: schemas.GenerateDocRequest) -> Gener
         key = match.group(1)
         return str(request.fields.get(key, f"{{{{{key}}}}}"))
 
-    rendered = PLACEHOLDER_PATTERN.sub(replace_fn, tpl.content)
+    # Ensure type is str for static checkers
+    rendered = PLACEHOLDER_PATTERN.sub(replace_fn, str(tpl.content))
     doc = GeneratedDoc(
         template_id=tpl.id,
         filename=request.filename,
@@ -52,8 +53,11 @@ def send_for_esign(db: Session, request: schemas.SendForESignRequest) -> dict:
     if not doc:
         raise ValueError("GeneratedDoc not found")
 
+    recipients_typed = [Recipient(**r) if isinstance(r, dict) else r for r in request.recipients]
     esign_req = ESignCreate(
-        recipients=request.recipients,
+        provider="internal",
+        subject=f"Sign: {doc.filename}",
+        recipients=recipients_typed,
         meta={"generated_doc_id": doc.id, "filename": doc.filename},
     )
     env = finops_service.create_envelope(db, esign_req)
