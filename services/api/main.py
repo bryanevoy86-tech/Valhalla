@@ -234,6 +234,20 @@ if NOTIFICATIONS_AVAILABLE and "notifications_router" in globals() and notificat
 else:
     print("INFO: Notifications router not registered")
 
+# Users router (Pack 24) — optional import
+try:
+    from app.routers.users import router as users_router
+    USERS_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import users router: {e}")
+    USERS_AVAILABLE = False
+    users_router = None
+
+if USERS_AVAILABLE and "users_router" in globals() and users_router is not None:
+    app.include_router(users_router, prefix="/api")
+else:
+    print("INFO: Users router not registered")
+
 # Pack routers (with availability checks)
 if GRANTS_AVAILABLE and "grants_router" in globals() and grants_router is not None:
     app.include_router(grants_router, prefix="/api")

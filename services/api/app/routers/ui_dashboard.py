@@ -97,3 +97,9 @@ async def render_lang_dashboard(request: Request):
 async def render_notifications_dashboard(request: Request):
     """Render the real-time notifications dashboard HTML."""
     return templates.TemplateResponse("notifications_dashboard.html", {"request": request})
+
+
+@router.get("/user-profile-dashboard-ui", response_class=HTMLResponse)
+async def render_user_profile_dashboard(request: Request):
+    """Render the user profile management dashboard HTML."""
+    return templates.TemplateResponse("user_profile_dashboard.html", {"request": request})

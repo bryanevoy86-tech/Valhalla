@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>User Profile Management</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; margin: 24px; background: #f9fafb; }
+    .container { max-width: 1200px; margin: 0 auto; }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+    .tabs { display: flex; gap: 8px; margin-bottom: 24px; border-bottom: 2px solid #e5e7eb; }
+    .tab { padding: 12px 24px; cursor: pointer; border-bottom: 3px solid transparent; font-weight: 500; color: #6b7280; }
+    .tab.active { border-bottom-color: #2563eb; color: #2563eb; }
+    .tab:hover { color: #1d4ed8; }
+    .card { border: 1px solid #e5e7eb; border-radius: 8px; padding: 24px; background: #fff; margin-bottom: 16px; }
+    .form-group { margin-bottom: 16px; }
+    label { display: block; font-weight: 600; margin-bottom: 6px; color: #374151; }
+    input, select, textarea { padding: 10px; border: 1px solid #e5e7eb; border-radius: 6px; width: 100%; box-sizing: border-box; font-size: 14px; }
+    button { background:#2563eb;color:#fff;border:none;border-radius:6px;padding:10px 20px;cursor:pointer;font-size:14px;font-weight:600; }
+    button:hover { background:#1d4ed8; }
+    button.secondary { background:#6b7280; }
+    button.secondary:hover { background:#4b5563; }
+    button.danger { background:#dc2626; }
+    button.danger:hover { background:#b91c1c; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .activity-log { max-height: 400px; overflow-y: auto; }
+    .activity-item { padding: 12px; margin-bottom: 8px; border-left: 3px solid #2563eb; background: #f9fafb; border-radius: 4px; }
+    .activity-time { font-size: 12px; color: #6b7280; }
+    .badge { display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+    .badge.success { background: #d1fae5; color: #065f46; }
+    .badge.warning { background: #fed7aa; color: #92400e; }
+    .badge.danger { background: #fee2e2; color: #991b1b; }
+    .hidden { display: none; }
+  </style>
+  <script>
+    let currentUserId = null;
+
+    function showTab(tabName) {
+      // Hide all tabs
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+      
+      // Show selected tab
+      document.getElementById(tabName).classList.remove('hidden');
+      event.target.classList.add('active');
+    }
+
+    async function createProfile() {
+      const data = {
+        first_name: document.getElementById('first_name').value,
+        last_name: document.getElementById('last_name').value,
+        email: document.getElementById('email').value,
+        phone_number: document.getElementById('phone_number').value || null,
+        address: document.getElementById('address').value || null
+      };
+
+      const res = await fetch('/api/users/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+
+      if (res.ok) {
+        const profile = await res.json();
+        currentUserId = profile.user_id;
+        alert(`Profile created successfully! User ID: ${profile.user_id}`);
+        document.getElementById('search_user_id').value = profile.user_id;
+        await loadProfile();
+      } else {
+        const error = await res.json();
+        alert(`Error: ${error.detail}`);
+      }
+    }
+
+    async function loadProfile() {
+      const userId = document.getElementById('search_user_id').value;
+      if (!userId) {
+        alert('Please enter a user ID');
+        return;
+      }
+
+      const res = await fetch(`/api/users/complete-profile/${userId}`);
+      if (!res.ok) {
+        alert('User not found');
+        return;
+      }
+
+      const data = await res.json();
+      currentUserId = userId;
+
+      // Display profile
+      document.getElementById('profile_info').innerHTML = `
+        <h3>${data.profile.first_name} ${data.profile.last_name}</h3>
+        <p><strong>Email:</strong> ${data.profile.email}</p>
+        <p><strong>Phone:</strong> ${data.profile.phone_number || 'N/A'}</p>
+        <p><strong>Address:</strong> ${data.profile.address || 'N/A'}</p>
+        <p><strong>Created:</strong> ${new Date(data.profile.created_at).toLocaleString()}</p>
+      `;
+
+      // Display preferences
+      if (data.preferences) {
+        document.getElementById('pref_email').value = data.preferences.email_preferences;
+        document.getElementById('pref_theme').value = data.preferences.theme;
+        document.getElementById('pref_notif').value = data.preferences.notification_preferences;
+      }
+
+      // Display privacy
+      if (data.privacy) {
+        document.getElementById('privacy_consent').checked = data.privacy.consent;
+        document.getElementById('privacy_info').innerHTML = `
+          <p>Data Access Request: ${data.privacy.data_access_request ? '<span class="badge warning">Pending</span>' : '<span class="badge success">None</span>'}</p>
+          <p>Data Deletion Request: ${data.privacy.data_deletion_request ? '<span class="badge danger">Pending</span>' : '<span class="badge success">None</span>'}</p>
+          <p>Consent Date: ${new Date(data.privacy.consent_date).toLocaleString()}</p>
+        `;
+      }
+
+      // Display account settings
+      if (data.account_settings) {
+        document.getElementById('settings_2fa').checked = data.account_settings.two_factor_enabled;
+        document.getElementById('settings_email_verified').checked = data.account_settings.email_verified;
+        document.getElementById('settings_info').innerHTML = `
+          <p>Email Verified: ${data.account_settings.email_verified ? '<span class="badge success">Yes</span>' : '<span class="badge warning">No</span>'}</p>
+          <p>Phone Verified: ${data.account_settings.phone_verified ? '<span class="badge success">Yes</span>' : '<span class="badge warning">No</span>'}</p>
+          <p>2FA Enabled: ${data.account_settings.two_factor_enabled ? '<span class="badge success">Yes</span>' : '<span class="badge warning">No</span>'}</p>
+          <p>Account Locked: ${data.account_settings.account_locked ? '<span class="badge danger">Yes</span>' : '<span class="badge success">No</span>'}</p>
+          <p>Last Password Change: ${new Date(data.account_settings.last_password_change).toLocaleString()}</p>
+        `;
+      }
+
+      // Display activity logs
+      if (data.recent_activities) {
+        const logsHtml = data.recent_activities.map(log => `
+          <div class="activity-item">
+            <strong>${log.action}</strong>
+            <p>${log.details || ''}</p>
+            <div class="activity-time">${new Date(log.timestamp).toLocaleString()} - IP: ${log.ip_address || 'N/A'}</div>
+          </div>
+        `).join('');
+        document.getElementById('activity_logs').innerHTML = logsHtml;
+      }
+    }
+
+    async function updatePreferences() {
+      if (!currentUserId) {
+        alert('Please load a profile first');
+        return;
+      }
+
+      const data = {
+        email_preferences: document.getElementById('pref_email').value,
+        theme: document.getElementById('pref_theme').value,
+        notification_preferences: document.getElementById('pref_notif').value
+      };
+
+      const res = await fetch(`/api/users/preferences/${currentUserId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+
+      if (res.ok) {
+        alert('Preferences updated successfully!');
+      } else {
+        alert('Error updating preferences');
+      }
+    }
+
+    async function updatePrivacy() {
+      if (!currentUserId) {
+        alert('Please load a profile first');
+        return;
+      }
+
+      const data = {
+        consent: document.getElementById('privacy_consent').checked
+      };
+
+      const res = await fetch(`/api/users/privacy/${currentUserId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      };
+
+      if (res.ok) {
+        alert('Privacy settings updated!');
+        await loadProfile();
+      } else {
+        alert('Error updating privacy settings');
+      }
+    }
+
+    async function updateSettings() {
+      if (!currentUserId) {
+        alert('Please load a profile first');
+        return;
+      }
+
+      const data = {
+        two_factor_enabled: document.getElementById('settings_2fa').checked,
+        email_verified: document.getElementById('settings_email_verified').checked
+      };
+
+      const res = await fetch(`/api/users/account-settings/${currentUserId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+
+      if (res.ok) {
+        alert('Account settings updated!');
+        await loadProfile();
+      } else {
+        alert('Error updating settings');
+      }
+    }
+  </script>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>User Profile Management</h1>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" onclick="showTab('create-tab')">Create Profile</div>
+      <div class="tab" onclick="showTab('view-tab')">View & Manage</div>
+      <div class="tab" onclick="showTab('preferences-tab')">Preferences</div>
+      <div class="tab" onclick="showTab('privacy-tab')">Privacy</div>
+      <div class="tab" onclick="showTab('settings-tab')">Security</div>
+      <div class="tab" onclick="showTab('activity-tab')">Activity Logs</div>
+    </div>
+
+    <!-- Create Profile Tab -->
+    <div id="create-tab" class="tab-content">
+      <div class="card">
+        <h2>Create New User Profile</h2>
+        <div class="grid">
+          <div class="form-group">
+            <label>First Name *</label>
+            <input id="first_name" placeholder="John" required />
+          </div>
+          <div class="form-group">
+            <label>Last Name *</label>
+            <input id="last_name" placeholder="Doe" required />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Email *</label>
+          <input id="email" type="email" placeholder="john.doe@example.com" required />
+        </div>
+        <div class="grid">
+          <div class="form-group">
+            <label>Phone Number</label>
+            <input id="phone_number" placeholder="+1234567890" />
+          </div>
+          <div class="form-group">
+            <label>Address</label>
+            <input id="address" placeholder="123 Main St, City, State" />
+          </div>
+        </div>
+        <button onclick="createProfile()">Create Profile</button>
+      </div>
+    </div>
+
+    <!-- View & Manage Tab -->
+    <div id="view-tab" class="tab-content hidden">
+      <div class="card">
+        <h2>Load User Profile</h2>
+        <div style="display: flex; gap: 12px; align-items: end;">
+          <div class="form-group" style="flex-grow: 1; margin-bottom: 0;">
+            <label>User ID</label>
+            <input id="search_user_id" placeholder="Enter user ID" />
+          </div>
+          <button onclick="loadProfile()">Load Profile</button>
+        </div>
+      </div>
+      <div class="card">
+        <div id="profile_info">
+          <p style="color: #6b7280;">Load a profile to view details</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Preferences Tab -->
+    <div id="preferences-tab" class="tab-content hidden">
+      <div class="card">
+        <h2>User Preferences</h2>
+        <div class="form-group">
+          <label>Email Preferences</label>
+          <select id="pref_email">
+            <option value="Daily">Daily</option>
+            <option value="Weekly">Weekly</option>
+            <option value="Never">Never</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Theme</label>
+          <select id="pref_theme">
+            <option value="Light">Light</option>
+            <option value="Dark">Dark</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Notification Preferences</label>
+          <select id="pref_notif">
+            <option value="Email">Email</option>
+            <option value="SMS">SMS</option>
+            <option value="Push">Push</option>
+          </select>
+        </div>
+        <button onclick="updatePreferences()">Save Preferences</button>
+      </div>
+    </div>
+
+    <!-- Privacy Tab -->
+    <div id="privacy-tab" class="tab-content hidden">
+      <div class="card">
+        <h2>Data Privacy Settings</h2>
+        <div id="privacy_info" style="margin-bottom: 20px;">
+          <p style="color: #6b7280;">Load a profile to view privacy settings</p>
+        </div>
+        <div class="form-group">
+          <label>
+            <input type="checkbox" id="privacy_consent" />
+            I consent to data processing
+          </label>
+        </div>
+        <button onclick="updatePrivacy()">Update Privacy Settings</button>
+      </div>
+    </div>
+
+    <!-- Security Settings Tab -->
+    <div id="settings-tab" class="tab-content hidden">
+      <div class="card">
+        <h2>Account Security Settings</h2>
+        <div id="settings_info" style="margin-bottom: 20px;">
+          <p style="color: #6b7280;">Load a profile to view security settings</p>
+        </div>
+        <div class="form-group">
+          <label>
+            <input type="checkbox" id="settings_email_verified" />
+            Email Verified
+          </label>
+        </div>
+        <div class="form-group">
+          <label>
+            <input type="checkbox" id="settings_2fa" />
+            Enable Two-Factor Authentication
+          </label>
+        </div>
+        <button onclick="updateSettings()">Update Security Settings</button>
+      </div>
+    </div>
+
+    <!-- Activity Logs Tab -->
+    <div id="activity-tab" class="tab-content hidden">
+      <div class="card">
+        <h2>Activity Logs</h2>
+        <div id="activity_logs" class="activity-log">
+          <p style="color: #6b7280;">Load a profile to view activity logs</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
