@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional, List
+from datetime import datetime
 
 
 class MetricsOut(BaseModel):
@@ -15,3 +16,10 @@ class MetricsDashboardOut(BaseModel):
     role: str
     metrics: List[str]
     last_updated: str
+
+
+class UserActivity(BaseModel):
+    user_id: str
+    action: str  # e.g., 'login', 'view', 'update'
+    timestamp: datetime
+    details: str  # details about the activity

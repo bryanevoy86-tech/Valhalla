@@ -2,14 +2,16 @@
 Metrics router
 - Aggregates counts from key database tables (existing behavior)
 - Adds in-process runtime counters (requests_per_sec, error_rate, p50_latency, totals)
+- Pack 22: Activity tracking endpoints
 """
 
+from typing import List
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import func, text
 from ..core.db import get_db
-from ..metrics.service import MetricsService
-from ..metrics.schemas import MetricsDashboardOut
+from ..metrics.service import MetricsService, ActivityService
+from ..metrics.schemas import MetricsDashboardOut, UserActivity
 
 router = APIRouter(prefix="/metrics", tags=["metrics"])
 
@@ -92,3 +94,16 @@ async def get_metrics(db: Session = Depends(get_db)):
 async def get_role_dashboard(role: str):
     """Return a role-based dashboard definition (list of metric keys)."""
     return MetricsService.get_role_dashboard(role)
+
+
+# Pack 22: Activity Tracking endpoints
+@router.post("/track", response_model=UserActivity)
+async def track_activity(user_id: str, action: str, details: str = ""):
+    """Record a user activity event."""
+    return ActivityService.record_activity(user_id, action, details)
+
+
+@router.get("/activities", response_model=List[UserActivity])
+async def get_activities(limit: int = 100):
+    """Retrieve recent user activities."""
+    return ActivityService.get_activities(limit)

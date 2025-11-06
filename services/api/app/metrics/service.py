@@ -3,9 +3,9 @@ from __future__ import annotations
 import threading
 import time
 from collections import deque
-from typing import Deque, Dict, Optional
+from typing import Deque, Dict, Optional, List
 
-from .schemas import MetricsOut, MetricsDashboardOut
+from .schemas import MetricsOut, MetricsDashboardOut, UserActivity
 from datetime import datetime
 
 
@@ -83,3 +83,32 @@ class MetricsService:
             metrics=metrics,
             last_updated=datetime.utcnow().isoformat(),
         )
+
+
+# In-memory activity tracking (for demo; replace with DB persistence in production)
+_ACTIVITIES: Deque[UserActivity] = deque(maxlen=1000)
+
+
+class ActivityService:
+    """Service for tracking user activities and actions."""
+    
+    @staticmethod
+    def record_activity(user_id: str, action: str, details: str) -> UserActivity:
+        """Record a user activity event."""
+        activity = UserActivity(
+            user_id=user_id,
+            action=action,
+            timestamp=datetime.utcnow(),
+            details=details
+        )
+        with _LOCK:
+            _ACTIVITIES.append(activity)
+        return activity
+    
+    @staticmethod
+    def get_activities(limit: int = 100) -> List[UserActivity]:
+        """Retrieve recent activities."""
+        with _LOCK:
+            # Return most recent activities (deque is FIFO, so last items are newest)
+            activities = list(_ACTIVITIES)
+            return activities[-limit:] if len(activities) > limit else activities

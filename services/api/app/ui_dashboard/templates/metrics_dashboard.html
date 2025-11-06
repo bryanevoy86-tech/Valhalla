@@ -120,6 +120,61 @@
         <div style="height: 420px;">
             <canvas id="metricsChart"></canvas>
         </div>
+
+        <!-- Pack 22: Activity Tracking Section -->
+        <div class="card" style="margin-top: 24px;">
+            <h3>User Activity Tracking</h3>
+            <div style="display:flex; gap:8px; margin: 12px 0;">
+                <input id="userId" placeholder="user_123" style="padding:6px 8px; border:1px solid #e5e7eb; border-radius:6px;" />
+                <input id="action" placeholder="login" style="padding:6px 8px; border:1px solid #e5e7eb; border-radius:6px;" />
+                <input id="details" placeholder="Successful login" style="padding:6px 8px; border:1px solid #e5e7eb; border-radius:6px; flex-grow:1;" />
+                <button onclick="recordActivity()" style="background:#111827;color:#fff;border:none;border-radius:6px;padding:8px 12px;cursor:pointer;">Record Activity</button>
+                <button onclick="loadActivities()" style="background:#2563eb;color:#fff;border:none;border-radius:6px;padding:8px 12px;cursor:pointer;">Load Activities</button>
+            </div>
+            <div id="activityLog" style="max-height:300px; overflow-y:auto; border:1px solid #e5e7eb; border-radius:6px; padding:8px; margin-top:8px; background:#f9fafb;"></div>
+        </div>
     </div>
+    <script>
+        async function recordActivity() {
+            const userId = document.getElementById('userId').value || 'user_123';
+            const action = document.getElementById('action').value || 'login';
+            const details = document.getElementById('details').value || 'Successful login';
+            
+            const res = await fetch('/api/metrics/track', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ user_id: userId, action: action, details: details })
+            });
+            
+            if (res.ok) {
+                const result = await res.json();
+                alert(`Activity recorded: ${result.action} for ${result.user_id}`);
+                loadActivities();
+            } else {
+                alert('Failed to record activity');
+            }
+        }
+
+        async function loadActivities() {
+            const res = await fetch('/api/metrics/activities?limit=50');
+            if (!res.ok) return;
+            
+            const activities = await res.json();
+            const log = document.getElementById('activityLog');
+            log.innerHTML = '';
+            
+            if (activities.length === 0) {
+                log.innerHTML = '<p style="color:#6b7280;">No activities recorded yet.</p>';
+                return;
+            }
+            
+            activities.reverse().forEach(activity => {
+                const div = document.createElement('div');
+                div.style.cssText = 'padding:8px; margin-bottom:4px; background:#fff; border-radius:4px; border-left:3px solid #2563eb;';
+                div.innerHTML = `<strong>${activity.action}</strong> - ${activity.user_id} <br/><span style="color:#6b7280; font-size:12px;">${activity.timestamp} - ${activity.details}</span>`;
+                log.appendChild(div);
+            });
+        }
+    </script>
 </body>
 </html>
