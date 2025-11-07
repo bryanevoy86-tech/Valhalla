@@ -56,6 +56,10 @@ BEHAVIOR_AVAILABLE = False
 BRRRR_AVAILABLE = False
 ACCOUNTING_AVAILABLE = False
 LEGAL_AVAILABLE = False
+NEG_ENHANCE_AVAILABLE = False
+BLACK_ICE_AVAILABLE = False
+CHILDREN_AVAILABLE = False
+QUEEN_AVAILABLE = False
 
 try:
     from app.routers.grants import router as grants_router
@@ -322,6 +326,38 @@ try:
 except Exception as e:
     print(f"WARNING: Could not import legal router: {e}")
     legal_router = None
+
+# Black Ice router (Pack 53)
+try:
+    from app.routers.blackice import router as blackice_router
+    BLACK_ICE_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import blackice router: {e}")
+    blackice_router = None
+
+# Children router (Pack 54)
+try:
+    from app.routers.children import router as children_router
+    CHILDREN_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import children router: {e}")
+    children_router = None
+
+# Queen router (Pack 55)
+try:
+    from app.routers.queen import router as queen_router
+    QUEEN_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import queen router: {e}")
+    queen_router = None
+
+# Negotiation Enhancer router (Pack 52)
+try:
+    from app.routers.neg_enhance import router as neg_enhance_router
+    NEG_ENHANCE_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import negotiation enhancer router: {e}")
+    neg_enhance_router = None
 
 # Try importing builder router with error handling
 try:
@@ -678,6 +714,26 @@ if LEGAL_AVAILABLE and "legal_router" in globals() and legal_router is not None:
 else:
     print("INFO: Legal router not registered")
 
+if NEG_ENHANCE_AVAILABLE and "neg_enhance_router" in globals() and neg_enhance_router is not None:
+    app.include_router(neg_enhance_router, prefix="/api")
+else:
+    print("INFO: Negotiation Enhancer router not registered")
+
+if BLACK_ICE_AVAILABLE and "blackice_router" in globals() and blackice_router is not None:
+    app.include_router(blackice_router, prefix="/api")
+else:
+    print("INFO: Black Ice router not registered")
+
+if CHILDREN_AVAILABLE and "children_router" in globals() and children_router is not None:
+    app.include_router(children_router, prefix="/api")
+else:
+    print("INFO: Children router not registered")
+
+if QUEEN_AVAILABLE and "queen_router" in globals() and queen_router is not None:
+    app.include_router(queen_router, prefix="/api")
+else:
+    print("INFO: Queen router not registered")
+
 if BUILDER_AVAILABLE and "builder_router" in globals() and builder_router is not None:
     app.include_router(builder_router, prefix="/api")
 else:
@@ -749,6 +805,9 @@ def debug_routes():
         "brrrr_available": BRRRR_AVAILABLE,
     "accounting_available": ACCOUNTING_AVAILABLE,
     "legal_available": LEGAL_AVAILABLE,
+    "neg_enhance_available": NEG_ENHANCE_AVAILABLE,
+    "black_ice_available": BLACK_ICE_AVAILABLE,
+    "children_available": CHILDREN_AVAILABLE,
         "builder_available": BUILDER_AVAILABLE,
         "reports_available": REPORTS_AVAILABLE,
         "research_available": RESEARCH_AVAILABLE,

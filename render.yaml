@@ -102,6 +102,46 @@ services:
         value: "true"
       - key: CRA_SAFE_WRITE_OFF_THRESHOLD
         value: "0.7"
+      # Pack 52: Negotiation & Psychology AI Enhancer
+      - key: NEG_ENHANCER_ENABLED
+        value: "true"
+      - key: NEG_MIN_CONF_FOR_REBUTTAL
+        value: "0.50"
+      - key: NEG_ESCALATE_SCORE
+        value: "0.80"
+      - key: NEG_MAX_REBUTTAL_LENGTH
+        value: "600"
+      # Pack 53: Black Ice Tier II + Shadow Contingency
+      - key: BLACK_ICE_ENABLED
+        value: "true"
+      - key: BLACK_ICE_DEFAULT_LEVEL
+        value: "2"
+      - key: BLACK_ICE_ALERT_CHANNEL
+        value: "ops"
+      - key: BLACK_ICE_KEY_ROTATE_CHECKLIST
+        value: "api,oauth,webhooks,ssh,db,cdn,emails,storage"
+      - key: BLACK_ICE_CONTINUITY_MIN_HOURS
+        value: "72"
+      # Pack 54: Children's Hubs + Vault Guardians
+      - key: KIDS_COIN_EXCHANGE_RATE
+        value: "0.01"
+      - key: KIDS_DEFAULT_SAVE_PCT
+        value: "0.20"
+      - key: KIDS_INVEST_APR
+        value: "0.05"
+      - key: KIDS_WEEKLY_DIGEST_DAY
+        value: "SUN"
+      # Pack 55: Queen's Hub + Fun Fund Vaults
+      - key: QUEEN_NAME
+        value: "Lanna"
+      - key: QUEEN_FUN_CAP_PHASE2
+        value: "10000"
+      - key: QUEEN_FUN_CAP_PHASE3
+        value: "25000"
+      - key: QUEEN_TAX_WITHHOLD_RATE
+        value: "0.18"
+      - key: QUEEN_BASE_CURRENCY
+        value: "CAD"
       
       # Builder API configuration
       - key: HEIMDALL_BUILDER_API_KEY
