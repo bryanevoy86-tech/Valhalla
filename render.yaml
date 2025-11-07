@@ -164,6 +164,28 @@ services:
         value: "SUN"
       - key: PANTRY_AUTOREORDER_ENABLED
         value: "true"
+      # Pack 58: Resort Vault + Residency Timeline
+      - key: RESORT_BASE_CURRENCY
+        value: USD
+      - key: RESORT_DEFAULT_NAME
+        value: Bahamas Phase 1
+      - key: RESORT_TARGET_BUDGET
+        value: "2500000"
+      - key: RESIDENCY_TARGET_DATE
+        value: "2027-01-15"
+      - key: RESIDENCY_MIN_CAPITAL
+        value: "750000"
+      - key: RESORT_DIGEST_DAY
+        value: MON
+      # Pack 59: Integrity Ledger + Telemetry Finalization
+      - key: INTEGRITY_HMAC_SECRET
+        value: change-me
+      - key: TELEMETRY_SAMPLE_RATE
+        value: "1.0"
+      - key: TELEMETRY_SLA_MS
+        value: "800"
+      - key: TELEMETRY_ALERT_CHANNEL
+        value: ops
       
       # Builder API configuration
       - key: HEIMDALL_BUILDER_API_KEY
