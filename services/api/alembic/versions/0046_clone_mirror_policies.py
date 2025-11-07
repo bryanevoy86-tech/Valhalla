@@ -26,7 +26,7 @@ def upgrade():
     op.create_table(
         "clone_policies",
         sa.Column("id", sa.Integer, primary_key=True),
-        sa.Column("enabled", sa.Boolean, nullable=False, server_default=sa.text("1")),
+        sa.Column("enabled", sa.Boolean, nullable=False, server_default=sa.text("true")),
         sa.Column("min_days_between", sa.Integer, nullable=False),
         sa.Column("max_active", sa.Integer, nullable=False),
         sa.Column("required_uptime_pct", sa.Float, nullable=False),
@@ -39,7 +39,7 @@ def upgrade():
     op.create_table(
         "mirror_policies",
         sa.Column("id", sa.Integer, primary_key=True),
-        sa.Column("enabled", sa.Boolean, nullable=False, server_default=sa.text("1")),
+        sa.Column("enabled", sa.Boolean, nullable=False, server_default=sa.text("true")),
         sa.Column("min_days_between", sa.Integer, nullable=False),
         sa.Column("max_active", sa.Integer, nullable=False),
         sa.Column("required_p90_rps", sa.Float, nullable=False),

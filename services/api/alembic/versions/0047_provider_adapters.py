@@ -27,7 +27,7 @@ def upgrade():
         sa.Column("event_type", sa.String(128), nullable=False),
         sa.Column("payload", sa.Text, nullable=False),
         sa.Column("signature", sa.String(256), nullable=True),
-        sa.Column("processed", sa.Boolean, nullable=False, server_default=sa.text("0")),
+        sa.Column("processed", sa.Boolean, nullable=False, server_default=sa.text("false")),
         sa.Column("error_msg", sa.Text, nullable=True),
     )
 
