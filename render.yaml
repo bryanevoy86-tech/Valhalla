@@ -91,6 +91,18 @@ services:
       - key: HEIMDALL_DEFAULT_PERSONA
         value: consultant
       
+      # Pack 50: Full Accounting Suite
+      - key: ACCOUNTING_BASE_CURRENCY
+        value: CAD
+      - key: ACCOUNTING_FISCAL_YEAR_START
+        value: "01-01"
+      - key: ACCOUNTING_REPORT_DECIMALS
+        value: "2"
+      - key: CRA_BOT_ENABLED
+        value: "true"
+      - key: CRA_SAFE_WRITE_OFF_THRESHOLD
+        value: "0.7"
+      
       # Builder API configuration
       - key: HEIMDALL_BUILDER_API_KEY
         value: 2af3d998e1b7e2ca882291732aa40dd9

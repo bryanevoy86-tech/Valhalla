@@ -54,6 +54,8 @@ POLICIES_AVAILABLE = False
 PROVIDERS_AVAILABLE = False
 BEHAVIOR_AVAILABLE = False
 BRRRR_AVAILABLE = False
+ACCOUNTING_AVAILABLE = False
+LEGAL_AVAILABLE = False
 
 try:
     from app.routers.grants import router as grants_router
@@ -304,6 +306,22 @@ try:
 except Exception as e:
     print(f"WARNING: Could not import brrrr router: {e}")
     brrrr_router = None
+
+# Accounting router (Pack 50)
+try:
+    from app.routers.accounting import router as accounting_router
+    ACCOUNTING_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import accounting router: {e}")
+    accounting_router = None
+
+# Legal router (Pack 51)
+try:
+    from app.routers.legal import router as legal_router
+    LEGAL_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import legal router: {e}")
+    legal_router = None
 
 # Try importing builder router with error handling
 try:
@@ -650,6 +668,16 @@ if BRRRR_AVAILABLE and "brrrr_router" in globals() and brrrr_router is not None:
 else:
     print("INFO: BRRRR router not registered")
 
+if ACCOUNTING_AVAILABLE and "accounting_router" in globals() and accounting_router is not None:
+    app.include_router(accounting_router, prefix="/api")
+else:
+    print("INFO: Accounting router not registered")
+
+if LEGAL_AVAILABLE and "legal_router" in globals() and legal_router is not None:
+    app.include_router(legal_router, prefix="/api")
+else:
+    print("INFO: Legal router not registered")
+
 if BUILDER_AVAILABLE and "builder_router" in globals() and builder_router is not None:
     app.include_router(builder_router, prefix="/api")
 else:
@@ -719,6 +747,8 @@ def debug_routes():
     "providers_available": PROVIDERS_AVAILABLE,
     "behavior_available": BEHAVIOR_AVAILABLE,
         "brrrr_available": BRRRR_AVAILABLE,
+    "accounting_available": ACCOUNTING_AVAILABLE,
+    "legal_available": LEGAL_AVAILABLE,
         "builder_available": BUILDER_AVAILABLE,
         "reports_available": REPORTS_AVAILABLE,
         "research_available": RESEARCH_AVAILABLE,
