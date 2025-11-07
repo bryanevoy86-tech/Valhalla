@@ -61,6 +61,7 @@ BLACK_ICE_AVAILABLE = False
 CHILDREN_AVAILABLE = False
 QUEEN_AVAILABLE = False
 KING_AVAILABLE = False
+PANTRY_AVAILABLE = False
 
 try:
     from app.routers.grants import router as grants_router
@@ -359,6 +360,14 @@ try:
 except Exception as e:
     print(f"WARNING: Could not import king router: {e}")
     king_router = None
+
+# Pantry router (Pack 57)
+try:
+    from app.routers.pantry import router as pantry_router
+    PANTRY_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import pantry router: {e}")
+    pantry_router = None
 
 # Negotiation Enhancer router (Pack 52)
 try:
@@ -748,6 +757,11 @@ if KING_AVAILABLE and "king_router" in globals() and king_router is not None:
 else:
     print("INFO: King router not registered")
 
+if PANTRY_AVAILABLE and "pantry_router" in globals() and pantry_router is not None:
+    app.include_router(pantry_router, prefix="/api")
+else:
+    print("INFO: Pantry router not registered")
+
 if BUILDER_AVAILABLE and "builder_router" in globals() and builder_router is not None:
     app.include_router(builder_router, prefix="/api")
 else:
@@ -823,6 +837,7 @@ def debug_routes():
     "black_ice_available": BLACK_ICE_AVAILABLE,
     "children_available": CHILDREN_AVAILABLE,
     "king_available": KING_AVAILABLE,
+    "pantry_available": PANTRY_AVAILABLE,
         "builder_available": BUILDER_AVAILABLE,
         "reports_available": REPORTS_AVAILABLE,
         "research_available": RESEARCH_AVAILABLE,

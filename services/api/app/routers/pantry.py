@@ -1,0 +1,1 @@
+from app.pantry.router import router  # re-export for main include_router

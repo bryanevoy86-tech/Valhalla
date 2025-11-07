@@ -157,6 +157,13 @@ services:
         value: "0.05"
       - key: KING_ADAPTIVE_ENABLED
         value: "true"
+      # Pack 57: Pantry Photo Inventory System
+      - key: PANTRY_DEFAULT_LOCATIONS
+        value: "Main Pantry,Deep Freezer,Garage Stock"
+      - key: PANTRY_REORDER_DIGEST_DAY
+        value: "SUN"
+      - key: PANTRY_AUTOREORDER_ENABLED
+        value: "true"
       
       # Builder API configuration
       - key: HEIMDALL_BUILDER_API_KEY
