@@ -250,6 +250,34 @@ services:
         value: none
       - key: CLOSER_NUDGE_COOLDOWN_MIN
         value: "60"
+      # Pack 64: Contract Assembly 2.0
+      - key: CONTRACT_ENGINE_ENABLED
+        value: "true"
+      - key: CONTRACT_PDF_PROVIDER
+        value: stub
+      - key: CONTRACT_ESIGN_PROVIDER
+        value: internal
+      - key: CONTRACT_DEFAULT_JURISDICTION
+        value: MB
+      - key: CONTRACT_FALLBACK_LANGUAGE
+        value: en
+      - key: CONTRACT_SEND_FROM_EMAIL
+        value: noreply@valhalla.inc
+      - key: CONTRACT_REMINDER_HOURS
+        value: "24"
+      # Pack 65: Buyer Matching Engine
+      - key: BUYER_MATCH_ENABLED
+        value: "true"
+      - key: BUYER_SCORE_MIN
+        value: "60"
+      - key: BUYER_MAX_RESULTS
+        value: "25"
+      - key: DEAL_CLAIM_TTL_MIN
+        value: "60"
+      - key: BUYER_ALERT_COOLDOWN_MIN
+        value: "120"
+      - key: BUYER_DEFAULT_REGION
+        value: MB-WPG
       
       # Builder API configuration
       - key: HEIMDALL_BUILDER_API_KEY

@@ -68,6 +68,8 @@ TAX_AVAILABLE = False
 HEIMDALL_TRAINING_AVAILABLE = False
 UNDERWRITER_AVAILABLE = False
 CLOSER_ENGINE_AVAILABLE = False
+CONTRACT_ENGINE_AVAILABLE = False
+BUYER_MATCH_AVAILABLE = False
 
 try:
     from app.routers.grants import router as grants_router
@@ -422,6 +424,22 @@ try:
 except Exception as e:
     print(f"WARNING: Could not import closer engine router: {e}")
     closer_engine_router = None
+
+# Contract Engine router (Pack 64)
+try:
+    from app.routers.contract_engine import router as contract_engine_router
+    CONTRACT_ENGINE_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import contract engine router: {e}")
+    contract_engine_router = None
+
+# Buyer Match router (Pack 65)
+try:
+    from app.routers.buyer_match import router as buyer_match_router
+    BUYER_MATCH_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import buyer match router: {e}")
+    buyer_match_router = None
 
 # Negotiation Enhancer router (Pack 52)
 try:
@@ -846,6 +864,16 @@ if CLOSER_ENGINE_AVAILABLE and "closer_engine_router" in globals() and closer_en
 else:
     print("INFO: Closer Engine router not registered")
 
+if CONTRACT_ENGINE_AVAILABLE and "contract_engine_router" in globals() and contract_engine_router is not None:
+    app.include_router(contract_engine_router, prefix="/api")
+else:
+    print("INFO: Contract Engine router not registered")
+
+if BUYER_MATCH_AVAILABLE and "buyer_match_router" in globals() and buyer_match_router is not None:
+    app.include_router(buyer_match_router, prefix="/api")
+else:
+    print("INFO: Buyer Match router not registered")
+
 if BUILDER_AVAILABLE and "builder_router" in globals() and builder_router is not None:
     app.include_router(builder_router, prefix="/api")
 else:
@@ -928,6 +956,8 @@ def debug_routes():
     "heimdall_training_available": HEIMDALL_TRAINING_AVAILABLE,
     "underwriter_available": UNDERWRITER_AVAILABLE,
     "closer_engine_available": CLOSER_ENGINE_AVAILABLE,
+    "contract_engine_available": CONTRACT_ENGINE_AVAILABLE,
+    "buyer_match_available": BUYER_MATCH_AVAILABLE,
         "builder_available": BUILDER_AVAILABLE,
         "reports_available": REPORTS_AVAILABLE,
         "research_available": RESEARCH_AVAILABLE,
