@@ -64,6 +64,8 @@ KING_AVAILABLE = False
 PANTRY_AVAILABLE = False
 RESORT_AVAILABLE = False
 INTEGRITY_AVAILABLE = False
+TAX_AVAILABLE = False
+HEIMDALL_TRAINING_AVAILABLE = False
 
 try:
     from app.routers.grants import router as grants_router
@@ -386,6 +388,22 @@ try:
 except Exception as e:
     print(f"WARNING: Could not import integrity router: {e}")
     integrity_router = None
+
+# Tax tracker router (Pack 60)
+try:
+    from app.routers.tax_tracker import router as tax_tracker_router
+    TAX_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import tax tracker router: {e}")
+    tax_tracker_router = None
+
+# Heimdall training router (Pack 61)
+try:
+    from app.routers.heimdall_training import router as heimdall_training_router
+    HEIMDALL_TRAINING_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import heimdall training router: {e}")
+    heimdall_training_router = None
 
 # Negotiation Enhancer router (Pack 52)
 try:
@@ -790,6 +808,16 @@ if INTEGRITY_AVAILABLE and "integrity_router" in globals() and integrity_router 
 else:
     print("INFO: Integrity router not registered")
 
+if TAX_AVAILABLE and "tax_tracker_router" in globals() and tax_tracker_router is not None:
+    app.include_router(tax_tracker_router, prefix="/api")
+else:
+    print("INFO: Tax Tracker router not registered")
+
+if HEIMDALL_TRAINING_AVAILABLE and "heimdall_training_router" in globals() and heimdall_training_router is not None:
+    app.include_router(heimdall_training_router, prefix="/api")
+else:
+    print("INFO: Heimdall Training router not registered")
+
 if BUILDER_AVAILABLE and "builder_router" in globals() and builder_router is not None:
     app.include_router(builder_router, prefix="/api")
 else:
@@ -868,6 +896,8 @@ def debug_routes():
     "pantry_available": PANTRY_AVAILABLE,
     "resort_available": RESORT_AVAILABLE,
     "integrity_available": INTEGRITY_AVAILABLE,
+    "tax_available": TAX_AVAILABLE,
+    "heimdall_training_available": HEIMDALL_TRAINING_AVAILABLE,
         "builder_available": BUILDER_AVAILABLE,
         "reports_available": REPORTS_AVAILABLE,
         "research_available": RESEARCH_AVAILABLE,

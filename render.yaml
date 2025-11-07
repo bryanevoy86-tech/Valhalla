@@ -186,6 +186,40 @@ services:
         value: "800"
       - key: TELEMETRY_ALERT_CHANNEL
         value: ops
+      # Pack 60: Tax Optimization & Write-Off Tracker
+      - key: TAX_TRACKER_ENABLED
+        value: "true"
+      - key: RECEIPT_OCR_PROVIDER
+        value: easyocr
+      - key: RECEIPT_STORAGE_BUCKET
+        value: s3://valhalla-receipts
+      - key: RECEIPT_MAX_IMAGE_MB
+        value: "20"
+      - key: CRA_YEAR
+        value: "2025"
+      - key: IRS_YEAR
+        value: "2025"
+      - key: TAX_RISK_THRESHOLD
+        value: "0.7"
+      - key: WRITEOFF_RULESET_VERSION
+        value: "1"
+      - key: EXPORT_BUNDLE_TTL_DAYS
+        value: "30"
+      # Pack 61: Heimdall Intelligence Training & Evolution Core
+      - key: HEIMDALL_TRAINING_ENABLED
+        value: "true"
+      - key: HEIMDALL_EVAL_CRON
+        value: "0 3 * * *"
+      - key: PROMPT_REGISTRY_VERSION
+        value: "1"
+      - key: ABTEST_DEFAULT_SPLIT
+        value: "50"
+      - key: CORPUS_STORAGE_BUCKET
+        value: s3://valhalla-corpus
+      - key: EVAL_SAMPLE_SIZE
+        value: "200"
+      - key: FEEDBACK_WEIGHT_DECAY
+        value: "0.98"
       
       # Builder API configuration
       - key: HEIMDALL_BUILDER_API_KEY
