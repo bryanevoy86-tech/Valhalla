@@ -7,3 +7,4 @@ mypy>=1.11
 black>=24.4
 isort>=5.13
 requests>=2.32
+respx>=0.21
