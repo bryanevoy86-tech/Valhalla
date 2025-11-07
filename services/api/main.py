@@ -53,6 +53,7 @@ DOCS_AVAILABLE = False
 POLICIES_AVAILABLE = False
 PROVIDERS_AVAILABLE = False
 BEHAVIOR_AVAILABLE = False
+BRRRR_AVAILABLE = False
 
 try:
     from app.routers.grants import router as grants_router
@@ -295,6 +296,14 @@ try:
 except Exception as e:
     print(f"WARNING: Could not import behavior router: {e}")
     behavior_router = None
+
+# BRRRR router (Pack 49)
+try:
+    from app.routers.brrrr import router as brrrr_router
+    BRRRR_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import brrrr router: {e}")
+    brrrr_router = None
 
 # Try importing builder router with error handling
 try:
@@ -636,6 +645,11 @@ if BEHAVIOR_AVAILABLE and "behavior_router" in globals() and behavior_router is 
 else:
     print("INFO: Behavior router not registered")
 
+if BRRRR_AVAILABLE and "brrrr_router" in globals() and brrrr_router is not None:
+    app.include_router(brrrr_router, prefix="/api")
+else:
+    print("INFO: BRRRR router not registered")
+
 if BUILDER_AVAILABLE and "builder_router" in globals() and builder_router is not None:
     app.include_router(builder_router, prefix="/api")
 else:
@@ -704,6 +718,7 @@ def debug_routes():
     "policies_available": POLICIES_AVAILABLE,
     "providers_available": PROVIDERS_AVAILABLE,
     "behavior_available": BEHAVIOR_AVAILABLE,
+        "brrrr_available": BRRRR_AVAILABLE,
         "builder_available": BUILDER_AVAILABLE,
         "reports_available": REPORTS_AVAILABLE,
         "research_available": RESEARCH_AVAILABLE,
