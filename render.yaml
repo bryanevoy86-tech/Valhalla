@@ -80,6 +80,17 @@ services:
         value: https://demo.docusign.net
       - key: DOCUSIGN_WEBHOOK_SECRET
         value: whsec_docusign_xxx
+      
+      # Pack 48: Heimdall Behavioral Core
+      - key: HEIMDALL_BEHAVIOR_ENABLED
+        value: "true"
+      - key: HEIMDALL_MIN_CONFIDENCE
+        value: "0.5"
+      - key: HEIMDALL_MAX_PUSHINESS
+        value: "0.8"
+      - key: HEIMDALL_DEFAULT_PERSONA
+        value: consultant
+      
       # Builder API configuration
       - key: HEIMDALL_BUILDER_API_KEY
         value: 2af3d998e1b7e2ca882291732aa40dd9
