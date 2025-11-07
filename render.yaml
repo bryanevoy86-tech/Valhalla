@@ -142,6 +142,21 @@ services:
         value: "0.18"
       - key: QUEEN_BASE_CURRENCY
         value: "CAD"
+      # Pack 56: King's Hub + Adaptive Vault Scaling
+      - key: KING_BASE_CURRENCY
+        value: "CAD"
+      - key: KING_DEFAULT_RULES_JSON
+        value: '{"reinvest_pct":0.90,"fun_pct":0.10,"bahamas_pct":0.00,"reserves_pct":0.00}'
+      - key: KING_MIN_RESERVES_TARGET
+        value: "25000"
+      - key: KING_BAHAMAS_TARGET
+        value: "500000"
+      - key: KING_BAHAMAS_MIN_MONTHLY
+        value: "5000"
+      - key: KING_RULE_ADJUST_STEP
+        value: "0.05"
+      - key: KING_ADAPTIVE_ENABLED
+        value: "true"
       
       # Builder API configuration
       - key: HEIMDALL_BUILDER_API_KEY

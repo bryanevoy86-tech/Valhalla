@@ -60,6 +60,7 @@ NEG_ENHANCE_AVAILABLE = False
 BLACK_ICE_AVAILABLE = False
 CHILDREN_AVAILABLE = False
 QUEEN_AVAILABLE = False
+KING_AVAILABLE = False
 
 try:
     from app.routers.grants import router as grants_router
@@ -350,6 +351,14 @@ try:
 except Exception as e:
     print(f"WARNING: Could not import queen router: {e}")
     queen_router = None
+
+# King router (Pack 56)
+try:
+    from app.routers.king import router as king_router
+    KING_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import king router: {e}")
+    king_router = None
 
 # Negotiation Enhancer router (Pack 52)
 try:
@@ -734,6 +743,11 @@ if QUEEN_AVAILABLE and "queen_router" in globals() and queen_router is not None:
 else:
     print("INFO: Queen router not registered")
 
+if KING_AVAILABLE and "king_router" in globals() and king_router is not None:
+    app.include_router(king_router, prefix="/api")
+else:
+    print("INFO: King router not registered")
+
 if BUILDER_AVAILABLE and "builder_router" in globals() and builder_router is not None:
     app.include_router(builder_router, prefix="/api")
 else:
@@ -808,6 +822,7 @@ def debug_routes():
     "neg_enhance_available": NEG_ENHANCE_AVAILABLE,
     "black_ice_available": BLACK_ICE_AVAILABLE,
     "children_available": CHILDREN_AVAILABLE,
+    "king_available": KING_AVAILABLE,
         "builder_available": BUILDER_AVAILABLE,
         "reports_available": REPORTS_AVAILABLE,
         "research_available": RESEARCH_AVAILABLE,
