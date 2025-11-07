@@ -220,6 +220,36 @@ services:
         value: "200"
       - key: FEEDBACK_WEIGHT_DECAY
         value: "0.98"
+      # Pack 62: Underwriter Signals & Deal Risk Scoring
+      - key: UNDERWRITER_ENABLED
+        value: "true"
+      - key: COMPS_PROVIDER
+        value: manual
+      - key: REPAIR_MODEL_PROVIDER
+        value: heuristic
+      - key: MARKET_BENCHMARK_REGION
+        value: MB-WPG
+      - key: MIN_TARGET_ROI_PCT
+        value: "18"
+      - key: MAX_DTI_PCT
+        value: "45"
+      - key: MAX_LTV_PCT
+        value: "75"
+      - key: UNDERWRITER_P95_MS
+        value: "350"
+      # Pack 63: Behavioral Closer Engine & Script Orchestrator
+      - key: CLOSER_ENGINE_ENABLED
+        value: "true"
+      - key: CLOSER_STYLE_DEFAULT
+        value: neutral
+      - key: CLOSER_MAX_STEP_MINUTES
+        value: "5"
+      - key: CLOSER_ESCALATE_AFTER_MINUTES
+        value: "45"
+      - key: CLOSER_VOIP_PROVIDER
+        value: none
+      - key: CLOSER_NUDGE_COOLDOWN_MIN
+        value: "60"
       
       # Builder API configuration
       - key: HEIMDALL_BUILDER_API_KEY

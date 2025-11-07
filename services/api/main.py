@@ -66,6 +66,8 @@ RESORT_AVAILABLE = False
 INTEGRITY_AVAILABLE = False
 TAX_AVAILABLE = False
 HEIMDALL_TRAINING_AVAILABLE = False
+UNDERWRITER_AVAILABLE = False
+CLOSER_ENGINE_AVAILABLE = False
 
 try:
     from app.routers.grants import router as grants_router
@@ -404,6 +406,22 @@ try:
 except Exception as e:
     print(f"WARNING: Could not import heimdall training router: {e}")
     heimdall_training_router = None
+
+# Underwriter router (Pack 62)
+try:
+    from app.routers.underwriter import router as underwriter_router
+    UNDERWRITER_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import underwriter router: {e}")
+    underwriter_router = None
+
+# Closer Engine router (Pack 63)
+try:
+    from app.routers.closer_engine import router as closer_engine_router
+    CLOSER_ENGINE_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import closer engine router: {e}")
+    closer_engine_router = None
 
 # Negotiation Enhancer router (Pack 52)
 try:
@@ -818,6 +836,16 @@ if HEIMDALL_TRAINING_AVAILABLE and "heimdall_training_router" in globals() and h
 else:
     print("INFO: Heimdall Training router not registered")
 
+if UNDERWRITER_AVAILABLE and "underwriter_router" in globals() and underwriter_router is not None:
+    app.include_router(underwriter_router, prefix="/api")
+else:
+    print("INFO: Underwriter router not registered")
+
+if CLOSER_ENGINE_AVAILABLE and "closer_engine_router" in globals() and closer_engine_router is not None:
+    app.include_router(closer_engine_router, prefix="/api")
+else:
+    print("INFO: Closer Engine router not registered")
+
 if BUILDER_AVAILABLE and "builder_router" in globals() and builder_router is not None:
     app.include_router(builder_router, prefix="/api")
 else:
@@ -898,6 +926,8 @@ def debug_routes():
     "integrity_available": INTEGRITY_AVAILABLE,
     "tax_available": TAX_AVAILABLE,
     "heimdall_training_available": HEIMDALL_TRAINING_AVAILABLE,
+    "underwriter_available": UNDERWRITER_AVAILABLE,
+    "closer_engine_available": CLOSER_ENGINE_AVAILABLE,
         "builder_available": BUILDER_AVAILABLE,
         "reports_available": REPORTS_AVAILABLE,
         "research_available": RESEARCH_AVAILABLE,
