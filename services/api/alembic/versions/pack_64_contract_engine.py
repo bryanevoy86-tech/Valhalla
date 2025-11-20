@@ -40,11 +40,18 @@ def upgrade():
         op.create_table(
             "contract_templates",
             sa.Column("id", sa.Integer, primary_key=True),
-            sa.Column("name", sa.String(128), index=True),
-            sa.Column("jurisdiction", sa.String(16), index=True),
-            sa.Column("language", sa.String(8), server_default=sa.text("'en'")),
-            sa.Column("structure", postgresql.JSONB),
-            sa.Column("active", sa.Boolean, server_default=sa.text("true")),
+            sa.Column("name", sa.String(length=255), nullable=False),
+            sa.Column("category", sa.String(length=100), nullable=True),
+            sa.Column("description", sa.Text, nullable=True),
+            sa.Column("body", sa.Text, nullable=False),
+            sa.Column("created_at", sa.DateTime, server_default=sa.func.now(), nullable=False),
+            sa.Column(
+                "updated_at",
+                sa.DateTime,
+                server_default=sa.func.now(),
+                onupdate=sa.func.now(),
+                nullable=False,
+            ),
         )
 
     if _table_exists(bind, "contract_instances"):
