@@ -3,11 +3,14 @@ from alembic import op
 import sqlalchemy as sa
 from sqlalchemy import inspect
 from sqlalchemy.dialects import postgresql
+import logging
 
 revision = "pack_63_closer_engine"
 down_revision = "pack_62_underwriter"
 branch_labels = None
 depends_on = None
+
+logger = logging.getLogger("alembic.runtime.migration")
 
 def upgrade():
     bind = op.get_bind()
@@ -24,6 +27,8 @@ def upgrade():
             sa.Column("sentiment", sa.Float),
             sa.Column("last_seen", sa.DateTime, server_default=sa.text("CURRENT_TIMESTAMP"))
         )
+    else:
+        logger.info("[migration 0063] seller_profiles already exists; skipping create_table")
     
     if "script_blocks" not in existing:
         op.create_table(
@@ -34,6 +39,8 @@ def upgrade():
             sa.Column("content", sa.Text),
             sa.Column("active", sa.Boolean, server_default=sa.text("true"))
         )
+    else:
+        logger.info("[migration 0063] script_blocks already exists; skipping create_table")
     
     if "playbooks" not in existing:
         op.create_table(
@@ -43,6 +50,8 @@ def upgrade():
             sa.Column("graph", postgresql.JSONB),
             sa.Column("active", sa.Boolean, server_default=sa.text("true"))
         )
+    else:
+        logger.info("[migration 0063] playbooks already exists; skipping create_table")
     
     if "closer_sessions" not in existing:
         op.create_table(
@@ -55,6 +64,8 @@ def upgrade():
             sa.Column("started_ts", sa.DateTime, server_default=sa.text("CURRENT_TIMESTAMP")),
             sa.Column("updated_ts", sa.DateTime, server_default=sa.text("CURRENT_TIMESTAMP"))
         )
+    else:
+        logger.info("[migration 0063] closer_sessions already exists; skipping create_table")
     
     if "closer_events" not in existing:
         op.create_table(
@@ -65,6 +76,8 @@ def upgrade():
             sa.Column("event", sa.String(64)),
             sa.Column("payload", postgresql.JSONB)
         )
+    else:
+        logger.info("[migration 0063] closer_events already exists; skipping create_table")
 
 def downgrade():
     for t in ["closer_events","closer_sessions","playbooks","script_blocks","seller_profiles"]:
