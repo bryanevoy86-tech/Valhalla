@@ -31,27 +31,35 @@ def upgrade():
         )
     else:
         print("[migration 0059] integrity_events already exists; skipping create_table")
-    op.create_table(
-        "telemetry_events",
-        sa.Column("id", sa.Integer, primary_key=True),
-        sa.Column("ts", sa.DateTime, server_default=sa.text("CURRENT_TIMESTAMP")),
-        sa.Column("category", sa.String(64), nullable=False),
-        sa.Column("name", sa.String(128), nullable=False),
-        sa.Column("latency_ms", sa.Integer, nullable=True),
-        sa.Column("ok", sa.Boolean, nullable=False, server_default=sa.text("true")),
-        sa.Column("dim", sa.String(128), nullable=True),
-        sa.Column("anomaly", sa.Boolean, nullable=False, server_default=sa.text("false"))
-    )
-    op.create_table(
-        "telemetry_counters",
-        sa.Column("id", sa.Integer, primary_key=True),
-        sa.Column("yyyymmdd", sa.String(10), nullable=False),
-        sa.Column("category", sa.String(64), nullable=False),
-        sa.Column("name", sa.String(128), nullable=False),
-        sa.Column("count_ok", sa.Integer, nullable=False, server_default="0"),
-        sa.Column("count_err", sa.Integer, nullable=False, server_default="0"),
-        sa.Column("p95_ms", sa.Integer, nullable=False, server_default="0")
-    )
+    
+    if "telemetry_events" not in existing:
+        op.create_table(
+            "telemetry_events",
+            sa.Column("id", sa.Integer, primary_key=True),
+            sa.Column("ts", sa.DateTime, server_default=sa.text("CURRENT_TIMESTAMP")),
+            sa.Column("category", sa.String(64), nullable=False),
+            sa.Column("name", sa.String(128), nullable=False),
+            sa.Column("latency_ms", sa.Integer, nullable=True),
+            sa.Column("ok", sa.Boolean, nullable=False, server_default=sa.text("true")),
+            sa.Column("dim", sa.String(128), nullable=True),
+            sa.Column("anomaly", sa.Boolean, nullable=False, server_default=sa.text("false"))
+        )
+    else:
+        print("[migration 0059] telemetry_events already exists; skipping create_table")
+    
+    if "telemetry_counters" not in existing:
+        op.create_table(
+            "telemetry_counters",
+            sa.Column("id", sa.Integer, primary_key=True),
+            sa.Column("yyyymmdd", sa.String(10), nullable=False),
+            sa.Column("category", sa.String(64), nullable=False),
+            sa.Column("name", sa.String(128), nullable=False),
+            sa.Column("count_ok", sa.Integer, nullable=False, server_default="0"),
+            sa.Column("count_err", sa.Integer, nullable=False, server_default="0"),
+            sa.Column("p95_ms", sa.Integer, nullable=False, server_default="0")
+        )
+    else:
+        print("[migration 0059] telemetry_counters already exists; skipping create_table")
 
 def downgrade():
     op.drop_table("telemetry_counters")

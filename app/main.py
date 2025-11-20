@@ -1,3 +1,15 @@
+"""FastAPI application entry point.
+
+Run with: uvicorn app.main:app --reload
+"""
+from fastapi import FastAPI
+
+app = FastAPI(title="Valhalla API", version="0.1.0")
+
+
+@app.get("/health", summary="Health check")
+def health() -> dict[str, str]:
+    return {"status": "ok"}
 """Higher-level app entrypoints (helpers and wiring) for Valhalla application.
 
 This file is a lightweight stub that re-exports or wraps functionality from
