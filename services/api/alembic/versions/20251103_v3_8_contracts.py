@@ -18,8 +18,9 @@ depends_on = None
 def upgrade():
     bind = op.get_bind()
     inspector = inspect(bind)
-    tables = set(inspector.get_table_names())
+    tables = inspector.get_table_names()
 
+    # --- contract_templates table ---
     if "contract_templates" not in tables:
         op.create_table(
             "contract_templates",
@@ -28,17 +29,10 @@ def upgrade():
             sa.Column("version", sa.String(length=40), nullable=True),
             sa.Column("notes", sa.Text(), nullable=True),
             sa.Column("body_text", sa.Text(), nullable=False),
-            sa.Column(
-                "created_at",
-                sa.DateTime(timezone=True),
-                server_default=sa.text("NOW()"),
-                nullable=False,
-            ),
+            sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("NOW()"), nullable=False),
         )
 
-    # Create records table if missing; FK references contract_templates either way.
-    inspector = inspect(op.get_bind())
-    tables = set(inspector.get_table_names())
+    # --- contract_records table (if you have one in this migration) ---
     if "contract_records" not in tables:
         op.create_table(
             "contract_records",
@@ -51,21 +45,18 @@ def upgrade():
             ),
             sa.Column("filename", sa.String(length=200), nullable=False),
             sa.Column("context_json", sa.Text(), nullable=True),
-            sa.Column(
-                "created_at",
-                sa.DateTime(timezone=True),
-                server_default=sa.text("NOW()"),
-                nullable=False,
-            ),
+            sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("NOW()"), nullable=False),
         )
 
 
 def downgrade():
     bind = op.get_bind()
     inspector = inspect(bind)
-    tables = set(inspector.get_table_names())
+    tables = inspector.get_table_names()
 
+    # Drop in reverse order, guarded
     if "contract_records" in tables:
         op.drop_table("contract_records")
+
     if "contract_templates" in tables:
         op.drop_table("contract_templates")
