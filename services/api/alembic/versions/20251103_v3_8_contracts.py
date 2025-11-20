@@ -1,12 +1,12 @@
-"""v3.8 - contract templates + records"""
+"""V3.8 – contracts migration
 
-Make table creation idempotent to avoid DuplicateTable errors if tables
-already exist in the target database.
+This migration manages contract-related tables.
+It has been updated to be idempotent so it can safely run multiple times
+in different environments without crashing on existing tables.
 """
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy import inspect
-import logging
 import logging
 
 revision = "v3_8_contracts"
