@@ -8,10 +8,9 @@ from alembic import op
 import sqlalchemy as sa
 from sqlalchemy import inspect
 
-
 # revision identifiers, used by Alembic.
-revision = "v3_8_contracts"  # keep existing
-down_revision = "v3_7_intake_notify"  # keep existing
+revision = "v3_8_contracts"  # <-- keep whatever was already here
+down_revision = "v3_7_intake_notify"        # <-- keep your existing value here
 branch_labels = None
 depends_on = None
 
