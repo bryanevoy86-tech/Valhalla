@@ -20,6 +20,13 @@ app.add_middleware(
 def healthz():
     return {"ok": True}
 
+@app.get("/health", tags=["System"])
+async def health():
+    """
+    Simple health check for uptime monitors and Render.
+    """
+    return {"status": "ok", "heimdall": "online"}
+
 @app.get("/version")
 def version():
     return {"service": "valhalla-api", "version": "0.1.0"}
@@ -28,8 +35,11 @@ def version():
 def features():
     return [{"id": 1, "name": "valhalla"}]
 
-@app.get("/")
-def root():
+@app.get("/", tags=["System"])
+async def root():
+    """
+    Public root endpoint for Render and health checks.
+    """
     return {
         "message": "Welcome to Valhalla Legacy API",
         "status": "Heimdall Operational",
