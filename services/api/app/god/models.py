@@ -70,7 +70,7 @@ class GodReviewCase(Base):
     status = Column(
         String(30),
         nullable=False,
-        default=GodCaseStatus.OPEN,
+        default=lambda: GodCaseStatus.OPEN,
     )
 
     heimdall_summary = Column(Text, nullable=True)
@@ -84,7 +84,7 @@ class GodReviewCase(Base):
     final_outcome = Column(
         String(30),
         nullable=False,
-        default=GodCaseOutcome.UNKNOWN,
+        default=lambda: GodCaseOutcome.UNKNOWN,
     )
 
     final_notes = Column(Text, nullable=True)
