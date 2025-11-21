@@ -84,6 +84,18 @@ try:
 except Exception as e:
     print(f"[app.main] Skipping god_cases router: {e}")
 
+try:
+    from app.routers.sync_engine import router as sync_engine_router
+    app.include_router(sync_engine_router)
+except Exception as e:
+    print(f"[app.main] Skipping sync_engine router: {e}")
+
+try:
+    from app.routers.specialists import router as specialists_router
+    app.include_router(specialists_router)
+except Exception as e:
+    print(f"[app.main] Skipping specialists router: {e}")
+
 
 # --- Startup tasks ------------------------------------------------------------
 

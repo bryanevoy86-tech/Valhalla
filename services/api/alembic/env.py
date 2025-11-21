@@ -25,6 +25,8 @@ from app.models.intake import LeadIntake
 from app.models.notify import Outbox
 from app.loki.models import LokiReview, LokiFinding
 from app.god.models import GodReviewCase, GodReviewEvent
+from app.sync.models import GodSyncRecord
+from app.specialists.models import HumanSpecialist, SpecialistCaseComment
 # Research models not yet created - comment out for now
 # from app.models.research import ResearchSource, ResearchDoc, ResearchQuery, Playbook
 
