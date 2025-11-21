@@ -79,10 +79,10 @@ except Exception as e:
     print(f"[app.main] Skipping loki router: {e}")
 
 try:
-    from app.routers.god import router as god_router
-    app.include_router(god_router)
+    from app.routers.god_cases import router as god_cases_router
+    app.include_router(god_cases_router)
 except Exception as e:
-    print(f"[app.main] Skipping god router: {e}")
+    print(f"[app.main] Skipping god_cases router: {e}")
 
 
 # --- Startup tasks ------------------------------------------------------------
