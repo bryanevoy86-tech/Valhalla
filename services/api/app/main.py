@@ -96,6 +96,18 @@ try:
 except Exception as e:
     print(f"[app.main] Skipping specialists router: {e}")
 
+try:
+    from app.routers.lawyer_feed import router as lawyer_feed_router
+    app.include_router(lawyer_feed_router)
+except Exception as e:
+    print(f"[app.main] Skipping lawyer_feed router: {e}")
+
+try:
+    from app.routers.tax_bridge import router as tax_bridge_router
+    app.include_router(tax_bridge_router)
+except Exception as e:
+    print(f"[app.main] Skipping tax_bridge router: {e}")
+
 
 # --- Startup tasks ------------------------------------------------------------
 
