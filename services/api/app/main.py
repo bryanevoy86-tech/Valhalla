@@ -108,6 +108,18 @@ try:
 except Exception as e:
     print(f"[app.main] Skipping tax_bridge router: {e}")
 
+try:
+    from app.routers.god_verdicts import router as god_verdicts_router
+    app.include_router(god_verdicts_router)
+except Exception as e:
+    print(f"[app.main] Skipping god_verdicts router: {e}")
+
+try:
+    from app.routers.disputes import router as disputes_router
+    app.include_router(disputes_router)
+except Exception as e:
+    print(f"[app.main] Skipping disputes router: {e}")
+
 
 # --- Startup tasks ------------------------------------------------------------
 
