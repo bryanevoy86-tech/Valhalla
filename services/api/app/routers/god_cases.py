@@ -20,6 +20,7 @@ from app.schemas.god_case import (
     GodCaseRead,
     GodCaseUpdate,
 )
+from pydantic import BaseModel
 from app.god.schemas import (
     GodReviewCaseCreate,
     GodReviewCaseRead,
@@ -310,6 +311,66 @@ def update_god_case_registry(
     for field, value in data.items():
         setattr(obj, field, value)
     obj.updated_at = datetime.utcnow()
+    db.add(obj)
+    db.commit()
+    db.refresh(obj)
+    return obj
+
+
+# --- Pack 85 Rescan Lifecycle -----------------------------------------------
+
+class RescanCompletePayload(BaseModel):
+    heimdall_output: Optional[dict[str, Any]] = None
+    loki_output: Optional[dict[str, Any]] = None
+    arbitration_output: Optional[dict[str, Any]] = None
+    status: Optional[str] = "closed"
+
+
+@router.post("/{case_id}/request-rescan", response_model=GodCaseRead)
+def request_rescan(
+    case_id: UUID,
+    db: Session = Depends(get_db),
+) -> GodCaseRead:
+    result = db.execute(select(GodCase).where(GodCase.id == case_id))
+    obj = result.scalar_one_or_none()
+    if not obj:
+        raise HTTPException(status_code=404, detail="GodCase not found")
+    obj.needs_rescan = True
+    if obj.status not in ("open", "rescan_required"):
+        obj.status = "rescan_required"
+    obj.updated_at = datetime.utcnow()
+    db.add(obj)
+    db.commit()
+    db.refresh(obj)
+    return obj
+
+
+@router.post("/{case_id}/rescan-complete", response_model=GodCaseRead)
+def rescan_complete(
+    case_id: UUID,
+    payload: RescanCompletePayload,
+    db: Session = Depends(get_db),
+) -> GodCaseRead:
+    result = db.execute(select(GodCase).where(GodCase.id == case_id))
+    obj = result.scalar_one_or_none()
+    if not obj:
+        raise HTTPException(status_code=404, detail="GodCase not found")
+
+    data = payload.dict(exclude_unset=True)
+    if "heimdall_output" in data:
+        obj.heimdall_output = data["heimdall_output"]
+    if "loki_output" in data:
+        obj.loki_output = data["loki_output"]
+    if "arbitration_output" in data:
+        obj.arbitration_output = data["arbitration_output"]
+    if "status" in data and data["status"] is not None:
+        obj.status = data["status"]
+
+    obj.needs_rescan = False
+    obj.rescan_count = (obj.rescan_count or 0) + 1
+    obj.last_rescan_at = datetime.utcnow()
+    obj.updated_at = datetime.utcnow()
+
     db.add(obj)
     db.commit()
     db.refresh(obj)

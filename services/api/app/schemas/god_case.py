@@ -27,6 +27,9 @@ class GodCaseUpdate(BaseModel):
     loki_output: Optional[dict[str, Any]] = None
     arbitration_output: Optional[dict[str, Any]] = None
     needs_rescan: Optional[bool] = None
+    rescan_count: Optional[int] = None
+    last_rescan_at: Optional[datetime] = None
+    last_specialist_feedback_at: Optional[datetime] = None
 
 
 class GodCaseRead(GodCaseBase):
@@ -35,6 +38,9 @@ class GodCaseRead(GodCaseBase):
     loki_output: Optional[dict[str, Any]] = None
     arbitration_output: Optional[dict[str, Any]] = None
     needs_rescan: bool
+    rescan_count: int
+    last_rescan_at: Optional[datetime] = None
+    last_specialist_feedback_at: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
 

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import List
 from uuid import UUID
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
@@ -37,6 +38,7 @@ def add_feedback(
         suggested_changes=payload.suggested_changes,
     )
     god_case.needs_rescan = True
+    god_case.last_specialist_feedback_at = datetime.utcnow()
     db.add(fb)
     db.add(god_case)
     db.commit()
