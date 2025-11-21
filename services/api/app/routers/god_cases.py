@@ -14,6 +14,12 @@ from app.god.models import (
     GodCaseStatus,
     GodCaseOutcome,
 )
+from app.models.god_case import GodCase
+from app.schemas.god_case import (
+    GodCaseCreate,
+    GodCaseRead,
+    GodCaseUpdate,
+)
 from app.god.schemas import (
     GodReviewCaseCreate,
     GodReviewCaseRead,
@@ -235,3 +241,76 @@ def get_dual_god_snapshot(
         final_outcome=case.final_outcome,
         status=case.status,
     )
+
+
+# ---------------------------------------------------------------------------
+# Pack 83: GodCase Registry CRUD (prefixed under /registry to avoid collisions)
+# ---------------------------------------------------------------------------
+
+
+@router.post("/registry", response_model=GodCaseRead, status_code=status.HTTP_201_CREATED)
+def create_god_case_registry(
+    payload: GodCaseCreate,
+    db: Session = Depends(get_db),
+) -> GodCaseRead:
+    obj = GodCase(
+        title=payload.title,
+        source_type=payload.source_type,
+        status=payload.status,
+        payload=payload.payload,
+        heimdall_output=payload.heimdall_output,
+        loki_output=payload.loki_output,
+        arbitration_output=payload.arbitration_output,
+    )
+    db.add(obj)
+    db.commit()
+    db.refresh(obj)
+    return obj
+
+
+@router.get("/registry/{case_id}", response_model=GodCaseRead)
+def get_god_case_registry(
+    case_id: UUID,
+    db: Session = Depends(get_db),
+) -> GodCaseRead:
+    result = db.execute(select(GodCase).where(GodCase.id == case_id))
+    obj = result.scalar_one_or_none()
+    if not obj:
+        raise HTTPException(status_code=404, detail="GodCase not found")
+    return obj
+
+
+@router.get("/registry", response_model=List[GodCaseRead])
+def list_god_case_registry(
+    status: Optional[str] = Query(default=None),
+    source_type: Optional[str] = Query(default=None),
+    db: Session = Depends(get_db),
+) -> List[GodCaseRead]:
+    stmt = select(GodCase)
+    if status:
+        stmt = stmt.where(GodCase.status == status)
+    if source_type:
+        stmt = stmt.where(GodCase.source_type == source_type)
+    stmt = stmt.order_by(GodCase.created_at.desc())
+    result = db.execute(stmt)
+    return result.scalars().all()
+
+
+@router.patch("/registry/{case_id}", response_model=GodCaseRead)
+def update_god_case_registry(
+    case_id: UUID,
+    payload: GodCaseUpdate,
+    db: Session = Depends(get_db),
+) -> GodCaseRead:
+    result = db.execute(select(GodCase).where(GodCase.id == case_id))
+    obj = result.scalar_one_or_none()
+    if not obj:
+        raise HTTPException(status_code=404, detail="GodCase not found")
+    data = payload.dict(exclude_unset=True)
+    for field, value in data.items():
+        setattr(obj, field, value)
+    obj.updated_at = datetime.utcnow()
+    db.add(obj)
+    db.commit()
+    db.refresh(obj)
+    return obj

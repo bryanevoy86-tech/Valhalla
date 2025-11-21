@@ -126,6 +126,12 @@ try:
 except Exception as e:
     print(f"[app.main] Skipping god_arbitration router: {e}")
 
+try:
+    from app.routers.specialist_feedback import router as specialist_feedback_router
+    app.include_router(specialist_feedback_router)
+except Exception as e:
+    print(f"[app.main] Skipping specialist_feedback router: {e}")
+
 
 # --- Startup tasks ------------------------------------------------------------
 
