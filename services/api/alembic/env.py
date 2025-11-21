@@ -24,6 +24,7 @@ from app.models.contracts import ContractTemplate, ContractRecord
 from app.models.intake import LeadIntake
 from app.models.notify import Outbox
 from app.loki.models import LokiReview, LokiFinding
+from app.god.models import GodReviewCase, GodReviewEvent
 # Research models not yet created - comment out for now
 # from app.models.research import ResearchSource, ResearchDoc, ResearchQuery, Playbook
 
