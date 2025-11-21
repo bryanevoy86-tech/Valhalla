@@ -11,6 +11,7 @@ from alembic import op
 import sqlalchemy as sa
 
 
+# revision identifiers, used by Alembic.
 revision: str = "85_god_case_rescan_fields"
 down_revision: Union[str, None] = "84_specialist_feedback"
 branch_labels: Union[str, Sequence[str], None] = None
@@ -18,6 +19,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    # New lifecycle fields for GodCase rescan logic
     op.add_column(
         "god_cases",
         sa.Column("rescan_count", sa.Integer(), nullable=False, server_default="0"),
@@ -28,9 +30,19 @@ def upgrade() -> None:
     )
     op.add_column(
         "god_cases",
-        sa.Column("last_specialist_feedback_at", sa.DateTime(timezone=True), nullable=True),
+        sa.Column(
+            "last_specialist_feedback_at",
+            sa.DateTime(timezone=True),
+            nullable=True,
+        ),
     )
-    op.alter_column("god_cases", "rescan_count", server_default=None)
+
+    # Drop the default now that initial backfill is done
+    op.alter_column(
+        "god_cases",
+        "rescan_count",
+        server_default=None,
+    )
 
 
 def downgrade() -> None:
