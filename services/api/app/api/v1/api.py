@@ -1,5 +1,7 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import root
+from .endpoints import root   # ⬅ relative import, no more VS Code whining
+from app.loki.router import router as loki_router
 
 api_router = APIRouter()
 api_router.include_router(root.router, prefix="", tags=["Root"])
+api_router.include_router(loki_router)
