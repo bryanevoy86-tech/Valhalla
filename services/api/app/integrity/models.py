@@ -4,18 +4,20 @@ from sqlalchemy import Integer, String, Text, DateTime, Boolean
 from sqlalchemy.sql import func
 from app.core.db import Base
 
-class IntegrityEvent(Base):
-    __tablename__ = "integrity_events"
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    ts: Mapped[str] = mapped_column(DateTime, server_default=func.now())
-    actor: Mapped[str] = mapped_column(String(64), nullable=False)
-    action: Mapped[str] = mapped_column(String(64), nullable=False)
-    scope: Mapped[str] = mapped_column(String(128), nullable=False)
-    ref_id: Mapped[str | None] = mapped_column(String(64))
-    payload_json: Mapped[str | None] = mapped_column(Text)
-    prev_hash: Mapped[str | None] = mapped_column(String(128))
-    event_hash: Mapped[str] = mapped_column(String(128), nullable=False)
-    sig: Mapped[str | None] = mapped_column(String(128))
+# REMOVE OR COMMENT OUT — Pack 59 duplicate
+# Use the canonical IntegrityEvent from app.models.telemetry instead
+# class IntegrityEvent(Base):
+#     __tablename__ = "integrity_events"
+#     id: Mapped[int] = mapped_column(Integer, primary_key=True)
+#     ts: Mapped[str] = mapped_column(DateTime, server_default=func.now())
+#     actor: Mapped[str] = mapped_column(String(64), nullable=False)
+#     action: Mapped[str] = mapped_column(String(64), nullable=False)
+#     scope: Mapped[str] = mapped_column(String(128), nullable=False)
+#     ref_id: Mapped[str | None] = mapped_column(String(64))
+#     payload_json: Mapped[str | None] = mapped_column(Text)
+#     prev_hash: Mapped[str | None] = mapped_column(String(128))
+#     event_hash: Mapped[str] = mapped_column(String(128), nullable=False)
+#     sig: Mapped[str | None] = mapped_column(String(128))
 
 class TelemetryEvent(Base):
     __tablename__ = "telemetry_events"
