@@ -38,4 +38,7 @@ class IntegrityEvent(Base):
     correlation_id = Column(String(255), nullable=True, index=True)
 
 
-__all__ = ["IntegrityEvent"]
+__all__ = ["IntegrityEvent", "TelemetryEvent"]
+
+# Backwards-compatibility alias for older imports expecting TelemetryEvent
+TelemetryEvent = IntegrityEvent
