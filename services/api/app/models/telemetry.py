@@ -1,33 +1,26 @@
 """
-Telemetry models for tracking system activity and errors.
+Telemetry models - DEPRECATED.
 
-This module now contains:
-- IntegrityEvent: Pack 9 model for the Integrity Ledger ("integrity_events")
-    (Note: legacy TelemetryEvent model is disabled; use app.integrity.models)
+All telemetry/integrity models have been consolidated into:
+- app.integrity.models.IntegrityEvent (maps to telemetry_events table)
+
+This file is kept for backwards compatibility but should not be imported.
 """
 
-from sqlalchemy import Column, Integer, String, Text, DateTime, func
-from ..core.db import Base
+# Deprecated: All models moved to app.integrity.models
+# Use app.integrity.models.IntegrityEvent instead
 
-
-# Deprecated: legacy TelemetryEvent definition conflicts with Pack 59 schema.
-# Use app.integrity.models.TelemetryEvent instead to match migrations.
+# Legacy TelemetryEvent - commented out, use app.integrity.models
 # class TelemetryEvent(Base):
 #     __tablename__ = "telemetry_events"
-#     
-#     id = Column(Integer, primary_key=True)
-#     kind = Column(String(80), nullable=False)  # e.g., "build", "ingest", "error"
-#     message = Column(Text, nullable=True)
-#     meta_json = Column(Text, nullable=True)  # JSON string for additional metadata
-#     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+#     ...
 
-
-class IntegrityEvent(Base):
-    """Pack 9: Integrity Ledger events"""
-    __tablename__ = "integrity_events"
-
-    id = Column(Integer, primary_key=True, index=True)
-    ts = Column(DateTime(timezone=True), server_default=func.now(), nullable=False, index=True)
+# Legacy IntegrityEvent - commented out, conflicts with new unified model
+# class IntegrityEvent(Base):
+#     """Pack 9: Integrity Ledger events"""
+#     __tablename__ = "integrity_events"
+#     id = Column(Integer, primary_key=True, index=True)
+#     ts = Column(DateTime(timezone=True), server_default=func.now(), nullable=False, index=True)
     event = Column(String(200), nullable=False, index=True)
     level = Column(String(16), nullable=False, server_default="info", index=True)
     actor = Column(String(120), nullable=False, server_default="system", index=True)
