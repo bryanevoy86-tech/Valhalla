@@ -4,9 +4,16 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.observability import drift, retention
-from app.api.v1.api import api_router
 
-app = FastAPI()
+# --- Core FastAPI app ---------------------------------------------------------
+
+app = FastAPI(
+    title="Valhalla API",
+    version="1.0.0",
+    docs_url="/docs",
+    openapi_url="/openapi.json",
+    redoc_url=None,
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -16,9 +23,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/healthz")
-def healthz():
-    return {"ok": True}
+
+# --- System endpoints: root + health -----------------------------------------
+
+@app.get("/", tags=["System"])
+async def root():
+    """
+    Root endpoint – Heimdall status + welcome message.
+    """
+    return {
+        "message": "Welcome to Valhalla Legacy API",
+        "status": "Heimdall Operational",
+        "version": "1.0.0",
+    }
+
 
 @app.get("/health", tags=["System"])
 async def health():
@@ -27,26 +45,35 @@ async def health():
     """
     return {"status": "ok", "heimdall": "online"}
 
+
+@app.get("/healthz", tags=["System"])
+async def healthz():
+    """
+    Secondary health endpoint (some scripts/tools use /healthz).
+    """
+    return {"status": "ok"}
+
+
 @app.get("/version")
 def version():
-    return {"service": "valhalla-api", "version": "0.1.0"}
+    return {"service": "valhalla-api", "version": "1.0.0"}
+
 
 @app.get("/api/features")
 def features():
     return [{"id": 1, "name": "valhalla"}]
 
-@app.get("/", tags=["System"])
-async def root():
-    """
-    Public root endpoint for Render and health checks.
-    """
-    return {
-        "message": "Welcome to Valhalla Legacy API",
-        "status": "Heimdall Operational",
-        "version": "1.0.0"
-    }
 
-app.include_router(api_router, prefix="/api/v1")
+# --- API v1 router (optional, but safe) --------------------------------------
+
+try:
+    from app.api.v1.api import api_router
+    app.include_router(api_router, prefix="/api/v1")
+except Exception as e:
+    print(f"[app.main] Skipping /api/v1 router: {e}")
+
+
+# --- Startup tasks ------------------------------------------------------------
 
 @app.on_event("startup")
 async def _retention_cron():
@@ -59,6 +86,7 @@ async def _retention_cron():
             await asyncio.sleep(int(os.getenv("RETENTION_CRON_MINUTES", "30")) * 60)
 
     asyncio.create_task(loop())
+
 
 @app.on_event("startup")
 async def _drift_check():
