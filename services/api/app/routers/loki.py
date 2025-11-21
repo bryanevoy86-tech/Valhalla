@@ -18,6 +18,11 @@ from app.loki.schemas import (
     LokiReviewRead,
     LokiVerdict,
 )
+from app.core.loki_engine import engine as counter_engine
+from app.schemas.loki_analysis import (
+    LokiAnalysisRequest,
+    LokiAnalysisResponse,
+)
 
 router = APIRouter(prefix="/loki", tags=["Loki Reviews"])
 
@@ -202,3 +207,28 @@ def get_loki_verdict(
         requires_human_review=requires_human,
         key_risks=key_risks,
     )
+
+
+@router.post(
+    "/analyze",
+    response_model=LokiAnalysisResponse,
+    status_code=status.HTTP_200_OK,
+)
+def analyze_artifact(
+    payload: LokiAnalysisRequest,
+    db: Session = Depends(get_db),  # retained for future linkage / logging
+) -> LokiAnalysisResponse:
+    """Deep counter-analysis of an arbitrary artifact text using LokiCounterEngine.
+
+    This is Pack 81 logic. Currently heuristic and stateless; can be extended to
+    persist results or emit events later.
+    """
+    context = payload.context or {}
+    if payload.risk_profile:
+        context["risk_profile"] = payload.risk_profile
+
+    result = counter_engine.analyze(
+        artifact_text=payload.artifact_text,
+        context=context,
+    )
+    return LokiAnalysisResponse(**result.__dict__)

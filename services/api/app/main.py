@@ -120,6 +120,12 @@ try:
 except Exception as e:
     print(f"[app.main] Skipping disputes router: {e}")
 
+try:
+    from app.routers.god_arbitration import router as god_arbitration_router
+    app.include_router(god_arbitration_router)
+except Exception as e:
+    print(f"[app.main] Skipping god_arbitration router: {e}")
+
 
 # --- Startup tasks ------------------------------------------------------------
 
