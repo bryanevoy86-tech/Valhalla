@@ -1,27 +1,18 @@
 """
-Telemetry models - DEPRECATED.
+Telemetry model shim.
 
-All telemetry/integrity models have been consolidated into:
-- app.integrity.models.IntegrityEvent (maps to telemetry_events table)
+We keep IntegrityEvent imported from app.integrity.models so that
+existing imports like:
 
-This file is kept for backwards compatibility but should not be imported.
+	from app.models.telemetry import IntegrityEvent
+
+continue to work, but the actual SQLAlchemy model is defined only once
+in app.integrity.models.
+
+This avoids duplicate table definitions and metadata conflicts.
 """
 
-# Deprecated: All models moved to app.integrity.models
-# Use app.integrity.models.IntegrityEvent instead
+from app.integrity.models import IntegrityEvent
 
-# Legacy TelemetryEvent - commented out, use app.integrity.models
-# class TelemetryEvent(Base):
-#     __tablename__ = "telemetry_events"
-#     ...
+__all__ = ["IntegrityEvent"]
 
-# Legacy IntegrityEvent - commented out, conflicts with new unified model
-# class IntegrityEvent(Base):
-#     """Pack 9: Integrity Ledger events"""
-#     __tablename__ = "integrity_events"
-#     id = Column(Integer, primary_key=True, index=True)
-#     ts = Column(DateTime(timezone=True), server_default=func.now(), nullable=False, index=True)
-    event = Column(String(200), nullable=False, index=True)
-    level = Column(String(16), nullable=False, server_default="info", index=True)
-    actor = Column(String(120), nullable=False, server_default="system", index=True)
-    meta = Column(Text, nullable=False, server_default="{}")
