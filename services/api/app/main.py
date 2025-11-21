@@ -72,6 +72,12 @@ try:
 except Exception as e:
     print(f"[app.main] Skipping /api/v1 router: {e}")
 
+try:
+    from app.routers.loki import router as loki_router
+    app.include_router(loki_router)
+except Exception as e:
+    print(f"[app.main] Skipping loki router: {e}")
+
 
 # --- Startup tasks ------------------------------------------------------------
 
