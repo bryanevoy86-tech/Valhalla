@@ -1,9 +1,5 @@
-"""Application package initialization.
+"""Application package initialization."""
 
-Expose the FastAPI `app` instance at package root.
-Add routers/modules here as the project grows.
-"""
-
-from .main import app  # re-export for convenience
+from .main import app
 
 __all__ = ["app"]

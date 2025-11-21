@@ -41,5 +41,3 @@ __all__ = ["Base", "TimestampMixin"]
 # Future model imports (uncomment as added):
 # from app.models.user import User  # noqa: F401
 # from app.models.property import Property  # noqa: F401
-
-from .legacy_models import LegacySystem  # noqa: F401
