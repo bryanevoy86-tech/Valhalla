@@ -17,7 +17,7 @@ from app.core.db import Base
 # Models imported for metadata discovery
 from app.models.builder import BuilderTask, BuilderEvent
 from app.models.capital import CapitalIntake
-from app.integrity.models import TelemetryEvent
+from app.integrity.models import IntegrityEvent
 from app.models.grants import GrantSource, GrantRecord
 from app.models.match import Buyer, DealBrief
 from app.models.contracts import ContractTemplate, ContractRecord
@@ -31,6 +31,8 @@ from app.models.god_verdicts import GodVerdict
 from app.models.disputes import Dispute
 from app.models.meeting_recordings import MeetingRecording
 from app.models.tax_interpretations import TaxOpinion
+from app.models.god_case import GodCase
+from app.models.specialist_feedback import SpecialistFeedback
 # Research models not yet created - comment out for now
 # from app.models.research import ResearchSource, ResearchDoc, ResearchQuery, Playbook
 
