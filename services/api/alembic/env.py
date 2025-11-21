@@ -17,7 +17,7 @@ from app.core.db import Base
 # Models imported for metadata discovery
 from app.models.builder import BuilderTask, BuilderEvent
 from app.models.capital import CapitalIntake
-from app.models.telemetry import TelemetryEvent
+from app.integrity.models import TelemetryEvent
 from app.models.grants import GrantSource, GrantRecord
 from app.models.match import Buyer, DealBrief
 from app.models.contracts import ContractTemplate, ContractRecord
