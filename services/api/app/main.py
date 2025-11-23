@@ -150,6 +150,24 @@ try:
 except Exception as e:
     print(f"[app.main] Skipping optimization router: {e}")
 
+try:
+    from app.api.v1.telemetry import router as telemetry_router
+    app.include_router(telemetry_router, prefix="/api/v1")
+except Exception as e:
+    print(f"[app.main] Skipping telemetry router: {e}")
+
+try:
+    from app.api.v1.diagnostics import router as diagnostics_router
+    app.include_router(diagnostics_router, prefix="/api/v1")
+except Exception as e:
+    print(f"[app.main] Skipping diagnostics router: {e}")
+
+try:
+    from app.api.v1.bus import router as bus_router
+    app.include_router(bus_router, prefix="/api/v1")
+except Exception as e:
+    print(f"[app.main] Skipping bus router: {e}")
+
 
 # --- Startup tasks ------------------------------------------------------------
 
