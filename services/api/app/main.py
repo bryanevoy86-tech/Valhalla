@@ -168,6 +168,12 @@ try:
 except Exception as e:
     print(f"[app.main] Skipping bus router: {e}")
 
+try:
+    from app.api.v1.arbitration import router as arbitration_router
+    app.include_router(arbitration_router, prefix="/api/v1")
+except Exception as e:
+    print(f"[app.main] Skipping arbitration router: {e}")
+
 
 # --- Startup tasks ------------------------------------------------------------
 
