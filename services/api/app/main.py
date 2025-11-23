@@ -132,6 +132,24 @@ try:
 except Exception as e:
     print(f"[app.main] Skipping specialist_feedback router: {e}")
 
+try:
+    from app.api.v1.backup import router as backup_router
+    app.include_router(backup_router, prefix="/api/v1")
+except Exception as e:
+    print(f"[app.main] Skipping backup router: {e}")
+
+try:
+    from app.api.v1.security import router as security_router
+    app.include_router(security_router, prefix="/api/v1")
+except Exception as e:
+    print(f"[app.main] Skipping security router: {e}")
+
+try:
+    from app.api.v1.optimization import router as optimization_router
+    app.include_router(optimization_router, prefix="/api/v1")
+except Exception as e:
+    print(f"[app.main] Skipping optimization router: {e}")
+
 
 # --- Startup tasks ------------------------------------------------------------
 
