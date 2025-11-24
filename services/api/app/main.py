@@ -174,6 +174,24 @@ try:
 except Exception as e:
     print(f"[app.main] Skipping arbitration router: {e}")
 
+try:
+    from app.api.api_v1.endpoints.staff import router as staff_router
+    app.include_router(staff_router, prefix="/api/v1/staff", tags=["Staff"])
+except Exception as e:
+    print(f"[app.main] Skipping staff router: {e}")
+
+try:
+    from app.api.api_v1.endpoints.contractors import router as contractors_router
+    app.include_router(contractors_router, prefix="/api/v1/contractors", tags=["Contractors"])
+except Exception as e:
+    print(f"[app.main] Skipping contractors router: {e}")
+
+try:
+    from app.api.api_v1.endpoints.resort import router as resort_router
+    app.include_router(resort_router, prefix="/api/v1/resort", tags=["Resort"])
+except Exception as e:
+    print(f"[app.main] Skipping resort router: {e}")
+
 
 # --- Startup tasks ------------------------------------------------------------
 
