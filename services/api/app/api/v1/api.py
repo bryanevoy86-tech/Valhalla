@@ -111,6 +111,26 @@ try:
 	from app.api.api_v1.endpoints.error_log import router as error_log_router
 except Exception:
 	error_log_router = None
+try:
+	from app.api.api_v1.endpoints.ai_personas import router as ai_personas_router
+except Exception:
+	ai_personas_router = None
+try:
+	from app.api.api_v1.endpoints.funfund import router as funfund_router
+except Exception:
+	funfund_router = None
+try:
+	from app.api.api_v1.endpoints.truck_plan import router as truck_plan_router
+except Exception:
+	truck_plan_router = None
+try:
+	from app.api.api_v1.endpoints.bahamas_plan import router as bahamas_plan_router
+except Exception:
+	bahamas_plan_router = None
+try:
+	from app.api.api_v1.endpoints.trust_status import router as trust_status_router
+except Exception:
+	trust_status_router = None
 
 api_router = APIRouter()
 api_router.include_router(root.router, prefix="", tags=["Root"])
@@ -170,5 +190,15 @@ if scheduler_router:
 	api_router.include_router(scheduler_router, prefix="/scheduled-jobs", tags=["Scheduler"])
 if error_log_router:
 	api_router.include_router(error_log_router, prefix="/error-logs", tags=["Errors"])
+if ai_personas_router:
+	api_router.include_router(ai_personas_router, prefix="/ai-personas", tags=["AI Personas"])
+if funfund_router:
+	api_router.include_router(funfund_router, prefix="/funfund-routing", tags=["Fun Fund"])
+if truck_plan_router:
+	api_router.include_router(truck_plan_router, prefix="/truck-plans", tags=["Truck Plan"])
+if bahamas_plan_router:
+	api_router.include_router(bahamas_plan_router, prefix="/bahamas-plans", tags=["Bahamas Plan"])
+if trust_status_router:
+	api_router.include_router(trust_status_router, prefix="/trust-status", tags=["Trust Status"])
 
 
