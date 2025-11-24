@@ -75,6 +75,18 @@ try:
 	from app.api.api_v1.endpoints.snapshot import router as snapshot_router
 except Exception:
 	snapshot_router = None
+try:
+	from app.api.api_v1.endpoints.empire_status import router as empire_status_router
+except Exception:
+	empire_status_router = None
+try:
+	from app.api.api_v1.endpoints.notifications import router as notifications_router
+except Exception:
+	notifications_router = None
+try:
+	from app.api.api_v1.endpoints.automation import router as automation_router
+except Exception:
+	automation_router = None
 
 api_router = APIRouter()
 api_router.include_router(root.router, prefix="", tags=["Root"])
@@ -116,4 +128,10 @@ if knowledge_router:
 	api_router.include_router(knowledge_router, prefix="/knowledge-sources", tags=["Knowledge"])
 if snapshot_router:
 	api_router.include_router(snapshot_router, prefix="/empire-snapshots", tags=["Snapshots"])
+if empire_status_router:
+	api_router.include_router(empire_status_router, prefix="/empire-status", tags=["Empire Status"])
+if notifications_router:
+	api_router.include_router(notifications_router, prefix="/notifications", tags=["Notifications"])
+if automation_router:
+	api_router.include_router(automation_router, prefix="/automation-rules", tags=["Automation"])
 
