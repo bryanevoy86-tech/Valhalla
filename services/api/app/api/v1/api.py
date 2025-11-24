@@ -63,6 +63,18 @@ try:
 	from app.api.api_v1.endpoints.settings import router as settings_router
 except Exception:
 	settings_router = None
+try:
+	from app.api.api_v1.endpoints.training import router as training_router
+except Exception:
+	training_router = None
+try:
+	from app.api.api_v1.endpoints.knowledge import router as knowledge_router
+except Exception:
+	knowledge_router = None
+try:
+	from app.api.api_v1.endpoints.snapshot import router as snapshot_router
+except Exception:
+	snapshot_router = None
 
 api_router = APIRouter()
 api_router.include_router(root.router, prefix="", tags=["Root"])
@@ -98,4 +110,10 @@ if health_monitor_router:
 	api_router.include_router(health_monitor_router, prefix="/system-health", tags=["System Health"])
 if settings_router:
 	api_router.include_router(settings_router, prefix="/settings", tags=["Settings"])
+if training_router:
+	api_router.include_router(training_router, prefix="/training-jobs", tags=["Training"])
+if knowledge_router:
+	api_router.include_router(knowledge_router, prefix="/knowledge-sources", tags=["Knowledge"])
+if snapshot_router:
+	api_router.include_router(snapshot_router, prefix="/empire-snapshots", tags=["Snapshots"])
 
