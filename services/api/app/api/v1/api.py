@@ -99,6 +99,18 @@ try:
 	from app.api.api_v1.endpoints.automation_run import router as automation_run_router
 except Exception:
 	automation_run_router = None
+try:
+	from app.api.api_v1.endpoints.heimdall_action import router as heimdall_action_router
+except Exception:
+	heimdall_action_router = None
+try:
+	from app.api.api_v1.endpoints.scheduler import router as scheduler_router
+except Exception:
+	scheduler_router = None
+try:
+	from app.api.api_v1.endpoints.error_log import router as error_log_router
+except Exception:
+	error_log_router = None
 
 api_router = APIRouter()
 api_router.include_router(root.router, prefix="", tags=["Root"])
@@ -152,5 +164,11 @@ if tasks_router:
 	api_router.include_router(tasks_router, prefix="/tasks", tags=["Tasks"])
 if automation_run_router:
 	api_router.include_router(automation_run_router, prefix="/automation-runs", tags=["Automation Runs"])
+if heimdall_action_router:
+	api_router.include_router(heimdall_action_router, prefix="/heimdall-action", tags=["Heimdall Action"])
+if scheduler_router:
+	api_router.include_router(scheduler_router, prefix="/scheduled-jobs", tags=["Scheduler"])
+if error_log_router:
+	api_router.include_router(error_log_router, prefix="/error-logs", tags=["Errors"])
 
 
