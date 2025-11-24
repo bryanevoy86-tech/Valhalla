@@ -39,6 +39,30 @@ try:
 	from app.api.api_v1.endpoints.materials import router as materials_router
 except Exception:
 	materials_router = None
+try:
+	from app.api.api_v1.endpoints.queen import router as queen_router
+except Exception:
+	queen_router = None
+try:
+	from app.api.api_v1.endpoints.children import router as children_router
+except Exception:
+	children_router = None
+try:
+	from app.api.api_v1.endpoints.compliance import router as compliance_router
+except Exception:
+	compliance_router = None
+try:
+	from app.api.api_v1.endpoints.integrity import router as integrity_router
+except Exception:
+	integrity_router = None
+try:
+	from app.api.api_v1.endpoints.health_monitor import router as health_monitor_router
+except Exception:
+	health_monitor_router = None
+try:
+	from app.api.api_v1.endpoints.settings import router as settings_router
+except Exception:
+	settings_router = None
 
 api_router = APIRouter()
 api_router.include_router(root.router, prefix="", tags=["Root"])
@@ -62,3 +86,16 @@ if underwriter_router:
 	api_router.include_router(underwriter_router, prefix="/underwriter", tags=["Underwriter"])
 if materials_router:
 	api_router.include_router(materials_router, prefix="/materials", tags=["Materials"])
+if queen_router:
+	api_router.include_router(queen_router, prefix="/queen-streams", tags=["Queen"])
+if children_router:
+	api_router.include_router(children_router, prefix="/children", tags=["Children"])
+if compliance_router:
+	api_router.include_router(compliance_router, prefix="/compliance-signals", tags=["Compliance"])
+if integrity_router:
+	api_router.include_router(integrity_router, prefix="/integrity-events", tags=["Integrity"])
+if health_monitor_router:
+	api_router.include_router(health_monitor_router, prefix="/system-health", tags=["System Health"])
+if settings_router:
+	api_router.include_router(settings_router, prefix="/settings", tags=["Settings"])
+
