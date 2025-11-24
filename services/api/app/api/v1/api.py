@@ -87,6 +87,18 @@ try:
 	from app.api.api_v1.endpoints.automation import router as automation_router
 except Exception:
 	automation_router = None
+try:
+	from app.api.api_v1.endpoints.kpi import router as kpi_router
+except Exception:
+	kpi_router = None
+try:
+	from app.api.api_v1.endpoints.tasks import router as tasks_router
+except Exception:
+	tasks_router = None
+try:
+	from app.api.api_v1.endpoints.automation_run import router as automation_run_router
+except Exception:
+	automation_run_router = None
 
 api_router = APIRouter()
 api_router.include_router(root.router, prefix="", tags=["Root"])
@@ -134,4 +146,11 @@ if notifications_router:
 	api_router.include_router(notifications_router, prefix="/notifications", tags=["Notifications"])
 if automation_router:
 	api_router.include_router(automation_router, prefix="/automation-rules", tags=["Automation"])
+if kpi_router:
+	api_router.include_router(kpi_router, prefix="/kpi-metrics", tags=["KPI"])
+if tasks_router:
+	api_router.include_router(tasks_router, prefix="/tasks", tags=["Tasks"])
+if automation_run_router:
+	api_router.include_router(automation_run_router, prefix="/automation-runs", tags=["Automation Runs"])
+
 
