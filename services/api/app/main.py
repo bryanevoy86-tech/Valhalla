@@ -192,6 +192,24 @@ try:
 except Exception as e:
     print(f"[app.main] Skipping resort router: {e}")
 
+try:
+    from app.api.api_v1.endpoints.trust import router as trust_router
+    app.include_router(trust_router, prefix="/api/v1/trust", tags=["Trust"])
+except Exception as e:
+    print(f"[app.main] Skipping trust router: {e}")
+
+try:
+    from app.api.api_v1.endpoints.legacy import router as legacy_router
+    app.include_router(legacy_router, prefix="/api/v1/legacy", tags=["Legacy"])
+except Exception as e:
+    print(f"[app.main] Skipping legacy router: {e}")
+
+try:
+    from app.api.api_v1.endpoints.shield import router as shield_router
+    app.include_router(shield_router, prefix="/api/v1/shield", tags=["Shield Mode"])
+except Exception as e:
+    print(f"[app.main] Skipping shield router: {e}")
+
 
 # --- Startup tasks ------------------------------------------------------------
 
