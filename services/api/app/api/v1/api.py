@@ -116,6 +116,42 @@ try:
 except Exception:
 	ai_personas_router = None
 try:
+	from app.api.api_v1.endpoints.arbitrage_profiles import router as arbitrage_profiles_router
+except Exception:
+	arbitrage_profiles_router = None
+try:
+	from app.api.api_v1.endpoints.alerting import router as alerting_router
+except Exception:
+	alerting_router = None
+try:
+	from app.api.api_v1.endpoints.governance_settings import router as governance_settings_router
+except Exception:
+	governance_settings_router = None
+try:
+	from app.api.api_v1.endpoints.system_health import router as system_health_router
+except Exception:
+	system_health_router = None
+try:
+	from app.api.api_v1.endpoints.system_check_jobs import router as system_check_jobs_router
+except Exception:
+	system_check_jobs_router = None
+try:
+	from app.api.api_v1.endpoints.external_experts import router as external_experts_router
+except Exception:
+	external_experts_router = None
+try:
+	from app.api.api_v1.endpoints.expert_reviews import router as expert_reviews_router
+except Exception:
+	expert_reviews_router = None
+try:
+	from app.api.api_v1.endpoints.backup_profiles import router as backup_profiles_router
+except Exception:
+	backup_profiles_router = None
+try:
+	from app.api.api_v1.endpoints.master_config import router as master_config_router
+except Exception:
+	master_config_router = None
+try:
 	from app.api.api_v1.endpoints.funfund import router as funfund_router
 except Exception:
 	funfund_router = None
@@ -131,6 +167,70 @@ try:
 	from app.api.api_v1.endpoints.trust_status import router as trust_status_router
 except Exception:
 	trust_status_router = None
+try:
+	from app.api.api_v1.endpoints.legacy_performance import router as legacy_performance_router
+except Exception:
+	legacy_performance_router = None
+try:
+	from app.api.api_v1.endpoints.brrrr_zones import router as brrrr_zones_router
+except Exception:
+	brrrr_zones_router = None
+try:
+	from app.api.api_v1.endpoints.contractor_loyalty import router as contractor_loyalty_router
+except Exception:
+	contractor_loyalty_router = None
+try:
+	from app.api.api_v1.endpoints.system_health_reports import router as system_health_reports_router
+except Exception:
+	system_health_reports_router = None
+try:
+	from app.api.api_v1.endpoints.rental_properties import router as rental_properties_router
+except Exception:
+	rental_properties_router = None
+try:
+	from app.api.api_v1.endpoints.tenants import router as tenants_router
+except Exception:
+	tenants_router = None
+try:
+	from app.api.api_v1.endpoints.leases import router as leases_router
+except Exception:
+	leases_router = None
+try:
+	from app.api.api_v1.endpoints.rent_payments import router as rent_payments_router
+except Exception:
+	rent_payments_router = None
+try:
+	from app.api.api_v1.endpoints.legal_profiles import router as legal_profiles_router
+except Exception:
+	legal_profiles_router = None
+try:
+	from app.api.api_v1.endpoints.tax_risk import router as tax_risk_router
+except Exception:
+	tax_risk_router = None
+try:
+	from app.api.api_v1.endpoints.shield_profiles import router as shield_profiles_router
+except Exception:
+	shield_profiles_router = None
+try:
+	from app.api.api_v1.endpoints.bahamas_vault import router as bahamas_vault_router
+except Exception:
+	bahamas_vault_router = None
+try:
+	from app.api.api_v1.endpoints.whole_life_policies import router as whole_life_policies_router
+except Exception:
+	whole_life_policies_router = None
+try:
+	from app.api.api_v1.endpoints.legacy_clone_profiles import router as legacy_clone_profiles_router
+except Exception:
+	legacy_clone_profiles_router = None
+try:
+	from app.api.api_v1.endpoints.ai_training_jobs import router as ai_training_jobs_router
+except Exception:
+	ai_training_jobs_router = None
+try:
+	from app.api.api_v1.endpoints.knowledge_sources import router as knowledge_sources_router
+except Exception:
+	knowledge_sources_router = None
 
 api_router = APIRouter()
 api_router.include_router(root.router, prefix="", tags=["Root"])
@@ -192,6 +292,24 @@ if error_log_router:
 	api_router.include_router(error_log_router, prefix="/error-logs", tags=["Errors"])
 if ai_personas_router:
 	api_router.include_router(ai_personas_router, prefix="/ai-personas", tags=["AI Personas"])
+if arbitrage_profiles_router:
+	api_router.include_router(arbitrage_profiles_router, prefix="/arbitrage-profiles", tags=["Arbitrage"])
+if alerting_router:
+	api_router.include_router(alerting_router, prefix="/alerting", tags=["Alerting"])
+if governance_settings_router:
+	api_router.include_router(governance_settings_router, prefix="/governance-settings", tags=["Governance"])
+if system_health_router:
+	api_router.include_router(system_health_router, prefix="/system-health", tags=["System Health Snapshots"])
+if system_check_jobs_router:
+	api_router.include_router(system_check_jobs_router, prefix="/system-check-jobs", tags=["System Checks"])
+if external_experts_router:
+	api_router.include_router(external_experts_router, prefix="/external-experts", tags=["External Experts"])
+if expert_reviews_router:
+	api_router.include_router(expert_reviews_router, prefix="/expert-reviews", tags=["Expert Reviews"])
+if backup_profiles_router:
+	api_router.include_router(backup_profiles_router, prefix="/backup-profiles", tags=["Backups"])
+if master_config_router:
+	api_router.include_router(master_config_router, prefix="/master-config", tags=["Master Config"])
 if funfund_router:
 	api_router.include_router(funfund_router, prefix="/funfund-routing", tags=["Fun Fund"])
 if truck_plan_router:
@@ -200,5 +318,37 @@ if bahamas_plan_router:
 	api_router.include_router(bahamas_plan_router, prefix="/bahamas-plans", tags=["Bahamas Plan"])
 if trust_status_router:
 	api_router.include_router(trust_status_router, prefix="/trust-status", tags=["Trust Status"])
+if legacy_performance_router:
+	api_router.include_router(legacy_performance_router, prefix="/legacy-performance", tags=["Legacy Performance"])
+if brrrr_zones_router:
+	api_router.include_router(brrrr_zones_router, prefix="/brrrr-zones", tags=["BRRRR Zones"])
+if contractor_loyalty_router:
+	api_router.include_router(contractor_loyalty_router, prefix="/contractor-loyalty", tags=["Contractor Loyalty"])
+if system_health_reports_router:
+	api_router.include_router(system_health_reports_router, prefix="/system-health-reports", tags=["System Health Reports"])
+if rental_properties_router:
+	api_router.include_router(rental_properties_router, prefix="/rental-properties", tags=["Rental Properties"])
+if tenants_router:
+	api_router.include_router(tenants_router, prefix="/tenants", tags=["Tenants"])
+if leases_router:
+	api_router.include_router(leases_router, prefix="/leases", tags=["Leases"])
+if rent_payments_router:
+	api_router.include_router(rent_payments_router, prefix="/rent-payments", tags=["Rent Payments"])
+if legal_profiles_router:
+	api_router.include_router(legal_profiles_router, prefix="/legal-profiles", tags=["Legal Profiles"])
+if tax_risk_router:
+	api_router.include_router(tax_risk_router, prefix="/tax-risk-profiles", tags=["Tax Risk"])
+if shield_profiles_router:
+	api_router.include_router(shield_profiles_router, prefix="/shield-profiles", tags=["Shield Mode"])
+if bahamas_vault_router:
+	api_router.include_router(bahamas_vault_router, prefix="/bahamas-vault", tags=["Bahamas Vault"])
+if whole_life_policies_router:
+	api_router.include_router(whole_life_policies_router, prefix="/whole-life-policies", tags=["Whole Life Policies"])
+if legacy_clone_profiles_router:
+	api_router.include_router(legacy_clone_profiles_router, prefix="/legacy-clone-profiles", tags=["Legacy Auto-Clone"])
+if ai_training_jobs_router:
+	api_router.include_router(ai_training_jobs_router, prefix="/ai-training-jobs", tags=["AI Training Jobs"])
+if knowledge_sources_router:
+	api_router.include_router(knowledge_sources_router, prefix="/knowledge-sources", tags=["Knowledge Sources"])
 
 

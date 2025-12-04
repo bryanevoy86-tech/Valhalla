@@ -20,6 +20,9 @@ from app.routers.system_health import router as system_health_router
 from app.routers.analytics import router as analytics_router
 from app.routers.alerts import router as alerts_router
 from app.routers.roles import router as roles_router
+from app.routers.debug_runtime import router as debug_runtime_router
+from app.routers.admin_heimdall import router as admin_heimdall_router
+from app.routers.admin_system_summary import router as admin_system_summary_router
 
 # Pack routers with error handling
 GRANTS_AVAILABLE = False
@@ -548,6 +551,22 @@ app.include_router(system_health_router, prefix="/api")
 app.include_router(analytics_router, prefix="/api")
 app.include_router(roles_router, prefix="/api")
 app.include_router(alerts_router, prefix="/api")
+app.include_router(debug_runtime_router)  # Debug runtime introspection
+app.include_router(admin_heimdall_router)  # Heimdall admin controls
+app.include_router(admin_system_summary_router)  # System overview panel
+
+# Freeze Events router (Pack 126) — graceful degradation if table not available
+try:
+    from app.routers import freeze_events
+    FREEZE_EVENTS_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import freeze_events router: {e}")
+    freeze_events = None
+    FREEZE_EVENTS_AVAILABLE = False
+
+if FREEZE_EVENTS_AVAILABLE and freeze_events is not None:
+    app.include_router(freeze_events.router)
+    print("INFO: Freeze Events router registered")
 
 # Security router (Pack 17) — optional import to avoid startup failure if deps missing
 try:

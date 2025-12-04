@@ -7,9 +7,11 @@ class AIPersonaBase(BaseModel):
     name: str
     code: str
     role: str
-    domain: str
-    status: Optional[str] = "active"
     description: Optional[str] = None
+    primary_domains: Optional[str] = None   # comma-separated
+    active: bool = True
+    tone: str = "neutral"
+    safety_level: str = "high"
     notes: Optional[str] = None
 
 
@@ -18,12 +20,12 @@ class AIPersonaCreate(AIPersonaBase):
 
 
 class AIPersonaUpdate(BaseModel):
-    name: Optional[str]
-    code: Optional[str]
     role: Optional[str]
-    domain: Optional[str]
-    status: Optional[str]
     description: Optional[str]
+    primary_domains: Optional[str]
+    active: Optional[bool]
+    tone: Optional[str]
+    safety_level: Optional[str]
     notes: Optional[str]
 
 

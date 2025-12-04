@@ -1,19 +1,28 @@
-from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy import Column, Integer, String, Float, DateTime, Text
+from app.db.base_class import Base
 import datetime
-from app.core.db import Base
 
 
-class SystemHealth(Base):
-    __tablename__ = "system_health"
+class SystemHealthSnapshot(Base):
+    __tablename__ = "system_health_snapshots"
 
     id = Column(Integer, primary_key=True, index=True)
-    service_name = Column(String, nullable=False, unique=True)
-    status = Column(String, default="unknown")
-    last_heartbeat = Column(DateTime)
-    issue_count = Column(Integer, default=0)
-    notes = Column(String)
+
+    scope = Column(String, nullable=False)
+    scope_code = Column(String)
+
+    health_score = Column(Float, default=1.0)
+
+    income_status = Column(String, default="green")
+    liquidity_status = Column(String, default="green")
+    deal_flow_status = Column(String, default="green")
+    compliance_status = Column(String, default="green")
+    ai_status = Column(String, default="green")
+
+    summary = Column(Text)
+    details_json = Column(Text)
+
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
 
 
-__all__ = ["SystemHealth"]
+__all__ = ["SystemHealthSnapshot"]

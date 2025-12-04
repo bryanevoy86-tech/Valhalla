@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
@@ -17,11 +17,6 @@ def create_ai_persona(
     payload: AIPersonaCreate,
     db: Session = Depends(get_db),
 ):
-    existing = db.query(AIPersona).filter(
-        (AIPersona.name == payload.name) | (AIPersona.code == payload.code)
-    ).first()
-    if existing:
-        raise HTTPException(status_code=400, detail="Persona with that name/code already exists")
     obj = AIPersona(**payload.dict())
     db.add(obj)
     db.commit()
@@ -31,16 +26,13 @@ def create_ai_persona(
 
 @router.get("/", response_model=list[AIPersonaOut])
 def list_ai_personas(
-    domain: str | None = None,
-    status: str | None = None,
+    active: bool | None = None,
     db: Session = Depends(get_db),
 ):
     query = db.query(AIPersona)
-    if domain:
-        query = query.filter(AIPersona.domain == domain)
-    if status:
-        query = query.filter(AIPersona.status == status)
-    return query.all()
+    if active is not None:
+        query = query.filter(AIPersona.active == active)
+    return query.order_by(AIPersona.name.asc()).all()
 
 
 @router.put("/{persona_id}", response_model=AIPersonaOut)
@@ -50,8 +42,6 @@ def update_ai_persona(
     db: Session = Depends(get_db),
 ):
     obj = db.query(AIPersona).get(persona_id)
-    if not obj:
-        raise HTTPException(status_code=404, detail="Persona not found")
     for k, v in payload.dict(exclude_unset=True).items():
         setattr(obj, k, v)
     db.commit()
