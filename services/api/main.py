@@ -24,6 +24,7 @@ from app.routers.debug_runtime import router as debug_runtime_router
 from app.routers.admin_heimdall import router as admin_heimdall_router
 from app.routers.admin_system_summary import router as admin_system_summary_router
 from app.routers.admin_dependencies import router as admin_dependencies_router
+from app.routers.admin_dashboard import router as admin_dashboard_router
 
 # Pack routers with error handling
 GRANTS_AVAILABLE = False
@@ -580,6 +581,18 @@ except Exception as e:
 if ADMIN_DEPS_AVAILABLE:
     app.include_router(admin_dependencies_router)
     print("INFO: Admin Dependencies router registered")
+
+# Admin Dashboard router — master system overview combining all metrics
+try:
+    ADMIN_DASHBOARD_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import admin_dashboard router: {e}")
+    admin_dashboard_router = None
+    ADMIN_DASHBOARD_AVAILABLE = False
+
+if ADMIN_DASHBOARD_AVAILABLE and admin_dashboard_router is not None:
+    app.include_router(admin_dashboard_router)
+    print("INFO: Admin Dashboard router registered")
 
 # Security router (Pack 17) — optional import to avoid startup failure if deps missing
 try:
