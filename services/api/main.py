@@ -78,6 +78,8 @@ UNDERWRITER_AVAILABLE = False
 CLOSER_ENGINE_AVAILABLE = False
 CONTRACT_ENGINE_AVAILABLE = False
 BUYER_MATCH_AVAILABLE = False
+FLOW_LEAD_TO_DEAL_AVAILABLE = False
+UNDERWRITING_ENGINE_AVAILABLE = False
 
 try:
     from app.routers.grants import router as grants_router
@@ -457,6 +459,15 @@ try:
 except Exception as e:
     print(f"WARNING: Could not import flow_lead_to_deal router: {e}")
     flow_lead_to_deal_router = None
+
+# Underwriting Engine flow router
+UNDERWRITING_ENGINE_AVAILABLE = False
+try:
+    from app.routers.underwriting_engine import router as underwriting_engine_router
+    UNDERWRITING_ENGINE_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import underwriting_engine router: {e}")
+    underwriting_engine_router = None
 
 # Negotiation Enhancer router (Pack 52)
 try:
@@ -973,6 +984,12 @@ if FLOW_LEAD_TO_DEAL_AVAILABLE and "flow_lead_to_deal_router" in globals() and f
     print("INFO: Flow Lead-to-Deal orchestrator registered")
 else:
     print("INFO: Flow Lead-to-Deal orchestrator not registered")
+
+if UNDERWRITING_ENGINE_AVAILABLE and "underwriting_engine_router" in globals() and underwriting_engine_router is not None:
+    app.include_router(underwriting_engine_router, prefix="/api")
+    print("INFO: Underwriting Engine flow router registered")
+else:
+    print("INFO: Underwriting Engine flow router not registered")
 
 if BUILDER_AVAILABLE and "builder_router" in globals() and builder_router is not None:
     app.include_router(builder_router, prefix="/api")
