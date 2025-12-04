@@ -15,9 +15,20 @@ async def run_jobs_once() -> None:
     db: Session = SessionLocal()
     try:
         # Execute maintenance tasks (best-effort)
-        freeze_list_events(db)
-        audit_list_events(db)
-        knowledge_purge(db)
+        try:
+            freeze_list_events(db)
+        except Exception as e:
+            print(f"[SCHEDULER] freeze_list_events failed: {e}")
+        
+        try:
+            audit_list_events(db)
+        except Exception as e:
+            print(f"[SCHEDULER] audit_list_events failed: {e}")
+        
+        try:
+            knowledge_purge(db)
+        except Exception as e:
+            print(f"[SCHEDULER] knowledge_purge failed: {e}")
         
         # Advance queued clone plans (Pack 42 integration)
         try:
