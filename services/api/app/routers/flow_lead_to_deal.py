@@ -11,14 +11,15 @@ from sqlalchemy.orm import Session
 from app.core.db import get_db
 from app.leads import service as lead_service  # Pack 31 service layer
 from app.models.match import Buyer, DealBrief
+from app.models.deal import Deal  # Backend Deal model
 from app.schemas.flows_lead_to_deal import (
     BuyerMatchCandidate,
+    DealFlowResult,
     LeadFlowResult,
     LeadToDealRequest,
     LeadToDealResponse,
-    DealFlowResult,
 )
-from app.schemas.leads import LeadCreate  # Pack 31 create schema
+from app.leads.schemas import LeadCreate  # Pack 31 create schema
 from app.schemas.match import DealBriefIn  # Match system deal brief schema
 
 router = APIRouter(
@@ -74,7 +75,7 @@ def _score_buyer_for_deal(
     score_components: List[float] = []
 
     # Regions / markets
-    buyer_regions = _split_csv(buyer.regions)
+    buyer_regions = _split_csv(getattr(buyer, "regions", None))
     deal_region = (deal.region or "").strip().lower()
     if buyer_regions and deal_region:
         if deal_region in buyer_regions:
@@ -82,7 +83,7 @@ def _score_buyer_for_deal(
             reasons.append("region_match")
 
     # Property types
-    buyer_types = _split_csv(buyer.property_types)
+    buyer_types = _split_csv(getattr(buyer, "property_types", None))
     deal_type = (deal.property_type or "").strip().lower()
     if buyer_types and deal_type:
         if deal_type in buyer_types:
@@ -143,11 +144,12 @@ def _score_buyer_for_deal(
     "/lead_to_deal",
     response_model=LeadToDealResponse,
     status_code=status.HTTP_201_CREATED,
-    summary="Create lead, create deal brief, and match buyers",
+    summary="Create lead, create deal (brief + backend), and match buyers",
     description=(
         "End-to-end flow:\n"
         "- Create a lead (Pack 31 lead system)\n"
         "- Create a DealBrief in the match system\n"
+        "- Create a backend Deal linked to the lead\n"
         "- Optionally match buyers using a simple buy-box matcher\n"
     ),
 )
@@ -180,7 +182,7 @@ def create_lead_and_deal_flow(
     )
 
     # --------- 2. Create DealBrief (match system) ---------
-    deal_in = DealBriefIn(
+    deal_brief_in = DealBriefIn(
         headline=payload.deal.headline,
         region=payload.deal.region,
         property_type=payload.deal.property_type,
@@ -190,29 +192,58 @@ def create_lead_and_deal_flow(
         notes=payload.deal.notes,
         status=payload.deal.status or "active",
     )
-    deal_obj = DealBrief(**deal_in.model_dump())
+    deal_brief_obj = DealBrief(**deal_brief_in.model_dump())
 
-    db.add(deal_obj)
+    db.add(deal_brief_obj)
     db.commit()
-    db.refresh(deal_obj)
+    db.refresh(deal_brief_obj)
 
-    deal_result = DealFlowResult(
-        id=deal_obj.id,
-        headline=deal_obj.headline,
-        region=deal_obj.region,
-        property_type=deal_obj.property_type,
-        price=deal_obj.price,
-        status=deal_obj.status,
+    # --------- 3. Create backend Deal ---------
+    # org_id is required in backend Deal; we use lead.org_id if present.
+    org_id = getattr(lead_obj, "org_id", None)
+    if org_id is None and payload.lead.org_id is not None:
+        org_id = payload.lead.org_id
+
+    if org_id is None:
+        # If still None, you may want to enforce this in your model / flow.
+        org_id = 0  # fallback; adjust to your multi-tenant strategy
+
+    backend_deal = Deal(
+        org_id=org_id,
+        legacy_id=None,
+        status="draft",
+        city=None,
+        state=None,
+        price=float(payload.deal.price) if payload.deal.price is not None else None,
+        lead_id=lead_obj.id,
+        arv=float(payload.deal.arv) if payload.deal.arv is not None else 0.0,
+        repairs=float(payload.deal.repairs) if payload.deal.repairs is not None else 0.0,
+        offer=float(payload.deal.offer) if payload.deal.offer is not None else 0.0,
+        mao=float(payload.deal.mao) if payload.deal.mao is not None else 0.0,
+        roi_note=payload.deal.roi_note or "",
     )
 
-    # --------- 3. Buyer matching (real, not stubbed) ---------
+    db.add(backend_deal)
+    db.commit()
+    db.refresh(backend_deal)
+
+    deal_result = DealFlowResult(
+        id=deal_brief_obj.id,  # Match system id; backend_deal.id is also available if needed
+        headline=deal_brief_obj.headline,
+        region=deal_brief_obj.region,
+        property_type=deal_brief_obj.property_type,
+        price=deal_brief_obj.price,
+        status=deal_brief_obj.status,
+    )
+
+    # --------- 4. Buyer matching (real, not stubbed) ---------
     matched_candidates: List[BuyerMatchCandidate] = []
     if payload.match_settings.match_buyers:
         buyers_query = db.query(Buyer).filter(Buyer.active.is_(True))
         buyers = buyers_query.all()
 
         for buyer in buyers:
-            candidate = _score_buyer_for_deal(buyer, deal_obj)
+            candidate = _score_buyer_for_deal(buyer, deal_brief_obj)
             if candidate is None:
                 continue
             if candidate.score < payload.match_settings.min_match_score:
@@ -238,6 +269,9 @@ def create_lead_and_deal_flow(
             notes_parts.append("Buyer matching was disabled for this flow.")
 
     metadata = {
+        "lead_id": lead_obj.id,
+        "deal_brief_id": deal_brief_obj.id,
+        "backend_deal_id": backend_deal.id,
         "min_match_score": payload.match_settings.min_match_score,
         "max_results": payload.match_settings.max_results,
     }
