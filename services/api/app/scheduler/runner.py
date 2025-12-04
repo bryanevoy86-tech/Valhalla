@@ -6,6 +6,7 @@ from app.core.db import SessionLocal
 from app.freeze.service import list_events as freeze_list_events
 from app.audit.service import list_events as audit_list_events
 from app.knowledge.service import purge_expired as knowledge_purge
+from app.services.freeze_events import log_freeze_event
 
 
 INTERVAL_SECONDS = 300  # run every 5 minutes
@@ -29,6 +30,17 @@ async def run_jobs_once() -> None:
             knowledge_purge(db)
         except Exception as e:
             print(f"[SCHEDULER] knowledge_purge failed: {e}")
+        
+        # NOTE: You can now safely log freeze events anywhere in the scheduler:
+        # log_freeze_event(
+        #     db,
+        #     source="scheduler",
+        #     event_type="liquidity",
+        #     severity="critical",
+        #     reason="Cash reserves below threshold",
+        #     payload={"current": 4200, "required": 5000},
+        # )
+        # This will NEVER crash the scheduler, even if the DB is missing the table.
         
         # Advance queued clone plans (Pack 42 integration)
         try:
