@@ -26,6 +26,8 @@ from app.routers.admin_system_summary import router as admin_system_summary_rout
 from app.routers.admin_dependencies import router as admin_dependencies_router
 from app.routers.admin_dashboard import router as admin_dashboard_router
 from app.routers.admin_healthcheck import router as admin_healthcheck_router
+from app.routers.admin_bootstrap import router as admin_bootstrap_router
+from app.routers.admin_todo import router as admin_todo_router
 
 # Pack routers with error handling
 GRANTS_AVAILABLE = False
@@ -606,6 +608,30 @@ except Exception as e:
 if ADMIN_HEALTHCHECK_AVAILABLE and admin_healthcheck_router is not None:
     app.include_router(admin_healthcheck_router)
     print("INFO: Admin Healthcheck router registered")
+
+# Admin Bootstrap router — ordered checklist of setup steps
+try:
+    ADMIN_BOOTSTRAP_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import admin_bootstrap router: {e}")
+    admin_bootstrap_router = None
+    ADMIN_BOOTSTRAP_AVAILABLE = False
+
+if ADMIN_BOOTSTRAP_AVAILABLE and admin_bootstrap_router is not None:
+    app.include_router(admin_bootstrap_router)
+    print("INFO: Admin Bootstrap router registered")
+
+# Admin TODO router — structured task list for setup and development
+try:
+    ADMIN_TODO_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import admin_todo router: {e}")
+    admin_todo_router = None
+    ADMIN_TODO_AVAILABLE = False
+
+if ADMIN_TODO_AVAILABLE and admin_todo_router is not None:
+    app.include_router(admin_todo_router)
+    print("INFO: Admin TODO router registered")
 
 # Security router (Pack 17) — optional import to avoid startup failure if deps missing
 try:
