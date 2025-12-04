@@ -449,6 +449,15 @@ except Exception as e:
     print(f"WARNING: Could not import buyer match router: {e}")
     buyer_match_router = None
 
+# Flow orchestrator - Lead to Deal (unified flow)
+FLOW_LEAD_TO_DEAL_AVAILABLE = False
+try:
+    from app.routers.flow_lead_to_deal import router as flow_lead_to_deal_router
+    FLOW_LEAD_TO_DEAL_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import flow_lead_to_deal router: {e}")
+    flow_lead_to_deal_router = None
+
 # Negotiation Enhancer router (Pack 52)
 try:
     from app.routers.neg_enhance import router as neg_enhance_router
@@ -957,6 +966,13 @@ if BUYER_MATCH_AVAILABLE and "buyer_match_router" in globals() and buyer_match_r
     app.include_router(buyer_match_router, prefix="/api")
 else:
     print("INFO: Buyer Match router not registered")
+
+# Flow orchestrator routers
+if FLOW_LEAD_TO_DEAL_AVAILABLE and "flow_lead_to_deal_router" in globals() and flow_lead_to_deal_router is not None:
+    app.include_router(flow_lead_to_deal_router, prefix="/api")
+    print("INFO: Flow Lead-to-Deal orchestrator registered")
+else:
+    print("INFO: Flow Lead-to-Deal orchestrator not registered")
 
 if BUILDER_AVAILABLE and "builder_router" in globals() and builder_router is not None:
     app.include_router(builder_router, prefix="/api")
