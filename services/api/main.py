@@ -595,6 +595,11 @@ except Exception as e:
 
 app = FastAPI(title="Valhalla API", version="3.4")
 
+# Heimdall build gate: always-on registration (must be after app creation)
+# This ensures /governance/heimdall_build_request exists for both runtime and tests
+from app.routers import heimdall_build_gate
+app.include_router(heimdall_build_gate.router)
+
 # Auto-create tables on startup (dev-friendly; safe if tables already exist)
 try:
     from app.core.db import Base, engine
@@ -801,7 +806,7 @@ if NOTIFICATIONS_AVAILABLE and "notifications_router" in globals() and notificat
 else:
     print("INFO: Notifications router not registered")
 
-# Users router (Pack 24) — optional import
+# NOTE: Heimdall Build Gate router is now registered unconditionally at app creation (see top of file)# Users router (Pack 24) — optional import
 try:
     from app.routers.users import router as users_router
     USERS_AVAILABLE = True

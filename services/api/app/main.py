@@ -43,6 +43,109 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# --- Governance System: Always-on registration --------------------------------
+# Register all governance routers to ensure endpoints exist for runtime and tests
+from app.routers import governance_king, governance_queen, governance_odin, governance_loki, governance_tyr
+from app.routers import governance_orchestrator, heimdall_build_gate, governance_policy
+
+app.include_router(governance_king.router, prefix="/api")
+app.include_router(governance_queen.router, prefix="/api")
+app.include_router(governance_odin.router, prefix="/api")
+app.include_router(governance_loki.router, prefix="/api")
+app.include_router(governance_tyr.router, prefix="/api")
+app.include_router(governance_orchestrator.router, prefix="/api")
+app.include_router(heimdall_build_gate.router)
+app.include_router(governance_policy.router, prefix="/api")
+
+# --- PACK H: Professional Behavioral Signal Extraction -------------------------
+# Safe behavioral analysis from public data sources (no psychology, no diagnosis)
+try:
+    from app.routers import pro_behavioral_extract
+    app.include_router(pro_behavioral_extract.router)
+except Exception as e:
+    print("WARNING: Could not load pro_behavioral_extract:", e)
+
+# --- PACK I: Professional Alignment Engine ----------------------------------------
+# Compares behavioral signals to Valhalla's ideal profile for operational compatibility
+try:
+    from app.routers import pro_alignment_engine
+    app.include_router(pro_alignment_engine.router)
+except Exception as e:
+    print("WARNING: pro_alignment_engine failed:", e)
+
+# --- PACK J: Professional Scorecard Engine ----------------------------------------
+# Tracks ongoing performance of lawyers, accountants, VAs, contractors (operational only)
+try:
+    from app.routers import pro_scorecard
+    app.include_router(pro_scorecard.router)
+except Exception as e:
+    print("WARNING: pro_scorecard load failed:", e)
+
+# --- PACK K: Retainer Lifecycle Engine --------------------------------------------
+# Manages retainer agreements, tracks hours, costs, renewals, and consumption
+try:
+    from app.routers import pro_retainer
+    app.include_router(pro_retainer.router)
+except Exception as e:
+    print("WARNING: pro_retainer load failed:", e)
+
+# --- PACK L: Professional Handoff Engine ------------------------------------------
+# Generates escalation packets with professional details, scorecards, and deal context
+try:
+    from app.routers import pro_handoff
+    app.include_router(pro_handoff.router)
+except Exception as e:
+    print("WARNING: pro_handoff load failed:", e)
+
+# --- PACK M: Professional Task Lifecycle Engine ------------------------------------
+# Links tasks to professionals for tracking what's waiting on which human
+try:
+    from app.routers import pro_tasks
+    app.include_router(pro_tasks.router)
+except Exception as e:
+    print("WARNING: pro_tasks load failed:", e)
+
+# --- PACK N: Contract Lifecycle Engine ---------------------------------------------
+# Tracks contract status from draft through review, approval, signature, and archival
+try:
+    from app.routers import contracts_lifecycle
+    app.include_router(contracts_lifecycle.router)
+except Exception as e:
+    print("WARNING: contracts_lifecycle load failed:", e)
+
+# --- PACK O: Document Routing Engine -----------------------------------------------
+# Tracks document delivery to professionals with sent/opened/acknowledged status
+try:
+    from app.routers import document_routing
+    app.include_router(document_routing.router)
+except Exception as e:
+    print("WARNING: document_routing load failed:", e)
+
+# --- PACK P: Deal Finalization Engine ----------------------------------------------
+# Validates all requirements met and marks deals as finalized when ready
+try:
+    from app.routers import deal_finalization
+    app.include_router(deal_finalization.router)
+except Exception as e:
+    print("WARNING: deal_finalization load failed:", e)
+
+# --- PACK Q: Internal Auditor -------------------------------------------------------
+# Scans deals/workflows for missing steps, logs compliance/process issues
+try:
+    from app.routers import internal_auditor
+    app.include_router(internal_auditor.router)
+except Exception as e:
+    print("WARNING: internal_auditor load failed:", e)
+
+# --- PACK R: Governance Integration -------------------------------------------------
+# Records governance decisions (approve/deny/override) by roles with audit trail
+try:
+    from app.routers import governance_decisions
+    app.include_router(governance_decisions.router)
+except Exception as e:
+    print("WARNING: governance_decisions load failed:", e)
+
+
 
 # --- System endpoints: root + health -----------------------------------------
 
@@ -253,6 +356,14 @@ try:
     print("[app.main] Tax Snapshot router registered")
 except Exception as e:
     print(f"[app.main] Skipping tax_snapshot router: {e}")
+
+# Governance-gated flow router
+try:
+    from app.routers import flow_governance_gate
+    app.include_router(flow_governance_gate.router, prefix="/api")
+    print("[app.main] Governance-Gated Flow router registered")
+except Exception as e:
+    print(f"[app.main] Skipping flow_governance_gate router: {e}")
 
 # Portfolio Dashboard router (deal summary and snapshots)
 try:

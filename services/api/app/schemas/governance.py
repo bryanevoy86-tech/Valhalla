@@ -358,3 +358,20 @@ class GovernanceEvaluationRequest(BaseModel):
         description="If set, restrict evaluation to these gods; otherwise, evaluate all.",
     )
 
+
+# -----------------------------------------------
+# GOVERNANCE POLICY AGGREGATE VIEW
+# -----------------------------------------------
+
+class GovernancePolicies(BaseModel):
+    """
+    Snapshot of all governance policies currently loaded in-memory.
+    This is what the policy API returns so the UI / tools can see
+    how the Gods are configured.
+    """
+
+    king: KingPolicy
+    queen: QueenPolicy
+    odin: OdinPolicy
+    loki: LokiPolicy
+    tyr: TyrPolicy
