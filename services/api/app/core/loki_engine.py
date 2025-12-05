@@ -5,9 +5,13 @@ This is a lightweight synchronous stub; real ML inference can replace the heuris
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
-from datetime import datetime
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
+
+
+def _now() -> datetime:
+    return datetime.now(timezone.utc)
 
 
 @dataclass
@@ -19,7 +23,7 @@ class CounterFrameResult:
     suggested_corrections: List[str]
     confidence: float
     version: str = "1.0-shadow"
-    analyzed_at: datetime = datetime.utcnow()
+    analyzed_at: datetime = field(default_factory=_now)
 
 
 class LokiCounterEngine:

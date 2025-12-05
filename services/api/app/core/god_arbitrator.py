@@ -6,9 +6,13 @@ Heuristic stub; replace with more robust ensemble / model logic later.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
-from datetime import datetime
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
+
+
+def _now() -> datetime:
+    return datetime.now(timezone.utc)
 
 
 @dataclass
@@ -19,7 +23,7 @@ class ArbitrationResult:
     confidence: float
     reasoning: Dict[str, Any]
     version: str = "1.0-arbiter"
-    decided_at: datetime = datetime.utcnow()
+    decided_at: datetime = field(default_factory=_now)
 
 
 class GodArbitrator:

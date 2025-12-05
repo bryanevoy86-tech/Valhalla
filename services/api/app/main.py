@@ -1,9 +1,28 @@
 import os
 import asyncio
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.observability import drift, retention
+
+# --- Startup/Shutdown Handler -------------------------------------------------
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Modern FastAPI lifespan context manager (replaces deprecated @app.on_event)."""
+    # Startup
+    if retention.EN:
+        async def retention_loop():
+            while True:
+                await retention.run_once()
+                await asyncio.sleep(int(os.getenv("RETENTION_CRON_MINUTES", "30")) * 60)
+        asyncio.create_task(retention_loop())
+    
+    drift.check()
+    yield
+    # Shutdown (if needed later)
+
 
 # --- Core FastAPI app ---------------------------------------------------------
 
@@ -13,6 +32,7 @@ app = FastAPI(
     docs_url="/docs",
     openapi_url="/openapi.json",
     redoc_url=None,
+    lifespan=lifespan,
 )
 
 app.add_middleware(
@@ -210,22 +230,83 @@ try:
 except Exception as e:
     print(f"[app.main] Skipping shield router: {e}")
 
+# FunFunds Planner flow router
+try:
+    from app.routers import flow_funfunds_planner
+    app.include_router(flow_funfunds_planner.router, prefix="/api")
+    print("[app.main] FunFunds Planner router registered")
+except Exception as e:
+    print(f"[app.main] Skipping funfunds_planner router: {e}")
 
-# --- Startup tasks ------------------------------------------------------------
+# FunFunds Presets flow router (lean/growth modes)
+try:
+    from app.routers import flow_funfunds_presets
+    app.include_router(flow_funfunds_presets.router, prefix="/api")
+    print("[app.main] FunFunds Presets router registered")
+except Exception as e:
+    print(f"[app.main] Skipping funfunds_presets router: {e}")
 
-@app.on_event("startup")
-async def _retention_cron():
-    if not retention.EN:
-        return
+# Tax Snapshot flow router (CRA-style tax breakdown)
+try:
+    from app.routers import flow_tax_snapshot
+    app.include_router(flow_tax_snapshot.router, prefix="/api")
+    print("[app.main] Tax Snapshot router registered")
+except Exception as e:
+    print(f"[app.main] Skipping tax_snapshot router: {e}")
 
-    async def loop():
-        while True:
-            await retention.run_once()
-            await asyncio.sleep(int(os.getenv("RETENTION_CRON_MINUTES", "30")) * 60)
+# Portfolio Dashboard router (deal summary and snapshots)
+try:
+    from app.routers import portfolio_dashboard
+    app.include_router(portfolio_dashboard.router, prefix="/api")
+    print("[app.main] Portfolio Dashboard router registered")
+except Exception as e:
+    print(f"[app.main] Skipping portfolio_dashboard router: {e}")
 
-    asyncio.create_task(loop())
+# Governance King router
+try:
+    from app.routers import governance_king
+    app.include_router(governance_king.router, prefix="/api")
+    print("[app.main] Governance King router registered")
+except Exception as e:
+    print(f"[app.main] Skipping governance_king router: {e}")
 
+# Governance Queen router
+try:
+    from app.routers import governance_queen
+    app.include_router(governance_queen.router, prefix="/api")
+    print("[app.main] Governance Queen router registered")
+except Exception as e:
+    print(f"[app.main] Skipping governance_queen router: {e}")
 
-@app.on_event("startup")
-async def _drift_check():
-    drift.check()
+# Governance Odin router
+try:
+    from app.routers import governance_odin
+    app.include_router(governance_odin.router, prefix="/api")
+    print("[app.main] Governance Odin router registered")
+except Exception as e:
+    print(f"[app.main] Skipping governance_odin router: {e}")
+
+# Governance Loki router
+try:
+    from app.routers import governance_loki
+    app.include_router(governance_loki.router, prefix="/api")
+    print("[app.main] Governance Loki router registered")
+except Exception as e:
+    print(f"[app.main] Skipping governance_loki router: {e}")
+
+# Governance Tyr router
+try:
+    from app.routers import governance_tyr
+    app.include_router(governance_tyr.router, prefix="/api")
+    print("[app.main] Governance Tyr router registered")
+except Exception as e:
+    print(f"[app.main] Skipping governance_tyr router: {e}")
+
+# Governance Orchestrator router (calls all five gods)
+try:
+    from app.routers import governance_orchestrator
+    app.include_router(governance_orchestrator.router, prefix="/api")
+    print("[app.main] Governance Orchestrator router registered")
+except Exception as e:
+    print(f"[app.main] Skipping governance_orchestrator router: {e}")
+

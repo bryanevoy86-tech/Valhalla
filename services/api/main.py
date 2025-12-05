@@ -80,6 +80,12 @@ CONTRACT_ENGINE_AVAILABLE = False
 BUYER_MATCH_AVAILABLE = False
 FLOW_LEAD_TO_DEAL_AVAILABLE = False
 UNDERWRITING_ENGINE_AVAILABLE = False
+FLOW_FULL_PIPELINE_AVAILABLE = False
+DEAL_WORKFLOW_STATUS_AVAILABLE = False
+FLOW_PREPARE_CLOSING_AVAILABLE = False
+CLOSING_PLAYBOOK_AVAILABLE = False
+FLOW_NOTIFICATIONS_AVAILABLE = False
+FLOW_PROFIT_ALLOCATION_AVAILABLE = False
 
 try:
     from app.routers.grants import router as grants_router
@@ -468,6 +474,78 @@ try:
 except Exception as e:
     print(f"WARNING: Could not import underwriting_engine router: {e}")
     underwriting_engine_router = None
+
+# Full Deal Pipeline flow router (combined lead + deal + underwriting + matching)
+FLOW_FULL_PIPELINE_AVAILABLE = False
+try:
+    from app.routers.flow_full_pipeline import router as flow_full_pipeline_router
+    FLOW_FULL_PIPELINE_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import flow_full_pipeline router: {e}")
+    flow_full_pipeline_router = None
+
+# Deal Workflow Status router
+DEAL_WORKFLOW_STATUS_AVAILABLE = False
+try:
+    from app.routers.deal_workflow_status import router as deal_workflow_status_router
+    DEAL_WORKFLOW_STATUS_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import deal_workflow_status router: {e}")
+    deal_workflow_status_router = None
+
+# Flow Prepare Closing router (closing context builder)
+FLOW_PREPARE_CLOSING_AVAILABLE = False
+try:
+    from app.routers.flow_prepare_closing import router as flow_prepare_closing_router
+    FLOW_PREPARE_CLOSING_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import flow_prepare_closing router: {e}")
+    flow_prepare_closing_router = None
+
+# Closing Playbook router (closing script generator)
+CLOSING_PLAYBOOK_AVAILABLE = False
+try:
+    from app.routers.closing_playbook import router as closing_playbook_router
+    CLOSING_PLAYBOOK_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import closing_playbook router: {e}")
+    closing_playbook_router = None
+
+# Flow Notifications router (seller/buyer notifications builder)
+FLOW_NOTIFICATIONS_AVAILABLE = False
+try:
+    from app.routers.flow_notifications import router as flow_notifications_router
+    FLOW_NOTIFICATIONS_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import flow_notifications router: {e}")
+    flow_notifications_router = None
+
+# Flow Profit Allocation router (tax, FunFunds, reinvest calculations)
+FLOW_PROFIT_ALLOCATION_AVAILABLE = False
+try:
+    from app.routers.flow_profit_allocation import router as flow_profit_allocation_router
+    FLOW_PROFIT_ALLOCATION_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import flow_profit_allocation router: {e}")
+    flow_profit_allocation_router = None
+
+# Deal Lifecycle Orchestrator router (unified control tower for deal pipeline)
+DEAL_LIFECYCLE_AVAILABLE = False
+try:
+    from app.routers.deal_lifecycle import router as deal_lifecycle_router
+    DEAL_LIFECYCLE_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import deal_lifecycle router: {e}")
+    deal_lifecycle_router = None
+
+# FunFunds Planner router (monthly budgeting calculator)
+FLOW_FUNFUNDS_PLANNER_AVAILABLE = False
+try:
+    from app.routers import flow_funfunds_planner
+    FLOW_FUNFUNDS_PLANNER_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import flow_funfunds_planner router: {e}")
+    flow_funfunds_planner = None
 
 # Negotiation Enhancer router (Pack 52)
 try:
@@ -990,6 +1068,54 @@ if UNDERWRITING_ENGINE_AVAILABLE and "underwriting_engine_router" in globals() a
     print("INFO: Underwriting Engine flow router registered")
 else:
     print("INFO: Underwriting Engine flow router not registered")
+
+if FLOW_FULL_PIPELINE_AVAILABLE and "flow_full_pipeline_router" in globals() and flow_full_pipeline_router is not None:
+    app.include_router(flow_full_pipeline_router, prefix="/api")
+    print("INFO: Full Deal Pipeline orchestrator registered")
+else:
+    print("INFO: Full Deal Pipeline orchestrator not registered")
+
+if DEAL_WORKFLOW_STATUS_AVAILABLE and "deal_workflow_status_router" in globals() and deal_workflow_status_router is not None:
+    app.include_router(deal_workflow_status_router, prefix="/api")
+    print("INFO: Deal Workflow Status router registered")
+else:
+    print("INFO: Deal Workflow Status router not registered")
+
+if FLOW_PREPARE_CLOSING_AVAILABLE and "flow_prepare_closing_router" in globals() and flow_prepare_closing_router is not None:
+    app.include_router(flow_prepare_closing_router, prefix="/api")
+    print("INFO: Flow Prepare Closing router registered")
+else:
+    print("INFO: Flow Prepare Closing router not registered")
+
+if CLOSING_PLAYBOOK_AVAILABLE and "closing_playbook_router" in globals() and closing_playbook_router is not None:
+    app.include_router(closing_playbook_router, prefix="/api")
+    print("INFO: Closing Playbook router registered")
+else:
+    print("INFO: Closing Playbook router not registered")
+
+if FLOW_NOTIFICATIONS_AVAILABLE and "flow_notifications_router" in globals() and flow_notifications_router is not None:
+    app.include_router(flow_notifications_router, prefix="/api")
+    print("INFO: Flow Notifications router registered")
+else:
+    print("INFO: Flow Notifications router not registered")
+
+if FLOW_PROFIT_ALLOCATION_AVAILABLE and "flow_profit_allocation_router" in globals() and flow_profit_allocation_router is not None:
+    app.include_router(flow_profit_allocation_router, prefix="/api")
+    print("INFO: Flow Profit Allocation router registered")
+else:
+    print("INFO: Flow Profit Allocation router not registered")
+
+if DEAL_LIFECYCLE_AVAILABLE and "deal_lifecycle_router" in globals() and deal_lifecycle_router is not None:
+    app.include_router(deal_lifecycle_router, prefix="/api")
+    print("INFO: Deal Lifecycle Orchestrator registered")
+else:
+    print("INFO: Deal Lifecycle Orchestrator not registered")
+
+if FLOW_FUNFUNDS_PLANNER_AVAILABLE and "flow_funfunds_planner" in globals() and flow_funfunds_planner is not None:
+    app.include_router(flow_funfunds_planner.router, prefix="/api")
+    print("INFO: FunFunds Planner registered")
+else:
+    print("INFO: FunFunds Planner not registered")
 
 if BUILDER_AVAILABLE and "builder_router" in globals() and builder_router is not None:
     app.include_router(builder_router, prefix="/api")
