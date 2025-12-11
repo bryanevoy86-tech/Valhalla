@@ -88,7 +88,7 @@ class VehicleExpense(Base):
     amount = Column(Float, nullable=False)
     
     # User-provided classification
-    business_related = Column(Boolean, nullable=False, server_default=False)
+    business_related = Column(Boolean, nullable=False, server_default='false')
     business_percentage = Column(Float, nullable=True)  # 0-100 for split expenses
     
     description = Column(String(255), nullable=True)

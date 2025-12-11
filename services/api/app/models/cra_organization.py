@@ -147,7 +147,7 @@ class FiscalYearSnapshot(Base):
     business_vehicle_percentage = Column(Float, nullable=True)
     
     # Completeness check
-    gaps_identified = Column(Boolean, nullable=False, server_default=False)
+    gaps_identified = Column(Boolean, nullable=False, server_default='false')
     gap_summary = Column(Text, nullable=True)
     
     created_at = Column(DateTime, nullable=False, server_default=func.now())
