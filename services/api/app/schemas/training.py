@@ -1,37 +1,39 @@
-from pydantic import BaseModel
-from typing import Optional
+"""PACK 88: Training Engine - Schemas"""
+
 from datetime import datetime
+from pydantic import BaseModel, ConfigDict
 
 
-class TrainingJobBase(BaseModel):
-    job_type: str
-    target_module: str
-    priority: int = 10
-    payload: Optional[str] = None
+class TrainingModuleBase(BaseModel):
+    title: str
+    difficulty: str | None = None
+    content_payload: str
 
 
-class TrainingJobCreate(TrainingJobBase):
+class TrainingModuleCreate(TrainingModuleBase):
     pass
 
 
-class TrainingJobUpdate(BaseModel):
-    status: Optional[str]
-    priority: Optional[int]
-    progress: Optional[float]
-    payload: Optional[str]
-    error_message: Optional[str]
-    started_at: Optional[datetime]
-    finished_at: Optional[datetime]
-
-
-class TrainingJobOut(TrainingJobBase):
+class TrainingModuleOut(TrainingModuleBase):
     id: int
-    status: str
-    progress: float
-    error_message: Optional[str]
     created_at: datetime
-    started_at: Optional[datetime]
-    finished_at: Optional[datetime]
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
+
+
+class TrainingProgressBase(BaseModel):
+    user_id: int
+    module_id: int
+    completion_pct: float = 0.0
+    status: str = "not_started"
+
+
+class TrainingProgressCreate(TrainingProgressBase):
+    pass
+
+
+class TrainingProgressOut(TrainingProgressBase):
+    id: int
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)

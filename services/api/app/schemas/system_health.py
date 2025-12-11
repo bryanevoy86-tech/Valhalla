@@ -26,3 +26,24 @@ class SystemHealthSnapshotOut(SystemHealthSnapshotBase):
 
     class Config:
         orm_mode = True
+
+
+# PACK TX: Health, Readiness & Metrics schemas
+
+class HealthStatus(BaseModel):
+    status: str  # "ok", "degraded", "down"
+    timestamp: datetime
+    message: Optional[str] = None
+
+
+class ReadinessStatus(BaseModel):
+    status: str  # "ready", "starting", "maintenance"
+    timestamp: datetime
+    db_ok: bool
+    message: Optional[str] = None
+
+
+class BasicMetrics(BaseModel):
+    timestamp: datetime
+    uptime_seconds: float
+    request_rate_hint: Optional[float] = None

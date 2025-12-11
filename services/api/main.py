@@ -29,6 +29,24 @@ from app.routers.admin_healthcheck import router as admin_healthcheck_router
 from app.routers.admin_bootstrap import router as admin_bootstrap_router
 from app.routers.admin_todo import router as admin_todo_router
 
+# PACK S: System introspection (debug endpoints)
+from app.routers.debug_system import router as debug_system_router
+
+# PACK T: Production hardening (security, rate limiting, logging)
+from app.middleware.security import SecurityHeadersMiddleware, SimpleRateLimitMiddleware
+from app.middleware.logging import RequestLoggingMiddleware
+
+# PACK U: Frontend preparation (UI map for WeWeb)
+from app.routers.ui_map import router as ui_map_router
+
+# PACK V: Deployment checklist (ops automation)
+from app.routers.deploy_check import router as deploy_check_router
+
+# PACK TM, TN, TO: Philosophy, Relationships, Daily Rhythm
+from app.routers.philosophy import router as philosophy_router
+from app.routers.relationships import router as relationships_router
+from app.routers.daily_rhythm import router as daily_rhythm_router
+
 # Pack routers with error handling
 GRANTS_AVAILABLE = False
 BUYERS_AVAILABLE = False
@@ -648,6 +666,25 @@ try:
 except Exception as _e:  # pragma: no cover
     print(f"INFO: MetricsMiddleware not enabled: {_e}")
 
+# PACK T: Production hardening middleware
+try:
+    app.add_middleware(RequestLoggingMiddleware)
+    print("INFO: Request logging middleware enabled")
+except Exception as _e:
+    print(f"INFO: Request logging middleware not enabled: {_e}")
+
+try:
+    app.add_middleware(SimpleRateLimitMiddleware)
+    print("INFO: Rate limiting middleware enabled")
+except Exception as _e:
+    print(f"INFO: Rate limiting middleware not enabled: {_e}")
+
+try:
+    app.add_middleware(SecurityHeadersMiddleware)
+    print("INFO: Security headers middleware enabled")
+except Exception as _e:
+    print(f"INFO: Security headers middleware not enabled: {_e}")
+
 # Register routers (core routers always available)
 app.include_router(health_router, prefix="/api")
 app.include_router(metrics_router, prefix="/api")
@@ -660,6 +697,12 @@ app.include_router(analytics_router, prefix="/api")
 app.include_router(roles_router, prefix="/api")
 app.include_router(alerts_router, prefix="/api")
 app.include_router(debug_runtime_router)  # Debug runtime introspection
+app.include_router(debug_system_router)  # PACK S: System introspection
+app.include_router(ui_map_router)  # PACK U: UI map for WeWeb
+app.include_router(deploy_check_router)  # PACK V: Deployment checks
+app.include_router(philosophy_router)  # PACK TM: Core Philosophy Archive
+app.include_router(relationships_router)  # PACK TN: Trust & Relationship Mapping
+app.include_router(daily_rhythm_router)  # PACK TO: Daily Rhythm & Tempo
 app.include_router(admin_heimdall_router)  # Heimdall admin controls
 app.include_router(admin_system_summary_router)  # System overview panel
 
@@ -1143,6 +1186,21 @@ if RESEARCH_AVAILABLE:
         app.include_router(research_semantic_router, prefix="/api")
 else:
     print("INFO: Research/Playbooks/Jobs routers not registered")
+
+# Governance Decisions router (PACK R) — optional import
+try:
+    from app.routers.governance_decisions import router as governance_decisions_router
+    GOVERNANCE_DECISIONS_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Could not import governance_decisions router: {e}")
+    GOVERNANCE_DECISIONS_AVAILABLE = False
+    governance_decisions_router = None
+
+if GOVERNANCE_DECISIONS_AVAILABLE and "governance_decisions_router" in globals() and governance_decisions_router is not None:
+    app.include_router(governance_decisions_router, prefix="/api")
+    print("INFO: Governance Decisions router registered")
+else:
+    print("INFO: Governance Decisions router not registered")
 
 
 @app.get("/")

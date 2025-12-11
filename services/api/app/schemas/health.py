@@ -1,31 +1,39 @@
-from pydantic import BaseModel
-from typing import Optional
+"""PACK 90: Health & Fitness - Schemas"""
+
 from datetime import datetime
+from pydantic import BaseModel, ConfigDict
 
 
-class SystemHealthBase(BaseModel):
-    service_name: str
-    status: Optional[str] = "unknown"
-    notes: Optional[str] = None
+class HealthMetricBase(BaseModel):
+    metric_name: str
+    value: float
+    notes: str | None = None
 
 
-class SystemHealthCreate(SystemHealthBase):
+class HealthMetricCreate(HealthMetricBase):
     pass
 
 
-class SystemHealthUpdate(BaseModel):
-    status: Optional[str]
-    notes: Optional[str]
-    issue_count: Optional[int]
-    last_heartbeat: Optional[datetime]
-
-
-class SystemHealthOut(SystemHealthBase):
+class HealthMetricOut(HealthMetricBase):
     id: int
-    last_heartbeat: Optional[datetime]
-    issue_count: int
     created_at: datetime
-    updated_at: datetime
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
+
+
+class WorkoutSessionBase(BaseModel):
+    workout_type: str
+    duration_minutes: float
+    intensity: str | None = None
+    notes: str | None = None
+
+
+class WorkoutSessionCreate(WorkoutSessionBase):
+    pass
+
+
+class WorkoutSessionOut(WorkoutSessionBase):
+    id: int
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)

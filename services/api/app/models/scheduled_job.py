@@ -1,6 +1,6 @@
+from datetime import datetime
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text
-from app.db.base_class import Base
-import datetime
+from app.models.base import Base
 
 
 class ScheduledJob(Base):
@@ -22,5 +22,5 @@ class ScheduledJob(Base):
     last_status = Column(String)                     # "success", "failed", etc.
     last_error = Column(Text)
 
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

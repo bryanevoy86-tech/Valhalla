@@ -1,6 +1,6 @@
+from datetime import datetime
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, Float
-from app.db.base_class import Base
-import datetime
+from app.models.base import Base
 
 
 class SystemCheckJob(Base):
@@ -16,5 +16,5 @@ class SystemCheckJob(Base):
     last_status = Column(String)
     last_health_score = Column(Float, default=1.0)
     notes = Column(Text)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

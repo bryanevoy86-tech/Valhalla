@@ -1,6 +1,6 @@
+from datetime import datetime
 from sqlalchemy import Column, Integer, String, Float, DateTime, Text
-from app.db.base_class import Base
-import datetime
+from app.models.base import Base
 
 
 class SystemHealthSnapshot(Base):
@@ -22,7 +22,7 @@ class SystemHealthSnapshot(Base):
     summary = Column(Text)
     details_json = Column(Text)
 
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.utcnow)
 
 
 __all__ = ["SystemHealthSnapshot"]

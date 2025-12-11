@@ -1,6 +1,6 @@
+from datetime import datetime
 from sqlalchemy import Column, Integer, String, DateTime, Text, Float
-import datetime
-from app.db.base_class import Base
+from app.models.base import Base
 
 
 class TrainingJob(Base):
@@ -14,7 +14,7 @@ class TrainingJob(Base):
     progress = Column(Float, default=0.0)
     payload = Column(Text)
     error_message = Column(Text)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.utcnow)
     started_at = Column(DateTime)
     finished_at = Column(DateTime)
 

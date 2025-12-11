@@ -14,9 +14,25 @@ if str(PROJECT_ROOT) not in sys.path:
 from db.base import Base
 
 # Import models so Alembic autogenerate can detect them.
-# Add real model imports here as they are created:
-# from app.models.user import User
-# from app.models.property import Property
+# Previous packs
+from app.models.pack_sp import CrisisEvent, CrisisResponsePlan, CrisisResolutionLog
+from app.models.pack_sq import HouseholdMember, SharedResponsibility, HouseholdExpense, MealPlan
+from app.models.pack_so import LegacyDocument, LegacyRecipient, SuccessionStage, SuccessionTransfer
+
+# PACK ST, SU, SV
+from app.models.pack_st import FinancialIndicator, FinancialStressEvent, FinancialStressSummary
+from app.models.pack_su import SafetyCategory, SafetyChecklist, SafetyPlan, SafetyEventLog
+from app.models.pack_sv import EmpireGoal, GoalMilestone, ActionStep
+
+# PACK SW, SX, SY
+from app.models.pack_sw import LifeEvent, LifeMilestone, LifeTimelineSnapshot
+from app.models.pack_sx import EmotionalStateEntry, StabilityLog, NeutralSummary
+from app.models.pack_sy import StrategicDecision, DecisionRevision, DecisionChainSnapshot
+
+# PACK SZ, TA, TB
+from app.models.pack_sz import PhilosophyRecord, EmpirePrinciple, PhilosophySnapshot
+from app.models.pack_ta import RelationshipProfile, TrustEventLog, RelationshipMapSnapshot
+from app.models.pack_tb import DailyRhythmProfile, TempoRule, DailyTempoSnapshot
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
