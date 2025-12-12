@@ -2,11 +2,8 @@ from alembic import op
 import sqlalchemy as sa
 
 revision = "0046_clone_mirror_policies"
-# Previous attempt referenced a non-existent revision id '0045_deal_doc_templates_send'.
-# Point this migration to the latest existing revision in the repo so Alembic can
-# compute a valid upgrade path. The repo's last timestamped migration uses
-# revision id 'v3_10_integrity_events', so use that as the down_revision.
-down_revision = "v3_10_integrity_events"
+# Points to the PACK core prelaunch migration which is the latest before PACK clone/mirror work
+down_revision = "20251209_pack_core_prelaunch_01"
 branch_labels = None
 depends_on = None
 
