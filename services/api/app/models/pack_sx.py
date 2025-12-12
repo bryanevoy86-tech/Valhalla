@@ -7,7 +7,7 @@ Heimdall uses this to understand context and adjust operational cadence.
 
 from sqlalchemy import Column, Integer, String, Date, DateTime, Text, ForeignKey, JSON, Float
 from sqlalchemy.sql import func
-from db.base import Base
+from app.models.base import Base
 
 
 class EmotionalStateEntry(Base):

@@ -8,7 +8,7 @@ This is the soul of Valhalla — structured, factual, unchanging guidance.
 from sqlalchemy import Column, Integer, String, Date, DateTime, Text, ForeignKey, JSON
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from db.base import Base
+from app.models.base import Base
 
 
 class PhilosophyRecord(Base):

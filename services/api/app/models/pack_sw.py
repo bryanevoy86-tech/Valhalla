@@ -8,7 +8,7 @@ This provides Heimdall with a structured, factual record of your life story.
 from sqlalchemy import Column, Integer, String, Date, DateTime, Text, ForeignKey, JSON
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from db.base import Base
+from app.models.base import Base
 
 
 class LifeEvent(Base):

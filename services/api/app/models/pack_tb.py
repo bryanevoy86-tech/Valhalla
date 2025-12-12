@@ -8,7 +8,7 @@ No emotion analysis — purely scheduling and behavioral pacing.
 from sqlalchemy import Column, Integer, String, Date, DateTime, Text, ForeignKey, JSON, Boolean
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from db.base import Base
+from app.models.base import Base
 
 
 class DailyRhythmProfile(Base):
