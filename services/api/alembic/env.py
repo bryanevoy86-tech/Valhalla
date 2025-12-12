@@ -279,9 +279,6 @@ from app.models.life_roles import LifeRole, RoleCapacitySnapshot
 # PACK TF: System Tune List Engine
 from app.models.system_tune import TuneArea, TuneItem
 
-# PACK TG: Mental Load Offloading Engine
-from app.models.mental_load import MentalLoadEntry, DailyLoadSummary
-
 # PACK SP/SQ/SO: Crisis Management Engine (imported from pack_sp)
 # Removed duplicate crisis.py import to prevent table redefinition
 

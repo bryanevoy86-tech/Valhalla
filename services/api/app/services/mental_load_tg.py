@@ -8,7 +8,7 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy import func, and_
 
-from app.models.mental_load import MentalLoadEntry, MentalLoadSummary
+from app.models.mental_load import MentalLoadEntry, DailyLoadSummary
 from app.schemas.mental_load_tg import (
     MentalLoadEntryCreate,
     MentalLoadSummaryCreate,
@@ -46,7 +46,7 @@ def archive_entry(db: Session, entry_id: int) -> Optional[MentalLoadEntry]:
 def create_daily_summary(
     db: Session,
     payload: MentalLoadSummaryCreate,
-) -> MentalLoadSummary:
+) -> DailyLoadSummary:
     # Count items for that date
     target_date = payload.date.date()
     start = datetime(target_date.year, target_date.month, target_date.day)
@@ -88,7 +88,7 @@ def create_daily_summary(
         .scalar()
     )
 
-    obj = MentalLoadSummary(
+    obj = DailyLoadSummary(
         date=payload.date,
         total_items=total_items or 0,
         urgent_items=urgent_items or 0,
@@ -121,8 +121,8 @@ def get_daily_view(
     )
 
     summary = (
-        db.query(MentalLoadSummary)
-        .filter(func.date(MentalLoadSummary.date) == day)
+        db.query(DailyLoadSummary)
+        .filter(func.date(DailyLoadSummary.date) == day)
         .first()
     )
 
