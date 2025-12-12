@@ -280,7 +280,7 @@ from app.models.life_roles import LifeRole, RoleCapacitySnapshot
 from app.models.system_tune import TuneArea, TuneItem
 
 # PACK TG: Mental Load Offloading Engine
-from app.models.mental_load import MentalLoadEntry, MentalLoadSummary
+from app.models.mental_load import MentalLoadEntry, DailyLoadSummary
 
 # PACK TH: Crisis Management Engine
 from app.models.crisis import CrisisProfile, CrisisActionStep, CrisisLogEntry
