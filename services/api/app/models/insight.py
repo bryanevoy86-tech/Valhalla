@@ -4,7 +4,7 @@ PACK CI4: Insight Synthesizer Models
 
 from datetime import datetime
 from sqlalchemy import Column, Integer, String, Text, DateTime, JSON
-from app.db import Base
+from app.models.base import Base
 
 
 class Insight(Base):

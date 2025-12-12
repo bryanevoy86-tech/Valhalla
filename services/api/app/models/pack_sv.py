@@ -8,7 +8,7 @@ from sqlalchemy import Column, Integer, String, DateTime, Text, JSON, Float, For
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
-from app.db import Base
+from app.models.base import Base
 
 
 class EmpireGoal(Base):

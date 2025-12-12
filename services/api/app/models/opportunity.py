@@ -4,7 +4,7 @@ PACK CI2: Opportunity Engine Models
 
 from datetime import datetime
 from sqlalchemy import Column, Integer, String, Text, DateTime, JSON, Float, Boolean
-from app.db import Base
+from app.models.base import Base
 
 
 class Opportunity(Base):
