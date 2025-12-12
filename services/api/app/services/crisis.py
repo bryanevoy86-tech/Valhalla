@@ -5,7 +5,7 @@ PACK TH: Crisis Management Service
 from typing import List, Optional
 from sqlalchemy.orm import Session
 
-from app.models.crisis import CrisisProfile, CrisisActionStep, CrisisLogEntry
+from app.models.pack_sp import CrisisProfile, CrisisActionStep, CrisisLogEntry
 from app.schemas.crisis import (
     CrisisProfileCreate,
     CrisisActionStepCreate,

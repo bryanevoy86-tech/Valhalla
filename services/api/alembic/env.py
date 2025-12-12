@@ -282,8 +282,8 @@ from app.models.system_tune import TuneArea, TuneItem
 # PACK TG: Mental Load Offloading Engine
 from app.models.mental_load import MentalLoadEntry, DailyLoadSummary
 
-# PACK TH: Crisis Management Engine
-from app.models.crisis import CrisisProfile, CrisisActionStep, CrisisLogEntry
+# PACK SP/SQ/SO: Crisis Management Engine (imported from pack_sp)
+# Removed duplicate crisis.py import to prevent table redefinition
 
 # PACK TI: Financial Stress Early Warning Engine
 from app.models.financial_stress import FinancialIndicator, FinancialStressEvent
