@@ -6,7 +6,7 @@ from sqlalchemy import inspect
 import logging
 
 revision = "pack_65_buyer_match"
-down_revision = "0114"
+down_revision = "f358f8404d91"
 branch_labels = None
 depends_on = None
 

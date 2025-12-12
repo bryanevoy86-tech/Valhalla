@@ -21,7 +21,7 @@ from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.engine.reflection import Inspector
 
 revision = "pack_core_prelaunch_01"
-down_revision = "107_system_health_reports_table"
+down_revision = "0114"
 branch_labels = None
 depends_on = None
 
