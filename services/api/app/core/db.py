@@ -36,3 +36,11 @@ def get_db():
     finally:
         db.close()
 
+
+def get_db_session():
+    """Alias for get_db() for backwards compatibility."""
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
