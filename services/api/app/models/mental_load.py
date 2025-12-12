@@ -3,8 +3,8 @@ PACK SN: Mental Load Offloading Engine
 Models for brain externalization, task tracking, and daily load management
 """
 from sqlalchemy import String, Integer, Text, DateTime, Boolean, JSON, Column
-from datetime import datetime
-from app.core.db import Base
+from sqlalchemy.sql import func
+from app.models.base import Base
 
 
 class MentalLoadEntry(Base):
@@ -21,8 +21,8 @@ class MentalLoadEntry(Base):
     cleared = Column(Boolean, nullable=False, server_default="0")
     cleared_date = Column(DateTime, nullable=True)
     user_notes = Column(Text, nullable=True)
-    created_at = Column(DateTime, nullable=False, server_default=datetime.utcnow)
-    updated_at = Column(DateTime, nullable=False, server_default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, nullable=False, server_default=func.now())
+    updated_at = Column(DateTime, nullable=False, server_default=func.now())
 
 
 class DailyLoadSummary(Base):
@@ -40,7 +40,7 @@ class DailyLoadSummary(Base):
     waiting_items = Column(JSON, nullable=True)  # [string]: items awaiting response
     parked_items = Column(JSON, nullable=True)  # [string]: items deferred to later
     notes = Column(Text, nullable=True)
-    created_at = Column(DateTime, nullable=False, server_default=datetime.utcnow)
+    created_at = Column(DateTime, nullable=False, server_default=func.now())
 
 
 class LoadOffloadWorkflow(Base):
@@ -53,5 +53,5 @@ class LoadOffloadWorkflow(Base):
     processed_count = Column(Integer, nullable=False, server_default="0")
     categorized_items = Column(JSON, nullable=True)  # [{entry_id, category, urgency}]
     workflow_stage = Column(String(50), nullable=False, server_default="intake")  # intake, categorizing, ready
-    created_at = Column(DateTime, nullable=False, server_default=datetime.utcnow)
-    updated_at = Column(DateTime, nullable=False, server_default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, nullable=False, server_default=func.now())
+    updated_at = Column(DateTime, nullable=False, server_default=func.now())
