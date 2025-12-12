@@ -1,7 +1,7 @@
 """PACK TD, TE, TF: Resilience, Life Roles, System Tune
 
 Revision ID: 0064
-Revises: 0063
+Revises: 0063_heimdall_ultra_mode
 Create Date: 2024-01-01 00:00:00.000000
 
 """
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = '0064'
-down_revision = '0063'
+down_revision = '0063_heimdall_ultra_mode'
 branch_labels = None
 depends_on = None
 
