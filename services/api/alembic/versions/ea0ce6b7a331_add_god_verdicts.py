@@ -19,25 +19,33 @@ branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
+def _table_exists(name: str, schema: str | None = None) -> bool:
+    """Check if a table exists in the database."""
+    bind = op.get_bind()
+    insp = sa.inspect(bind)
+    return name in insp.get_table_names(schema=schema)
+
+
 def upgrade() -> None:
     """Upgrade schema."""
-    op.create_table(
-        "god_verdicts",
-        sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
-        sa.Column("case_id", postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column("trigger", sa.String(length=50), nullable=True),
-        sa.Column("heimdall_summary", sa.Text(), nullable=True),
-        sa.Column("heimdall_recommendation", postgresql.JSONB, nullable=True),
-        sa.Column("heimdall_confidence", sa.String(length=20), nullable=True),
-        sa.Column("loki_summary", sa.Text(), nullable=True),
-        sa.Column("loki_recommendation", postgresql.JSONB, nullable=True),
-        sa.Column("loki_confidence", sa.String(length=20), nullable=True),
-        sa.Column("consensus", sa.String(length=20), nullable=True),
-        sa.Column("risk_level", sa.String(length=20), nullable=True),
-        sa.Column("notes", sa.Text(), nullable=True),
-        sa.Column("metadata", postgresql.JSONB, nullable=True),
-    )
+    if not _table_exists("god_verdicts"):
+        op.create_table(
+            "god_verdicts",
+            sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True),
+            sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
+            sa.Column("case_id", postgresql.UUID(as_uuid=True), nullable=False),
+            sa.Column("trigger", sa.String(length=50), nullable=True),
+            sa.Column("heimdall_summary", sa.Text(), nullable=True),
+            sa.Column("heimdall_recommendation", postgresql.JSONB, nullable=True),
+            sa.Column("heimdall_confidence", sa.String(length=20), nullable=True),
+            sa.Column("loki_summary", sa.Text(), nullable=True),
+            sa.Column("loki_recommendation", postgresql.JSONB, nullable=True),
+            sa.Column("loki_confidence", sa.String(length=20), nullable=True),
+            sa.Column("consensus", sa.String(length=20), nullable=True),
+            sa.Column("risk_level", sa.String(length=20), nullable=True),
+            sa.Column("notes", sa.Text(), nullable=True),
+            sa.Column("metadata", postgresql.JSONB, nullable=True),
+        )
 
 
 def downgrade() -> None:

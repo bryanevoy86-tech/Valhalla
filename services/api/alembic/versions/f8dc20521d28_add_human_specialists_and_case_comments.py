@@ -19,31 +19,40 @@ branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
+def _table_exists(name: str, schema: str | None = None) -> bool:
+    """Check if a table exists in the database."""
+    bind = op.get_bind()
+    insp = sa.inspect(bind)
+    return name in insp.get_table_names(schema=schema)
+
+
 def upgrade() -> None:
     """Upgrade schema."""
-    op.create_table(
-        "human_specialists",
-        sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
-        sa.Column("name", sa.String(120), nullable=False),
-        sa.Column("role", sa.String(60), nullable=False),
-        sa.Column("email", sa.String(200), nullable=True),
-        sa.Column("phone", sa.String(40), nullable=True),
-        sa.Column("notes", sa.Text, nullable=True),
-        sa.Column("expertise", postgresql.JSONB, nullable=True),
-    )
+    if not _table_exists("human_specialists"):
+        op.create_table(
+            "human_specialists",
+            sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True),
+            sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
+            sa.Column("name", sa.String(120), nullable=False),
+            sa.Column("role", sa.String(60), nullable=False),
+            sa.Column("email", sa.String(200), nullable=True),
+            sa.Column("phone", sa.String(40), nullable=True),
+            sa.Column("notes", sa.Text, nullable=True),
+            sa.Column("expertise", postgresql.JSONB, nullable=True),
+        )
     
-    op.create_table(
-        "specialist_case_comments",
-        sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
-        sa.Column("specialist_id", postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column("case_id", postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column("comment", sa.Text, nullable=True),
-        sa.Column("payload", postgresql.JSONB, nullable=True),
-        sa.ForeignKeyConstraint(["specialist_id"], ["human_specialists.id"]),
-        sa.ForeignKeyConstraint(["case_id"], ["god_review_cases.id"], ondelete="CASCADE"),
-    )
+    if not _table_exists("specialist_case_comments"):
+        op.create_table(
+            "specialist_case_comments",
+            sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True),
+            sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
+            sa.Column("specialist_id", postgresql.UUID(as_uuid=True), nullable=False),
+            sa.Column("case_id", postgresql.UUID(as_uuid=True), nullable=False),
+            sa.Column("comment", sa.Text, nullable=True),
+            sa.Column("payload", postgresql.JSONB, nullable=True),
+            sa.ForeignKeyConstraint(["specialist_id"], ["human_specialists.id"]),
+            sa.ForeignKeyConstraint(["case_id"], ["god_review_cases.id"], ondelete="CASCADE"),
+        )
 
 
 def downgrade() -> None:

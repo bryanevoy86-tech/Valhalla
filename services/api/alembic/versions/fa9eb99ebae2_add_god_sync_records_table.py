@@ -19,20 +19,28 @@ branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
+def _table_exists(name: str, schema: str | None = None) -> bool:
+    """Check if a table exists in the database."""
+    bind = op.get_bind()
+    insp = sa.inspect(bind)
+    return name in insp.get_table_names(schema=schema)
+
+
 def upgrade() -> None:
     """Upgrade schema."""
-    op.create_table(
-        "god_sync_records",
-        sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
-        sa.Column("subject_type", sa.String(100), nullable=False),
-        sa.Column("subject_reference", sa.String(200), nullable=True),
-        sa.Column("heimdall_payload", postgresql.JSONB, nullable=True),
-        sa.Column("loki_payload", postgresql.JSONB, nullable=True),
-        sa.Column("sync_status", sa.String(20), nullable=False),
-        sa.Column("conflict_summary", sa.Text, nullable=True),
-        sa.Column("forwarded_case_id", postgresql.UUID(as_uuid=True), nullable=True),
-    )
+    if not _table_exists("god_sync_records"):
+        op.create_table(
+            "god_sync_records",
+            sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True),
+            sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
+            sa.Column("subject_type", sa.String(100), nullable=False),
+            sa.Column("subject_reference", sa.String(200), nullable=True),
+            sa.Column("heimdall_payload", postgresql.JSONB, nullable=True),
+            sa.Column("loki_payload", postgresql.JSONB, nullable=True),
+            sa.Column("sync_status", sa.String(20), nullable=False),
+            sa.Column("conflict_summary", sa.Text, nullable=True),
+            sa.Column("forwarded_case_id", postgresql.UUID(as_uuid=True), nullable=True),
+        )
 
 
 def downgrade() -> None:
