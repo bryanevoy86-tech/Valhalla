@@ -21,7 +21,7 @@ from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.engine.reflection import Inspector
 
 revision = "pack_core_prelaunch_01"
-down_revision = "0067_pack_tm_tn_to"
+down_revision = "0067"
 branch_labels = None
 depends_on = None
 
