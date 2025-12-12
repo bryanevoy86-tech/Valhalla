@@ -1,37 +1,30 @@
-"""FastAPI application entry point.
+"""Thin application entrypoint for Valhalla.
 
-Run with: uvicorn app.main:app --reload
-"""
-from fastapi import FastAPI
+⚠️ DO NOT add routers or middleware here.
+This file ONLY re-exports the real FastAPI app.
 
-app = FastAPI(title="Valhalla API", version="0.1.0")
-
-
-@app.get("/health", summary="Health check")
-def health() -> dict[str, str]:
-    return {"status": "ok"}
-"""Higher-level app entrypoints (helpers and wiring) for Valhalla application.
-
-This file is a lightweight stub that re-exports or wraps functionality from
-`app.ai` and any app-level wiring. Keep `services/api/main.py` as the HTTP
-entrypoint — this `app.main` is intentionally minimal so you can import it
-from other modules without bringing FastAPI into the import graph.
+The real HTTP app lives in:
+    services/api/main.py
 """
 
-from importlib.metadata import version
+from importlib.metadata import version as _version
 
-__all__ = ["version"]
+# Re-export the real FastAPI app
+from services.api.main import app  # noqa: F401
+
+
+# ---- Metadata helpers -------------------------------------------------------
 
 try:
-    __version__ = version("valhalla")
+    __version__ = _version("valhalla")
 except Exception:
     __version__ = "0.0.0"
 
-def info():
-    return {"app": "Valhalla", "version": __version__}
 
-
-@app.get("/hello")
-def hello_get():
-    return {"ok": True, "route": "/hello"}
+def info() -> dict:
+    return {
+        "app": "Valhalla",
+        "version": __version__,
+        "entrypoint": "services.api.main:app",
+    }
 
