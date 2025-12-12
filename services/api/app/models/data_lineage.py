@@ -20,6 +20,6 @@ class DataLineage(Base):
     source = Column(String, nullable=True)          # heimdall, user, system, automation
     description = Column(String, nullable=True)
 
-    metadata = Column(JSON, nullable=True)          # keys changed, tags, timestamps
+    meta_json = Column("metadata", JSON, nullable=True)          # keys changed, tags, timestamps
 
     created_at = Column(DateTime, default=datetime.utcnow)

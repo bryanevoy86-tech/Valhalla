@@ -16,6 +16,6 @@ class ExplanationLog(Base):
     context_id = Column(String, nullable=True)     # id of the entity
 
     explanation = Column(Text, nullable=False)     # human-readable text
-    metadata = Column(JSON, nullable=True)         # structured breadcrumbs
+    meta_json = Column("metadata", JSON, nullable=True)         # structured breadcrumbs
 
     created_at = Column(DateTime, default=datetime.utcnow)

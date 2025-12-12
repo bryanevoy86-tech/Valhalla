@@ -5,6 +5,7 @@ Note: ContractRecord is now in app.models.contract_record (PACK N)
 
 from sqlalchemy import Column, Integer, String, Text, DateTime, func
 from ..core.db import Base
+from .contract_record import ContractRecord  # noqa: F401 - backwards compatibility
 
 
 class ContractTemplate(Base):

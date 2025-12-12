@@ -20,7 +20,7 @@ class HoneypotInstance(Base):
     location = Column(String, nullable=True)         # geographic or logical location
     honeypot_type = Column(String, nullable=False)   # ssh, web, database, custom
     active = Column(Boolean, default=True)
-    metadata = Column(JSON, nullable=True)           # version, credentials, config
+    meta_json = Column("metadata", JSON, nullable=True)           # version, credentials, config
     
     # Relationships
     events = relationship("HoneypotEvent", cascade="all, delete-orphan", back_populates="instance")
