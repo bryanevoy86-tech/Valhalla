@@ -19,40 +19,49 @@ branch_labels = None
 depends_on = None
 
 
-def upgrade() -> None:
-    op.create_table(
-        "loki_reviews",
-        sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
-        sa.Column("input_source", sa.String(length=100), nullable=False),
-        sa.Column("artifact_type", sa.String(length=100), nullable=False),
-        sa.Column("risk_profile", sa.String(length=100), nullable=True),
-        sa.Column("status", sa.String(length=20), nullable=False),
-        sa.Column("heimdall_reference_id", sa.String(length=100), nullable=True),
-        sa.Column("human_reference_id", sa.String(length=100), nullable=True),
-        sa.Column("summary", sa.Text(), nullable=True),
-        sa.Column("result_severity", sa.String(length=20), nullable=True),
-        sa.Column("raw_input", postgresql.JSONB(astext_type=sa.Text()), nullable=False),
-        sa.Column("raw_output", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
-    )
+def _table_exists(name: str, schema: str | None = None) -> bool:
+    """Check if a table exists in the database."""
+    bind = op.get_bind()
+    insp = sa.inspect(bind)
+    return name in insp.get_table_names(schema=schema)
 
-    op.create_table(
-        "loki_findings",
-        sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
-        sa.Column(
-            "review_id",
-            postgresql.UUID(as_uuid=True),
-            sa.ForeignKey("loki_reviews.id", ondelete="CASCADE"),
-            nullable=False,
-        ),
-        sa.Column("category", sa.String(length=100), nullable=False),
-        sa.Column("severity", sa.String(length=20), nullable=False),
-        sa.Column("message", sa.Text(), nullable=False),
-        sa.Column("suggested_fix", sa.Text(), nullable=True),
-        sa.Column("tags", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
-    )
+
+def upgrade() -> None:
+    if not _table_exists("loki_reviews"):
+        op.create_table(
+            "loki_reviews",
+            sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True),
+            sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
+            sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
+            sa.Column("input_source", sa.String(length=100), nullable=False),
+            sa.Column("artifact_type", sa.String(length=100), nullable=False),
+            sa.Column("risk_profile", sa.String(length=100), nullable=True),
+            sa.Column("status", sa.String(length=20), nullable=False),
+            sa.Column("heimdall_reference_id", sa.String(length=100), nullable=True),
+            sa.Column("human_reference_id", sa.String(length=100), nullable=True),
+            sa.Column("summary", sa.Text(), nullable=True),
+            sa.Column("result_severity", sa.String(length=20), nullable=True),
+            sa.Column("raw_input", postgresql.JSONB(astext_type=sa.Text()), nullable=False),
+            sa.Column("raw_output", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
+        )
+
+    if not _table_exists("loki_findings"):
+        op.create_table(
+            "loki_findings",
+            sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True),
+            sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
+            sa.Column(
+                "review_id",
+                postgresql.UUID(as_uuid=True),
+                sa.ForeignKey("loki_reviews.id", ondelete="CASCADE"),
+                nullable=False,
+            ),
+            sa.Column("category", sa.String(length=100), nullable=False),
+            sa.Column("severity", sa.String(length=20), nullable=False),
+            sa.Column("message", sa.Text(), nullable=False),
+            sa.Column("suggested_fix", sa.Text(), nullable=True),
+            sa.Column("tags", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
+        )
 
 
 def downgrade() -> None:
