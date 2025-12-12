@@ -15,9 +15,17 @@ branch_labels = None
 depends_on = None
 
 
+def _table_exists(name: str, schema: str | None = None) -> bool:
+    """Check if a table exists in the database."""
+    bind = op.get_bind()
+    insp = sa.inspect(bind)
+    return name in insp.get_table_names(schema=schema)
+
+
 def upgrade():
-    op.create_table(
-        "contractors",
+    if not _table_exists("contractors"):
+        op.create_table(
+            "contractors",
         sa.Column("id", sa.Integer, primary_key=True),
         sa.Column("company_name", sa.String(), nullable=False),
         sa.Column("contact_person", sa.String()),
@@ -28,7 +36,7 @@ def upgrade():
         sa.Column("speed_score", sa.Float(), server_default="0.0"),
         sa.Column("attitude_score", sa.Float(), server_default="0.0"),
         sa.Column("created_at", sa.DateTime())
-    )
+        )
 
 
 def downgrade():

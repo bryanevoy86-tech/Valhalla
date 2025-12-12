@@ -15,9 +15,17 @@ branch_labels = None
 depends_on = None
 
 
+def _table_exists(name: str, schema: str | None = None) -> bool:
+    """Check if a table exists in the database."""
+    bind = op.get_bind()
+    insp = sa.inspect(bind)
+    return name in insp.get_table_names(schema=schema)
+
+
 def upgrade():
-    op.create_table(
-        "resort_bookings",
+    if not _table_exists("resort_bookings"):
+        op.create_table(
+            "resort_bookings",
         sa.Column("id", sa.Integer, primary_key=True),
         sa.Column("guest_name", sa.String(), nullable=False),
         sa.Column("check_in", sa.DateTime()),
@@ -27,7 +35,7 @@ def upgrade():
         sa.Column("dynamic_price", sa.Float()),
         sa.Column("status", sa.String(), server_default="reserved"),
         sa.Column("created_at", sa.DateTime())
-    )
+        )
 
 
 def downgrade():
