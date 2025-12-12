@@ -618,13 +618,19 @@ app = FastAPI(title="Valhalla API", version="3.4")
 from app.routers import heimdall_build_gate
 app.include_router(heimdall_build_gate.router)
 
-# Auto-create tables on startup (dev-friendly; safe if tables already exist)
+# Auto-create tables on startup (dev-friendly; controlled via AUTO_CREATE_SCHEMA env var)
 try:
     from app.core.db import Base, engine
+    from app.core.startup import should_auto_create_schema
+    
     @app.on_event("startup")
     def startup_create_tables():
         try:
-            Base.metadata.create_all(bind=engine)
+            if should_auto_create_schema():
+                Base.metadata.create_all(bind=engine)
+                print("AUTO_CREATE_SCHEMA enabled: Created tables if they didn't exist")
+            else:
+                print("AUTO_CREATE_SCHEMA disabled: Relying on Alembic migrations for schema management")
         except Exception as e:
             print(f"WARNING: Failed to auto-create tables on startup: {e}")
 except Exception as e:
