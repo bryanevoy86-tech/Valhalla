@@ -67,7 +67,7 @@ class EmpireGovernanceMap(Base):
     
     id = Column(Integer, primary_key=True)
     map_id = Column(String(255), nullable=False, unique=True)
-    version = Column(Integer, nullable=False, server_default=1)
+    version = Column(Integer, nullable=False, server_default='1')
     roles_count = Column(Integer, nullable=False)
     role_graph = Column(JSON, nullable=True)  # Complete role hierarchy as JSON
     conflict_rules = Column(JSON, nullable=True)  # [{roles, resolution_path, notes}]
