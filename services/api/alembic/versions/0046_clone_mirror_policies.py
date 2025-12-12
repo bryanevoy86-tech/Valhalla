@@ -2,8 +2,9 @@ from alembic import op
 import sqlalchemy as sa
 
 revision = "0046_clone_mirror_policies"
-# Points to the PACK core prelaunch migration which is the latest before PACK clone/mirror work
-down_revision = "pack_core_prelaunch_01"
+# This migration was originally broken (referenced 0045_deal_doc_templates_send which doesn't exist).
+# Correctly points to v3_10_integrity_events, the actual parent migration in the chain.
+down_revision = "v3_10_integrity_events"
 branch_labels = None
 depends_on = None
 
