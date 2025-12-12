@@ -1,7 +1,7 @@
 """add god review case models
 
 Revision ID: 3e8296b25e8b
-Revises: f358f8404d91
+Revises: 107_system_health_reports_table
 Create Date: 2025-11-20 22:45:06.123731
 
 """
@@ -14,7 +14,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = "3e8296b25e8b"
-down_revision = "f358f8404d91"
+down_revision = "107_system_health_reports_table"
 branch_labels = None
 depends_on = None
 

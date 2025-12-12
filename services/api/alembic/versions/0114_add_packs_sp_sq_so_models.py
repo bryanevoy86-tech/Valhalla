@@ -1,7 +1,7 @@
 """Add PACKS SP, SQ, SO models
 
 Revision ID: 0114
-Revises: 0113
+Revises: 0067
 Create Date: 2025-01-07 13:30:00.000000
 
 """
@@ -11,7 +11,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = '0114'
-down_revision = '0113'
+down_revision = '0067'
 branch_labels = None
 depends_on = None
 

@@ -1,7 +1,7 @@
 """Pack 114: add system_health_reports table
 
 Revision ID: 107_system_health_reports_table
-Revises: 106_contractor_loyalty_tables
+Revises: 0114
 Create Date: 2025-11-24
 """
 from alembic import op
@@ -9,7 +9,7 @@ import sqlalchemy as sa
 from sqlalchemy import inspect
 
 revision = "107_system_health_reports_table"
-down_revision = "106_contractor_loyalty_tables"
+down_revision = "0114"
 branch_labels = None
 depends_on = None
 
