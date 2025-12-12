@@ -2,9 +2,9 @@ from alembic import op
 import sqlalchemy as sa
 
 revision = "0046_clone_mirror_policies"
-# This migration was originally broken (referenced 0045_deal_doc_templates_send which doesn't exist).
-# Correctly points to v3_10_integrity_events, the actual parent migration in the chain.
-down_revision = "v3_10_integrity_events"
+# Points to v3_9_research_db so numbered migrations 0046-0067 come BEFORE the v3_x versions
+# This breaks the cycle: 0046...0067 → v3_9 → v3_8 → v3_7 → (other migrations)
+down_revision = "v3_9_research_db"
 branch_labels = None
 depends_on = None
 

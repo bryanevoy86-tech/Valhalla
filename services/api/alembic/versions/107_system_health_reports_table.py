@@ -9,7 +9,7 @@ import sqlalchemy as sa
 from sqlalchemy import inspect
 
 revision = "107_system_health_reports_table"
-down_revision = "0114"
+down_revision = "106_contractor_loyalty_tables"
 branch_labels = None
 depends_on = None
 
