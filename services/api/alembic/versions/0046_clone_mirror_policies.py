@@ -3,7 +3,7 @@ import sqlalchemy as sa
 
 revision = "0046_clone_mirror_policies"
 # Points to the PACK core prelaunch migration which is the latest before PACK clone/mirror work
-down_revision = "20251209_pack_core_prelaunch_01"
+down_revision = "pack_core_prelaunch_01"
 branch_labels = None
 depends_on = None
 
