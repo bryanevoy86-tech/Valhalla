@@ -19,10 +19,18 @@ branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
+def _table_exists(name: str, schema: str | None = None) -> bool:
+    """Check if a table exists in the database."""
+    bind = op.get_bind()
+    insp = sa.inspect(bind)
+    return name in insp.get_table_names(schema=schema)
+
+
 def upgrade() -> None:
     """Upgrade schema."""
-    op.create_table(
-        "disputes",
+    if not _table_exists("disputes"):
+        op.create_table(
+            "disputes",
         sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
@@ -37,7 +45,7 @@ def upgrade() -> None:
         sa.Column("status", sa.String(length=30), nullable=False, server_default="open"),
         sa.Column("resolution_summary", sa.Text(), nullable=True),
         sa.Column("resolution_metadata", postgresql.JSONB, nullable=True),
-    )
+        )
 
 
 def downgrade() -> None:

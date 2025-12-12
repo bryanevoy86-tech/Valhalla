@@ -1,10 +1,5 @@
-"""create god_cases table
+from __future__ import annotations
 
-Revision ID: 83_god_cases
-Revises: 4cd55687949f
-Create Date: 2025-11-21 00:00:00.000000
-
-"""
 from typing import Sequence, Union
 
 from alembic import op
@@ -19,9 +14,17 @@ branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
+def _table_exists(name: str, schema: str | None = None) -> bool:
+    """Check if a table exists in the database."""
+    bind = op.get_bind()
+    insp = sa.inspect(bind)
+    return name in insp.get_table_names(schema=schema)
+
+
 def upgrade() -> None:
-    op.create_table(
-        "god_cases",
+    if not _table_exists("god_cases"):
+        op.create_table(
+            "god_cases",
         sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True, nullable=False),
         sa.Column("title", sa.String(length=255), nullable=False),
         sa.Column("source_type", sa.String(length=50), nullable=False),
@@ -33,8 +36,8 @@ def upgrade() -> None:
         sa.Column("needs_rescan", sa.Boolean(), nullable=False, server_default=sa.text("false")),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
-    )
-    op.create_index("ix_god_cases_id", "god_cases", ["id"], unique=False)
+        )
+        op.create_index("ix_god_cases_id", "god_cases", ["id"], unique=False)
 
 
 def downgrade() -> None:
