@@ -5,7 +5,7 @@ PACK TI: Financial Stress Early Warning Service
 from typing import List, Optional
 from sqlalchemy.orm import Session
 
-from app.models.financial_stress import FinancialIndicator, FinancialStressEvent
+from app.models.pack_st import FinancialIndicator, FinancialStressEvent
 from app.schemas.financial_stress import (
     FinancialIndicatorCreate,
     FinancialStressEventCreate,

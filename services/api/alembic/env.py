@@ -285,8 +285,8 @@ from app.models.mental_load import MentalLoadEntry, DailyLoadSummary
 # PACK SP/SQ/SO: Crisis Management Engine (imported from pack_sp)
 # Removed duplicate crisis.py import to prevent table redefinition
 
-# PACK TI: Financial Stress Early Warning Engine
-from app.models.financial_stress import FinancialIndicator, FinancialStressEvent
+# PACK ST: Financial Stress Early Warning Engine (imported from pack_st)
+# Removed duplicate financial_stress.py import to prevent table redefinition
 
 # Research models not yet created - comment out for now
 # from app.models.research import ResearchSource, ResearchDoc, ResearchQuery, Playbook
