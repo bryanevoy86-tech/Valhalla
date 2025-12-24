@@ -30,6 +30,20 @@ app.add_middleware(
 
 Base.metadata.create_all(bind=engine)
 
+# Viability Core routers (Policy, Health, Telemetry, Exports)
+try:
+    from .core.policy.router import router as policy_router
+    from .core.health.router import router as health_router
+    from .core.telemetry.router import router as telemetry_router
+    from .core.exports.router import router as exports_router
+
+    app.include_router(health_router)
+    app.include_router(policy_router)
+    app.include_router(telemetry_router)
+    app.include_router(exports_router)
+except Exception as e:
+    print(f"WARNING: Could not load Viability Core routers: {e}")
+
 # route mounting (only add if not present)
 try:
     s = get_settings()
