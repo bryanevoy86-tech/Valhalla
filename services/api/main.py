@@ -1,7 +1,11 @@
 ﻿from fastapi import FastAPI, Response
 from fastapi.responses import JSONResponse
+from app.core.policy.router import router as policy_router
 
 app = FastAPI(title="Valhalla API", version="0.1.0")
+
+# Register policy router
+app.include_router(policy_router)
 
 
 @app.api_route("/", methods=["GET", "HEAD"])

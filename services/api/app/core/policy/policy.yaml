@@ -1,0 +1,32 @@
+version: "2.0"
+name: "Valhalla Unified Policy v2"
+
+safety:
+  max_risk_per_action_pct: 1.25
+  max_exposure_per_leg_pct: 20.0
+  max_weekly_drawdown_pct: 5.0
+  max_monthly_drawdown_pct: 10.0
+  correlated_risk_cap_pct: 25.0
+  default_cash_buffer_pct: 35.0
+  crisis_cash_buffer_pct: 80.0
+
+autonomy:
+  l1_recommend_min_samples: 12
+  l2_auto_execute_min_samples: 30
+  l3_auto_scale_min_samples: 100
+  l4_auto_prune_min_samples: 250
+  l2_max_variance_pct: 25.0
+  l3_max_variance_pct: 20.0
+  l4_max_variance_pct: 15.0
+
+optimization:
+  min_ev: 0.25
+  min_confidence_pct: 70.0
+  max_downside_to_ev_ratio: 0.4
+  score_weights:
+    risk_weight: 0.8
+    time_penalty_weight: 0.2
+  time_to_cash_months_soft_cap: 12
+
+portfolio:
+  exploration_floor_pct: 10.0
