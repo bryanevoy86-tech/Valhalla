@@ -28,7 +28,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-Base.metadata.create_all(bind=engine)
+# Auto-schema creation - disabled for local dev (use alembic migrations instead)
+# Base.metadata.create_all(bind=engine)
 
 # Viability Core routers (Policy, Health, Telemetry, Exports)
 try:
@@ -101,9 +102,9 @@ from app.observability.tracing import setup_tracing
 from app.routers import (
     admin_alerts,
     admin_canary,
-    admin_logs,
+    # admin_logs,  # TODO: implement
     admin_observability,
-    admin_ops,
+    # admin_ops,  # TODO: implement
     admin_replay,
 )
 from fastapi.staticfiles import StaticFiles
@@ -113,9 +114,9 @@ setup_tracing(app)
 install_metrics(app)
 install_replay_middleware(app)
 app.include_router(admin_observability.router)
-app.include_router(admin_logs.router)
+# app.include_router(admin_logs.router)  # TODO: implement
 app.include_router(admin_replay.router)
-app.include_router(admin_ops.router)
+# app.include_router(admin_ops.router)  # TODO: implement
 app.include_router(admin_alerts.router)
 app.include_router(admin_canary.router)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")

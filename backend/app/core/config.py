@@ -1,6 +1,7 @@
 from functools import lru_cache
 
-from pydantic import AnyUrl, BaseSettings
+from pydantic import AnyUrl
+from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
@@ -42,29 +43,9 @@ class Settings(BaseSettings):
     S3_FORCE_PATH_STYLE: bool = True  # MinIO needs this
     S3_PRESIGN_EXPIRE_SEC: int = 900  # 15 minutes
 
-    class Config:
-        env_file = ".env"
+    model_config = {"env_file": ".env"}
 
 
 @lru_cache
 def get_settings() -> Settings:
-    from pydantic import AnyUrl, BaseSettings  # ensure imports exist
-
-    class Settings(BaseSettings):
-        PROJECT_NAME: str = "Valhalla API"
-        API_V1_STR: str = "/api/v1"
-        SECRET_KEY: str
-        ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
-        REFRESH_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7
-        POSTGRES_SERVER: str | None = None
-        POSTGRES_USER: str | None = None
-        POSTGRES_PASSWORD: str | None = None
-        POSTGRES_DB: str | None = None
-        DATABASE_URL: AnyUrl | None = None
-        REDIS_URL: str = "redis://redis:6379/0"
-        CORS_ORIGINS: list[str] = ["http://localhost:3000"]
-
-        class Config:
-            env_file = ".env"
-
     return Settings()

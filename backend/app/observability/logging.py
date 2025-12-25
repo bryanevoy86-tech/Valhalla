@@ -1,9 +1,15 @@
 import logging
 import os
+import contextvars
 
 from pythonjsonlogger import jsonlogger
 
 from .scrub import scrub_any, scrub_headers
+
+# Context variables for request tracking
+request_id_ctx = contextvars.ContextVar("request_id", default=None)
+route_id_ctx = contextvars.ContextVar("route_id", default=None)
+user_id_ctx = contextvars.ContextVar("user_id", default=None)
 
 
 class OTELJsonFormatter(jsonlogger.JsonFormatter):
@@ -26,3 +32,7 @@ def configure_logging():
     root = logging.getLogger()
     root.setLevel(os.getenv("LOG_LEVEL", "INFO"))
     root.handlers = [handler]
+
+
+def get_logger(name: str = "valhalla"):
+    return logging.getLogger(name)
