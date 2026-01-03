@@ -59,6 +59,11 @@ from .reconcile.router import router as reconcile_router
 from .proofpacks.router import router as proofpacks_router
 from .networth.router import router as networth_router
 from .exports_year_end.router import router as exports_year_end_router
+from .bank_profiles.router import router as bank_profiles_router
+from .bank_categorizer.router import router as bank_categorizer_router
+from .vaults.router import router as vaults_router
+from .finance_alerts.router import router as finance_alerts_router
+from .export_csv.router import router as export_csv_router
 from .transactions.router import router as transactions_router
 from .packs.router import router as packs_router
 from .inventory.router import router as inventory_router
@@ -214,6 +219,11 @@ core.include_router(reconcile_router)
 core.include_router(proofpacks_router)
 core.include_router(networth_router)
 core.include_router(exports_year_end_router)
+core.include_router(bank_profiles_router)
+core.include_router(bank_categorizer_router)
+core.include_router(vaults_router)
+core.include_router(finance_alerts_router)
+core.include_router(export_csv_router)
 core.include_router(transactions_router)
 core.include_router(packs_router)
 core.include_router(inventory_router)

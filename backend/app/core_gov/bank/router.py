@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 from typing import Any, Dict, List
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Body
 
 from .schemas import BankTxnCreate, BankTxnListResponse
-from . import service
+from . import service, csv_import
 
 router = APIRouter(prefix="/core/bank", tags=["core-bank"])
 
@@ -40,4 +40,10 @@ def patch(txn_id: str, patch: Dict[str, Any]):
 
 @router.post("/txns/bulk_import")
 def bulk_import(payloads: List[Dict[str, Any]], dedupe_external_id: bool = True, max_items: int = 500):
+    return service.bulk_import(payloads, dedupe_external_id=dedupe_external_id, max_items=max_items)
+
+
+@router.post("/txns/import_csv")
+def import_csv(csv_text: str = Body(..., embed=True), mapping: Dict[str, Any] = Body(...), dedupe_external_id: bool = True, max_items: int = 500):
+    payloads = csv_import.parse_csv(csv_text, mapping=mapping)
     return service.bulk_import(payloads, dedupe_external_id=dedupe_external_id, max_items=max_items)

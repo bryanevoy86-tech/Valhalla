@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter
 
 from app.core_gov.command.service import what_now, daily_brief, weekly_review
+from . import finance_brief
 
 router = APIRouter(prefix="/command", tags=["Core: Command Center"])
 
@@ -20,3 +21,9 @@ def daily_brief_endpoint():
 @router.get("/weekly_review")
 def weekly_review_endpoint():
     return weekly_review()
+
+
+@router.get("/finance_brief")
+def finance_brief_endpoint(month: str = ""):
+    return finance_brief.finance_brief(month=month)
+

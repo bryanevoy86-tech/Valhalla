@@ -1,0 +1,185 @@
+{
+  "updated_at": "2026-01-03T08:01:16.663820+00:00",
+  "items": [
+    {
+      "id": "v_b8d4e04e2dd6",
+      "name": "Rent Buffer",
+      "category": "bills",
+      "target": 1000.0,
+      "balance": 500.0,
+      "currency": "CAD",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T07:59:25.405308+00:00",
+      "updated_at": "2026-01-03T07:59:25.405318+00:00"
+    },
+    {
+      "id": "v_033916f75aed",
+      "name": "Vault1",
+      "category": "general",
+      "target": 1000.0,
+      "balance": 0.0,
+      "currency": "CAD",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T07:59:25.410972+00:00",
+      "updated_at": "2026-01-03T07:59:25.410982+00:00"
+    },
+    {
+      "id": "v_9eaaa8da4bb7",
+      "name": "DepositTest",
+      "category": "general",
+      "target": 0.0,
+      "balance": 150.0,
+      "currency": "CAD",
+      "notes": "",
+      "meta": {
+        "last_txn": {
+          "type": "deposit",
+          "amount": 50,
+          "note": "test deposit"
+        }
+      },
+      "created_at": "2026-01-03T07:59:25.413641+00:00",
+      "updated_at": "2026-01-03T07:59:25.415120+00:00"
+    },
+    {
+      "id": "v_5971f9eb0617",
+      "name": "WithdrawTest",
+      "category": "general",
+      "target": 0.0,
+      "balance": 150.0,
+      "currency": "CAD",
+      "notes": "",
+      "meta": {
+        "last_txn": {
+          "type": "withdraw",
+          "amount": 50,
+          "note": "test withdraw"
+        }
+      },
+      "created_at": "2026-01-03T07:59:25.416850+00:00",
+      "updated_at": "2026-01-03T07:59:25.418531+00:00"
+    },
+    {
+      "id": "v_d54488404d75",
+      "name": "PatchTest",
+      "category": "general",
+      "target": 1000.0,
+      "balance": 0.0,
+      "currency": "CAD",
+      "notes": "Updated target",
+      "meta": {},
+      "created_at": "2026-01-03T07:59:25.420327+00:00",
+      "updated_at": "2026-01-03T07:59:25.421709+00:00"
+    },
+    {
+      "id": "v_5f8a07e24516",
+      "name": "Workflow_ab478b9d",
+      "category": "general",
+      "target": 1000.0,
+      "balance": 600.0,
+      "currency": "CAD",
+      "notes": "",
+      "meta": {
+        "last_txn": {
+          "type": "withdraw",
+          "amount": 100,
+          "note": ""
+        }
+      },
+      "created_at": "2026-01-03T07:59:25.560712+00:00",
+      "updated_at": "2026-01-03T07:59:25.565051+00:00"
+    },
+    {
+      "id": "v_183945ec8923",
+      "name": "Rent Buffer",
+      "category": "bills",
+      "target": 1000.0,
+      "balance": 500.0,
+      "currency": "CAD",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:01:16.553461+00:00",
+      "updated_at": "2026-01-03T08:01:16.553472+00:00"
+    },
+    {
+      "id": "v_f86ec4b9b789",
+      "name": "Vault1",
+      "category": "general",
+      "target": 1000.0,
+      "balance": 0.0,
+      "currency": "CAD",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:01:16.557338+00:00",
+      "updated_at": "2026-01-03T08:01:16.557348+00:00"
+    },
+    {
+      "id": "v_2cac9261f5da",
+      "name": "DepositTest",
+      "category": "general",
+      "target": 0.0,
+      "balance": 150.0,
+      "currency": "CAD",
+      "notes": "",
+      "meta": {
+        "last_txn": {
+          "type": "deposit",
+          "amount": 50,
+          "note": "test deposit"
+        }
+      },
+      "created_at": "2026-01-03T08:01:16.559993+00:00",
+      "updated_at": "2026-01-03T08:01:16.562016+00:00"
+    },
+    {
+      "id": "v_8e569ba6f2ab",
+      "name": "WithdrawTest",
+      "category": "general",
+      "target": 0.0,
+      "balance": 150.0,
+      "currency": "CAD",
+      "notes": "",
+      "meta": {
+        "last_txn": {
+          "type": "withdraw",
+          "amount": 50,
+          "note": "test withdraw"
+        }
+      },
+      "created_at": "2026-01-03T08:01:16.563884+00:00",
+      "updated_at": "2026-01-03T08:01:16.565726+00:00"
+    },
+    {
+      "id": "v_3424943fceca",
+      "name": "PatchTest",
+      "category": "general",
+      "target": 1000.0,
+      "balance": 0.0,
+      "currency": "CAD",
+      "notes": "Updated target",
+      "meta": {},
+      "created_at": "2026-01-03T08:01:16.567572+00:00",
+      "updated_at": "2026-01-03T08:01:16.569297+00:00"
+    },
+    {
+      "id": "v_3587ecae63b0",
+      "name": "Workflow_4acbc1bc",
+      "category": "general",
+      "target": 1000.0,
+      "balance": 600.0,
+      "currency": "CAD",
+      "notes": "",
+      "meta": {
+        "last_txn": {
+          "type": "withdraw",
+          "amount": 100,
+          "note": ""
+        }
+      },
+      "created_at": "2026-01-03T08:01:16.657092+00:00",
+      "updated_at": "2026-01-03T08:01:16.663379+00:00"
+    }
+  ]
+}

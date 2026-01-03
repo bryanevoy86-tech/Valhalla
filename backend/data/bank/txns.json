@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-01-03T07:52:32.217116+00:00",
+  "updated_at": "2026-01-03T08:01:16.455085+00:00",
   "items": [
     {
       "id": "bt_f9ca0e9ab3db",
@@ -464,6 +464,74 @@
       "meta": {},
       "created_at": "2026-01-03T07:52:32.200626+00:00",
       "updated_at": "2026-01-03T07:52:32.216368+00:00"
+    },
+    {
+      "id": "bt_9780a333993d",
+      "date": "2026-01-03",
+      "description": "CSV Import Test",
+      "amount": 75.5,
+      "currency": "CAD",
+      "txn_type": "unknown",
+      "account": "",
+      "status": "new",
+      "external_id": "",
+      "tags": [],
+      "notes": "",
+      "meta": {
+        "csv_row": {
+          "Date": "2026-01-03",
+          "Description": "CSV Import Test",
+          "Amount": "75.50"
+        }
+      },
+      "created_at": "2026-01-03T07:59:25.267772+00:00",
+      "updated_at": "2026-01-03T07:59:25.267772+00:00"
+    },
+    {
+      "id": "bt_5455ce2fa647",
+      "date": "2026-01-03",
+      "description": "Integration Test",
+      "amount": 99.99,
+      "currency": "CAD",
+      "txn_type": "unknown",
+      "account": "RBC",
+      "status": "new",
+      "external_id": "ext123",
+      "tags": [],
+      "notes": "",
+      "meta": {
+        "csv_row": {
+          "Date": "2026-01-03",
+          "Description": "Integration Test",
+          "Amount": "99.99",
+          "Account": "RBC",
+          "ID": "ext123"
+        }
+      },
+      "created_at": "2026-01-03T07:59:25.552798+00:00",
+      "updated_at": "2026-01-03T07:59:25.552798+00:00"
+    },
+    {
+      "id": "bt_7e2cb66e387b",
+      "date": "2026-01-03",
+      "description": "CSV Import Test",
+      "amount": 75.5,
+      "currency": "CAD",
+      "txn_type": "unknown",
+      "account": "",
+      "status": "new",
+      "external_id": "",
+      "tags": [],
+      "notes": "",
+      "meta": {
+        "csv_row": {
+          "Date": "2026-01-03",
+          "Description": "CSV Import Test",
+          "Amount": "75.50"
+        }
+      },
+      "created_at": "2026-01-03T08:01:16.454292+00:00",
+      "updated_at": "2026-01-03T08:01:16.454292+00:00"
     }
   ]
 }
