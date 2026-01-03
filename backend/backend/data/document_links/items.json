@@ -1,0 +1,245 @@
+{
+  "updated_at": "2026-01-03T08:15:47.400227+00:00",
+  "items": [
+    {
+      "id": "dl_c33a03250654",
+      "doc_id": "doc_123",
+      "entity_type": "deals",
+      "entity_id": "deal_456",
+      "relation": "supporting_doc",
+      "notes": "Primary proof",
+      "meta": {},
+      "created_at": "2026-01-03T08:14:33.038823+00:00"
+    },
+    {
+      "id": "dl_c9bf8facc6cc",
+      "doc_id": "doc_1",
+      "entity_type": "deals",
+      "entity_id": "deal_1",
+      "relation": "supporting",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:14:33.043375+00:00"
+    },
+    {
+      "id": "dl_f347179ad99b",
+      "doc_id": "doc_2",
+      "entity_type": "deals",
+      "entity_id": "deal_1",
+      "relation": "proof",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:14:33.045220+00:00"
+    },
+    {
+      "id": "dl_c36fc36a4da0",
+      "doc_id": "doc_alpha",
+      "entity_type": "deals",
+      "entity_id": "deal_1",
+      "relation": "proof",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:14:33.048590+00:00"
+    },
+    {
+      "id": "dl_d682ba7f55fb",
+      "doc_id": "doc_alpha",
+      "entity_type": "loans",
+      "entity_id": "loan_1",
+      "relation": "disclosure",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:14:33.050516+00:00"
+    },
+    {
+      "id": "dl_5eeb0dfb7591",
+      "doc_id": "doc_49fde2dda52d",
+      "entity_type": "deals",
+      "entity_id": "deal_integration",
+      "relation": "reference",
+      "notes": "Test link",
+      "meta": {},
+      "created_at": "2026-01-03T08:14:33.815735+00:00"
+    },
+    {
+      "id": "dl_21143d0b7050",
+      "doc_id": "doc_123",
+      "entity_type": "deals",
+      "entity_id": "deal_456",
+      "relation": "supporting_doc",
+      "notes": "Primary proof",
+      "meta": {},
+      "created_at": "2026-01-03T08:15:26.783886+00:00"
+    },
+    {
+      "id": "dl_16f5c674ee36",
+      "doc_id": "doc_1",
+      "entity_type": "deals",
+      "entity_id": "deal_1",
+      "relation": "supporting",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:15:26.786750+00:00"
+    },
+    {
+      "id": "dl_49051a8af602",
+      "doc_id": "doc_2",
+      "entity_type": "deals",
+      "entity_id": "deal_1",
+      "relation": "proof",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:15:26.788292+00:00"
+    },
+    {
+      "id": "dl_2917bfcbc5e9",
+      "doc_id": "doc_alpha",
+      "entity_type": "deals",
+      "entity_id": "deal_1",
+      "relation": "proof",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:15:26.792576+00:00"
+    },
+    {
+      "id": "dl_9176d4788116",
+      "doc_id": "doc_alpha",
+      "entity_type": "loans",
+      "entity_id": "loan_1",
+      "relation": "disclosure",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:15:26.794643+00:00"
+    },
+    {
+      "id": "dl_fce91aadf9ff",
+      "doc_id": "doc_4c0ff4e5f425",
+      "entity_type": "deals",
+      "entity_id": "deal_integration",
+      "relation": "reference",
+      "notes": "Test link",
+      "meta": {},
+      "created_at": "2026-01-03T08:15:27.049991+00:00"
+    },
+    {
+      "id": "dl_6a57149d0d20",
+      "doc_id": "doc_123",
+      "entity_type": "deals",
+      "entity_id": "deal_456",
+      "relation": "supporting_doc",
+      "notes": "Primary proof",
+      "meta": {},
+      "created_at": "2026-01-03T08:15:43.124437+00:00"
+    },
+    {
+      "id": "dl_5af329aa18f4",
+      "doc_id": "doc_1",
+      "entity_type": "deals",
+      "entity_id": "deal_1",
+      "relation": "supporting",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:15:43.127888+00:00"
+    },
+    {
+      "id": "dl_fc511dc7363a",
+      "doc_id": "doc_2",
+      "entity_type": "deals",
+      "entity_id": "deal_1",
+      "relation": "proof",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:15:43.129262+00:00"
+    },
+    {
+      "id": "dl_da8156c10d28",
+      "doc_id": "doc_alpha",
+      "entity_type": "deals",
+      "entity_id": "deal_1",
+      "relation": "proof",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:15:43.132161+00:00"
+    },
+    {
+      "id": "dl_39cfe594d73b",
+      "doc_id": "doc_alpha",
+      "entity_type": "loans",
+      "entity_id": "loan_1",
+      "relation": "disclosure",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:15:43.133451+00:00"
+    },
+    {
+      "id": "dl_7c53d3ac9a84",
+      "doc_id": "doc_2429b51e9802",
+      "entity_type": "deals",
+      "entity_id": "deal_integration",
+      "relation": "reference",
+      "notes": "Test link",
+      "meta": {},
+      "created_at": "2026-01-03T08:15:43.280580+00:00"
+    },
+    {
+      "id": "dl_20afe6800cfb",
+      "doc_id": "doc_123",
+      "entity_type": "deals",
+      "entity_id": "deal_456",
+      "relation": "supporting_doc",
+      "notes": "Primary proof",
+      "meta": {},
+      "created_at": "2026-01-03T08:15:47.229207+00:00"
+    },
+    {
+      "id": "dl_bfd5bb22af05",
+      "doc_id": "doc_1",
+      "entity_type": "deals",
+      "entity_id": "deal_1",
+      "relation": "supporting",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:15:47.232206+00:00"
+    },
+    {
+      "id": "dl_99f0248e4a4f",
+      "doc_id": "doc_2",
+      "entity_type": "deals",
+      "entity_id": "deal_1",
+      "relation": "proof",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:15:47.233517+00:00"
+    },
+    {
+      "id": "dl_6145cfe181ee",
+      "doc_id": "doc_alpha",
+      "entity_type": "deals",
+      "entity_id": "deal_1",
+      "relation": "proof",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:15:47.235928+00:00"
+    },
+    {
+      "id": "dl_e37acb32438a",
+      "doc_id": "doc_alpha",
+      "entity_type": "loans",
+      "entity_id": "loan_1",
+      "relation": "disclosure",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:15:47.237784+00:00"
+    },
+    {
+      "id": "dl_c87115f8ace1",
+      "doc_id": "doc_e4a25e4456f1",
+      "entity_type": "deals",
+      "entity_id": "deal_integration",
+      "relation": "reference",
+      "notes": "Test link",
+      "meta": {},
+      "created_at": "2026-01-03T08:15:47.399511+00:00"
+    }
+  ]
+}

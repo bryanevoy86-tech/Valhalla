@@ -1,0 +1,405 @@
+{
+  "updated_at": "2026-01-03T08:15:47.398268+00:00",
+  "items": [
+    {
+      "id": "doc_155fbabfeb51",
+      "title": "Test Document",
+      "doc_type": "contract",
+      "tags": [
+        "legal",
+        "signed"
+      ],
+      "local_path": "/path/to/doc.pdf",
+      "source": "upload",
+      "status": "active",
+      "notes": "Test note",
+      "meta": {},
+      "created_at": "2026-01-03T08:14:33.002004+00:00",
+      "updated_at": "2026-01-03T08:14:33.002027+00:00"
+    },
+    {
+      "id": "doc_ca311a5b1911",
+      "title": "Doc A",
+      "doc_type": "contract",
+      "tags": [
+        "legal"
+      ],
+      "local_path": "/a.pdf",
+      "source": "upload",
+      "status": "active",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:14:33.007186+00:00",
+      "updated_at": "2026-01-03T08:14:33.007207+00:00"
+    },
+    {
+      "id": "doc_49f3c35ea88c",
+      "title": "Doc B",
+      "doc_type": "reference",
+      "tags": [
+        "info"
+      ],
+      "local_path": "/b.pdf",
+      "source": "upload",
+      "status": "active",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:14:33.009606+00:00",
+      "updated_at": "2026-01-03T08:14:33.009622+00:00"
+    },
+    {
+      "id": "doc_eaf89d580ae6",
+      "title": "Contract 1",
+      "doc_type": "contract",
+      "tags": [],
+      "local_path": "/c1.pdf",
+      "source": "upload",
+      "status": "active",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:14:33.013587+00:00",
+      "updated_at": "2026-01-03T08:14:33.013599+00:00"
+    },
+    {
+      "id": "doc_f3be691a19b1",
+      "title": "Reference 1",
+      "doc_type": "reference",
+      "tags": [],
+      "local_path": "/r1.pdf",
+      "source": "upload",
+      "status": "active",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:14:33.015603+00:00",
+      "updated_at": "2026-01-03T08:14:33.015612+00:00"
+    },
+    {
+      "id": "doc_646541700f3a",
+      "title": "Test",
+      "doc_type": "contract",
+      "tags": [],
+      "local_path": "/test.pdf",
+      "source": "upload",
+      "status": "active",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:14:33.019297+00:00",
+      "updated_at": "2026-01-03T08:14:33.019313+00:00"
+    },
+    {
+      "id": "doc_49fde2dda52d",
+      "title": "Integration Test Doc",
+      "doc_type": "reference",
+      "tags": [
+        "integration"
+      ],
+      "local_path": "/int_test.pdf",
+      "source": "test",
+      "status": "active",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:14:33.814080+00:00",
+      "updated_at": "2026-01-03T08:14:33.814091+00:00"
+    },
+    {
+      "id": "doc_66f96f843f06",
+      "title": "Test Document",
+      "doc_type": "contract",
+      "tags": [
+        "legal",
+        "signed"
+      ],
+      "local_path": "/path/to/doc.pdf",
+      "source": "upload",
+      "status": "active",
+      "notes": "Test note",
+      "meta": {},
+      "created_at": "2026-01-03T08:15:26.762403+00:00",
+      "updated_at": "2026-01-03T08:15:26.762417+00:00"
+    },
+    {
+      "id": "doc_a1bc3b916603",
+      "title": "Doc A",
+      "doc_type": "contract",
+      "tags": [
+        "legal"
+      ],
+      "local_path": "/a.pdf",
+      "source": "upload",
+      "status": "active",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:15:26.766929+00:00",
+      "updated_at": "2026-01-03T08:15:26.766939+00:00"
+    },
+    {
+      "id": "doc_b8bce643a63a",
+      "title": "Doc B",
+      "doc_type": "reference",
+      "tags": [
+        "info"
+      ],
+      "local_path": "/b.pdf",
+      "source": "upload",
+      "status": "active",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:15:26.768448+00:00",
+      "updated_at": "2026-01-03T08:15:26.768458+00:00"
+    },
+    {
+      "id": "doc_379b32a94ad9",
+      "title": "Contract 1",
+      "doc_type": "contract",
+      "tags": [],
+      "local_path": "/c1.pdf",
+      "source": "upload",
+      "status": "active",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:15:26.771235+00:00",
+      "updated_at": "2026-01-03T08:15:26.771245+00:00"
+    },
+    {
+      "id": "doc_4f4c99af72f6",
+      "title": "Reference 1",
+      "doc_type": "reference",
+      "tags": [],
+      "local_path": "/r1.pdf",
+      "source": "upload",
+      "status": "active",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:15:26.773001+00:00",
+      "updated_at": "2026-01-03T08:15:26.773016+00:00"
+    },
+    {
+      "id": "doc_4535f0439005",
+      "title": "Test",
+      "doc_type": "contract",
+      "tags": [],
+      "local_path": "/test.pdf",
+      "source": "upload",
+      "status": "active",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:15:26.777288+00:00",
+      "updated_at": "2026-01-03T08:15:26.777298+00:00"
+    },
+    {
+      "id": "doc_4c0ff4e5f425",
+      "title": "Integration Test Doc",
+      "doc_type": "reference",
+      "tags": [
+        "integration"
+      ],
+      "local_path": "/int_test.pdf",
+      "source": "test",
+      "status": "active",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:15:27.048404+00:00",
+      "updated_at": "2026-01-03T08:15:27.048413+00:00"
+    },
+    {
+      "id": "doc_a3a0ff7db06c",
+      "title": "Test Document",
+      "doc_type": "contract",
+      "tags": [
+        "legal",
+        "signed"
+      ],
+      "local_path": "/path/to/doc.pdf",
+      "source": "upload",
+      "status": "active",
+      "notes": "Test note",
+      "meta": {},
+      "created_at": "2026-01-03T08:15:43.097870+00:00",
+      "updated_at": "2026-01-03T08:15:43.097896+00:00"
+    },
+    {
+      "id": "doc_66e018000ee1",
+      "title": "Doc A",
+      "doc_type": "contract",
+      "tags": [
+        "legal"
+      ],
+      "local_path": "/a.pdf",
+      "source": "upload",
+      "status": "active",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:15:43.102128+00:00",
+      "updated_at": "2026-01-03T08:15:43.102139+00:00"
+    },
+    {
+      "id": "doc_6e6e4755a3a1",
+      "title": "Doc B",
+      "doc_type": "reference",
+      "tags": [
+        "info"
+      ],
+      "local_path": "/b.pdf",
+      "source": "upload",
+      "status": "active",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:15:43.104147+00:00",
+      "updated_at": "2026-01-03T08:15:43.104158+00:00"
+    },
+    {
+      "id": "doc_de7e7d50b125",
+      "title": "Contract 1",
+      "doc_type": "contract",
+      "tags": [],
+      "local_path": "/c1.pdf",
+      "source": "upload",
+      "status": "active",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:15:43.109124+00:00",
+      "updated_at": "2026-01-03T08:15:43.109139+00:00"
+    },
+    {
+      "id": "doc_209eccd4dbb7",
+      "title": "Reference 1",
+      "doc_type": "reference",
+      "tags": [],
+      "local_path": "/r1.pdf",
+      "source": "upload",
+      "status": "active",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:15:43.111396+00:00",
+      "updated_at": "2026-01-03T08:15:43.111406+00:00"
+    },
+    {
+      "id": "doc_5117f8b8c7c3",
+      "title": "Test",
+      "doc_type": "contract",
+      "tags": [],
+      "local_path": "/test.pdf",
+      "source": "upload",
+      "status": "active",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:15:43.114549+00:00",
+      "updated_at": "2026-01-03T08:15:43.114558+00:00"
+    },
+    {
+      "id": "doc_2429b51e9802",
+      "title": "Integration Test Doc",
+      "doc_type": "reference",
+      "tags": [
+        "integration"
+      ],
+      "local_path": "/int_test.pdf",
+      "source": "test",
+      "status": "active",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:15:43.278958+00:00",
+      "updated_at": "2026-01-03T08:15:43.278968+00:00"
+    },
+    {
+      "id": "doc_4141fb041d41",
+      "title": "Test Document",
+      "doc_type": "contract",
+      "tags": [
+        "legal",
+        "signed"
+      ],
+      "local_path": "/path/to/doc.pdf",
+      "source": "upload",
+      "status": "active",
+      "notes": "Test note",
+      "meta": {},
+      "created_at": "2026-01-03T08:15:47.207814+00:00",
+      "updated_at": "2026-01-03T08:15:47.207836+00:00"
+    },
+    {
+      "id": "doc_b13515dcb4a2",
+      "title": "Doc A",
+      "doc_type": "contract",
+      "tags": [
+        "legal"
+      ],
+      "local_path": "/a.pdf",
+      "source": "upload",
+      "status": "active",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:15:47.211833+00:00",
+      "updated_at": "2026-01-03T08:15:47.211842+00:00"
+    },
+    {
+      "id": "doc_03c4c309165e",
+      "title": "Doc B",
+      "doc_type": "reference",
+      "tags": [
+        "info"
+      ],
+      "local_path": "/b.pdf",
+      "source": "upload",
+      "status": "active",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:15:47.213572+00:00",
+      "updated_at": "2026-01-03T08:15:47.213580+00:00"
+    },
+    {
+      "id": "doc_dab0a4d3570a",
+      "title": "Contract 1",
+      "doc_type": "contract",
+      "tags": [],
+      "local_path": "/c1.pdf",
+      "source": "upload",
+      "status": "active",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:15:47.216302+00:00",
+      "updated_at": "2026-01-03T08:15:47.216309+00:00"
+    },
+    {
+      "id": "doc_6ade7563be9f",
+      "title": "Reference 1",
+      "doc_type": "reference",
+      "tags": [],
+      "local_path": "/r1.pdf",
+      "source": "upload",
+      "status": "active",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:15:47.217794+00:00",
+      "updated_at": "2026-01-03T08:15:47.217801+00:00"
+    },
+    {
+      "id": "doc_672a1765a6dd",
+      "title": "Test",
+      "doc_type": "contract",
+      "tags": [],
+      "local_path": "/test.pdf",
+      "source": "upload",
+      "status": "active",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:15:47.220812+00:00",
+      "updated_at": "2026-01-03T08:15:47.220821+00:00"
+    },
+    {
+      "id": "doc_e4a25e4456f1",
+      "title": "Integration Test Doc",
+      "doc_type": "reference",
+      "tags": [
+        "integration"
+      ],
+      "local_path": "/int_test.pdf",
+      "source": "test",
+      "status": "active",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:15:47.397524+00:00",
+      "updated_at": "2026-01-03T08:15:47.397534+00:00"
+    }
+  ]
+}

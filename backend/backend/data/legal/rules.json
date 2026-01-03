@@ -1,0 +1,41 @@
+{
+  "items": [
+    {
+      "id": "lr_6b4157547a4a",
+      "name": "Assignment Block",
+      "description": "No assignment permitted",
+      "country": "CA",
+      "region": "MB",
+      "severity": "high",
+      "conditions": [],
+      "action_hint": "block",
+      "created_at": "2026-01-03T08:15:26.862897+00:00",
+      "updated_at": "2026-01-03T08:15:26.862897+00:00"
+    },
+    {
+      "id": "lr_5addc14ceaaa",
+      "name": "Assignment Block",
+      "description": "No assignment permitted",
+      "country": "CA",
+      "region": "MB",
+      "severity": "high",
+      "conditions": [],
+      "action_hint": "block",
+      "created_at": "2026-01-03T08:15:43.194288+00:00",
+      "updated_at": "2026-01-03T08:15:43.194288+00:00"
+    },
+    {
+      "id": "lr_b7276031127c",
+      "name": "Assignment Block",
+      "description": "No assignment permitted",
+      "country": "CA",
+      "region": "MB",
+      "severity": "high",
+      "conditions": [],
+      "action_hint": "block",
+      "created_at": "2026-01-03T08:15:47.308496+00:00",
+      "updated_at": "2026-01-03T08:15:47.308496+00:00"
+    }
+  ],
+  "updated_at": "2026-01-03T08:15:47.308787+00:00"
+}

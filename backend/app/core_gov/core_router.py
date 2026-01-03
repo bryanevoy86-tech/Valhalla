@@ -19,6 +19,10 @@ from .reality.router import router as reality_router
 from .export.router import router as export_router
 from .anchors.router import router as anchors_router
 from .onboarding import onboarding_payload
+from .documents.router import router as documents_router
+from .document_links.router import router as document_links_router
+from .comps.router import router as comps_router
+from .partner_dashboard.router import router as partner_dashboard_router
 from .knowledge.router import router as knowledge_router
 from .go.sources_service import next_step_with_sources
 from .deals.router import router as deals_router
@@ -249,13 +253,17 @@ core.include_router(boring_router)
 core.include_router(shield_router)
 core.include_router(exporter_router)
 core.include_router(legal_filter_router)
+core.include_router(documents_router)
+core.include_router(document_links_router)
 core.include_router(partners_router)
+core.include_router(partner_dashboard_router)
 core.include_router(knowledge_router)
 core.include_router(trust_router)
 core.include_router(audit_router)
 core.include_router(integrity_router)
 core.include_router(reorder_router)
 core.include_router(property_intel_router)
+core.include_router(comps_router)
 core.include_router(pricebook_router)
 core.include_router(buyplan_router)
 core.include_router(tools_vault_router)
