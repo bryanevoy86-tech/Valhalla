@@ -43,7 +43,7 @@ class Settings(BaseSettings):
     S3_FORCE_PATH_STYLE: bool = True  # MinIO needs this
     S3_PRESIGN_EXPIRE_SEC: int = 900  # 15 minutes
 
-    model_config = {"env_file": ".env"}
+    model_config = {"env_file": ".env", "extra": "ignore"}
 
 
 @lru_cache

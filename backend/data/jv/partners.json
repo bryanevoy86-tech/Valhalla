@@ -1,0 +1,18 @@
+{
+  "updated_at": "2026-01-03T01:59:26.853958+00:00",
+  "items": [
+    {
+      "id": "par_62f07ebdbfe8",
+      "name": "Test Partner",
+      "partner_type": "jv",
+      "status": "active",
+      "email": "",
+      "phone": "",
+      "notes": "",
+      "tags": [],
+      "meta": {},
+      "created_at": "2026-01-03T01:59:26.853174+00:00",
+      "updated_at": "2026-01-03T01:59:26.853174+00:00"
+    }
+  ]
+}

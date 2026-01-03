@@ -1,0 +1,40 @@
+{
+  "updated_at": "2026-01-03T04:04:07.077601+00:00",
+  "items": [
+    {
+      "id": "bd_7b2e20c29129",
+      "name": "Property Bundle",
+      "manifest": {
+        "bundle_id": "bd_7b2e20c29129",
+        "name": "Property Bundle",
+        "created_at": "2026-01-03T04:04:07.076919+00:00",
+        "doc_count": 1,
+        "docs": [
+          {
+            "id": "dc_6b9512985f34",
+            "title": "Lease Agreement (Updated)",
+            "doc_type": "contract",
+            "visibility": "shareable",
+            "file_path": "/docs/lease_2024.pdf",
+            "blob_ref": "",
+            "mime": "application/pdf",
+            "sha256": "",
+            "tags": [
+              "lease",
+              "property",
+              "executed"
+            ],
+            "links": {
+              "property": "pi_abc123"
+            },
+            "notes": "Main lease document"
+          }
+        ],
+        "meta": {
+          "purpose": "sharing"
+        }
+      },
+      "created_at": "2026-01-03T04:04:07.076919+00:00"
+    }
+  ]
+}

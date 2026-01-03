@@ -1,0 +1,19 @@
+{
+  "updated_at": "2026-01-03T06:20:53.583202+00:00",
+  "state": {
+    "monthly_required": 9500.0,
+    "buffer_multiplier": 1.25,
+    "buffer_required": 11875.0,
+    "by_category": {
+      "housing": 9500.0
+    },
+    "autopay_verified": 3,
+    "autopay_total": 3,
+    "coverage": {
+      "available_cash": null,
+      "covered": null,
+      "note": "coverage requires capital module providing a personal cash balance"
+    },
+    "updated_at": "2026-01-03T06:20:53.583033+00:00"
+  }
+}

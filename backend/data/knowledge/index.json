@@ -1,0 +1,533 @@
+{
+  "updated_at": "2026-01-03T03:24:07.008009+00:00",
+  "index": {
+    "essentials": [
+      {
+        "chunk_id": "kc_d01a1be2c036",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_dd18a07e7fff",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_58c951d4f003",
+        "tf": 1
+      }
+    ],
+    "first": [
+      {
+        "chunk_id": "kc_d01a1be2c036",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_dd18a07e7fff",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_58c951d4f003",
+        "tf": 1
+      }
+    ],
+    "autopay": [
+      {
+        "chunk_id": "kc_d01a1be2c036",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_dd18a07e7fff",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_58c951d4f003",
+        "tf": 1
+      }
+    ],
+    "must": [
+      {
+        "chunk_id": "kc_d01a1be2c036",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_dce16c4ab4e0",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_dd18a07e7fff",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_08dd76b9bd28",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_58c951d4f003",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_a4c5230bfe76",
+        "tf": 1
+      }
+    ],
+    "verified": [
+      {
+        "chunk_id": "kc_d01a1be2c036",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_dd18a07e7fff",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_58c951d4f003",
+        "tf": 1
+      }
+    ],
+    "discretionary": [
+      {
+        "chunk_id": "kc_d01a1be2c036",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_dd18a07e7fff",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_58c951d4f003",
+        "tf": 1
+      }
+    ],
+    "blocked": [
+      {
+        "chunk_id": "kc_d01a1be2c036",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_dd18a07e7fff",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_58c951d4f003",
+        "tf": 1
+      }
+    ],
+    "obligations": [
+      {
+        "chunk_id": "kc_d01a1be2c036",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_dd18a07e7fff",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_58c951d4f003",
+        "tf": 1
+      }
+    ],
+    "not": [
+      {
+        "chunk_id": "kc_d01a1be2c036",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_dd18a07e7fff",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_58c951d4f003",
+        "tf": 1
+      }
+    ],
+    "covered": [
+      {
+        "chunk_id": "kc_d01a1be2c036",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_dd18a07e7fff",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_58c951d4f003",
+        "tf": 1
+      }
+    ],
+    "always": [
+      {
+        "chunk_id": "kc_d01a1be2c036",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_dd18a07e7fff",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_58c951d4f003",
+        "tf": 1
+      }
+    ],
+    "keep": [
+      {
+        "chunk_id": "kc_d01a1be2c036",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_dd18a07e7fff",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_58c951d4f003",
+        "tf": 1
+      }
+    ],
+    "capital": [
+      {
+        "chunk_id": "kc_d01a1be2c036",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_dd18a07e7fff",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_58c951d4f003",
+        "tf": 1
+      }
+    ],
+    "buffer": [
+      {
+        "chunk_id": "kc_d01a1be2c036",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_dd18a07e7fff",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_58c951d4f003",
+        "tf": 1
+      }
+    ],
+    "above": [
+      {
+        "chunk_id": "kc_d01a1be2c036",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_dd18a07e7fff",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_58c951d4f003",
+        "tf": 1
+      }
+    ],
+    "minimum": [
+      {
+        "chunk_id": "kc_d01a1be2c036",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_dce16c4ab4e0",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_dd18a07e7fff",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_08dd76b9bd28",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_58c951d4f003",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_a4c5230bfe76",
+        "tf": 1
+      }
+    ],
+    "target": [
+      {
+        "chunk_id": "kc_dce16c4ab4e0",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_08dd76b9bd28",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_a4c5230bfe76",
+        "tf": 1
+      }
+    ],
+    "properties": [
+      {
+        "chunk_id": "kc_dce16c4ab4e0",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_08dd76b9bd28",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_a4c5230bfe76",
+        "tf": 1
+      }
+    ],
+    "have": [
+      {
+        "chunk_id": "kc_dce16c4ab4e0",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_08dd76b9bd28",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_a4c5230bfe76",
+        "tf": 1
+      }
+    ],
+    "positive": [
+      {
+        "chunk_id": "kc_dce16c4ab4e0",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_08dd76b9bd28",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_a4c5230bfe76",
+        "tf": 1
+      }
+    ],
+    "cashflow": [
+      {
+        "chunk_id": "kc_dce16c4ab4e0",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_08dd76b9bd28",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_a4c5230bfe76",
+        "tf": 1
+      }
+    ],
+    "cap": [
+      {
+        "chunk_id": "kc_dce16c4ab4e0",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_08dd76b9bd28",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_a4c5230bfe76",
+        "tf": 1
+      }
+    ],
+    "rate": [
+      {
+        "chunk_id": "kc_dce16c4ab4e0",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_08dd76b9bd28",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_a4c5230bfe76",
+        "tf": 1
+      }
+    ],
+    "location": [
+      {
+        "chunk_id": "kc_dce16c4ab4e0",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_08dd76b9bd28",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_a4c5230bfe76",
+        "tf": 1
+      }
+    ],
+    "critical": [
+      {
+        "chunk_id": "kc_dce16c4ab4e0",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_08dd76b9bd28",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_a4c5230bfe76",
+        "tf": 1
+      }
+    ],
+    "for": [
+      {
+        "chunk_id": "kc_dce16c4ab4e0",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_08dd76b9bd28",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_a4c5230bfe76",
+        "tf": 1
+      }
+    ],
+    "tenant": [
+      {
+        "chunk_id": "kc_dce16c4ab4e0",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_08dd76b9bd28",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_a4c5230bfe76",
+        "tf": 1
+      }
+    ],
+    "quality": [
+      {
+        "chunk_id": "kc_dce16c4ab4e0",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_08dd76b9bd28",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_a4c5230bfe76",
+        "tf": 1
+      }
+    ],
+    "avoid": [
+      {
+        "chunk_id": "kc_dce16c4ab4e0",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_08dd76b9bd28",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_a4c5230bfe76",
+        "tf": 1
+      }
+    ],
+    "high": [
+      {
+        "chunk_id": "kc_dce16c4ab4e0",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_08dd76b9bd28",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_a4c5230bfe76",
+        "tf": 1
+      }
+    ],
+    "vacancy": [
+      {
+        "chunk_id": "kc_dce16c4ab4e0",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_08dd76b9bd28",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_a4c5230bfe76",
+        "tf": 1
+      }
+    ],
+    "areas": [
+      {
+        "chunk_id": "kc_dce16c4ab4e0",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_08dd76b9bd28",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_a4c5230bfe76",
+        "tf": 1
+      }
+    ],
+    "focus": [
+      {
+        "chunk_id": "kc_dce16c4ab4e0",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_08dd76b9bd28",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_a4c5230bfe76",
+        "tf": 1
+      }
+    ],
+    "workforce": [
+      {
+        "chunk_id": "kc_dce16c4ab4e0",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_08dd76b9bd28",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_a4c5230bfe76",
+        "tf": 1
+      }
+    ],
+    "housing": [
+      {
+        "chunk_id": "kc_dce16c4ab4e0",
+        "tf": 2
+      },
+      {
+        "chunk_id": "kc_08dd76b9bd28",
+        "tf": 2
+      },
+      {
+        "chunk_id": "kc_a4c5230bfe76",
+        "tf": 2
+      }
+    ],
+    "student": [
+      {
+        "chunk_id": "kc_dce16c4ab4e0",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_08dd76b9bd28",
+        "tf": 1
+      },
+      {
+        "chunk_id": "kc_a4c5230bfe76",
+        "tf": 1
+      }
+    ]
+  }
+}

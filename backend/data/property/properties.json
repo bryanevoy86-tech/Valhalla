@@ -1,0 +1,39 @@
+{
+  "updated_at": "2026-01-03T02:02:06.675943+00:00",
+  "items": [
+    {
+      "id": "prop_09936b62e386",
+      "country": "CA",
+      "region": "",
+      "city": "",
+      "address": "123 Test St",
+      "postal": "",
+      "beds": null,
+      "baths": null,
+      "sqft": null,
+      "year_built": null,
+      "deal_id": null,
+      "tags": [],
+      "meta": {},
+      "created_at": "2026-01-03T01:59:26.856720+00:00",
+      "updated_at": "2026-01-03T01:59:26.856720+00:00"
+    },
+    {
+      "id": "prop_5ca551c0832d",
+      "country": "CA",
+      "region": "ON",
+      "city": "Toronto",
+      "address": "123 Main St",
+      "postal": "M5V 3A8",
+      "beds": null,
+      "baths": null,
+      "sqft": null,
+      "year_built": null,
+      "deal_id": "deal_888",
+      "tags": [],
+      "meta": {},
+      "created_at": "2026-01-03T02:02:06.675764+00:00",
+      "updated_at": "2026-01-03T02:02:06.675764+00:00"
+    }
+  ]
+}

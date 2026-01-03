@@ -1,0 +1,19 @@
+{
+  "updated_at": "2026-01-03T02:22:44.196943+00:00",
+  "items": [
+    {
+      "id": "run_0b5131a120",
+      "obligation_id": "ob_6038e7c40571",
+      "name": "Rent",
+      "amount": 1600.0,
+      "currency": "CAD",
+      "due_date": "2026-02-01",
+      "priority": "A",
+      "pay_from": "personal",
+      "autopay_enabled": true,
+      "autopay_verified": true,
+      "status": "scheduled",
+      "created_at": "2026-01-03T02:22:44.196910+00:00"
+    }
+  ]
+}

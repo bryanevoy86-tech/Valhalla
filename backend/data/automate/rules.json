@@ -1,0 +1,38 @@
+{
+  "updated_at": "2026-01-03T03:07:17.598672+00:00",
+  "items": [
+    {
+      "id": "rl_34237f8a19db",
+      "name": "Obligations not covered alert",
+      "status": "active",
+      "trigger": "obligations_not_covered",
+      "threshold": 0.0,
+      "action": "create_alert",
+      "action_payload": {
+        "title": "OBLIGATIONS NOT COVERED",
+        "severity": "high",
+        "message": "Obligations coverage issue detected."
+      },
+      "tags": [],
+      "meta": {},
+      "created_at": "2026-01-03T03:07:17.593657+00:00",
+      "updated_at": "2026-01-03T03:07:17.593657+00:00"
+    },
+    {
+      "id": "rl_51e277b7d8b1",
+      "name": "Shopping backlog alert",
+      "status": "active",
+      "trigger": "shopping_backlog_over",
+      "threshold": 30.0,
+      "action": "create_alert",
+      "action_payload": {
+        "title": "Shopping backlog over threshold",
+        "severity": "low"
+      },
+      "tags": [],
+      "meta": {},
+      "created_at": "2026-01-03T03:07:17.597568+00:00",
+      "updated_at": "2026-01-03T03:07:17.597568+00:00"
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "updated_at": "2026-01-03T03:07:17.658935+00:00",
+  "items": [
+    {
+      "id": "cr_70e1b56dc64b",
+      "name": "Business Visa",
+      "account_type": "credit_card",
+      "status": "active",
+      "bureau_reporting": [],
+      "opened_date": "",
+      "credit_limit": 5000.0,
+      "balance": 1800.0,
+      "utilization": 36.0,
+      "due_day": 15,
+      "autopay": true,
+      "notes": "",
+      "tags": [],
+      "meta": {},
+      "created_at": "2026-01-03T03:07:17.650994+00:00",
+      "updated_at": "2026-01-03T03:07:17.658920+00:00"
+    },
+    {
+      "id": "cr_76392c2248bd",
+      "name": "Uline Net-30",
+      "account_type": "vendor_tradeline",
+      "status": "active",
+      "bureau_reporting": [],
+      "opened_date": "",
+      "credit_limit": 2000.0,
+      "balance": 500.0,
+      "utilization": 25.0,
+      "due_day": 30,
+      "autopay": false,
+      "notes": "",
+      "tags": [],
+      "meta": {},
+      "created_at": "2026-01-03T03:07:17.654554+00:00",
+      "updated_at": "2026-01-03T03:07:17.654554+00:00"
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "updated_at": "2026-01-03T02:48:27.632022+00:00",
+  "items": [
+    {
+      "id": "rp_50900f5a4787",
+      "name": "Mattress",
+      "target_cost": 1200.0,
+      "currency": "CAD",
+      "priority": "A",
+      "status": "saving",
+      "desired_by": "",
+      "suggested_months": 4,
+      "monthly_save": 300.0,
+      "notes": "Current mattress 10 years old",
+      "tags": [],
+      "meta": {},
+      "created_at": "2026-01-03T02:48:27.626801+00:00",
+      "updated_at": "2026-01-03T02:48:27.631459+00:00"
+    }
+  ]
+}

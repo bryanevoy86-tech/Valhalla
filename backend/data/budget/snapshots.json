@@ -1,0 +1,133 @@
+{
+  "updated_at": "2026-01-03T03:47:01.993136+00:00",
+  "items": [
+    {
+      "month": "2026-01",
+      "bucket_id": "bk_24b0fe2542fb",
+      "allocated": 0.0,
+      "spent": 0.0,
+      "remaining": 900.0,
+      "updated_at": "2026-01-03T03:47:01.992690+00:00"
+    },
+    {
+      "month": "2026-01",
+      "bucket_id": "bk_719e1725bff4",
+      "allocated": 150.0,
+      "spent": 0.0,
+      "remaining": 150.0,
+      "updated_at": "2026-01-03T03:47:01.992690+00:00"
+    },
+    {
+      "month": "2026-01",
+      "bucket_id": "bk_86ab1a034841",
+      "allocated": 0.0,
+      "spent": 0.0,
+      "remaining": 0.0,
+      "updated_at": "2026-01-03T03:47:01.992690+00:00"
+    },
+    {
+      "month": "2026-01",
+      "bucket_id": "bk_9d37063cfa7e",
+      "allocated": 0.0,
+      "spent": 0.0,
+      "remaining": 0.0,
+      "updated_at": "2026-01-03T03:47:01.992690+00:00"
+    },
+    {
+      "month": "2026-01",
+      "bucket_id": "bk_f9cf9eb51f88",
+      "allocated": 0.0,
+      "spent": 0.0,
+      "remaining": 1500.0,
+      "updated_at": "2026-01-03T03:47:01.992690+00:00"
+    },
+    {
+      "month": "2026-01",
+      "bucket_id": "bk_309e872ad85c",
+      "allocated": 0.0,
+      "spent": 0.0,
+      "remaining": 100.0,
+      "updated_at": "2026-01-03T03:47:01.992690+00:00"
+    },
+    {
+      "month": "2026-01",
+      "bucket_id": "bk_6b835504740f",
+      "allocated": 0.0,
+      "spent": 0.0,
+      "remaining": 250.0,
+      "updated_at": "2026-01-03T03:47:01.992690+00:00"
+    },
+    {
+      "month": "2026-01",
+      "bucket_id": "bk_e84b85df1fdd",
+      "allocated": 0.0,
+      "spent": 0.0,
+      "remaining": 1500.0,
+      "updated_at": "2026-01-03T03:47:01.992690+00:00"
+    },
+    {
+      "month": "2026-01",
+      "bucket_id": "bk_8bb36b8da6cf",
+      "allocated": 0.0,
+      "spent": 0.0,
+      "remaining": 100.0,
+      "updated_at": "2026-01-03T03:47:01.992690+00:00"
+    },
+    {
+      "month": "2026-01",
+      "bucket_id": "bk_e5d95437f8af",
+      "allocated": 0.0,
+      "spent": 0.0,
+      "remaining": 250.0,
+      "updated_at": "2026-01-03T03:47:01.992690+00:00"
+    },
+    {
+      "month": "2026-01",
+      "bucket_id": "bk_3de8f9f82e98",
+      "allocated": 0.0,
+      "spent": 0.0,
+      "remaining": 1500.0,
+      "updated_at": "2026-01-03T03:47:01.992690+00:00"
+    },
+    {
+      "month": "2026-01",
+      "bucket_id": "bk_e395477ea0f9",
+      "allocated": 0.0,
+      "spent": 0.0,
+      "remaining": 100.0,
+      "updated_at": "2026-01-03T03:47:01.992690+00:00"
+    },
+    {
+      "month": "2026-01",
+      "bucket_id": "bk_e5dd400bb51d",
+      "allocated": 0.0,
+      "spent": 0.0,
+      "remaining": 250.0,
+      "updated_at": "2026-01-03T03:47:01.992690+00:00"
+    },
+    {
+      "month": "2026-01",
+      "bucket_id": "bk_d2f2bb4d80f6",
+      "allocated": 0.0,
+      "spent": 0.0,
+      "remaining": 1500.0,
+      "updated_at": "2026-01-03T03:47:01.992690+00:00"
+    },
+    {
+      "month": "2026-01",
+      "bucket_id": "bk_afe893d69fe9",
+      "allocated": 0.0,
+      "spent": 0.0,
+      "remaining": 100.0,
+      "updated_at": "2026-01-03T03:47:01.992690+00:00"
+    },
+    {
+      "month": "2026-01",
+      "bucket_id": "bk_137e71fae284",
+      "allocated": 0.0,
+      "spent": 0.0,
+      "remaining": 250.0,
+      "updated_at": "2026-01-03T03:47:01.992690+00:00"
+    }
+  ]
+}

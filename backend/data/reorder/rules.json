@@ -1,0 +1,33 @@
+{
+  "updated_at": "2026-01-03T03:40:50.320708+00:00",
+  "items": [
+    {
+      "id": "rr_005808e9b073",
+      "inventory_id": "si_e08c07ba851a",
+      "status": "active",
+      "reorder_qty": 5.0,
+      "cooldown_days": 7,
+      "store_hint": "Costco",
+      "category": "household",
+      "last_triggered_at": "",
+      "tags": [],
+      "meta": {},
+      "created_at": "2026-01-03T03:39:39.476872+00:00",
+      "updated_at": "2026-01-03T03:39:39.476872+00:00"
+    },
+    {
+      "id": "rr_511c835d26e7",
+      "inventory_id": "si_0fcd5f63993b",
+      "status": "active",
+      "reorder_qty": 5.0,
+      "cooldown_days": 7,
+      "store_hint": "Costco",
+      "category": "household",
+      "last_triggered_at": "",
+      "tags": [],
+      "meta": {},
+      "created_at": "2026-01-03T03:40:50.319113+00:00",
+      "updated_at": "2026-01-03T03:40:50.319113+00:00"
+    }
+  ]
+}

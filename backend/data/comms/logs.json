@@ -1,0 +1,137 @@
+{
+  "updated_at": "2026-01-03T03:24:06.988476+00:00",
+  "items": [
+    {
+      "id": "cl_b43f98036a36",
+      "outbox_id": "",
+      "channel": "sms",
+      "event_type": "template_created",
+      "message": "Template created: Seller followup text",
+      "created_at": "2026-01-03T03:23:06.619641+00:00",
+      "meta": {
+        "template_id": "ct_35dbdf792dfc"
+      }
+    },
+    {
+      "id": "cl_a4ffa5b16443",
+      "outbox_id": "ob_dfd1fb6f1d30",
+      "channel": "sms",
+      "event_type": "outbox_created",
+      "message": "Outbox created: ob_dfd1fb6f1d30",
+      "created_at": "2026-01-03T03:23:06.626434+00:00",
+      "meta": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "cl_5178377da44b",
+      "outbox_id": "ob_dfd1fb6f1d30",
+      "channel": "sms",
+      "event_type": "outbox_queued",
+      "message": "Outbox queued: ob_dfd1fb6f1d30",
+      "created_at": "2026-01-03T03:23:06.629411+00:00",
+      "meta": {
+        "error": ""
+      }
+    },
+    {
+      "id": "cl_2c2d6451c441",
+      "outbox_id": "ob_dfd1fb6f1d30",
+      "channel": "sms",
+      "event_type": "outbox_sent",
+      "message": "Outbox sent: ob_dfd1fb6f1d30",
+      "created_at": "2026-01-03T03:23:06.632511+00:00",
+      "meta": {
+        "error": ""
+      }
+    },
+    {
+      "id": "cl_d613d0d7849b",
+      "outbox_id": "",
+      "channel": "sms",
+      "event_type": "template_created",
+      "message": "Template created: Seller followup text",
+      "created_at": "2026-01-03T03:23:37.506031+00:00",
+      "meta": {
+        "template_id": "ct_549e01d57d4d"
+      }
+    },
+    {
+      "id": "cl_ab163b60e25f",
+      "outbox_id": "ob_42de65210bb5",
+      "channel": "sms",
+      "event_type": "outbox_created",
+      "message": "Outbox created: ob_42de65210bb5",
+      "created_at": "2026-01-03T03:23:37.510336+00:00",
+      "meta": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "cl_38819801f8c2",
+      "outbox_id": "ob_42de65210bb5",
+      "channel": "sms",
+      "event_type": "outbox_queued",
+      "message": "Outbox queued: ob_42de65210bb5",
+      "created_at": "2026-01-03T03:23:37.512996+00:00",
+      "meta": {
+        "error": ""
+      }
+    },
+    {
+      "id": "cl_662c1fabdec7",
+      "outbox_id": "ob_42de65210bb5",
+      "channel": "sms",
+      "event_type": "outbox_sent",
+      "message": "Outbox sent: ob_42de65210bb5",
+      "created_at": "2026-01-03T03:23:37.516002+00:00",
+      "meta": {
+        "error": ""
+      }
+    },
+    {
+      "id": "cl_fd25cccba447",
+      "outbox_id": "",
+      "channel": "sms",
+      "event_type": "template_created",
+      "message": "Template created: Seller followup text",
+      "created_at": "2026-01-03T03:24:06.977175+00:00",
+      "meta": {
+        "template_id": "ct_e0fe0622afbb"
+      }
+    },
+    {
+      "id": "cl_7ee13e1dd390",
+      "outbox_id": "ob_59f9703807d2",
+      "channel": "sms",
+      "event_type": "outbox_created",
+      "message": "Outbox created: ob_59f9703807d2",
+      "created_at": "2026-01-03T03:24:06.981474+00:00",
+      "meta": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "cl_fd4ad80655b3",
+      "outbox_id": "ob_59f9703807d2",
+      "channel": "sms",
+      "event_type": "outbox_queued",
+      "message": "Outbox queued: ob_59f9703807d2",
+      "created_at": "2026-01-03T03:24:06.984383+00:00",
+      "meta": {
+        "error": ""
+      }
+    },
+    {
+      "id": "cl_4bbc667a7176",
+      "outbox_id": "ob_59f9703807d2",
+      "channel": "sms",
+      "event_type": "outbox_sent",
+      "message": "Outbox sent: ob_59f9703807d2",
+      "created_at": "2026-01-03T03:24:06.987838+00:00",
+      "meta": {
+        "error": ""
+      }
+    }
+  ]
+}

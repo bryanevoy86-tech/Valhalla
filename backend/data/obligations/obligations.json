@@ -1,0 +1,218 @@
+{
+  "updated_at": "2026-01-03T03:31:27.296697+00:00",
+  "items": [
+    {
+      "id": "ob_6038e7c40571",
+      "name": "Rent",
+      "amount": 1600.0,
+      "currency": "CAD",
+      "due_day": 1,
+      "frequency": "monthly",
+      "next_due_date": "",
+      "category": "housing",
+      "priority": "A",
+      "status": "active",
+      "pay_from": "personal",
+      "autopay": {
+        "enabled": true,
+        "verified": true,
+        "method": "bank_autopay",
+        "payee": "LANDLORD INC",
+        "reference": "UNIT 12",
+        "notes": ""
+      },
+      "recurrence": {
+        "frequency": "monthly",
+        "day_of_month": 1,
+        "day_of_week": 0,
+        "interval": 1,
+        "start_date": "",
+        "timezone": "America/Toronto"
+      },
+      "tags": [],
+      "meta": {},
+      "created_at": "2026-01-03T02:22:44.161981+00:00",
+      "updated_at": "2026-01-03T02:22:44.192739+00:00"
+    },
+    {
+      "id": "ob_71db6a268793",
+      "name": "Rent",
+      "amount": 1500.0,
+      "currency": "CAD",
+      "due_day": 1,
+      "frequency": "monthly",
+      "next_due_date": "",
+      "category": "housing",
+      "priority": "A",
+      "status": "active",
+      "pay_from": "personal",
+      "autopay": {
+        "enabled": false,
+        "verified": false,
+        "method": "manual",
+        "payee": "",
+        "reference": "",
+        "notes": ""
+      },
+      "recurrence": {
+        "frequency": "monthly",
+        "day_of_month": 1,
+        "day_of_week": 0,
+        "interval": 1,
+        "start_date": "",
+        "timezone": "America/Toronto"
+      },
+      "tags": [
+        "housing",
+        "essentials"
+      ],
+      "meta": {},
+      "created_at": "2026-01-03T03:30:08.027084+00:00",
+      "updated_at": "2026-01-03T03:30:08.047639+00:00"
+    },
+    {
+      "id": "ob_035b9c0dc862",
+      "name": "Rent",
+      "amount": 1600.0,
+      "currency": "CAD",
+      "due_day": 1,
+      "frequency": "monthly",
+      "next_due_date": "",
+      "category": "housing",
+      "priority": "A",
+      "status": "active",
+      "pay_from": "personal",
+      "autopay": {
+        "enabled": false,
+        "verified": false,
+        "method": "manual",
+        "payee": "",
+        "reference": "",
+        "notes": ""
+      },
+      "recurrence": {
+        "frequency": "monthly",
+        "day_of_month": 1,
+        "day_of_week": 0,
+        "interval": 1,
+        "start_date": "",
+        "timezone": "America/Toronto"
+      },
+      "tags": [
+        "housing",
+        "essentials"
+      ],
+      "meta": {},
+      "created_at": "2026-01-03T03:30:49.583381+00:00",
+      "updated_at": "2026-01-03T03:30:49.608758+00:00"
+    },
+    {
+      "id": "ob_bc362015ab85",
+      "name": "Rent",
+      "amount": 1600.0,
+      "currency": "CAD",
+      "due_day": 1,
+      "frequency": "monthly",
+      "next_due_date": "",
+      "category": "housing",
+      "priority": "A",
+      "status": "active",
+      "pay_from": "personal",
+      "autopay": {
+        "enabled": false,
+        "verified": false,
+        "method": "manual",
+        "payee": "",
+        "reference": "",
+        "notes": ""
+      },
+      "recurrence": {
+        "frequency": "monthly",
+        "day_of_month": 1,
+        "day_of_week": 0,
+        "interval": 1,
+        "start_date": "",
+        "timezone": "America/Toronto"
+      },
+      "tags": [
+        "housing",
+        "essentials"
+      ],
+      "meta": {},
+      "created_at": "2026-01-03T03:31:09.377739+00:00",
+      "updated_at": "2026-01-03T03:31:09.390812+00:00"
+    },
+    {
+      "id": "ob_178af0b84d51",
+      "name": "Rent",
+      "amount": 1600.0,
+      "currency": "CAD",
+      "due_day": 1,
+      "frequency": "monthly",
+      "next_due_date": "",
+      "category": "housing",
+      "priority": "A",
+      "status": "active",
+      "pay_from": "personal",
+      "autopay": {
+        "enabled": true,
+        "verified": true,
+        "method": "manual",
+        "payee": "",
+        "reference": "CONF_2026_RENT_001",
+        "notes": ""
+      },
+      "recurrence": {
+        "frequency": "monthly",
+        "day_of_month": 1,
+        "day_of_week": 0,
+        "interval": 1,
+        "start_date": "",
+        "timezone": "America/Toronto"
+      },
+      "tags": [
+        "housing",
+        "essentials"
+      ],
+      "meta": {},
+      "created_at": "2026-01-03T03:31:19.268488+00:00",
+      "updated_at": "2026-01-03T03:31:19.283690+00:00"
+    },
+    {
+      "id": "ob_22f2021e02db",
+      "name": "Rent",
+      "amount": 1600.0,
+      "currency": "CAD",
+      "due_day": 1,
+      "frequency": "monthly",
+      "next_due_date": "",
+      "category": "housing",
+      "priority": "A",
+      "status": "active",
+      "pay_from": "personal",
+      "autopay": {
+        "enabled": true,
+        "verified": true,
+        "method": "manual",
+        "payee": "",
+        "reference": "CONF_2026_RENT_001",
+        "notes": ""
+      },
+      "recurrence": {
+        "frequency": "monthly",
+        "day_of_month": 1,
+        "day_of_week": 0,
+        "interval": 1,
+        "start_date": "",
+        "timezone": "America/Toronto"
+      },
+      "tags": [
+        "housing",
+        "essentials"
+      ],
+      "meta": {},
+      "created_at": "2026-01-03T03:31:27.279588+00:00",
+      "updated_at": "2026-01-03T03:31:27.296684+00:00"
+    }
+  ]
+}

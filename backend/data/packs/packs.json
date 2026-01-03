@@ -1,0 +1,57 @@
+{
+  "updated_at": "2026-01-03T02:53:59.599010+00:00",
+  "items": [
+    {
+      "id": "pk_813df59c136d",
+      "code": "P-BUDGET-1",
+      "name": "Household Buckets v1",
+      "module": "backend.app.core_gov.budget",
+      "router_symbol": "budget_router",
+      "data_paths": [
+        "backend/data/budget/buckets.json",
+        "backend/data/budget/snapshots.json"
+      ],
+      "tags": [
+        "budget",
+        "essentials"
+      ],
+      "meta": {},
+      "created_at": "2026-01-03T02:53:59.594439+00:00",
+      "updated_at": "2026-01-03T02:53:59.594439+00:00"
+    },
+    {
+      "id": "pk_e3cd100330e1",
+      "code": "P-BUDGET-2",
+      "name": "Transactions v1",
+      "module": "backend.app.core_gov.transactions",
+      "router_symbol": "transactions_router",
+      "data_paths": [
+        "backend/data/transactions/transactions.json"
+      ],
+      "tags": [
+        "transactions",
+        "money"
+      ],
+      "meta": {},
+      "created_at": "2026-01-03T02:53:59.596648+00:00",
+      "updated_at": "2026-01-03T02:53:59.596648+00:00"
+    },
+    {
+      "id": "pk_b64c3531a80f",
+      "code": "P-PACKS-1",
+      "name": "Pack Registry",
+      "module": "backend.app.core_gov.packs",
+      "router_symbol": "packs_router",
+      "data_paths": [
+        "backend/data/packs/packs.json"
+      ],
+      "tags": [
+        "registry",
+        "system"
+      ],
+      "meta": {},
+      "created_at": "2026-01-03T02:53:59.598338+00:00",
+      "updated_at": "2026-01-03T02:53:59.598338+00:00"
+    }
+  ]
+}

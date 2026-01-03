@@ -4,6 +4,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .core.config import get_settings
 from .core.db import Base, engine
+from .core_gov.telemetry.logger import configure_logging
+from .core_gov.telemetry.exceptions import unhandled_exception_handler
+from .core_gov.settings.config import load_settings
 
 
 # ensure models import somewhere before create_all
@@ -14,8 +17,12 @@ app = FastAPI(
     openapi_url=f"{get_settings().API_V1_STR}/openapi.json",
 )
 
+configure_logging()
+app.add_exception_handler(Exception, unhandled_exception_handler)
+
 # CORS for WeWeb, ngrok, local dev
-origins = [
+gov_settings = load_settings()
+origins = gov_settings.CORS_ALLOWED_ORIGINS or [
     "https://*.weweb.app",
     "https://*.ngrok-free.app",
     "http://localhost:5173",
@@ -95,52 +102,99 @@ except Exception:
     pass
 
 
-from app.observability.logging import configure_logging
-from app.observability.metrics import install_metrics
-from app.observability.replay import install_replay_middleware
-from app.observability.tracing import setup_tracing
-from app.routers import (
-    admin_alerts,
-    admin_canary,
-    # admin_logs,  # TODO: implement
-    admin_observability,
-    # admin_ops,  # TODO: implement
-    admin_replay,
-)
+# Try to import observability modules from root app, gracefully handle if missing
+try:
+    from app.observability.logging import configure_logging as root_configure_logging
+    from app.observability.metrics import install_metrics
+    from app.observability.replay import install_replay_middleware
+    from app.observability.tracing import setup_tracing
+except (ModuleNotFoundError, ImportError):
+    # Use governance logging instead
+    def install_metrics(*args, **kwargs): pass
+    def install_replay_middleware(*args, **kwargs): pass
+    def setup_tracing(*args, **kwargs): pass
+
+try:
+    from app.routers import (
+        admin_alerts,
+        admin_canary,
+        # admin_logs,  # TODO: implement
+        admin_observability,
+        # admin_ops,  # TODO: implement
+        admin_replay,
+    )
+except (ModuleNotFoundError, ImportError):
+    admin_alerts = None
+    admin_canary = None
+    admin_observability = None
+    admin_replay = None
 from fastapi.staticfiles import StaticFiles
 
 configure_logging()
 setup_tracing(app)
 install_metrics(app)
 install_replay_middleware(app)
-app.include_router(admin_observability.router)
+
+# Include optional admin routers if they were loaded
+if admin_observability:
+    app.include_router(admin_observability.router)
 # app.include_router(admin_logs.router)  # TODO: implement
-app.include_router(admin_replay.router)
+if admin_replay:
+    app.include_router(admin_replay.router)
 # app.include_router(admin_ops.router)  # TODO: implement
-app.include_router(admin_alerts.router)
-app.include_router(admin_canary.router)
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
+if admin_alerts:
+    app.include_router(admin_alerts.router)
+if admin_canary:
+    app.include_router(admin_canary.router)
+
+# Mount static files if directory exists
+import os
+if os.path.exists("app/static"):
+    app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 
-from app.observability import canary
-from app.observability.logging import get_logger
-from app.observability.metrics import NS, Counter, _registry
+# Try to import optional observability modules
+try:
+    from app.observability import canary
+    from app.observability.logging import get_logger
+    from app.observability.metrics import NS, Counter, _registry
+    
+    log_canary = get_logger("canary")
+    HAS_OBSERVABILITY = True
+except (ModuleNotFoundError, ImportError):
+    HAS_OBSERVABILITY = False
+    class DummyCounter:
+        def labels(self, **kwargs):
+            return self
+        def inc(self, *args, **kwargs):
+            pass
+    Counter = DummyCounter
+    NS = "valhalla"
+    
 from fastapi import Request
 
-log_canary = get_logger("canary")
-CANARY_ROUTED = Counter(
-    f"{NS}_canary_routed_total", "Requests routed to canary", ["path"], registry=_registry
-)
-CANARY_FALLBACK = Counter(
-    f"{NS}_canary_fallback_total",
-    "Requests failed canary and fell back",
-    ["path"],
-    registry=_registry,
-)
+if HAS_OBSERVABILITY:
+    log_canary = get_logger("canary")
+    CANARY_ROUTED = Counter(
+        f"{NS}_canary_routed_total", "Requests routed to canary", ["path"], registry=_registry
+    )
+    CANARY_FALLBACK = Counter(
+        f"{NS}_canary_fallback_total",
+        "Requests failed canary and fell back",
+        ["path"],
+        registry=_registry,
+    )
+else:
+    # Dummy implementations if observability is not available
+    CANARY_ROUTED = DummyCounter()
+    CANARY_FALLBACK = DummyCounter()
 
 
 @app.middleware("http")
 async def canary_splitter(request: Request, call_next):
+    if not HAS_OBSERVABILITY:
+        return await call_next(request)
+        
     st = canary.status()
     if not st.get("enabled") or st.get("percent", 0) <= 0:
         return await call_next(request)
@@ -239,3 +293,9 @@ async def _warm():
 
     asyncio.create_task(warmer.run())
     asyncio.create_task(synthetic.run())
+
+
+from .core_gov.core_router import core as core_router
+from .public_router import public as public_router
+app.include_router(core_router)
+app.include_router(public_router)

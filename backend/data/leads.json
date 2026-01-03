@@ -1,0 +1,43 @@
+{
+  "items": [
+    {
+      "source": "text",
+      "name": "Test Seller",
+      "phone": "2045551234",
+      "email": "test@example.com",
+      "address": null,
+      "city": "Winnipeg",
+      "province": "MB",
+      "country": "CA",
+      "notes": "Wants offer",
+      "tags": [
+        "wholesale",
+        "urgent"
+      ],
+      "meta": {
+        "test": true,
+        "source_campaign": "sms_blast"
+      },
+      "id": "a396eb88-26a6-47e4-85d0-de4929065a25",
+      "created_at_utc": "2026-01-01T09:49:19.060854Z"
+    },
+    {
+      "source": "call",
+      "name": "John Seller",
+      "phone": "2045559999",
+      "email": null,
+      "address": null,
+      "city": "Toronto",
+      "province": "ON",
+      "country": "CA",
+      "notes": "Interested in wholesaling",
+      "tags": [
+        "call",
+        "hot"
+      ],
+      "meta": {},
+      "id": "403295e0-286a-4758-849e-6c384674d246",
+      "created_at_utc": "2026-01-01T09:49:21.120506Z"
+    }
+  ]
+}

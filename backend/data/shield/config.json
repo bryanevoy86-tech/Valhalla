@@ -1,0 +1,33 @@
+{
+  "updated_at": "2026-01-03T03:31:27.313412+00:00",
+  "config": {
+    "enabled": true,
+    "tier": "green",
+    "reserve_floor": 0.0,
+    "min_deals_pipeline": 0,
+    "notes": "Updated config",
+    "actions_by_tier": {
+      "green": [
+        "review_followups"
+      ],
+      "yellow": [
+        "audit_expenses",
+        "focus_boring_engines",
+        "review_followups"
+      ],
+      "orange": [
+        "pause_expansion",
+        "reduce_marketing",
+        "focus_boring_engines",
+        "review_legal_flags"
+      ],
+      "red": [
+        "pause_expansion",
+        "freeze_hiring",
+        "audit_expenses",
+        "manual_override_required"
+      ]
+    },
+    "updated_at": "2026-01-03T03:31:27.313298+00:00"
+  }
+}

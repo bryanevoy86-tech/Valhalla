@@ -1,0 +1,10 @@
+{
+  "updated_at": "2026-01-03T06:20:53.594285+00:00",
+  "items": [
+    {
+      "id": "iv_persist1",
+      "name": "Persistent Item",
+      "on_hand": 42
+    }
+  ]
+}
