@@ -35,6 +35,7 @@ from .rents.router import router as rents_router
 from .playbooks.router import router as playbooks_router
 from .budget_obligations.router import router as budget_obligations_router
 from .budget_calendar.router import router as budget_calendar_router
+from .household_brief.router import router as household_brief_router
 from .autopay_guides.router import router as autopay_guides_router
 from .autopay_setups.router import router as autopay_setups_router
 from .house_inventory.router import router as house_inventory_router
@@ -332,6 +333,7 @@ core.include_router(rents_router)
 core.include_router(playbooks_router)
 core.include_router(budget_obligations_router)
 core.include_router(budget_calendar_router)
+core.include_router(household_brief_router)
 core.include_router(autopay_guides_router)
 core.include_router(autopay_setups_router)
 core.include_router(house_inventory_router)

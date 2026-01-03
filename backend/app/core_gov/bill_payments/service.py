@@ -47,6 +47,20 @@ def mark_paid(
     items = store.list_items()
     items.append(rec)
     store.save_items(items)
+    
+    # also push to ledger light (safe)
+    try:
+        from backend.app.core_gov.bill_payments.ledger_bridge import post_to_ledger  # type: ignore
+        post_to_ledger(
+            date=paid_date.strip(),
+            amount=float(amount or 0.0),
+            description=f"Bill paid: {obligation_id}",
+            category="bills",
+            account_id=account_id or "",
+        )
+    except Exception:
+        pass
+    
     return rec
 
 def list_items(obligation_id: str = "", date_from: str = "", date_to: str = "") -> List[Dict[str, Any]]:

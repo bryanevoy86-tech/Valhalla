@@ -2,8 +2,10 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException
 from . import service
+from .due import upcoming
+from .followups import create_due_followups
 
-router = APIRouter(prefix="/core/budget_obligations", tags=["core-budget-obligations"])
+router = APIRouter(prefix="/core/budget/obligations", tags=["core-budget-obligations"])
 
 @router.post("")
 def create(
@@ -31,3 +33,11 @@ def create(
 @router.get("")
 def list_items(status: str = "", category: str = "", q: str = ""):
     return {"items": service.list_items(status=status, category=category, q=q)}
+
+@router.get("/upcoming")
+def upcoming_bills(days: int = 14, today: str = ""):
+    return upcoming(days=days, today=today)
+
+@router.post("/due_followups")
+def due_followups(days: int = 7):
+    return create_due_followups(days=days)
