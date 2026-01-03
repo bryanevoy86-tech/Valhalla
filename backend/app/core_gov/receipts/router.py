@@ -5,6 +5,8 @@ from fastapi import APIRouter, HTTPException
 
 from .schemas import ReceiptCreate, ReceiptListResponse
 from . import service
+from .attachments import file_fingerprint
+from .attach_meta import attach as attach_receipt
 
 router = APIRouter(prefix="/core/receipts", tags=["core-receipts"])
 
@@ -44,3 +46,19 @@ def post_ledger(receipt_id: str, account_id: str = ""):
         return post_to_ledger(receipt_id=receipt_id, account_id=account_id)
     except KeyError:
         raise HTTPException(status_code=404, detail="not found")
+
+@router.get("/fingerprint")
+def fingerprint(file_path: str):
+    try:
+        return file_fingerprint(file_path=file_path)
+    except (ValueError, FileNotFoundError) as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.post("/{receipt_id}/attach")
+def attach(receipt_id: str, file_path: str):
+    try:
+        return attach_receipt(receipt_id=receipt_id, file_path=file_path)
+    except KeyError:
+        raise HTTPException(status_code=404, detail="not found")
+    except (ValueError, FileNotFoundError) as e:
+        raise HTTPException(status_code=400, detail=str(e))

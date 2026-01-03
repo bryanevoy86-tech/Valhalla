@@ -47,5 +47,19 @@ def tick() -> Dict[str, Any]:
         result["success"] = False
         result["daily_ops_result"] = {"error": str(e)}
         result["message"] = "Daily ops failed"
-    
+
+    # Call payday followups
+    try:
+        from backend.app.core_gov.payday.followups import create_income_followups
+        create_income_followups(days=14)
+    except Exception:
+        pass
+
+    # Call calendar to reminders
+    try:
+        from backend.app.core_gov.house_calendar.reminders import push_to_reminders
+        push_to_reminders(limit=25)
+    except Exception:
+        pass
+
     return result

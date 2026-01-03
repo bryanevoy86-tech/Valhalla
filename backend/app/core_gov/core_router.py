@@ -89,6 +89,14 @@ from .ops_board.router import router as ops_board_router
 from .task_links.router import router as task_links_router
 from .budget_flow.router import router as budget_flow_router
 from .journal.router import router as journal_router
+from .income.router import router as income_router
+from .payday.router import router as payday_router
+from .cra_risk.router import router as cra_risk_router
+from .jv_board.router import router as jv_board_router
+from .know_inbox.router import router as know_inbox_router
+from .know_chunks.router import router as know_chunks_router
+from .know_retrieve.router import router as know_retrieve_router
+from .envelopes.router import router as envelopes_router
 from .csv_export.router import router as csv_export_router
 from .tax_buckets.router import router as tax_buckets_router
 from .tax_tagging.router import router as tax_tagging_router
@@ -418,6 +426,15 @@ core.include_router(ops_board_router)
 core.include_router(task_links_router)
 core.include_router(budget_flow_router)
 core.include_router(journal_router)
+core.include_router(income_router)
+core.include_router(payday_router)
+core.include_router(cra_risk_router)
+core.include_router(jv_board_router)
+core.include_router(know_inbox_router)
+core.include_router(know_chunks_router)
+core.include_router(know_retrieve_router)
+core.include_router(envelopes_router)
+
 
 @core.get("/onboarding")
 def onboarding():

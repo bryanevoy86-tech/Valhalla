@@ -56,5 +56,14 @@ def today() -> Dict[str, Any]:
         board["outbox_ready"] = [o for o in items if o.get("status") == "ready"][:5]
     except:
         pass
-    
+
+    # Safe-call to payday plan
+    try:
+        from ..payday.service import plan
+        board["payday_plan"] = plan(days=14)
+    except:
+        board["payday_plan"] = {}
+
+    board["cra_risk_hint"] = "GET /core/cra/risk/scan/{YYYY-MM}"
+
     return board
