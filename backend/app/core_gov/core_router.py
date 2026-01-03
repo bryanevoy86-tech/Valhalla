@@ -54,6 +54,11 @@ from .receipts.router import router as receipts_router
 from .categorizer.router import router as categorizer_router
 from .taxrisk.router import router as taxrisk_router
 from .reports.router import router as reports_router
+from .bank.router import router as bank_router
+from .reconcile.router import router as reconcile_router
+from .proofpacks.router import router as proofpacks_router
+from .networth.router import router as networth_router
+from .exports_year_end.router import router as exports_year_end_router
 from .transactions.router import router as transactions_router
 from .packs.router import router as packs_router
 from .inventory.router import router as inventory_router
@@ -204,6 +209,11 @@ core.include_router(receipts_router)
 core.include_router(categorizer_router)
 core.include_router(taxrisk_router)
 core.include_router(reports_router)
+core.include_router(bank_router)
+core.include_router(reconcile_router)
+core.include_router(proofpacks_router)
+core.include_router(networth_router)
+core.include_router(exports_year_end_router)
 core.include_router(transactions_router)
 core.include_router(packs_router)
 core.include_router(inventory_router)
