@@ -177,3 +177,15 @@ def get_month(month: Optional[str] = None) -> List[Dict[str, Any]]:
     _save_snapshot_map(snap_map)
     out.sort(key=lambda x: x["bucket_id"])
     return out
+
+
+# Plan functions (P-BUDGET-3)
+from . import plan  # noqa: E402
+
+
+def month_plan_view(month: str) -> Dict[str, Any]:
+    return plan.month_plan_view(month)
+
+
+def obligations_status(buffer_multiplier: float = 1.25) -> Dict[str, Any]:
+    return plan.obligations_status(buffer_multiplier=buffer_multiplier)

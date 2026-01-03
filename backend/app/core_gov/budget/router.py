@@ -59,6 +59,36 @@ def month(month: Optional[str] = None):
         raise HTTPException(status_code=400, detail=str(e))
 
 
+# P-BUDGET-2 calendar endpoints
+@router.get("/calendar/next_30")
+def next_30():
+    from . import calendar as cal
+    return cal.next_30_days_calendar()
+
+
+@router.get("/calendar/next_n")
+def next_n(days: int = 14):
+    from . import calendar as cal
+    return cal.next_n_days_calendar(days)
+
+
+# P-BUDGET-3 plan endpoints
+from . import plan
+
+
+@router.get("/plan/month")
+def month_plan(month: str):
+    try:
+        return plan.month_plan_view(month)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/status/obligations")
+def obligations_status(buffer_multiplier: float = 1.25):
+    return plan.obligations_status(buffer_multiplier=buffer_multiplier)
+
+
 @router.get("/bill_calendar")
 def bill_calendar(start: str, end: str):
     return cal_service.bill_calendar(start, end)

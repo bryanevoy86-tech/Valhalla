@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-01-03T06:20:53.584720+00:00",
+  "updated_at": "2026-01-03T06:38:59.012006+00:00",
   "items": [
     {
       "id": "ae_537645903520",
@@ -1891,6 +1891,484 @@
         "buffer_required": 11875.0
       },
       "created_at": "2026-01-03T06:20:53.584034+00:00"
+    },
+    {
+      "id": "ae_5096753368d5",
+      "event_type": "system",
+      "level": "info",
+      "message": "OBLIGATIONS reserve recalculated",
+      "actor": "api",
+      "ref_type": "obligations_reserve",
+      "ref_id": "",
+      "meta": {
+        "monthly_required": 9500.0,
+        "buffer_required": 11875.0
+      },
+      "created_at": "2026-01-03T06:36:05.842725+00:00"
+    },
+    {
+      "id": "ae_66de48280eba",
+      "event_type": "system",
+      "level": "info",
+      "message": "OBLIGATIONS reserve recalculated",
+      "actor": "api",
+      "ref_type": "obligations_reserve",
+      "ref_id": "",
+      "meta": {
+        "monthly_required": 9500.0,
+        "buffer_required": 11875.0
+      },
+      "created_at": "2026-01-03T06:36:05.921781+00:00"
+    },
+    {
+      "id": "ae_99ab3e11abff",
+      "event_type": "system",
+      "level": "info",
+      "message": "OBLIGATION created: Internet",
+      "actor": "api",
+      "ref_type": "obligation",
+      "ref_id": "ob_b9438c3cd9bd",
+      "meta": {
+        "frequency": "monthly",
+        "amount": 150.0,
+        "currency": "CAD"
+      },
+      "created_at": "2026-01-03T06:38:31.565839+00:00"
+    },
+    {
+      "id": "ae_fadb1f1048f9",
+      "event_type": "system",
+      "level": "info",
+      "message": "OBLIGATION created: Rent",
+      "actor": "api",
+      "ref_type": "obligation",
+      "ref_id": "ob_89808a44339d",
+      "meta": {
+        "frequency": "monthly",
+        "amount": 1500.0,
+        "currency": "CAD"
+      },
+      "created_at": "2026-01-03T06:38:31.583730+00:00"
+    },
+    {
+      "id": "ae_f9420c705d43",
+      "event_type": "system",
+      "level": "info",
+      "message": "OBLIGATION created: Water Bill",
+      "actor": "api",
+      "ref_type": "obligation",
+      "ref_id": "ob_faa3d947e75f",
+      "meta": {
+        "frequency": "quarterly",
+        "amount": 280.0,
+        "currency": "CAD"
+      },
+      "created_at": "2026-01-03T06:38:31.590165+00:00"
+    },
+    {
+      "id": "ae_d7272a640028",
+      "event_type": "system",
+      "level": "info",
+      "message": "OBLIGATION created: Test Get",
+      "actor": "api",
+      "ref_type": "obligation",
+      "ref_id": "ob_e1114598f922",
+      "meta": {
+        "frequency": "monthly",
+        "amount": 100.0,
+        "currency": "CAD"
+      },
+      "created_at": "2026-01-03T06:38:31.597333+00:00"
+    },
+    {
+      "id": "ae_a0814fd9373b",
+      "event_type": "system",
+      "level": "info",
+      "message": "OBLIGATION created: Patchable",
+      "actor": "api",
+      "ref_type": "obligation",
+      "ref_id": "ob_a4514fae2e99",
+      "meta": {
+        "frequency": "monthly",
+        "amount": 50.0,
+        "currency": "CAD"
+      },
+      "created_at": "2026-01-03T06:38:31.603815+00:00"
+    },
+    {
+      "id": "ae_0141b2b2fb4d",
+      "event_type": "system",
+      "level": "info",
+      "message": "OBLIGATION created: Payable",
+      "actor": "api",
+      "ref_type": "obligation",
+      "ref_id": "ob_b1fa5038e6aa",
+      "meta": {
+        "frequency": "monthly",
+        "amount": 100.0,
+        "currency": "CAD"
+      },
+      "created_at": "2026-01-03T06:38:31.613208+00:00"
+    },
+    {
+      "id": "ae_cb06cb47965d",
+      "event_type": "system",
+      "level": "info",
+      "message": "OBLIGATION created: P1",
+      "actor": "api",
+      "ref_type": "obligation",
+      "ref_id": "ob_2eb6b58fb03e",
+      "meta": {
+        "frequency": "monthly",
+        "amount": 100.0,
+        "currency": "CAD"
+      },
+      "created_at": "2026-01-03T06:38:31.624912+00:00"
+    },
+    {
+      "id": "ae_271be0f67884",
+      "event_type": "system",
+      "level": "info",
+      "message": "OBLIGATION created: P2",
+      "actor": "api",
+      "ref_type": "obligation",
+      "ref_id": "ob_21b20ac05934",
+      "meta": {
+        "frequency": "monthly",
+        "amount": 200.0,
+        "currency": "CAD"
+      },
+      "created_at": "2026-01-03T06:38:31.630560+00:00"
+    },
+    {
+      "id": "ae_7da0b658175d",
+      "event_type": "system",
+      "level": "info",
+      "message": "OBLIGATION created: Buffer Test",
+      "actor": "api",
+      "ref_type": "obligation",
+      "ref_id": "ob_e1308d647670",
+      "meta": {
+        "frequency": "monthly",
+        "amount": 100.0,
+        "currency": "CAD"
+      },
+      "created_at": "2026-01-03T06:38:31.637125+00:00"
+    },
+    {
+      "id": "ae_59bbee78e560",
+      "event_type": "system",
+      "level": "info",
+      "message": "OBLIGATION created: Setup Test",
+      "actor": "api",
+      "ref_type": "obligation",
+      "ref_id": "ob_f87f0d05f878",
+      "meta": {
+        "frequency": "monthly",
+        "amount": 99.99,
+        "currency": "CAD"
+      },
+      "created_at": "2026-01-03T06:38:31.644166+00:00"
+    },
+    {
+      "id": "ae_67dc63bc59b3",
+      "event_type": "system",
+      "level": "info",
+      "message": "OBLIGATION created: Status Test",
+      "actor": "api",
+      "ref_type": "obligation",
+      "ref_id": "ob_fe9a940ea109",
+      "meta": {
+        "frequency": "monthly",
+        "amount": 50.0,
+        "currency": "CAD"
+      },
+      "created_at": "2026-01-03T06:38:31.653925+00:00"
+    },
+    {
+      "id": "ae_348d7e50d31a",
+      "event_type": "system",
+      "level": "info",
+      "message": "OBLIGATION created: Workflow Test",
+      "actor": "api",
+      "ref_type": "obligation",
+      "ref_id": "ob_2394b390fb86",
+      "meta": {
+        "frequency": "monthly",
+        "amount": 120.0,
+        "currency": "CAD"
+      },
+      "created_at": "2026-01-03T06:38:31.662016+00:00"
+    },
+    {
+      "id": "ae_fe422f8787f3",
+      "event_type": "system",
+      "level": "info",
+      "message": "OBLIGATION created: Monthly Obligation",
+      "actor": "api",
+      "ref_type": "obligation",
+      "ref_id": "ob_f1f363d7afa4",
+      "meta": {
+        "frequency": "monthly",
+        "amount": 100.0,
+        "currency": "CAD"
+      },
+      "created_at": "2026-01-03T06:38:31.672890+00:00"
+    },
+    {
+      "id": "ae_acbd09f35fee",
+      "event_type": "system",
+      "level": "info",
+      "message": "OBLIGATION created: Quarterly Obligation",
+      "actor": "api",
+      "ref_type": "obligation",
+      "ref_id": "ob_f71742d7b045",
+      "meta": {
+        "frequency": "quarterly",
+        "amount": 100.0,
+        "currency": "CAD"
+      },
+      "created_at": "2026-01-03T06:38:31.678502+00:00"
+    },
+    {
+      "id": "ae_2f66e038e2a9",
+      "event_type": "system",
+      "level": "info",
+      "message": "OBLIGATION created: Yearly Obligation",
+      "actor": "api",
+      "ref_type": "obligation",
+      "ref_id": "ob_3f9951dac6b1",
+      "meta": {
+        "frequency": "yearly",
+        "amount": 100.0,
+        "currency": "CAD"
+      },
+      "created_at": "2026-01-03T06:38:31.684507+00:00"
+    },
+    {
+      "id": "ae_079bf10023f9",
+      "event_type": "system",
+      "level": "info",
+      "message": "OBLIGATION created: Internet",
+      "actor": "api",
+      "ref_type": "obligation",
+      "ref_id": "ob_9e316a3a69f7",
+      "meta": {
+        "frequency": "monthly",
+        "amount": 150.0,
+        "currency": "CAD"
+      },
+      "created_at": "2026-01-03T06:38:58.886787+00:00"
+    },
+    {
+      "id": "ae_886e1f696659",
+      "event_type": "system",
+      "level": "info",
+      "message": "OBLIGATION created: Rent",
+      "actor": "api",
+      "ref_type": "obligation",
+      "ref_id": "ob_96ae6ddc27f3",
+      "meta": {
+        "frequency": "monthly",
+        "amount": 1500.0,
+        "currency": "CAD"
+      },
+      "created_at": "2026-01-03T06:38:58.895189+00:00"
+    },
+    {
+      "id": "ae_7fdad4404e68",
+      "event_type": "system",
+      "level": "info",
+      "message": "OBLIGATION created: Water Bill",
+      "actor": "api",
+      "ref_type": "obligation",
+      "ref_id": "ob_e4d6e9cd69e2",
+      "meta": {
+        "frequency": "quarterly",
+        "amount": 280.0,
+        "currency": "CAD"
+      },
+      "created_at": "2026-01-03T06:38:58.902034+00:00"
+    },
+    {
+      "id": "ae_34fa681ead42",
+      "event_type": "system",
+      "level": "info",
+      "message": "OBLIGATION created: Test Get",
+      "actor": "api",
+      "ref_type": "obligation",
+      "ref_id": "ob_206ae28a6f51",
+      "meta": {
+        "frequency": "monthly",
+        "amount": 100.0,
+        "currency": "CAD"
+      },
+      "created_at": "2026-01-03T06:38:58.911074+00:00"
+    },
+    {
+      "id": "ae_4d66d5b4f1be",
+      "event_type": "system",
+      "level": "info",
+      "message": "OBLIGATION created: Patchable",
+      "actor": "api",
+      "ref_type": "obligation",
+      "ref_id": "ob_734576c3821c",
+      "meta": {
+        "frequency": "monthly",
+        "amount": 50.0,
+        "currency": "CAD"
+      },
+      "created_at": "2026-01-03T06:38:58.918354+00:00"
+    },
+    {
+      "id": "ae_f4437a214756",
+      "event_type": "system",
+      "level": "info",
+      "message": "OBLIGATION created: Payable",
+      "actor": "api",
+      "ref_type": "obligation",
+      "ref_id": "ob_4060af99972c",
+      "meta": {
+        "frequency": "monthly",
+        "amount": 100.0,
+        "currency": "CAD"
+      },
+      "created_at": "2026-01-03T06:38:58.928436+00:00"
+    },
+    {
+      "id": "ae_e99638e836c2",
+      "event_type": "system",
+      "level": "info",
+      "message": "OBLIGATION created: P1",
+      "actor": "api",
+      "ref_type": "obligation",
+      "ref_id": "ob_87b755e96622",
+      "meta": {
+        "frequency": "monthly",
+        "amount": 100.0,
+        "currency": "CAD"
+      },
+      "created_at": "2026-01-03T06:38:58.940133+00:00"
+    },
+    {
+      "id": "ae_c31f1c9ef6cf",
+      "event_type": "system",
+      "level": "info",
+      "message": "OBLIGATION created: P2",
+      "actor": "api",
+      "ref_type": "obligation",
+      "ref_id": "ob_c2ba4665bb4b",
+      "meta": {
+        "frequency": "monthly",
+        "amount": 200.0,
+        "currency": "CAD"
+      },
+      "created_at": "2026-01-03T06:38:58.947020+00:00"
+    },
+    {
+      "id": "ae_76550659ef62",
+      "event_type": "system",
+      "level": "info",
+      "message": "OBLIGATION created: Buffer Test",
+      "actor": "api",
+      "ref_type": "obligation",
+      "ref_id": "ob_ab0f8ab0bcff",
+      "meta": {
+        "frequency": "monthly",
+        "amount": 100.0,
+        "currency": "CAD"
+      },
+      "created_at": "2026-01-03T06:38:58.955139+00:00"
+    },
+    {
+      "id": "ae_56315e1150ac",
+      "event_type": "system",
+      "level": "info",
+      "message": "OBLIGATION created: Setup Test",
+      "actor": "api",
+      "ref_type": "obligation",
+      "ref_id": "ob_a114f2db846e",
+      "meta": {
+        "frequency": "monthly",
+        "amount": 99.99,
+        "currency": "CAD"
+      },
+      "created_at": "2026-01-03T06:38:58.963786+00:00"
+    },
+    {
+      "id": "ae_7d2e90eddc40",
+      "event_type": "system",
+      "level": "info",
+      "message": "OBLIGATION created: Status Test",
+      "actor": "api",
+      "ref_type": "obligation",
+      "ref_id": "ob_872e7e92bd2c",
+      "meta": {
+        "frequency": "monthly",
+        "amount": 50.0,
+        "currency": "CAD"
+      },
+      "created_at": "2026-01-03T06:38:58.972504+00:00"
+    },
+    {
+      "id": "ae_f0332e3f5a09",
+      "event_type": "system",
+      "level": "info",
+      "message": "OBLIGATION created: Workflow Test",
+      "actor": "api",
+      "ref_type": "obligation",
+      "ref_id": "ob_bf4358a5c315",
+      "meta": {
+        "frequency": "monthly",
+        "amount": 120.0,
+        "currency": "CAD"
+      },
+      "created_at": "2026-01-03T06:38:58.981192+00:00"
+    },
+    {
+      "id": "ae_491b205eb332",
+      "event_type": "system",
+      "level": "info",
+      "message": "OBLIGATION created: Monthly Obligation",
+      "actor": "api",
+      "ref_type": "obligation",
+      "ref_id": "ob_b42746248f71",
+      "meta": {
+        "frequency": "monthly",
+        "amount": 100.0,
+        "currency": "CAD"
+      },
+      "created_at": "2026-01-03T06:38:58.991390+00:00"
+    },
+    {
+      "id": "ae_ce8acbbd34db",
+      "event_type": "system",
+      "level": "info",
+      "message": "OBLIGATION created: Quarterly Obligation",
+      "actor": "api",
+      "ref_type": "obligation",
+      "ref_id": "ob_4e376e4ded67",
+      "meta": {
+        "frequency": "quarterly",
+        "amount": 100.0,
+        "currency": "CAD"
+      },
+      "created_at": "2026-01-03T06:38:58.999619+00:00"
+    },
+    {
+      "id": "ae_c6f235536367",
+      "event_type": "system",
+      "level": "info",
+      "message": "OBLIGATION created: Yearly Obligation",
+      "actor": "api",
+      "ref_type": "obligation",
+      "ref_id": "ob_520036c94704",
+      "meta": {
+        "frequency": "yearly",
+        "amount": 100.0,
+        "currency": "CAD"
+      },
+      "created_at": "2026-01-03T06:38:59.010245+00:00"
     }
   ]
 }
