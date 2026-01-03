@@ -1,0 +1,720 @@
+{
+  "updated_at": "2026-01-03T09:10:42.740832+00:00",
+  "items": [
+    {
+      "id": "apr_4fe8384b9593",
+      "title": "High-risk action",
+      "action": "assign_deal",
+      "target_type": "deal",
+      "target_id": "d_123",
+      "cone_band": "A_EXPANSION",
+      "risk": "high",
+      "payload": {},
+      "notes": "",
+      "status": "pending",
+      "decision": {
+        "by": "",
+        "at": "",
+        "reason": ""
+      },
+      "created_at": "2026-01-03T09:06:14.403393+00:00",
+      "updated_at": "2026-01-03T09:06:14.403407+00:00"
+    },
+    {
+      "id": "apr_89f06658448f",
+      "title": "Test",
+      "action": "test",
+      "target_type": "",
+      "target_id": "",
+      "cone_band": "",
+      "risk": "medium",
+      "payload": {},
+      "notes": "",
+      "status": "pending",
+      "decision": {
+        "by": "",
+        "at": "",
+        "reason": ""
+      },
+      "created_at": "2026-01-03T09:06:14.407556+00:00",
+      "updated_at": "2026-01-03T09:06:14.407567+00:00"
+    },
+    {
+      "id": "apr_b7ec53236b7e",
+      "title": "Review",
+      "action": "proceed",
+      "target_type": "",
+      "target_id": "",
+      "cone_band": "",
+      "risk": "low",
+      "payload": {},
+      "notes": "",
+      "status": "approved",
+      "decision": {
+        "by": "owner",
+        "at": "2026-01-03T09:06:14.413068+00:00",
+        "reason": "Looks good"
+      },
+      "created_at": "2026-01-03T09:06:14.410782+00:00",
+      "updated_at": "2026-01-03T09:06:14.413078+00:00"
+    },
+    {
+      "id": "apr_5a84827701bf",
+      "title": "Review",
+      "action": "proceed",
+      "target_type": "",
+      "target_id": "",
+      "cone_band": "",
+      "risk": "high",
+      "payload": {},
+      "notes": "",
+      "status": "denied",
+      "decision": {
+        "by": "system",
+        "at": "2026-01-03T09:06:14.417387+00:00",
+        "reason": "Risk too high"
+      },
+      "created_at": "2026-01-03T09:06:14.415461+00:00",
+      "updated_at": "2026-01-03T09:06:14.417398+00:00"
+    },
+    {
+      "id": "apr_d06424ffedc5",
+      "title": "Wholesale assignment",
+      "action": "assign_deal",
+      "target_type": "",
+      "target_id": "",
+      "cone_band": "B_CAUTION",
+      "risk": "high",
+      "payload": {},
+      "notes": "",
+      "status": "approved",
+      "decision": {
+        "by": "manager",
+        "at": "2026-01-03T09:06:15.046872+00:00",
+        "reason": "Approved after review"
+      },
+      "created_at": "2026-01-03T09:06:15.045106+00:00",
+      "updated_at": "2026-01-03T09:06:15.046879+00:00"
+    },
+    {
+      "id": "apr_bb6bfbf46678",
+      "title": "Test",
+      "action": "test",
+      "target_type": "",
+      "target_id": "",
+      "cone_band": "",
+      "risk": "medium",
+      "payload": {},
+      "notes": "",
+      "status": "pending",
+      "decision": {
+        "by": "",
+        "at": "",
+        "reason": ""
+      },
+      "created_at": "2026-01-03T09:06:15.057093+00:00",
+      "updated_at": "2026-01-03T09:06:15.057104+00:00"
+    },
+    {
+      "id": "apr_0c0c88fcfe42",
+      "title": "High-risk action",
+      "action": "assign_deal",
+      "target_type": "deal",
+      "target_id": "d_123",
+      "cone_band": "A_EXPANSION",
+      "risk": "high",
+      "payload": {},
+      "notes": "",
+      "status": "pending",
+      "decision": {
+        "by": "",
+        "at": "",
+        "reason": ""
+      },
+      "created_at": "2026-01-03T09:07:38.967150+00:00",
+      "updated_at": "2026-01-03T09:07:38.967166+00:00"
+    },
+    {
+      "id": "apr_e7330fddc8f6",
+      "title": "Test",
+      "action": "test",
+      "target_type": "",
+      "target_id": "",
+      "cone_band": "",
+      "risk": "medium",
+      "payload": {},
+      "notes": "",
+      "status": "pending",
+      "decision": {
+        "by": "",
+        "at": "",
+        "reason": ""
+      },
+      "created_at": "2026-01-03T09:07:38.971696+00:00",
+      "updated_at": "2026-01-03T09:07:38.971709+00:00"
+    },
+    {
+      "id": "apr_92285b5105d8",
+      "title": "Review",
+      "action": "proceed",
+      "target_type": "",
+      "target_id": "",
+      "cone_band": "",
+      "risk": "low",
+      "payload": {},
+      "notes": "",
+      "status": "approved",
+      "decision": {
+        "by": "owner",
+        "at": "2026-01-03T09:07:38.979582+00:00",
+        "reason": "Looks good"
+      },
+      "created_at": "2026-01-03T09:07:38.976716+00:00",
+      "updated_at": "2026-01-03T09:07:38.979594+00:00"
+    },
+    {
+      "id": "apr_af9237ebea13",
+      "title": "Review",
+      "action": "proceed",
+      "target_type": "",
+      "target_id": "",
+      "cone_band": "",
+      "risk": "high",
+      "payload": {},
+      "notes": "",
+      "status": "denied",
+      "decision": {
+        "by": "system",
+        "at": "2026-01-03T09:07:38.984466+00:00",
+        "reason": "Risk too high"
+      },
+      "created_at": "2026-01-03T09:07:38.982482+00:00",
+      "updated_at": "2026-01-03T09:07:38.984475+00:00"
+    },
+    {
+      "id": "apr_ffe2253840e4",
+      "title": "Wholesale assignment",
+      "action": "assign_deal",
+      "target_type": "",
+      "target_id": "",
+      "cone_band": "B_CAUTION",
+      "risk": "high",
+      "payload": {},
+      "notes": "",
+      "status": "approved",
+      "decision": {
+        "by": "manager",
+        "at": "2026-01-03T09:07:39.249456+00:00",
+        "reason": "Approved after review"
+      },
+      "created_at": "2026-01-03T09:07:39.247042+00:00",
+      "updated_at": "2026-01-03T09:07:39.249468+00:00"
+    },
+    {
+      "id": "apr_99efb97dc843",
+      "title": "Research",
+      "action": "investigate",
+      "target_type": "",
+      "target_id": "",
+      "cone_band": "",
+      "risk": "medium",
+      "payload": {},
+      "notes": "",
+      "status": "approved",
+      "decision": {
+        "by": "owner",
+        "at": "2026-01-03T09:07:39.255609+00:00",
+        "reason": ""
+      },
+      "created_at": "2026-01-03T09:07:39.253511+00:00",
+      "updated_at": "2026-01-03T09:07:39.255622+00:00"
+    },
+    {
+      "id": "apr_82d4ae335f70",
+      "title": "Test",
+      "action": "test",
+      "target_type": "",
+      "target_id": "",
+      "cone_band": "",
+      "risk": "medium",
+      "payload": {},
+      "notes": "",
+      "status": "pending",
+      "decision": {
+        "by": "",
+        "at": "",
+        "reason": ""
+      },
+      "created_at": "2026-01-03T09:07:39.263352+00:00",
+      "updated_at": "2026-01-03T09:07:39.263361+00:00"
+    },
+    {
+      "id": "apr_330f9be81734",
+      "title": "High-risk action",
+      "action": "assign_deal",
+      "target_type": "deal",
+      "target_id": "d_123",
+      "cone_band": "A_EXPANSION",
+      "risk": "high",
+      "payload": {},
+      "notes": "",
+      "status": "pending",
+      "decision": {
+        "by": "",
+        "at": "",
+        "reason": ""
+      },
+      "created_at": "2026-01-03T09:08:27.619981+00:00",
+      "updated_at": "2026-01-03T09:08:27.620002+00:00"
+    },
+    {
+      "id": "apr_2bfcf848783a",
+      "title": "Test",
+      "action": "test",
+      "target_type": "",
+      "target_id": "",
+      "cone_band": "",
+      "risk": "medium",
+      "payload": {},
+      "notes": "",
+      "status": "pending",
+      "decision": {
+        "by": "",
+        "at": "",
+        "reason": ""
+      },
+      "created_at": "2026-01-03T09:08:27.624662+00:00",
+      "updated_at": "2026-01-03T09:08:27.624674+00:00"
+    },
+    {
+      "id": "apr_2a2e9b14a985",
+      "title": "Review",
+      "action": "proceed",
+      "target_type": "",
+      "target_id": "",
+      "cone_band": "",
+      "risk": "low",
+      "payload": {},
+      "notes": "",
+      "status": "approved",
+      "decision": {
+        "by": "owner",
+        "at": "2026-01-03T09:08:27.630465+00:00",
+        "reason": "Looks good"
+      },
+      "created_at": "2026-01-03T09:08:27.628641+00:00",
+      "updated_at": "2026-01-03T09:08:27.630476+00:00"
+    },
+    {
+      "id": "apr_0d13fed676d1",
+      "title": "Review",
+      "action": "proceed",
+      "target_type": "",
+      "target_id": "",
+      "cone_band": "",
+      "risk": "high",
+      "payload": {},
+      "notes": "",
+      "status": "denied",
+      "decision": {
+        "by": "system",
+        "at": "2026-01-03T09:08:27.635835+00:00",
+        "reason": "Risk too high"
+      },
+      "created_at": "2026-01-03T09:08:27.633597+00:00",
+      "updated_at": "2026-01-03T09:08:27.635843+00:00"
+    },
+    {
+      "id": "apr_8a19c04d3129",
+      "title": "Test",
+      "action": "test",
+      "target_type": "",
+      "target_id": "",
+      "cone_band": "",
+      "risk": "medium",
+      "payload": {},
+      "notes": "",
+      "status": "pending",
+      "decision": {
+        "by": "",
+        "at": "",
+        "reason": ""
+      },
+      "created_at": "2026-01-03T09:08:27.639200+00:00",
+      "updated_at": "2026-01-03T09:08:27.639207+00:00"
+    },
+    {
+      "id": "apr_b274019d56aa",
+      "title": "Wholesale assignment",
+      "action": "assign_deal",
+      "target_type": "",
+      "target_id": "",
+      "cone_band": "B_CAUTION",
+      "risk": "high",
+      "payload": {},
+      "notes": "",
+      "status": "approved",
+      "decision": {
+        "by": "manager",
+        "at": "2026-01-03T09:08:30.120322+00:00",
+        "reason": "Approved after review"
+      },
+      "created_at": "2026-01-03T09:08:30.116926+00:00",
+      "updated_at": "2026-01-03T09:08:30.120342+00:00"
+    },
+    {
+      "id": "apr_66abcf9da2c3",
+      "title": "Research",
+      "action": "investigate",
+      "target_type": "",
+      "target_id": "",
+      "cone_band": "",
+      "risk": "medium",
+      "payload": {},
+      "notes": "",
+      "status": "approved",
+      "decision": {
+        "by": "owner",
+        "at": "2026-01-03T09:08:30.127866+00:00",
+        "reason": ""
+      },
+      "created_at": "2026-01-03T09:08:30.125179+00:00",
+      "updated_at": "2026-01-03T09:08:30.127878+00:00"
+    },
+    {
+      "id": "apr_9a415bf3be22",
+      "title": "Complex decision",
+      "action": "proceed",
+      "target_type": "",
+      "target_id": "",
+      "cone_band": "",
+      "risk": "medium",
+      "payload": {
+        "deal_id": "d_123",
+        "amount": 500000,
+        "terms": "wholesale"
+      },
+      "notes": "",
+      "status": "pending",
+      "decision": {
+        "by": "",
+        "at": "",
+        "reason": ""
+      },
+      "created_at": "2026-01-03T09:08:30.192032+00:00",
+      "updated_at": "2026-01-03T09:08:30.192048+00:00"
+    },
+    {
+      "id": "apr_a20ec5af9e73",
+      "title": "High-risk action",
+      "action": "assign_deal",
+      "target_type": "deal",
+      "target_id": "d_123",
+      "cone_band": "A_EXPANSION",
+      "risk": "high",
+      "payload": {},
+      "notes": "",
+      "status": "pending",
+      "decision": {
+        "by": "",
+        "at": "",
+        "reason": ""
+      },
+      "created_at": "2026-01-03T09:08:45.968734+00:00",
+      "updated_at": "2026-01-03T09:08:45.968746+00:00"
+    },
+    {
+      "id": "apr_26815da77bff",
+      "title": "Test",
+      "action": "test",
+      "target_type": "",
+      "target_id": "",
+      "cone_band": "",
+      "risk": "medium",
+      "payload": {},
+      "notes": "",
+      "status": "pending",
+      "decision": {
+        "by": "",
+        "at": "",
+        "reason": ""
+      },
+      "created_at": "2026-01-03T09:08:45.971849+00:00",
+      "updated_at": "2026-01-03T09:08:45.971859+00:00"
+    },
+    {
+      "id": "apr_bf3ee7d99a48",
+      "title": "Review",
+      "action": "proceed",
+      "target_type": "",
+      "target_id": "",
+      "cone_band": "",
+      "risk": "low",
+      "payload": {},
+      "notes": "",
+      "status": "approved",
+      "decision": {
+        "by": "owner",
+        "at": "2026-01-03T09:08:45.978601+00:00",
+        "reason": "Looks good"
+      },
+      "created_at": "2026-01-03T09:08:45.975948+00:00",
+      "updated_at": "2026-01-03T09:08:45.978611+00:00"
+    },
+    {
+      "id": "apr_893152a752a4",
+      "title": "Review",
+      "action": "proceed",
+      "target_type": "",
+      "target_id": "",
+      "cone_band": "",
+      "risk": "high",
+      "payload": {},
+      "notes": "",
+      "status": "denied",
+      "decision": {
+        "by": "system",
+        "at": "2026-01-03T09:08:45.983750+00:00",
+        "reason": "Risk too high"
+      },
+      "created_at": "2026-01-03T09:08:45.981395+00:00",
+      "updated_at": "2026-01-03T09:08:45.983759+00:00"
+    },
+    {
+      "id": "apr_1a1091907ec8",
+      "title": "Test",
+      "action": "test",
+      "target_type": "",
+      "target_id": "",
+      "cone_band": "",
+      "risk": "medium",
+      "payload": {},
+      "notes": "",
+      "status": "pending",
+      "decision": {
+        "by": "",
+        "at": "",
+        "reason": ""
+      },
+      "created_at": "2026-01-03T09:08:45.987671+00:00",
+      "updated_at": "2026-01-03T09:08:45.987680+00:00"
+    },
+    {
+      "id": "apr_a5c0f91adf19",
+      "title": "Wholesale assignment",
+      "action": "assign_deal",
+      "target_type": "",
+      "target_id": "",
+      "cone_band": "B_CAUTION",
+      "risk": "high",
+      "payload": {},
+      "notes": "",
+      "status": "approved",
+      "decision": {
+        "by": "manager",
+        "at": "2026-01-03T09:08:46.170619+00:00",
+        "reason": "Approved after review"
+      },
+      "created_at": "2026-01-03T09:08:46.167804+00:00",
+      "updated_at": "2026-01-03T09:08:46.170630+00:00"
+    },
+    {
+      "id": "apr_fa82d94259ee",
+      "title": "Research",
+      "action": "investigate",
+      "target_type": "",
+      "target_id": "",
+      "cone_band": "",
+      "risk": "medium",
+      "payload": {},
+      "notes": "",
+      "status": "approved",
+      "decision": {
+        "by": "owner",
+        "at": "2026-01-03T09:08:46.177180+00:00",
+        "reason": ""
+      },
+      "created_at": "2026-01-03T09:08:46.174146+00:00",
+      "updated_at": "2026-01-03T09:08:46.177192+00:00"
+    },
+    {
+      "id": "apr_771fd6990590",
+      "title": "Complex decision",
+      "action": "proceed",
+      "target_type": "",
+      "target_id": "",
+      "cone_band": "",
+      "risk": "medium",
+      "payload": {
+        "deal_id": "d_123",
+        "amount": 500000,
+        "terms": "wholesale"
+      },
+      "notes": "",
+      "status": "pending",
+      "decision": {
+        "by": "",
+        "at": "",
+        "reason": ""
+      },
+      "created_at": "2026-01-03T09:08:46.331116+00:00",
+      "updated_at": "2026-01-03T09:08:46.331126+00:00"
+    },
+    {
+      "id": "apr_560bdbed2030",
+      "title": "High-risk action",
+      "action": "assign_deal",
+      "target_type": "deal",
+      "target_id": "d_123",
+      "cone_band": "A_EXPANSION",
+      "risk": "high",
+      "payload": {},
+      "notes": "",
+      "status": "pending",
+      "decision": {
+        "by": "",
+        "at": "",
+        "reason": ""
+      },
+      "created_at": "2026-01-03T09:10:42.468183+00:00",
+      "updated_at": "2026-01-03T09:10:42.468217+00:00"
+    },
+    {
+      "id": "apr_774d238795be",
+      "title": "Test",
+      "action": "test",
+      "target_type": "",
+      "target_id": "",
+      "cone_band": "",
+      "risk": "medium",
+      "payload": {},
+      "notes": "",
+      "status": "pending",
+      "decision": {
+        "by": "",
+        "at": "",
+        "reason": ""
+      },
+      "created_at": "2026-01-03T09:10:42.473359+00:00",
+      "updated_at": "2026-01-03T09:10:42.473374+00:00"
+    },
+    {
+      "id": "apr_95785cde31b1",
+      "title": "Review",
+      "action": "proceed",
+      "target_type": "",
+      "target_id": "",
+      "cone_band": "",
+      "risk": "low",
+      "payload": {},
+      "notes": "",
+      "status": "approved",
+      "decision": {
+        "by": "owner",
+        "at": "2026-01-03T09:10:42.482146+00:00",
+        "reason": "Looks good"
+      },
+      "created_at": "2026-01-03T09:10:42.479511+00:00",
+      "updated_at": "2026-01-03T09:10:42.482170+00:00"
+    },
+    {
+      "id": "apr_e1031913f353",
+      "title": "Review",
+      "action": "proceed",
+      "target_type": "",
+      "target_id": "",
+      "cone_band": "",
+      "risk": "high",
+      "payload": {},
+      "notes": "",
+      "status": "denied",
+      "decision": {
+        "by": "system",
+        "at": "2026-01-03T09:10:42.490476+00:00",
+        "reason": "Risk too high"
+      },
+      "created_at": "2026-01-03T09:10:42.486471+00:00",
+      "updated_at": "2026-01-03T09:10:42.490493+00:00"
+    },
+    {
+      "id": "apr_4c2477a4a336",
+      "title": "Test",
+      "action": "test",
+      "target_type": "",
+      "target_id": "",
+      "cone_band": "",
+      "risk": "medium",
+      "payload": {},
+      "notes": "",
+      "status": "pending",
+      "decision": {
+        "by": "",
+        "at": "",
+        "reason": ""
+      },
+      "created_at": "2026-01-03T09:10:42.497483+00:00",
+      "updated_at": "2026-01-03T09:10:42.497497+00:00"
+    },
+    {
+      "id": "apr_c8c760b8ab20",
+      "title": "Wholesale assignment",
+      "action": "assign_deal",
+      "target_type": "",
+      "target_id": "",
+      "cone_band": "B_CAUTION",
+      "risk": "high",
+      "payload": {},
+      "notes": "",
+      "status": "approved",
+      "decision": {
+        "by": "manager",
+        "at": "2026-01-03T09:10:42.691330+00:00",
+        "reason": "Approved after review"
+      },
+      "created_at": "2026-01-03T09:10:42.688433+00:00",
+      "updated_at": "2026-01-03T09:10:42.691344+00:00"
+    },
+    {
+      "id": "apr_e10b2bb4f1f1",
+      "title": "Research",
+      "action": "investigate",
+      "target_type": "",
+      "target_id": "",
+      "cone_band": "",
+      "risk": "medium",
+      "payload": {},
+      "notes": "",
+      "status": "approved",
+      "decision": {
+        "by": "owner",
+        "at": "2026-01-03T09:10:42.700996+00:00",
+        "reason": ""
+      },
+      "created_at": "2026-01-03T09:10:42.697325+00:00",
+      "updated_at": "2026-01-03T09:10:42.701007+00:00"
+    },
+    {
+      "id": "apr_a139e3fc0dce",
+      "title": "Complex decision",
+      "action": "proceed",
+      "target_type": "",
+      "target_id": "",
+      "cone_band": "",
+      "risk": "medium",
+      "payload": {
+        "deal_id": "d_123",
+        "amount": 500000,
+        "terms": "wholesale"
+      },
+      "notes": "",
+      "status": "pending",
+      "decision": {
+        "by": "",
+        "at": "",
+        "reason": ""
+      },
+      "created_at": "2026-01-03T09:10:42.739971+00:00",
+      "updated_at": "2026-01-03T09:10:42.739981+00:00"
+    }
+  ]
+}

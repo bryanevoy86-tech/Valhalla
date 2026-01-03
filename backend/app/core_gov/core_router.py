@@ -125,7 +125,11 @@ from .boring.router import router as boring_router
 from .shield.router import router as shield_router
 from .exporter.router import router as exporter_router
 from .legal_filter.router import router as legal_filter_router
+from .legal_profiles.router import router as legal_profiles_router
+from .document_vault.router import router as document_vault_router
 from .partners.router import router as partners_router
+from .mode.router import router as mode_router
+from .approvals.router import router as approvals_router
 from .trust.router import router as trust_router
 from .audit.router import router as audit_router
 from .integrity.router import router as integrity_router
@@ -213,6 +217,8 @@ def weekly_audit():
     }
 
 core.include_router(cone_router)
+core.include_router(mode_router)
+core.include_router(approvals_router)
 core.include_router(jobs_router)
 core.include_router(visibility_router)
 core.include_router(alerts_router)
@@ -292,6 +298,8 @@ core.include_router(boring_router)
 core.include_router(shield_router)
 core.include_router(exporter_router)
 core.include_router(legal_filter_router)
+core.include_router(legal_profiles_router)
+core.include_router(document_vault_router)
 core.include_router(documents_router)
 core.include_router(document_links_router)
 core.include_router(partners_router)

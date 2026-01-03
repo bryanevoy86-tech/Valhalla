@@ -1,0 +1,586 @@
+{
+  "updated_at": "2026-01-03T09:10:42.733721+00:00",
+  "items": [
+    {
+      "id": "doc_1c9c692fbe00",
+      "title": "Acquisition Strategy",
+      "doc_type": "guide",
+      "tags": [],
+      "source": "",
+      "file_path": "",
+      "text": "Strategy for acquiring properties...",
+      "links": [],
+      "created_at": "2026-01-03T09:06:14.811790+00:00",
+      "updated_at": "2026-01-03T09:06:14.811800+00:00"
+    },
+    {
+      "id": "doc_d89add0df243",
+      "title": "Note",
+      "doc_type": "note",
+      "tags": [
+        "important"
+      ],
+      "source": "",
+      "file_path": "",
+      "text": "Content",
+      "links": [],
+      "created_at": "2026-01-03T09:06:14.821585+00:00",
+      "updated_at": "2026-01-03T09:06:14.823585+00:00"
+    },
+    {
+      "id": "doc_109fea83d35d",
+      "title": "Note",
+      "doc_type": "note",
+      "tags": [],
+      "source": "",
+      "file_path": "",
+      "text": "Content",
+      "links": [
+        {
+          "type": "deal",
+          "id": "d_123"
+        }
+      ],
+      "created_at": "2026-01-03T09:06:14.825246+00:00",
+      "updated_at": "2026-01-03T09:06:14.826468+00:00"
+    },
+    {
+      "id": "doc_6eb8e298348b",
+      "title": "Acquisition Guide",
+      "doc_type": "note",
+      "tags": [],
+      "source": "",
+      "file_path": "",
+      "text": "This is about acquisitions",
+      "links": [],
+      "created_at": "2026-01-03T09:06:14.828087+00:00",
+      "updated_at": "2026-01-03T09:06:14.828094+00:00"
+    },
+    {
+      "id": "doc_41b067e31b72",
+      "title": "Disposition Guide",
+      "doc_type": "note",
+      "tags": [],
+      "source": "",
+      "file_path": "",
+      "text": "This is about dispositions",
+      "links": [],
+      "created_at": "2026-01-03T09:06:14.829139+00:00",
+      "updated_at": "2026-01-03T09:06:14.829146+00:00"
+    },
+    {
+      "id": "doc_bf09e26bb3c3",
+      "title": "Internet bill",
+      "doc_type": "note",
+      "tags": [
+        "household",
+        "bills"
+      ],
+      "source": "",
+      "file_path": "",
+      "text": "Internet is 150 monthly on the 15th",
+      "links": [],
+      "created_at": "2026-01-03T09:06:15.033523+00:00",
+      "updated_at": "2026-01-03T09:06:15.033533+00:00"
+    },
+    {
+      "id": "doc_35eeab8f8c0c",
+      "title": "Acquisition Strategy",
+      "doc_type": "guide",
+      "tags": [],
+      "source": "",
+      "file_path": "",
+      "text": "Strategy for acquiring properties...",
+      "links": [],
+      "created_at": "2026-01-03T09:07:39.102310+00:00",
+      "updated_at": "2026-01-03T09:07:39.102322+00:00"
+    },
+    {
+      "id": "doc_e833229db921",
+      "title": "Note",
+      "doc_type": "note",
+      "tags": [
+        "important"
+      ],
+      "source": "",
+      "file_path": "",
+      "text": "Content",
+      "links": [],
+      "created_at": "2026-01-03T09:07:39.107127+00:00",
+      "updated_at": "2026-01-03T09:07:39.110165+00:00"
+    },
+    {
+      "id": "doc_ab7f72e2ec74",
+      "title": "Note",
+      "doc_type": "note",
+      "tags": [],
+      "source": "",
+      "file_path": "",
+      "text": "Content",
+      "links": [
+        {
+          "type": "deal",
+          "id": "d_123"
+        }
+      ],
+      "created_at": "2026-01-03T09:07:39.112468+00:00",
+      "updated_at": "2026-01-03T09:07:39.114326+00:00"
+    },
+    {
+      "id": "doc_d61659a4de76",
+      "title": "Acquisition Guide",
+      "doc_type": "note",
+      "tags": [],
+      "source": "",
+      "file_path": "",
+      "text": "This is about acquisitions",
+      "links": [],
+      "created_at": "2026-01-03T09:07:39.116919+00:00",
+      "updated_at": "2026-01-03T09:07:39.116934+00:00"
+    },
+    {
+      "id": "doc_74322a5b5938",
+      "title": "Disposition Guide",
+      "doc_type": "note",
+      "tags": [],
+      "source": "",
+      "file_path": "",
+      "text": "This is about dispositions",
+      "links": [],
+      "created_at": "2026-01-03T09:07:39.119381+00:00",
+      "updated_at": "2026-01-03T09:07:39.119394+00:00"
+    },
+    {
+      "id": "doc_e2db440568d8",
+      "title": "Partnership Agreement",
+      "doc_type": "note",
+      "tags": [],
+      "source": "",
+      "file_path": "",
+      "text": "Agreement content",
+      "links": [],
+      "created_at": "2026-01-03T09:07:39.259929+00:00",
+      "updated_at": "2026-01-03T09:07:39.259939+00:00"
+    },
+    {
+      "id": "doc_5fcf9555a9bd",
+      "title": "Unicode Test 中文",
+      "doc_type": "note",
+      "tags": [],
+      "source": "",
+      "file_path": "",
+      "text": "This document contains unicode: 你好世界 🚀",
+      "links": [],
+      "created_at": "2026-01-03T09:07:39.272115+00:00",
+      "updated_at": "2026-01-03T09:07:39.272130+00:00"
+    },
+    {
+      "id": "doc_538789f09952",
+      "title": "Acquisition Strategy",
+      "doc_type": "guide",
+      "tags": [],
+      "source": "",
+      "file_path": "",
+      "text": "Strategy for acquiring properties...",
+      "links": [],
+      "created_at": "2026-01-03T09:08:27.798708+00:00",
+      "updated_at": "2026-01-03T09:08:27.798725+00:00"
+    },
+    {
+      "id": "doc_74b01ad816e6",
+      "title": "Note",
+      "doc_type": "note",
+      "tags": [
+        "important"
+      ],
+      "source": "",
+      "file_path": "",
+      "text": "Content",
+      "links": [],
+      "created_at": "2026-01-03T09:08:27.802625+00:00",
+      "updated_at": "2026-01-03T09:08:27.805616+00:00"
+    },
+    {
+      "id": "doc_b0a4c0b3ed24",
+      "title": "Note",
+      "doc_type": "note",
+      "tags": [],
+      "source": "",
+      "file_path": "",
+      "text": "Content",
+      "links": [
+        {
+          "type": "deal",
+          "id": "d_123"
+        }
+      ],
+      "created_at": "2026-01-03T09:08:27.810442+00:00",
+      "updated_at": "2026-01-03T09:08:27.813819+00:00"
+    },
+    {
+      "id": "doc_3d58fd061e09",
+      "title": "Acquisition Guide",
+      "doc_type": "note",
+      "tags": [],
+      "source": "",
+      "file_path": "",
+      "text": "This is about acquisitions",
+      "links": [],
+      "created_at": "2026-01-03T09:08:27.817352+00:00",
+      "updated_at": "2026-01-03T09:08:27.817364+00:00"
+    },
+    {
+      "id": "doc_dbac6f8321f9",
+      "title": "Disposition Guide",
+      "doc_type": "note",
+      "tags": [],
+      "source": "",
+      "file_path": "",
+      "text": "This is about dispositions",
+      "links": [],
+      "created_at": "2026-01-03T09:08:27.819503+00:00",
+      "updated_at": "2026-01-03T09:08:27.819515+00:00"
+    },
+    {
+      "id": "doc_9b416ab017da",
+      "title": "Doc with \"quotes\" & special chars",
+      "doc_type": "note",
+      "tags": [],
+      "source": "",
+      "file_path": "",
+      "text": "Content with unicode: 你好 🚀",
+      "links": [],
+      "created_at": "2026-01-03T09:08:27.826837+00:00",
+      "updated_at": "2026-01-03T09:08:27.826848+00:00"
+    },
+    {
+      "id": "doc_46c3419381f0",
+      "title": "Partnership Agreement",
+      "doc_type": "contract",
+      "tags": [
+        "legal",
+        "jv",
+        "important"
+      ],
+      "source": "upload",
+      "file_path": "",
+      "text": "Agreement content here",
+      "links": [],
+      "created_at": "2026-01-03T09:08:30.131631+00:00",
+      "updated_at": "2026-01-03T09:08:30.135063+00:00"
+    },
+    {
+      "id": "doc_68199417ecbb",
+      "title": "Multi-tag",
+      "doc_type": "note",
+      "tags": [
+        "tag1",
+        "tag2",
+        "tag3"
+      ],
+      "source": "",
+      "file_path": "",
+      "text": "Content",
+      "links": [],
+      "created_at": "2026-01-03T09:08:30.163420+00:00",
+      "updated_at": "2026-01-03T09:08:30.172624+00:00"
+    },
+    {
+      "id": "doc_1ded09fd400a",
+      "title": "Multi-link",
+      "doc_type": "note",
+      "tags": [],
+      "source": "",
+      "file_path": "",
+      "text": "Content",
+      "links": [
+        {
+          "type": "deal",
+          "id": "d_1"
+        },
+        {
+          "type": "property",
+          "id": "p_1"
+        },
+        {
+          "type": "partner",
+          "id": "ptn_1"
+        }
+      ],
+      "created_at": "2026-01-03T09:08:30.177716+00:00",
+      "updated_at": "2026-01-03T09:08:30.186217+00:00"
+    },
+    {
+      "id": "doc_abeb211aa784",
+      "title": "Acquisition Strategy",
+      "doc_type": "guide",
+      "tags": [],
+      "source": "",
+      "file_path": "",
+      "text": "Strategy for acquiring properties...",
+      "links": [],
+      "created_at": "2026-01-03T09:08:46.058946+00:00",
+      "updated_at": "2026-01-03T09:08:46.058960+00:00"
+    },
+    {
+      "id": "doc_71661a703c50",
+      "title": "Note",
+      "doc_type": "note",
+      "tags": [
+        "important"
+      ],
+      "source": "",
+      "file_path": "",
+      "text": "Content",
+      "links": [],
+      "created_at": "2026-01-03T09:08:46.062907+00:00",
+      "updated_at": "2026-01-03T09:08:46.065780+00:00"
+    },
+    {
+      "id": "doc_d9e0ca233a75",
+      "title": "Note",
+      "doc_type": "note",
+      "tags": [],
+      "source": "",
+      "file_path": "",
+      "text": "Content",
+      "links": [
+        {
+          "type": "deal",
+          "id": "d_123"
+        }
+      ],
+      "created_at": "2026-01-03T09:08:46.069157+00:00",
+      "updated_at": "2026-01-03T09:08:46.072398+00:00"
+    },
+    {
+      "id": "doc_73918ff0d1e0",
+      "title": "Acquisition Guide",
+      "doc_type": "note",
+      "tags": [],
+      "source": "",
+      "file_path": "",
+      "text": "This is about acquisitions",
+      "links": [],
+      "created_at": "2026-01-03T09:08:46.075678+00:00",
+      "updated_at": "2026-01-03T09:08:46.075688+00:00"
+    },
+    {
+      "id": "doc_b9da0b91f622",
+      "title": "Disposition Guide",
+      "doc_type": "note",
+      "tags": [],
+      "source": "",
+      "file_path": "",
+      "text": "This is about dispositions",
+      "links": [],
+      "created_at": "2026-01-03T09:08:46.078089+00:00",
+      "updated_at": "2026-01-03T09:08:46.078100+00:00"
+    },
+    {
+      "id": "doc_006611ce9297",
+      "title": "Doc with \"quotes\" & special chars",
+      "doc_type": "note",
+      "tags": [],
+      "source": "",
+      "file_path": "",
+      "text": "Content with unicode: 你好 🚀",
+      "links": [],
+      "created_at": "2026-01-03T09:08:46.082332+00:00",
+      "updated_at": "2026-01-03T09:08:46.082341+00:00"
+    },
+    {
+      "id": "doc_25e58a55bebc",
+      "title": "Partnership Agreement",
+      "doc_type": "contract",
+      "tags": [
+        "legal",
+        "jv",
+        "important"
+      ],
+      "source": "upload",
+      "file_path": "",
+      "text": "Agreement content here",
+      "links": [],
+      "created_at": "2026-01-03T09:08:46.180852+00:00",
+      "updated_at": "2026-01-03T09:08:46.183598+00:00"
+    },
+    {
+      "id": "doc_f0520f8ce1c7",
+      "title": "Multi-tag",
+      "doc_type": "note",
+      "tags": [
+        "tag1",
+        "tag2",
+        "tag3"
+      ],
+      "source": "",
+      "file_path": "",
+      "text": "Content",
+      "links": [],
+      "created_at": "2026-01-03T09:08:46.305779+00:00",
+      "updated_at": "2026-01-03T09:08:46.312794+00:00"
+    },
+    {
+      "id": "doc_9aa61409a18c",
+      "title": "Multi-link",
+      "doc_type": "note",
+      "tags": [],
+      "source": "",
+      "file_path": "",
+      "text": "Content",
+      "links": [
+        {
+          "type": "deal",
+          "id": "d_1"
+        },
+        {
+          "type": "property",
+          "id": "p_1"
+        },
+        {
+          "type": "partner",
+          "id": "ptn_1"
+        }
+      ],
+      "created_at": "2026-01-03T09:08:46.315523+00:00",
+      "updated_at": "2026-01-03T09:08:46.322872+00:00"
+    },
+    {
+      "id": "doc_138517b5c90b",
+      "title": "Acquisition Strategy",
+      "doc_type": "guide",
+      "tags": [],
+      "source": "",
+      "file_path": "",
+      "text": "Strategy for acquiring properties...",
+      "links": [],
+      "created_at": "2026-01-03T09:10:42.574795+00:00",
+      "updated_at": "2026-01-03T09:10:42.574811+00:00"
+    },
+    {
+      "id": "doc_139b6a7c3ab6",
+      "title": "Note",
+      "doc_type": "note",
+      "tags": [
+        "important"
+      ],
+      "source": "",
+      "file_path": "",
+      "text": "Content",
+      "links": [],
+      "created_at": "2026-01-03T09:10:42.580499+00:00",
+      "updated_at": "2026-01-03T09:10:42.583318+00:00"
+    },
+    {
+      "id": "doc_33ea3c0d6c14",
+      "title": "Note",
+      "doc_type": "note",
+      "tags": [],
+      "source": "",
+      "file_path": "",
+      "text": "Content",
+      "links": [
+        {
+          "type": "deal",
+          "id": "d_123"
+        }
+      ],
+      "created_at": "2026-01-03T09:10:42.585941+00:00",
+      "updated_at": "2026-01-03T09:10:42.588382+00:00"
+    },
+    {
+      "id": "doc_8945baf609d0",
+      "title": "Acquisition Guide",
+      "doc_type": "note",
+      "tags": [],
+      "source": "",
+      "file_path": "",
+      "text": "This is about acquisitions",
+      "links": [],
+      "created_at": "2026-01-03T09:10:42.592219+00:00",
+      "updated_at": "2026-01-03T09:10:42.592232+00:00"
+    },
+    {
+      "id": "doc_d24ea463e345",
+      "title": "Disposition Guide",
+      "doc_type": "note",
+      "tags": [],
+      "source": "",
+      "file_path": "",
+      "text": "This is about dispositions",
+      "links": [],
+      "created_at": "2026-01-03T09:10:42.596306+00:00",
+      "updated_at": "2026-01-03T09:10:42.596327+00:00"
+    },
+    {
+      "id": "doc_a56a7f211276",
+      "title": "Doc with \"quotes\" & special chars",
+      "doc_type": "note",
+      "tags": [],
+      "source": "",
+      "file_path": "",
+      "text": "Content with unicode: 你好 🚀",
+      "links": [],
+      "created_at": "2026-01-03T09:10:42.602531+00:00",
+      "updated_at": "2026-01-03T09:10:42.602541+00:00"
+    },
+    {
+      "id": "doc_3902c4f68067",
+      "title": "Partnership Agreement",
+      "doc_type": "contract",
+      "tags": [
+        "legal",
+        "jv",
+        "important"
+      ],
+      "source": "upload",
+      "file_path": "",
+      "text": "Agreement content here",
+      "links": [],
+      "created_at": "2026-01-03T09:10:42.705678+00:00",
+      "updated_at": "2026-01-03T09:10:42.707895+00:00"
+    },
+    {
+      "id": "doc_dccb1983d1f1",
+      "title": "Multi-tag",
+      "doc_type": "note",
+      "tags": [
+        "tag1",
+        "tag2",
+        "tag3"
+      ],
+      "source": "",
+      "file_path": "",
+      "text": "Content",
+      "links": [],
+      "created_at": "2026-01-03T09:10:42.718825+00:00",
+      "updated_at": "2026-01-03T09:10:42.724378+00:00"
+    },
+    {
+      "id": "doc_2f717dd1a5e2",
+      "title": "Multi-link",
+      "doc_type": "note",
+      "tags": [],
+      "source": "",
+      "file_path": "",
+      "text": "Content",
+      "links": [
+        {
+          "type": "deal",
+          "id": "d_1"
+        },
+        {
+          "type": "property",
+          "id": "p_1"
+        },
+        {
+          "type": "partner",
+          "id": "ptn_1"
+        }
+      ],
+      "created_at": "2026-01-03T09:10:42.727096+00:00",
+      "updated_at": "2026-01-03T09:10:42.733503+00:00"
+    }
+  ]
+}
