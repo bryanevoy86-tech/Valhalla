@@ -53,6 +53,16 @@ from .house_calendar.router import router as house_calendar_router
 from .house_reminders.router import router as house_reminders_router
 from .shopping_list.router import router as shopping_list_router
 from .big_purchases.router import router as big_purchases_router
+from .bill_payments.router import router as bill_payments_router
+from .reconcile.router import router as reconcile_router
+from .autopay_verify.router import router as autopay_verify_router
+from .monthly_close.router import router as monthly_close_router
+from .exports.router import router as exports_router
+from .csv_export.router import router as csv_export_router
+from .tax_buckets.router import router as tax_buckets_router
+from .tax_tagging.router import router as tax_tagging_router
+from .intent_router.router import router as intent_router_router
+from .text_commands.router import router as text_commands_router
 from .go.sources_service import next_step_with_sources
 from .deals.router import router as deals_router
 from .deals.seed.router import router as deals_seed_router
@@ -328,6 +338,16 @@ core.include_router(house_calendar_router)
 core.include_router(house_reminders_router)
 core.include_router(shopping_list_router)
 core.include_router(big_purchases_router)
+core.include_router(bill_payments_router)
+core.include_router(reconcile_router)
+core.include_router(autopay_verify_router)
+core.include_router(monthly_close_router)
+core.include_router(exports_router)
+core.include_router(csv_export_router)
+core.include_router(tax_buckets_router)
+core.include_router(tax_tagging_router)
+core.include_router(intent_router_router)
+core.include_router(text_commands_router)
 
 @core.get("/onboarding")
 def onboarding():

@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-01-03T08:41:15.422047+00:00",
+  "updated_at": "2026-01-03T08:47:29.800679+00:00",
   "items": [
     {
       "id": "led_cc4953174dfd",
@@ -720,6 +720,74 @@
       "tags": [],
       "meta": {},
       "created_at": "2026-01-03T08:41:15.421222+00:00"
+    },
+    {
+      "id": "led_18e9c3b2f68f",
+      "kind": "expense",
+      "date": "2026-01-03",
+      "amount": 50.0,
+      "description": "office supplies",
+      "category": "",
+      "merchant": "",
+      "account_id": "",
+      "obligation_id": "",
+      "receipt_id": "",
+      "tags": [],
+      "meta": {
+        "tax_code": "HOME_OFFICE"
+      },
+      "created_at": "2026-01-03T08:47:17.036078+00:00"
+    },
+    {
+      "id": "led_27b78e911abe",
+      "kind": "expense",
+      "date": "2026-01-03",
+      "amount": 200.0,
+      "description": "home office furniture",
+      "category": "",
+      "merchant": "",
+      "account_id": "",
+      "obligation_id": "",
+      "receipt_id": "",
+      "tags": [],
+      "meta": {
+        "tax_code": "HOME_OFFICE"
+      },
+      "created_at": "2026-01-03T08:47:17.135818+00:00"
+    },
+    {
+      "id": "led_757392c946cc",
+      "kind": "expense",
+      "date": "2026-01-03",
+      "amount": 50.0,
+      "description": "office supplies",
+      "category": "",
+      "merchant": "",
+      "account_id": "",
+      "obligation_id": "",
+      "receipt_id": "",
+      "tags": [],
+      "meta": {
+        "tax_code": "HOME_OFFICE"
+      },
+      "created_at": "2026-01-03T08:47:29.697467+00:00"
+    },
+    {
+      "id": "led_cb5f29ba9f31",
+      "kind": "expense",
+      "date": "2026-01-03",
+      "amount": 200.0,
+      "description": "home office furniture",
+      "category": "",
+      "merchant": "",
+      "account_id": "",
+      "obligation_id": "",
+      "receipt_id": "",
+      "tags": [],
+      "meta": {
+        "tax_code": "HOME_OFFICE"
+      },
+      "created_at": "2026-01-03T08:47:29.794788+00:00"
     }
   ]
 }
