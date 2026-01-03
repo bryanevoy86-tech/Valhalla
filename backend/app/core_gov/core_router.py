@@ -58,6 +58,21 @@ from .house_reminders.router import router as house_reminders_router
 from .shopping_list.router import router as shopping_list_router
 from .big_purchases.router import router as big_purchases_router
 from .bill_payments.router import router as bill_payments_router
+from .house_budget.router import router as house_budget_router
+from .cash_plan.router import router as cash_plan_router
+from .budget_categories.router import router as budget_categories_router
+from .ledger_rules.router import router as ledger_rules_router
+from .budget_snapshot.router import router as budget_snapshot_router
+from .readiness.router import router as readiness_router
+from .daily_ops.router import router as daily_ops_router
+from .brief.router import router as brief_router
+from .audit_log.router import router as audit_log_router
+from .system_config.router import router as system_config_router
+from .export_snapshot.router import router as export_snapshot_router
+from .approval_gate.router import router as approval_gate_router
+from .boot_seed.router import router as boot_seed_router
+from .scheduler.router import router as scheduler_router
+from .reminders.router import router as reminders_router
 from .autopay_checklists.router import router as autopay_checklists_router
 from .reconcile.router import router as reconcile_router
 from .autopay_verify.router import router as autopay_verify_router
@@ -366,6 +381,21 @@ core.include_router(tax_buckets_router)
 core.include_router(tax_tagging_router)
 core.include_router(intent_router_router)
 core.include_router(text_commands_router)
+core.include_router(house_budget_router)
+core.include_router(cash_plan_router)
+core.include_router(budget_categories_router)
+core.include_router(ledger_rules_router)
+core.include_router(budget_snapshot_router)
+core.include_router(readiness_router)
+core.include_router(daily_ops_router)
+core.include_router(brief_router)
+core.include_router(audit_log_router)
+core.include_router(system_config_router)
+core.include_router(export_snapshot_router)
+core.include_router(approval_gate_router)
+core.include_router(boot_seed_router)
+core.include_router(scheduler_router)
+core.include_router(reminders_router)
 
 @core.get("/onboarding")
 def onboarding():
