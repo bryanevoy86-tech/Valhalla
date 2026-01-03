@@ -43,6 +43,16 @@ from .vaults.router import router as vaults_router
 from .bills_buffer.router import router as bills_buffer_router
 from .receipts.router import router as receipts_router
 from .guardrails.router import router as guardrails_router
+from .ledger.router import router as ledger_router
+from .bank_accounts.router import router as bank_accounts_router
+from .txn_import.router import router as txn_import_router
+from .category_rules.router import router as category_rules_router
+from .allocation_rules.router import router as allocation_rules_router
+from .allocation_engine.router import router as allocation_engine_router
+from .house_calendar.router import router as house_calendar_router
+from .house_reminders.router import router as house_reminders_router
+from .shopping_list.router import router as shopping_list_router
+from .big_purchases.router import router as big_purchases_router
 from .go.sources_service import next_step_with_sources
 from .deals.router import router as deals_router
 from .deals.seed.router import router as deals_seed_router
@@ -308,6 +318,16 @@ core.include_router(vaults_router)
 core.include_router(bills_buffer_router)
 core.include_router(receipts_router)
 core.include_router(guardrails_router)
+core.include_router(ledger_router)
+core.include_router(bank_accounts_router)
+core.include_router(txn_import_router)
+core.include_router(category_rules_router)
+core.include_router(allocation_rules_router)
+core.include_router(allocation_engine_router)
+core.include_router(house_calendar_router)
+core.include_router(house_reminders_router)
+core.include_router(shopping_list_router)
+core.include_router(big_purchases_router)
 
 @core.get("/onboarding")
 def onboarding():

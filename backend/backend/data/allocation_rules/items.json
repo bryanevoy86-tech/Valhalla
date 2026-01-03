@@ -1,0 +1,425 @@
+{
+  "updated_at": "2026-01-03T08:41:15.442038+00:00",
+  "items": [
+    {
+      "id": "alr_78d4579cf073",
+      "name": "Payday Split",
+      "splits": [
+        {
+          "vault_id": "",
+          "vault_name": "Bills Buffer",
+          "pct": 60.0
+        },
+        {
+          "vault_id": "",
+          "vault_name": "Groceries",
+          "pct": 20.0
+        },
+        {
+          "vault_id": "",
+          "vault_name": "Fun",
+          "pct": 10.0
+        }
+      ],
+      "status": "active",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:40:38.792523+00:00",
+      "updated_at": "2026-01-03T08:40:38.792537+00:00"
+    },
+    {
+      "id": "alr_514bc0b71d1c",
+      "name": "Rule1",
+      "splits": [
+        {
+          "vault_id": "",
+          "vault_name": "V1",
+          "pct": 100.0
+        }
+      ],
+      "status": "active",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:40:38.800022+00:00",
+      "updated_at": "2026-01-03T08:40:38.800037+00:00"
+    },
+    {
+      "id": "alr_6ae63e8a56eb",
+      "name": "Test",
+      "splits": [
+        {
+          "vault_id": "",
+          "vault_name": "Bills",
+          "pct": 60.0
+        },
+        {
+          "vault_id": "",
+          "vault_name": "Groceries",
+          "pct": 40.0
+        }
+      ],
+      "status": "active",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:40:38.816875+00:00",
+      "updated_at": "2026-01-03T08:40:38.816887+00:00"
+    },
+    {
+      "id": "alr_e041d52dd613",
+      "name": "Test",
+      "splits": [
+        {
+          "vault_id": "",
+          "vault_name": "Bills",
+          "pct": 50.0
+        }
+      ],
+      "status": "active",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:40:38.840874+00:00",
+      "updated_at": "2026-01-03T08:40:38.840894+00:00"
+    },
+    {
+      "id": "alr_fd2cc943b783",
+      "name": "Monthly Allocation",
+      "splits": [
+        {
+          "vault_id": "",
+          "vault_name": "Bills Buffer",
+          "pct": 60.0
+        },
+        {
+          "vault_id": "",
+          "vault_name": "Groceries",
+          "pct": 20.0
+        },
+        {
+          "vault_id": "",
+          "vault_name": "Fun",
+          "pct": 20.0
+        }
+      ],
+      "status": "active",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:40:39.014265+00:00",
+      "updated_at": "2026-01-03T08:40:39.014280+00:00"
+    },
+    {
+      "id": "alr_12a0eefe445a",
+      "name": "Payday Split",
+      "splits": [
+        {
+          "vault_id": "",
+          "vault_name": "Bills Buffer",
+          "pct": 60.0
+        },
+        {
+          "vault_id": "",
+          "vault_name": "Groceries",
+          "pct": 20.0
+        },
+        {
+          "vault_id": "",
+          "vault_name": "Fun",
+          "pct": 10.0
+        }
+      ],
+      "status": "active",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:40:49.162943+00:00",
+      "updated_at": "2026-01-03T08:40:49.162953+00:00"
+    },
+    {
+      "id": "alr_482036ea76d3",
+      "name": "Rule1",
+      "splits": [
+        {
+          "vault_id": "",
+          "vault_name": "V1",
+          "pct": 100.0
+        }
+      ],
+      "status": "active",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:40:49.168308+00:00",
+      "updated_at": "2026-01-03T08:40:49.168318+00:00"
+    },
+    {
+      "id": "alr_57fb22c412ab",
+      "name": "Test",
+      "splits": [
+        {
+          "vault_id": "",
+          "vault_name": "Bills",
+          "pct": 60.0
+        },
+        {
+          "vault_id": "",
+          "vault_name": "Groceries",
+          "pct": 40.0
+        }
+      ],
+      "status": "active",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:40:49.178625+00:00",
+      "updated_at": "2026-01-03T08:40:49.178641+00:00"
+    },
+    {
+      "id": "alr_1b986d98388f",
+      "name": "Test",
+      "splits": [
+        {
+          "vault_id": "",
+          "vault_name": "Bills",
+          "pct": 50.0
+        }
+      ],
+      "status": "active",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:40:49.198232+00:00",
+      "updated_at": "2026-01-03T08:40:49.198242+00:00"
+    },
+    {
+      "id": "alr_2b393db0f004",
+      "name": "Monthly Allocation",
+      "splits": [
+        {
+          "vault_id": "",
+          "vault_name": "Bills Buffer",
+          "pct": 60.0
+        },
+        {
+          "vault_id": "",
+          "vault_name": "Groceries",
+          "pct": 20.0
+        },
+        {
+          "vault_id": "",
+          "vault_name": "Fun",
+          "pct": 20.0
+        }
+      ],
+      "status": "active",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:40:49.334194+00:00",
+      "updated_at": "2026-01-03T08:40:49.334204+00:00"
+    },
+    {
+      "id": "alr_9ede6c752a69",
+      "name": "Payday Split",
+      "splits": [
+        {
+          "vault_id": "",
+          "vault_name": "Bills Buffer",
+          "pct": 60.0
+        },
+        {
+          "vault_id": "",
+          "vault_name": "Groceries",
+          "pct": 20.0
+        },
+        {
+          "vault_id": "",
+          "vault_name": "Fun",
+          "pct": 10.0
+        }
+      ],
+      "status": "active",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:41:03.547025+00:00",
+      "updated_at": "2026-01-03T08:41:03.547036+00:00"
+    },
+    {
+      "id": "alr_858d8bc0784d",
+      "name": "Rule1",
+      "splits": [
+        {
+          "vault_id": "",
+          "vault_name": "V1",
+          "pct": 100.0
+        }
+      ],
+      "status": "active",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:41:03.552776+00:00",
+      "updated_at": "2026-01-03T08:41:03.552785+00:00"
+    },
+    {
+      "id": "alr_25d53a9b8596",
+      "name": "Test",
+      "splits": [
+        {
+          "vault_id": "",
+          "vault_name": "Bills",
+          "pct": 60.0
+        },
+        {
+          "vault_id": "",
+          "vault_name": "Groceries",
+          "pct": 40.0
+        }
+      ],
+      "status": "active",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:41:03.562115+00:00",
+      "updated_at": "2026-01-03T08:41:03.562125+00:00"
+    },
+    {
+      "id": "alr_0168c4b4ee19",
+      "name": "Test",
+      "splits": [
+        {
+          "vault_id": "",
+          "vault_name": "Bills",
+          "pct": 50.0
+        }
+      ],
+      "status": "active",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:41:03.581697+00:00",
+      "updated_at": "2026-01-03T08:41:03.581710+00:00"
+    },
+    {
+      "id": "alr_08290e5e4aa5",
+      "name": "Monthly Allocation",
+      "splits": [
+        {
+          "vault_id": "",
+          "vault_name": "Bills Buffer",
+          "pct": 60.0
+        },
+        {
+          "vault_id": "",
+          "vault_name": "Groceries",
+          "pct": 20.0
+        },
+        {
+          "vault_id": "",
+          "vault_name": "Fun",
+          "pct": 20.0
+        }
+      ],
+      "status": "active",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:41:03.694666+00:00",
+      "updated_at": "2026-01-03T08:41:03.694676+00:00"
+    },
+    {
+      "id": "alr_b6ac5fe168e7",
+      "name": "Payday Split",
+      "splits": [
+        {
+          "vault_id": "",
+          "vault_name": "Bills Buffer",
+          "pct": 60.0
+        },
+        {
+          "vault_id": "",
+          "vault_name": "Groceries",
+          "pct": 20.0
+        },
+        {
+          "vault_id": "",
+          "vault_name": "Fun",
+          "pct": 10.0
+        }
+      ],
+      "status": "active",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:41:15.318024+00:00",
+      "updated_at": "2026-01-03T08:41:15.318034+00:00"
+    },
+    {
+      "id": "alr_142cfa91a2e7",
+      "name": "Rule1",
+      "splits": [
+        {
+          "vault_id": "",
+          "vault_name": "V1",
+          "pct": 100.0
+        }
+      ],
+      "status": "active",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:41:15.323674+00:00",
+      "updated_at": "2026-01-03T08:41:15.323693+00:00"
+    },
+    {
+      "id": "alr_65ee1c39abf1",
+      "name": "Test",
+      "splits": [
+        {
+          "vault_id": "",
+          "vault_name": "Bills",
+          "pct": 60.0
+        },
+        {
+          "vault_id": "",
+          "vault_name": "Groceries",
+          "pct": 40.0
+        }
+      ],
+      "status": "active",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:41:15.331119+00:00",
+      "updated_at": "2026-01-03T08:41:15.331130+00:00"
+    },
+    {
+      "id": "alr_cdf5b13f11ee",
+      "name": "Test",
+      "splits": [
+        {
+          "vault_id": "",
+          "vault_name": "Bills",
+          "pct": 50.0
+        }
+      ],
+      "status": "active",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:41:15.347630+00:00",
+      "updated_at": "2026-01-03T08:41:15.347639+00:00"
+    },
+    {
+      "id": "alr_6693c4792ec7",
+      "name": "Monthly Allocation",
+      "splits": [
+        {
+          "vault_id": "",
+          "vault_name": "Bills Buffer",
+          "pct": 60.0
+        },
+        {
+          "vault_id": "",
+          "vault_name": "Groceries",
+          "pct": 20.0
+        },
+        {
+          "vault_id": "",
+          "vault_name": "Fun",
+          "pct": 20.0
+        }
+      ],
+      "status": "active",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:41:15.441243+00:00",
+      "updated_at": "2026-01-03T08:41:15.441254+00:00"
+    }
+  ]
+}
