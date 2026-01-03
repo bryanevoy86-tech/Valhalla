@@ -1,4 +1,35 @@
 {
-  "updated_at": "2026-01-03T07:59:25.515561+00:00",
-  "items": []
+  "updated_at": "2026-01-03T08:07:19.316214+00:00",
+  "items": [
+    {
+      "id": "rm_63e213fd0ef9",
+      "title": "Buy: Test Purchase",
+      "due_date": "2026-01-03",
+      "status": "active",
+      "priority": "normal",
+      "source": "manual",
+      "ref": "",
+      "notes": "Approved purchase request — complete shopping item.",
+      "meta": {
+        "purchase_request_id": "pr_9fb032598eb0"
+      },
+      "created_at": "2026-01-03T08:07:07.411679+00:00",
+      "updated_at": "2026-01-03T08:07:07.411679+00:00"
+    },
+    {
+      "id": "rm_d0a64ff199b1",
+      "title": "Buy: Test Purchase",
+      "due_date": "2026-01-03",
+      "status": "active",
+      "priority": "normal",
+      "source": "manual",
+      "ref": "",
+      "notes": "Approved purchase request — complete shopping item.",
+      "meta": {
+        "purchase_request_id": "pr_d3c26244fad9"
+      },
+      "created_at": "2026-01-03T08:07:19.304313+00:00",
+      "updated_at": "2026-01-03T08:07:19.304313+00:00"
+    }
+  ]
 }

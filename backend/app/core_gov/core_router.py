@@ -88,6 +88,12 @@ from .audit.router import router as audit_router
 from .integrity.router import router as integrity_router
 from .reorder.router import router as reorder_router
 from .property_intel.router import router as property_intel_router
+from .pricebook.router import router as pricebook_router
+from .buyplan.router import router as buyplan_router
+from .tools_vault.router import router as tools_vault_router
+from .family_payroll.router import router as family_payroll_router
+from .family_payroll_export.router import router as family_payroll_export_router
+from .purchase_requests.router import router as purchase_requests_router
 from .analytics.decisions import decision_stats
 from .canon.canon import ENGINE_CANON
 from .security.identity import get_identity
@@ -250,6 +256,12 @@ core.include_router(audit_router)
 core.include_router(integrity_router)
 core.include_router(reorder_router)
 core.include_router(property_intel_router)
+core.include_router(pricebook_router)
+core.include_router(buyplan_router)
+core.include_router(tools_vault_router)
+core.include_router(family_payroll_router)
+core.include_router(family_payroll_export_router)
+core.include_router(purchase_requests_router)
 
 @core.get("/onboarding")
 def onboarding():
