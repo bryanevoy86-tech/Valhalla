@@ -84,6 +84,14 @@ def month_plan(month: str):
         raise HTTPException(status_code=400, detail=str(e))
 
 
+@router.get("/plan/month_full")
+def month_plan_full(month: str = ""):
+    try:
+        return service.month_plan_full(month)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
 @router.get("/status/obligations")
 def obligations_status(buffer_multiplier: float = 1.25):
     return plan.obligations_status(buffer_multiplier=buffer_multiplier)

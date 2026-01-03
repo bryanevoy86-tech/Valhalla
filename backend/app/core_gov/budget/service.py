@@ -179,8 +179,8 @@ def get_month(month: Optional[str] = None) -> List[Dict[str, Any]]:
     return out
 
 
-# Plan functions (P-BUDGET-3)
-from . import plan  # noqa: E402
+# Plan functions (P-BUDGET-3, P-BUDGET-5)
+from . import plan, full_plan  # noqa: E402
 
 
 def month_plan_view(month: str) -> Dict[str, Any]:
@@ -189,3 +189,7 @@ def month_plan_view(month: str) -> Dict[str, Any]:
 
 def obligations_status(buffer_multiplier: float = 1.25) -> Dict[str, Any]:
     return plan.obligations_status(buffer_multiplier=buffer_multiplier)
+
+
+def month_plan_full(month: str = "") -> Dict[str, Any]:
+    return full_plan.month_plan_full(month)

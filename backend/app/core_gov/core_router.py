@@ -47,6 +47,9 @@ from .property.router import router as property_router
 from .obligations.router import router as obligations_router
 from .budget.router import router as budget_router
 from .autopay.router import router as autopay_router
+from .shopping.router import router as shopping_router
+from .reminders.router import router as reminders_router
+from .calendar.router import router as calendar_router
 from .transactions.router import router as transactions_router
 from .packs.router import router as packs_router
 from .inventory.router import router as inventory_router
@@ -190,6 +193,9 @@ core.include_router(property_router)
 core.include_router(obligations_router)
 core.include_router(budget_router)
 core.include_router(autopay_router)
+core.include_router(shopping_router)
+core.include_router(reminders_router)
+core.include_router(calendar_router)
 core.include_router(transactions_router)
 core.include_router(packs_router)
 core.include_router(inventory_router)
