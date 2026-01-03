@@ -36,3 +36,11 @@ def patch(receipt_id: str, patch: Dict[str, Any]):
         return service.patch(receipt_id, patch)
     except KeyError:
         raise HTTPException(status_code=404, detail="receipt not found")
+
+@router.post("/{receipt_id}/post_ledger")
+def post_ledger(receipt_id: str, account_id: str = ""):
+    try:
+        from .post_to_ledger import post as post_to_ledger
+        return post_to_ledger(receipt_id=receipt_id, account_id=account_id)
+    except KeyError:
+        raise HTTPException(status_code=404, detail="not found")

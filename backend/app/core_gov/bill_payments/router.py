@@ -5,6 +5,17 @@ from . import service
 
 router = APIRouter(prefix="/core/bill_payments", tags=["core-bill-payments"])
 
+# Convenience endpoints
+@router.get("/upcoming")
+def upcoming(days: int = 14):
+    from .convenience import upcoming as upcoming_bills
+    return upcoming_bills(days=days)
+
+@router.post("/mark_paid")
+def mark_paid_endpoint(obligation_id: str, date: str, amount: float):
+    from .convenience import mark_paid_by_obligation
+    return mark_paid_by_obligation(obligation_id=obligation_id, date=date, amount=amount)
+
 @router.post("")
 def mark_paid(
     obligation_id: str,

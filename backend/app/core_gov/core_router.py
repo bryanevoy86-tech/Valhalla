@@ -78,6 +78,17 @@ from .reconcile.router import router as reconcile_router
 from .autopay_verify.router import router as autopay_verify_router
 from .monthly_close.router import router as monthly_close_router
 from .exports.router import router as exports_router
+from .balance_snapshots.router import router as balance_snapshots_router
+from .outbox.router import router as outbox_router
+from .tax_buckets.router import router as tax_buckets_router
+from .tax_map.router import router as tax_map_router
+from .tax_report.router import router as tax_report_router
+from .month_close.router import router as month_close_router
+from .house_commands.router import router as house_commands_router
+from .ops_board.router import router as ops_board_router
+from .task_links.router import router as task_links_router
+from .budget_flow.router import router as budget_flow_router
+from .journal.router import router as journal_router
 from .csv_export.router import router as csv_export_router
 from .tax_buckets.router import router as tax_buckets_router
 from .tax_tagging.router import router as tax_tagging_router
@@ -396,6 +407,17 @@ core.include_router(approval_gate_router)
 core.include_router(boot_seed_router)
 core.include_router(scheduler_router)
 core.include_router(reminders_router)
+core.include_router(balance_snapshots_router)
+core.include_router(outbox_router)
+core.include_router(tax_buckets_router)
+core.include_router(tax_map_router)
+core.include_router(tax_report_router)
+core.include_router(month_close_router)
+core.include_router(house_commands_router)
+core.include_router(ops_board_router)
+core.include_router(task_links_router)
+core.include_router(budget_flow_router)
+core.include_router(journal_router)
 
 @core.get("/onboarding")
 def onboarding():
