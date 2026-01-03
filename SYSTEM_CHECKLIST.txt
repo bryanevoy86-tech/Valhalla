@@ -151,16 +151,24 @@
 - ✅ Loans Module (registry, underwriting checklists, recommendations)
 - ✅ Command Center (Jarvis - daily brief, weekly review, what now)
 
+## 10-PACK OPERATIONAL WORKFLOW (Jan 3, 2026)
+- ✅ P-ENTITY-1: Entity + Trust Status Tracker (4 files, 2 endpoints)
+- ✅ P-ENTITY-2: Checklist Templates + Auto-Followups (3 files, 1 endpoint)
+- ✅ P-COMMS-1: Comms Hub Outbox (4 files, 3 endpoints)
+- ✅ P-COMMS-2: Template Library + Variable Render (4 files, 3 endpoints)
+- ✅ P-JV-1: JV Deal Link + Splits (4 files, 3 endpoints)
+- ✅ P-JV-2: JV Dashboard (3 files, 1 endpoint)
+- ✅ P-LEGAL-3: Require Docs Enforcement (1 file, require_docs.py)
+- ✅ P-PROP-3: Repair Worksheet (4 files, 3 endpoints)
+- ✅ P-PROP-4: Rent Worksheet + DSCR (4 files, 3 endpoints)
+- ✅ P-PLAYBOOK-1: CA/US Playbooks + Templates (4 files, 3 endpoints)
+
 ## MISSING SYSTEMS
-- ❌ Property Intelligence
-- ❌ Legal/Compliance
-- ❌ Communication Hub (SMS/Email)
-- ❌ Advanced Analytics (ROI/IRR/Predictive)
-- ❌ Partner Management
-- ❌ Document Management
-- ❌ Market Sourcing (MLS/Off-Market)
-- ❌ Mobile App
-- ❌ Third-party Integrations
+- ⭐ Property Intelligence
+- ⭐ Advanced Analytics (ROI/IRR/Predictive)
+- ⭐ Market Sourcing (MLS/Off-Market)
+- ⭐ Mobile App
+- ⭐ Third-party Integrations
 
 ## TECH STACK
 - ✅ FastAPI 0.100+
@@ -184,9 +192,11 @@
 
 ## TESTING
 - ✅ Smoke Tests (7 tests, all passing)
+- ✅ 10-PACK Tests (42 tests, all passing - 100%)
 - ✅ pytest Configuration (conftest.py)
 - ✅ Integration Test Patterns
 - ✅ Error Checking
+- ✅ Test Coverage: Entity mgmt, task tracking, checklists, comms, JV, repairs, rents, playbooks
 
 ## READY FOR
 - ✅ Production Deployment

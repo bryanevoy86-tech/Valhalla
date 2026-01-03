@@ -1,0 +1,137 @@
+{
+  "updated_at": "2026-01-03T08:33:48.098550+00:00",
+  "items": [
+    {
+      "id": "aps_e4aaeb2a4144",
+      "obligation_id": "obl_f9d8f314",
+      "guide_id": "",
+      "status": "pending",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:32:06.684685+00:00",
+      "updated_at": "2026-01-03T08:32:06.684696+00:00",
+      "verified_at": ""
+    },
+    {
+      "id": "aps_55202cccaaa7",
+      "obligation_id": "obl_e4372282",
+      "guide_id": "",
+      "status": "verified",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:32:06.687613+00:00",
+      "updated_at": "2026-01-03T08:32:06.689343+00:00",
+      "verified_at": "2026-01-03T08:32:06.689355+00:00"
+    },
+    {
+      "id": "aps_e235fc5611f1",
+      "obligation_id": "obl_aa84456a",
+      "guide_id": "",
+      "status": "pending",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:32:06.692732+00:00",
+      "updated_at": "2026-01-03T08:32:06.692743+00:00",
+      "verified_at": ""
+    },
+    {
+      "id": "aps_fb22f9913fc8",
+      "obligation_id": "obl_761bfb6f",
+      "guide_id": "",
+      "status": "enabled",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:32:06.694075+00:00",
+      "updated_at": "2026-01-03T08:32:06.694083+00:00",
+      "verified_at": ""
+    },
+    {
+      "id": "aps_fb442fa7582a",
+      "obligation_id": "obl_ea9e6e81",
+      "guide_id": "",
+      "status": "pending",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:33:11.053352+00:00",
+      "updated_at": "2026-01-03T08:33:11.053362+00:00",
+      "verified_at": ""
+    },
+    {
+      "id": "aps_c92f5cce42a4",
+      "obligation_id": "obl_a009db1e",
+      "guide_id": "",
+      "status": "verified",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:33:11.056792+00:00",
+      "updated_at": "2026-01-03T08:33:11.059074+00:00",
+      "verified_at": "2026-01-03T08:33:11.059085+00:00"
+    },
+    {
+      "id": "aps_46ec8e8fa581",
+      "obligation_id": "obl_70406cbb",
+      "guide_id": "",
+      "status": "pending",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:33:11.061617+00:00",
+      "updated_at": "2026-01-03T08:33:11.061626+00:00",
+      "verified_at": ""
+    },
+    {
+      "id": "aps_b088923fd067",
+      "obligation_id": "obl_1f19085b",
+      "guide_id": "",
+      "status": "enabled",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:33:11.062930+00:00",
+      "updated_at": "2026-01-03T08:33:11.062937+00:00",
+      "verified_at": ""
+    },
+    {
+      "id": "aps_23953e8cce97",
+      "obligation_id": "obl_6c7da281",
+      "guide_id": "",
+      "status": "pending",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:33:48.089787+00:00",
+      "updated_at": "2026-01-03T08:33:48.089805+00:00",
+      "verified_at": ""
+    },
+    {
+      "id": "aps_b2dc9f628c26",
+      "obligation_id": "obl_187a55e1",
+      "guide_id": "",
+      "status": "verified",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:33:48.093198+00:00",
+      "updated_at": "2026-01-03T08:33:48.094935+00:00",
+      "verified_at": "2026-01-03T08:33:48.094943+00:00"
+    },
+    {
+      "id": "aps_c889e3ad8654",
+      "obligation_id": "obl_fea74f47",
+      "guide_id": "",
+      "status": "pending",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:33:48.096843+00:00",
+      "updated_at": "2026-01-03T08:33:48.096850+00:00",
+      "verified_at": ""
+    },
+    {
+      "id": "aps_9496588fa29a",
+      "obligation_id": "obl_28825b0b",
+      "guide_id": "",
+      "status": "enabled",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:33:48.098053+00:00",
+      "updated_at": "2026-01-03T08:33:48.098059+00:00",
+      "verified_at": ""
+    }
+  ]
+}

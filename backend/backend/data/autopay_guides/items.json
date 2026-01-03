@@ -1,0 +1,269 @@
+{
+  "updated_at": "2026-01-03T08:33:48.079758+00:00",
+  "items": [
+    {
+      "id": "apg_d388f4b84431",
+      "provider": "TD Bank",
+      "country": "CA",
+      "steps": [
+        "Step 1",
+        "Step 2"
+      ],
+      "proof_pack": [],
+      "notes": "",
+      "status": "active",
+      "meta": {},
+      "created_at": "2026-01-03T08:32:06.655519+00:00",
+      "updated_at": "2026-01-03T08:32:06.655529+00:00"
+    },
+    {
+      "id": "apg_3b3994cc25a3",
+      "provider": "Generic Bank Autopay (Bill Payments)",
+      "country": "CA",
+      "steps": [
+        "Log into online banking",
+        "Go to Bills / Pay Bills / Bill Payments",
+        "Add payee (provider name from bill)",
+        "Enter account number from bill",
+        "Set recurring payment amount + date (or minimum due if available)",
+        "Enable email/SMS alerts for payment confirmation"
+      ],
+      "proof_pack": [
+        "Screenshot of recurring setup",
+        "Confirmation number / receipt",
+        "Copy of bill showing account number"
+      ],
+      "notes": "Seeded default",
+      "status": "active",
+      "meta": {
+        "seed": true
+      },
+      "created_at": "2026-01-03T08:32:06.660065+00:00",
+      "updated_at": "2026-01-03T08:32:06.660079+00:00"
+    },
+    {
+      "id": "apg_4c3d185e9073",
+      "provider": "Generic Credit Card Autopay",
+      "country": "CA",
+      "steps": [
+        "Open credit card portal/app",
+        "Enable Autopay / Pre-authorized payment",
+        "Choose amount (minimum/statement balance/fixed)",
+        "Choose date (statement date or due date)",
+        "Confirm bank account and save"
+      ],
+      "proof_pack": [
+        "Autopay enabled screenshot",
+        "Bank account last-4 screenshot",
+        "First payment receipt"
+      ],
+      "notes": "Seeded default",
+      "status": "active",
+      "meta": {
+        "seed": true
+      },
+      "created_at": "2026-01-03T08:32:06.661821+00:00",
+      "updated_at": "2026-01-03T08:32:06.661829+00:00"
+    },
+    {
+      "id": "apg_579db978378b",
+      "provider": "BMO",
+      "country": "CA",
+      "steps": [],
+      "proof_pack": [],
+      "notes": "",
+      "status": "active",
+      "meta": {},
+      "created_at": "2026-01-03T08:32:06.664632+00:00",
+      "updated_at": "2026-01-03T08:32:06.664641+00:00"
+    },
+    {
+      "id": "apg_ca8a67bb988f",
+      "provider": "BofA",
+      "country": "US",
+      "steps": [],
+      "proof_pack": [],
+      "notes": "",
+      "status": "active",
+      "meta": {},
+      "created_at": "2026-01-03T08:32:06.666170+00:00",
+      "updated_at": "2026-01-03T08:32:06.666182+00:00"
+    },
+    {
+      "id": "apg_ea635af90ece",
+      "provider": "TD Bank",
+      "country": "CA",
+      "steps": [
+        "Step 1",
+        "Step 2"
+      ],
+      "proof_pack": [],
+      "notes": "",
+      "status": "active",
+      "meta": {},
+      "created_at": "2026-01-03T08:33:11.032678+00:00",
+      "updated_at": "2026-01-03T08:33:11.032693+00:00"
+    },
+    {
+      "id": "apg_3219bfbba320",
+      "provider": "Generic Bank Autopay (Bill Payments)",
+      "country": "CA",
+      "steps": [
+        "Log into online banking",
+        "Go to Bills / Pay Bills / Bill Payments",
+        "Add payee (provider name from bill)",
+        "Enter account number from bill",
+        "Set recurring payment amount + date (or minimum due if available)",
+        "Enable email/SMS alerts for payment confirmation"
+      ],
+      "proof_pack": [
+        "Screenshot of recurring setup",
+        "Confirmation number / receipt",
+        "Copy of bill showing account number"
+      ],
+      "notes": "Seeded default",
+      "status": "active",
+      "meta": {
+        "seed": true
+      },
+      "created_at": "2026-01-03T08:33:11.036789+00:00",
+      "updated_at": "2026-01-03T08:33:11.036803+00:00"
+    },
+    {
+      "id": "apg_d36ee0f73d32",
+      "provider": "Generic Credit Card Autopay",
+      "country": "CA",
+      "steps": [
+        "Open credit card portal/app",
+        "Enable Autopay / Pre-authorized payment",
+        "Choose amount (minimum/statement balance/fixed)",
+        "Choose date (statement date or due date)",
+        "Confirm bank account and save"
+      ],
+      "proof_pack": [
+        "Autopay enabled screenshot",
+        "Bank account last-4 screenshot",
+        "First payment receipt"
+      ],
+      "notes": "Seeded default",
+      "status": "active",
+      "meta": {
+        "seed": true
+      },
+      "created_at": "2026-01-03T08:33:11.039069+00:00",
+      "updated_at": "2026-01-03T08:33:11.039156+00:00"
+    },
+    {
+      "id": "apg_d980e716de1f",
+      "provider": "BMO",
+      "country": "CA",
+      "steps": [],
+      "proof_pack": [],
+      "notes": "",
+      "status": "active",
+      "meta": {},
+      "created_at": "2026-01-03T08:33:11.043457+00:00",
+      "updated_at": "2026-01-03T08:33:11.043468+00:00"
+    },
+    {
+      "id": "apg_1f2dcdd7d56a",
+      "provider": "BofA",
+      "country": "US",
+      "steps": [],
+      "proof_pack": [],
+      "notes": "",
+      "status": "active",
+      "meta": {},
+      "created_at": "2026-01-03T08:33:11.045081+00:00",
+      "updated_at": "2026-01-03T08:33:11.045089+00:00"
+    },
+    {
+      "id": "apg_96d5581da8a5",
+      "provider": "TD Bank",
+      "country": "CA",
+      "steps": [
+        "Step 1",
+        "Step 2"
+      ],
+      "proof_pack": [],
+      "notes": "",
+      "status": "active",
+      "meta": {},
+      "created_at": "2026-01-03T08:33:48.068346+00:00",
+      "updated_at": "2026-01-03T08:33:48.068357+00:00"
+    },
+    {
+      "id": "apg_495fa49a9224",
+      "provider": "Generic Bank Autopay (Bill Payments)",
+      "country": "CA",
+      "steps": [
+        "Log into online banking",
+        "Go to Bills / Pay Bills / Bill Payments",
+        "Add payee (provider name from bill)",
+        "Enter account number from bill",
+        "Set recurring payment amount + date (or minimum due if available)",
+        "Enable email/SMS alerts for payment confirmation"
+      ],
+      "proof_pack": [
+        "Screenshot of recurring setup",
+        "Confirmation number / receipt",
+        "Copy of bill showing account number"
+      ],
+      "notes": "Seeded default",
+      "status": "active",
+      "meta": {
+        "seed": true
+      },
+      "created_at": "2026-01-03T08:33:48.071223+00:00",
+      "updated_at": "2026-01-03T08:33:48.071230+00:00"
+    },
+    {
+      "id": "apg_17d379cde260",
+      "provider": "Generic Credit Card Autopay",
+      "country": "CA",
+      "steps": [
+        "Open credit card portal/app",
+        "Enable Autopay / Pre-authorized payment",
+        "Choose amount (minimum/statement balance/fixed)",
+        "Choose date (statement date or due date)",
+        "Confirm bank account and save"
+      ],
+      "proof_pack": [
+        "Autopay enabled screenshot",
+        "Bank account last-4 screenshot",
+        "First payment receipt"
+      ],
+      "notes": "Seeded default",
+      "status": "active",
+      "meta": {
+        "seed": true
+      },
+      "created_at": "2026-01-03T08:33:48.073391+00:00",
+      "updated_at": "2026-01-03T08:33:48.073404+00:00"
+    },
+    {
+      "id": "apg_7bc6120d61a0",
+      "provider": "BMO",
+      "country": "CA",
+      "steps": [],
+      "proof_pack": [],
+      "notes": "",
+      "status": "active",
+      "meta": {},
+      "created_at": "2026-01-03T08:33:48.077509+00:00",
+      "updated_at": "2026-01-03T08:33:48.077520+00:00"
+    },
+    {
+      "id": "apg_78242a7d6508",
+      "provider": "BofA",
+      "country": "US",
+      "steps": [],
+      "proof_pack": [],
+      "notes": "",
+      "status": "active",
+      "meta": {},
+      "created_at": "2026-01-03T08:33:48.079149+00:00",
+      "updated_at": "2026-01-03T08:33:48.079156+00:00"
+    }
+  ]
+}

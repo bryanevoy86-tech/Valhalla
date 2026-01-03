@@ -33,6 +33,16 @@ from .jv_dashboard.router import router as jv_dashboard_router
 from .repairs.router import router as repairs_router
 from .rents.router import router as rents_router
 from .playbooks.router import router as playbooks_router
+from .budget_obligations.router import router as budget_obligations_router
+from .budget_calendar.router import router as budget_calendar_router
+from .autopay_guides.router import router as autopay_guides_router
+from .autopay_setups.router import router as autopay_setups_router
+from .house_inventory.router import router as house_inventory_router
+from .reorder_engine.router import router as reorder_engine_router
+from .vaults.router import router as vaults_router
+from .bills_buffer.router import router as bills_buffer_router
+from .receipts.router import router as receipts_router
+from .guardrails.router import router as guardrails_router
 from .go.sources_service import next_step_with_sources
 from .deals.router import router as deals_router
 from .deals.seed.router import router as deals_seed_router
@@ -288,6 +298,16 @@ core.include_router(jv_dashboard_router)
 core.include_router(repairs_router)
 core.include_router(rents_router)
 core.include_router(playbooks_router)
+core.include_router(budget_obligations_router)
+core.include_router(budget_calendar_router)
+core.include_router(autopay_guides_router)
+core.include_router(autopay_setups_router)
+core.include_router(house_inventory_router)
+core.include_router(reorder_engine_router)
+core.include_router(vaults_router)
+core.include_router(bills_buffer_router)
+core.include_router(receipts_router)
+core.include_router(guardrails_router)
 
 @core.get("/onboarding")
 def onboarding():

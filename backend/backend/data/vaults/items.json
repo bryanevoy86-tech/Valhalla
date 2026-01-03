@@ -1,0 +1,65 @@
+{
+  "updated_at": "2026-01-03T08:33:11.361827+00:00",
+  "items": [
+    {
+      "id": "v_93718c7510b0",
+      "name": "Bills Buffer",
+      "category": "general",
+      "target": 0.0,
+      "balance": 0.0,
+      "currency": "CAD",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:32:07.023267+00:00",
+      "updated_at": "2026-01-03T08:32:07.023287+00:00"
+    },
+    {
+      "id": "v_d45c60fd0a64",
+      "name": "Savings",
+      "category": "general",
+      "target": 0.0,
+      "balance": 0.0,
+      "currency": "CAD",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:33:11.219606+00:00",
+      "updated_at": "2026-01-03T08:33:11.219621+00:00"
+    },
+    {
+      "id": "v_40065694c125",
+      "name": "Fun Fund",
+      "category": "general",
+      "target": 0.0,
+      "balance": 0.0,
+      "currency": "CAD",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:33:11.230301+00:00",
+      "updated_at": "2026-01-03T08:33:11.230311+00:00"
+    },
+    {
+      "id": "v_3a236fb56698",
+      "name": "Bills Buffer",
+      "category": "general",
+      "target": 0.0,
+      "balance": 0.0,
+      "currency": "CAD",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:33:11.345775+00:00",
+      "updated_at": "2026-01-03T08:33:11.345783+00:00"
+    },
+    {
+      "id": "v_f938a650855b",
+      "name": "Bills Buffer",
+      "category": "general",
+      "target": 0.0,
+      "balance": 0.0,
+      "currency": "CAD",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:33:11.361199+00:00",
+      "updated_at": "2026-01-03T08:33:11.361207+00:00"
+    }
+  ]
+}
