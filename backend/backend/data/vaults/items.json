@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-01-03T08:33:11.361827+00:00",
+  "updated_at": "2026-01-03T08:55:23.252397+00:00",
   "items": [
     {
       "id": "v_93718c7510b0",
@@ -60,6 +60,186 @@
       "meta": {},
       "created_at": "2026-01-03T08:33:11.361199+00:00",
       "updated_at": "2026-01-03T08:33:11.361207+00:00"
+    },
+    {
+      "id": "v_96e1b053860e",
+      "name": "Groceries",
+      "category": "general",
+      "target": 0.0,
+      "balance": 500.0,
+      "currency": "CAD",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:53:12.124775+00:00",
+      "updated_at": "2026-01-03T08:53:12.124795+00:00"
+    },
+    {
+      "id": "v_565db628d9e3",
+      "name": "Fun Money",
+      "category": "general",
+      "target": 0.0,
+      "balance": 100.0,
+      "currency": "CAD",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:53:12.129818+00:00",
+      "updated_at": "2026-01-03T08:53:12.129836+00:00"
+    },
+    {
+      "id": "v_057151c2d120",
+      "name": "Emergency",
+      "category": "general",
+      "target": 0.0,
+      "balance": 5000.0,
+      "currency": "CAD",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:53:12.507512+00:00",
+      "updated_at": "2026-01-03T08:53:12.507526+00:00"
+    },
+    {
+      "id": "v_cc7f60ada343",
+      "name": "Bills Buffer",
+      "category": "general",
+      "target": 0.0,
+      "balance": 3000.0,
+      "currency": "CAD",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:54:15.163506+00:00",
+      "updated_at": "2026-01-03T08:54:15.163521+00:00"
+    },
+    {
+      "id": "v_311bf11f98ac",
+      "name": "Groceries",
+      "category": "general",
+      "target": 0.0,
+      "balance": 500.0,
+      "currency": "CAD",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:54:15.167387+00:00",
+      "updated_at": "2026-01-03T08:54:15.167395+00:00"
+    },
+    {
+      "id": "v_b4e66195b464",
+      "name": "Fun Money",
+      "category": "general",
+      "target": 0.0,
+      "balance": 100.0,
+      "currency": "CAD",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:54:15.170100+00:00",
+      "updated_at": "2026-01-03T08:54:15.170108+00:00"
+    },
+    {
+      "id": "v_4bf78568476c",
+      "name": "Emergency",
+      "category": "general",
+      "target": 0.0,
+      "balance": 5000.0,
+      "currency": "CAD",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:54:15.337708+00:00",
+      "updated_at": "2026-01-03T08:54:15.337715+00:00"
+    },
+    {
+      "id": "v_1de500a2882e",
+      "name": "Bills Buffer",
+      "category": "general",
+      "target": 0.0,
+      "balance": 3000.0,
+      "currency": "CAD",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:55:04.793862+00:00",
+      "updated_at": "2026-01-03T08:55:04.793882+00:00"
+    },
+    {
+      "id": "v_767f9b731677",
+      "name": "Groceries",
+      "category": "general",
+      "target": 0.0,
+      "balance": 500.0,
+      "currency": "CAD",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:55:04.800649+00:00",
+      "updated_at": "2026-01-03T08:55:04.800666+00:00"
+    },
+    {
+      "id": "v_2fae99a4337b",
+      "name": "Fun Money",
+      "category": "general",
+      "target": 0.0,
+      "balance": 100.0,
+      "currency": "CAD",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:55:04.806799+00:00",
+      "updated_at": "2026-01-03T08:55:04.806812+00:00"
+    },
+    {
+      "id": "v_7a6bcaddc39c",
+      "name": "Emergency",
+      "category": "general",
+      "target": 0.0,
+      "balance": 5000.0,
+      "currency": "CAD",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:55:05.249632+00:00",
+      "updated_at": "2026-01-03T08:55:05.249644+00:00"
+    },
+    {
+      "id": "v_d6baea099145",
+      "name": "Bills Buffer",
+      "category": "general",
+      "target": 0.0,
+      "balance": 3000.0,
+      "currency": "CAD",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:55:23.144563+00:00",
+      "updated_at": "2026-01-03T08:55:23.144576+00:00"
+    },
+    {
+      "id": "v_1cf6077caaef",
+      "name": "Groceries",
+      "category": "general",
+      "target": 0.0,
+      "balance": 500.0,
+      "currency": "CAD",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:55:23.150034+00:00",
+      "updated_at": "2026-01-03T08:55:23.150049+00:00"
+    },
+    {
+      "id": "v_7c1302d793b4",
+      "name": "Fun Money",
+      "category": "general",
+      "target": 0.0,
+      "balance": 100.0,
+      "currency": "CAD",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:55:23.153770+00:00",
+      "updated_at": "2026-01-03T08:55:23.153779+00:00"
+    },
+    {
+      "id": "v_1429f497d914",
+      "name": "Emergency",
+      "category": "general",
+      "target": 0.0,
+      "balance": 5000.0,
+      "currency": "CAD",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:55:23.251796+00:00",
+      "updated_at": "2026-01-03T08:55:23.251802+00:00"
     }
   ]
 }
