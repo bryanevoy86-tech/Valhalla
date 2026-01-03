@@ -1,0 +1,145 @@
+{
+  "updated_at": "2026-01-03T08:22:27.784690+00:00",
+  "items": [
+    {
+      "id": "jv_01622d2860bb",
+      "deal_id": "deal_8171b97f",
+      "partner_id": "pt_1446cbf0",
+      "role": "jv",
+      "split_pct": 50.0,
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:22:19.701230+00:00"
+    },
+    {
+      "id": "jv_522b06449cf4",
+      "deal_id": "deal_737bc6fa",
+      "partner_id": "pt_ed35dae1",
+      "role": "jv",
+      "split_pct": 50.0,
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:22:19.703752+00:00"
+    },
+    {
+      "id": "jv_63735ab3694c",
+      "deal_id": "deal_b3ee91ba",
+      "partner_id": "pt_91e6f0ad",
+      "role": "jv",
+      "split_pct": 50.0,
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:22:19.706162+00:00"
+    },
+    {
+      "id": "jv_2bbbbaa58698",
+      "deal_id": "deal_b3ee91ba",
+      "partner_id": "pt_2d994a96",
+      "role": "jv",
+      "split_pct": 50.0,
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:22:19.708338+00:00"
+    },
+    {
+      "id": "jv_cb471bb286a9",
+      "deal_id": "deal_c9963e90",
+      "partner_id": "pt_ed591cdd",
+      "role": "jv",
+      "split_pct": 60.0,
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:22:19.711633+00:00"
+    },
+    {
+      "id": "jv_65f5cd4d80e3",
+      "deal_id": "deal_c9963e90",
+      "partner_id": "pt_a7e16427",
+      "role": "jv",
+      "split_pct": 50.0,
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:22:19.712854+00:00"
+    },
+    {
+      "id": "jv_3d475f38ab4e",
+      "deal_id": "deal_9c8c22d2",
+      "partner_id": "pt_af274c31",
+      "role": "jv",
+      "split_pct": 50.0,
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:22:19.953567+00:00"
+    },
+    {
+      "id": "jv_8da1484f2496",
+      "deal_id": "deal_b48da719",
+      "partner_id": "pt_8d302b0d",
+      "role": "jv",
+      "split_pct": 50.0,
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:22:27.621753+00:00"
+    },
+    {
+      "id": "jv_20e7b25fa34f",
+      "deal_id": "deal_9714ec72",
+      "partner_id": "pt_667abeb8",
+      "role": "jv",
+      "split_pct": 50.0,
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:22:27.625044+00:00"
+    },
+    {
+      "id": "jv_3b34e544535e",
+      "deal_id": "deal_ce527b46",
+      "partner_id": "pt_2e3f8db9",
+      "role": "jv",
+      "split_pct": 50.0,
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:22:27.627919+00:00"
+    },
+    {
+      "id": "jv_3d1ebe8f5b9a",
+      "deal_id": "deal_ce527b46",
+      "partner_id": "pt_fe294ea2",
+      "role": "jv",
+      "split_pct": 50.0,
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:22:27.629298+00:00"
+    },
+    {
+      "id": "jv_aa46d93897c3",
+      "deal_id": "deal_83ade4f9",
+      "partner_id": "pt_241e7291",
+      "role": "jv",
+      "split_pct": 60.0,
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:22:27.632869+00:00"
+    },
+    {
+      "id": "jv_fd6a27d1e148",
+      "deal_id": "deal_83ade4f9",
+      "partner_id": "pt_dc3d7c53",
+      "role": "jv",
+      "split_pct": 50.0,
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:22:27.634565+00:00"
+    },
+    {
+      "id": "jv_38e80bbfd741",
+      "deal_id": "deal_36b8f22e",
+      "partner_id": "pt_0bb00f06",
+      "role": "jv",
+      "split_pct": 50.0,
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T08:22:27.784189+00:00"
+    }
+  ]
+}

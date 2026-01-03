@@ -1,0 +1,205 @@
+{
+  "updated_at": "2026-01-03T08:22:27.719308+00:00",
+  "items": [
+    {
+      "id": "pbk_7101205c152c",
+      "name": "Assignment Deal Process",
+      "category": "deals",
+      "region": "US",
+      "steps": [
+        "Step 1",
+        "Step 2"
+      ],
+      "checklist": [
+        "Item 1",
+        "Item 2"
+      ],
+      "notes": "",
+      "meta": {},
+      "status": "active",
+      "created_at": "2026-01-03T08:22:19.922066+00:00",
+      "updated_at": "2026-01-03T08:22:19.922075+00:00"
+    },
+    {
+      "id": "pbk_1ec86c3ddec2",
+      "name": "Assignment Deal Proof Pack",
+      "category": "deals",
+      "region": "US",
+      "steps": [
+        "Confirm assignment is allowed for this deal",
+        "Collect signed PSA",
+        "Collect assignment agreement",
+        "Collect disclosure (if applicable)",
+        "Build buyer packet"
+      ],
+      "checklist": [
+        "PSA signed",
+        "Assignment agreement",
+        "Seller disclosures",
+        "Photos",
+        "Repair estimate",
+        "Comps summary"
+      ],
+      "notes": "Seeded default",
+      "meta": {
+        "seed": true
+      },
+      "status": "active",
+      "created_at": "2026-01-03T08:22:19.925141+00:00",
+      "updated_at": "2026-01-03T08:22:19.925151+00:00"
+    },
+    {
+      "id": "pbk_a9176fb74bbc",
+      "name": "Canadian Business Bank KYC Pack",
+      "category": "banking",
+      "region": "CA",
+      "steps": [
+        "Choose bank",
+        "Prepare incorporation docs",
+        "Prepare director IDs",
+        "Bring proof of address",
+        "Open account + set alerts"
+      ],
+      "checklist": [
+        "Articles",
+        "Certificate",
+        "Director ID",
+        "Address proof",
+        "Initial deposit"
+      ],
+      "notes": "Seeded default",
+      "meta": {
+        "seed": true
+      },
+      "status": "active",
+      "created_at": "2026-01-03T08:22:19.926323+00:00",
+      "updated_at": "2026-01-03T08:22:19.926329+00:00"
+    },
+    {
+      "id": "pbk_0db515dc6aab",
+      "name": "PB 1",
+      "category": "deals",
+      "region": "US",
+      "steps": [],
+      "checklist": [],
+      "notes": "",
+      "meta": {},
+      "status": "active",
+      "created_at": "2026-01-03T08:22:19.928621+00:00",
+      "updated_at": "2026-01-03T08:22:19.928630+00:00"
+    },
+    {
+      "id": "pbk_922a54897ef6",
+      "name": "PB 2",
+      "category": "banking",
+      "region": "CA",
+      "steps": [],
+      "checklist": [],
+      "notes": "",
+      "meta": {},
+      "status": "active",
+      "created_at": "2026-01-03T08:22:19.929902+00:00",
+      "updated_at": "2026-01-03T08:22:19.929908+00:00"
+    },
+    {
+      "id": "pbk_7ce983638516",
+      "name": "Assignment Deal Process",
+      "category": "deals",
+      "region": "US",
+      "steps": [
+        "Step 1",
+        "Step 2"
+      ],
+      "checklist": [
+        "Item 1",
+        "Item 2"
+      ],
+      "notes": "",
+      "meta": {},
+      "status": "active",
+      "created_at": "2026-01-03T08:22:27.710962+00:00",
+      "updated_at": "2026-01-03T08:22:27.710979+00:00"
+    },
+    {
+      "id": "pbk_5aefcf06a21a",
+      "name": "Assignment Deal Proof Pack",
+      "category": "deals",
+      "region": "US",
+      "steps": [
+        "Confirm assignment is allowed for this deal",
+        "Collect signed PSA",
+        "Collect assignment agreement",
+        "Collect disclosure (if applicable)",
+        "Build buyer packet"
+      ],
+      "checklist": [
+        "PSA signed",
+        "Assignment agreement",
+        "Seller disclosures",
+        "Photos",
+        "Repair estimate",
+        "Comps summary"
+      ],
+      "notes": "Seeded default",
+      "meta": {
+        "seed": true
+      },
+      "status": "active",
+      "created_at": "2026-01-03T08:22:27.713852+00:00",
+      "updated_at": "2026-01-03T08:22:27.713865+00:00"
+    },
+    {
+      "id": "pbk_2a746f0f0a56",
+      "name": "Canadian Business Bank KYC Pack",
+      "category": "banking",
+      "region": "CA",
+      "steps": [
+        "Choose bank",
+        "Prepare incorporation docs",
+        "Prepare director IDs",
+        "Bring proof of address",
+        "Open account + set alerts"
+      ],
+      "checklist": [
+        "Articles",
+        "Certificate",
+        "Director ID",
+        "Address proof",
+        "Initial deposit"
+      ],
+      "notes": "Seeded default",
+      "meta": {
+        "seed": true
+      },
+      "status": "active",
+      "created_at": "2026-01-03T08:22:27.715257+00:00",
+      "updated_at": "2026-01-03T08:22:27.715264+00:00"
+    },
+    {
+      "id": "pbk_95373db420dc",
+      "name": "PB 1",
+      "category": "deals",
+      "region": "US",
+      "steps": [],
+      "checklist": [],
+      "notes": "",
+      "meta": {},
+      "status": "active",
+      "created_at": "2026-01-03T08:22:27.717711+00:00",
+      "updated_at": "2026-01-03T08:22:27.717717+00:00"
+    },
+    {
+      "id": "pbk_a02e4a91d242",
+      "name": "PB 2",
+      "category": "banking",
+      "region": "CA",
+      "steps": [],
+      "checklist": [],
+      "notes": "",
+      "meta": {},
+      "status": "active",
+      "created_at": "2026-01-03T08:22:27.718856+00:00",
+      "updated_at": "2026-01-03T08:22:27.718862+00:00"
+    }
+  ]
+}

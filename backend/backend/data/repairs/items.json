@@ -1,0 +1,155 @@
+{
+  "updated_at": "2026-01-03T08:22:27.791941+00:00",
+  "items": [
+    {
+      "id": "rep_73066fa208ab",
+      "property_id": "prop_cc14e171",
+      "title": "Roof Repairs",
+      "line_items": [
+        {
+          "category": "roof",
+          "item": "Shingles",
+          "qty": 100,
+          "unit_cost": 5,
+          "labor_cost": 500
+        }
+      ],
+      "notes": "",
+      "meta": {},
+      "status": "active",
+      "created_at": "2026-01-03T08:22:19.871259+00:00",
+      "updated_at": "2026-01-03T08:22:19.871269+00:00"
+    },
+    {
+      "id": "rep_278fc4f4e9f1",
+      "property_id": "prop_bd45c99e",
+      "title": "Repair Worksheet",
+      "line_items": [
+        {
+          "qty": 2,
+          "unit_cost": 100,
+          "labor_cost": 50
+        },
+        {
+          "qty": 1,
+          "unit_cost": 200,
+          "labor_cost": 100
+        }
+      ],
+      "notes": "",
+      "meta": {},
+      "status": "active",
+      "created_at": "2026-01-03T08:22:19.875622+00:00",
+      "updated_at": "2026-01-03T08:22:19.875635+00:00"
+    },
+    {
+      "id": "rep_5e9ee69b8dc5",
+      "property_id": "prop_ef55c31d",
+      "title": "Repair Worksheet",
+      "line_items": [
+        {
+          "qty": 1,
+          "unit_cost": 1000,
+          "labor_cost": 500
+        }
+      ],
+      "notes": "",
+      "meta": {},
+      "status": "active",
+      "created_at": "2026-01-03T08:22:19.878585+00:00",
+      "updated_at": "2026-01-03T08:22:19.878594+00:00"
+    },
+    {
+      "id": "rep_f1641f4468f1",
+      "property_id": "prop_ba020748",
+      "title": "Repair Worksheet",
+      "line_items": [
+        {
+          "qty": 1,
+          "unit_cost": 5000,
+          "labor_cost": 1000
+        }
+      ],
+      "notes": "",
+      "meta": {},
+      "status": "active",
+      "created_at": "2026-01-03T08:22:19.960133+00:00",
+      "updated_at": "2026-01-03T08:22:19.960142+00:00"
+    },
+    {
+      "id": "rep_1e16b8d9f212",
+      "property_id": "prop_a0e553b5",
+      "title": "Roof Repairs",
+      "line_items": [
+        {
+          "category": "roof",
+          "item": "Shingles",
+          "qty": 100,
+          "unit_cost": 5,
+          "labor_cost": 500
+        }
+      ],
+      "notes": "",
+      "meta": {},
+      "status": "active",
+      "created_at": "2026-01-03T08:22:27.678205+00:00",
+      "updated_at": "2026-01-03T08:22:27.678216+00:00"
+    },
+    {
+      "id": "rep_ef3b75cd18d6",
+      "property_id": "prop_813b3f6b",
+      "title": "Repair Worksheet",
+      "line_items": [
+        {
+          "qty": 2,
+          "unit_cost": 100,
+          "labor_cost": 50
+        },
+        {
+          "qty": 1,
+          "unit_cost": 200,
+          "labor_cost": 100
+        }
+      ],
+      "notes": "",
+      "meta": {},
+      "status": "active",
+      "created_at": "2026-01-03T08:22:27.681193+00:00",
+      "updated_at": "2026-01-03T08:22:27.681207+00:00"
+    },
+    {
+      "id": "rep_516174e09a10",
+      "property_id": "prop_02df2afe",
+      "title": "Repair Worksheet",
+      "line_items": [
+        {
+          "qty": 1,
+          "unit_cost": 1000,
+          "labor_cost": 500
+        }
+      ],
+      "notes": "",
+      "meta": {},
+      "status": "active",
+      "created_at": "2026-01-03T08:22:27.683666+00:00",
+      "updated_at": "2026-01-03T08:22:27.683672+00:00"
+    },
+    {
+      "id": "rep_07b0273fff8d",
+      "property_id": "prop_b4b09ca5",
+      "title": "Repair Worksheet",
+      "line_items": [
+        {
+          "qty": 1,
+          "unit_cost": 5000,
+          "labor_cost": 1000
+        }
+      ],
+      "notes": "",
+      "meta": {},
+      "status": "active",
+      "created_at": "2026-01-03T08:22:27.791150+00:00",
+      "updated_at": "2026-01-03T08:22:27.791161+00:00"
+    }
+  ]
+}
