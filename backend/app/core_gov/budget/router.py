@@ -106,3 +106,14 @@ def bill_calendar(start: str, end: str):
 def bill_calendar_next_30():
     return cal_service.next_30_days_calendar()
 
+
+# P-BUDGET-6 actuals endpoint
+from . import actuals
+
+
+@router.get("/actuals/month")
+def actuals_month(month: str):
+    try:
+        return actuals.month_actuals(month)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))

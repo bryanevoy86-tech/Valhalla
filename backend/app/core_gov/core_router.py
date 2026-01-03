@@ -50,6 +50,10 @@ from .autopay.router import router as autopay_router
 from .shopping.router import router as shopping_router
 from .reminders.router import router as reminders_router
 from .calendar.router import router as calendar_router
+from .receipts.router import router as receipts_router
+from .categorizer.router import router as categorizer_router
+from .taxrisk.router import router as taxrisk_router
+from .reports.router import router as reports_router
 from .transactions.router import router as transactions_router
 from .packs.router import router as packs_router
 from .inventory.router import router as inventory_router
@@ -196,6 +200,10 @@ core.include_router(autopay_router)
 core.include_router(shopping_router)
 core.include_router(reminders_router)
 core.include_router(calendar_router)
+core.include_router(receipts_router)
+core.include_router(categorizer_router)
+core.include_router(taxrisk_router)
+core.include_router(reports_router)
 core.include_router(transactions_router)
 core.include_router(packs_router)
 core.include_router(inventory_router)
