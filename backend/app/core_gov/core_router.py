@@ -49,11 +49,15 @@ from .txn_import.router import router as txn_import_router
 from .category_rules.router import router as category_rules_router
 from .allocation_rules.router import router as allocation_rules_router
 from .allocation_engine.router import router as allocation_engine_router
+from .accounts.router import router as accounts_router
+from .ledger_light.router import router as ledger_light_router
+from .goals.router import router as goals_router
 from .house_calendar.router import router as house_calendar_router
 from .house_reminders.router import router as house_reminders_router
 from .shopping_list.router import router as shopping_list_router
 from .big_purchases.router import router as big_purchases_router
 from .bill_payments.router import router as bill_payments_router
+from .autopay_checklists.router import router as autopay_checklists_router
 from .reconcile.router import router as reconcile_router
 from .autopay_verify.router import router as autopay_verify_router
 from .monthly_close.router import router as monthly_close_router
@@ -337,6 +341,9 @@ core.include_router(bills_buffer_router)
 core.include_router(receipts_router)
 core.include_router(guardrails_router)
 core.include_router(ledger_router)
+core.include_router(accounts_router)
+core.include_router(ledger_light_router)
+core.include_router(goals_router)
 core.include_router(bank_accounts_router)
 core.include_router(txn_import_router)
 core.include_router(category_rules_router)
@@ -347,6 +354,7 @@ core.include_router(house_reminders_router)
 core.include_router(shopping_list_router)
 core.include_router(big_purchases_router)
 core.include_router(bill_payments_router)
+core.include_router(autopay_checklists_router)
 core.include_router(reconcile_router)
 core.include_router(autopay_verify_router)
 core.include_router(monthly_close_router)

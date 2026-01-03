@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-01-03T09:10:42.745562+00:00",
+  "updated_at": "2026-01-03T09:12:26.991161+00:00",
   "items": [
     {
       "id": "jur_a8568cd79455",
@@ -289,6 +289,81 @@
       "rules": {},
       "created_at": "2026-01-03T09:10:42.744319+00:00",
       "updated_at": "2026-01-03T09:10:42.744330+00:00"
+    },
+    {
+      "id": "jur_7d73d4555053",
+      "jurisdiction": "ON",
+      "country": "CA",
+      "kind": "province",
+      "notes": "",
+      "rules": {
+        "assignments_restricted": false
+      },
+      "created_at": "2026-01-03T09:12:26.865023+00:00",
+      "updated_at": "2026-01-03T09:12:26.865036+00:00"
+    },
+    {
+      "id": "jur_657e49770180",
+      "jurisdiction": "FL",
+      "country": "US",
+      "kind": "state",
+      "notes": "",
+      "rules": {},
+      "created_at": "2026-01-03T09:12:26.868851+00:00",
+      "updated_at": "2026-01-03T09:12:26.868859+00:00"
+    },
+    {
+      "id": "jur_c158437f82a6",
+      "jurisdiction": "MB",
+      "country": "CA",
+      "kind": "province",
+      "notes": "",
+      "rules": {},
+      "created_at": "2026-01-03T09:12:26.871461+00:00",
+      "updated_at": "2026-01-03T09:12:26.871471+00:00"
+    },
+    {
+      "id": "jur_40c3394aa033",
+      "jurisdiction": "CA_TEST1",
+      "country": "CA",
+      "kind": "province",
+      "notes": "",
+      "rules": {},
+      "created_at": "2026-01-03T09:12:26.874375+00:00",
+      "updated_at": "2026-01-03T09:12:26.874380+00:00"
+    },
+    {
+      "id": "jur_4d95f8cca994",
+      "jurisdiction": "CA_TEST2",
+      "country": "CA",
+      "kind": "province",
+      "notes": "",
+      "rules": {},
+      "created_at": "2026-01-03T09:12:26.875684+00:00",
+      "updated_at": "2026-01-03T09:12:26.875690+00:00"
+    },
+    {
+      "id": "jur_9bccbd0b0bd3",
+      "jurisdiction": "ON_TEST_GOV",
+      "country": "CA",
+      "kind": "province",
+      "notes": "",
+      "rules": {
+        "assignments_restricted": true,
+        "cooling_off_days": 5
+      },
+      "created_at": "2026-01-03T09:12:26.961349+00:00",
+      "updated_at": "2026-01-03T09:12:26.961354+00:00"
+    },
+    {
+      "id": "jur_580b63f45684",
+      "jurisdiction": "ON",
+      "country": "CA",
+      "kind": "province",
+      "notes": "",
+      "rules": {},
+      "created_at": "2026-01-03T09:12:26.990617+00:00",
+      "updated_at": "2026-01-03T09:12:26.990625+00:00"
     }
   ]
 }

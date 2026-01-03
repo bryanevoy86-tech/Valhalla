@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-01-03T09:10:42.711050+00:00",
+  "updated_at": "2026-01-03T09:12:26.956470+00:00",
   "items": [
     {
       "id": "tpl_97777da0878f",
@@ -509,6 +509,104 @@
       "meta": {},
       "created_at": "2026-01-03T09:10:42.710220+00:00",
       "updated_at": "2026-01-03T09:10:42.710228+00:00"
+    },
+    {
+      "id": "tpl_1528ea579f25",
+      "name": "Offer Letter",
+      "channel": "email",
+      "subject": "We Have an Offer",
+      "body": "Dear Seller...",
+      "tags": [],
+      "status": "active",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T09:12:26.802370+00:00",
+      "updated_at": "2026-01-03T09:12:26.802381+00:00"
+    },
+    {
+      "id": "tpl_84d1c4fee0ea",
+      "name": "Welcome",
+      "channel": "sms",
+      "subject": "",
+      "body": "",
+      "tags": [
+        "greeting",
+        "sales"
+      ],
+      "status": "active",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T09:12:26.806865+00:00",
+      "updated_at": "2026-01-03T09:12:26.806872+00:00"
+    },
+    {
+      "id": "tpl_b214e0c680b6",
+      "name": "Template1",
+      "channel": "email",
+      "subject": "",
+      "body": "",
+      "tags": [],
+      "status": "active",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T09:12:26.809583+00:00",
+      "updated_at": "2026-01-03T09:12:26.809589+00:00"
+    },
+    {
+      "id": "tpl_2e4a4c882c85",
+      "name": "Template2",
+      "channel": "email",
+      "subject": "",
+      "body": "",
+      "tags": [],
+      "status": "active",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T09:12:26.812047+00:00",
+      "updated_at": "2026-01-03T09:12:26.812062+00:00"
+    },
+    {
+      "id": "tpl_5d7b123407af",
+      "name": "T1",
+      "channel": "email",
+      "subject": "",
+      "body": "",
+      "tags": [
+        "urgent"
+      ],
+      "status": "active",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T09:12:26.816845+00:00",
+      "updated_at": "2026-01-03T09:12:26.816855+00:00"
+    },
+    {
+      "id": "tpl_e7ecbbac4923",
+      "name": "T2",
+      "channel": "email",
+      "subject": "",
+      "body": "",
+      "tags": [
+        "urgent"
+      ],
+      "status": "active",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T09:12:26.819152+00:00",
+      "updated_at": "2026-01-03T09:12:26.819163+00:00"
+    },
+    {
+      "id": "tpl_c48572ec5713",
+      "name": "Offer Acceptance",
+      "channel": "email",
+      "subject": "Your Offer",
+      "body": "We accept your offer...",
+      "tags": [],
+      "status": "active",
+      "notes": "",
+      "meta": {},
+      "created_at": "2026-01-03T09:12:26.955974+00:00",
+      "updated_at": "2026-01-03T09:12:26.955980+00:00"
     }
   ]
 }

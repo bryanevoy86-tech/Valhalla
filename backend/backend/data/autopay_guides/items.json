@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-01-03T08:33:48.079758+00:00",
+  "updated_at": "2026-01-03T09:15:32.897180+00:00",
   "items": [
     {
       "id": "apg_d388f4b84431",
@@ -264,6 +264,94 @@
       "meta": {},
       "created_at": "2026-01-03T08:33:48.079149+00:00",
       "updated_at": "2026-01-03T08:33:48.079156+00:00"
+    },
+    {
+      "id": "apg_0a2ed0f178aa",
+      "provider": "TD Bank",
+      "country": "CA",
+      "steps": [
+        "Step 1",
+        "Step 2"
+      ],
+      "proof_pack": [],
+      "notes": "",
+      "status": "active",
+      "meta": {},
+      "created_at": "2026-01-03T09:15:32.889283+00:00",
+      "updated_at": "2026-01-03T09:15:32.889291+00:00"
+    },
+    {
+      "id": "apg_fa1c40ac394f",
+      "provider": "Generic Bank Autopay (Bill Payments)",
+      "country": "CA",
+      "steps": [
+        "Log into online banking",
+        "Go to Bills / Pay Bills / Bill Payments",
+        "Add payee (provider name from bill)",
+        "Enter account number from bill",
+        "Set recurring payment amount + date (or minimum due if available)",
+        "Enable email/SMS alerts for payment confirmation"
+      ],
+      "proof_pack": [
+        "Screenshot of recurring setup",
+        "Confirmation number / receipt",
+        "Copy of bill showing account number"
+      ],
+      "notes": "Seeded default",
+      "status": "active",
+      "meta": {
+        "seed": true
+      },
+      "created_at": "2026-01-03T09:15:32.892252+00:00",
+      "updated_at": "2026-01-03T09:15:32.892259+00:00"
+    },
+    {
+      "id": "apg_07ab80d5f15c",
+      "provider": "Generic Credit Card Autopay",
+      "country": "CA",
+      "steps": [
+        "Open credit card portal/app",
+        "Enable Autopay / Pre-authorized payment",
+        "Choose amount (minimum/statement balance/fixed)",
+        "Choose date (statement date or due date)",
+        "Confirm bank account and save"
+      ],
+      "proof_pack": [
+        "Autopay enabled screenshot",
+        "Bank account last-4 screenshot",
+        "First payment receipt"
+      ],
+      "notes": "Seeded default",
+      "status": "active",
+      "meta": {
+        "seed": true
+      },
+      "created_at": "2026-01-03T09:15:32.893523+00:00",
+      "updated_at": "2026-01-03T09:15:32.893529+00:00"
+    },
+    {
+      "id": "apg_af6315846c8d",
+      "provider": "BMO",
+      "country": "CA",
+      "steps": [],
+      "proof_pack": [],
+      "notes": "",
+      "status": "active",
+      "meta": {},
+      "created_at": "2026-01-03T09:15:32.895521+00:00",
+      "updated_at": "2026-01-03T09:15:32.895528+00:00"
+    },
+    {
+      "id": "apg_301a76b0d677",
+      "provider": "BofA",
+      "country": "US",
+      "steps": [],
+      "proof_pack": [],
+      "notes": "",
+      "status": "active",
+      "meta": {},
+      "created_at": "2026-01-03T09:15:32.896748+00:00",
+      "updated_at": "2026-01-03T09:15:32.896753+00:00"
     }
   ]
 }
