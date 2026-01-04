@@ -66,4 +66,16 @@ def today() -> Dict[str, Any]:
 
     board["cra_risk_hint"] = "GET /core/cra/risk/scan/{YYYY-MM}"
 
+    try:
+        from backend.app.core_gov.approvals import store as astore  # type: ignore
+        board["approvals_pending"] = [x for x in astore.list_items() if x.get("status") == "pending"][:100]
+    except Exception:
+        board["approvals_pending"] = []
+
+    try:
+        from backend.app.core_gov.shopping.service import list_items  # type: ignore
+        board["shopping_open"] = list_items(status="open", limit=50)
+    except Exception:
+        board["shopping_open"] = []
+
     return board

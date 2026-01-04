@@ -165,10 +165,13 @@ from .shield.router import router as shield_router
 from .exporter.router import router as exporter_router
 from .legal_filter.router import router as legal_filter_router
 from .legal_profiles.router import router as legal_profiles_router
-from .document_vault.router import router as document_vault_router
+from .legal_rules.router import router as legal_rules_router
+from .doc_vault.router import router as doc_vault_router
 from .partners.router import router as partners_router
 from .mode.router import router as mode_router
 from .approvals.router import router as approvals_router
+from .share_tokens.router import router as share_tokens_router
+from .security_keys.router import router as security_keys_router
 from .trust.router import router as trust_router
 from .audit.router import router as audit_router
 from .integrity.router import router as integrity_router
@@ -434,6 +437,12 @@ core.include_router(know_inbox_router)
 core.include_router(know_chunks_router)
 core.include_router(know_retrieve_router)
 core.include_router(envelopes_router)
+core.include_router(doc_vault_router)
+core.include_router(legal_profiles_router)
+core.include_router(legal_rules_router)
+core.include_router(legal_filter_router)
+core.include_router(share_tokens_router)
+core.include_router(security_keys_router)
 
 
 @core.get("/onboarding")

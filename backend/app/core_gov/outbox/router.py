@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import Any, Dict
 from fastapi import APIRouter, Body, HTTPException
 from . import service
+from .from_bundle import create_from_bundle
 
 router = APIRouter(prefix="/core/outbox", tags=["core-outbox"])
 
@@ -34,6 +35,10 @@ def sent(outbox_id: str, sent_via: str = "manual"):
 def from_followups(limit: int = 25):
     from .from_followups import create_from_open
     return create_from_open(limit=limit)
+
+@router.post("/from_bundle")
+def from_bundle(bundle_id: str, to: str = "(paste)", channel: str = "email"):
+    return create_from_bundle(bundle_id=bundle_id, to=to, channel=channel)
 
 @router.post("/from_deal_script")
 def from_deal_script(deal_id: str, channel: str = "sms", to: str = "(paste)", tone: str = "neutral"):

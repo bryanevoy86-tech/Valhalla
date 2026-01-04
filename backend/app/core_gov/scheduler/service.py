@@ -62,4 +62,11 @@ def tick() -> Dict[str, Any]:
     except Exception:
         pass
 
+    # Call legal hotlist scan
+    try:
+        from backend.app.core_gov.scheduler.legal_hotlist import scan_hotlist
+        scan_hotlist(limit=25)
+    except Exception:
+        pass
+
     return result

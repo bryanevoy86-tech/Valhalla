@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException
 
 from .schemas import PartnerCreate, PartnerListResponse, NoteCreate, DashboardResponse
 from . import service
+from .notes import add as add_note, list_notes
 
 router = APIRouter(prefix="/core/partners", tags=["core-partners"])
 
@@ -56,3 +57,11 @@ def list_notes(partner_id: Optional[str] = None, visibility: Optional[str] = Non
 @router.get("/dashboard", response_model=DashboardResponse)
 def dashboard():
     return service.dashboard()
+
+@router.post("/{partner_id}/note")
+def add_partner_note(partner_id: str, text: str):
+    return add_note(partner_id=partner_id, text=text)
+
+@router.get("/{partner_id}/partner_notes")
+def get_partner_notes(partner_id: str, limit: int = 50):
+    return {"items": list_notes(partner_id=partner_id, limit=limit)}
