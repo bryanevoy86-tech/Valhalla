@@ -1,4 +1,81 @@
 {
-  "updated_at": "2026-01-04T01:34:35.156935+00:00",
-  "items": []
+  "updated_at": "2026-01-04T03:50:06.275340+00:00",
+  "items": [
+    {
+      "id": "apr_f375dc8d636c",
+      "title": "Test Approval",
+      "action": "purchase",
+      "target_type": "",
+      "target_id": "",
+      "cone_band": "",
+      "risk": "medium",
+      "payload": {},
+      "notes": "",
+      "status": "pending",
+      "decision": {
+        "by": "",
+        "at": "",
+        "reason": ""
+      },
+      "created_at": "2026-01-04T03:49:50.958191+00:00",
+      "updated_at": "2026-01-04T03:49:50.958208+00:00"
+    },
+    {
+      "id": "apr_060fd618aef5",
+      "title": "Decide Test",
+      "action": "approve",
+      "target_type": "",
+      "target_id": "",
+      "cone_band": "",
+      "risk": "medium",
+      "payload": {},
+      "notes": "",
+      "status": "pending",
+      "decision": {
+        "by": "",
+        "at": "",
+        "reason": ""
+      },
+      "created_at": "2026-01-04T03:49:51.027004+00:00",
+      "updated_at": "2026-01-04T03:49:51.027014+00:00"
+    },
+    {
+      "id": "apr_f3a72fd61006",
+      "title": "Test Approval",
+      "action": "purchase",
+      "target_type": "",
+      "target_id": "",
+      "cone_band": "",
+      "risk": "medium",
+      "payload": {},
+      "notes": "",
+      "status": "pending",
+      "decision": {
+        "by": "",
+        "at": "",
+        "reason": ""
+      },
+      "created_at": "2026-01-04T03:50:06.268870+00:00",
+      "updated_at": "2026-01-04T03:50:06.268880+00:00"
+    },
+    {
+      "id": "apr_d6c6e9483907",
+      "title": "Decide Test",
+      "action": "approve",
+      "target_type": "",
+      "target_id": "",
+      "cone_band": "",
+      "risk": "medium",
+      "payload": {},
+      "notes": "",
+      "status": "pending",
+      "decision": {
+        "by": "",
+        "at": "",
+        "reason": ""
+      },
+      "created_at": "2026-01-04T03:50:06.274433+00:00",
+      "updated_at": "2026-01-04T03:50:06.274449+00:00"
+    }
+  ]
 }

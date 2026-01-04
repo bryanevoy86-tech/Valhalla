@@ -98,6 +98,9 @@ from .know_chunks.router import router as know_chunks_router
 from .know_retrieve.router import router as know_retrieve_router
 from .envelopes.router import router as envelopes_router
 from .csv_export.router import router as csv_export_router
+from .forecast.router import router as forecast_router
+from .approvals.router import router as approvals_router
+from .heimdall.router import router as heimdall_router
 from .tax_buckets.router import router as tax_buckets_router
 from .tax_tagging.router import router as tax_tagging_router
 from .intent_router.router import router as intent_router_router
@@ -464,3 +467,6 @@ core.include_router(know_citations_router)
 core.include_router(underwriter_router)
 core.include_router(bills_router)
 core.include_router(pipeline_router)
+core.include_router(forecast_router)
+core.include_router(approvals_router)
+core.include_router(heimdall_router)

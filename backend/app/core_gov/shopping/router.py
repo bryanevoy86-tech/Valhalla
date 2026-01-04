@@ -51,3 +51,20 @@ def mark_purchased(item_id: str, paid_unit_cost: float = 0.0):
 def autofill_from_inventory(max_create: int = 25):
     return autofill.create_from_inventory(max_create=max_create)
 
+@router.post("/quick_add")
+def quick_add(name: str, est_total: float = 0.0, category: str = "household", notes: str = ""):
+    # est_total becomes est_unit_cost with qty=1 for simplicity
+    try:
+        return service.create_item({"name": name, "qty": 1.0, "unit": "each", "category": category, "est_unit_cost": float(est_total or 0.0), "notes": notes})
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.post("/request_approvals")
+def request_approvals(threshold: float = 200.0):
+    from .approvals import request_approvals as req_approvals
+    return req_approvals(threshold=threshold)
+
+@router.post("/generate_from_needs")
+def generate_from_needs(within_days: int = 30, limit: int = 50):
+    from .from_schedule_needs import generate
+    return generate(within_days=within_days, limit=limit)

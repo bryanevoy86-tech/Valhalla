@@ -120,4 +120,10 @@ def today() -> Dict[str, Any]:
     except Exception:
         board["pipeline_recent"] = []
 
+    try:
+        from backend.app.core_gov.heimdall.log import list_items  # type: ignore
+        board["heimdall_actions"] = list_items(limit=20)
+    except Exception:
+        board["heimdall_actions"] = []
+
     return board

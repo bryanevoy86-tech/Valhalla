@@ -92,4 +92,18 @@ def tick() -> Dict[str, Any]:
     except Exception:
         pass
 
+    # Generate shopping from schedule needs
+    try:
+        from backend.app.core_gov.shopping.from_schedule_needs import generate as gen_needs  # type: ignore
+        gen_needs(within_days=30, limit=50)
+    except Exception:
+        pass
+
+    # Request approvals for big ticket items
+    try:
+        from backend.app.core_gov.shopping.approvals import request_approvals  # type: ignore
+        request_approvals(threshold=200.0)
+    except Exception:
+        pass
+
     return result
