@@ -106,4 +106,25 @@ def tick() -> Dict[str, Any]:
     except Exception:
         pass
 
+    # Push routine reminders
+    try:
+        from backend.app.core_gov.routines.reminders import push as routines_push  # type: ignore
+        routines_push()
+    except Exception:
+        pass
+
+    # Push subscription reminders
+    try:
+        from backend.app.core_gov.subscriptions.reminders import push as subs_push  # type: ignore
+        subs_push(days_ahead=7)
+    except Exception:
+        pass
+
+    # Push replace-to-shopping
+    try:
+        from backend.app.core_gov.assets.replace_actions import push_replace_to_shopping  # type: ignore
+        push_replace_to_shopping(threshold=200.0)
+    except Exception:
+        pass
+
     return result

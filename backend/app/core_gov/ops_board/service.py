@@ -126,4 +126,10 @@ def today() -> Dict[str, Any]:
     except Exception:
         board["heimdall_actions"] = []
 
+    try:
+        from backend.app.core_gov.personal_board.service import board as personal_board  # type: ignore
+        board["personal_board"] = personal_board()
+    except Exception:
+        board["personal_board"] = {}
+
     return board

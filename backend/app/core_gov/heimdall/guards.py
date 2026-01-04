@@ -8,6 +8,9 @@ SAFE_ACTIONS = {
     "bills.push_reminders",
     "schedule.push_reminders",
     "budget.impact",
+    "personal_board.get",
+    "cashflow.get",
+    "subscriptions.audit",
 }
 
 EXEC_ACTIONS = {

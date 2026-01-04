@@ -1,0 +1,31 @@
+{
+  "updated_at": "2026-01-04T05:01:18.619513+00:00",
+  "items": [
+    {
+      "id": "sub_905f5c733ba6",
+      "name": "Netflix",
+      "amount": 15.99,
+      "currency": "CAD",
+      "cadence": "monthly",
+      "renewal_day": 1,
+      "category": "subscriptions",
+      "notes": "",
+      "status": "active",
+      "created_at": "2026-01-04T05:01:01.653828+00:00",
+      "updated_at": "2026-01-04T05:01:01.653843+00:00"
+    },
+    {
+      "id": "sub_2fbb7121f934",
+      "name": "Netflix",
+      "amount": 15.99,
+      "currency": "CAD",
+      "cadence": "monthly",
+      "renewal_day": 1,
+      "category": "subscriptions",
+      "notes": "",
+      "status": "active",
+      "created_at": "2026-01-04T05:01:18.618538+00:00",
+      "updated_at": "2026-01-04T05:01:18.618558+00:00"
+    }
+  ]
+}

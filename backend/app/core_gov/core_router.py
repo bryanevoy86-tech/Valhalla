@@ -101,6 +101,12 @@ from .csv_export.router import router as csv_export_router
 from .forecast.router import router as forecast_router
 from .approvals.router import router as approvals_router
 from .heimdall.router import router as heimdall_router
+from .nlp.router import router as nlp_router
+from .subscriptions.router import router as subscriptions_router
+from .assets.router import router as assets_router
+from .cashflow.router import router as cashflow_router
+from .routines.router import router as routines_router
+from .personal_board.router import router as personal_board_router
 from .tax_buckets.router import router as tax_buckets_router
 from .tax_tagging.router import router as tax_tagging_router
 from .intent_router.router import router as intent_router_router
@@ -470,3 +476,9 @@ core.include_router(pipeline_router)
 core.include_router(forecast_router)
 core.include_router(approvals_router)
 core.include_router(heimdall_router)
+core.include_router(nlp_router)
+core.include_router(subscriptions_router)
+core.include_router(assets_router)
+core.include_router(cashflow_router)
+core.include_router(routines_router)
+core.include_router(personal_board_router)

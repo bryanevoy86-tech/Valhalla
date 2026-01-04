@@ -6,6 +6,7 @@ from . import store
 from .due import upcoming
 from .reminders import push as push_reminders
 from .autopay import checklist, checklist_for_all
+from .nlp_intake import create_from_candidate
 from .pay_log import mark_paid, missed
 
 router = APIRouter(prefix="/core/bills", tags=["core-bills"])
@@ -90,3 +91,7 @@ def paid(bill_id: str, paid_on: str = "", amount: float = 0.0, notes: str = ""):
 @router.get("/missed")
 def missed_ep():
     return missed()
+
+@router.post("/from_candidate")
+def from_candidate(payload: Dict[str, Any] = Body(...)):
+    return create_from_candidate(candidate=(payload or {}).get("candidate") or {})

@@ -51,4 +51,28 @@ def dispatch(action: str, payload: Dict[str, Any]) -> Dict[str, Any]:
         except Exception as e:
             return {"ok": False, "error": f"failed: {type(e).__name__}"}
 
+    # PERSONAL BOARD
+    if action == "personal_board.get":
+        try:
+            from backend.app.core_gov.personal_board.service import board  # type: ignore
+            return board()
+        except Exception as e:
+            return {"ok": False, "error": f"failed: {type(e).__name__}"}
+
+    # CASHFLOW
+    if action == "cashflow.get":
+        try:
+            from backend.app.core_gov.cashflow.service import forecast  # type: ignore
+            return forecast(days=int(payload.get("days") or 30))
+        except Exception as e:
+            return {"ok": False, "error": f"failed: {type(e).__name__}"}
+
+    # SUBSCRIPTIONS
+    if action == "subscriptions.audit":
+        try:
+            from backend.app.core_gov.subscriptions.audit import audit  # type: ignore
+            return audit()
+        except Exception as e:
+            return {"ok": False, "error": f"failed: {type(e).__name__}"}
+
     return {"ok": False, "error": "unknown action"}
