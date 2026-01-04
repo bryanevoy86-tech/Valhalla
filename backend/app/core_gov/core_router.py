@@ -186,6 +186,9 @@ from .family_payroll_export.router import router as family_payroll_export_router
 from .purchase_requests.router import router as purchase_requests_router
 from .know_sources.router import router as know_sources_router
 from .know_citations.router import router as know_citations_router
+from .underwriter.router import router as underwriter_router
+from .bills.router import router as bills_router
+from .pipeline.router import router as pipeline_router
 from .analytics.decisions import decision_stats
 from .canon.canon import ENGINE_CANON
 from .security.identity import get_identity
@@ -458,3 +461,6 @@ def go_next_step_with_sources():
 core.include_router(trust_status_router)
 core.include_router(know_sources_router)
 core.include_router(know_citations_router)
+core.include_router(underwriter_router)
+core.include_router(bills_router)
+core.include_router(pipeline_router)

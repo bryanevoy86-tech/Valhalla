@@ -69,4 +69,27 @@ def tick() -> Dict[str, Any]:
     except Exception:
         pass
 
+    # Call bills reminders push
+    try:
+        from backend.app.core_gov.bills.reminders import push as bills_push  # type: ignore
+        bills_push(days_ahead=7)
+    except Exception:
+        pass
+
+    # Call bills missed detector
+    try:
+        from backend.app.core_gov.bills.pay_log import missed  # type: ignore
+        m = missed()
+        if (m.get("missed") or []):
+            pass  # bills missed detected
+    except Exception:
+        pass
+
+    # Call pipeline daily tick
+    try:
+        from backend.app.core_gov.pipeline.daily import tick as pipe_tick  # type: ignore
+        pipe_tick(limit=10)
+    except Exception:
+        pass
+
     return result

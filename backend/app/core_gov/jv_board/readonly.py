@@ -12,8 +12,11 @@ def readonly(token: str) -> Dict[str, Any]:
     
     try:
         from .service import board
+        from .filtering import filter_board
         b = board()
-        # optionally filter by subject_id later (partner-specific)
-        return {"ok": True, "scope": "jv_board", "board": b}
+        subject_id = (rec or {}).get("subject_id") or ""
+        b2 = filter_board(b, subject_id=subject_id)
+        return {"ok": True, "scope": "jv_board", "subject_id": subject_id, "board": b2}
     except Exception as e:
         return {"ok": False, "error": f"board unavailable: {type(e).__name__}"}
+

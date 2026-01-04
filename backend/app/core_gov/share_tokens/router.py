@@ -10,6 +10,8 @@ def _utcnow_iso() -> str:
 
 @router.post("")
 def create(scope: str = "jv_board", subject_id: str = "", expires_on: str = ""):
+    if (scope or "").strip() == "jv_board" and not (subject_id or "").strip():
+        raise HTTPException(status_code=400, detail="subject_id required for jv_board tokens")
     t = store.new_token()
     rec = {"token": t, "scope": (scope or "jv_board").strip(), "subject_id": (subject_id or "").strip(), "expires_on": (expires_on or "").strip(), "status": "active", "created_at": _utcnow_iso()}
     items = store.list_tokens()

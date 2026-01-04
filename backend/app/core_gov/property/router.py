@@ -18,6 +18,7 @@ from .comps import add_comp, comps_summary
 from .repairs import add_repair
 from .rent import set_rent
 from .neighborhood import set_rating
+from .arv import set_arv
 
 router = APIRouter(prefix="/core/property", tags=["core-property"])
 
@@ -92,6 +93,14 @@ def neighborhood_ep(prop_id: str, score: int, notes: str = ""):
         return set_rating(prop_id=prop_id, score=score, notes=notes)
     except KeyError:
         raise HTTPException(status_code=404, detail="not found")
+
+@router.post("/{prop_id}/arv")
+def set_arv_ep(prop_id: str, arv: float, notes: str = ""):
+    try:
+        return set_arv(prop_id=prop_id, arv=arv, notes=notes)
+    except KeyError:
+        raise HTTPException(status_code=404, detail="not found")
+
 @router.post("/rent_repairs", response_model=RentRepairResponse)
 def rent_repairs(payload: RentRepairRequest):
     return service.rent_repairs(payload.model_dump())

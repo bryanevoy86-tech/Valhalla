@@ -102,4 +102,22 @@ def today() -> Dict[str, Any]:
     except Exception:
         board["trust_status"] = {}
 
+    try:
+        from backend.app.core_gov.bills.due import upcoming  # type: ignore
+        board["bills_upcoming"] = upcoming(limit=10).get("upcoming", [])
+    except Exception:
+        board["bills_upcoming"] = []
+
+    try:
+        from backend.app.core_gov.budget.snapshot import snapshot  # type: ignore
+        board["budget_snapshot"] = snapshot()
+    except Exception:
+        board["budget_snapshot"] = {}
+
+    try:
+        from backend.app.core_gov.pipeline import store as pstore  # type: ignore
+        board["pipeline_recent"] = pstore.list_runs()[:10]
+    except Exception:
+        board["pipeline_recent"] = []
+
     return board
