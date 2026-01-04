@@ -8,6 +8,7 @@ from app.core_gov.followups.store import create_followup
 from app.core_gov.grants.models import GrantIn, Grant
 from app.core_gov.grants.store import add_grant, get_grant, list_grants
 from app.core_gov.grants.proof_pack import build_proof_pack
+from app.core_gov.grants.priority import rank
 
 router = APIRouter(prefix="/grants", tags=["Core: Grants"])
 
@@ -70,3 +71,9 @@ def deadline_followup(grant_id: str, payload: DeadlineFollowupIn):
     })
     audit("GRANT_DEADLINE_FOLLOWUP_CREATED", {"grant_id": grant_id, "followup_id": fu["id"]})
     return fu
+
+
+@router.get("/rank")
+def rank_grants(limit: int = 25):
+    return rank(limit=limit)
+

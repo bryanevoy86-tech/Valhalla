@@ -173,6 +173,7 @@ from .approvals.router import router as approvals_router
 from .share_tokens.router import router as share_tokens_router
 from .security_keys.router import router as security_keys_router
 from .trust.router import router as trust_router
+from .trust_status.router import router as trust_status_router
 from .audit.router import router as audit_router
 from .integrity.router import router as integrity_router
 from .reorder.router import router as reorder_router
@@ -183,6 +184,8 @@ from .tools_vault.router import router as tools_vault_router
 from .family_payroll.router import router as family_payroll_router
 from .family_payroll_export.router import router as family_payroll_export_router
 from .purchase_requests.router import router as purchase_requests_router
+from .know_sources.router import router as know_sources_router
+from .know_citations.router import router as know_citations_router
 from .analytics.decisions import decision_stats
 from .canon.canon import ENGINE_CANON
 from .security.identity import get_identity
@@ -452,3 +455,6 @@ def onboarding():
 @core.get("/go/next_step_with_sources")
 def go_next_step_with_sources():
     return next_step_with_sources()
+core.include_router(trust_status_router)
+core.include_router(know_sources_router)
+core.include_router(know_citations_router)

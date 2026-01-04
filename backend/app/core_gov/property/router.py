@@ -14,6 +14,10 @@ from .schemas import (
     RentRepairResponse,
 )
 from . import service
+from .comps import add_comp, comps_summary
+from .repairs import add_repair
+from .rent import set_rent
+from .neighborhood import set_rating
 
 router = APIRouter(prefix="/core/property", tags=["core-property"])
 
@@ -54,6 +58,40 @@ def comps(payload: CompsRequest):
     return service.comps(payload.model_dump())
 
 
+@router.post("/{prop_id}/comps")
+def add_comp_ep(prop_id: str, address: str, sold_price: float, sold_date: str = "", sqft: int = 0, notes: str = ""):
+    try:
+        return add_comp(prop_id=prop_id, address=address, sold_price=sold_price, sold_date=sold_date, sqft=sqft, notes=notes)
+    except KeyError:
+        raise HTTPException(status_code=404, detail="not found")
+
+@router.get("/{prop_id}/comps/summary")
+def comps_sum(prop_id: str):
+    try:
+        return comps_summary(prop_id=prop_id)
+    except KeyError:
+        raise HTTPException(status_code=404, detail="not found")
+
+@router.post("/{prop_id}/repairs")
+def add_repair_ep(prop_id: str, item: str, cost: float, notes: str = ""):
+    try:
+        return add_repair(prop_id=prop_id, item=item, cost=cost, notes=notes)
+    except KeyError:
+        raise HTTPException(status_code=404, detail="not found")
+
+@router.post("/{prop_id}/rent")
+def set_rent_ep(prop_id: str, projected_rent: float, notes: str = ""):
+    try:
+        return set_rent(prop_id=prop_id, projected_rent=projected_rent, notes=notes)
+    except KeyError:
+        raise HTTPException(status_code=404, detail="not found")
+
+@router.post("/{prop_id}/neighborhood")
+def neighborhood_ep(prop_id: str, score: int, notes: str = ""):
+    try:
+        return set_rating(prop_id=prop_id, score=score, notes=notes)
+    except KeyError:
+        raise HTTPException(status_code=404, detail="not found")
 @router.post("/rent_repairs", response_model=RentRepairResponse)
 def rent_repairs(payload: RentRepairRequest):
     return service.rent_repairs(payload.model_dump())

@@ -5,6 +5,8 @@ from fastapi import APIRouter, HTTPException
 
 from .schemas import MessageCreate, MessageListResponse, MarkSentRequest
 from . import service
+from .send_log import mark_sent as mark_sent_log
+from .deal_message import build as build_deal_message
 
 router = APIRouter(prefix="/core/comms", tags=["core-comms"])
 
@@ -44,3 +46,14 @@ def mark_sent(msg_id: str, payload: MarkSentRequest):
         return service.mark_sent(msg_id, sent_at=payload.sent_at, meta=payload.meta)
     except KeyError:
         raise HTTPException(status_code=404, detail="message not found")
+
+@router.post("/drafts/{draft_id}/sent")
+def sent(draft_id: str, channel: str = "", result: str = "sent"):
+    try:
+        return mark_sent_log(draft_id=draft_id, channel=channel, result=result)
+    except KeyError:
+        raise HTTPException(status_code=404, detail="not found")
+
+@router.get("/deal/{deal_id}/build")
+def build_for_deal(deal_id: str, kind: str = "sms", tone: str = "neutral"):
+    return build_deal_message(deal_id=deal_id, kind=kind, tone=tone)

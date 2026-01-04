@@ -5,6 +5,10 @@ from fastapi import APIRouter, HTTPException
 
 from .schemas import CreditProfileUpsert, CreditAccountCreate, CreditListResponse, UtilUpdate
 from . import service
+from .tradelines import add as add_tradeline, list_items as list_tradelines
+from .followups import push_followups
+from .score import score as credit_score
+from .recommend import recommend as credit_recommend
 
 router = APIRouter(prefix="/core/credit", tags=["core-credit"])
 
@@ -52,3 +56,26 @@ def add_task(title: str, due_date: str, priority: str = "B"):
 @router.get("/tasks")
 def list_tasks(status: Optional[str] = None):
     return {"items": service.list_tasks(status=status)}
+
+@router.post("/tradelines")
+def tradeline_add(vendor: str, tier: str = "net30", status: str = "todo", notes: str = ""):
+    try:
+        return add_tradeline(vendor=vendor, tier=tier, status=status, notes=notes)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.get("/tradelines")
+def tradeline_list():
+    return {"items": list_tradelines()}
+
+@router.post("/followups")
+def credit_followups():
+    return push_followups()
+
+@router.get("/score")
+def get_score():
+    return credit_score()
+
+@router.get("/recommend_credit")
+def recommend_credit():
+    return credit_recommend()

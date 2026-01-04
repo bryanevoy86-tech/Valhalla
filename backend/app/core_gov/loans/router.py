@@ -8,6 +8,7 @@ from app.core_gov.loans.models import LoanIn, Loan
 from app.core_gov.loans.store import add_loan, get_loan, list_loans, load_loans
 from app.core_gov.loans.underwriting import build_underwriting_checklist
 from app.core_gov.loans.recommend import recommend_next_step
+from app.core_gov.loans.priority import rank
 
 router = APIRouter(prefix="/loans", tags=["Core: Loans"])
 
@@ -53,3 +54,9 @@ def recommend(payload: LoanProfile):
     res = recommend_next_step(payload.model_dump(), load_loans())
     audit("LOAN_NEXT_RECOMMENDATION", {"country": payload.country, "province_state": payload.province_state})
     return res
+
+
+@router.get("/rank")
+def rank_loans(limit: int = 25):
+    return rank(limit=limit)
+

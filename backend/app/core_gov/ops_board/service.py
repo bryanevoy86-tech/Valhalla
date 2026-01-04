@@ -78,4 +78,28 @@ def today() -> Dict[str, Any]:
     except Exception:
         board["shopping_open"] = []
 
+    try:
+        from backend.app.core_gov.credit.score import score as cscore  # type: ignore
+        board["credit_score"] = cscore()
+    except Exception:
+        board["credit_score"] = {}
+
+    try:
+        from backend.app.core_gov.property.service import list_items as plist  # type: ignore
+        board["properties_recent"] = plist(limit=10)
+    except Exception:
+        board["properties_recent"] = []
+
+    try:
+        from backend.app.core_gov.comms import store as cstore  # type: ignore
+        board["comms_drafts"] = cstore.list_drafts()[:10]
+    except Exception:
+        board["comms_drafts"] = []
+
+    try:
+        from backend.app.core_gov.trust_status import store as tstore  # type: ignore
+        board["trust_status"] = tstore.get()
+    except Exception:
+        board["trust_status"] = {}
+
     return board
