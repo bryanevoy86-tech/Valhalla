@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException
 from .schemas import ReconSuggestRequest, ReconSuggestResponse, ReconLinkCreate, ReconLinkRecord
 from . import service, auto_accept, batch
+from .alerts import push_missing_alerts
 
 router = APIRouter(prefix="/core/reconcile", tags=["core-reconcile"])
 
@@ -44,3 +45,19 @@ def auto_accept_link(bank_txn_id: str, threshold: float = 0.92, amount_tolerance
 @router.post("/batch_run")
 def batch_run(limit: int = 200, threshold: float = 0.92):
     return batch.run_batch(limit=limit, threshold=threshold)
+
+
+@router.get("/payments")
+def reconcile_payments(days: int = 30):
+    out = service.reconcile(days=days)
+    if not out.get("ok"):
+        raise HTTPException(status_code=503, detail=out.get("error"))
+    return out
+
+
+@router.post("/payments/push_alerts")
+def push_alerts(days: int = 30):
+    out = service.reconcile(days=days)
+    if not out.get("ok"):
+        raise HTTPException(status_code=503, detail=out.get("error"))
+    return push_missing_alerts(out.get("missing") or [])

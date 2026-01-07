@@ -138,6 +138,10 @@ from .property.router import router as property_router
 from .obligations.router import router as obligations_router
 from .budget.router import router as budget_router
 from .autopay.router import router as autopay_router
+from .payments.router import router as payments_router
+from .pay_confirm.router import router as pay_confirm_router
+from .shield_lite.router import router as shield_lite_router
+from .fail_playbooks.router import router as fail_playbooks_router
 from .shopping.router import router as shopping_router
 from .reminders.router import router as reminders_router
 from .calendar.router import router as calendar_router
@@ -319,6 +323,10 @@ core.include_router(property_router)
 core.include_router(obligations_router)
 core.include_router(budget_router)
 core.include_router(autopay_router)
+core.include_router(payments_router)
+core.include_router(pay_confirm_router)
+core.include_router(shield_lite_router)
+core.include_router(fail_playbooks_router)
 core.include_router(shopping_router)
 core.include_router(reminders_router)
 core.include_router(calendar_router)

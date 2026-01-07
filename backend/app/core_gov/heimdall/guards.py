@@ -11,12 +11,19 @@ SAFE_ACTIONS = {
     "personal_board.get",
     "cashflow.get",
     "subscriptions.audit",
+    "payments.schedule",
+    "payments.reconcile",
+    "payments.push_reminders",
+    "shield.auto_check",
+    "shield.state",
 }
 
 EXEC_ACTIONS = {
     "bills.paid",
     "shopping.bought",
     "receipts.create",
+    "pay_confirm.create",
+    "payments.autopay_verified",
 }
 
 def guard(mode: str, action: str) -> Tuple[bool, str]:

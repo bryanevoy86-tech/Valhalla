@@ -75,4 +75,67 @@ def dispatch(action: str, payload: Dict[str, Any]) -> Dict[str, Any]:
         except Exception as e:
             return {"ok": False, "error": f"failed: {type(e).__name__}"}
 
+    # PAYMENTS
+    if action == "payments.schedule":
+        try:
+            from backend.app.core_gov.payments import store as pstore  # type: ignore
+            from backend.app.core_gov.payments.service import schedule as sched  # type: ignore
+            return {"items": sched(pstore.list_items(), days=int(payload.get("days") or 30))}
+        except Exception as e:
+            return {"ok": False, "error": f"failed: {type(e).__name__}"}
+
+    if action == "payments.reconcile":
+        try:
+            from backend.app.core_gov.reconcile.service import reconcile  # type: ignore
+            return reconcile(days=int(payload.get("days") or 30))
+        except Exception as e:
+            return {"ok": False, "error": f"failed: {type(e).__name__}"}
+
+    if action == "payments.push_reminders":
+        try:
+            from backend.app.core_gov.payments.reminders import push  # type: ignore
+            return push(days_ahead=int(payload.get("days_ahead") or 5))
+        except Exception as e:
+            return {"ok": False, "error": f"failed: {type(e).__name__}"}
+
+    if action == "shield.auto_check":
+        try:
+            from backend.app.core_gov.shield_lite.auto import check_and_trigger  # type: ignore
+            return check_and_trigger(buffer_min=float(payload.get("buffer_min") or 500.0))
+        except Exception as e:
+            return {"ok": False, "error": f"failed: {type(e).__name__}"}
+
+    if action == "shield.state":
+        try:
+            from backend.app.core_gov.shield_lite import store as sstore  # type: ignore
+            return sstore.get_state()
+        except Exception as e:
+            return {"ok": False, "error": f"failed: {type(e).__name__}"}
+
+    if action == "pay_confirm.create":
+        try:
+            from backend.app.core_gov.pay_confirm import store as cstore  # type: ignore
+            return cstore.create(
+                payment_id=str(payload.get("payment_id") or ""),
+                paid_on=str(payload.get("paid_on") or ""),
+                amount=float(payload.get("amount") or 0.0),
+                currency=str(payload.get("currency") or "CAD"),
+                method=str(payload.get("method") or ""),
+                ref=str(payload.get("ref") or ""),
+                notes=str(payload.get("notes") or ""),
+            )
+        except Exception as e:
+            return {"ok": False, "error": f"failed: {type(e).__name__}"}
+
+    if action == "payments.autopay_verified":
+        try:
+            from backend.app.core_gov.payments.autopay_verify import mark_verified  # type: ignore
+            return mark_verified(
+                payment_id=str(payload.get("payment_id") or ""),
+                verified=bool(payload.get("verified") if "verified" in payload else True),
+                proof_note=str(payload.get("proof_note") or ""),
+            )
+        except Exception as e:
+            return {"ok": False, "error": f"failed: {type(e).__name__}"}
+
     return {"ok": False, "error": "unknown action"}

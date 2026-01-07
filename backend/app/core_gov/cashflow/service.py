@@ -48,4 +48,13 @@ def forecast(days: int = 30) -> Dict[str, Any]:
 
     schedule.sort(key=lambda x: x.get("date",""))
     total = sum(float(x.get("amount") or 0.0) for x in schedule)
-    return {"days": days, "items": schedule, "estimated_total": round(total, 2), "warnings": warnings}
+    
+    # Also include payments schedule if available
+    try:
+        from backend.app.core_gov.payments import store as pstore  # type: ignore
+        from backend.app.core_gov.payments.service import schedule as psched  # type: ignore
+        fc_payments = psched(pstore.list_items(), days=days)
+    except Exception:
+        fc_payments = []
+    
+    return {"days": days, "items": schedule, "estimated_total": round(total, 2), "warnings": warnings, "payments": fc_payments}

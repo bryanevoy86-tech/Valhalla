@@ -30,6 +30,64 @@ def _safe(fn, warnings: List[str], label: str):
         return None
 
 
+def reconcile(days: int = 30) -> Dict[str, Any]:
+    """Reconcile payments: compare due schedule vs. confirmations"""
+    days = max(7, min(180, int(days or 30)))
+    start = date.today() - timedelta(days=3)  # grace window
+    end = date.today() + timedelta(days=days)
+
+    try:
+        from backend.app.core_gov.payments import store as pstore  # type: ignore
+        from backend.app.core_gov.payments.service import schedule as sched  # type: ignore
+        pays = pstore.list_items()
+        due = sched(pays, days=days)
+    except Exception as e:
+        return {"ok": False, "error": f"payments unavailable: {type(e).__name__}: {e}"}
+
+    try:
+        from backend.app.core_gov.pay_confirm import store as cstore  # type: ignore
+        conf = cstore.list_items()
+    except Exception as e:
+        return {"ok": False, "error": f"pay_confirm unavailable: {type(e).__name__}: {e}"}
+
+    # index confirmations by payment_id and date
+    conf_idx = {}
+    for c in conf:
+        pid = c.get("payment_id")
+        d = c.get("paid_on")
+        if not pid or not d:
+            continue
+        conf_idx.setdefault(pid, []).append(c)
+
+    missing = []
+    matched = 0
+
+    for d in due:
+        pid = d.get("payment_id")
+        due_date = d.get("date")
+        # match any confirmation within [due_date-2, due_date+5]
+        ok = False
+        try:
+            dd = date.fromisoformat(due_date)
+            lo = (dd - timedelta(days=2)).isoformat()
+            hi = (dd + timedelta(days=5)).isoformat()
+        except Exception:
+            lo, hi = "", ""
+
+        for c in conf_idx.get(pid, []):
+            pd = c.get("paid_on") or ""
+            if lo and hi and (lo <= pd <= hi):
+                ok = True
+                break
+
+        if ok:
+            matched += 1
+        else:
+            missing.append(d)
+
+    return {"ok": True, "matched": matched, "missing": missing, "due_count": len(due)}
+
+
 def suggest(bank_txn_id: str, max_suggestions: int = 10, amount_tolerance: float = 1.0, days_tolerance: int = 5) -> Dict[str, Any]:
     warnings: List[str] = []
 

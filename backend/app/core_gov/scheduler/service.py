@@ -127,4 +127,28 @@ def tick() -> Dict[str, Any]:
     except Exception:
         pass
 
+    # Push payment reminders
+    try:
+        from backend.app.core_gov.payments.reminders import push as pay_push  # type: ignore
+        pay_push(days_ahead=5)
+    except Exception:
+        pass
+
+    # Reconcile payments and push alerts
+    try:
+        from backend.app.core_gov.reconcile.service import reconcile  # type: ignore
+        from backend.app.core_gov.reconcile.alerts import push_missing_alerts  # type: ignore
+        rec = reconcile(days=30)
+        if rec.get("ok"):
+            push_missing_alerts(rec.get("missing") or [])
+    except Exception:
+        pass
+
+    # Auto-check Shield Lite
+    try:
+        from backend.app.core_gov.shield_lite.auto import check_and_trigger  # type: ignore
+        check_and_trigger(buffer_min=500.0)
+    except Exception:
+        pass
+
     return result
