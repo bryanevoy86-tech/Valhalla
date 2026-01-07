@@ -1302,7 +1302,7 @@ class BrainVerificationSuite:
     def verify_learning_ingestion(self) -> Dict[str, Any]:
         """Verify learning ingestion with allowed sources."""
         try:
-            ingestor = LearningIngestsor(["Source A", "Source B"])
+            ingestor = LearningIngestor(["Source A", "Source B"])
             result = ingestor.ingest_data("Source A", {"data": "test"})
             blocked = ingestor.ingest_data("UnknownSource", {"data": "test"})
             
@@ -1524,10 +1524,10 @@ class LearningAndScalingOrchestrator:
         self.ab_tracker = ABTracker()
         self.script_promoter = ScriptPromoter()
         self.deal_builder = DealPacketBuilder()
-        self.learning_ingestor = LearningIngestsor(allowed_learning_sources)
+        self.learning_ingestor = LearningIngestor(allowed_learning_sources)
         self.outcome_evaluator = OutcomeEvaluator()
         self.model_updater = SafeModelUpdater()
-        self.readiness_scorer = CloneReadinessScorecardi()
+        self.readiness_scorer = CloneReadinessScorer()
         self.gate_enforcer = CloneGateEnforcer()
         self.audit_trail = CloneAuditTrail()
         self.verification_suite = BrainVerificationSuite()
@@ -1566,10 +1566,5 @@ class LearningAndScalingOrchestrator:
 
 # Typo fix for class name
 class CloneReadinessScorer(CloneReadinessScorecardi):
-    """Alias for correct class name."""
-    pass
-
-
-class LearningIngestsor(LearningIngestsor):
     """Alias for correct class name."""
     pass

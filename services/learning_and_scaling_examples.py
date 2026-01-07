@@ -4,7 +4,7 @@ Batch 3: Learning + Scaling Safety - Working Examples
 """
 
 from services.learning_and_scaling import (
-    ABTracker, ScriptPromoter, DealPacketBuilder, LearningIngestsor,
+    ABTracker, ScriptPromoter, DealPacketBuilder, LearningIngestor,
     OutcomeEvaluator, SafeModelUpdater, CloneReadinessScorer, CloneGateEnforcer,
     CloneAuditTrail, BrainVerificationSuite, LearningAndScalingOrchestrator
 )
@@ -167,7 +167,7 @@ def example_learning_ingestion():
     print("="*70)
     
     allowed = ["Zillow", "Facebook", "Redfin", "MLS"]
-    ingestor = LearningIngestsor(allowed)
+    ingestor = LearningIngestor(allowed)
     
     print(f"\n✅ Allowed Sources: {', '.join(allowed)}")
     
