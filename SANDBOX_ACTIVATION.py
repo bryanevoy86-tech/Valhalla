@@ -40,9 +40,14 @@ try:
         CloneGateEnforcer, CloneAuditTrail, BrainVerificationSuite,
         LearningAndScalingOrchestrator
     )
-    logger.info("✅ All 30 activation blocks successfully imported")
+    # Import lead export capability
+    from ops.runtime_export import export_scored_leads_from_locals
+    from ops.lead_exporter import export_leads_csv
+    # Import Phase 3 safety guard
+    from security.phase3_guard import assert_phase3_safety
+    logger.info("All 30 activation blocks successfully imported")
 except ImportError as e:
-    logger.error(f"❌ Failed to import blocks: {e}")
+    logger.error(f"Failed to import blocks: {e}")
     raise
 
 
@@ -434,6 +439,13 @@ def main():
     logger.info("="*70)
     logger.info(f"Start Time: {datetime.now().isoformat()}\n")
     
+    # Phase 3 Safety Check: Ensure DRY-RUN and outbound are locked if Phase 3 is enabled
+    try:
+        assert_phase3_safety()
+    except RuntimeError as e:
+        logger.critical(f"PHASE 3 SAFETY CHECK FAILED: {e}")
+        raise
+    
     # Initialize activation manager
     manager = SandboxActivationManager()
     
@@ -481,8 +493,30 @@ def main():
         logger.info("🟢 SANDBOX SYSTEM IS LIVE AND OPERATIONAL")
         logger.info("Press Ctrl+C to stop monitoring...\n")
         try:
+            cycle_count = 0
+            # Add scores to test leads for Phase 2 export
+            scored_test_leads = []
+            import random
+            for i, lead in enumerate(manager.test_leads, 1):
+                scored_lead = dict(lead)
+                # Simulate varying scores (50-95 range)
+                scored_lead['score'] = 50 + (i * 15) % 45  # Distribute across range
+                scored_test_leads.append(scored_lead)
+            
             while True:
-                time.sleep(1)
+                cycle_count += 1
+                time.sleep(30)  # Monitor every 30 seconds (one cycle)
+                
+                # Export leads each cycle for Phase 2 consumption
+                try:
+                    # Export the scored test leads
+                    export_path = export_leads_csv(scored_test_leads, out_dir="ops/exports", 
+                                                   filename_prefix="sandbox_leads", limit=5000)
+                    if export_path and cycle_count % 10 == 0:  # Log every 10 cycles
+                        logger.info(f"[EXPORT] {len(scored_test_leads)} leads exported to {export_path}")
+                except Exception as e:
+                    logger.debug(f"[EXPORT] Export attempt {cycle_count}: {e}")
+                    
         except KeyboardInterrupt:
             logger.info("\n✅ Sandbox monitoring stopped")
             logger.info("All services remain active in background")
