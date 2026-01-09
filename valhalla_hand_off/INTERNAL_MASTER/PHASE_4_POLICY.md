@@ -276,4 +276,26 @@ Once all 5 stakeholders have signed Section 6, Phase 4 may be activated with exp
 
 ---
 
+## Phase 4 Authorization & Sign-Off
+
+By signing below, stakeholders confirm:
+- Phase 3 passed stability + safety certification
+- Guard enforcement is active
+- DRY-RUN and outbound constraints are understood
+- Phase 4 will proceed in pilot mode only
+- Rollback procedures are defined and tested
+
+### Signatures
+
+CEO: _______________________  Date: __________  
+CFO: _______________________  Date: __________  
+Risk Officer: _______________  Date: __________  
+Legal Liaison: ______________  Date: __________  
+Operations: _________________  Date: __________  
+
+Version: Phase 4 Policy v1.0  
+Authorized On: __________  
+
+---
+
 *End of Phase 4 Policy Document*
