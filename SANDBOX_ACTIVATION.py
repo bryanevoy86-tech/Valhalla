@@ -215,55 +215,93 @@ class SandboxActivationManager:
             return False
     
     def step_6_launch_lead_collection(self) -> bool:
-        """Step 6: Launch lead collection process with test data."""
+        """Step 6: Launch lead collection process with test data (demo or real)."""
         self.logger.info("\n" + "="*70)
         self.logger.info("STEP 6: Launching Lead Collection Process")
         self.logger.info("="*70)
         
         try:
-            # Create test leads
-            self.test_leads = [
-                {
-                    "id": "LEAD_001",
-                    "name": "John Doe",
-                    "email": "john@example.com",
-                    "phone": "555-0001",
-                    "property_value": 500000,
-                    "equity": 200000,
-                    "source": "Website",
-                    "created_at": datetime.now().isoformat()
-                },
-                {
-                    "id": "LEAD_002",
-                    "name": "Jane Smith",
-                    "email": "jane@example.com",
-                    "phone": "555-0002",
-                    "property_value": 750000,
-                    "equity": 300000,
-                    "source": "Referral",
-                    "created_at": datetime.now().isoformat()
-                },
-                {
-                    "id": "LEAD_003",
-                    "name": "Bob Wilson",
-                    "email": "bob@example.com",
-                    "phone": "555-0003",
-                    "property_value": 600000,
-                    "equity": 250000,
-                    "source": "Facebook",
-                    "created_at": datetime.now().isoformat()
-                }
-            ]
+            import os, csv
+            from pathlib import Path
+            
+            # ENV-GATED LEAD SELECTION:
+            # VALHALLA_REAL_DATA_INGEST=1 → Load real leads from CSV (Phase 3)
+            # VALHALLA_REAL_DATA_INGEST=0 → Use demo leads (baseline regression)
+            use_real_data = os.getenv("VALHALLA_REAL_DATA_INGEST", "0") == "1"
+            real_leads_dir = Path(os.getenv("VALHALLA_REAL_LEADS_DIR", "data/inbox/real_leads"))
+            
+            if use_real_data and real_leads_dir.exists():
+                # PHASE 3: Load real leads from CSV files
+                self.test_leads = []
+                csv_files = list(real_leads_dir.glob("*.csv"))
+                for csv_file in sorted(csv_files):
+                    try:
+                        with open(csv_file, 'r') as f:
+                            reader = csv.DictReader(f)
+                            for row in reader:
+                                lead = {
+                                    "id": row.get("lead_id", f"LEAD_{len(self.test_leads)+1}"),
+                                    "name": row.get("name", "Unknown"),
+                                    "email": row.get("email", "no-email@example.com"),
+                                    "phone": row.get("phone", "555-0000"),
+                                    "property_value": int(row.get("budget", "0").replace("$","").replace(",","")) if row.get("budget") else 0,
+                                    "source": row.get("source", "Unknown"),
+                                    "city": row.get("city", "Unknown"),
+                                    "segment": row.get("segment", "Unknown"),
+                                    "created_at": datetime.now().isoformat()
+                                }
+                                self.test_leads.append(lead)
+                    except Exception as e:
+                        self.logger.warning(f"Could not read {csv_file.name}: {e}")
+                load_mode = f"REAL DATA (Phase 3) - {len(self.test_leads)} leads from {len(csv_files)} CSV files"
+            else:
+                # DEMO MODE (baseline regression): 3 hardcoded leads
+                self.test_leads = [
+                    {
+                        "id": "LEAD_001",
+                        "name": "John Doe",
+                        "email": "john@example.com",
+                        "phone": "555-0001",
+                        "property_value": 500000,
+                        "equity": 200000,
+                        "source": "Website",
+                        "created_at": datetime.now().isoformat()
+                    },
+                    {
+                        "id": "LEAD_002",
+                        "name": "Jane Smith",
+                        "email": "jane@example.com",
+                        "phone": "555-0002",
+                        "property_value": 750000,
+                        "equity": 300000,
+                        "source": "Referral",
+                        "created_at": datetime.now().isoformat()
+                    },
+                    {
+                        "id": "LEAD_003",
+                        "name": "Bob Wilson",
+                        "email": "bob@example.com",
+                        "phone": "555-0003",
+                        "property_value": 600000,
+                        "equity": 250000,
+                        "source": "Facebook",
+                        "created_at": datetime.now().isoformat()
+                    }
+                ]
+                load_mode = "DEMO MODE (baseline regression)"
             
             # Initialize learning ingestor for lead ingestion
             ingestor = LearningIngestor(["Website", "Referral", "Facebook", "Google"])
             self.active_components['lead_ingestor'] = ingestor
             
             self.logger.info("✅ Lead collection LAUNCHED")
+            self.logger.info(f"   - Mode: {load_mode}")
             self.logger.info(f"   - Test leads: {len(self.test_leads)} loaded")
             
-            for lead in self.test_leads:
+            for lead in self.test_leads[:5]:  # Log first 5 leads
                 self.logger.info(f"   ✓ {lead['name']} ({lead['email']}) - ${lead['property_value']:,}")
+            if len(self.test_leads) > 5:
+                self.logger.info(f"   ... and {len(self.test_leads) - 5} more")
             
             self.activation_status['lead_collection_launched'] = True
             return True
