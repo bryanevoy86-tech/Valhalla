@@ -1,0 +1,32 @@
+{
+  "mode": "sandbox",
+  "phase": 3,
+  "cycle_seconds": 30,
+  "dry_run_required": true,
+  "outbound_must_be_disabled": true,
+
+  "resources": {
+    "sim_capital_pool": 1000000,
+    "max_actions_per_cycle_global": 0,
+    "max_items_per_cycle_global": 200
+  },
+
+  "engines": [
+    {
+      "name": "valhalla_core",
+      "module": "sandbox_profiles.valhalla_engine",
+      "enabled": true,
+      "min_budget_pct": 0.60,
+      "max_items_per_cycle": 150,
+      "max_actions_per_cycle": 0
+    },
+    {
+      "name": "noop_secondary",
+      "module": "sandbox_profiles.noop_engine",
+      "enabled": false,
+      "min_budget_pct": 0.40,
+      "max_items_per_cycle": 50,
+      "max_actions_per_cycle": 0
+    }
+  ]
+}
