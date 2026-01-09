@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "rule": "Credibility affects PRIORITY only; it must not auto-reject leads.",
+  "sources": {
+    "referral": 0.90,
+    "webform": 0.75,
+    "sms_inbound": 0.70,
+    "skiptrace": 0.60,
+    "cold_call": 0.55,
+    "unknown": 0.50
+  },
+  "notes": [
+    "This is sandbox-only until validated.",
+    "Low credibility does not mean bad. It means verify first.",
+    "Adjust based on observed close rates and noise."
+  ]
+}
