@@ -3,9 +3,11 @@ Twilio SMS sending utility using app.core.settings.
 """
 from typing import Dict
 from app.core.settings import settings
+from app.core.engines.dispatch_guard import guard_outreach
 
 
 def send_sms(recipient_phone: str, message: str) -> Dict[str, str]:
+    guard_outreach()
     try:
         if not (settings.TWILIO_ACCOUNT_SID and settings.TWILIO_AUTH_TOKEN and settings.TWILIO_PHONE_NUMBER):
             return {"status": "failure", "message": "Twilio not configured (missing env vars)"}

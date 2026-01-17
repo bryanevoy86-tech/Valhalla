@@ -1,0 +1,4 @@
+lead_id,first_name,last_name,phone,email,address,city,province,postal_code,source,notes,asking_price,bed,bath,sqft
+L001,John,Doe,2045550101,john@example.com,123 Main St,Winnipeg,MB,R3C1A1,skiptrace,"Wants quick close",250000,3,2,1100
+L002,Jane,Smith,2045550102,jane@example.com,45 River Rd,Winnipeg,MB,R2M2B2,referral,"Inherited property, needs cleanup",180000,2,1,900
+L003,Bob,Wilson,2045550103,bob@example.com,9 Oak Ave,Winnipeg,MB,R2C3C3,webform,"Tenant issues, open to assignment",320000,4,2,1600

@@ -90,6 +90,8 @@ def generate_document(db: Session, template_id: int, version: int, variables: di
 
 
 def request_signature(db: Session, doc_id: int, signer_name: str, signer_email: str):
+    from app.core.engines.dispatch_guard import guard_contract_send
+    guard_contract_send()
     d = db.query(LegalDocument).get(doc_id)
     if not d:
         raise ValueError("Document not found")

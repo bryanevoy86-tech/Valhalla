@@ -45,6 +45,13 @@ try:
     from ops.lead_exporter import export_leads_csv
     # Import Phase 3 safety guard
     from security.phase3_guard import assert_phase3_safety
+    # Import cold-zone operations infrastructure
+    try:
+        from ops.scripts.prime_directive_guard import assert_prime_directive
+        from ops.scripts.system_snapshot import main as system_snapshot
+        logger.info("Cold-zone ops infrastructure imported: prime_directive_guard, system_snapshot")
+    except ImportError as e:
+        logger.warning(f"Cold-zone ops not available (non-critical): {e}")
     logger.info("All 30 activation blocks successfully imported")
 except ImportError as e:
     logger.error(f"Failed to import blocks: {e}")
@@ -383,7 +390,7 @@ class SandboxActivationManager:
                     'script_id': var_id,
                     'name': f"Lead_{lead['id']}_Script",
                     'status': 'experimental'
-                })
+                }, version='1.0')
                 self.logger.info(f"      ✓ Script promoted to EXPERIMENTAL")
                 
                 # Build deal packet
@@ -530,6 +537,25 @@ def main():
     if all(manager.activation_status.values()):
         logger.info("🟢 SANDBOX SYSTEM IS LIVE AND OPERATIONAL")
         logger.info("Press Ctrl+C to stop monitoring...\n")
+        
+        # Verify prime directive at startup
+        try:
+            from ops.scripts.prime_directive_guard import assert_prime_directive
+            assert_prime_directive({
+                "subsystem": "sandbox_core",
+                "action": "activation_startup",
+                "irreversible": False,
+                "daily_loss_pct": 0.0,
+                "drawdown_pct": 0.0,
+                "projected_variance_pct": 0.0
+            })
+            logger.info("✅ Prime Directive check passed at startup")
+        except SystemExit as e:
+            logger.error(f"🔴 Prime Directive BLOCKED startup: {e}")
+            raise
+        except Exception as e:
+            logger.debug(f"Prime Directive check skipped (ops not available): {e}")
+        
         try:
             cycle_count = 0
             # Add scores to test leads for Phase 2 export
@@ -544,6 +570,15 @@ def main():
             while True:
                 cycle_count += 1
                 time.sleep(30)  # Monitor every 30 seconds (one cycle)
+                
+                # Periodic system snapshot (every hour = 120 cycles)
+                if cycle_count % 120 == 0:
+                    try:
+                        from ops.scripts.system_snapshot import main as system_snapshot
+                        system_snapshot()
+                        logger.info(f"[SNAPSHOT] System state captured at cycle {cycle_count}")
+                    except Exception as e:
+                        logger.debug(f"[SNAPSHOT] Skipped (ops not available): {e}")
                 
                 # Export leads each cycle for Phase 2 consumption
                 try:

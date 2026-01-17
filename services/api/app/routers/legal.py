@@ -4,6 +4,8 @@ Pack 51: Legal Document Engine - API router
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.core.db import get_db
+from app.core.engines.guard_runtime import enforce_engine
+from app.core.engines.actions import CONTRACT_SEND
 from app.legal.schemas import *
 from app.legal import service as svc
 from app.legal.models import LegalTemplate, LegalTemplateVersion, LegalClause, LegalVariable, LegalDocument
@@ -61,6 +63,7 @@ def post_generate(body: GenerateReq, db: Session = Depends(get_db)):
 
 @router.post("/sign", response_model=DocOut)
 def post_sign(body: SignReq, db: Session = Depends(get_db)):
+    enforce_engine("wholesaling", CONTRACT_SEND)
     try:
         d = svc.request_signature(db, body.document_id, body.signer_name, body.signer_email)
     except ValueError as e:

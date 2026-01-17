@@ -1,0 +1,2 @@
+buyer_id,name,company,email,phone,market,asset_type,buy_box_min,buy_box_max,close_speed_days,proof_of_funds,notes,tags
+B001,Example Buyer,Example Co,buyer@example.com,000-000-0000,Winnipeg,SFR,100000,400000,14,YES,"sample entry","CASH,FAST"

@@ -25,10 +25,20 @@ class SendEmailRequest(BaseModel):
     subject: str
     body: str
     html: bool = False
+    # Market policy enforcement (optional)
+    province: Optional[str] = None
+    market: Optional[str] = None
+    weekday: Optional[int] = None  # 0=Monday, 6=Sunday
+    hhmm: Optional[str] = None  # "HHMM" format e.g. "0900" for 9 AM
 
 class SendSmsRequest(BaseModel):
     to: str
     message: str
+    # Market policy enforcement (optional)
+    province: Optional[str] = None
+    market: Optional[str] = None
+    weekday: Optional[int] = None  # 0=Monday, 6=Sunday
+    hhmm: Optional[str] = None  # "HHMM" format e.g. "0900" for 9 AM
 
 class SendWithTemplateRequest(BaseModel):
     template_name: str

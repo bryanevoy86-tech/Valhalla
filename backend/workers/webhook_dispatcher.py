@@ -2,6 +2,7 @@ import asyncio
 
 from backend.db.webhooks_dao import get_active_webhooks
 from backend.utils.webhooks import post_webhook, sign_payload
+from app.core.engines.dispatch_guard import guard_outreach
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -16,6 +17,7 @@ def _next_delay(attempts: int) -> int:
 
 
 async def dispatch_once(session: AsyncSession):
+    guard_outreach()
     row = (
         (
             await session.execute(

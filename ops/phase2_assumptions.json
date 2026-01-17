@@ -1,0 +1,23 @@
+{
+  "leads_per_day_fallback": 150,
+  "cost_per_lead_usd": 1.5,
+  "spread_usd": {
+    "conservative": 6000,
+    "expected": 10000,
+    "aggressive": 14000
+  },
+  "score_to_close_prob": [
+    { "score_gte": 90, "p_close": 0.20 },
+    { "score_gte": 80, "p_close": 0.12 },
+    { "score_gte": 70, "p_close": 0.07 },
+    { "score_gte": 60, "p_close": 0.04 },
+    { "score_gte": 50, "p_close": 0.02 },
+    { "score_gte": 0,  "p_close": 0.005 }
+  ],
+  "band_multipliers": {
+    "conservative": { "p_mult": 0.75, "spread_mult": 0.90 },
+    "expected":     { "p_mult": 1.00, "spread_mult": 1.00 },
+    "aggressive":   { "p_mult": 1.15, "spread_mult": 1.05 }
+  },
+  "cycle_minutes_fallback": 30
+}

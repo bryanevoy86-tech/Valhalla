@@ -2,6 +2,9 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Dict, Any, List, Optional
 
+from app.core.engines.guard_runtime import enforce_engine
+from app.core.engines.actions import CONTRACT_SEND
+
 router = APIRouter(prefix="/contract", tags=["contract"])
 
 class TemplateIn(BaseModel):
@@ -35,6 +38,7 @@ def build_pdf(contract_id: int):
 
 @router.post("/send/{contract_id}")
 def send_for_esign(contract_id: int):
+    enforce_engine("wholesaling", CONTRACT_SEND)
     return {"ok": True, "status": "sent"}
 
 @router.get("/status/{contract_id}")

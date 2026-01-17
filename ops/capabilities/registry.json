@@ -1,0 +1,492 @@
+{
+  "version": 1,
+  "rules": {
+    "auto_surface_requires_certified": true,
+    "auto_run_never": true,
+    "max_suggestions": 3
+  },
+  "capabilities": [
+    {
+      "id": "banking_intake_wizard",
+      "name": "Banking Intake Wizard",
+      "type": "tool",
+      "status": "CERTIFIED",
+      "risk_class": "SAFE",
+      "triggers": [
+        "new account",
+        "opened account",
+        "bank account",
+        "add account",
+        "rbc",
+        "td",
+        "bmo",
+        "cibc",
+        "scotia"
+      ],
+      "how_to_use": {
+        "mode": "manual_run",
+        "command": "python ops/scripts/capability_run.py banking_intake_wizard",
+        "notes": "Guided intake. No bank credentials. Registers account w/ tags + defaults."
+      },
+      "certification": {
+        "certified": true,
+        "certified_at": "2026-01-11T00:39:18.033666+00:00",
+        "certified_by": "System",
+        "cert_notes": "CERTIFIED entry during initial setup",
+        "test_log": []
+      }
+    },
+    {
+      "id": "handoff_pack_generator",
+      "name": "Handoff Pack Generator (EIA/Accountant/Lawyer)",
+      "type": "script",
+      "status": "CERTIFIED",
+      "risk_class": "SAFE",
+      "triggers": [
+        "eia",
+        "accountant",
+        "lawyer",
+        "handoff",
+        "printouts",
+        "paperwork",
+        "folder",
+        "package"
+      ],
+      "how_to_use": {
+        "mode": "manual_run",
+        "command": "python ops/scripts/generate_handoff_packs.py",
+        "notes": "Generates separate shareable folders. No secrets."
+      },
+      "certification": {
+        "certified": true,
+        "certified_at": "2026-01-11T00:39:18.598264+00:00",
+        "certified_by": "System",
+        "cert_notes": "CERTIFIED entry during initial setup",
+        "test_log": []
+      }
+    },
+    {
+      "id": "export_cleanup_retention",
+      "name": "Export Cleanup & Retention (Safe Prune)",
+      "type": "script",
+      "status": "CERTIFIED",
+      "risk_class": "SAFE",
+      "triggers": [
+        "too many exports",
+        "storage",
+        "cleanup",
+        "delete old",
+        "bloat",
+        "disk full"
+      ],
+      "how_to_use": {
+        "mode": "manual_run",
+        "command": "python ops/scripts/cleanup_exports.py --path data/exports --days 14 --dry-run",
+        "notes": "Always dry-run first. Only deletes by age. Never touches proof/cert folders."
+      },
+      "certification": {
+        "certified": true,
+        "certified_at": "2026-01-11T00:39:18.897607+00:00",
+        "certified_by": "System",
+        "cert_notes": "CERTIFIED entry during initial setup",
+        "test_log": []
+      }
+    },
+    {
+      "id": "repo_smoke_check",
+      "name": "Repo Smoke Check (Secrets/Config Drift)",
+      "type": "script",
+      "status": "CERTIFIED",
+      "risk_class": "SAFE",
+      "triggers": [
+        "did we commit",
+        "secrets",
+        "token",
+        "password",
+        "safe to push",
+        "check repo"
+      ],
+      "how_to_use": {
+        "mode": "manual_run",
+        "command": "python ops/scripts/smoke_check.py",
+        "notes": "Scans for obvious secret patterns. Does not run sandbox."
+      },
+      "certification": {
+        "certified": true,
+        "certified_at": "2026-01-11T00:39:20.745972+00:00",
+        "certified_by": "System",
+        "cert_notes": "CERTIFIED entry during initial setup",
+        "test_log": []
+      }
+    },
+    {
+      "id": "go_preflight",
+      "name": "GO Preflight (Fast Checklist + Sanity Checks)",
+      "type": "script",
+      "status": "DORMANT",
+      "risk_class": "SAFE",
+      "triggers": [
+        "go button",
+        "go-live",
+        "launch",
+        "production",
+        "start live",
+        "phase 4"
+      ],
+      "how_to_use": {
+        "mode": "manual_run",
+        "command": "python ops/scripts/preflight_go.py",
+        "notes": "Not active yet. Will be enabled closer to GO when wired to your exact env vars."
+      },
+      "certification": {
+        "certified": false,
+        "certified_at": null,
+        "certified_by": null,
+        "cert_notes": "",
+        "test_log": []
+      }
+    },
+    {
+      "id": "buyer_pipeline_starter",
+      "name": "Buyer Pipeline Starter Pack (Templates + Import Schema)",
+      "type": "pack",
+      "status": "DORMANT",
+      "risk_class": "SAFE",
+      "triggers": [
+        "buyers",
+        "dispo",
+        "exit",
+        "sell the deal",
+        "cash buyer",
+        "who buys"
+      ],
+      "how_to_use": {
+        "mode": "manual_open",
+        "command": "open ops/packs/dormant/templates/BUYER_REGISTRY_TEMPLATE.csv",
+        "notes": "Templates only. No runtime changes."
+      },
+      "certification": {
+        "certified": false,
+        "certified_at": null,
+        "certified_by": null,
+        "cert_notes": "",
+        "test_log": []
+      }
+    },
+    {
+      "id": "third_party_payee_workflow",
+      "name": "Third-Party Payee Workflow (Staged Safety Ladder)",
+      "type": "pack",
+      "status": "DORMANT",
+      "risk_class": "GATED",
+      "triggers": [
+        "pay vendor",
+        "pay contractor",
+        "send money",
+        "third party",
+        "payment",
+        "wire"
+      ],
+      "how_to_use": {
+        "mode": "manual_open",
+        "command": "open ops/packs/dormant/THIRD_PARTY_PAYEE_POLICY.md",
+        "notes": "Advisory-only by default. Execution is always gated."
+      },
+      "certification": {
+        "certified": false,
+        "certified_at": null,
+        "certified_by": null,
+        "cert_notes": "",
+        "test_log": []
+      }
+    },
+    {
+      "id": "buyer_matching_advisor",
+      "name": "Buyer Matching Advisor (Read-Only)",
+      "type": "tool",
+      "status": "DORMANT",
+      "risk_class": "SAFE",
+      "triggers": [
+        "buyer",
+        "exit",
+        "dispo",
+        "who would buy",
+        "sell"
+      ],
+      "how_to_use": {
+        "mode": "manual_open",
+        "command": "open ops/packs/dormant/BUYER_MATCHING_RULES.md",
+        "notes": "Advisory only. No buyer contact."
+      },
+      "certification": {
+        "certified": false,
+        "certified_at": null,
+        "certified_by": null,
+        "cert_notes": "",
+        "test_log": []
+      }
+    },
+    {
+      "id": "deal_packet_generator",
+      "name": "Deal Packet Generator (Lawyer-Ready)",
+      "type": "script",
+      "status": "CERTIFIED",
+      "risk_class": "SAFE",
+      "triggers": [
+        "lawyer",
+        "deal packet",
+        "paperwork",
+        "send deal"
+      ],
+      "how_to_use": {
+        "mode": "manual_run",
+        "command": "python ops/scripts/generate_deal_packet.py",
+        "notes": "Generates clean deal folder. No execution."
+      },
+      "certification": {
+        "certified": true,
+        "certified_at": "2026-01-11T00:42:06.204290+00:00",
+        "certified_by": "Bryan",
+        "cert_notes": "Verified local output only",
+        "test_log": [
+          {
+            "at": "2026-01-11T00:35:44.806228+00:00",
+            "line": "Generated packet folder successfully"
+          },
+          {
+            "at": "2026-01-11T00:42:04.426067+00:00",
+            "line": "Ran script; output folder created"
+          },
+          {
+            "at": "2026-01-11T00:42:06.204305+00:00",
+            "line": "Ran script; output folder created"
+          }
+        ]
+      }
+    },
+    {
+      "id": "eia_application_pack",
+      "name": "EIA Application Pack Builder",
+      "type": "script",
+      "status": "CERTIFIED",
+      "risk_class": "SAFE",
+      "triggers": [
+        "eia",
+        "44 week",
+        "program",
+        "application"
+      ],
+      "how_to_use": {
+        "mode": "manual_run",
+        "command": "python ops/scripts/generate_eia_pack.py",
+        "notes": "Builds EIA-specific packet only."
+      },
+      "certification": {
+        "certified": true,
+        "certified_at": "2026-01-11T00:42:06.204777+00:00",
+        "certified_by": "Bryan",
+        "cert_notes": "Verified local output only",
+        "test_log": [
+          {
+            "at": "2026-01-11T00:35:48.105671+00:00",
+            "line": "Created EIA pack folder successfully"
+          },
+          {
+            "at": "2026-01-11T00:35:58.339346+00:00",
+            "line": "Created EIA pack folder successfully"
+          },
+          {
+            "at": "2026-01-11T00:42:04.426774+00:00",
+            "line": "Ran script; output folder created"
+          },
+          {
+            "at": "2026-01-11T00:42:06.204784+00:00",
+            "line": "Ran script; output folder created"
+          }
+        ]
+      }
+    },
+    {
+      "id": "accountant_snapshot_pack",
+      "name": "Accountant Monthly Snapshot Pack",
+      "type": "script",
+      "status": "CERTIFIED",
+      "risk_class": "SAFE",
+      "triggers": [
+        "accountant",
+        "tax",
+        "monthly books"
+      ],
+      "how_to_use": {
+        "mode": "manual_run",
+        "command": "python ops/scripts/generate_accountant_snapshot.py",
+        "notes": "Masked, clean snapshot. No secrets."
+      },
+      "certification": {
+        "certified": true,
+        "certified_at": "2026-01-11T00:42:06.205110+00:00",
+        "certified_by": "Bryan",
+        "cert_notes": "Verified local output only",
+        "test_log": [
+          {
+            "at": "2026-01-11T00:35:47.586771+00:00",
+            "line": "Created snapshot folder successfully"
+          },
+          {
+            "at": "2026-01-11T00:42:04.427204+00:00",
+            "line": "Ran script; output folder created"
+          },
+          {
+            "at": "2026-01-11T00:42:06.205115+00:00",
+            "line": "Ran script; output folder created"
+          }
+        ]
+      }
+    },
+    {
+      "id": "capital_allocation_advisor",
+      "name": "Capital Allocation Advisor (Read-Only)",
+      "type": "tool",
+      "status": "DORMANT",
+      "risk_class": "SAFE",
+      "triggers": [
+        "allocate",
+        "reinvest",
+        "capital split"
+      ],
+      "how_to_use": {
+        "mode": "manual_open",
+        "command": "open ops/packs/dormant/CAPITAL_ALLOCATION_GUIDE.md",
+        "notes": "Advisory only. No transfers."
+      },
+      "certification": {
+        "certified": false,
+        "certified_at": null,
+        "certified_by": null,
+        "cert_notes": "",
+        "test_log": []
+      }
+    },
+    {
+      "id": "risk_exposure_snapshot",
+      "name": "Risk Exposure Snapshot",
+      "type": "tool",
+      "status": "DORMANT",
+      "risk_class": "SAFE",
+      "triggers": [
+        "risk",
+        "exposure",
+        "how safe"
+      ],
+      "how_to_use": {
+        "mode": "manual_open",
+        "command": "open ops/packs/dormant/RISK_SNAPSHOT_TEMPLATE.md",
+        "notes": "Summarizes exposure. No decisions executed."
+      },
+      "certification": {
+        "certified": false,
+        "certified_at": null,
+        "certified_by": null,
+        "cert_notes": "",
+        "test_log": []
+      }
+    },
+    {
+      "id": "trust_residency_advisor",
+      "name": "Trust & Residency Advisory Pack",
+      "type": "pack",
+      "status": "DORMANT",
+      "risk_class": "GATED",
+      "triggers": [
+        "trust",
+        "residency",
+        "tax planning"
+      ],
+      "how_to_use": {
+        "mode": "manual_open",
+        "command": "open ops/packs/dormant/TRUST_RESIDENCY_ADVISORY.md",
+        "notes": "Advisory only. Legal review required."
+      },
+      "certification": {
+        "certified": false,
+        "certified_at": null,
+        "certified_by": null,
+        "cert_notes": "",
+        "test_log": []
+      }
+    },
+    {
+      "id": "hiring_readiness_pack",
+      "name": "Hiring Readiness Pack",
+      "type": "pack",
+      "status": "DORMANT",
+      "risk_class": "SAFE",
+      "triggers": [
+        "hire",
+        "va",
+        "team",
+        "delegate"
+      ],
+      "how_to_use": {
+        "mode": "manual_open",
+        "command": "open ops/packs/dormant/HIRING_READINESS.md",
+        "notes": "Advises timing and roles only."
+      },
+      "certification": {
+        "certified": false,
+        "certified_at": null,
+        "certified_by": null,
+        "cert_notes": "",
+        "test_log": []
+      }
+    },
+    {
+      "id": "engine_expansion_intake",
+      "name": "Engine Expansion Intake",
+      "type": "tool",
+      "status": "DORMANT",
+      "risk_class": "SAFE",
+      "triggers": [
+        "new engine",
+        "side hustle",
+        "add revenue"
+      ],
+      "how_to_use": {
+        "mode": "manual_open",
+        "command": "open ops/packs/dormant/ENGINE_EXPANSION_INTAKE.md",
+        "notes": "Guides sandbox-first expansion."
+      },
+      "certification": {
+        "certified": false,
+        "certified_at": null,
+        "certified_by": null,
+        "cert_notes": "",
+        "test_log": []
+      }
+    },
+    {
+      "id": "long_horizon_alignment_check",
+      "name": "Long-Horizon Alignment Check",
+      "type": "tool",
+      "status": "DORMANT",
+      "risk_class": "SAFE",
+      "triggers": [
+        "should we",
+        "worth it",
+        "long term"
+      ],
+      "how_to_use": {
+        "mode": "manual_open",
+        "command": "open ops/packs/dormant/LONG_HORIZON_ALIGNMENT.md",
+        "notes": "Flags misalignment with legacy goals."
+      },
+      "certification": {
+        "certified": false,
+        "certified_at": null,
+        "certified_by": null,
+        "cert_notes": "",
+        "test_log": []
+      }
+    }
+  ]
+}

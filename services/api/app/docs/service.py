@@ -49,6 +49,8 @@ def list_generated(db: Session) -> list[GeneratedDoc]:
 
 
 def send_for_esign(db: Session, request: schemas.SendForESignRequest) -> dict:
+    from app.core.engines.dispatch_guard import guard_contract_send
+    guard_contract_send()
     doc = db.query(GeneratedDoc).filter(GeneratedDoc.id == request.generated_doc_id).first()
     if not doc:
         raise ValueError("GeneratedDoc not found")

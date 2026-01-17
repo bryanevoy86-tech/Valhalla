@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
+from app.core.geo import infer_province_market
 from app.models.deal import Deal
 from app.models.match import Buyer, DealBrief
 from app.schemas.notifications_flow import (
@@ -17,6 +18,8 @@ from app.schemas.notifications_flow import (
     SellerNotification,
 )
 from app.routers.flow_lead_to_deal import _score_buyer_for_deal  # reuse matcher
+from app.services.buyer_liquidity import liquidity_score
+from app.services.kpi import emit_kpi
 
 router = APIRouter(
     prefix="/flow",
@@ -49,6 +52,7 @@ def _get_deal_and_brief(
 
 
 def _build_seller_notification(
+    db: Session,
     deal: Deal,
     deal_brief: Optional[DealBrief],
 ) -> SellerNotification:
@@ -58,9 +62,27 @@ def _build_seller_notification(
     to_phone = getattr(lead_obj, "phone", None) if lead_obj else None
     seller_name = getattr(lead_obj, "name", "there") if lead_obj else "there"
 
-    headline = getattr(deal_brief, "headline", None) if deal_brief else None
-    region = getattr(deal_brief, "region", None) if deal_brief else None
-    property_type = getattr(deal_brief, "property_type", None) if deal_brief else None
+    # --- Infer province/market for policy context ---
+    province = None
+    market = None
+    liq_score = None
+    
+    if deal_brief:
+        region = getattr(deal_brief, "region", None)
+        headline = getattr(deal_brief, "headline", None)
+        property_type = getattr(deal_brief, "property_type", None)
+        
+        try:
+            province, market = infer_province_market(region, None)
+            if province and property_type:
+                liq_score = liquidity_score(db, province, market or "ALL", property_type)
+        except Exception:
+            # Non-blocking: geo inference or liquidity fetch failed
+            pass
+    else:
+        headline = None
+        region = None
+        property_type = None
 
     subject = "Update on your property and our offer"
     body_lines = [
@@ -110,6 +132,9 @@ def _build_seller_notification(
         meta={
             "lead_id": str(lead_obj.id) if lead_obj else "",
             "deal_id": str(deal.id),
+            "province": province,
+            "market": market,
+            "liquidity_score": liq_score,
         },
     )
 
@@ -123,6 +148,22 @@ def _build_buyer_notifications(
 ) -> List[BuyerNotification]:
     if deal_brief is None:
         return []
+
+    # --- Infer province/market for context ---
+    province = None
+    market = None
+    liq_score = None
+    
+    region = getattr(deal_brief, "region", None)
+    property_type = getattr(deal_brief, "property_type", None)
+    
+    try:
+        province, market = infer_province_market(region, None)
+        if province and property_type:
+            liq_score = liquidity_score(db, province, market or "ALL", property_type)
+    except Exception:
+        # Non-blocking: geo/liquidity fetch failed
+        pass
 
     buyers = db.query(Buyer).filter(Buyer.active.is_(True)).all()
     candidates = []
@@ -147,11 +188,11 @@ def _build_buyer_notifications(
         to_phone = getattr(buyer, "phone", None)
 
         headline = getattr(deal_brief, "headline", None) or "New deal opportunity"
-        region = getattr(deal_brief, "region", "your target markets")
-        property_type = getattr(deal_brief, "property_type", "property")
+        region_display = getattr(deal_brief, "region", "your target markets")
+        property_type_display = getattr(deal_brief, "property_type", "property")
         price = getattr(deal_brief, "price", None)
 
-        subject = f"Deal opportunity: {property_type} in {region}"
+        subject = f"Deal opportunity: {property_type_display} in {region_display}"
 
         body_lines = [
             f"Hi {buyer_name},",
@@ -159,8 +200,8 @@ def _build_buyer_notifications(
             "We've got a new deal that looks like a fit for your buy box:",
             "",
             f"- Headline: {headline}",
-            f"- Region: {region}",
-            f"- Type: {property_type}",
+            f"- Region: {region_display}",
+            f"- Type: {property_type_display}",
         ]
 
         if price is not None:
@@ -193,6 +234,9 @@ def _build_buyer_notifications(
                 meta={
                     "deal_id": str(deal.id),
                     "deal_brief_id": str(deal_brief.id),
+                    "province": province,
+                    "market": market,
+                    "liquidity_score": liq_score,
                 },
             )
         )
@@ -220,7 +264,7 @@ def notify_deal_parties(
 
     seller_notification: Optional[SellerNotification] = None
     if payload.include_seller:
-        seller_notification = _build_seller_notification(deal, deal_brief)
+        seller_notification = _build_seller_notification(db, deal, deal_brief)
 
     buyer_notifications: List[BuyerNotification] = []
     if payload.include_buyers:
@@ -231,6 +275,20 @@ def notify_deal_parties(
             min_score=payload.min_buyer_score,
             max_buyers=payload.max_buyers,
         )
+
+    # --- Emit KPI: notifications prepared ---
+    corr_id = f"notifications:{deal.id}"
+    emit_kpi(
+        db, "NOTIFICATIONS", "prepared",
+        success=True,
+        actor="system",
+        correlation_id=corr_id,
+        detail={
+            "deal_id": deal.id,
+            "seller_notified": seller_notification is not None,
+            "buyer_count": len(buyer_notifications),
+        },
+    )
 
     notes_parts = []
     if seller_notification:

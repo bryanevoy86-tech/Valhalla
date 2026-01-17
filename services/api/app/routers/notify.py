@@ -7,6 +7,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from ..core.db import get_db
+from app.core.engines.guard_runtime import enforce_engine
+from app.core.engines.actions import OUTREACH
 from ..core.dependencies import require_builder_key
 from ..core.settings import settings
 from ..models.notify import Outbox
@@ -21,6 +23,7 @@ def queue_webhook(
     db: Session = Depends(get_db),
     _: bool = Depends(require_builder_key)
 ):
+    enforce_engine("wholesaling", OUTREACH)
     """Queue a webhook notification for async dispatch."""
     url = payload.url or settings.DEFAULT_WEBHOOK_URL
     if not url:
@@ -47,6 +50,7 @@ def queue_email(
     db: Session = Depends(get_db),
     _: bool = Depends(require_builder_key)
 ):
+    enforce_engine("wholesaling", OUTREACH)
     """Queue an email notification for async dispatch."""
     row = Outbox(
         kind="email",

@@ -49,6 +49,9 @@ from app.models.workflow_guardrails import WorkflowGuardrail
 # PACK CL12: Model Provider Registry
 from app.models.model_provider import ModelProvider
 
+# Governance: Engine State (Core governance layer)
+from app.models.engine_state import EngineStateRow  # noqa: F401
+
 __all__ = [
     "Professional",
     "InteractionLog",

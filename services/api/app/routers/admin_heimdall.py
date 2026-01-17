@@ -11,6 +11,8 @@ from typing import Any, Dict
 
 import requests
 from fastapi import APIRouter, HTTPException, status
+from app.core.engines.guard_runtime import enforce_engine
+from app.core.engines.actions import OUTREACH
 
 router = APIRouter(
     prefix="/admin/heimdall",
@@ -183,6 +185,7 @@ async def get_alerts_status() -> Dict[str, Any]:
     ),
 )
 async def send_test_alert() -> Dict[str, Any]:
+    enforce_engine("wholesaling", OUTREACH)
     try:
         result = _send_discord_test_message(
             "🔔 Heimdall test alert: connectivity OK."

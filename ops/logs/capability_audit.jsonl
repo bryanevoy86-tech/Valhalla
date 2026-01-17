@@ -1,0 +1,7 @@
+{"at": "2026-01-11T00:39:27.721212+00:00", "actor": "Bryan", "action": "certify", "capability_id": "deal_packet_generator", "details": "Local output only; verified", "payload": null}
+{"at": "2026-01-11T00:42:04.426296+00:00", "actor": "Bryan", "action": "certify", "capability_id": "deal_packet_generator", "details": "Verified local output only", "payload": null}
+{"at": "2026-01-11T00:42:04.426929+00:00", "actor": "Bryan", "action": "certify", "capability_id": "eia_application_pack", "details": "Verified local output only", "payload": null}
+{"at": "2026-01-11T00:42:04.427314+00:00", "actor": "Bryan", "action": "certify", "capability_id": "accountant_snapshot_pack", "details": "Verified local output only", "payload": null}
+{"at": "2026-01-11T00:42:06.204497+00:00", "actor": "Bryan", "action": "certify", "capability_id": "deal_packet_generator", "details": "Verified local output only", "payload": null}
+{"at": "2026-01-11T00:42:06.204899+00:00", "actor": "Bryan", "action": "certify", "capability_id": "eia_application_pack", "details": "Verified local output only", "payload": null}
+{"at": "2026-01-11T00:42:06.205259+00:00", "actor": "Bryan", "action": "certify", "capability_id": "accountant_snapshot_pack", "details": "Verified local output only", "payload": null}

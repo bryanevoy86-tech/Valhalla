@@ -1,10 +1,13 @@
 import os
 import asyncio
+import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.observability import drift, retention
+
+log = logging.getLogger("valhalla.startup")
 
 # --- Startup/Shutdown Handler -------------------------------------------------
 
@@ -19,7 +22,19 @@ async def lifespan(app: FastAPI):
                 await asyncio.sleep(int(os.getenv("RETENTION_CRON_MINUTES", "30")) * 60)
         asyncio.create_task(retention_loop())
     
-    drift.check()
+    # Drift check with controlled kill switch
+    try:
+        run_drift = os.getenv("DRIFT_CHECK_ON_STARTUP", "1").lower() in {"1", "true", "yes", "on"}
+        if run_drift:
+            log.info("Running drift.check() on startup (DRIFT_CHECK_ON_STARTUP=1)")
+            drift.check()
+        else:
+            log.warning("Skipping drift.check() on startup (DRIFT_CHECK_ON_STARTUP=0)")
+    except Exception as e:
+        # IMPORTANT: do not suppress. Log full details then crash hard.
+        log.exception("Startup failed during drift.check(): %s", e)
+        raise
+    
     yield
     # Shutdown (if needed later)
 
@@ -51,10 +66,31 @@ app.add_middleware(CorrelationIdMiddleware)
 from app.core.error_handling import register_error_handlers
 register_error_handlers(app)
 
+# --- Go-Live & Kill-Switch Enforcement (Prime Law Safeguard) ----------------
+from app.core.go_live_middleware import GoLiveMiddleware
+app.add_middleware(GoLiveMiddleware)
+
+# --- Execution Classification Enforcement (Precise Go-Live Governance) -------
+from app.core.execution_class_middleware import ExecutionClassMiddleware
+app.add_middleware(ExecutionClassMiddleware)
+
 # --- Governance System: Always-on registration --------------------------------
 # Register all governance routers to ensure endpoints exist for runtime and tests
 from app.routers import governance_king, governance_queen, governance_odin, governance_loki, governance_tyr
 from app.routers import governance_orchestrator, heimdall_build_gate, governance_policy
+from app.routers import go_live as governance_go_live
+from app.routers import risk as governance_risk
+from app.routers import heimdall_governance as governance_heimdall
+from app.routers import regression as governance_regression
+from app.routers import runbook as governance_runbook
+from app.routers import market_policy as governance_market_policy
+from app.routers import followup_ladder as followups_ladder
+from app.routers import buyer_liquidity as buyers_liquidity
+from app.routers import offer_strategy as deals_offer_strategy
+
+# --- Core Engine Governance (PACK 1-5: Canonical enforcement) ----------------
+from app.routers import engine_admin
+from app.routers import runbook_status
 
 app.include_router(governance_king.router, prefix="/api")
 app.include_router(governance_queen.router, prefix="/api")
@@ -64,6 +100,19 @@ app.include_router(governance_tyr.router, prefix="/api")
 app.include_router(governance_orchestrator.router, prefix="/api")
 app.include_router(heimdall_build_gate.router)
 app.include_router(governance_policy.router, prefix="/api")
+app.include_router(governance_go_live.router, prefix="/api")
+app.include_router(governance_risk.router, prefix="/api")
+app.include_router(governance_heimdall.router, prefix="/api")
+app.include_router(governance_regression.router, prefix="/api")
+app.include_router(governance_runbook.router, prefix="/api")
+app.include_router(governance_market_policy.router, prefix="/api")
+app.include_router(followups_ladder.router, prefix="/api")
+app.include_router(buyers_liquidity.router, prefix="/api")
+app.include_router(deals_offer_strategy.router, prefix="/api")
+
+# --- Core Engine Governance Routers (canonical enforcement) --
+app.include_router(engine_admin.router)
+app.include_router(runbook_status.router)
 
 # --- PACK H: Professional Behavioral Signal Extraction -------------------------
 # Safe behavioral analysis from public data sources (no psychology, no diagnosis)

@@ -2,6 +2,8 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from app.core.db import get_db
 from app.docs import service, schemas
+from app.core.engines.guard_runtime import enforce_engine
+from app.core.engines.actions import CONTRACT_SEND
 
 router = APIRouter(prefix="/docs", tags=["docs"])
 
@@ -37,4 +39,5 @@ def send_for_esign(
     request: schemas.SendForESignRequest,
     db: Session = Depends(get_db),
 ):
+    enforce_engine("wholesaling", CONTRACT_SEND)
     return service.send_for_esign(db, request)

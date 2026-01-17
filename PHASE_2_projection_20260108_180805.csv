@@ -1,0 +1,4 @@
+band,leads_day,avg_score,expected_closes_day,spread_used_usd,cost_per_lead_usd,profit_day_usd,profit_week_usd,profit_30d_usd
+conservative,3,65.0,0.135,5400.0,1.5,724.5,5071.5,21735.0
+expected,3,65.0,0.18,10000.0,1.5,1795.5,12568.5,53865.0
+aggressive,3,65.0,0.207,14700.0,1.5,3038.4,21268.8,91152.0

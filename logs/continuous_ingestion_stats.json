@@ -1,0 +1,10 @@
+{
+  "start_time": "2026-01-07T22:04:31.018118",
+  "cycles_completed": 3,
+  "total_leads": 30,
+  "valid_leads": 30,
+  "invalid_leads": 0,
+  "last_cycle_time": 0.004543,
+  "status": "STOPPED",
+  "last_update": "2026-01-07T22:04:41.066106"
+}
