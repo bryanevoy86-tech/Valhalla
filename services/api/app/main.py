@@ -105,6 +105,11 @@ app.include_router(governance_risk.router, prefix="/api")
 app.include_router(governance_heimdall.router, prefix="/api")
 app.include_router(governance_regression.router, prefix="/api")
 app.include_router(governance_runbook.router, prefix="/api")
+
+# DEBUG: Print all governance/runbook routes
+_governance_routes = [r.path for r in app.router.routes if "governance" in r.path or "runbook" in r.path]
+print(f"DEBUG: Registered governance/runbook routes: {_governance_routes}")
+
 app.include_router(governance_market_policy.router, prefix="/api")
 app.include_router(followups_ladder.router, prefix="/api")
 app.include_router(buyers_liquidity.router, prefix="/api")
