@@ -17,7 +17,7 @@ def upgrade():
         sa.Column("id", sa.Integer(), primary_key=True),
         sa.Column("province", sa.String(), nullable=False),
         sa.Column("market", sa.String(), nullable=False, server_default=sa.text("'ALL'")),
-        sa.Column("enabled", sa.Boolean(), nullable=False, server_default=sa.text("1")),
+        sa.Column("enabled", sa.Boolean(), nullable=False, server_default=sa.text("true")),
         sa.Column("rules_json", sa.Text(), nullable=False),
         sa.Column("changed_by", sa.String(), nullable=True),
         sa.Column("reason", sa.String(), nullable=True),
@@ -29,7 +29,7 @@ def upgrade():
     for prov in ["BC","AB","SK","MB","ON","QC","NB","NS","PE","NL","YT","NT","NU"]:
         op.execute(
             "INSERT INTO market_policy (province, market, enabled, rules_json, changed_by, reason, updated_at) VALUES "
-            f"('{prov}','ALL',1,"
+            f"('{prov}','ALL',true,"
             "'{\"contact_windows_local\":[{\"days\":[0,1,2,3,4],\"start\":\"09:00\",\"end\":\"20:00\"},{\"days\":[5],\"start\":\"10:00\",\"end\":\"18:00\"}],"
             "\"channels_allowed\":[\"SMS\",\"CALL\",\"EMAIL\"],\"min_lead_score_to_contact\":0.65}',"
             "'system','Seed safe contact windows',CURRENT_TIMESTAMP)"
