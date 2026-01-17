@@ -158,7 +158,7 @@ from app.models.personal_dashboard import (
 
 # PACK SM: Kids Education & Development Engine
 from app.models.kids_education import (
-    ChildProfile,
+    KidsEducationSMChildProfile,
     LearningPlan,
     EducationLog,
     ChildSummary,
