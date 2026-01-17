@@ -22,7 +22,7 @@ def upgrade():
         sa.Column("min_confidence_prod", sa.Float(), nullable=False, server_default=sa.text("0.90")),
         sa.Column("min_sandbox_trials", sa.Integer(), nullable=False, server_default=sa.text("50")),
         sa.Column("min_sandbox_success_rate", sa.Float(), nullable=False, server_default=sa.text("0.80")),
-        sa.Column("prod_use_enabled", sa.Boolean(), nullable=False, server_default=sa.text("0")),
+        sa.Column("prod_use_enabled", sa.Boolean(), nullable=False, server_default=sa.text("false")),
         sa.Column("changed_by", sa.String(), nullable=True),
         sa.Column("reason", sa.String(), nullable=True),
         sa.Column("updated_at", sa.DateTime(), nullable=False),
