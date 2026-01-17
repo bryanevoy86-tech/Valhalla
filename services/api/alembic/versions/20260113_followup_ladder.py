@@ -21,7 +21,7 @@ def upgrade():
         sa.Column("channel", sa.String(), nullable=False),
         sa.Column("step", sa.Integer(), nullable=False, server_default=sa.text("1")),
         sa.Column("due_at", sa.DateTime(), nullable=False),
-        sa.Column("completed", sa.Boolean(), nullable=False, server_default=sa.text("0")),
+        sa.Column("completed", sa.Boolean(), nullable=False, server_default=sa.text("false")),
         sa.Column("completed_at", sa.DateTime(), nullable=True),
         sa.Column("owner", sa.String(), nullable=True),
         sa.Column("note", sa.Text(), nullable=True),
