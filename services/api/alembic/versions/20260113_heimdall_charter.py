@@ -51,7 +51,7 @@ def upgrade():
         sa.Column("evidence_json", sa.Text(), nullable=True),
         sa.Column("correlation_id", sa.String(), nullable=True),
         sa.Column("actor", sa.String(), nullable=True),
-        sa.Column("prod_eligible", sa.Boolean(), nullable=False, server_default=sa.text("0")),
+        sa.Column("prod_eligible", sa.Boolean(), nullable=False, server_default=sa.text("false")),
         sa.Column("gate_reason", sa.String(), nullable=True),
         sa.Column("created_at", sa.DateTime(), nullable=False),
     )
@@ -61,7 +61,7 @@ def upgrade():
         sa.Column("id", sa.Integer(), primary_key=True),
         sa.Column("domain", sa.String(), nullable=False),
         sa.Column("event", sa.String(), nullable=False),
-        sa.Column("ok", sa.Boolean(), nullable=False, server_default=sa.text("1")),
+        sa.Column("ok", sa.Boolean(), nullable=False, server_default=sa.text("true")),
         sa.Column("confidence", sa.Float(), nullable=True),
         sa.Column("recommendation_id", sa.Integer(), nullable=True),
         sa.Column("correlation_id", sa.String(), nullable=True),
@@ -73,10 +73,10 @@ def upgrade():
     # Seed conservative defaults (prod use OFF until you explicitly enable)
     op.execute(
         "INSERT INTO heimdall_policy (domain, min_confidence_prod, min_sandbox_trials, min_sandbox_success_rate, prod_use_enabled, changed_by, reason, updated_at) VALUES "
-        "('WHOLESALE_OFFER', 0.92, 75, 0.82, 0, 'system', 'Seed charter policy', CURRENT_TIMESTAMP),"
-        "('BUYER_MATCH', 0.90, 50, 0.80, 0, 'system', 'Seed charter policy', CURRENT_TIMESTAMP),"
-        "('CAPITAL_ROUTE', 0.95, 100, 0.85, 0, 'system', 'Seed charter policy', CURRENT_TIMESTAMP),"
-        "('FOLLOWUP_NEXT_ACTION', 0.90, 60, 0.80, 0, 'system', 'Seed charter policy', CURRENT_TIMESTAMP)"
+        "('WHOLESALE_OFFER', 0.92, 75, 0.82, false, 'system', 'Seed charter policy', CURRENT_TIMESTAMP),"
+        "('BUYER_MATCH', 0.90, 50, 0.80, false, 'system', 'Seed charter policy', CURRENT_TIMESTAMP),"
+        "('CAPITAL_ROUTE', 0.95, 100, 0.85, false, 'system', 'Seed charter policy', CURRENT_TIMESTAMP),"
+        "('FOLLOWUP_NEXT_ACTION', 0.90, 60, 0.80, false, 'system', 'Seed charter policy', CURRENT_TIMESTAMP)"
     )
 
 
