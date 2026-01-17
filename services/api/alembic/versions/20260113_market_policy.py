@@ -25,14 +25,14 @@ def upgrade():
         sa.UniqueConstraint("province", "market", name="uq_market_policy_province_market"),
     )
 
-    # Seed ALL-market policies (safe defaults - minimal rules JSON to avoid string formatting issues)
-    sql_template = (
-        "INSERT INTO market_policy (province, market, enabled, rules_json, changed_by, reason, updated_at) "
-        "VALUES ('%s','ALL',true,'{\"contact_windows_local\":[],\"channels_allowed\":[\"SMS\",\"CALL\",\"EMAIL\"],\"min_lead_score_to_contact\":0.5}',"
-        "'system','Seed safe contact windows',CURRENT_TIMESTAMP)"
-    )
+    # Seed ALL-market policies (safe defaults - use string concatenation to avoid % formatting)
     for prov in ["BC","AB","SK","MB","ON","QC","NB","NS","PE","NL","YT","NT","NU"]:
-        op.execute(sa.text(sql_template % prov))
+        sql = (
+            "INSERT INTO market_policy (province, market, enabled, rules_json, changed_by, reason, updated_at) "
+            "VALUES ('" + prov + "','ALL',true,'{\"contact_windows_local\":[],\"channels_allowed\":[\"SMS\",\"CALL\",\"EMAIL\"],\"min_lead_score_to_contact\":0.5}',"
+            "'system','Seed safe contact windows',CURRENT_TIMESTAMP)"
+        )
+        op.execute(sa.text(sql))
 
 def downgrade():
     op.drop_table("market_policy")
