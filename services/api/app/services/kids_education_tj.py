@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from typing import List, Optional
 from sqlalchemy.orm import Session
 
-from app.models.kids_education_tj import ChildProfile, LearningPlan, EducationLog
+from app.models.kids_education_tj import KidsEducationChildProfile, LearningPlan, EducationLog
 from app.schemas.kids_education_tj import (
     ChildProfileCreate,
     LearningPlanCreate,
@@ -15,20 +15,20 @@ from app.schemas.kids_education_tj import (
 )
 
 
-def create_child(db: Session, payload: ChildProfileCreate) -> ChildProfile:
-    obj = ChildProfile(**payload.model_dump())
+def create_child(db: Session, payload: ChildProfileCreate) -> KidsEducationChildProfile:
+    obj = KidsEducationChildProfile(**payload.model_dump())
     db.add(obj)
     db.commit()
     db.refresh(obj)
     return obj
 
 
-def list_children(db: Session) -> List[ChildProfile]:
-    return db.query(ChildProfile).order_by(ChildProfile.name.asc()).all()
+def list_children(db: Session) -> List[KidsEducationChildProfile]:
+    return db.query(KidsEducationChildProfile).order_by(KidsEducationChildProfile.name.asc()).all()
 
 
 def create_learning_plan(db: Session, payload: LearningPlanCreate) -> Optional[LearningPlan]:
-    child = db.query(ChildProfile).filter(ChildProfile.id == payload.child_id).first()
+    child = db.query(KidsEducationChildProfile).filter(KidsEducationChildProfile.id == payload.child_id).first()
     if not child:
         return None
     obj = LearningPlan(**payload.model_dump())
@@ -39,7 +39,7 @@ def create_learning_plan(db: Session, payload: LearningPlanCreate) -> Optional[L
 
 
 def create_education_log(db: Session, payload: EducationLogCreate) -> Optional[EducationLog]:
-    child = db.query(ChildProfile).filter(ChildProfile.id == payload.child_id).first()
+    child = db.query(KidsEducationChildProfile).filter(KidsEducationChildProfile.id == payload.child_id).first()
     if not child:
         return None
     obj = EducationLog(**payload.model_dump())
@@ -54,7 +54,7 @@ def get_child_weekly_summary(
     child_id: int,
     week_of: datetime,
 ) -> Optional[ChildWeeklySummary]:
-    child = db.query(ChildProfile).filter(ChildProfile.id == child_id).first()
+    child = db.query(KidsEducationChildProfile).filter(KidsEducationChildProfile.id == child_id).first()
     if not child:
         return None
 

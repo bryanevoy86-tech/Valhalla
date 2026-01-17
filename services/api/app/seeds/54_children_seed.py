@@ -13,8 +13,8 @@ def run(db: Session):
         ("Charlee", 7, "horses"),
         ("Archer", 4, "dino"),
     ]:
-        from app.children.models import ChildProfile
-        kid = db.query(ChildProfile).filter(ChildProfile.name == name).first()
+        from app.children.models import KidsHubChildProfile
+        kid = db.query(KidsHubChildProfile).filter(KidsHubChildProfile.name == name).first()
         if not kid:
             svc.child_create(db, {"name": name, "age": age, "avatar_theme": theme})
     db.commit()

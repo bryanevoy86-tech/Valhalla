@@ -6,7 +6,7 @@ import datetime
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from app.children.models import (
-    ChildProfile, VaultGuardian, Chore, ChoreLog, CoinWallet, CoinTxn, WishlistItem, IdeaSubmission
+    KidsHubChildProfile, VaultGuardian, Chore, ChoreLog, CoinWallet, CoinTxn, WishlistItem, IdeaSubmission
 )
 
 def _rate():
@@ -22,7 +22,7 @@ def _wallet(db: Session, child_id: int) -> CoinWallet:
     return w
 
 def child_create(db: Session, body: dict):
-    row = ChildProfile(**body)
+    row = KidsHubChildProfile(**body)
     db.add(row)
     db.commit()
     db.refresh(row)
@@ -47,7 +47,7 @@ def chore_done(db: Session, chore_id: int):
     log = ChoreLog(chore_id=chore_id, coins_awarded=c.coins)
     db.add(log)
     # split per save/invest rules
-    kid = db.query(ChildProfile).get(c.child_id)
+    kid = db.query(KidsHubChildProfile).get(c.child_id)
     w = _wallet(db, c.child_id)
     save_pct = kid.save_pct
     invest_pct = kid.invest_pct
@@ -68,7 +68,7 @@ def chore_done(db: Session, chore_id: int):
 
 def earn_manual(db: Session, child_id: int, coins: int, memo: str | None):
     w = _wallet(db, child_id)
-    kid = db.query(ChildProfile).get(child_id)
+    kid = db.query(KidsHubChildProfile).get(child_id)
     save_amt = int(round(coins * kid.save_pct))
     invest_amt = int(round(coins * kid.invest_pct))
     spend_amt = coins - save_amt - invest_amt
@@ -94,7 +94,7 @@ def spend(db: Session, child_id: int, coins: int, memo: str | None):
     return True, None
 
 def set_rules(db: Session, child_id: int, save_pct: float, invest_pct: float):
-    kid = db.query(ChildProfile).get(child_id)
+    kid = db.query(KidsHubChildProfile).get(child_id)
     if not kid:
         return None
     kid.save_pct = save_pct

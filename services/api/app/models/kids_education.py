@@ -9,9 +9,9 @@ from datetime import datetime
 from app.models.base import Base
 
 
-class ChildProfile(Base):
+class KidsEducationSMChildProfile(Base):
     """Child profile with user-defined skill levels and interests."""
-    __tablename__ = 'child_profiles'
+    __tablename__ = 'child_profiles_sm'
     
     id = Column(Integer, primary_key=True)
     child_id = Column(String(255), nullable=False, unique=True)
@@ -31,11 +31,11 @@ class ChildProfile(Base):
 
 class LearningPlan(Base):
     """Customized learning plan with user-defined goals and activities."""
-    __tablename__ = 'learning_plans'
+    __tablename__ = 'learning_plans_sm'
     
     id = Column(Integer, primary_key=True)
     plan_id = Column(String(255), nullable=False, unique=True)
-    child_id = Column(Integer, ForeignKey('child_profiles.id'), nullable=False)
+    child_id = Column(Integer, ForeignKey('child_profiles_sm.id'), nullable=False)
     timeframe = Column(String(50), nullable=False)  # daily, weekly, monthly
     goals = Column(JSON, nullable=True)  # [{goal: str, notes: str}]
     activities = Column(JSON, nullable=True)  # [{activity: str, category: str, duration_minutes: int}]
@@ -45,16 +45,16 @@ class LearningPlan(Base):
     updated_at = Column(DateTime, nullable=False, server_default=func.now())
     
     # Relationships
-    child = relationship('ChildProfile', back_populates='learning_plans', foreign_keys=[child_id])
+    child = relationship('KidsEducationSMChildProfile', back_populates='learning_plans', foreign_keys=[child_id])
 
 
 class EducationLog(Base):
     """Daily education log tracking completed activities and progress."""
-    __tablename__ = 'education_logs'
+    __tablename__ = 'education_logs_sm'
     
     id = Column(Integer, primary_key=True)
     log_id = Column(String(255), nullable=False, unique=True)
-    child_id = Column(Integer, ForeignKey('child_profiles.id'), nullable=False)
+    child_id = Column(Integer, ForeignKey('child_profiles_sm.id'), nullable=False)
     date = Column(DateTime, nullable=False)
     completed_activities = Column(JSON, nullable=True)  # [string]: activities completed
     highlights = Column(JSON, nullable=True)  # [string]: fun/notable moments
@@ -62,16 +62,16 @@ class EducationLog(Base):
     created_at = Column(DateTime, nullable=False, server_default=func.now())
     
     # Relationships
-    child = relationship('ChildProfile', back_populates='education_logs', foreign_keys=[child_id])
+    child = relationship('KidsEducationSMChildProfile', back_populates='education_logs', foreign_keys=[child_id])
 
 
 class ChildSummary(Base):
     """Weekly education summary with growth notes and next steps."""
-    __tablename__ = 'child_summaries'
+    __tablename__ = 'child_summaries_sm'
     
     id = Column(Integer, primary_key=True)
     summary_id = Column(String(255), nullable=False, unique=True)
-    child_id = Column(Integer, ForeignKey('child_profiles.id'), nullable=False)
+    child_id = Column(Integer, ForeignKey('child_profiles_sm.id'), nullable=False)
     week_of = Column(DateTime, nullable=False)
     completed_goals = Column(JSON, nullable=True)  # [string]: goals achieved
     fun_moments = Column(JSON, nullable=True)  # [string]: fun/positive experiences
@@ -80,4 +80,4 @@ class ChildSummary(Base):
     created_at = Column(DateTime, nullable=False, server_default=func.now())
     
     # Relationships
-    child = relationship('ChildProfile', back_populates='summaries', foreign_keys=[child_id])
+    child = relationship('KidsEducationSMChildProfile', back_populates='summaries', foreign_keys=[child_id])

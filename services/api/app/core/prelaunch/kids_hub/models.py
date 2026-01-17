@@ -7,7 +7,7 @@ import uuid
 from app.models.base import Base
 
 
-class ChildProfile(Base):
+class PrelaunchKidsHubChildProfile(Base):
     """Child profile with preferences and metadata."""
     __tablename__ = "children_profiles"
 

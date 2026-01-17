@@ -7,14 +7,14 @@ from sqlalchemy.orm import Session
 from . import models, schemas
 
 
-def list_children(db: Session) -> List[models.ChildProfile]:
+def list_children(db: Session) -> List[models.PrelaunchKidsHubChildProfile]:
     """List all children."""
-    return db.query(models.ChildProfile).order_by(models.ChildProfile.created_at).all()
+    return db.query(models.PrelaunchKidsHubChildProfile).order_by(models.PrelaunchKidsHubChildProfile.created_at).all()
 
 
-def create_child(db: Session, data: schemas.ChildProfileCreate) -> models.ChildProfile:
+def create_child(db: Session, data: schemas.ChildProfileCreate) -> models.PrelaunchKidsHubChildProfile:
     """Create a new child profile."""
-    c = models.ChildProfile(**data.model_dump())
+    c = models.PrelaunchKidsHubChildProfile(**data.model_dump())
     db.add(c)
     db.commit()
     db.refresh(c)

@@ -5,7 +5,7 @@ from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, Foreign
 from sqlalchemy.sql import func
 from app.core.db import Base
 
-class ChildProfile(Base):
+class KidsHubChildProfile(Base):
     __tablename__ = "child_profiles"
     id = Column(Integer, primary_key=True)
     name = Column(String(64), nullable=False)

@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.core.db import get_db
 from app.children.schemas import *
 from app.children import service as svc
-from app.children.models import ChildProfile, Chore
+from app.children.models import KidsHubChildProfile, Chore
 
 router = APIRouter(prefix="/kids", tags=["kids"])
 

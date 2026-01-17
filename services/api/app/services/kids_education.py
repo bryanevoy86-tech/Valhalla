@@ -3,7 +3,7 @@ PACK SM: Kids Education & Development Engine
 Service functions for learning plans and education tracking
 """
 from sqlalchemy.orm import Session
-from app.models.kids_education import ChildProfile, LearningPlan, EducationLog, ChildSummary
+from app.models.kids_education import KidsEducationSMChildProfile, LearningPlan, EducationLog, ChildSummary
 from datetime import datetime, timedelta
 from typing import List, Optional, Dict, Any
 
@@ -16,9 +16,9 @@ def create_child_profile(
     interests: Optional[List[str]] = None,
     skill_levels: Optional[Dict[str, str]] = None,
     notes: Optional[str] = None
-) -> ChildProfile:
+) -> KidsEducationSMChildProfile:
     """Create a child profile."""
-    child = ChildProfile(
+    child = KidsEducationSMChildProfile(
         child_id=child_id,
         name=name,
         age=age,
@@ -32,9 +32,9 @@ def create_child_profile(
     return child
 
 
-def list_children(db: Session) -> List[ChildProfile]:
+def list_children(db: Session) -> List[KidsEducationSMChildProfile]:
     """List all children."""
-    return db.query(ChildProfile).order_by(ChildProfile.age).all()
+    return db.query(KidsEducationSMChildProfile).order_by(KidsEducationSMChildProfile.age).all()
 
 
 def create_learning_plan(
