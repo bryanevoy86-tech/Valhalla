@@ -23,7 +23,7 @@ def upgrade():
         sa.Column("max_daily_exposure", sa.Float(), nullable=False, server_default=sa.text("0")),
         sa.Column("max_open_risk", sa.Float(), nullable=False, server_default=sa.text("0")),
         sa.Column("max_actions_per_day", sa.Integer(), nullable=False, server_default=sa.text("0")),
-        sa.Column("enabled", sa.Boolean(), nullable=False, server_default=sa.text("1")),
+        sa.Column("enabled", sa.Boolean(), nullable=False, server_default=sa.text("true")),
         sa.Column("changed_by", sa.String(), nullable=True),
         sa.Column("reason", sa.String(), nullable=True),
         sa.Column("updated_at", sa.DateTime(), nullable=False),
@@ -49,7 +49,7 @@ def upgrade():
         sa.Column("engine", sa.String(), nullable=False),
         sa.Column("action", sa.String(), nullable=False),
         sa.Column("amount", sa.Float(), nullable=False, server_default=sa.text("0")),
-        sa.Column("ok", sa.Boolean(), nullable=False, server_default=sa.text("1")),
+        sa.Column("ok", sa.Boolean(), nullable=False, server_default=sa.text("true")),
         sa.Column("reason", sa.String(), nullable=True),
         sa.Column("correlation_id", sa.String(), nullable=True),
         sa.Column("actor", sa.String(), nullable=True),
@@ -61,10 +61,10 @@ def upgrade():
     op.execute(
         "INSERT INTO risk_policy (engine, max_daily_loss, max_daily_exposure, max_open_risk, max_actions_per_day, enabled, changed_by, reason, updated_at) "
         "VALUES "
-        "('GLOBAL', 250.0, 1500.0, 1500.0, 0, 1, 'system', 'Seed default GLOBAL floors', CURRENT_TIMESTAMP),"
-        "('WHOLESALE', 200.0, 1000.0, 1000.0, 0, 1, 'system', 'Seed default WHOLESALE floors', CURRENT_TIMESTAMP),"
-        "('CAPITAL', 150.0, 750.0, 750.0, 0, 1, 'system', 'Seed default CAPITAL floors', CURRENT_TIMESTAMP),"
-        "('NOTIFY', 0.0, 0.0, 0.0, 0, 0, 'system', 'Disabled until comms policies are set', CURRENT_TIMESTAMP)"
+        "('GLOBAL', 250.0, 1500.0, 1500.0, 0, true, 'system', 'Seed default GLOBAL floors', CURRENT_TIMESTAMP),"
+        "('WHOLESALE', 200.0, 1000.0, 1000.0, 0, true, 'system', 'Seed default WHOLESALE floors', CURRENT_TIMESTAMP),"
+        "('CAPITAL', 150.0, 750.0, 750.0, 0, true, 'system', 'Seed default CAPITAL floors', CURRENT_TIMESTAMP),"
+        "('NOTIFY', 0.0, 0.0, 0.0, 0, false, 'system', 'Disabled until comms policies are set', CURRENT_TIMESTAMP)"
     )
 
 
