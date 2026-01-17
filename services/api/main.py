@@ -57,6 +57,12 @@ if cors:
     )
 
 # Routers
+# NOTE: Two runbook endpoints exist (kept for backward compatibility):
+#   - /api/runbook/status (runbook_status_router): Legacy unified health
+#   - /api/governance/runbook/status (governance_runbook_router): Canonical governance/blockers/policies
+# RECOMMENDED: Use /api/governance/runbook/status for go-live monitoring + WeWeb health
+# TODO: Consider deprecating /api/runbook/status after migration period
+
 app.include_router(policy_router)
 app.include_router(ops_router)  # /ops/* guarded endpoints
 app.include_router(engine_admin_router)  # /api/engines/* (Heimdall-governed)
@@ -64,13 +70,22 @@ app.include_router(outcomes_router)  # /api/outcomes (closed-loop learning)
 app.include_router(intake_router)  # /api/intake (quarantine-first)
 app.include_router(intake_admin_router)  # /api/intake/admin (promotion)
 app.include_router(metrics_router)  # /api/metrics (gate inputs)
-app.include_router(runbook_status_router)  # /api/runbook/status (unified health)
-app.include_router(governance_runbook_router.router, prefix="/api")  # /api/governance/runbook/status
+app.include_router(runbook_status_router)  # /api/runbook/status (legacy health)
+app.include_router(governance_runbook_router.router, prefix="/api")  # /api/governance/runbook/status (canonical)
 
-# DEBUG: Route list endpoint (remove after debugging)
-@app.get("/__routes", include_in_schema=False)
-def __routes():
-    return JSONResponse(sorted({r.path for r in app.router.routes}))
+# DEBUG: Route list endpoint (gated behind env var for security)
+# Set EXPOSE_DEBUG_ROUTES=1 temporarily to inspect routes; default is disabled
+if os.getenv("EXPOSE_DEBUG_ROUTES") == "1":
+    @app.get("/__routes", include_in_schema=False)
+    def __routes():
+        """Debug endpoint: list all registered routes (only when env var set)."""
+        return JSONResponse(sorted({r.path for r in app.router.routes}))
+else:
+    @app.get("/__routes", include_in_schema=False)
+    def __routes_disabled():
+        """Debug endpoint disabled in production (EXPOSE_DEBUG_ROUTES not set)."""
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Not found")
 
 
 @app.api_route("/", methods=["GET", "HEAD"])
