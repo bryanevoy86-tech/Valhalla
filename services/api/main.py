@@ -13,6 +13,7 @@ from app.routers.intake import router as intake_router
 from app.routers.intake_admin import router as intake_admin_router
 from app.routers.metrics import router as metrics_router
 from app.routers.runbook_status import router as runbook_status_router
+from app.routers import runbook as governance_runbook_router
 
 
 def _truthy(v: str | None, default: bool = False) -> bool:
@@ -64,6 +65,12 @@ app.include_router(intake_router)  # /api/intake (quarantine-first)
 app.include_router(intake_admin_router)  # /api/intake/admin (promotion)
 app.include_router(metrics_router)  # /api/metrics (gate inputs)
 app.include_router(runbook_status_router)  # /api/runbook/status (unified health)
+app.include_router(governance_runbook_router.router, prefix="/api")  # /api/governance/runbook/status
+
+# DEBUG: Route list endpoint (remove after debugging)
+@app.get("/__routes", include_in_schema=False)
+def __routes():
+    return JSONResponse(sorted({r.path for r in app.router.routes}))
 
 
 @app.api_route("/", methods=["GET", "HEAD"])
