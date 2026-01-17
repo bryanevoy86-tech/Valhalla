@@ -58,6 +58,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# --- DEBUG: Route List Endpoint (remove after debugging) ----------------------
+from fastapi.responses import JSONResponse
+
+@app.get("/__routes", include_in_schema=False)
+def __routes():
+    return sorted({r.path for r in app.router.routes})
+
 # --- PACK TW: Correlation ID Middleware (must be early) ----------------------
 from app.core.correlation_middleware import CorrelationIdMiddleware
 app.add_middleware(CorrelationIdMiddleware)
@@ -117,7 +124,8 @@ app.include_router(deals_offer_strategy.router, prefix="/api")
 
 # --- Core Engine Governance Routers (canonical enforcement) --
 app.include_router(engine_admin.router)
-app.include_router(runbook_status.router)
+# ISOLATED: Commenting out runbook_status.router to isolate governance_runbook router
+# app.include_router(runbook_status.router)
 
 # --- PACK H: Professional Behavioral Signal Extraction -------------------------
 # Safe behavioral analysis from public data sources (no psychology, no diagnosis)
