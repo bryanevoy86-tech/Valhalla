@@ -17,7 +17,7 @@ def upgrade():
         sa.Column("id", sa.Integer(), primary_key=True),
         sa.Column("province", sa.String(), nullable=False),
         sa.Column("market", sa.String(), nullable=False, server_default=sa.text("'ALL'")),
-        sa.Column("enabled", sa.Boolean(), nullable=False, server_default=sa.text("1")),
+        sa.Column("enabled", sa.Boolean(), nullable=False, server_default=sa.text("true")),
         sa.Column("max_arv_multiplier", sa.Float(), nullable=False, server_default=sa.text("0.70")),
         sa.Column("default_assignment_fee", sa.Float(), nullable=False, server_default=sa.text("10000")),
         sa.Column("default_fees_buffer", sa.Float(), nullable=False, server_default=sa.text("2500")),
