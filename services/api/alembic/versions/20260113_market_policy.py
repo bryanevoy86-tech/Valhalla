@@ -25,12 +25,11 @@ def upgrade():
         sa.UniqueConstraint("province", "market", name="uq_market_policy_province_market"),
     )
 
-    # Seed ALL-market policies (safe defaults - use string concatenation to avoid % formatting)
+    # Seed ALL-market policies (safe defaults - minimal JSON to avoid parsing issues)
     for prov in ["BC","AB","SK","MB","ON","QC","NB","NS","PE","NL","YT","NT","NU"]:
         sql = (
             "INSERT INTO market_policy (province, market, enabled, rules_json, changed_by, reason, updated_at) "
-            "VALUES ('" + prov + "','ALL',true,'{\"contact_windows_local\":[],\"channels_allowed\":[\"SMS\",\"CALL\",\"EMAIL\"],\"min_lead_score_to_contact\":0.5}',"
-            "'system','Seed safe contact windows',CURRENT_TIMESTAMP)"
+            "VALUES ('" + prov + "','ALL',true,'{}','system','Seed safe contact windows',CURRENT_TIMESTAMP)"
         )
         op.execute(sa.text(sql))
 
