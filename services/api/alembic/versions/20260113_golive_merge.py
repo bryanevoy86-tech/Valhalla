@@ -20,15 +20,15 @@ def upgrade():
     op.create_table(
         "go_live_state",
         sa.Column("id", sa.Integer(), primary_key=True),
-        sa.Column("go_live_enabled", sa.Boolean(), nullable=False, server_default=sa.text("0")),
-        sa.Column("kill_switch_engaged", sa.Boolean(), nullable=False, server_default=sa.text("0")),
+        sa.Column("go_live_enabled", sa.Boolean(), nullable=False, server_default=sa.text("false")),
+        sa.Column("kill_switch_engaged", sa.Boolean(), nullable=False, server_default=sa.text("false")),
         sa.Column("changed_by", sa.String(), nullable=True),
         sa.Column("reason", sa.String(), nullable=True),
         sa.Column("updated_at", sa.DateTime(), nullable=False),
     )
     op.execute(
         "INSERT INTO go_live_state (id, go_live_enabled, kill_switch_engaged, updated_at) "
-        "VALUES (1, 0, 0, CURRENT_TIMESTAMP)"
+        "VALUES (1, false, false, CURRENT_TIMESTAMP)"
     )
 
 
