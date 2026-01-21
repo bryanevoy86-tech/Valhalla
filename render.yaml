@@ -18,7 +18,7 @@ services:
     autoDeploy: true
     dockerfilePath: ./Dockerfile
     dockerContext: .
-    dockerCommand: alembic upgrade head && python start.py
+    dockerCommand: alembic upgrade heads && python start.py
     healthCheckPath: /api/health
     envVars:
       - key: APP_ENV
