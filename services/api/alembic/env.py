@@ -326,6 +326,9 @@ def run_migrations_online():
         poolclass=pool.NullPool,
     )
     with connectable.connect() as connection:
+        # Repair schema state mismatch before running migrations
+        _repair_schema_state(connection)
+        
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
@@ -333,6 +336,46 @@ def run_migrations_online():
         )
         with context.begin_transaction():
             context.run_migrations()
+
+
+def _repair_schema_state(connection):
+    """
+    Repair schema state mismatch between actual database and alembic_version.
+    
+    This handles partial deployments where tables exist but migration versions
+    aren't marked as applied in alembic_version.
+    """
+    from sqlalchemy import text, inspect
+    
+    try:
+        inspector = inspect(connection)
+        existing_tables = set(inspector.get_table_names())
+        
+        if 'alembic_version' not in existing_tables:
+            return  # Alembic not yet initialized
+        
+        # Tables that indicate specific migrations were applied
+        migration_table_map = {
+            'v3_4_capital_telemetry': ['telemetry_events', 'capital_intake'],
+            'v3_5_grants': ['grant_sources', 'grant_records'],
+            'v3_6_buyer_matching': ['buyers', 'deal_briefs'],
+        }
+        
+        # Get already-applied revisions
+        result = connection.execute(text("SELECT version FROM alembic_version"))
+        applied_revisions = {row[0] for row in result}
+        
+        # For each migration, check if its tables exist but it's not marked as applied
+        for revision_id, table_names in migration_table_map.items():
+            if revision_id not in applied_revisions:
+                # Check if all this migration's tables exist
+                if all(t in existing_tables for t in table_names):
+                    # Mark as applied
+                    connection.execute(text(f"INSERT INTO alembic_version (version) VALUES ('{revision_id}')"))
+                    print(f"[Schema Repair] Marked {revision_id} as applied (tables {table_names} exist)")
+    except Exception as e:
+        # Don't block migrations if repair fails
+        print(f"[Schema Repair] Warning: {e}")
 
 if context.is_offline_mode():
     run_migrations_offline()
