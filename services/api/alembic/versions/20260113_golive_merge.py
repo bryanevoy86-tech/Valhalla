@@ -11,7 +11,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = "20260113_golive_merge"
-down_revision = ("v3_10_integrity_events", "9e9f0b8c7f91", "pack_64_contract_engine", "pack_65_buyer_match")
+down_revision = ("v3_10_integrity_events", "pack_64_contract_engine", "pack_65_buyer_match")
 branch_labels = None
 depends_on = None
 

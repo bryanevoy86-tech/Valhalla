@@ -1,7 +1,7 @@
 """add staff table
 
 Revision ID: 73_staff_table
-Revises: 85_god_case_rescan_fields
+Revises: 84_specialist_feedback
 Create Date: 2025-11-24
 
 """
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = '73_staff_table'
-down_revision = '85_god_case_rescan_fields'
+down_revision = "84_specialist_feedback"
 branch_labels = None
 depends_on = None
 

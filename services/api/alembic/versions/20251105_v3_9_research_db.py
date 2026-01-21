@@ -4,7 +4,7 @@ import sqlalchemy as sa
 from sqlalchemy.engine.reflection import Inspector
 
 revision = "v3_9_research_db"
-down_revision = "v3_8_contracts"
+down_revision = "v3_4_embeddings"
 branch_labels = None
 depends_on = None
 
