@@ -5,7 +5,7 @@ from sqlalchemy import inspect
 
 # revision identifiers
 revision = "ops_enablers_001"
-down_revision = None
+down_revision = "20260121_go_live_core_tables"
 branch_labels = None
 depends_on = None
 
