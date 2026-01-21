@@ -6,6 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.observability import drift, retention
+from app.core.db import verify_schema_initialized
 
 log = logging.getLogger("valhalla.startup")
 
@@ -15,6 +16,14 @@ log = logging.getLogger("valhalla.startup")
 async def lifespan(app: FastAPI):
     """Modern FastAPI lifespan context manager (replaces deprecated @app.on_event)."""
     # Startup
+    
+    # Verify schema is initialized (migrations applied)
+    try:
+        verify_schema_initialized()
+    except RuntimeError as e:
+        log.error("Schema validation failed: %s", e)
+        raise
+    
     if retention.EN:
         async def retention_loop():
             while True:
