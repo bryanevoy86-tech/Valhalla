@@ -8,7 +8,7 @@ echo "==> Python version: $(python --version)"
 echo "==> Running migrations..."
 
 cd /app/services/api
-alembic upgrade head
+alembic upgrade heads
 
 echo "==> Starting API with wrapper script..."
 exec python start.py
