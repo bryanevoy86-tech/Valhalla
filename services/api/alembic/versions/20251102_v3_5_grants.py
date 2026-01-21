@@ -18,7 +18,7 @@ depends_on = None
 
 def upgrade():
     # Check if grant_sources table already exists (idempotent)
-    if not op.get_bind().dialect.has_table(op.get_bind().connect(), "grant_sources"):
+    if not op.get_bind().dialect.has_table(op.get_bind(), "grant_sources"):
         op.create_table(
             "grant_sources",
             sa.Column("id", sa.Integer, primary_key=True),
@@ -31,7 +31,7 @@ def upgrade():
         )
     
     # Check if grant_records table already exists (idempotent)
-    if not op.get_bind().dialect.has_table(op.get_bind().connect(), "grant_records"):
+    if not op.get_bind().dialect.has_table(op.get_bind(), "grant_records"):
         op.create_table(
             "grant_records",
             sa.Column("id", sa.Integer, primary_key=True),
