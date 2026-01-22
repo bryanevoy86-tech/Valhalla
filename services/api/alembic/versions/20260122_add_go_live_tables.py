@@ -49,15 +49,15 @@ def upgrade():
             kill_switch_engaged BOOLEAN NOT NULL DEFAULT TRUE,
             changed_by VARCHAR NULL,
             reason VARCHAR NULL,
-            updated_at TIMESTAMP NULL
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
         """
     )
 
     op.execute(
         """
-        INSERT INTO go_live_state (id, go_live_enabled, kill_switch_engaged)
-        VALUES (1, FALSE, TRUE)
+        INSERT INTO go_live_state (id, go_live_enabled, kill_switch_engaged, updated_at)
+        VALUES (1, FALSE, TRUE, CURRENT_TIMESTAMP)
         ON CONFLICT (id) DO NOTHING;
         """
     )
