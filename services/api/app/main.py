@@ -2,8 +2,9 @@ import os
 import asyncio
 import logging
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
 
 from app.observability import drift, retention
 from app.core.db import verify_schema_initialized
@@ -59,13 +60,48 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# ✅ CORS Middleware (MUST be first): Allow WeWeb and OPTIONS preflight requests
+ALLOWED_ORIGINS = [
+    "https://editor.weweb.io",
+    "https://app.weweb.io",
+    "https://valhalla.weweb-preview.io",
+    "https://preview.weweb.io",
+    # Optional: add your published WeWeb domain when ready
+    # "https://yourapp.weweb.app",
+    # Allow localhost for dev
+    "http://localhost:3000",
+    "http://localhost:4000",
+    "http://localhost:8000",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=False,  # IMPORTANT: keep False unless you are using cookies with credentials
+    allow_methods=["*"],      # includes OPTIONS
     allow_headers=["*"],
+    expose_headers=["*"],
+    max_age=86400,            # 24 hours for preflight cache
 )
+
+# ✅ OPTIONS Bypass Middleware: Ensure OPTIONS never hits auth/business logic
+class OptionsBypassMiddleware:
+    """Pass through all OPTIONS requests with 200 status immediately."""
+    
+    def __init__(self, app):
+        self.app = app
+    
+    async def __call__(self, request: Request, call_next):
+        if request.method == "OPTIONS":
+            return Response(status_code=200, headers={
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "*",
+                "Access-Control-Allow-Headers": "*",
+                "Access-Control-Max-Age": "86400",
+            })
+        return await call_next(request)
+
+app.add_middleware(OptionsBypassMiddleware)
 
 # --- DEBUG: Route List Endpoint (remove after debugging) ----------------------
 from fastapi.responses import JSONResponse
