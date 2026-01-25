@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse
 
 from app.core.policy.router import router as policy_router
 from app.security.auth import router as ops_router  # owner auth (+ /ops/token)
+from app.routers.admin_go_live import router as admin_go_live_router
 from app.routers.engine_admin import router as engine_admin_router
 from app.routers.outcomes import router as outcomes_router
 from app.routers.intake import router as intake_router
@@ -65,6 +66,7 @@ if cors:
 
 app.include_router(policy_router)
 app.include_router(ops_router)  # /ops/* guarded endpoints
+app.include_router(admin_go_live_router)  # /api/admin/* go-live endpoints
 app.include_router(engine_admin_router)  # /api/engines/* (Heimdall-governed)
 app.include_router(outcomes_router)  # /api/outcomes (closed-loop learning)
 app.include_router(intake_router)  # /api/intake (quarantine-first)
