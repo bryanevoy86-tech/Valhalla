@@ -45,17 +45,28 @@ app = FastAPI(
     redoc_url=redoc_url,
 )
 
-# CORS (locked minimal: env-driven)
-cors = (os.getenv("CORS_ALLOWED_ORIGINS") or "").strip()
-if cors:
-    allow_origins = [o.strip() for o in cors.split(",") if o.strip()]
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=allow_origins,
-        allow_credentials=True,
-        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-        allow_headers=["Authorization", "Content-Type", "Accept", "X-Requested-With"],
-    )
+# CORS: Support WeWeb (editor/preview/app) + custom origins from env
+# WeWeb subdomains that may call the API from different contexts
+weweb_origins = [
+    "https://editor.weweb.io",
+    "https://app.weweb.io",
+    "https://preview.weweb.io",
+]
+
+# Allow additional origins from environment variable (comma-separated)
+env_origins = (os.getenv("CORS_ALLOWED_ORIGINS") or "").strip()
+additional_origins = [o.strip() for o in env_origins.split(",") if o.strip()] if env_origins else []
+
+all_origins = weweb_origins + additional_origins
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=all_origins,
+    allow_origin_regex=r"^https:\/\/.*\.weweb\.io$|^https:\/\/.*\.weweb\.app$",
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Routers
 # NOTE: Two runbook endpoints exist (kept for backward compatibility):
