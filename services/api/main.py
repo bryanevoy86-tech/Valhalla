@@ -45,27 +45,29 @@ app = FastAPI(
     redoc_url=redoc_url,
 )
 
-# CORS: Support WeWeb (editor/preview/app) + custom origins from env
-# WeWeb subdomains that may call the API from different contexts
-weweb_origins = [
+# CORS: Support WeWeb (editor/preview/app) + localhost dev + custom origins from env
+ALLOWED_ORIGINS = [
     "https://editor.weweb.io",
     "https://app.weweb.io",
     "https://preview.weweb.io",
+    "http://localhost:3000",      # Local WeWeb dev
+    "http://localhost:5173",      # Local Vite/dev server
 ]
 
 # Allow additional origins from environment variable (comma-separated)
 env_origins = (os.getenv("CORS_ALLOWED_ORIGINS") or "").strip()
-additional_origins = [o.strip() for o in env_origins.split(",") if o.strip()] if env_origins else []
-
-all_origins = weweb_origins + additional_origins
+if env_origins:
+    additional_origins = [o.strip() for o in env_origins.split(",") if o.strip()]
+    ALLOWED_ORIGINS.extend(additional_origins)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=all_origins,
+    allow_origins=ALLOWED_ORIGINS,
     allow_origin_regex=r"^https:\/\/.*\.weweb\.io$|^https:\/\/.*\.weweb\.app$",
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
+    max_age=86400,  # Cache preflight for 24 hours
 )
 
 # Routers
