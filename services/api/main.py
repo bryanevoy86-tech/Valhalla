@@ -66,7 +66,7 @@ if cors:
 
 app.include_router(policy_router)
 app.include_router(ops_router)  # /ops/* guarded endpoints
-app.include_router(admin_go_live_router)  # /api/admin/* go-live endpoints
+app.include_router(admin_go_live_router, prefix="/api")  # /api/admin/* go-live endpoints
 app.include_router(engine_admin_router)  # /api/engines/* (Heimdall-governed)
 app.include_router(outcomes_router)  # /api/outcomes (closed-loop learning)
 app.include_router(intake_router)  # /api/intake (quarantine-first)

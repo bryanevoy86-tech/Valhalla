@@ -5,7 +5,7 @@ from datetime import datetime
 from app.core.db import get_db
 from app.models.system_metadata import SystemMetadata
 
-router = APIRouter(prefix="/api/admin", tags=["admin"])
+router = APIRouter(prefix="/admin", tags=["admin"])
 
 @router.post("/backend-complete")
 def set_backend_complete(db: Session = Depends(get_db)):
