@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from datetime import datetime
 
-from app.db.session import get_db
+from app.core.db import get_db
 from app.models.system_metadata import SystemMetadata
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
