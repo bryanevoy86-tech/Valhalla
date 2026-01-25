@@ -86,6 +86,13 @@ app.include_router(metrics_router)  # /api/metrics (gate inputs)
 app.include_router(runbook_status_router)  # /api/runbook/status (legacy health)
 app.include_router(governance_runbook_router.router, prefix="/api")  # /api/governance/runbook/status (canonical)
 
+# Catch-all OPTIONS handler for CORS preflight requests
+# This prevents "405 Method Not Allowed" on preflight requests from browsers/WeWeb
+@app.options("/{path:path}")
+async def options_handler(path: str):
+    """Handle CORS preflight OPTIONS requests for all paths."""
+    return {}
+
 # DEBUG: Route list endpoint (gated behind env var for security)
 # Set EXPOSE_DEBUG_ROUTES=1 temporarily to inspect routes; default is disabled
 if os.getenv("EXPOSE_DEBUG_ROUTES") == "1":
