@@ -19,7 +19,7 @@ services:
     dockerfilePath: ./Dockerfile
     dockerContext: .
     dockerCommand: alembic upgrade heads && python start.py
-    healthCheckPath: /api/health
+    healthCheckPath: /health
     envVars:
       - key: APP_ENV
         value: production

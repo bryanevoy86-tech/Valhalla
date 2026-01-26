@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends
-from fastapi.responses import PlainTextResponse
+from fastapi.responses import PlainTextResponse, JSONResponse
 from sqlalchemy.orm import Session
 from datetime import datetime
 
@@ -14,15 +14,19 @@ router = APIRouter(prefix="/governance/runbook", tags=["Governance", "Runbook"])
 @router.get("/status")
 def status(db: Session = Depends(get_db)):
     try:
-        return build_runbook(db)
+        data = build_runbook(db)
+        return JSONResponse(content=data)
     except Exception as e:
-        return {
-            "generated_at": datetime.utcnow().isoformat() + "Z",
-            "blockers": [{"id": "runbook_error", "ok": False, "severity": "BLOCKER", "message": "Runbook engine exception", "detail": {"error": str(e)}}],
-            "warnings": [],
-            "info": [],
-            "ok_to_enable_go_live": False,
-        }
+        return JSONResponse(
+            status_code=200,
+            content={
+                "generated_at": datetime.utcnow().isoformat() + "Z",
+                "blockers": [{"id": "runbook_error", "ok": False, "severity": "BLOCKER", "message": "Runbook engine exception", "detail": {"error": str(e)}}],
+                "warnings": [],
+                "info": [],
+                "ok_to_enable_go_live": False,
+            }
+        )
 
 
 @router.get("/markdown", response_class=PlainTextResponse)
