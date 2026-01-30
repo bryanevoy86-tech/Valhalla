@@ -332,3 +332,22 @@ services:
         value: CHANGE_ME
       - key: S3_SECRET_ACCESS_KEY
         value: CHANGE_ME
+
+  - type: cron
+    name: valhalla-daily-ops
+    runtime: docker
+    plan: starter
+    region: oregon
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    dockerCommand: /bin/sh -c "cd /app && alembic upgrade heads 2>/dev/null; /bin/sh /app/cron_daily_ops.sh"
+    schedule: "0 9 * * *"
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: valhalla-prod
+          property: internalConnectionString
+      - key: CRON_MODE
+        value: daily_ops
