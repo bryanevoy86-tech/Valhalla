@@ -1,9 +1,15 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, model_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 import os, json
 
-class Settings(BaseModel):
-    database_url: str
-    jwt_secret: str
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=None,
+        extra="ignore",
+    )
+
+    database_url: str = Field(validation_alias="DATABASE_URL")
+    jwt_secret: str = Field(validation_alias="VALHALLA_JWT_SECRET")
     env: str = "dev"
     notify_url: str | None = None           # for SLA breach pings (Discord/Slack/Zapier)
     feature_flags: dict[str, bool] = {}
@@ -30,29 +36,40 @@ class Settings(BaseModel):
         "web/weweb-datasources",
         "web/weweb-widgets",
     ]
-    BUILDER_MAX_FILE_BYTES: int = int(os.getenv("BUILDER_MAX_FILE_BYTES", "200000"))  # 200 KB/file
+    BUILDER_MAX_FILE_BYTES: int = Field(default=200000)
 
     # Git auto-commit/push flags
-    GIT_ENABLE_AUTOCOMMIT: bool = os.environ.get("GIT_ENABLE_AUTOCOMMIT", "false").lower() in ("1","true","yes")
-    GIT_REPO_DIR: str = os.environ.get("GIT_REPO_DIR", "")
-    GIT_REMOTE_NAME: str = os.environ.get("GIT_REMOTE_NAME", "origin")
-    GIT_BRANCH: str = os.environ.get("GIT_BRANCH", "main")
-    GIT_USER_NAME: str = os.environ.get("GIT_USER_NAME", "Heimdall Bot")
-    GIT_USER_EMAIL: str = os.environ.get("GIT_USER_EMAIL", "heimdall-bot@valhalla.local")
-    GITHUB_TOKEN: str = os.environ.get("GITHUB_TOKEN", "")
+    GIT_ENABLE_AUTOCOMMIT: bool = Field(default=False)
+    GIT_REPO_DIR: str = Field(default="")
+    GIT_REMOTE_NAME: str = Field(default="origin")
+    GIT_BRANCH: str = Field(default="main")
+    GIT_USER_NAME: str = Field(default="Heimdall Bot")
+    GIT_USER_EMAIL: str = Field(default="heimdall-bot@valhalla.local")
+    GITHUB_TOKEN: str = Field(default="")
 
     # --- Notifications ---
-    DEFAULT_WEBHOOK_URL: str | None = os.getenv("DEFAULT_WEBHOOK_URL")
-    SMTP_HOST: str | None = os.getenv("SMTP_HOST")
-    SMTP_PORT: int = int(os.getenv("SMTP_PORT", "587"))
-    SMTP_USER: str | None = os.getenv("SMTP_USER")
-    SMTP_PASS: str | None = os.getenv("SMTP_PASS")
-    SMTP_FROM: str | None = os.getenv("SMTP_FROM", "noreply@valhalla.local")
+    DEFAULT_WEBHOOK_URL: str | None = Field(default=None)
+    SMTP_HOST: str | None = Field(default=None, validation_alias="SMTP_HOST")
+    SMTP_PORT: int = Field(default=587, validation_alias="SMTP_PORT")
+    SMTP_USER: str | None = Field(default=None, validation_alias="SMTP_USER")
+    SMTP_PASS: str | None = Field(default=None, validation_alias="SMTP_PASS")
+    SMTP_USERNAME: str | None = Field(default=None, validation_alias="SMTP_USERNAME")
+    SMTP_PASSWORD: str | None = Field(default=None, validation_alias="SMTP_PASSWORD")
+    SMTP_FROM: str | None = Field(default="noreply@valhalla.local")
 
     # Twilio SMS
-    TWILIO_ACCOUNT_SID: str | None = os.getenv("TWILIO_ACCOUNT_SID")
-    TWILIO_AUTH_TOKEN: str | None = os.getenv("TWILIO_AUTH_TOKEN")
-    TWILIO_PHONE_NUMBER: str | None = os.getenv("TWILIO_PHONE_NUMBER")
+    TWILIO_ACCOUNT_SID: str | None = Field(default=None)
+    TWILIO_AUTH_TOKEN: str | None = Field(default=None)
+    TWILIO_PHONE_NUMBER: str | None = Field(default=None)
+
+    @model_validator(mode="after")
+    def _smtp_backcompat(self):
+        """Fallback: if SMTP_USER/PASS not set, use USERNAME/PASSWORD"""
+        if not self.SMTP_USER and self.SMTP_USERNAME:
+            self.SMTP_USER = self.SMTP_USERNAME
+        if not self.SMTP_PASS and self.SMTP_PASSWORD:
+            self.SMTP_PASS = self.SMTP_PASSWORD
+        return self
 
     @classmethod
     def load(cls) -> "Settings":
@@ -63,7 +80,7 @@ class Settings(BaseModel):
             flags = {}
         return cls(
             database_url=os.environ.get("DATABASE_URL", ""),
-            jwt_secret=os.environ.get("JWT_SECRET", "change-me"),
+            jwt_secret=os.environ.get("VALHALLA_JWT_SECRET", "change-me"),
             env=os.environ.get("ENV", "dev"),
             notify_url=os.environ.get("NOTIFY_URL"),
             feature_flags=flags,
