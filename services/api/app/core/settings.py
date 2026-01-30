@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, model_validator, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 import os, json
 
@@ -6,6 +6,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=None,
         extra="ignore",
+        populate_by_name=True,
     )
 
     database_url: str = Field(validation_alias="DATABASE_URL")
@@ -24,7 +25,7 @@ class Settings(BaseSettings):
     # Sentry
     sentry_dsn: str = ""
     # CORS
-    CORS_ALLOWED_ORIGINS: list[str] = []
+    CORS_ALLOWED_ORIGINS: list[str] = Field(default=[], validation_alias="CORS_ORIGINS")
     # Builder
     HEIMDALL_BUILDER_API_KEY: str = ""
     BUILDER_ALLOWED_DIRS: list[str] = [
@@ -61,6 +62,16 @@ class Settings(BaseSettings):
     TWILIO_ACCOUNT_SID: str | None = Field(default=None)
     TWILIO_AUTH_TOKEN: str | None = Field(default=None)
     TWILIO_PHONE_NUMBER: str | None = Field(default=None)
+
+    @field_validator("CORS_ALLOWED_ORIGINS", mode="before")
+    @classmethod
+    def parse_cors_origins(cls, v):
+        """Parse comma-separated string to list, or return as-is if already a list"""
+        if isinstance(v, str):
+            return [x.strip() for x in v.split(",") if x.strip()] if v else []
+        if isinstance(v, list):
+            return v
+        return []
 
     @model_validator(mode="after")
     def _smtp_backcompat(self):
