@@ -31,9 +31,6 @@ from sqlalchemy.orm import Session
 from app.core.identity import system_identity
 from app.core.db import get_db
 from app.services.email_service import send_email
-from app.models.task import Task
-from app.models.match import DealBrief
-from app.models.decision_outcome import DecisionOutcome
 
 
 def get_service_url() -> str:
@@ -138,6 +135,9 @@ def build_deals_section(db: Session) -> str:
     lines = ["DEAL PIPELINE", "─" * 40]
     
     try:
+        # Lazy import to avoid circular dependencies
+        from app.models.match import DealBrief
+        
         # Get deal counts by status
         statuses = ["active", "under_contract", "sold", "archived"]
         deal_counts = {}
@@ -174,6 +174,9 @@ def build_tasks_section(db: Session) -> str:
     lines = ["TODAY'S TASKS (Top 5)", "─" * 40]
     
     try:
+        # Lazy import to avoid circular dependencies
+        from app.models.task import Task
+        
         from datetime import date
         today = date.today()
         
@@ -213,6 +216,9 @@ def build_outcomes_section(db: Session) -> str:
     lines = ["YESTERDAY'S RESULTS", "─" * 40]
     
     try:
+        # Lazy import to avoid circular dependencies
+        from app.models.decision_outcome import DecisionOutcome
+        
         from datetime import date, timedelta
         yesterday = date.today() - timedelta(days=1)
         
