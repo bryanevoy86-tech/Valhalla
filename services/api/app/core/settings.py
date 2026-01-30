@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     # Sentry
     sentry_dsn: str = ""
     # CORS
-    CORS_ALLOWED_ORIGINS: list[str] = Field(default=[], validation_alias="CORS_ORIGINS")
+    CORS_ALLOWED_ORIGINS: list[str] = Field(default=[], validation_alias="CORS_ALLOWED_ORIGINS")
     # Builder
     HEIMDALL_BUILDER_API_KEY: str = ""
     BUILDER_ALLOWED_DIRS: list[str] = [
@@ -102,7 +102,7 @@ class Settings(BaseSettings):
             s3_secret_access_key=os.environ.get("S3_SECRET_ACCESS_KEY", ""),
             docusign_powerform_url=os.environ.get("DOCUSIGN_POWERFORM_URL", ""),
             sentry_dsn=os.environ.get("SENTRY_DSN", ""),
-            CORS_ALLOWED_ORIGINS=os.environ.get("CORS_ORIGINS", "").split(",") if os.environ.get("CORS_ORIGINS") else [],
+            CORS_ALLOWED_ORIGINS=os.environ.get("CORS_ALLOWED_ORIGINS", "").split(",") if os.environ.get("CORS_ALLOWED_ORIGINS") else [],
             HEIMDALL_BUILDER_API_KEY=os.environ.get("HEIMDALL_BUILDER_API_KEY", ""),
         )
 
