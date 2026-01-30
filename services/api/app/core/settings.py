@@ -1,10 +1,15 @@
-from pydantic import BaseModel, Field, model_validator, field_validator
+from pydantic import Field, model_validator, field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 import os, json
 
-class Settings(BaseModel):
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=None,
+        extra="ignore",
+    )
 
-    database_url: str
-    jwt_secret: str
+    database_url: str = Field(validation_alias="DATABASE_URL")
+    jwt_secret: str = Field(validation_alias="VALHALLA_JWT_SECRET")
     env: str = "dev"
     notify_url: str | None = None           # for SLA breach pings (Discord/Slack/Zapier)
     feature_flags: dict[str, bool] = {}
@@ -19,7 +24,7 @@ class Settings(BaseModel):
     # Sentry
     sentry_dsn: str = ""
     # CORS
-    CORS_ALLOWED_ORIGINS: list[str] = Field(default=[])
+    CORS_ALLOWED_ORIGINS: list[str] = Field(default=[], validation_alias="CORS_ALLOWED_ORIGINS")
     # Builder
     HEIMDALL_BUILDER_API_KEY: str = ""
     BUILDER_ALLOWED_DIRS: list[str] = [
@@ -44,12 +49,12 @@ class Settings(BaseModel):
 
     # --- Notifications ---
     DEFAULT_WEBHOOK_URL: str | None = None
-    SMTP_HOST: str | None = None
-    SMTP_PORT: int = 587
-    SMTP_USER: str | None = None
-    SMTP_PASS: str | None = None
-    SMTP_USERNAME: str | None = None
-    SMTP_PASSWORD: str | None = None
+    SMTP_HOST: str | None = Field(default=None, validation_alias="SMTP_HOST")
+    SMTP_PORT: int = Field(default=587, validation_alias="SMTP_PORT")
+    SMTP_USER: str | None = Field(default=None, validation_alias="SMTP_USER")
+    SMTP_PASS: str | None = Field(default=None, validation_alias="SMTP_PASS")
+    SMTP_USERNAME: str | None = Field(default=None, validation_alias="SMTP_USERNAME")
+    SMTP_PASSWORD: str | None = Field(default=None, validation_alias="SMTP_PASSWORD")
     SMTP_FROM: str | None = "noreply@valhalla.local"
 
     # Twilio SMS
@@ -78,26 +83,8 @@ class Settings(BaseModel):
 
     @classmethod
     def load(cls) -> "Settings":
-        flags_env = os.environ.get("FEATURE_FLAGS_JSON", "{}")
-        try:
-            flags = json.loads(flags_env)
-        except Exception:
-            flags = {}
-        return cls(
-            database_url=os.environ.get("DATABASE_URL", ""),
-            jwt_secret=os.environ.get("VALHALLA_JWT_SECRET", "change-me"),
-            env=os.environ.get("ENV", "dev"),
-            notify_url=os.environ.get("NOTIFY_URL"),
-            feature_flags=flags,
-            storage_provider=os.environ.get("STORAGE_PROVIDER", "s3"),
-            s3_bucket=os.environ.get("S3_BUCKET", ""),
-            s3_region=os.environ.get("S3_REGION", ""),
-            s3_access_key_id=os.environ.get("S3_ACCESS_KEY_ID", ""),
-            s3_secret_access_key=os.environ.get("S3_SECRET_ACCESS_KEY", ""),
-            docusign_powerform_url=os.environ.get("DOCUSIGN_POWERFORM_URL", ""),
-            sentry_dsn=os.environ.get("SENTRY_DSN", ""),
-            CORS_ALLOWED_ORIGINS=os.environ.get("CORS_ALLOWED_ORIGINS", "").split(",") if os.environ.get("CORS_ALLOWED_ORIGINS") else [],
-            HEIMDALL_BUILDER_API_KEY=os.environ.get("HEIMDALL_BUILDER_API_KEY", ""),
-        )
+        # Always load from environment via BaseSettings
+        # (prevents accidental empty-dict construction that bypasses env vars)
+        return cls()
 
 settings = Settings.load()
