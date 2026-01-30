@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
+from app.core.identity import system_identity
 from app.services.go_live import checklist, read_state
 from app.services.engine_state import list_states
 
@@ -14,6 +15,8 @@ router = APIRouter(prefix="/api/runbook", tags=["Governance", "Runbook"])
 def runbook_status(db: Session = Depends(get_db)):
     """
     Fail-safe runbook status. Never 500.
+    
+    Includes system identity (email and from_name) for verification and debugging.
     """
     try:
         go = read_state(db)
@@ -32,6 +35,16 @@ def runbook_status(db: Session = Depends(get_db)):
         if getattr(go, "kill_switch_engaged", False):
             blockers.append({"code": "kill_switch_engaged", "detail": "Kill switch engaged"})
 
+        # Get system identity for verification
+        try:
+            identity = system_identity()
+            system_email = identity["email"]
+            from_name = identity["from_name"]
+        except RuntimeError:
+            # If system email not configured, include null values
+            system_email = None
+            from_name = None
+
         return {
             "ok": len(blockers) == 0,
             "blockers": blockers,
@@ -43,14 +56,27 @@ def runbook_status(db: Session = Depends(get_db)):
                 "reason": getattr(go, "reason", None),
                 "updated_at": getattr(go, "updated_at", None).isoformat() if getattr(go, "updated_at", None) else None,
             },
+            "system_email": system_email,
+            "from_name": from_name,
             "engines": engines,
         }
     except Exception as e:
         # Fail-safe degradation (never 500)
+        # Try to get system identity even in error case
+        try:
+            identity = system_identity()
+            system_email = identity["email"]
+            from_name = identity["from_name"]
+        except RuntimeError:
+            system_email = None
+            from_name = None
+
         return {
             "ok": False,
             "blockers": [{"code": "runbook_exception", "detail": str(e)}],
             "warnings": {},
             "go_live": {},
+            "system_email": system_email,
+            "from_name": from_name,
             "engines": [],
         }
