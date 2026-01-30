@@ -1,16 +1,10 @@
 from pydantic import BaseModel, Field, model_validator, field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
 import os, json
 
-class Settings(BaseSettings):
-    model_config = SettingsConfigDict(
-        env_file=None,
-        extra="ignore",
-        populate_by_name=True,
-    )
+class Settings(BaseModel):
 
-    database_url: str = Field(validation_alias="DATABASE_URL")
-    jwt_secret: str = Field(validation_alias="VALHALLA_JWT_SECRET")
+    database_url: str
+    jwt_secret: str
     env: str = "dev"
     notify_url: str | None = None           # for SLA breach pings (Discord/Slack/Zapier)
     feature_flags: dict[str, bool] = {}
@@ -49,14 +43,14 @@ class Settings(BaseSettings):
     GITHUB_TOKEN: str = Field(default="")
 
     # --- Notifications ---
-    DEFAULT_WEBHOOK_URL: str | None = Field(default=None)
-    SMTP_HOST: str | None = Field(default=None, validation_alias="SMTP_HOST")
-    SMTP_PORT: int = Field(default=587, validation_alias="SMTP_PORT")
-    SMTP_USER: str | None = Field(default=None, validation_alias="SMTP_USER")
-    SMTP_PASS: str | None = Field(default=None, validation_alias="SMTP_PASS")
-    SMTP_USERNAME: str | None = Field(default=None, validation_alias="SMTP_USERNAME")
-    SMTP_PASSWORD: str | None = Field(default=None, validation_alias="SMTP_PASSWORD")
-    SMTP_FROM: str | None = Field(default="noreply@valhalla.local")
+    DEFAULT_WEBHOOK_URL: str | None = None
+    SMTP_HOST: str | None = None
+    SMTP_PORT: int = 587
+    SMTP_USER: str | None = None
+    SMTP_PASS: str | None = None
+    SMTP_USERNAME: str | None = None
+    SMTP_PASSWORD: str | None = None
+    SMTP_FROM: str | None = "noreply@valhalla.local"
 
     # Twilio SMS
     TWILIO_ACCOUNT_SID: str | None = Field(default=None)
