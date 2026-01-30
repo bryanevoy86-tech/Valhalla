@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     # Sentry
     sentry_dsn: str = ""
     # CORS
-    CORS_ALLOWED_ORIGINS: list[str] = Field(default=[], validation_alias="CORS_ALLOWED_ORIGINS")
+    CORS_ALLOWED_ORIGINS: list[str] = Field(default=[])
     # Builder
     HEIMDALL_BUILDER_API_KEY: str = ""
     BUILDER_ALLOWED_DIRS: list[str] = [
@@ -62,19 +62,15 @@ class Settings(BaseSettings):
     TWILIO_AUTH_TOKEN: str | None = Field(default=None)
     TWILIO_PHONE_NUMBER: str | None = Field(default=None)
 
-    @field_validator("CORS_ALLOWED_ORIGINS", mode="before")
-    @classmethod
-    def parse_cors_origins(cls, v):
-        """Parse comma-separated string to list, or return as-is if already a list"""
-        if isinstance(v, str):
-            return [x.strip() for x in v.split(",") if x.strip()] if v else []
-        if isinstance(v, list):
-            return v
-        return []
-
     @model_validator(mode="after")
-    def _smtp_backcompat(self):
-        """Fallback: if SMTP_USER/PASS not set, use USERNAME/PASSWORD"""
+    def _load_from_env_and_backcompat(self):
+        """Load CORS from env (avoids JSON parsing issues) and apply SMTP backcompat"""
+        # Parse CORS_ALLOWED_ORIGINS from env (as comma-separated string)
+        cors_env = os.environ.get("CORS_ALLOWED_ORIGINS", "")
+        if cors_env:
+            self.CORS_ALLOWED_ORIGINS = [x.strip() for x in cors_env.split(",") if x.strip()]
+        
+        # Fallback: if SMTP_USER/PASS not set, use USERNAME/PASSWORD
         if not self.SMTP_USER and self.SMTP_USERNAME:
             self.SMTP_USER = self.SMTP_USERNAME
         if not self.SMTP_PASS and self.SMTP_PASSWORD:
