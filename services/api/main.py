@@ -88,6 +88,10 @@ app.include_router(metrics_router)  # /api/metrics (gate inputs)
 app.include_router(runbook_status_router)  # /api/runbook/status (legacy health)
 app.include_router(governance_runbook_router.router, prefix="/api")  # /api/governance/runbook/status (canonical)
 
+# --- Notification API (System Email) ---
+from app.api.notify.test_email_router import router as notify_test_router
+app.include_router(notify_test_router, prefix="/api")  # /api/notify/test-email
+
 # DEBUG: Route list endpoint (gated behind env var for security)
 # Set EXPOSE_DEBUG_ROUTES=1 temporarily to inspect routes; default is disabled
 if os.getenv("EXPOSE_DEBUG_ROUTES") == "1":

@@ -6,7 +6,7 @@ from fastapi import APIRouter
 from app.core.identity import system_identity
 from app.services.email_service import send_email
 
-router = APIRouter(prefix="/api/notify", tags=["notify"])
+router = APIRouter(prefix="/notify", tags=["notify"])
 
 
 @router.post("/test-email")

@@ -163,10 +163,6 @@ app.include_router(engine_admin.router)
 # ISOLATED: Commenting out runbook_status.router to isolate governance_runbook router
 # app.include_router(runbook_status.router)
 
-# --- Notification API (System Email) ---
-from app.api.notify.test_email_router import router as notify_test_router
-app.include_router(notify_test_router)
-
 # --- PACK H: Professional Behavioral Signal Extraction -------------------------
 # Safe behavioral analysis from public data sources (no psychology, no diagnosis)
 try:
