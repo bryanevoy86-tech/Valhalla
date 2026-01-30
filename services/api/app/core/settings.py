@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     # Sentry
     sentry_dsn: str = ""
     # CORS
-    CORS_ALLOWED_ORIGINS: list[str] = Field(default=[], validation_alias="CORS_ALLOWED_ORIGINS")
+    CORS_ALLOWED_ORIGINS: list[str] = Field(default=[])
     # Builder
     HEIMDALL_BUILDER_API_KEY: str = ""
     BUILDER_ALLOWED_DIRS: list[str] = [
