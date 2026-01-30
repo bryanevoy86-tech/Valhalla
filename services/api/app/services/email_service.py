@@ -77,7 +77,8 @@ def send_email(
         # Validate SMTP configuration
         if not settings.SMTP_HOST or not settings.SMTP_USER or not settings.SMTP_PASS:
             print("EMAIL CONFIG ERROR: Missing SMTP settings",
-                  {"host": bool(settings.SMTP_HOST), "user": bool(settings.SMTP_USER), "pass": bool(settings.SMTP_PASS)})
+                  {"host": bool(settings.SMTP_HOST), "user": bool(settings.SMTP_USER), "pass": bool(settings.SMTP_PASS)},
+                  flush=True)
             return False
 
         from_header = build_from_header(identity)
@@ -107,8 +108,8 @@ def send_email(
 
     except Exception as e:
         import traceback
-        print("EMAIL SEND ERROR:", repr(e))
-        print(traceback.format_exc())
+        print("EMAIL SEND ERROR:", repr(e), flush=True)
+        print(traceback.format_exc(), flush=True)
         return False
 
 
