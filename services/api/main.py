@@ -15,6 +15,7 @@ from app.routers.intake_admin import router as intake_admin_router
 from app.routers.metrics import router as metrics_router
 from app.routers.runbook_status import router as runbook_status_router
 from app.routers import runbook as governance_runbook_router
+from app.core.settings import settings
 
 
 def _truthy(v: str | None, default: bool = False) -> bool:
@@ -52,13 +53,7 @@ ALLOWED_ORIGINS = [
     "https://preview.weweb.io",
     "http://localhost:3000",      # Local WeWeb dev
     "http://localhost:5173",      # Local Vite/dev server
-]
-
-# Allow additional origins from environment variable (comma-separated)
-env_origins = (os.getenv("CORS_ALLOWED_ORIGINS") or "").strip()
-if env_origins:
-    additional_origins = [o.strip() for o in env_origins.split(",") if o.strip()]
-    ALLOWED_ORIGINS.extend(additional_origins)
+] + settings.cors_origins_list
 
 app.add_middleware(
     CORSMiddleware,

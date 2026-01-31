@@ -8,6 +8,7 @@ from fastapi.responses import Response
 
 from app.observability import drift, retention
 from app.core.db import verify_schema_initialized
+from app.core.settings import settings
 
 log = logging.getLogger("valhalla.startup")
 
@@ -86,7 +87,7 @@ app.add_middleware(
         "http://localhost:3000",
         "http://localhost:4000",
         "http://localhost:8000",
-    ],
+    ] + settings.cors_origins_list,
     allow_credentials=False,  # IMPORTANT: keep False unless you are using cookies with credentials
     allow_methods=["*"],      # includes OPTIONS
     allow_headers=["*"],

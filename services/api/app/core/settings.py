@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     # Sentry
     sentry_dsn: str = ""
     # CORS
-    CORS_ALLOWED_ORIGINS: list[str] = Field(default=[])
+    CORS_ALLOWED_ORIGINS: str = Field(default="", validation_alias="CORS_ALLOWED_ORIGINS")
     # Builder
     HEIMDALL_BUILDER_API_KEY: str = ""
     BUILDER_ALLOWED_DIRS: list[str] = [
@@ -63,19 +63,46 @@ class Settings(BaseSettings):
     TWILIO_PHONE_NUMBER: str | None = Field(default=None)
 
     @model_validator(mode="after")
-    def _load_from_env_and_backcompat(self):
-        """Load CORS from env (avoids JSON parsing issues) and apply SMTP backcompat"""
-        # Parse CORS_ALLOWED_ORIGINS from env (as comma-separated string)
-        cors_env = os.environ.get("CORS_ALLOWED_ORIGINS", "")
-        if cors_env:
-            self.CORS_ALLOWED_ORIGINS = [x.strip() for x in cors_env.split(",") if x.strip()]
-        
-        # Fallback: if SMTP_USER/PASS not set, use USERNAME/PASSWORD
+    def _smtp_backcompat(self):
+        """Fallback: if SMTP_USER/PASS not set, use USERNAME/PASSWORD"""
         if not self.SMTP_USER and self.SMTP_USERNAME:
             self.SMTP_USER = self.SMTP_USERNAME
         if not self.SMTP_PASS and self.SMTP_PASSWORD:
             self.SMTP_PASS = self.SMTP_PASSWORD
         return self
+
+    @property
+    def cors_origins_list(self) -> list[str]:
+        """
+        Accept either:
+        - JSON list string: ["https://a.com","https://b.com"]
+        - Comma-separated string: https://a.com,https://b.com
+        - Already a list (defensive)
+        Never raises during Settings construction (prevents migration boot failure).
+        """
+        v = self.CORS_ALLOWED_ORIGINS
+
+        if v is None:
+            return []
+
+        if isinstance(v, list):
+            return [str(x).strip() for x in v if str(x).strip()]
+
+        s = str(v).strip()
+        if not s:
+            return []
+
+        # Try JSON first
+        if s.startswith("["):
+            try:
+                data = json.loads(s)
+                if isinstance(data, list):
+                    return [str(x).strip() for x in data if str(x).strip()]
+            except Exception:
+                pass
+
+        # Fallback: comma split
+        return [x.strip() for x in s.split(",") if x.strip()]
 
     @classmethod
     def load(cls) -> "Settings":
