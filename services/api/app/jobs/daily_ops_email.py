@@ -123,7 +123,12 @@ def build_runbook_section(db: Session) -> str:
             lines.append(f"  Active Engines:        0")
             
     except Exception as e:
-        lines.append(f"  Status:                Error reading runbook state")
+        err_type = type(e).__name__
+        msg = str(e)
+        if len(msg) > 160:
+            msg = msg[:160] + "..."
+        lines.append("  Status:                Not ready / not initialized")
+        lines.append(f"  Detail:                {err_type}: {msg}")
     
     lines.append("")
     return "\n".join(lines)
