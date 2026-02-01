@@ -340,7 +340,7 @@ services:
     region: oregon
     dockerfilePath: ./Dockerfile
     dockerContext: .
-    dockerCommand: /bin/sh -c "cd /app && alembic upgrade heads 2>/dev/null; /bin/sh /app/cron_daily_ops.sh"
+    dockerCommand: /bin/sh -c "cd /app && SKIP_MIGRATIONS=1 /bin/sh /app/cron_daily_ops.sh"
     schedule: "0 9 * * *"
     envVars:
       - key: APP_ENV
