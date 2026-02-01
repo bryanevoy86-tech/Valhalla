@@ -8,6 +8,7 @@ import time
 from datetime import datetime
 from typing import Dict, Any
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 
 from app.models.base import Base
 
@@ -60,7 +61,7 @@ def get_readiness_status(db: Session) -> Dict[str, Any]:
     msg: str = "Readiness check passed."
     try:
         # Try a simple query to verify DB connection
-        db.execute("SELECT 1")
+        db.execute(text("SELECT 1"))
         db_ok = True
     except Exception as e:
         db_ok = False

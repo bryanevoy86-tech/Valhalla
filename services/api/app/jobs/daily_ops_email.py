@@ -25,7 +25,7 @@ import sys
 from datetime import datetime, timezone
 from typing import Dict, List, Any, Optional
 
-from sqlalchemy import func, and_
+from sqlalchemy import func, and_, text
 from sqlalchemy.orm import Session
 
 from app.core.identity import system_identity
@@ -35,7 +35,11 @@ from app.services.email_service import send_email
 
 def get_service_url() -> str:
     """Get the service URL for links in the email."""
-    return os.getenv("VALHALLA_SERVICE_URL", "http://localhost:8000").rstrip("/")
+    return (
+        os.getenv("PUBLIC_BASE_URL")
+        or os.getenv("VALHALLA_SERVICE_URL")
+        or "http://localhost:8000"
+    ).rstrip("/")
 
 
 def build_header_section() -> str:
@@ -67,7 +71,7 @@ def build_health_section(db: Session) -> str:
     """
     try:
         # Check API health (basic DB connectivity via query)
-        db.execute("SELECT 1")
+        db.execute(text("SELECT 1"))
         db_status = "✓ OK"
     except Exception as e:
         db_status = f"✗ ERROR: {str(e)[:50]}"
