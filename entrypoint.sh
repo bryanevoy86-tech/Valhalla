@@ -1,14 +1,18 @@
 #!/bin/sh
-# Entrypoint script - Render cannot override this with dashboard settings
 set -e
 
 echo "==> Valhalla API Entrypoint"
 echo "==> Working directory: $(pwd)"
 echo "==> Python version: $(python --version)"
-echo "==> Running migrations..."
 
 cd /app/services/api
-alembic upgrade heads
 
-echo "==> Starting API with wrapper script..."
+if [ "${SKIP_MIGRATIONS:-0}" = "1" ]; then
+  echo "==> SKIP_MIGRATIONS=1, skipping alembic upgrade"
+else
+  echo "==> Running migrations (single head)..."
+  alembic upgrade head
+fi
+
+echo "==> Starting API..."
 exec python start.py
