@@ -5,6 +5,11 @@ from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from app.core.correlation_middleware import CorrelationIdMiddleware
+from app.core.error_handling import register_error_handlers
+from app.core.go_live_middleware import GoLiveMiddleware
+from app.core.execution_class_middleware import ExecutionClassMiddleware
+
 from app.core.policy.router import router as policy_router
 from app.security.auth import router as ops_router  # owner auth (+ /ops/token)
 from app.routers.admin_go_live import router as admin_go_live_router
@@ -15,6 +20,7 @@ from app.routers.intake_admin import router as intake_admin_router
 from app.routers.metrics import router as metrics_router
 from app.routers.runbook_status import router as runbook_status_router
 from app.routers import runbook as governance_runbook_router
+from app.routers import go_live as governance_go_live_router
 from app.core.settings import settings
 
 
@@ -65,6 +71,18 @@ app.add_middleware(
     max_age=86400,  # Cache preflight for 24 hours
 )
 
+# --- PACK TW: Correlation ID Middleware (must be early) ----------------------
+app.add_middleware(CorrelationIdMiddleware)
+
+# --- PACK TU: Global Error Handling (must be early) --------------------------
+register_error_handlers(app)
+
+# --- Go-Live & Kill-Switch Enforcement (Prime Law Safeguard) ----------------
+app.add_middleware(GoLiveMiddleware)
+
+# --- Execution Classification Enforcement (Precise Go-Live Governance) -------
+app.add_middleware(ExecutionClassMiddleware)
+
 # Routers
 # NOTE: Two runbook endpoints exist (kept for backward compatibility):
 #   - /api/runbook/status (runbook_status_router): Legacy unified health
@@ -82,6 +100,7 @@ app.include_router(intake_admin_router)  # /api/intake/admin (promotion)
 app.include_router(metrics_router)  # /api/metrics (gate inputs)
 app.include_router(runbook_status_router)  # /api/runbook/status (legacy health)
 app.include_router(governance_runbook_router.router, prefix="/api")  # /api/governance/runbook/status (canonical)
+app.include_router(governance_go_live_router.router, prefix="/api")  # /api/governance/go-live/* (go-live control)
 
 # --- Notification API (System Email) ---
 from app.api.notify.test_email_router import router as notify_test_router
