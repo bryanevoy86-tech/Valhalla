@@ -17,7 +17,7 @@ from email.mime.multipart import MIMEMultipart
 from typing import Optional, List, Dict, Any
 from sqlalchemy.orm import Session
 
-from app.core.settings import Settings
+from app.core.settings import settings
 from app.core.identity import system_identity, get_system_email
 
 
@@ -45,7 +45,6 @@ def send_email(
     subject: str,
     body: str,
     html_body: Optional[str] = None,
-    settings: Optional[Settings] = None,
     identity: Optional[Dict[str, str]] = None,
 ) -> bool:
     """
@@ -58,7 +57,6 @@ def send_email(
         subject: Email subject
         body: Plain text email body
         html_body: Optional HTML email body
-        settings: Settings object with SMTP configuration. If None, creates new Settings().
         identity: System identity dict. If None, fetches from system_identity().
 
     Returns:
@@ -68,9 +66,6 @@ def send_email(
         RuntimeError: If system email is not configured
     """
     try:
-        if settings is None:
-            settings = Settings()
-
         if identity is None:
             identity = system_identity()
 
@@ -118,7 +113,6 @@ def send_summary(
     body: str,
     html_body: Optional[str] = None,
     to_email: Optional[str] = None,
-    settings: Optional[Settings] = None,
 ) -> bool:
     """
     Send a summary email to the default recipient (system email).
@@ -131,7 +125,6 @@ def send_summary(
         body: Plain text email body
         html_body: Optional HTML email body
         to_email: Override recipient. Defaults to system email.
-        settings: Settings object with SMTP configuration.
 
     Returns:
         bool: True if email was sent successfully, False otherwise
@@ -144,5 +137,4 @@ def send_summary(
         subject=subject,
         body=body,
         html_body=html_body,
-        settings=settings,
     )

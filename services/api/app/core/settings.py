@@ -1,30 +1,64 @@
-from pydantic import Field, model_validator, field_validator
+from __future__ import annotations
+
+import json
+from typing import List, Optional
+
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
-import os, json
+
+
+def _parse_origins(raw: str | None) -> List[str]:
+    if not raw:
+        return []
+    s = raw.strip()
+    if not s:
+        return []
+
+    # Try JSON list first: ["https://a","https://b"]
+    if s.startswith("["):
+        try:
+            v = json.loads(s)
+            if isinstance(v, list):
+                return [str(x).strip() for x in v if str(x).strip()]
+        except Exception:
+            pass
+
+    # Fallback: comma-separated: https://a,https://b
+    return [p.strip() for p in s.split(",") if p.strip()]
+
 
 class Settings(BaseSettings):
+    # IMPORTANT: do not rely on .env files in Render containers
     model_config = SettingsConfigDict(
         env_file=None,
         extra="ignore",
     )
 
-    database_url: str = Field(validation_alias="DATABASE_URL")
-    jwt_secret: str = Field(validation_alias="VALHALLA_JWT_SECRET")
+    # REQUIRED CORE
+    database_url: str = Field(alias="DATABASE_URL")
+    jwt_secret: str = Field(alias="VALHALLA_JWT_SECRET")
     env: str = "dev"
+    
+    # CORS (raw string from env, parse safely)
+    cors_allowed_origins_raw: Optional[str] = Field(default=None, alias="CORS_ALLOWED_ORIGINS")
+
+    # Optional / Feature-gated
     notify_url: str | None = None           # for SLA breach pings (Discord/Slack/Zapier)
     feature_flags: dict[str, bool] = {}
+    
     # S3 Storage
     storage_provider: str = "s3"
     s3_bucket: str = ""
     s3_region: str = ""
     s3_access_key_id: str = ""
     s3_secret_access_key: str = ""
+    
     # DocuSign PowerForm
     docusign_powerform_url: str = ""
+    
     # Sentry
     sentry_dsn: str = ""
-    # CORS
-    CORS_ALLOWED_ORIGINS: str = Field(default="", validation_alias="CORS_ALLOWED_ORIGINS")
+    
     # Builder
     HEIMDALL_BUILDER_API_KEY: str = ""
     BUILDER_ALLOWED_DIRS: list[str] = [
@@ -49,12 +83,12 @@ class Settings(BaseSettings):
 
     # --- Notifications ---
     DEFAULT_WEBHOOK_URL: str | None = None
-    SMTP_HOST: str | None = Field(default=None, validation_alias="SMTP_HOST")
-    SMTP_PORT: int = Field(default=587, validation_alias="SMTP_PORT")
-    SMTP_USER: str | None = Field(default=None, validation_alias="SMTP_USER")
-    SMTP_PASS: str | None = Field(default=None, validation_alias="SMTP_PASS")
-    SMTP_USERNAME: str | None = Field(default=None, validation_alias="SMTP_USERNAME")
-    SMTP_PASSWORD: str | None = Field(default=None, validation_alias="SMTP_PASSWORD")
+    SMTP_HOST: str | None = Field(default=None, alias="SMTP_HOST")
+    SMTP_PORT: int = Field(default=587, alias="SMTP_PORT")
+    SMTP_USER: str | None = Field(default=None, alias="SMTP_USER")
+    SMTP_PASS: str | None = Field(default=None, alias="SMTP_PASS")
+    SMTP_USERNAME: str | None = Field(default=None, alias="SMTP_USERNAME")
+    SMTP_PASSWORD: str | None = Field(default=None, alias="SMTP_PASSWORD")
     SMTP_FROM: str | None = "noreply@valhalla.local"
 
     # Twilio SMS
@@ -72,42 +106,9 @@ class Settings(BaseSettings):
         return self
 
     @property
-    def cors_origins_list(self) -> list[str]:
-        """
-        Accept either:
-        - JSON list string: ["https://a.com","https://b.com"]
-        - Comma-separated string: https://a.com,https://b.com
-        - Already a list (defensive)
-        Never raises during Settings construction (prevents migration boot failure).
-        """
-        v = self.CORS_ALLOWED_ORIGINS
+    def cors_allowed_origins(self) -> List[str]:
+        return _parse_origins(self.cors_allowed_origins_raw)
 
-        if v is None:
-            return []
 
-        if isinstance(v, list):
-            return [str(x).strip() for x in v if str(x).strip()]
-
-        s = str(v).strip()
-        if not s:
-            return []
-
-        # Try JSON first
-        if s.startswith("["):
-            try:
-                data = json.loads(s)
-                if isinstance(data, list):
-                    return [str(x).strip() for x in data if str(x).strip()]
-            except Exception:
-                pass
-
-        # Fallback: comma split
-        return [x.strip() for x in s.split(",") if x.strip()]
-
-    @classmethod
-    def load(cls) -> "Settings":
-        # Always load from environment via BaseSettings
-        # (prevents accidental empty-dict construction that bypasses env vars)
-        return cls()
-
-settings = Settings.load()
+# singleton (import this everywhere)
+settings = Settings()
