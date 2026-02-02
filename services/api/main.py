@@ -5,11 +5,6 @@ from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.core.correlation_middleware import CorrelationIdMiddleware
-from app.core.error_handling import register_error_handlers
-from app.core.go_live_middleware import GoLiveMiddleware
-from app.core.execution_class_middleware import ExecutionClassMiddleware
-
 from app.core.policy.router import router as policy_router
 from app.security.auth import router as ops_router  # owner auth (+ /ops/token)
 from app.routers.admin_go_live import router as admin_go_live_router
@@ -70,18 +65,6 @@ app.add_middleware(
     allow_headers=["*"],
     max_age=86400,  # Cache preflight for 24 hours
 )
-
-# --- PACK TW: Correlation ID Middleware (must be early) ----------------------
-app.add_middleware(CorrelationIdMiddleware)
-
-# --- PACK TU: Global Error Handling (must be early) --------------------------
-register_error_handlers(app)
-
-# --- Go-Live & Kill-Switch Enforcement (Prime Law Safeguard) ----------------
-app.add_middleware(GoLiveMiddleware)
-
-# --- Execution Classification Enforcement (Precise Go-Live Governance) -------
-app.add_middleware(ExecutionClassMiddleware)
 
 # Routers
 # NOTE: Two runbook endpoints exist (kept for backward compatibility):
