@@ -70,7 +70,7 @@ def main(argv: list[str]) -> int:
     parser.add_argument(
         "--state",
         required=True,
-        help="Target state: sandbox, live (usually sandbox for PHASE 2)",
+        help="Target state: SANDBOX, ACTIVE (usually SANDBOX for PHASE 2)",
     )
     args = parser.parse_args(argv)
 
@@ -95,13 +95,14 @@ def main(argv: list[str]) -> int:
         print()
 
         # Step 2: Validate transition is allowed
-        if args.state.lower() not in [s.lower() for s in engine_info["allowed_next"]]:
-            print(f"[ERROR] Transition to {args.state} not allowed from {engine_info['state']}")
+        target_state_upper = args.state.upper()
+        if target_state_upper not in [s.upper() for s in engine_info["allowed_next"]]:
+            print(f"[ERROR] Transition to {target_state_upper} not allowed from {engine_info['state']}")
             print(f"Allowed transitions: {engine_info['allowed_next']}")
             return 1
 
-        print(f"[STEP 2] Transitioning {args.engine} to {args.state.upper()}...")
-        result = transition_engine(args.api, args.engine, args.state)
+        print(f"[STEP 2] Transitioning {args.engine} to {target_state_upper}...")
+        result = transition_engine(args.api, args.engine, target_state_upper)
 
         print(f"✓ Engine promoted")
         print(f"New state:")
