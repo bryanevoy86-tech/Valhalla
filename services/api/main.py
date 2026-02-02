@@ -53,7 +53,7 @@ ALLOWED_ORIGINS = [
     "https://preview.weweb.io",
     "http://localhost:3000",      # Local WeWeb dev
     "http://localhost:5173",      # Local Vite/dev server
-] + settings.cors_origins_list
+] + settings.cors_allowed_origins
 
 app.add_middleware(
     CORSMiddleware,

@@ -87,7 +87,7 @@ app.add_middleware(
         "http://localhost:3000",
         "http://localhost:4000",
         "http://localhost:8000",
-    ] + settings.cors_origins_list,
+    ] + settings.cors_allowed_origins,
     allow_credentials=False,  # IMPORTANT: keep False unless you are using cookies with credentials
     allow_methods=["*"],      # includes OPTIONS
     allow_headers=["*"],
