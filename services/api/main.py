@@ -104,6 +104,12 @@ else:
         raise HTTPException(status_code=404, detail="Not found")
 
 
+@app.get("/debug/main-loaded", include_in_schema=False)
+def debug_main_loaded():
+    """Debug endpoint to verify which main.py is loaded."""
+    return {"message": "services/api/main.py is loaded"}
+
+
 @app.api_route("/", methods=["GET", "HEAD"])
 def root(_: Response):
     return {"ok": True, "service": "valhalla-api"}
