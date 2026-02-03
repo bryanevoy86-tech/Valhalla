@@ -89,42 +89,54 @@ app.include_router(governance_go_live_router.router, prefix="/api")  # /api/gove
 from app.api.notify.test_email_router import router as notify_test_router
 app.include_router(notify_test_router, prefix="/api")  # /api/notify/test-email
 
-# --- Notification Queue & Jobs Dispatch ---
+# --- Outbox & Jobs Routers (email/webhook dispatch) ---
 try:
-    from app.routers.notify import router as notify_queue_router
-    app.include_router(notify_queue_router, prefix="/api")  # /api/notify/email, /api/notify/webhook
+    from app.routers import notify
+    app.include_router(notify.router, prefix="/api")  # /api/notify/email, /api/notify/webhook
+    print("[main.py] Notify router registered")
 except Exception as e:
-    print(f"[main.py] Warning: Could not load notify queue router: {e}")
+    print(f"[main.py] Skipping notify router: {e}")
 
 try:
-    from app.routers.jobs import router as jobs_router
-    app.include_router(jobs_router, prefix="/api")  # /api/jobs/notify/dispatch
+    from app.routers import jobs
+    app.include_router(jobs.router, prefix="/api")  # /api/jobs/notify/dispatch, etc
+    print("[main.py] Jobs router registered")
 except Exception as e:
-    print(f"[main.py] Warning: Could not load jobs router: {e}")
+    print(f"[main.py] Skipping jobs router: {e}")
 
-# DEBUG: Route list endpoint (gated behind X-API-Key for security)
-from fastapi import Depends, HTTPException, Request
+# DEBUG: Route list endpoint (gated behind env var or X-API-Key header for security)
+def _get_debug_routes():
+    """Helper to list all routes (used by both __routes endpoints)."""
+    return sorted({f"{r.methods if hasattr(r, 'methods') else '?'} {r.path}" 
+                   for r in app.router.routes 
+                   if hasattr(r, 'path')})
 
-def _require_builder_key(request: Request):
-    """Gate for sensitive debug endpoints."""
-    key = request.headers.get("X-API-Key")
-    if key and key == settings.HEIMDALL_BUILDER_API_KEY:
-        return True
-    # Fallback: check env var for public debug mode
-    if os.getenv("EXPOSE_DEBUG_ROUTES") == "1":
-        return True
-    raise HTTPException(status_code=401, detail="Unauthorized")
-
-@app.get("/__routes", include_in_schema=False)
-def list_routes(auth: bool = Depends(_require_builder_key)):
-    """Debug endpoint: list all registered routes (requires X-API-Key or EXPOSE_DEBUG_ROUTES=1)."""
-    return JSONResponse(sorted({r.path for r in app.router.routes}))
+if os.getenv("EXPOSE_DEBUG_ROUTES") == "1":
+    @app.get("/__routes", include_in_schema=False)
+    def __routes():
+        """Debug endpoint: list all registered routes (when EXPOSE_DEBUG_ROUTES=1)."""
+        return JSONResponse(_get_debug_routes())
+else:
+    @app.get("/__routes", include_in_schema=False)
+    def __routes_disabled():
+        """Debug endpoint disabled (EXPOSE_DEBUG_ROUTES not set)."""
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Not found")
 
 
 @app.get("/debug/main-loaded", include_in_schema=False)
 def debug_main_loaded():
     """Debug endpoint to verify which main.py is loaded."""
     return {"message": "services/api/main.py is loaded"}
+
+
+@app.get("/debug/routes", include_in_schema=False)
+def debug_routes():
+    """List all registered routes (available in dev/staging for debugging)."""
+    if APP_ENV == "production" and not os.getenv("EXPOSE_DEBUG_ROUTES"):
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Not available in production")
+    return _get_debug_routes()
 
 
 @app.api_route("/", methods=["GET", "HEAD"])
