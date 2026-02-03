@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass
+import os
+from dataclasses import dataclass, field
 from sqlalchemy.orm import Session
 
 from app.models.market_feed_event import MarketFeedEvent
@@ -9,14 +10,36 @@ from app.models.arbitrage_opportunity import ArbitrageOpportunity
 from app.models.arbitrage_sim_trade import ArbitrageSimTrade
 
 
+def _env_float(name: str, default: float) -> float:
+    """Read float from env var, return default if missing or invalid."""
+    v = os.getenv(name)
+    if v is None or v.strip() == "":
+        return default
+    try:
+        return float(v)
+    except ValueError:
+        return default
+
+
+def _env_int(name: str, default: int) -> int:
+    """Read int from env var, return default if missing or invalid."""
+    v = os.getenv(name)
+    if v is None or v.strip() == "":
+        return default
+    try:
+        return int(v)
+    except ValueError:
+        return default
+
+
 @dataclass
 class ArbitragePolicy:
-    # Phase A: conservative + observation focused
-    min_roi: float = 0.03            # 3% net ROI minimum
-    min_profit: float = 15.0         # minimum net profit in currency units
-    assumed_fee_rate: float = 0.08   # generic fee estimate (8%)
-    assumed_shipping: float = 15.0   # flat shipping estimate (safe default)
-    max_age_hours: int = 72          # ignore older feed events
+    # Phase A: configurable via Render env vars, sensible Manitoba defaults
+    min_roi: float = field(default_factory=lambda: _env_float("ARB_MIN_ROI", 0.05))
+    min_profit: float = field(default_factory=lambda: _env_float("ARB_MIN_PROFIT", 25.0))
+    assumed_fee_rate: float = field(default_factory=lambda: _env_float("ARB_FEE_RATE", 0.10))
+    assumed_shipping: float = field(default_factory=lambda: _env_float("ARB_SHIPPING", 10.0))
+    max_age_hours: int = field(default_factory=lambda: _env_int("ARB_MAX_AGE_HOURS", 72))
 
 
 def _estimate_fees(buy_price: float, sell_price: float, policy: ArbitragePolicy) -> float:
