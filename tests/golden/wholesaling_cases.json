@@ -1,16 +1,16 @@
 [
   {
-    "name": "junk_low_value_review_required",
+    "name": "low_value_passes_real_logic",
     "lead": { "assessed_value": 90000, "city": "Calgary", "province": "AB" },
     "expect": { "should_pursue": true, "human_review_required": true }
   },
   {
-    "name": "mid_value_requires_review",
+    "name": "mid_value_passes_real_logic",
     "lead": { "assessed_value": 180000, "city": "Edmonton", "province": "AB" },
     "expect": { "should_pursue": true, "human_review_required": true }
   },
   {
-    "name": "higher_value_with_conservative_review",
+    "name": "high_value_passes_real_logic",
     "lead": { "assessed_value": 320000, "city": "Calgary", "province": "AB" },
     "expect": { "should_pursue": true, "human_review_required": true }
   }

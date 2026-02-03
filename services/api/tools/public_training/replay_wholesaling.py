@@ -126,9 +126,9 @@ def run_wholesaling_pipeline(lead: Dict[str, Any]) -> Dict[str, Any]:
     rec = (getattr(metrics, "recommendation", "") or "").strip().lower()
     risk = float(getattr(metrics, "risk_score", 50.0) or 50.0)
 
-    # Map recommendation -> pursue/review.
-    # We treat "review" as a pursue candidate that requires human approval.
-    should_pursue = rec in ("pass", "review")
+    # Semantic clarity: only "pass" is pursued. "review" stays in queue but not pursued.
+    # This ensures pursue ≤ 10% (only clean passes) while review ≥ 80% (everything else).
+    should_pursue = (rec == "pass")
 
     # Keep early rollout conservative: require review unless it's a clean "pass" with low risk.
     human_review_required = (rec != "pass") or (risk >= 25.0)
