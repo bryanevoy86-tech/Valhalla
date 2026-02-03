@@ -43,6 +43,38 @@ def list_pending(
     ]
 
 
+@router.get("/decided")
+def list_decided(
+    engine_name: str | None = Query(None),
+    limit: int = Query(100, ge=1, le=1000),
+    db: Session = Depends(get_db),
+    _: bool = Depends(require_builder_key),
+):
+    """List decided actions (APPROVED or DECLINED) for analysis."""
+    q = db.query(PendingAction).filter(
+        PendingAction.status.in_([PendingActionStatus.APPROVED.value, PendingActionStatus.DECLINED.value])
+    )
+    if engine_name:
+        q = q.filter(PendingAction.engine_name == engine_name)
+    rows = q.order_by(PendingAction.reviewed_at.desc()).limit(limit).all()
+    return [
+        {
+            "id": r.id,
+            "engine_name": r.engine_name,
+            "action_type": r.action_type,
+            "status": r.status,
+            "target": r.target,
+            "subject": r.subject,
+            "preview_text": r.preview_text,
+            "payload": json.loads(r.payload_json) if r.payload_json else None,
+            "reason": r.reason,
+            "created_at": r.created_at.isoformat() if r.created_at else None,
+            "reviewed_at": r.reviewed_at.isoformat() if r.reviewed_at else None,
+        }
+        for r in rows
+    ]
+
+
 @router.post("/{action_id}/approve")
 def approve_action(
     action_id: int,
