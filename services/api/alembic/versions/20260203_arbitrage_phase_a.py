@@ -10,10 +10,8 @@ import sqlalchemy as sa
 
 revision = "20260203_arbitrage_phase_a"
 
-# IMPORTANT:
-# If your current head is NOT 20260201_merge_heads_final (because you added other migrations today),
-# set down_revision to your CURRENT head (run: alembic heads).
-down_revision = "20260201_merge_heads_final"
+# Chain: sandbox_visibility -> engine_readiness -> arbitrage_phase_a
+down_revision = "20260203_engine_readiness"
 
 branch_labels = None
 depends_on = None

@@ -7,7 +7,7 @@ import sqlalchemy as sa
 
 
 revision = "20260203_engine_readiness"
-down_revision = "20260201_merge_heads_final"
+down_revision = "20260203_sandbox_visibility"
 branch_labels = None
 depends_on = None
 
