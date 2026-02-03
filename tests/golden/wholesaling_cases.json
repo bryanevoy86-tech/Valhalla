@@ -1,0 +1,17 @@
+[
+  {
+    "name": "junk_low_value_should_not_pursue",
+    "lead": { "assessed_value": 90000, "city": "Calgary", "province": "AB" },
+    "expect": { "should_pursue": false, "human_review_required": true }
+  },
+  {
+    "name": "mid_value_requires_review",
+    "lead": { "assessed_value": 180000, "city": "Edmonton", "province": "AB" },
+    "expect": { "human_review_required": true }
+  },
+  {
+    "name": "higher_value_can_pursue_but_review_on",
+    "lead": { "assessed_value": 320000, "city": "Calgary", "province": "AB" },
+    "expect": { "human_review_required": true }
+  }
+]
