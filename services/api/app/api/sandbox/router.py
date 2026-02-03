@@ -121,15 +121,17 @@ def learning_report(
     now = dt.datetime.now(dt.timezone.utc)
     yesterday = now - dt.timedelta(days=1)
     
-    recent_decided = db.query(PendingAction).filter(
-        PendingAction.reviewed_at >= yesterday,
-        PendingAction.status.in_([PendingActionStatus.APPROVED.value, PendingActionStatus.DECLINED.value])
-    ).count()
-    
     recent_approved = db.query(PendingAction).filter(
         PendingAction.reviewed_at >= yesterday,
         PendingAction.status == PendingActionStatus.APPROVED.value
     ).count()
+    
+    recent_declined = db.query(PendingAction).filter(
+        PendingAction.reviewed_at >= yesterday,
+        PendingAction.status == PendingActionStatus.DECLINED.value
+    ).count()
+    
+    recent_decided = recent_approved + recent_declined
     
     return {
         "timestamp": now.isoformat(),
