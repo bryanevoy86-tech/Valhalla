@@ -2,10 +2,25 @@
 
 ## One-Time Setup
 
-```bash
+### Windows PowerShell
+```powershell
 cd C:\dev\valhalla
+$env:APP_ENV="sandbox"
+$env:DATABASE_URL="postgresql://..."  # Your Render DB URL
+```
+
+### Windows Command Prompt (cmd.exe)
+```cmd
+cd C:\dev\valhalla
+set APP_ENV=sandbox
+set DATABASE_URL=postgresql://...
+```
+
+### macOS / Linux
+```bash
+cd ~/path/to/valhalla
 export APP_ENV=sandbox
-export DATABASE_URL="postgresql://..."  # Your Render DB URL
+export DATABASE_URL="postgresql://..."
 ```
 
 ## Execute the Full Pipeline (5 Steps)
@@ -30,7 +45,12 @@ python services/api/tools/public_training/generate_synthetic_outcomes.py
 
 ### Step 4: Replay Against Your Engine
 ```bash
-export REPLAY_LIMIT=2000
+# PowerShell
+$env:REPLAY_LIMIT="2000"
+python services/api/tools/public_training/replay_wholesaling.py
+
+# OR Command Prompt
+set REPLAY_LIMIT=2000
 python services/api/tools/public_training/replay_wholesaling.py
 ```
 ✅ Tests wholesaling logic, generates metrics (accuracy, precision, recall)
@@ -83,6 +103,36 @@ Once you're ready, provide:
    ```
 
 Then I'll wire the adapter so replay uses your actual engine.
+
+## Verify Setup Works
+
+### 1. Check Database Tables Populated
+
+Run in your PostgreSQL client:
+```sql
+SELECT COUNT(*) as property_count FROM public_training_properties;
+SELECT COUNT(*) as label_count FROM public_training_labels;
+```
+
+**Expected**: Both > 0 (if 0, check download_sources.py output for failed URLs)
+
+### 2. Verify Golden Tests Pass
+
+```bash
+pytest tests/test_golden_wholesaling.py -v
+```
+
+**Expected**: ✅ test_golden_cases PASSED
+
+### 3. Check Replay Output
+
+Last 5 lines should show metrics like:
+```
+Records replayed: 2000
+Pursue rate: 0.XX%
+Review rate: 0.XX%
+Accuracy: 0.XX%
+```
 
 ## Files Created
 
