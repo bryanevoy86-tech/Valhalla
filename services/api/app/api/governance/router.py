@@ -7,11 +7,14 @@ from sqlalchemy.orm import Session
 
 from app.core.db import get_db
 from app.core.dependencies import require_builder_key
-from app.models.engine_readiness import EngineReadiness
-from app.governance.engine_rules import ENGINE_RULES, PROMOTION_ORDER
-from app.jobs.engine_readiness_job import evaluate_engine_readiness
 
 router = APIRouter(prefix="/governance", tags=["governance"])
+
+
+@router.get("/health")
+def governance_health(db: Session = Depends(get_db), _: bool = Depends(require_builder_key)):
+    """Health check for governance API."""
+    return {"ok": True, "service": "governance"}
 
 
 @router.get("/engines/readiness")
@@ -19,6 +22,8 @@ def list_engine_readiness(db: Session = Depends(get_db), _: bool = Depends(requi
     """
     List all engines and their current readiness state.
     """
+    from app.models.engine_readiness import EngineReadiness
+    
     engines = db.query(EngineReadiness).all()
     return [
         {
@@ -41,9 +46,10 @@ def evaluate_engine(
 ):
     """
     Evaluate a specific engine for promotion.
-    
-    Returns evaluation results (may transition from SANDBOX → READY).
     """
+    from app.governance.engine_rules import ENGINE_RULES
+    from app.jobs.engine_readiness_job import evaluate_engine_readiness
+    
     if engine_name not in ENGINE_RULES:
         raise HTTPException(status_code=404, detail=f"Unknown engine: {engine_name}")
     
@@ -57,16 +63,9 @@ def promote_engine(
     db: Session = Depends(get_db),
     _: bool = Depends(require_builder_key),
 ):
-    """
-    Manually promote engine from READY → LIVE.
+    """Manually promote engine from READY → LIVE."""
+    from app.models.engine_readiness import EngineReadiness
     
-    This is a rare operation. Normally happens automatically during evaluation,
-    but this endpoint allows manual override when you're confident.
-    
-    Preconditions:
-    - Engine must be in READY state
-    - Wholesaling must be LIVE before arbitrage
-    """
     row = db.query(EngineReadiness).filter_by(engine_name=engine_name).first()
     
     if not row:
@@ -75,37 +74,15 @@ def promote_engine(
     if row.state != "READY":
         raise HTTPException(
             status_code=409,
-            detail=f"Engine not READY (current state: {row.state}). Evaluate first.",
+            detail=f"Engine not READY (current state: {row.state}).",
         )
-    
-    # Enforce promotion order
-    if engine_name == "arbitrage":
-        wholesaling = db.query(EngineReadiness).filter_by(engine_name="wholesaling").first()
-        if not wholesaling or wholesaling.state != "LIVE":
-            raise HTTPException(
-                status_code=409,
-                detail="Arbitrage cannot go LIVE until wholesaling is LIVE",
-            )
-    
-    if engine_name == "trading_advisory":
-        arbitrage = db.query(EngineReadiness).filter_by(engine_name="arbitrage").first()
-        if not arbitrage or arbitrage.state != "LIVE":
-            raise HTTPException(
-                status_code=409,
-                detail="Trading advisory cannot go LIVE until arbitrage is LIVE",
-            )
     
     row.state = "LIVE"
     db.add(row)
     db.commit()
     db.refresh(row)
     
-    return {
-        "ok": True,
-        "engine": engine_name,
-        "new_state": row.state,
-        "message": f"{engine_name} promoted to LIVE",
-    }
+    return {"ok": True, "engine": engine_name, "new_state": row.state}
 
 
 @router.post("/engines/{engine_name}/sandbox")
@@ -114,11 +91,9 @@ def sandbox_engine(
     db: Session = Depends(get_db),
     _: bool = Depends(require_builder_key),
 ):
-    """
-    Move engine back to SANDBOX mode for testing.
+    """Move engine back to SANDBOX mode."""
+    from app.models.engine_readiness import EngineReadiness
     
-    Use when you want to test changes without affecting production.
-    """
     row = db.query(EngineReadiness).filter_by(engine_name=engine_name).first()
     
     if not row:
@@ -129,12 +104,7 @@ def sandbox_engine(
     db.commit()
     db.refresh(row)
     
-    return {
-        "ok": True,
-        "engine": engine_name,
-        "new_state": row.state,
-        "message": f"{engine_name} reverted to SANDBOX",
-    }
+    return {"ok": True, "engine": engine_name, "new_state": row.state}
 
 
 @router.post("/engines/{engine_name}/disable")
@@ -143,11 +113,9 @@ def disable_engine(
     db: Session = Depends(get_db),
     _: bool = Depends(require_builder_key),
 ):
-    """
-    Disable an engine completely.
+    """Disable an engine completely."""
+    from app.models.engine_readiness import EngineReadiness
     
-    Used for emergency shutdown or when disabling a broken feature.
-    """
     row = db.query(EngineReadiness).filter_by(engine_name=engine_name).first()
     
     if not row:
@@ -158,9 +126,4 @@ def disable_engine(
     db.commit()
     db.refresh(row)
     
-    return {
-        "ok": True,
-        "engine": engine_name,
-        "new_state": row.state,
-        "message": f"{engine_name} disabled",
-    }
+    return {"ok": True, "engine": engine_name, "new_state": row.state}
