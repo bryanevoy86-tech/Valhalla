@@ -5,11 +5,14 @@ from sqlalchemy.orm import Session
 
 from app.core.db import get_db
 from app.core.dependencies import require_builder_key
-from app.models.arbitrage_opportunity import ArbitrageOpportunity
-from app.models.arbitrage_sim_trade import ArbitrageSimTrade
-from app.engines.arbitrage.engine import scan_arbitrage, ArbitragePolicy
 
 router = APIRouter(prefix="/arbitrage", tags=["arbitrage"])
+
+
+@router.get("/health")
+def arbitrage_health(db: Session = Depends(get_db), _: bool = Depends(require_builder_key)):
+    """Health check for arbitrage engine."""
+    return {"ok": True, "service": "arbitrage", "mode": "SANDBOX_SIM_ONLY"}
 
 
 @router.post("/scan")
@@ -17,7 +20,11 @@ def run_scan(
     db: Session = Depends(get_db),
     _: bool = Depends(require_builder_key),
 ):
-    # Phase A: always SIM + observation
+    """Scan for arbitrage opportunities (simulation only)."""
+    from app.models.arbitrage_opportunity import ArbitrageOpportunity
+    from app.models.arbitrage_sim_trade import ArbitrageSimTrade
+    from app.engines.arbitrage.engine import scan_arbitrage, ArbitragePolicy
+    
     policy = ArbitragePolicy()
     result = scan_arbitrage(db, policy)
     return result
@@ -30,6 +37,9 @@ def list_opportunities(
     db: Session = Depends(get_db),
     _: bool = Depends(require_builder_key),
 ):
+    """List detected arbitrage opportunities."""
+    from app.models.arbitrage_opportunity import ArbitrageOpportunity
+    
     rows = (
         db.query(ArbitrageOpportunity)
         .filter(ArbitrageOpportunity.status == status)
@@ -59,6 +69,10 @@ def scorecard(
     db: Session = Depends(get_db),
     _: bool = Depends(require_builder_key),
 ):
+    """Arbitrage scorecard: performance summary."""
+    from app.models.arbitrage_opportunity import ArbitrageOpportunity
+    from app.models.arbitrage_sim_trade import ArbitrageSimTrade
+    
     open_ops = db.query(ArbitrageOpportunity).filter(ArbitrageOpportunity.status == "OPEN").count()
     sim_count = db.query(ArbitrageSimTrade).count()
 
@@ -80,3 +94,4 @@ def scorecard(
         "sim_avg_roi": round(avg_roi, 4),
         "note": "No real execution. No capital moves. Observation + simulation only.",
     }
+
