@@ -144,6 +144,13 @@ except Exception as e:
     print(f"[main.py] Error registering arbitrage router: {e}")
 
 try:
+    from app.api.arbitrage.test_data import router as arbitrage_test_router
+    app.include_router(arbitrage_test_router, prefix="/api")  # /api/arbitrage/test/*
+    print("[main.py] Arbitrage test router registered")
+except Exception as e:
+    print(f"[main.py] Error registering arbitrage test router: {e}")
+
+try:
     from app.jobs.arbitrage_jobs import router as arbitrage_jobs_router
     app.include_router(arbitrage_jobs_router, prefix="/api")  # /api/jobs/arbitrage/*
     print("[main.py] Arbitrage jobs router registered")
