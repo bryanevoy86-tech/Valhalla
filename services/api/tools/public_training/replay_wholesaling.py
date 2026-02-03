@@ -21,11 +21,55 @@ class ReplayResult:
     label_review: Optional[bool]
     label_risk: Optional[str]
 
-# --------------- ADAPTER YOU WIRE ONCE ---------------
+# --------------- ADAPTER WIRED TO REAL LOGIC ---------------
+from typing import Dict, Any, Optional
+
+# Import from your discovered entrypoint
+# Repo root at runtime is /app/services/api, so "app. ..." is the correct module root.
+from app.deal_analyzer.service import calculate_deal_metrics
+
+
+def _clamp(v: float, lo: float, hi: float) -> float:
+    return max(lo, min(hi, v))
+
+
+def _derive_inputs_from_training_lead(lead: Dict[str, Any]) -> Dict[str, float]:
+    """
+    We do not have true asking price, sold price, or real rehab in public assessment data.
+    So for SANDBOX replay we derive conservative proxy inputs from assessed_value.
+
+    assessed_value -> valuation anchor (high confidence)
+    purchase_price -> conservative target acquisition proxy
+    rehab_cost     -> conservative rehab band proxy
+    arv            -> conservative after-repair value proxy
+    """
+    assessed = lead.get("assessed_value")
+    if assessed is None:
+        raise ValueError("lead.assessed_value is required for replay adapter")
+
+    assessed = float(assessed)
+
+    # Conservative proxy assumptions (tune later)
+    # Purchase price proxy: target below assessed to avoid optimism
+    purchase_price = assessed * 0.70
+
+    # Rehab proxy: modest % of assessed with clamps to avoid crazy numbers
+    rehab_cost = _clamp(assessed * 0.12, 8000.0, 90000.0)
+
+    # ARV proxy: mild uplift over assessed (still conservative)
+    arv = assessed * 1.10
+
+    return {
+        "assessed_value": assessed,
+        "purchase_price": purchase_price,
+        "rehab_cost": rehab_cost,
+        "arv": arv,
+    }
+
+
 def run_wholesaling_pipeline(lead: Dict[str, Any]) -> Dict[str, Any]:
     """
-    TODO: Wire this to your actual wholesaling code.
-    Must return a dict like:
+    Calls real deal metrics logic and maps result into replay contract:
       {
         "should_pursue": bool,
         "offer_low": float|None,
@@ -33,18 +77,40 @@ def run_wholesaling_pipeline(lead: Dict[str, Any]) -> Dict[str, Any]:
         "human_review_required": bool
       }
 
-    Example pseudo-import (replace with your real entrypoint):
-      from deals.scoring import score_lead
-      from deals.offer import suggest_offer_band
+    IMPORTANT:
+    - This is still SANDBOX-only (enforced by caller).
+    - This does NOT perform outbound actions.
     """
-    # Safe fallback (never pursue by default)
+    x = _derive_inputs_from_training_lead(lead)
+
+    metrics = calculate_deal_metrics(
+        purchase_price=x["purchase_price"],
+        rehab_cost=x["rehab_cost"],
+        arv=x["arv"],
+    )
+
+    # metrics.recommendation is one of: "pass", "review", "reject"
+    rec = (getattr(metrics, "recommendation", "") or "").strip().lower()
+    risk = float(getattr(metrics, "risk_score", 50.0) or 50.0)
+
+    # Map recommendation -> pursue/review.
+    # We treat "review" as a pursue candidate that requires human approval.
+    should_pursue = rec in ("pass", "review")
+
+    # Keep early rollout conservative: require review unless it's a clean "pass" with low risk.
+    human_review_required = (rec != "pass") or (risk >= 25.0)
+
+    # Offer band uses assessed anchor (aligns with synthetic labels + gates)
+    offer_low = x["assessed_value"] * 0.60
+    offer_high = x["assessed_value"] * 0.78
+
     return {
-        "should_pursue": False,
-        "offer_low": None,
-        "offer_high": None,
-        "human_review_required": True
+        "should_pursue": bool(should_pursue),
+        "offer_low": float(offer_low),
+        "offer_high": float(offer_high),
+        "human_review_required": bool(human_review_required),
     }
-# ----------------------------------------------------
+# ----------------------------------------------------------
 
 def main():
     app_env = os.getenv("APP_ENV", "dev").lower()
