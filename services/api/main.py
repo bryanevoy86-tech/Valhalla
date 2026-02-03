@@ -17,6 +17,8 @@ from app.routers.runbook_status import router as runbook_status_router
 from app.routers import runbook as governance_runbook_router
 from app.routers import go_live as governance_go_live_router
 from app.core.settings import settings
+from app.api.arbitrage.router import router as arbitrage_router
+from app.jobs.arbitrage_jobs import router as arbitrage_jobs_router
 
 
 def _truthy(v: str | None, default: bool = False) -> bool:
@@ -134,6 +136,12 @@ try:
     print("[main.py] Governance router registered")
 except Exception as e:
     print(f"[main.py] Skipping governance router: {e}")
+
+# --- Arbitrage API (Phase A: observation + sim trading) ---
+app.include_router(arbitrage_router, prefix="/api")  # /api/arbitrage/*
+print("[main.py] Arbitrage router registered")
+app.include_router(arbitrage_jobs_router, prefix="/api")  # /api/jobs/arbitrage/*
+print("[main.py] Arbitrage jobs router registered")
 
 # DEBUG: Route list endpoint (gated behind env var or X-API-Key header for security)
 def _get_debug_routes():
