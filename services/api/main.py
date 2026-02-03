@@ -89,19 +89,36 @@ app.include_router(governance_go_live_router.router, prefix="/api")  # /api/gove
 from app.api.notify.test_email_router import router as notify_test_router
 app.include_router(notify_test_router, prefix="/api")  # /api/notify/test-email
 
-# DEBUG: Route list endpoint (gated behind env var for security)
-# Set EXPOSE_DEBUG_ROUTES=1 temporarily to inspect routes; default is disabled
-if os.getenv("EXPOSE_DEBUG_ROUTES") == "1":
-    @app.get("/__routes", include_in_schema=False)
-    def __routes():
-        """Debug endpoint: list all registered routes (only when env var set)."""
-        return JSONResponse(sorted({r.path for r in app.router.routes}))
-else:
-    @app.get("/__routes", include_in_schema=False)
-    def __routes_disabled():
-        """Debug endpoint disabled in production (EXPOSE_DEBUG_ROUTES not set)."""
-        from fastapi import HTTPException
-        raise HTTPException(status_code=404, detail="Not found")
+# --- Notification Queue & Jobs Dispatch ---
+try:
+    from app.routers.notify import router as notify_queue_router
+    app.include_router(notify_queue_router, prefix="/api")  # /api/notify/email, /api/notify/webhook
+except Exception as e:
+    print(f"[main.py] Warning: Could not load notify queue router: {e}")
+
+try:
+    from app.routers.jobs import router as jobs_router
+    app.include_router(jobs_router, prefix="/api")  # /api/jobs/notify/dispatch
+except Exception as e:
+    print(f"[main.py] Warning: Could not load jobs router: {e}")
+
+# DEBUG: Route list endpoint (gated behind X-API-Key for security)
+from fastapi import Depends, HTTPException, Request
+
+def _require_builder_key(request: Request):
+    """Gate for sensitive debug endpoints."""
+    key = request.headers.get("X-API-Key")
+    if key and key == settings.HEIMDALL_BUILDER_API_KEY:
+        return True
+    # Fallback: check env var for public debug mode
+    if os.getenv("EXPOSE_DEBUG_ROUTES") == "1":
+        return True
+    raise HTTPException(status_code=401, detail="Unauthorized")
+
+@app.get("/__routes", include_in_schema=False)
+def list_routes(auth: bool = Depends(_require_builder_key)):
+    """Debug endpoint: list all registered routes (requires X-API-Key or EXPOSE_DEBUG_ROUTES=1)."""
+    return JSONResponse(sorted({r.path for r in app.router.routes}))
 
 
 @app.get("/debug/main-loaded", include_in_schema=False)
