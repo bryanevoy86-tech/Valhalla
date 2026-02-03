@@ -184,5 +184,4 @@ def insert_manitoba_data(
     except Exception as e:
         db.rollback()
         return {"ok": False, "error": str(e)}
-    }
 
