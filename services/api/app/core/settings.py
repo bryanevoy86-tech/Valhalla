@@ -60,7 +60,7 @@ class Settings(BaseSettings):
     sentry_dsn: str = ""
     
     # Builder
-    HEIMDALL_BUILDER_API_KEY: str = ""
+    BUILDER_KEY: str = ""
     BUILDER_ALLOWED_DIRS: list[str] = [
         "services/api/app/routers",
         "services/api/app/models",
