@@ -254,6 +254,13 @@ def main():
     print(f"Precision: {precision:.2%}")
     print(f"Recall: {recall:.2%}")
     print(f"TP/FP/TN/FN: {tp}/{fp}/{tn}/{fn}")
+    print("==========================================")
+    print("\n=== DIAGNOSTIC: Safety Gate Analysis ===")
+    print(f"Records with rec='pass': {pass_recommendation_count} ({pass_recommendation_count/n:.1%})")
+    if pass_recommendation_count > 0:
+        print(f"  Failed risk gate (>{PASS_RISK_MAX}): {failed_risk_gate} ({failed_risk_gate/pass_recommendation_count:.1%})")
+        print(f"  Failed ROI gate (<{PASS_ROI_MIN}): {failed_roi_gate} ({failed_roi_gate/pass_recommendation_count:.1%})")
+        print(f"  Failed profit gate (<${PASS_PROFIT_MIN:,.0f}): {failed_profit_gate} ({failed_profit_gate/pass_recommendation_count:.1%})")
     print("==========================================\n")
     print("Next tuning levers:")
     print("- If pursue rate is too high: tighten thresholds / default review")

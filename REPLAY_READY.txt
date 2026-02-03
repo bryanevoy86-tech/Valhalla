@@ -1,0 +1,47 @@
+=== READY FOR REPLAY ===
+
+## Current Status
+
+✅ Adapter wired
+✅ Semantics corrected  
+✅ Golden tests passing
+✅ Import paths fixed
+
+## To Run Full Replay
+
+When training data is loaded in Render database:
+
+```powershell
+cd C:\dev\valhalla
+$env:APP_ENV="sandbox"
+$env:DATABASE_URL="postgres://YOUR_RENDER_DB_URL"
+$env:REPLAY_LIMIT="2000"
+
+python services/api/tools/public_training/replay_wholesaling.py
+```
+
+## Expected Output
+
+```
+=== SANDBOX REPLAY REPORT (WHOLESALING) ===
+Records replayed: 2000
+Pursue rate: XX.XX%
+Review rate: XX.XX%
+Accuracy (where labeled): XX.XX%
+Precision: XX.XX%
+Recall: XX.XX%
+TP/FP/TN/FN: X/Y/Z/W
+```
+
+## What To Paste Back
+
+After replay completes, paste the metrics block:
+- Records replayed
+- Pursue rate
+- Review rate
+- TP/FP/TN/FN (if present)
+
+Then adapter tuning will be provided to hit gates:
+- pursue ≤ 10%
+- review ≥ 80%
+- FP near 0%

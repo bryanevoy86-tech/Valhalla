@@ -112,6 +112,21 @@ try:
 except Exception as e:
     print(f"[main.py] Skipping notify_test router: {e}")
 
+# --- SANDBOX Visibility + Approvals (queues real-world effects for review) ---
+try:
+    from app.api.sandbox.router import router as sandbox_router
+    app.include_router(sandbox_router, prefix="/api")  # /api/sandbox/*
+    print("[main.py] Sandbox activity router registered")
+except Exception as e:
+    print(f"[main.py] Skipping sandbox router: {e}")
+
+try:
+    from app.api.approvals.router import router as approvals_router
+    app.include_router(approvals_router, prefix="/api")  # /api/approvals/*
+    print("[main.py] Approvals router registered")
+except Exception as e:
+    print(f"[main.py] Skipping approvals router: {e}")
+
 # DEBUG: Route list endpoint (gated behind env var or X-API-Key header for security)
 def _get_debug_routes():
     """Helper to list all routes (used by both __routes endpoints)."""
