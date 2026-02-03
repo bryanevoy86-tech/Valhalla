@@ -134,5 +134,55 @@ def insert_demo_data(
     except Exception as e:
         db.rollback()
         return {"ok": False, "error": str(e)}
+
+
+@router.post("/test/insert-manitoba-data")
+def insert_manitoba_data(
+    db: Session = Depends(get_db),
+    _: bool = Depends(require_builder_key),
+):
+    """
+    Insert realistic Manitoba test data:
+    - MANI001: Local pickup (no shipping) → high margin
+    - MANI002: Cross-province shipped → moderate margin
+    - MANI003: Marginal spread → should be rejected by new policy
+    """
+    from app.models.market_feed_event import MarketFeedEvent
+    
+    # Clear old demo data first
+    db.query(MarketFeedEvent).filter(MarketFeedEvent.sku.in_(['SKU123', 'SKU999', 'SKU777'])).delete()
+    
+    test_events = [
+        # MANI001: Local pickup (no shipping cost) - WINNIPEG to CALGARY local buyers
+        # Buy: $45 (local Winnipeg seller), Sell: $89 (Calgary buyer, local pickup)
+        # Net: $89 - $45 - (89*0.10 fee) - $0 shipping = $44 - $8.90 = $35.10 ✓ PASS
+        MarketFeedEvent(source='kijiji_buy', sku='MANI001', title='Vintage Tool Set', venue='BUY', price=45.00, currency='CAD', url='http://kijiji.ca/buy1'),
+        MarketFeedEvent(source='facebook_sell', sku='MANI001', title='Vintage Tool Set', venue='SELL', price=89.00, currency='CAD', url='http://facebook.com/sell1'),
+        
+        # MANI002: Cross-province shipped (realistic $18 shipping)
+        # Buy: $75 (Toronto supplier), Sell: $155 (Vancouver buyer shipped)
+        # Net: $155 - $75 - (155*0.10 fee) - $18 shipping = $80 - $15.50 - $18 = $46.50 ✓ PASS
+        MarketFeedEvent(source='alibaba_buy', sku='MANI002', title='Home Decor Item', venue='BUY', price=75.00, currency='CAD', url='http://alibaba.com/buy2'),
+        MarketFeedEvent(source='ebay_sell', sku='MANI002', title='Home Decor Item', venue='SELL', price=155.00, currency='CAD', url='http://ebay.ca/sell2'),
+        
+        # MANI003: Marginal spread (new policy should reject)
+        # Buy: $120, Sell: $145
+        # Net: $145 - $120 - (145*0.10 fee) - $10 shipping = $25 - $14.50 - $10 = $0.50 ✗ FAIL (< $25 min_profit)
+        MarketFeedEvent(source='craigslist_buy', sku='MANI003', title='Used Electronics', venue='BUY', price=120.00, currency='CAD', url='http://craigslist.ca/buy3'),
+        MarketFeedEvent(source='kijiji_sell', sku='MANI003', title='Used Electronics', venue='SELL', price=145.00, currency='CAD', url='http://kijiji.ca/sell3'),
+    ]
+    
+    try:
+        db.add_all(test_events)
+        db.commit()
+        return {
+            "ok": True,
+            "inserted": len(test_events),
+            "message": "Manitoba test data inserted",
+            "note": "Run POST /api/arbitrage/scan - expect 2 opportunities (MANI001 $35.10, MANI002 $46.50), reject MANI003"
+        }
+    except Exception as e:
+        db.rollback()
+        return {"ok": False, "error": str(e)}
     }
 
