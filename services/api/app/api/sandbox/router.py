@@ -195,7 +195,6 @@ def learning_report(
 
 @router.get("/learning/scorecard")
 def learning_scorecard(
-    days: int = Query(7, ge=1, le=365),
     db: Session = Depends(get_db),
     _: bool = Depends(require_builder_key),
 ):
