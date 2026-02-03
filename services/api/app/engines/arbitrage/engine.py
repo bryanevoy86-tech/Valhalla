@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import math
 import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from sqlalchemy.orm import Session
 
 from app.models.market_feed_event import MarketFeedEvent
@@ -35,11 +35,23 @@ def _env_int(name: str, default: int) -> int:
 @dataclass
 class ArbitragePolicy:
     # Phase A: configurable via Render env vars, sensible Manitoba defaults
-    min_roi: float = field(default_factory=lambda: _env_float("ARB_MIN_ROI", 0.05))
-    min_profit: float = field(default_factory=lambda: _env_float("ARB_MIN_PROFIT", 25.0))
-    assumed_fee_rate: float = field(default_factory=lambda: _env_float("ARB_FEE_RATE", 0.10))
-    assumed_shipping: float = field(default_factory=lambda: _env_float("ARB_SHIPPING", 10.0))
-    max_age_hours: int = field(default_factory=lambda: _env_int("ARB_MAX_AGE_HOURS", 72))
+    min_roi: float = None
+    min_profit: float = None
+    assumed_fee_rate: float = None
+    assumed_shipping: float = None
+    max_age_hours: int = None
+    
+    def __post_init__(self):
+        if self.min_roi is None:
+            self.min_roi = _env_float("ARB_MIN_ROI", 0.05)
+        if self.min_profit is None:
+            self.min_profit = _env_float("ARB_MIN_PROFIT", 25.0)
+        if self.assumed_fee_rate is None:
+            self.assumed_fee_rate = _env_float("ARB_FEE_RATE", 0.10)
+        if self.assumed_shipping is None:
+            self.assumed_shipping = _env_float("ARB_SHIPPING", 10.0)
+        if self.max_age_hours is None:
+            self.max_age_hours = _env_int("ARB_MAX_AGE_HOURS", 72)
 
 
 def _estimate_fees(buy_price: float, sell_price: float, policy: ArbitragePolicy) -> float:
