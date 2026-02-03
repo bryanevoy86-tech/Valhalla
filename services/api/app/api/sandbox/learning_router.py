@@ -33,18 +33,18 @@ def learning_report(
     
     # === METRIC 1: Queue Quality ===
     queue_stats = db.query(
-        func.sum(func.cast(PendingAction.status == PendingActionStatus.PENDING.value, type_=type(1))).label("pending"),
-        func.sum(func.cast(PendingAction.status == PendingActionStatus.APPROVED.value, type_=type(1))).label("approved"),
-        func.sum(func.cast(PendingAction.status == PendingActionStatus.DECLINED.value, type_=type(1))).label("declined"),
-        func.sum(func.cast(PendingAction.status == PendingActionStatus.EXECUTED.value, type_=type(1))).label("executed"),
-        func.sum(func.cast(PendingAction.status == PendingActionStatus.FAILED.value, type_=type(1))).label("failed"),
+        func.count(PendingAction.id).filter(PendingAction.status == PendingActionStatus.PENDING.value).label("pending"),
+        func.count(PendingAction.id).filter(PendingAction.status == PendingActionStatus.APPROVED.value).label("approved"),
+        func.count(PendingAction.id).filter(PendingAction.status == PendingActionStatus.DECLINED.value).label("declined"),
+        func.count(PendingAction.id).filter(PendingAction.status == PendingActionStatus.EXECUTED.value).label("executed"),
+        func.count(PendingAction.id).filter(PendingAction.status == PendingActionStatus.FAILED.value).label("failed"),
     ).first()
     
-    pending = queue_stats[0] or 0
-    approved = queue_stats[1] or 0
-    declined = queue_stats[2] or 0
-    executed = queue_stats[3] or 0
-    failed = queue_stats[4] or 0
+    pending = db.query(PendingAction).filter(PendingAction.status == PendingActionStatus.PENDING.value).count()
+    approved = db.query(PendingAction).filter(PendingAction.status == PendingActionStatus.APPROVED.value).count()
+    declined = db.query(PendingAction).filter(PendingAction.status == PendingActionStatus.DECLINED.value).count()
+    executed = db.query(PendingAction).filter(PendingAction.status == PendingActionStatus.EXECUTED.value).count()
+    failed = db.query(PendingAction).filter(PendingAction.status == PendingActionStatus.FAILED.value).count()
     
     total_decided = approved + declined
     approval_rate = (approved / total_decided) if total_decided > 0 else None
