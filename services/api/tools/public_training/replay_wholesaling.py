@@ -1,8 +1,15 @@
 # services/api/tools/public_training/replay_wholesaling.py
 import os
+import sys
+from pathlib import Path
 from dataclasses import dataclass
 from typing import Optional, Dict, Any, List
 from sqlalchemy import create_engine, text
+
+# Ensure app module is importable (services/api is the root for "app.*" imports)
+_api_root = Path(__file__).parent.parent.parent.parent / "services" / "api"
+if str(_api_root) not in sys.path:
+    sys.path.insert(0, str(_api_root))
 
 def die(msg: str):
     raise SystemExit(f"[replay_wholesaling] {msg}")
@@ -24,13 +31,36 @@ class ReplayResult:
 # --------------- ADAPTER WIRED TO REAL LOGIC ---------------
 from typing import Dict, Any, Optional
 
-# Import from your discovered entrypoint
-# Repo root at runtime is /app/services/api, so "app. ..." is the correct module root.
-from app.deal_analyzer.service import calculate_deal_metrics
-
 
 def _clamp(v: float, lo: float, hi: float) -> float:
     return max(lo, min(hi, v))
+
+
+def _get_calculate_deal_metrics():
+    """Lazy load the real function with path handling."""
+    try:
+        from app.deal_analyzer.service import calculate_deal_metrics
+        return calculate_deal_metrics
+    except ModuleNotFoundError:
+        # services/api must be in sys.path for "from app..." to work
+        import os
+        
+        # Current working directory is typically the repo root
+        cwd = Path(os.getcwd())
+        
+        # Check if cwd is already the repo root (contains services/api)
+        services_api = cwd / "services" / "api"
+        if services_api.exists():
+            if str(services_api) not in sys.path:
+                sys.path.insert(0, str(services_api))
+        else:
+            # Fallback: try relative to this file (3 levels up)
+            file_path = Path(__file__).resolve().parent.parent.parent
+            if file_path.exists() and "api" in str(file_path) and str(file_path) not in sys.path:
+                sys.path.insert(0, str(file_path))
+        
+        from app.deal_analyzer.service import calculate_deal_metrics
+        return calculate_deal_metrics
 
 
 def _derive_inputs_from_training_lead(lead: Dict[str, Any]) -> Dict[str, float]:
@@ -82,6 +112,9 @@ def run_wholesaling_pipeline(lead: Dict[str, Any]) -> Dict[str, Any]:
     - This does NOT perform outbound actions.
     """
     x = _derive_inputs_from_training_lead(lead)
+
+    # Lazy load the real function (handles import path issues)
+    calculate_deal_metrics = _get_calculate_deal_metrics()
 
     metrics = calculate_deal_metrics(
         purchase_price=x["purchase_price"],

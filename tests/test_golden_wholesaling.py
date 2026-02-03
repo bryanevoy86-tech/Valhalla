@@ -1,7 +1,13 @@
-import json
+import sys
 from pathlib import Path
+import json
 
-# Import the adapter function from replay harness (or move it to a shared module)
+# Set up path for app module imports
+_services_api = Path(__file__).parent.parent / "services" / "api"
+if str(_services_api) not in sys.path:
+    sys.path.insert(0, str(_services_api))
+
+# Import the adapter function from replay harness
 from services.api.tools.public_training.replay_wholesaling import run_wholesaling_pipeline
 
 def test_golden_cases():
