@@ -104,6 +104,14 @@ try:
 except Exception as e:
     print(f"[main.py] Skipping jobs router: {e}")
 
+# --- Test Email Router (SANDBOX-safe SMTP verification) ---
+try:
+    from app.routers import notify_test
+    app.include_router(notify_test.router)  # /api/notify/test-email (no prefix override)
+    print("[main.py] Notify test router registered")
+except Exception as e:
+    print(f"[main.py] Skipping notify_test router: {e}")
+
 # DEBUG: Route list endpoint (gated behind env var or X-API-Key header for security)
 def _get_debug_routes():
     """Helper to list all routes (used by both __routes endpoints)."""
