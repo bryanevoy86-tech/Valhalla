@@ -127,6 +127,13 @@ try:
 except Exception as e:
     print(f"[main.py] Skipping approvals router: {e}")
 
+try:
+    from app.api.sandbox.learning_router import router as learning_router
+    app.include_router(learning_router, prefix="/api")  # /api/sandbox/learning/*
+    print("[main.py] Learning report router registered")
+except Exception as e:
+    print(f"[main.py] Skipping learning router: {e}")
+
 # DEBUG: Route list endpoint (gated behind env var or X-API-Key header for security)
 def _get_debug_routes():
     """Helper to list all routes (used by both __routes endpoints)."""
