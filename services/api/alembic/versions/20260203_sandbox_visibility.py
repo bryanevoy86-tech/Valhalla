@@ -1,7 +1,7 @@
 """SANDBOX visibility + approvals + human labels
 
 Revision ID: 20260203_sandbox_visibility
-Revises: <previous head>
+Revises: 20260201_merge_heads_final
 Create Date: 2026-02-03 15:30:00.000000
 
 """
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = '20260203_sandbox_visibility'
-down_revision = None
+down_revision = '20260201_merge_heads_final'
 branch_labels = None
 depends_on = None
 
