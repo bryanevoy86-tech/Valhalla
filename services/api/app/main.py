@@ -519,6 +519,22 @@ try:
 except Exception as e:
     print(f"[app.main] Skipping backup router: {e}")
 
+# PACK: Jobs Router (notification dispatch, research jobs, etc)
+try:
+    from app.routers import jobs
+    app.include_router(jobs.router, prefix="/api")
+    print("[app.main] Jobs router registered")
+except Exception as e:
+    print(f"[app.main] Skipping jobs router: {e}")
+
+# PACK: Notify Router (queue webhooks and emails for dispatch)
+try:
+    from app.routers import notify
+    app.include_router(notify.router, prefix="/api")
+    print("[app.main] Notify router registered")
+except Exception as e:
+    print(f"[app.main] Skipping notify router: {e}")
+
 try:
     from app.api.v1.security import router as security_router
     app.include_router(security_router, prefix="/api/v1")
