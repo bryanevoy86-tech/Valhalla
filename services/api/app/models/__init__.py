@@ -52,6 +52,11 @@ from app.models.model_provider import ModelProvider
 # Governance: Engine State (Core governance layer)
 from app.models.engine_state import EngineStateRow  # noqa: F401
 
+# Arbitrage Phase A
+from app.models.market_feed_event import MarketFeedEvent
+from app.models.arbitrage_opportunity import ArbitrageOpportunity
+from app.models.arbitrage_sim_trade import ArbitrageSimTrade
+
 __all__ = [
     "Professional",
     "InteractionLog",
@@ -92,4 +97,8 @@ __all__ = [
     "HumanLabel",
     # Governance
     "EngineReadiness",
+    # Arbitrage Phase A
+    "MarketFeedEvent",
+    "ArbitrageOpportunity",
+    "ArbitrageSimTrade",
 ]

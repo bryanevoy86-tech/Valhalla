@@ -138,10 +138,17 @@ except Exception as e:
     print(f"[main.py] Skipping governance router: {e}")
 
 # --- Arbitrage API (Phase A: observation + sim trading) ---
-app.include_router(arbitrage_router, prefix="/api")  # /api/arbitrage/*
-print("[main.py] Arbitrage router registered")
-app.include_router(arbitrage_jobs_router, prefix="/api")  # /api/jobs/arbitrage/*
-print("[main.py] Arbitrage jobs router registered")
+try:
+    app.include_router(arbitrage_router, prefix="/api")  # /api/arbitrage/*
+    print("[main.py] Arbitrage router registered")
+except Exception as e:
+    print(f"[main.py] Error registering arbitrage router: {e}")
+
+try:
+    app.include_router(arbitrage_jobs_router, prefix="/api")  # /api/jobs/arbitrage/*
+    print("[main.py] Arbitrage jobs router registered")
+except Exception as e:
+    print(f"[main.py] Error registering arbitrage jobs router: {e}")
 
 # DEBUG: Route list endpoint (gated behind env var or X-API-Key header for security)
 def _get_debug_routes():
