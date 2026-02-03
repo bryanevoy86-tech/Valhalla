@@ -127,6 +127,14 @@ try:
 except Exception as e:
     print(f"[main.py] Skipping approvals router: {e}")
 
+# --- Governance API (Engine activation, readiness tracking) ---
+try:
+    from app.api.governance.router import router as governance_router
+    app.include_router(governance_router, prefix="/api")  # /api/governance/*
+    print("[main.py] Governance router registered")
+except Exception as e:
+    print(f"[main.py] Skipping governance router: {e}")
+
 # DEBUG: Route list endpoint (gated behind env var or X-API-Key header for security)
 def _get_debug_routes():
     """Helper to list all routes (used by both __routes endpoints)."""

@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from ..core.db import get_db
 from app.core.engines.guard_runtime import enforce_engine
 from app.core.engines.actions import OUTREACH
+from app.core.engine_guard import require_engine_live
 from ..core.dependencies import require_builder_key
 from ..core.settings import settings
 from ..models.notify import Outbox
@@ -90,6 +91,9 @@ def queue_webhook(
 
             return {"ok": True, "queued_for_approval": True, "reason": "SANDBOX blocks real-world effects"}
         raise
+    
+    # --- GOVERNANCE: Check if wholesaling engine is LIVE before dispatching ---
+    require_engine_live(db, "wholesaling")
     
     url = payload.url or settings.DEFAULT_WEBHOOK_URL
     if not url:
@@ -178,6 +182,9 @@ def queue_email(
 
             return {"ok": True, "queued_for_approval": True, "reason": "SANDBOX blocks real-world effects"}
         raise
+    
+    # --- GOVERNANCE: Check if wholesaling engine is LIVE before dispatching ---
+    require_engine_live(db, "wholesaling")
     
     row = Outbox(
         kind="email",
