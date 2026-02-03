@@ -1,17 +1,17 @@
 [
   {
-    "name": "low_value_passes_real_logic",
+    "name": "low_value_blocked_by_secondary_gate",
     "lead": { "assessed_value": 90000, "city": "Calgary", "province": "AB" },
-    "expect": { "should_pursue": true, "human_review_required": true }
+    "expect": { "should_pursue": false, "human_review_required": true }
   },
   {
-    "name": "mid_value_passes_real_logic",
+    "name": "mid_value_blocked_by_secondary_gate",
     "lead": { "assessed_value": 180000, "city": "Edmonton", "province": "AB" },
-    "expect": { "should_pursue": true, "human_review_required": true }
+    "expect": { "should_pursue": false, "human_review_required": true }
   },
   {
-    "name": "high_value_passes_real_logic",
+    "name": "high_value_blocked_by_secondary_gate",
     "lead": { "assessed_value": 320000, "city": "Calgary", "province": "AB" },
-    "expect": { "should_pursue": true, "human_review_required": true }
+    "expect": { "should_pursue": false, "human_review_required": true }
   }
 ]

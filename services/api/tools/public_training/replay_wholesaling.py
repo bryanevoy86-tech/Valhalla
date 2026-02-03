@@ -125,13 +125,28 @@ def run_wholesaling_pipeline(lead: Dict[str, Any]) -> Dict[str, Any]:
     # metrics.recommendation is one of: "pass", "review", "reject"
     rec = (getattr(metrics, "recommendation", "") or "").strip().lower()
     risk = float(getattr(metrics, "risk_score", 50.0) or 50.0)
+    roi = float(getattr(metrics, "roi_percentage", 0.0) or 0.0)
+    profit = float(getattr(metrics, "expected_profit", 0.0) or 0.0)
 
-    # Semantic clarity: only "pass" is pursued. "review" stays in queue but not pursued.
-    # This ensures pursue ≤ 10% (only clean passes) while review ≥ 80% (everything else).
-    should_pursue = (rec == "pass")
+    # --- Two-stage gate ---
+    # Stage 1: Analyzer recommendation
+    # Stage 2: Valhalla safety policy (secondary gate)
+    PASS_RISK_MAX = 20.0
+    PASS_ROI_MIN = 18.0
+    PASS_PROFIT_MIN = 15000.0
 
-    # Keep early rollout conservative: require review unless it's a clean "pass" with low risk.
-    human_review_required = (rec != "pass") or (risk >= 25.0)
+    passes_secondary_gate = (
+        (risk <= PASS_RISK_MAX) and
+        (roi >= PASS_ROI_MIN) and
+        (profit >= PASS_PROFIT_MIN)
+    )
+
+    # Only pursue if analyzer says "pass" AND passes secondary safety gate
+    should_pursue = (rec == "pass") and passes_secondary_gate
+
+    # Review stays on by default unless it's a very clean pass (both gates pass)
+    human_review_required = not should_pursue
+
 
     # Offer band uses assessed anchor (aligns with synthetic labels + gates)
     offer_low = x["assessed_value"] * 0.60
