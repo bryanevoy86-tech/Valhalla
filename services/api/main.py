@@ -135,40 +135,32 @@ try:
 except Exception as e:
     print(f"[main.py] Skipping governance router: {e}")
 
-# NOTE: Arbitrage Phase A routers temporarily disabled due to deployment issues
-# Will re-enable once infrastructure is stable
-# try:
-#     from app.api.arbitrage.router import router as arbitrage_router
-#     app.include_router(arbitrage_router, prefix="/api")  # /api/arbitrage/*
-#     print("[main.py] Arbitrage router registered")
-# except Exception as e:
-#     print(f"[main.py] Error registering arbitrage router: {e}")
-# 
-# try:
-#     from app.jobs.arbitrage_jobs import router as arbitrage_jobs_router
-#     app.include_router(arbitrage_jobs_router, prefix="/api")  # /api/jobs/arbitrage/*
-#     print("[main.py] Arbitrage jobs router registered")
-# except Exception as e:
-#     print(f"[main.py] Error registering arbitrage jobs router: {e}")
+# --- Arbitrage Phase A (Observation + simulation) ---
+try:
+    from app.api.arbitrage.router import router as arbitrage_router
+    app.include_router(arbitrage_router, prefix="/api")  # /api/arbitrage/*
+    print("[main.py] Arbitrage router registered")
+except Exception as e:
+    print(f"[main.py] Error registering arbitrage router: {e}")
 
-# DEBUG: Route list endpoint (gated behind env var or X-API-Key header for security)
+try:
+    from app.jobs.arbitrage_jobs import router as arbitrage_jobs_router
+    app.include_router(arbitrage_jobs_router, prefix="/api")  # /api/jobs/arbitrage/*
+    print("[main.py] Arbitrage jobs router registered")
+except Exception as e:
+    print(f"[main.py] Error registering arbitrage jobs router: {e}")
+
+# DEBUG: Route list endpoint (always available for debugging)
 def _get_debug_routes():
-    """Helper to list all routes (used by both __routes endpoints)."""
+    """Helper to list all routes."""
     return sorted({f"{r.methods if hasattr(r, 'methods') else '?'} {r.path}" 
                    for r in app.router.routes 
                    if hasattr(r, 'path')})
 
-if os.getenv("EXPOSE_DEBUG_ROUTES") == "1":
-    @app.get("/__routes", include_in_schema=False)
-    def __routes():
-        """Debug endpoint: list all registered routes (when EXPOSE_DEBUG_ROUTES=1)."""
-        return JSONResponse(_get_debug_routes())
-else:
-    @app.get("/__routes", include_in_schema=False)
-    def __routes_disabled():
-        """Debug endpoint disabled (EXPOSE_DEBUG_ROUTES not set)."""
-        from fastapi import HTTPException
-        raise HTTPException(status_code=404, detail="Not found")
+@app.get("/__routes", include_in_schema=False)
+def __routes():
+    """Debug endpoint: list all registered routes."""
+    return JSONResponse(_get_debug_routes())
 
 
 @app.get("/debug/main-loaded", include_in_schema=False)
