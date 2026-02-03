@@ -85,4 +85,11 @@ __all__ = [
     "StrategicEvent",
     # CL12
     "ModelProvider",
+    # AP1: Approval Workflow
+    "PendingAction",
+    "PendingActionStatus",
+    "SandboxEvent",
+    "HumanLabel",
+    # Governance
+    "EngineReadiness",
 ]
