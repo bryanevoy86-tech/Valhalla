@@ -33,7 +33,7 @@ def upgrade():
             sa.Column(
                 "created_at",
                 sa.DateTime(timezone=True),
-                server_default=sa.text("NOW()"),
+                server_default=sa.text("CURRENT_TIMESTAMP"),
                 nullable=False,
             ),
         )
@@ -63,7 +63,7 @@ def upgrade():
             sa.Column(
                 "created_at",
                 sa.DateTime(timezone=True),
-                server_default=sa.text("NOW()"),
+                server_default=sa.text("CURRENT_TIMESTAMP"),
                 nullable=False,
             ),
         )

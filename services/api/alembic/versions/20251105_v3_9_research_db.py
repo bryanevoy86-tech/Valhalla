@@ -37,8 +37,8 @@ def upgrade():
             sa.Column("steps", sa.Text(), nullable=False),
             sa.Column("tags", sa.String(length=512), nullable=False, server_default=""),
             sa.Column("meta", sa.Text(), nullable=False, server_default="{}"),
-            sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("NOW()"), nullable=False),
-            sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("NOW()"), nullable=False),
+            sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("CURRENT_TIMESTAMP"), nullable=False),
+            sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("CURRENT_TIMESTAMP"), nullable=False),
         )
         op.create_index("ix_research_playbooks_id", "research_playbooks", ["id"]) 
         op.create_index("ix_research_playbooks_key", "research_playbooks", ["key"], unique=True)

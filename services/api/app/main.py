@@ -179,6 +179,9 @@ ROUTERS = [
     # Floor Control Plane (DO NOT add prefix here; router already has its own prefix)
     RouterSpec("floor_control", "app.routers.floor_control", required=True),
 
+    # Contract Pipeline (DO NOT add prefix here; router already has its own prefix)
+    RouterSpec("contracts_pipeline", "app.routers.contracts_pipeline", required=True),
+
     # ----- OPTIONAL (warn only) -----
     RouterSpec("jobs", "app.routers.jobs", prefix="/api", required=False),
     RouterSpec("notify", "app.routers.notify", prefix="/api", required=False),

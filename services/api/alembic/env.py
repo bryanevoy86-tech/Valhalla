@@ -20,8 +20,18 @@ from app.models.capital import CapitalIntake
 from app.integrity.models import IntegrityEvent
 from app.models.grants import GrantSource, GrantRecord
 from app.models.match import Buyer, DealBrief
-from app.models.contracts import ContractTemplate
-# from app.models.contracts import ContractRecord  # Doesn't exist
+from app.models.contracts import (
+    ContractTemplate,
+    Contract,
+    ContractParty,
+    ContractPartyRole,
+    ContractDocument,
+    ContractDocKind,
+    ContractEnvelope,
+    ContractEvent,
+    ContractState,
+    SignProvider,
+)
 from app.models.intake import LeadIntake
 from app.models.notify import Outbox
 from app.loki.models import LokiReview, LokiFinding

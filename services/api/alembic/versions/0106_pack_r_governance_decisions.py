@@ -28,7 +28,7 @@ def upgrade() -> None:
         sa.Column('action', sa.String(length=50), nullable=False),
         sa.Column('reason', sa.String(length=500), nullable=True),
         sa.Column('is_final', sa.Boolean(), nullable=True),
-        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
+        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=True),
         sa.PrimaryKeyConstraint('id')
     )
     

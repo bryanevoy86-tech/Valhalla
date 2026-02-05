@@ -24,7 +24,7 @@ def upgrade():
             sa.Column("min_baths", sa.Integer(), nullable=True),
             sa.Column("tags", sa.String(length=240), nullable=True),
             sa.Column("active", sa.Boolean(), nullable=False, server_default=sa.text("true")),
-            sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("NOW()"), nullable=False),
+            sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("CURRENT_TIMESTAMP"), nullable=False),
         )
     
     # Check if deal_briefs table already exists (idempotent)
@@ -40,7 +40,7 @@ def upgrade():
             sa.Column("baths", sa.Integer(), nullable=True),
             sa.Column("notes", sa.Text(), nullable=True),
             sa.Column("status", sa.String(length=40), nullable=False, server_default=sa.text("'active'")),
-            sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("NOW()"), nullable=False),
+            sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("CURRENT_TIMESTAMP"), nullable=False),
         )
 
 def downgrade():

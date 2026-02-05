@@ -27,7 +27,7 @@ def upgrade():
             sa.Column("region", sa.String(length=80), nullable=True),
             sa.Column("tags", sa.String(length=255), nullable=True),
             sa.Column("active", sa.Boolean(), nullable=False, server_default=sa.text("true")),
-            sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("NOW()"), nullable=False),
+            sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("CURRENT_TIMESTAMP"), nullable=False),
         )
     
     # Check if grant_records table already exists (idempotent)
@@ -46,7 +46,7 @@ def upgrade():
             sa.Column("link", sa.Text(), nullable=True),
             sa.Column("summary", sa.Text(), nullable=True),
             sa.Column("score_json", sa.Text(), nullable=True),
-            sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("NOW()"), nullable=False),
+            sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("CURRENT_TIMESTAMP"), nullable=False),
         )
 
 

@@ -20,7 +20,7 @@ def upgrade() -> None:
         op.create_table(
             "integrity_events",
             sa.Column("id", sa.Integer(), primary_key=True),
-            sa.Column("ts", sa.DateTime(timezone=True), server_default=sa.text("NOW()"), nullable=False),
+            sa.Column("ts", sa.DateTime(timezone=True), server_default=sa.text("CURRENT_TIMESTAMP"), nullable=False),
             sa.Column("event", sa.String(length=200), nullable=False),
             sa.Column("level", sa.String(length=16), nullable=False, server_default="info"),
             sa.Column("actor", sa.String(length=120), nullable=False, server_default="system"),

@@ -24,7 +24,7 @@ def upgrade() -> None:
         sa.Column("state", sa.String(length=50), nullable=False, server_default="unknown"),
         sa.Column("changed_by", sa.String(length=100), nullable=True),
         sa.Column("reason", sa.Text(), nullable=True),
-        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
+        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("CURRENT_TIMESTAMP"), nullable=False),
     )
 
     # If you want "one row per engine" enforced, add a unique constraint:

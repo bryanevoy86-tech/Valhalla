@@ -29,7 +29,7 @@ def upgrade():
             sa.Column("status", sa.String(length=40), nullable=False, server_default=sa.text("'new'")),
             sa.Column("raw_json", sa.Text(), nullable=True),
             sa.Column("deal_id", sa.Integer(), nullable=True),
-            sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("NOW()"), nullable=False),
+            sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("CURRENT_TIMESTAMP"), nullable=False),
         )
     
     # Check if outbox table already exists (idempotent)
@@ -45,7 +45,7 @@ def upgrade():
             sa.Column("attempts", sa.Integer(), nullable=False, server_default="0"),
             sa.Column("last_error", sa.Text(), nullable=True),
             sa.Column("sent_at", sa.DateTime(timezone=True), nullable=True),
-            sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("NOW()"), nullable=False),
+            sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("CURRENT_TIMESTAMP"), nullable=False),
         )
 
 

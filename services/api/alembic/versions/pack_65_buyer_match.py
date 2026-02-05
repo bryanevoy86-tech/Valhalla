@@ -30,7 +30,7 @@ def upgrade():
             sa.Column("name", sa.String(128)),
             sa.Column("phone", sa.String(64)),
             sa.Column("status", sa.String(32), server_default="active"),
-            sa.Column("created_ts", sa.DateTime, server_default=sa.text("now()")),
+            sa.Column("created_ts", sa.DateTime, server_default=sa.text("CURRENT_TIMESTAMP")),
         )
 
     if _table_exists(bind, "buyer_preferences"):
@@ -75,7 +75,7 @@ def upgrade():
             sa.Column("id", sa.BigInteger, primary_key=True),
             sa.Column("deal_id", sa.BigInteger, index=True),
             sa.Column("buyer_id", sa.BigInteger, index=True),
-            sa.Column("ts", sa.DateTime, server_default=sa.text("now()")),
+            sa.Column("ts", sa.DateTime, server_default=sa.text("CURRENT_TIMESTAMP")),
             sa.Column("event", sa.String(64)),
             sa.Column("payload", postgresql.JSONB),
         )

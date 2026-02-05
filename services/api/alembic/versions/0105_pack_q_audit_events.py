@@ -38,7 +38,7 @@ def upgrade() -> None:
         sa.Column('severity', sa.String(length=50), nullable=True),
         sa.Column('message', sa.String(length=500), nullable=False),
         sa.Column('is_resolved', sa.Boolean(), nullable=True),
-        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
+        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=True),
         sa.Column('resolved_at', sa.DateTime(timezone=True), nullable=True),
         sa.PrimaryKeyConstraint('id')
     )

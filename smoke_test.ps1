@@ -1,6 +1,6 @@
 #!/usr/bin/env powershell
 # Valhalla Local Dev Smoke Test
-# Validates Floor Control Plane + system health
+# Validates Floor Control Plane + Contract Pipeline + system health
 
 $BaseURL = "http://127.0.0.1:8010"
 $ApiKey = $env:VALHALLA_API_KEY
@@ -15,7 +15,7 @@ $passCount = 0
 $failCount = 0
 
 # Test 1: Health Check
-Write-Host "`n[TEST 1/3] Health Endpoint" -ForegroundColor Yellow
+Write-Host "`n[TEST 1/4] Health Endpoint" -ForegroundColor Yellow
 try {
     $response = Invoke-WebRequest "$BaseURL/health" -TimeoutSec 3 -UseBasicParsing
     if ($response.StatusCode -eq 200) {
@@ -34,7 +34,7 @@ try {
 }
 
 # Test 2: System Selftest
-Write-Host "`n[TEST 2/3] System Selftest" -ForegroundColor Yellow
+Write-Host "`n[TEST 2/4] System Selftest" -ForegroundColor Yellow
 try {
     $response = Invoke-WebRequest "$BaseURL/api/system/selftest" -TimeoutSec 5 -UseBasicParsing
     if ($response.StatusCode -eq 200) {
@@ -53,7 +53,7 @@ try {
 }
 
 # Test 3: Floor Control Routes Accessible
-Write-Host "`n[TEST 3/3] Floor Control Routes Registered" -ForegroundColor Yellow
+Write-Host "`n[TEST 3/4] Floor Control Routes Registered" -ForegroundColor Yellow
 try {
     $response = Invoke-WebRequest "$BaseURL/__routes" -TimeoutSec 3 -UseBasicParsing
     $routes = $response.Content
@@ -85,14 +85,49 @@ try {
     $failCount++
 }
 
+# Test 4: Contract Pipeline Routes Accessible
+Write-Host "`n[TEST 4/4] Contract Pipeline Routes Registered" -ForegroundColor Yellow
+try {
+    $response = Invoke-WebRequest "$BaseURL/__routes" -TimeoutSec 3 -UseBasicParsing
+    $routes = $response.Content
+    
+    $contractRoutes = @(
+        "/api/contracts",
+        "/api/contracts/{contract_id}/state",
+        "/api/contracts/{contract_id}/upload",
+        "/api/contracts/{contract_id}/send",
+        "/api/contracts/{contract_id}/events"
+    )
+    
+    $allFound = $true
+    foreach ($route in $contractRoutes) {
+        $routeEscaped = [regex]::Escape($route)
+        if ($routes -match $routeEscaped) {
+            Write-Host "  [OK] $route" -ForegroundColor Green
+        } else {
+            Write-Host "  [MISSING] $route" -ForegroundColor Red
+            $allFound = $false
+        }
+    }
+    
+    if ($allFound) {
+        $passCount++
+    } else {
+        $failCount++
+    }
+} catch {
+    Write-Host "[FAIL] Connection error: $_" -ForegroundColor Red
+    $failCount++
+}
+
 # Summary
 Write-Host "`n========================================" -ForegroundColor Cyan
 Write-Host "SUMMARY" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "Passed: $passCount/3" -ForegroundColor $(if ($passCount -eq 3) { "Green" } else { "Yellow" })
-Write-Host "Failed: $failCount/3" -ForegroundColor $(if ($failCount -eq 0) { "Green" } else { "Red" })
+Write-Host "Passed: $passCount/4" -ForegroundColor $(if ($passCount -eq 4) { "Green" } else { "Yellow" })
+Write-Host "Failed: $failCount/4" -ForegroundColor $(if ($failCount -eq 0) { "Green" } else { "Red" })
 
-if ($passCount -eq 3) {
+if ($passCount -eq 4) {
     Write-Host "`n[SUCCESS] All tests passed - Local dev environment is healthy" -ForegroundColor Green
     exit 0
 } else {

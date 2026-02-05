@@ -29,7 +29,7 @@ def upgrade():
             sa.Column("version", sa.String(length=40), nullable=True),
             sa.Column("notes", sa.Text(), nullable=True),
             sa.Column("body_text", sa.Text(), nullable=False),
-            sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("NOW()"), nullable=False),
+            sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("CURRENT_TIMESTAMP"), nullable=False),
         )
 
     # --- contract_records table (if you have one in this migration) ---
@@ -45,7 +45,7 @@ def upgrade():
             ),
             sa.Column("filename", sa.String(length=200), nullable=False),
             sa.Column("context_json", sa.Text(), nullable=True),
-            sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("NOW()"), nullable=False),
+            sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("CURRENT_TIMESTAMP"), nullable=False),
         )
 
 

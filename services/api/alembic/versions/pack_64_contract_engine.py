@@ -67,8 +67,8 @@ def upgrade():
             sa.Column("variables", postgresql.JSONB),
             sa.Column("counterparty_email", sa.String(256)),
             sa.Column("counterparty_name", sa.String(256)),
-            sa.Column("created_ts", sa.DateTime, server_default=sa.text("now()")),
-            sa.Column("updated_ts", sa.DateTime, server_default=sa.text("now()")),
+            sa.Column("created_ts", sa.DateTime, server_default=sa.text("CURRENT_TIMESTAMP")),
+            sa.Column("updated_ts", sa.DateTime, server_default=sa.text("CURRENT_TIMESTAMP")),
         )
 
     if _table_exists(bind, "contract_clauses_applied"):
@@ -94,7 +94,7 @@ def upgrade():
             sa.Column("signer_name", sa.String(256)),
             sa.Column("role", sa.String(32)),
             sa.Column("status", sa.String(32)),
-            sa.Column("updated_ts", sa.DateTime, server_default=sa.text("now()")),
+            sa.Column("updated_ts", sa.DateTime, server_default=sa.text("CURRENT_TIMESTAMP")),
         )
 
 

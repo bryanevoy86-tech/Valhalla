@@ -44,7 +44,7 @@ def upgrade() -> None:
         op.add_column('contract_records', sa.Column('title', sa.String(200), nullable=False, server_default='Untitled'))
     
     if 'updated_at' not in col_names:
-        op.add_column('contract_records', sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True))
+        op.add_column('contract_records', sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=True))
     
     if 'signed_at' not in col_names:
         op.add_column('contract_records', sa.Column('signed_at', sa.DateTime(timezone=True), nullable=True))
