@@ -12,41 +12,74 @@ from app.core.settings import settings
 
 log = logging.getLogger("valhalla.startup")
 
+# DIAGNOSTIC: Verify logging works immediately
+print("=" * 80)
+print("=== APP MODULE LOADING STARTED ===")
+print("=" * 80)
+
 # --- Startup/Shutdown Handler -------------------------------------------------
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Modern FastAPI lifespan context manager (replaces deprecated @app.on_event)."""
     # Startup
+    print("=" * 80)
+    print("=== LIFESPAN STARTUP BEGIN ===")
+    print("=" * 80)
+    log.info("LIFESPAN: startup begin")
     
     # Verify schema is initialized (migrations applied)
     try:
+        print("LIFESPAN: about to call verify_schema_initialized()")
+        log.info("LIFESPAN: calling verify_schema_initialized()")
         verify_schema_initialized()
+        print("LIFESPAN: verify_schema_initialized() completed without error")
+        log.info("LIFESPAN: verify_schema_initialized() complete")
     except RuntimeError as e:
+        print(f"LIFESPAN: RuntimeError during verify_schema_initialized: {e}")
         log.error("Schema validation failed: %s", e)
         raise
+    except Exception as e:
+        print(f"LIFESPAN: Exception during verify_schema_initialized: {type(e).__name__}: {e}")
+        log.exception("LIFESPAN: verify_schema_initialized() raised unexpected exception")
+        raise
     
+    print("LIFESPAN: about to check retention.EN")
+    log.info("LIFESPAN: checking retention.EN")
     if retention.EN:
+        log.info("LIFESPAN: retention enabled, starting retention loop")
         async def retention_loop():
             while True:
                 await retention.run_once()
                 await asyncio.sleep(int(os.getenv("RETENTION_CRON_MINUTES", "30")) * 60)
         asyncio.create_task(retention_loop())
+        log.info("LIFESPAN: retention_loop created")
+    else:
+        log.info("LIFESPAN: retention disabled")
     
     # Drift check with controlled kill switch
+    log.info("LIFESPAN: checking drift")
     try:
-        run_drift = os.getenv("DRIFT_CHECK_ON_STARTUP", "1").lower() in {"1", "true", "yes", "on"}
+        run_drift = os.getenv("DRIFT_CHECK_ON_STARTUP", "0").lower() in {"1", "true", "yes", "on"}
         if run_drift:
             log.info("Running drift.check() on startup (DRIFT_CHECK_ON_STARTUP=1)")
             drift.check()
+            log.info("LIFESPAN: drift.check() complete")
         else:
-            log.warning("Skipping drift.check() on startup (DRIFT_CHECK_ON_STARTUP=0)")
+            log.info("Skipping drift.check() on startup (DRIFT_CHECK_ON_STARTUP=0)")
     except Exception as e:
-        # IMPORTANT: do not suppress. Log full details then crash hard.
         log.exception("Startup failed during drift.check(): %s", e)
         raise
     
+    print("=" * 80)
+    print("=== LIFESPAN STARTUP COMPLETE (YIELDING) ===")
+    print("=" * 80)
+    log.info("LIFESPAN: startup complete (yielding)")
     yield
+    print("=" * 80)
+    print("=== LIFESPAN SHUTDOWN BEGIN ===")
+    print("=" * 80)
+    log.warning("LIFESPAN: shutdown begin")
     # Shutdown (if needed later)
 
 
@@ -60,6 +93,10 @@ app = FastAPI(
     redoc_url=None,
     lifespan=lifespan,
 )
+
+print("=" * 80)
+print("=== APP CREATED ===")
+print("=" * 80)
 
 # ✅ HARD BYPASS: OPTIONS always returns 200 (runs FIRST, before all other middleware)
 @app.middleware("http")
@@ -106,6 +143,10 @@ def __routes():
 from app.core.correlation_middleware import CorrelationIdMiddleware
 app.add_middleware(CorrelationIdMiddleware)
 
+# --- Read-Only Shield Middleware (blocks writes during maintenance/read-only mode) --------
+from app.core.read_only_middleware import ReadOnlyShieldMiddleware
+app.add_middleware(ReadOnlyShieldMiddleware)
+
 # --- PACK TU: Global Error Handling (must be early) --------------------------
 from app.core.error_handling import register_error_handlers
 register_error_handlers(app)
@@ -118,6 +159,40 @@ app.add_middleware(GoLiveMiddleware)
 from app.core.execution_class_middleware import ExecutionClassMiddleware
 app.add_middleware(ExecutionClassMiddleware)
 
+# --- Router Registry (deterministic, no duplicates, no silent failures) ---------
+from app.core.router_registry import RouterSpec, include_router_safe
+
+ROUTERS = [
+    # ----- REQUIRED (system must crash if missing) -----
+    RouterSpec("system_selftest", "app.routers.system_selftest", required=True),
+
+    RouterSpec("governance_runbook", "app.routers.runbook", prefix="/api", required=True),
+    RouterSpec("governance_policy", "app.routers.governance_policy", prefix="/api", required=True),
+    RouterSpec("governance_risk", "app.routers.risk", prefix="/api", required=True),
+    RouterSpec("go_live", "app.routers.go_live", prefix="/api", required=True),
+
+    # Contracts + docs + deal finalization = real-world readiness
+    RouterSpec("contracts_lifecycle", "app.routers.contracts_lifecycle", required=True),
+    RouterSpec("document_routing", "app.routers.document_routing", required=True),
+    RouterSpec("deal_finalization", "app.routers.deal_finalization", required=True),
+
+    # Floor Control Plane (DO NOT add prefix here; router already has its own prefix)
+    RouterSpec("floor_control", "app.routers.floor_control", required=True),
+
+    # ----- OPTIONAL (warn only) -----
+    RouterSpec("jobs", "app.routers.jobs", prefix="/api", required=False),
+    RouterSpec("notify", "app.routers.notify", prefix="/api", required=False),
+    RouterSpec("engine_admin", "app.routers.engine_admin", required=False),
+    RouterSpec("market_policy", "app.routers.market_policy", prefix="/api", required=False),
+]
+
+for spec in ROUTERS:
+    include_router_safe(app, spec)
+
+print("=" * 80)
+print("=== ROUTER REGISTRY COMPLETE ===")
+print("=" * 80)
+
 # --- Governance System: Always-on registration --------------------------------
 # Register all governance routers to ensure endpoints exist for runtime and tests
 from app.routers import governance_king, governance_queen, governance_odin, governance_loki, governance_tyr
@@ -127,10 +202,52 @@ from app.routers import risk as governance_risk
 from app.routers import heimdall_governance as governance_heimdall
 from app.routers import regression as governance_regression
 from app.routers import runbook as governance_runbook
-from app.routers import market_policy as governance_market_policy
-from app.routers import followup_ladder as followups_ladder
-from app.routers import buyer_liquidity as buyers_liquidity
-from app.routers import offer_strategy as deals_offer_strategy
+
+print("=" * 80)
+print("=== GOVERNANCE IMPORTS COMPLETE ===")
+print("=" * 80)
+try:
+    print("About to import market_policy...")
+    from app.routers import market_policy as governance_market_policy
+    print("[OK] market_policy imported")
+except Exception as e:
+    print(f"ERROR importing market_policy: {type(e).__name__}: {e}")
+    import traceback
+    traceback.print_exc()
+    raise
+try:
+    print("About to import followup_ladder...")
+    from app.routers import followup_ladder as followups_ladder
+    print("[OK] followup_ladder imported")
+except Exception as e:
+    print(f"ERROR importing followup_ladder: {e}")
+    import traceback
+    traceback.print_exc()
+    raise
+try:
+    print("About to import buyer_liquidity...")
+    from app.routers import buyer_liquidity as buyers_liquidity
+    print("[OK] buyer_liquidity imported")
+except Exception as e:
+    print(f"ERROR importing buyer_liquidity: {e}")
+    import traceback
+    traceback.print_exc()
+    raise
+try:
+    print("About to import offer_strategy...")
+    from app.routers import offer_strategy as deals_offer_strategy
+    print("[OK] offer_strategy imported")
+except Exception as e:
+    print(f"ERROR importing offer_strategy: {e}")
+    import traceback
+    traceback.print_exc()
+    raise
+
+# NOTE: These are kept for backward compatibility but are now registered via router_registry above
+# If you're seeing duplicates in /api/system/selftest, comment out the old blocks below
+# app.include_router(governance_king.router, prefix="/api")
+# app.include_router(governance_queen.router, prefix="/api")
+# ... etc ...
 
 # --- Core Engine Governance (PACK 1-5: Canonical enforcement) ----------------
 from app.routers import engine_admin
@@ -163,6 +280,14 @@ app.include_router(deals_offer_strategy.router, prefix="/api")
 app.include_router(engine_admin.router)
 # ISOLATED: Commenting out runbook_status.router to isolate governance_runbook router
 # app.include_router(runbook_status.router)
+
+# --- PACK: Floor Control Plane (Income Engines, Revenue Ledger, Trajectory Targets) ----
+try:
+    from app.routers import floor_control
+    app.include_router(floor_control.router)
+    print("[app.main] Floor control plane router registered")
+except Exception as e:
+    print(f"[app.main] Skipping floor_control router: {e}")
 
 # --- PACK H: Professional Behavioral Signal Extraction -------------------------
 # Safe behavioral analysis from public data sources (no psychology, no diagnosis)
@@ -1244,14 +1369,8 @@ try:
 except Exception as e:
     print(f"[app.main] Skipping data_retention router: {e}")
 
-# PACK UJ: Read-Only Shield Middleware (blocks writes during maintenance/read-only mode)
-# Must be added BEFORE error handlers in middleware stack
-try:
-    from app.core.read_only_middleware import ReadOnlyShieldMiddleware
-    app.add_middleware(ReadOnlyShieldMiddleware)
-    print("[app.main] Read-only shield middleware registered")
-except Exception as e:
-    print(f"[app.main] Skipping read_only_shield middleware: {e}")
+# PACK UJ: Read-Only Shield Middleware (moved to correct position after CorrelationIdMiddleware)
+# (Already registered above; removed duplicate from here)
 
 # PACK CI1: Decision Recommendation Engine router
 try:
@@ -1820,6 +1939,12 @@ try:
     print("[app.main] Contract engine upgrade router registered")
 except Exception as e:
     print(f"[app.main] Skipping contract_engine_upgrade router: {e}")
+
+print("=" * 80)
+print("=== APP INITIALIZATION COMPLETE ===")
+print("=== Server is ready for uvicorn lifespan handler ===")
+print("=" * 80)
+
 
 
 

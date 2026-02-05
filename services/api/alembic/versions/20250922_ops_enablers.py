@@ -44,7 +44,7 @@ def upgrade():
             sa.Column("key", sa.Text(), primary_key=True),
             sa.Column("enabled", sa.Boolean(), nullable=False, server_default=sa.text("false")),
             sa.Column("note", sa.Text(), nullable=True),
-            sa.Column("updated_at", sa.TIMESTAMP(timezone=True), server_default=sa.text("NOW()")),
+            sa.Column("updated_at", sa.TIMESTAMP(timezone=True), server_default=sa.func.now()),
         )
 
 def downgrade():

@@ -74,6 +74,13 @@ def verify_schema_initialized():
     Raises RuntimeError if schema is not initialized.
     """
     from sqlalchemy import text, inspect
+    import os
+    
+    # Skip verification in dev mode (DATABASE_URL starts with sqlite:)
+    db_url = os.getenv("DATABASE_URL", "")
+    if db_url.startswith("sqlite"):
+        logger.info("[db.verify_schema_initialized] Skipping schema check for SQLite (dev mode)")
+        return
     
     try:
         with engine.connect() as conn:
