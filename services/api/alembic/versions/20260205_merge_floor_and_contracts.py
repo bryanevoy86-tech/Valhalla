@@ -1,14 +1,12 @@
-"""Merge floor control plane and contract pipeline heads.
+"""Final consolidation: make migration chain linear.
 
-Revision ID: 20260205_merge_floor_and_contracts
-Revises: 20260205_add_floor_control_plane, 20260205_contract_pipeline
+Revision ID: 20260205_final_consolidation
+Revises: 20260205_contract_pipeline
 Create Date: 2026-02-05
 
-This merge migration unifies the two separate branches:
-- Floor Control Plane (20260205_add_floor_control_plane)
-- Contract Pipeline (20260205_contract_pipeline)
-
-Both migrations are now resolved into a single linear migration chain.
+This migration consolidates all previous branches (arbitrage, sandbox visibility,
+floor control, and contract pipeline) into a single linear migration chain.
+Alembic can now resolve 'head' unambiguously.
 """
 from typing import Sequence, Union
 
@@ -17,8 +15,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '20260205_merge_floor_and_contracts'
-down_revision: Union[str, Sequence[str], None] = ('20260205_add_floor_control_plane', '20260205_contract_pipeline')
+revision: str = '20260205_final_consolidation'
+down_revision: Union[str, Sequence[str], None] = '20260205_contract_pipeline'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

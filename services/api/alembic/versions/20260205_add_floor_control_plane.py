@@ -1,14 +1,14 @@
 """Add floor control plane tables.
 
 Revision ID: 20260205_add_floor_control_plane
-Revises: 20260203_sandbox_visibility
+Revises: cd7e574386be
 Create Date: 2026-02-05
 """
 from alembic import op
 import sqlalchemy as sa
 
 revision = "20260205_add_floor_control_plane"
-down_revision = "20260203_sandbox_visibility"
+down_revision = "cd7e574386be"
 branch_labels = None
 depends_on = None
 
