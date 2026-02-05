@@ -301,6 +301,14 @@ try:
 except Exception as e:
     print(f"[app.main] Skipping intake router: {e}")
 
+# --- MODULE 21-35: Extended System (Stripe, QuickBooks, Contracts, Admin) --
+try:
+    from app.admin.router import router as admin_router
+    app.include_router(admin_router)
+    print("[app.main] Admin router registered")
+except Exception as e:
+    print(f"[app.main] Skipping admin router: {e}")
+
 # --- PACK H: Professional Behavioral Signal Extraction -------------------------
 # Safe behavioral analysis from public data sources (no psychology, no diagnosis)
 try:

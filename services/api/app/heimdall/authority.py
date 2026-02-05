@@ -45,6 +45,10 @@ class HeimdallAuthority:
             "runtime_mode": RUNTIME_MODE.value,
             "activation_allowed": self.activation_allowed()
         }
+    
+    def is_active(self) -> bool:
+        """Check if Heimdall is actively gating (armed or live)."""
+        return self.ready and self.activation_allowed()
 
 
 # Global Heimdall instance
