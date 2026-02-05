@@ -293,6 +293,14 @@ try:
 except Exception as e:
     print(f"[app.main] Skipping floor_control router: {e}")
 
+# --- MODULE 11-19: Deal Intake & Processing Pipeline --
+try:
+    from app.intake.router import intake_router
+    app.include_router(intake_router)
+    print("[app.main] Deal intake router registered")
+except Exception as e:
+    print(f"[app.main] Skipping intake router: {e}")
+
 # --- PACK H: Professional Behavioral Signal Extraction -------------------------
 # Safe behavioral analysis from public data sources (no psychology, no diagnosis)
 try:
