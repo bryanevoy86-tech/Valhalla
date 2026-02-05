@@ -1,7 +1,7 @@
 """Add production contract pipeline (S3 storage, webhooks, templates).
 
 Revision ID: 20260205_contract_pipeline_s3
-Revises: 20260205_merge_floor_and_contracts
+Revises: 20260205_add_floor_control_plane
 Create Date: 2026-02-05
 
 This migration creates the production contract pipeline with:
@@ -17,7 +17,7 @@ import sqlalchemy as sa
 
 
 revision = "20260205_contract_pipeline_s3"
-down_revision = "20260205_merge_floor_and_contracts"
+down_revision = "20260205_add_floor_control_plane"
 branch_labels = None
 depends_on = None
 
