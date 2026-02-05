@@ -181,6 +181,7 @@ ROUTERS = [
 
     # Contract Pipeline (DO NOT add prefix here; router already has its own prefix)
     RouterSpec("contracts_pipeline", "app.routers.contracts_pipeline", required=True),
+    RouterSpec("contracts_webhooks", "app.routers.contracts_webhooks", required=True),
 
     # ----- OPTIONAL (warn only) -----
     RouterSpec("jobs", "app.routers.jobs", prefix="/api", required=False),

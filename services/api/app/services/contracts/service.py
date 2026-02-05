@@ -20,7 +20,6 @@ from app.models.contracts import (
     SignProvider,
 )
 from app.schemas.contracts import PartyIn
-from app.services.contracts.storage import LocalContractStorage
 from app.services.contracts.provider_base import ProviderRecipient, SignatureProvider
 from app.services.contracts.provider_sandbox import SandboxSignatureProvider
 
@@ -55,8 +54,18 @@ ALLOWED_TRANSITIONS = {
 class ContractPipeline:
     def __init__(self, db: Session):
         self.db = db
-        self.storage = LocalContractStorage(os.getenv("CONTRACT_STORAGE_LOCAL_DIR", "./.contract_store"))
+        self.storage = self._resolve_storage()
         self.provider = self._resolve_provider()
+
+    def _resolve_storage(self):
+        """Resolve storage backend: S3 (default) or local."""
+        backend = os.getenv("CONTRACT_STORAGE_BACKEND", "s3").lower().strip()
+        if backend == "s3":
+            from app.services.contracts.storage_s3 import S3ContractStorage
+            return S3ContractStorage()
+        else:
+            from app.services.contracts.storage import LocalContractStorage
+            return LocalContractStorage(os.getenv("CONTRACT_STORAGE_LOCAL_DIR", "./.contract_store"))
 
     def _resolve_provider(self) -> SignatureProvider:
         p = os.getenv("SIGN_PROVIDER", "sandbox").lower().strip()

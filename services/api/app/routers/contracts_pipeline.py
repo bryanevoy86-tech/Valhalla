@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import os
 from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, Request
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
@@ -12,7 +14,7 @@ from app.schemas.contracts import (
     EventOut,
 )
 from app.services.contracts.service import ContractPipeline
-from app.models.contracts import ContractEvent
+from app.models.contracts import ContractEvent, ContractDocument
 
 router = APIRouter(prefix="/api/contracts", tags=["Contracts"])
 
@@ -91,6 +93,53 @@ def send_for_signature(
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/{contract_id}/documents/{doc_id}/download")
+def download_doc(contract_id: str, doc_id: str, db: Session = Depends(get_db)):
+    """
+    Download contract document.
+    
+    For S3 storage (production): returns presigned URL.
+    For local storage (dev): returns document bytes.
+    """
+    doc = db.query(ContractDocument).filter(
+        ContractDocument.id == doc_id,
+        ContractDocument.contract_id == contract_id
+    ).one_or_none()
+    
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    # If using S3 storage, return presigned URL (best for production)
+    backend = os.getenv("CONTRACT_STORAGE_BACKEND", "s3").lower().strip()
+    if backend == "s3":
+        from app.services.contracts.storage_s3 import S3ContractStorage
+        s3 = S3ContractStorage()
+        url = s3.presign_get(doc.storage_key, expires_seconds=900)
+        return {
+            "ok": True,
+            "url": url,
+            "filename": doc.filename,
+            "content_type": doc.content_type,
+            "expires_seconds": 900,
+        }
+
+    # Fallback: inline bytes (dev only)
+    svc = ContractPipeline(db)
+    data = svc.storage.get_bytes(doc.storage_key)
+    return Response(content=data, media_type=doc.content_type)
+
+
+@router.post("/templates/seed")
+def seed_templates(db: Session = Depends(get_db)):
+    """
+    Seed default contract templates.
+    
+    Idempotent: only creates templates that don't already exist.
+    """
+    from app.services.contracts.seed_templates import seed_contract_templates
+    return seed_contract_templates(db)
 
 
 @router.get("/{contract_id}/events", response_model=list[EventOut])
