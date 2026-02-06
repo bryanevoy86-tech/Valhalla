@@ -1,4 +1,78 @@
-"""Deal scoring module - automated deal evaluation."""
+"""
+Module 71: Wholesale Scoring Engine
+Calculate MAO (Max Allowable Offer) and score leads for viability.
+"""
+
+
+def mao(arv: int, repairs: int, assignment_fee: int = 15000, mao_pct: float = 0.70) -> int:
+    """
+    Calculate Max Allowable Offer.
+    
+    Formula: MAO = (ARV * percentage) - repairs - assignment_fee
+    
+    Args:
+        arv: After Repair Value
+        repairs: Estimated repair costs
+        assignment_fee: Wholesale assignment fee (default 15000)
+        mao_pct: MAO percentage of ARV (default 0.70 = 70%)
+    
+    Returns:
+        int: Maximum allowable offer price in cents
+    """
+    return int((arv * mao_pct) - repairs - assignment_fee)
+
+
+def score_lead(lead: dict) -> dict:
+    """
+    Score a deal lead for viability.
+    
+    Grades:
+    - A: Spread >= $25,000
+    - B: Spread >= $15,000
+    - C: Spread >= $5,000
+    - PASS: Below spread threshold
+    
+    Args:
+        lead: Lead data dict
+            {
+                "arv": 350000,
+                "repairs": 30000,
+                "asking_price": 250000
+            }
+    
+    Returns:
+        dict: Score result
+            {
+                "mao": int,
+                "spread": int,
+                "grade": str,
+                "ok_to_offer": bool
+            }
+    """
+    arv = lead.get("arv") or 0
+    repairs = lead.get("repairs") or 0
+    asking = lead.get("asking_price") or 0
+
+    lead_mao = mao(arv, repairs)
+    spread = lead_mao - asking
+
+    grade = "PASS"
+    if arv > 0 and asking > 0:
+        if spread >= 25000:
+            grade = "A"
+        elif spread >= 15000:
+            grade = "B"
+        elif spread >= 5000:
+            grade = "C"
+        else:
+            grade = "PASS"
+
+    return {
+        "mao": lead_mao,
+        "spread": spread,
+        "grade": grade,
+        "ok_to_offer": grade in {"A", "B", "C"},
+    }
 
 
 def score_deal(deal: dict) -> float:

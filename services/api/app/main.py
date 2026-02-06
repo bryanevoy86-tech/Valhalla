@@ -354,6 +354,39 @@ try:
 except Exception as e:
     print(f"[app.main] Skipping heimdall activation module: {e}")
 
+# --- MODULE 67-76: Buyers Directory, Lead Intake, Wholesale Scoring, Offers, Contract Packaging, Disposition Matching --
+# Module 67-68: Buyers directory and roster
+try:
+    from app.buyers.router import router as buyers_router
+    app.include_router(buyers_router, prefix="/api")
+    print("[app.main] Buyers router registered")
+except Exception as e:
+    print(f"[app.main] Skipping buyers router: {e}")
+
+# Module 69-70: Lead intake and deals
+try:
+    from app.deals.intake_router import router as deals_intake_router
+    app.include_router(deals_intake_router, prefix="/api")
+    print("[app.main] Deals intake router registered")
+except Exception as e:
+    print(f"[app.main] Skipping deals intake router: {e}")
+
+# Module 74: Auto-contract generation from leads
+try:
+    from app.deals.contract_router import router as deals_contract_router
+    app.include_router(deals_contract_router, prefix="/api")
+    print("[app.main] Deals contract router registered")
+except Exception as e:
+    print(f"[app.main] Skipping deals contract router: {e}")
+
+# Module 76: Buyer disposition matching
+try:
+    from app.buyers.match_router import router as buyers_match_router
+    app.include_router(buyers_match_router, prefix="/api")
+    print("[app.main] Buyers match router registered")
+except Exception as e:
+    print(f"[app.main] Skipping buyers match router: {e}")
+
 # --- PACK H: Professional Behavioral Signal Extraction -------------------------
 # Safe behavioral analysis from public data sources (no psychology, no diagnosis)
 try:

@@ -1,8 +1,50 @@
-"""Offer issuance pipeline - create and send offers."""
-from uuid import uuid4
-from app.core.runtime_flags import is_live
-from app.deals.scoring import evaluate_deal
-from app.contracts.service import create_contract
+"""
+Module 72: Offers Generator
+Generate purchase offers based on lead scoring and wholesale calculations.
+"""
+from app.deals.scoring import score_lead
+
+
+def build_offer(lead: dict) -> dict:
+    """
+    Generate purchase offer for a lead.
+    
+    Args:
+        lead: Lead data dict
+            {
+                "asking_price": 250000,
+                "arv": 350000,
+                "repairs": 30000
+            }
+    
+    Returns:
+        dict: Offer details or rejection
+            {
+                "ok": bool,
+                "offer_price": int,
+                "terms": {
+                    "inspection_days": 10,
+                    "close_days": 21,
+                    "earnest_money": 1000
+                },
+                "score": dict
+            }
+    """
+    s = score_lead(lead)
+    if not s["ok_to_offer"]:
+        return {"ok": False, "reason": "Lead below threshold", "score": s}
+
+    offer_price = min((lead.get("asking_price") or s["mao"]), s["mao"])
+    return {
+        "ok": True,
+        "offer_price": offer_price,
+        "terms": {
+            "inspection_days": 10,
+            "close_days": 21,
+            "earnest_money": 1000,
+        },
+        "score": s,
+    }
 
 
 def process_offer(deal: dict, template_id: str = None) -> dict:
