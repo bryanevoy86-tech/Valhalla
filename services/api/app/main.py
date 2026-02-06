@@ -9,6 +9,7 @@ from fastapi.responses import Response
 from app.observability import drift, retention
 from app.core.db import verify_schema_initialized
 from app.core.settings import settings
+from app.middleware.safety import safety_guard
 
 log = logging.getLogger("valhalla.startup")
 
@@ -146,6 +147,9 @@ app.add_middleware(CorrelationIdMiddleware)
 # --- Read-Only Shield Middleware (blocks writes during maintenance/read-only mode) --------
 from app.core.read_only_middleware import ReadOnlyShieldMiddleware
 app.add_middleware(ReadOnlyShieldMiddleware)
+
+# Module 44-45: Register safety middleware
+app.middleware("http")(safety_guard)
 
 # --- PACK TU: Global Error Handling (must be early) --------------------------
 from app.core.error_handling import register_error_handlers
@@ -1959,6 +1963,30 @@ try:
     print("[app.main] Contract engine upgrade router registered")
 except Exception as e:
     print(f"[app.main] Skipping contract_engine_upgrade router: {e}")
+
+# Module 36: Stripe webhook handler
+try:
+    from app.webhooks.stripe import router as stripe_webhooks
+    app.include_router(stripe_webhooks)
+    print("[app.main] Stripe webhook router registered")
+except Exception as e:
+    print(f"[app.main] Skipping stripe_webhooks router: {e}")
+
+# Module 37: DocuSign webhook handler
+try:
+    from app.webhooks.docusign import router as docusign_webhooks
+    app.include_router(docusign_webhooks)
+    print("[app.main] DocuSign webhook router registered")
+except Exception as e:
+    print(f"[app.main] Skipping docusign_webhooks router: {e}")
+
+# Module 50: System state endpoint
+try:
+    from app.system.router import router as system_router
+    app.include_router(system_router)
+    print("[app.main] System state router registered")
+except Exception as e:
+    print(f"[app.main] Skipping system router: {e}")
 
 print("=" * 80)
 print("=== APP INITIALIZATION COMPLETE ===")
