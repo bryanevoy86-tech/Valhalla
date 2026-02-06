@@ -313,6 +313,47 @@ try:
 except Exception as e:
     print(f"[app.main] Skipping admin router: {e}")
 
+# --- MODULE 51-66: Banking, Payments, Accounting, Contracts, Alerts, Pipelines, Activation --
+# Module 51-52: Bank linking via Plaid
+try:
+    from app.banking.router import router as banking_router
+    app.include_router(banking_router, prefix="/api")
+    print("[app.main] Banking (Plaid) router registered")
+except Exception as e:
+    print(f"[app.main] Skipping banking router: {e}")
+
+# Module 53-55: ACH payments
+try:
+    from app.payments.router import router as payments_router
+    app.include_router(payments_router, prefix="/api")
+    print("[app.main] Payments (ACH) router registered")
+except Exception as e:
+    print(f"[app.main] Skipping payments router: {e}")
+
+# Module 56-58: QuickBooks operations
+try:
+    from app.accounting.router import router as accounting_router
+    app.include_router(accounting_router, prefix="/api")
+    print("[app.main] Accounting (QuickBooks) router registered")
+except Exception as e:
+    print(f"[app.main] Skipping accounting router: {e}")
+
+# Module 62-63: Alert system
+try:
+    from app.alerts.router import router as alerts_router
+    app.include_router(alerts_router, prefix="/api")
+    print("[app.main] Alerts router registered")
+except Exception as e:
+    print(f"[app.main] Skipping alerts router: {e}")
+
+# Module 64: Deal → Cash pipeline (no additional router, integrated into pipelines)
+# Module 65-66: Heimdall activation gate (import but no new router)
+try:
+    from app.heimdall.activation import activate, deactivate, is_active, get_mode, set_mode, get_status
+    print("[app.main] Heimdall activation module imported")
+except Exception as e:
+    print(f"[app.main] Skipping heimdall activation module: {e}")
+
 # --- PACK H: Professional Behavioral Signal Extraction -------------------------
 # Safe behavioral analysis from public data sources (no psychology, no diagnosis)
 try:
