@@ -1,0 +1,12 @@
+﻿python : 
+C:\Users\Lanna\AppData\Local\Programs\Python\Python313\python.exe: 
+can't open file 'C:\\dev\\SANDBOX_ACTIVATION.py': [Errno 2] No 
+such file or directory
+At line:1 char:1
++ python SANDBOX_ACTIVATION.py 2>&1 | Out-File -FilePath 
+sandbox_run_$( ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (C:\Users\Lanna\...le  
+   or directory:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 

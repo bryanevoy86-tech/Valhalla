@@ -1,0 +1,47 @@
+{
+  "timestamp": "2026-01-07T19:04:03.983864",
+  "monitoring_active": true,
+  "data_quality": {
+    "status": "HEALTHY",
+    "score": 95.0,
+    "checks_passed": 5,
+    "checks_failed": 0,
+    "details": {
+      "records_validated": 10,
+      "duplicates_found": 0,
+      "missing_fields": 0,
+      "invalid_formats": 0,
+      "outliers_detected": 0
+    }
+  },
+  "system_performance": {
+    "status": "HEALTHY",
+    "checks_passed": 5,
+    "checks_failed": 0,
+    "metrics": {
+      "cpu_usage_percent": 2.3,
+      "memory_usage_mb": 13.27,
+      "active_connections": 1,
+      "request_latency_ms": 12.5,
+      "thread_pool_utilization": 0.25
+    }
+  },
+  "security": {
+    "status": "SECURE",
+    "checks_passed": 5,
+    "checks_failed": 0,
+    "details": {
+      "data_encryption": "ENABLED",
+      "access_control": "CONFIGURED",
+      "audit_logging": "ACTIVE",
+      "authentication": "VERIFIED",
+      "suspicious_activities": 0
+    }
+  },
+  "alerts": {
+    "critical": 0,
+    "warnings": 0,
+    "info": 3,
+    "total": 3
+  }
+}
