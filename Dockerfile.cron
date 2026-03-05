@@ -1,0 +1,15 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Copy the entire valhalla directory
+COPY . .
+
+# Install dependencies (if needed for the cron script)
+RUN pip install --no-cache-dir urllib3
+
+# Set Python path for imports
+ENV PYTHONPATH=/app/services/api
+
+# The command will be overridden by Render, but default to no-op
+CMD ["echo", "Cron job template running"]
