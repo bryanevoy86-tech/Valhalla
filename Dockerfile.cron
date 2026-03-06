@@ -2,14 +2,14 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Copy the entire valhalla directory
-COPY . .
+# Copy everything from build context into /app
+COPY . /app/
 
-# Install dependencies (if needed for the cron script)
+# Install dependencies
 RUN pip install --no-cache-dir urllib3
 
-# Set Python path for imports
+# Set Python path
 ENV PYTHONPATH=/app/services/api
 
-# The command will be overridden by Render, but default to no-op
-CMD ["echo", "Cron job template running"]
+# Default command - can be overridden
+CMD ["python", "/app/services/api/tools/cron/daily_email_ping.py"]
