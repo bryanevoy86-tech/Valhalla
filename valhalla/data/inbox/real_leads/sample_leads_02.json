@@ -1,0 +1,26 @@
+[
+  {
+    "lead_id": "J001",
+    "name": "Mike Johnson",
+    "phone": "(204) 555-0104",
+    "email": "mike@example.com",
+    "address": "77 Portage Ave",
+    "city": "Winnipeg",
+    "province": "MB",
+    "source": "cold_call",
+    "notes": "Says make an offer, unclear motivation",
+    "meta": {"beds": 3, "baths": 2}
+  },
+  {
+    "lead_id": "J002",
+    "name": "Sara Lee",
+    "phone": "204-555-0105",
+    "email": null,
+    "address": "200 King St",
+    "city": "Winnipeg",
+    "province": "MB",
+    "source": "sms_inbound",
+    "notes": "No email; prefers text",
+    "meta": {"beds": null, "baths": 1}
+  }
+]

@@ -1,0 +1,20 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<div class="panel">
+  <div><span class="badge">{{ title }}</span></div>
+  <table class="table">
+    <thead><tr><th>File</th><th>Size</th><th>Modified</th><th></th></tr></thead>
+    <tbody>
+    {% for f in files %}
+      <tr>
+        <td><code>{{ f.rel }}</code></td>
+        <td>{{ f.size }} B</td>
+        <td>{{ f.mtime }}</td>
+  <td><a href="#" onclick="window.open(tlink('/admin/heimdall/ui/raw?rel={{ f.rel|urlencode }}'),'_blank')">raw</a></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% if files|length == 0 %}<small class="warn">No files.</small>{% endif %}
+</div>
+{% endblock %}

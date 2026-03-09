@@ -1,0 +1,50 @@
+{
+  "timestamp_utc": "2026-01-09T05:39:52Z",
+  "local_date": "2026-01-08",
+  "timezone_hint": "local",
+  "env": {
+    "VALHALLA_PHASE": "3",
+    "VALHALLA_REAL_DATA_INGEST": "1",
+    "VALHALLA_DRY_RUN": "1",
+    "VALHALLA_DISABLE_OUTBOUND": "1"
+  },
+  "paths": {
+    "inbox": "data\\inbox\\real_leads",
+    "quarantine": "data\\inbox\\quarantine",
+    "integrated_reports": "reports\\integrated_sandbox",
+    "export_dirs_detected": {
+      "phase3": "data\\exports\\phase3",
+      "exports": "data\\exports",
+      "reports": "reports",
+      "integrated_sandbox": "reports\\integrated_sandbox"
+    },
+    "digest_dir": "reports\\daily_digest"
+  },
+  "counts": {
+    "inbox_files": 8,
+    "quarantine_files": 0,
+    "integrated_reports": 0,
+    "files_in_phase3": 0,
+    "files_in_exports": 0,
+    "files_in_reports": 0,
+    "files_in_integrated_sandbox": 0
+  },
+  "recent": {
+    "inbox": [
+      "data\\inbox\\real_leads\\edge_case_duplicates.csv",
+      "data\\inbox\\real_leads\\edge_case_bad_json.json",
+      "data\\inbox\\real_leads\\edge_case_bad_csv.csv",
+      "data\\inbox\\real_leads\\batch_03_leads.csv",
+      "data\\inbox\\real_leads\\batch_01_leads.csv",
+      "data\\inbox\\real_leads\\batch_02_leads.csv",
+      "data\\inbox\\real_leads\\sample_leads_02.json",
+      "data\\inbox\\real_leads\\sample_leads_01.csv"
+    ],
+    "quarantine": [],
+    "integrated_reports": []
+  },
+  "notes": [
+    "Digest is read-only; it does not modify sandbox state.",
+    "If export dirs are missing, add your actual export path to candidates in this script."
+  ]
+}

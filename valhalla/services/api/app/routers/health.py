@@ -1,7 +1,8 @@
 from fastapi import APIRouter
 
-router = APIRouter()
+router = APIRouter(prefix="/healthz", tags=["health"])
 
-@router.get("/healthz")
-def healthz():
-    return {"status": "ok"}
+
+@router.get("")
+async def healthz():
+    return {"ok": True, "app": "Valhalla API", "version": "3.4"}

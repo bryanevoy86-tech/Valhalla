@@ -1,0 +1,73 @@
+groups:
+- name: valhalla-slo-endpoints
+  interval: 30s
+  rules:
+  - record: valhalla:path_slo_name
+    expr: |
+      label_replace(
+        sum by (path) (valhalla_http_requests_total)
+        * 0
+        + on (path)
+        group_left
+        (
+          sum by (path, slo_name) (
+            label_replace(valhalla_http_requests_total, "slo_name", "api-public", "path", "^/(auth|io|public)(/.*)?$")
+          )
+          or
+          sum by (path, slo_name) (
+            label_replace(valhalla_http_requests_total, "slo_name", "admin", "path", "^/admin(/.*)?$")
+          )
+          or
+          sum by (path, slo_name) (
+            label_replace(valhalla_http_requests_total, "slo_name", "jobs", "path", "^/jobs(/.*)?$")
+          )
+        ),
+        "slo_name","$1","slo_name","(.+)"
+      )
+  - record: valhalla:slo_availability_requests:rate1m
+    expr: sum by (slo_name) (rate(valhalla_http_requests_total[1m])) 
+      and on(path) group_left(slo_name) valhalla:path_slo_name
+  - record: valhalla:slo_availability_good:rate1m
+    expr: sum by (slo_name) (rate(valhalla_http_requests_total{status!~"5.."}[1m]))
+      and on(path) group_left(slo_name) valhalla:path_slo_name
+  - record: valhalla:slo_availability_ratio:30m:by_endpoint
+    expr: sum_over_time(valhalla:slo_availability_good:rate1m[30m]) 
+          / sum_over_time(valhalla:slo_availability_requests:rate1m[30m])
+  - record: valhalla:slo_availability_ratio:24h:by_endpoint
+    expr: sum_over_time(valhalla:slo_availability_good:rate1m[24h]) 
+          / sum_over_time(valhalla:slo_availability_requests:rate1m[24h])
+  - record: valhalla:http_latency_p95:by_endpoint
+    expr: histogram_quantile(
+            0.95,
+            sum by (le, slo_name) (
+              rate(valhalla_http_request_duration_seconds_bucket[5m])
+              and on(path) group_left(slo_name) valhalla:path_slo_name
+            )
+          )
+  - record: valhalla:slo_target:availability
+    expr: 0.999
+  - record: valhalla:slo_target:availability{ slo_name="api-public" }
+    expr: 0.999
+  - record: valhalla:slo_target:availability{ slo_name="admin" }
+    expr: 0.995
+  - record: valhalla:slo_target:availability{ slo_name="jobs" }
+    expr: 0.99
+  - record: valhalla:slo_latency_threshold_seconds
+    expr: 0.5
+  - record: valhalla:slo_latency_threshold_seconds{ slo_name="admin" }
+    expr: 0.8
+  - record: valhalla:slo_latency_threshold_seconds{ slo_name="jobs" }
+    expr: 2
+  - record: valhalla:slo_latency_pass:by_endpoint
+    expr: (valhalla:http_latency_p95:by_endpoint < on(slo_name) group_left valhalla:slo_latency_threshold_seconds)
+  - record: valhalla:slo_latency_ratio:30m:by_endpoint
+    expr: sum_over_time(valhalla:slo_latency_pass:by_endpoint[30m]) 
+          / count_over_time(valhalla:slo_latency_pass:by_endpoint[30m])
+  - record: valhalla:error_budget:by_endpoint
+    expr: (1 - on(slo_name) group_left valhalla:slo_target:availability)
+  - record: valhalla:burnrate:30m:by_endpoint
+    expr: (1 - valhalla:slo_availability_ratio:30m:by_endpoint) 
+          / on(slo_name) group_left valhalla:error_budget:by_endpoint
+  - record: valhalla:burnrate:2h:by_endpoint
+    expr: (1 - valhalla:slo_availability_ratio:24h:by_endpoint) 
+          / on(slo_name) group_left valhalla:error_budget:by_endpoint

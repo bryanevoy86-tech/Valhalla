@@ -1,0 +1,9 @@
+type: job
+name: demo_ok
+shell: |
+  echo "hello from job"
+  echo "done"
+timeout: 20
+notify:
+  on_success: true     # override global default (which is false)
+  on_failure: true

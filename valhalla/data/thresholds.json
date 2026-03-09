@@ -1,0 +1,8 @@
+{
+  "max_failed_jobs_red": 3,
+  "max_failed_jobs_yellow": 1,
+  "deny_rate_yellow": 0.25,
+  "deny_rate_red": 0.35,
+  "min_decisions_for_drift": 20,
+  "unhandled_exceptions_red": 1
+}

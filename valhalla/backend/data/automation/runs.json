@@ -1,0 +1,1166 @@
+{
+  "updated_at": "2026-01-03T04:57:18.432450+00:00",
+  "items": [
+    {
+      "id": "ar_prune_test_051",
+      "run_type": "test",
+      "created_at": "2025-01-24T03:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_052",
+      "run_type": "test",
+      "created_at": "2025-01-25T04:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_053",
+      "run_type": "test",
+      "created_at": "2025-01-26T05:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_054",
+      "run_type": "test",
+      "created_at": "2025-01-27T06:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_055",
+      "run_type": "test",
+      "created_at": "2025-01-28T07:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_056",
+      "run_type": "test",
+      "created_at": "2025-01-01T08:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_057",
+      "run_type": "test",
+      "created_at": "2025-01-02T09:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_058",
+      "run_type": "test",
+      "created_at": "2025-01-03T10:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_059",
+      "run_type": "test",
+      "created_at": "2025-01-04T11:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_060",
+      "run_type": "test",
+      "created_at": "2025-01-05T12:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_061",
+      "run_type": "test",
+      "created_at": "2025-01-06T13:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_062",
+      "run_type": "test",
+      "created_at": "2025-01-07T14:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_063",
+      "run_type": "test",
+      "created_at": "2025-01-08T15:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_064",
+      "run_type": "test",
+      "created_at": "2025-01-09T16:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_065",
+      "run_type": "test",
+      "created_at": "2025-01-10T17:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_066",
+      "run_type": "test",
+      "created_at": "2025-01-11T18:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_067",
+      "run_type": "test",
+      "created_at": "2025-01-12T19:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_068",
+      "run_type": "test",
+      "created_at": "2025-01-13T20:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_069",
+      "run_type": "test",
+      "created_at": "2025-01-14T21:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_070",
+      "run_type": "test",
+      "created_at": "2025-01-15T22:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_071",
+      "run_type": "test",
+      "created_at": "2025-01-16T23:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_072",
+      "run_type": "test",
+      "created_at": "2025-01-17T00:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_073",
+      "run_type": "test",
+      "created_at": "2025-01-18T01:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_074",
+      "run_type": "test",
+      "created_at": "2025-01-19T02:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_075",
+      "run_type": "test",
+      "created_at": "2025-01-20T03:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_076",
+      "run_type": "test",
+      "created_at": "2025-01-21T04:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_077",
+      "run_type": "test",
+      "created_at": "2025-01-22T05:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_078",
+      "run_type": "test",
+      "created_at": "2025-01-23T06:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_079",
+      "run_type": "test",
+      "created_at": "2025-01-24T07:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_080",
+      "run_type": "test",
+      "created_at": "2025-01-25T08:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_081",
+      "run_type": "test",
+      "created_at": "2025-01-26T09:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_082",
+      "run_type": "test",
+      "created_at": "2025-01-27T10:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_083",
+      "run_type": "test",
+      "created_at": "2025-01-28T11:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_084",
+      "run_type": "test",
+      "created_at": "2025-01-01T12:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_085",
+      "run_type": "test",
+      "created_at": "2025-01-02T13:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_086",
+      "run_type": "test",
+      "created_at": "2025-01-03T14:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_087",
+      "run_type": "test",
+      "created_at": "2025-01-04T15:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_088",
+      "run_type": "test",
+      "created_at": "2025-01-05T16:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_089",
+      "run_type": "test",
+      "created_at": "2025-01-06T17:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_090",
+      "run_type": "test",
+      "created_at": "2025-01-07T18:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_091",
+      "run_type": "test",
+      "created_at": "2025-01-08T19:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_092",
+      "run_type": "test",
+      "created_at": "2025-01-09T20:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_093",
+      "run_type": "test",
+      "created_at": "2025-01-10T21:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_094",
+      "run_type": "test",
+      "created_at": "2025-01-11T22:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_095",
+      "run_type": "test",
+      "created_at": "2025-01-12T23:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_096",
+      "run_type": "test",
+      "created_at": "2025-01-13T00:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_097",
+      "run_type": "test",
+      "created_at": "2025-01-14T01:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_098",
+      "run_type": "test",
+      "created_at": "2025-01-15T02:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_099",
+      "run_type": "test",
+      "created_at": "2025-01-16T03:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_100",
+      "run_type": "test",
+      "created_at": "2025-01-17T04:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_101",
+      "run_type": "test",
+      "created_at": "2025-01-18T05:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_102",
+      "run_type": "test",
+      "created_at": "2025-01-19T06:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_103",
+      "run_type": "test",
+      "created_at": "2025-01-20T07:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_104",
+      "run_type": "test",
+      "created_at": "2025-01-21T08:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_105",
+      "run_type": "test",
+      "created_at": "2025-01-22T09:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_106",
+      "run_type": "test",
+      "created_at": "2025-01-23T10:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_107",
+      "run_type": "test",
+      "created_at": "2025-01-24T11:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_108",
+      "run_type": "test",
+      "created_at": "2025-01-25T12:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_109",
+      "run_type": "test",
+      "created_at": "2025-01-26T13:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_110",
+      "run_type": "test",
+      "created_at": "2025-01-27T14:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_111",
+      "run_type": "test",
+      "created_at": "2025-01-28T15:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_112",
+      "run_type": "test",
+      "created_at": "2025-01-01T16:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_113",
+      "run_type": "test",
+      "created_at": "2025-01-02T17:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_114",
+      "run_type": "test",
+      "created_at": "2025-01-03T18:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_115",
+      "run_type": "test",
+      "created_at": "2025-01-04T19:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_116",
+      "run_type": "test",
+      "created_at": "2025-01-05T20:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_117",
+      "run_type": "test",
+      "created_at": "2025-01-06T21:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_118",
+      "run_type": "test",
+      "created_at": "2025-01-07T22:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_119",
+      "run_type": "test",
+      "created_at": "2025-01-08T23:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_120",
+      "run_type": "test",
+      "created_at": "2025-01-09T00:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_121",
+      "run_type": "test",
+      "created_at": "2025-01-10T01:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_122",
+      "run_type": "test",
+      "created_at": "2025-01-11T02:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_123",
+      "run_type": "test",
+      "created_at": "2025-01-12T03:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_124",
+      "run_type": "test",
+      "created_at": "2025-01-13T04:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_125",
+      "run_type": "test",
+      "created_at": "2025-01-14T05:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_126",
+      "run_type": "test",
+      "created_at": "2025-01-15T06:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_127",
+      "run_type": "test",
+      "created_at": "2025-01-16T07:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_128",
+      "run_type": "test",
+      "created_at": "2025-01-17T08:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_129",
+      "run_type": "test",
+      "created_at": "2025-01-18T09:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_130",
+      "run_type": "test",
+      "created_at": "2025-01-19T10:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_131",
+      "run_type": "test",
+      "created_at": "2025-01-20T11:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_132",
+      "run_type": "test",
+      "created_at": "2025-01-21T12:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_133",
+      "run_type": "test",
+      "created_at": "2025-01-22T13:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_134",
+      "run_type": "test",
+      "created_at": "2025-01-23T14:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_135",
+      "run_type": "test",
+      "created_at": "2025-01-24T15:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_136",
+      "run_type": "test",
+      "created_at": "2025-01-25T16:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_137",
+      "run_type": "test",
+      "created_at": "2025-01-26T17:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_138",
+      "run_type": "test",
+      "created_at": "2025-01-27T18:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_139",
+      "run_type": "test",
+      "created_at": "2025-01-28T19:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_140",
+      "run_type": "test",
+      "created_at": "2025-01-01T20:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_141",
+      "run_type": "test",
+      "created_at": "2025-01-02T21:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_142",
+      "run_type": "test",
+      "created_at": "2025-01-03T22:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_143",
+      "run_type": "test",
+      "created_at": "2025-01-04T23:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_144",
+      "run_type": "test",
+      "created_at": "2025-01-05T00:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_145",
+      "run_type": "test",
+      "created_at": "2025-01-06T01:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_146",
+      "run_type": "test",
+      "created_at": "2025-01-07T02:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_147",
+      "run_type": "test",
+      "created_at": "2025-01-08T03:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_148",
+      "run_type": "test",
+      "created_at": "2025-01-09T04:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_149",
+      "run_type": "test",
+      "created_at": "2025-01-10T05:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_150",
+      "run_type": "test",
+      "created_at": "2025-01-11T06:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_151",
+      "run_type": "test",
+      "created_at": "2025-01-12T07:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_152",
+      "run_type": "test",
+      "created_at": "2025-01-13T08:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_153",
+      "run_type": "test",
+      "created_at": "2025-01-14T09:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_154",
+      "run_type": "test",
+      "created_at": "2025-01-15T10:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_155",
+      "run_type": "test",
+      "created_at": "2025-01-16T11:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_156",
+      "run_type": "test",
+      "created_at": "2025-01-17T12:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_157",
+      "run_type": "test",
+      "created_at": "2025-01-18T13:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_158",
+      "run_type": "test",
+      "created_at": "2025-01-19T14:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_159",
+      "run_type": "test",
+      "created_at": "2025-01-20T15:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_160",
+      "run_type": "test",
+      "created_at": "2025-01-21T16:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_161",
+      "run_type": "test",
+      "created_at": "2025-01-22T17:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_162",
+      "run_type": "test",
+      "created_at": "2025-01-23T18:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_163",
+      "run_type": "test",
+      "created_at": "2025-01-24T19:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_164",
+      "run_type": "test",
+      "created_at": "2025-01-25T20:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_165",
+      "run_type": "test",
+      "created_at": "2025-01-26T21:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_166",
+      "run_type": "test",
+      "created_at": "2025-01-27T22:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_167",
+      "run_type": "test",
+      "created_at": "2025-01-28T23:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_168",
+      "run_type": "test",
+      "created_at": "2025-01-01T00:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_169",
+      "run_type": "test",
+      "created_at": "2025-01-02T01:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_170",
+      "run_type": "test",
+      "created_at": "2025-01-03T02:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_171",
+      "run_type": "test",
+      "created_at": "2025-01-04T03:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_172",
+      "run_type": "test",
+      "created_at": "2025-01-05T04:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_173",
+      "run_type": "test",
+      "created_at": "2025-01-06T05:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_174",
+      "run_type": "test",
+      "created_at": "2025-01-07T06:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_175",
+      "run_type": "test",
+      "created_at": "2025-01-08T07:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_176",
+      "run_type": "test",
+      "created_at": "2025-01-09T08:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_177",
+      "run_type": "test",
+      "created_at": "2025-01-10T09:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_178",
+      "run_type": "test",
+      "created_at": "2025-01-11T10:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_179",
+      "run_type": "test",
+      "created_at": "2025-01-12T11:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_180",
+      "run_type": "test",
+      "created_at": "2025-01-13T12:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_181",
+      "run_type": "test",
+      "created_at": "2025-01-14T13:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_182",
+      "run_type": "test",
+      "created_at": "2025-01-15T14:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_183",
+      "run_type": "test",
+      "created_at": "2025-01-16T15:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_184",
+      "run_type": "test",
+      "created_at": "2025-01-17T16:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_185",
+      "run_type": "test",
+      "created_at": "2025-01-18T17:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_186",
+      "run_type": "test",
+      "created_at": "2025-01-19T18:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_187",
+      "run_type": "test",
+      "created_at": "2025-01-20T19:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_188",
+      "run_type": "test",
+      "created_at": "2025-01-21T20:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_189",
+      "run_type": "test",
+      "created_at": "2025-01-22T21:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_190",
+      "run_type": "test",
+      "created_at": "2025-01-23T22:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_191",
+      "run_type": "test",
+      "created_at": "2025-01-24T23:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_192",
+      "run_type": "test",
+      "created_at": "2025-01-25T00:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_193",
+      "run_type": "test",
+      "created_at": "2025-01-26T01:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_194",
+      "run_type": "test",
+      "created_at": "2025-01-27T02:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_195",
+      "run_type": "test",
+      "created_at": "2025-01-28T03:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_196",
+      "run_type": "test",
+      "created_at": "2025-01-01T04:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_197",
+      "run_type": "test",
+      "created_at": "2025-01-02T05:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_198",
+      "run_type": "test",
+      "created_at": "2025-01-03T06:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_199",
+      "run_type": "test",
+      "created_at": "2025-01-04T07:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_200",
+      "run_type": "test",
+      "created_at": "2025-01-05T08:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_201",
+      "run_type": "test",
+      "created_at": "2025-01-06T09:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_202",
+      "run_type": "test",
+      "created_at": "2025-01-07T10:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_203",
+      "run_type": "test",
+      "created_at": "2025-01-08T11:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_204",
+      "run_type": "test",
+      "created_at": "2025-01-09T12:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_205",
+      "run_type": "test",
+      "created_at": "2025-01-10T13:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_206",
+      "run_type": "test",
+      "created_at": "2025-01-11T14:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_207",
+      "run_type": "test",
+      "created_at": "2025-01-12T15:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_208",
+      "run_type": "test",
+      "created_at": "2025-01-13T16:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_209",
+      "run_type": "test",
+      "created_at": "2025-01-14T17:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_210",
+      "run_type": "test",
+      "created_at": "2025-01-15T18:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_211",
+      "run_type": "test",
+      "created_at": "2025-01-16T19:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_212",
+      "run_type": "test",
+      "created_at": "2025-01-17T20:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_213",
+      "run_type": "test",
+      "created_at": "2025-01-18T21:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_214",
+      "run_type": "test",
+      "created_at": "2025-01-19T22:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_215",
+      "run_type": "test",
+      "created_at": "2025-01-20T23:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_216",
+      "run_type": "test",
+      "created_at": "2025-01-21T00:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_217",
+      "run_type": "test",
+      "created_at": "2025-01-22T01:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_218",
+      "run_type": "test",
+      "created_at": "2025-01-23T02:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_219",
+      "run_type": "test",
+      "created_at": "2025-01-24T03:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_220",
+      "run_type": "test",
+      "created_at": "2025-01-25T04:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_221",
+      "run_type": "test",
+      "created_at": "2025-01-26T05:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_222",
+      "run_type": "test",
+      "created_at": "2025-01-27T06:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_223",
+      "run_type": "test",
+      "created_at": "2025-01-28T07:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_224",
+      "run_type": "test",
+      "created_at": "2025-01-01T08:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_225",
+      "run_type": "test",
+      "created_at": "2025-01-02T09:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_226",
+      "run_type": "test",
+      "created_at": "2025-01-03T10:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_227",
+      "run_type": "test",
+      "created_at": "2025-01-04T11:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_228",
+      "run_type": "test",
+      "created_at": "2025-01-05T12:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_229",
+      "run_type": "test",
+      "created_at": "2025-01-06T13:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_230",
+      "run_type": "test",
+      "created_at": "2025-01-07T14:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_231",
+      "run_type": "test",
+      "created_at": "2025-01-08T15:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_232",
+      "run_type": "test",
+      "created_at": "2025-01-09T16:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_233",
+      "run_type": "test",
+      "created_at": "2025-01-10T17:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_234",
+      "run_type": "test",
+      "created_at": "2025-01-11T18:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_235",
+      "run_type": "test",
+      "created_at": "2025-01-12T19:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_236",
+      "run_type": "test",
+      "created_at": "2025-01-13T20:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_237",
+      "run_type": "test",
+      "created_at": "2025-01-14T21:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_238",
+      "run_type": "test",
+      "created_at": "2025-01-15T22:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_239",
+      "run_type": "test",
+      "created_at": "2025-01-16T23:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_240",
+      "run_type": "test",
+      "created_at": "2025-01-17T00:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_241",
+      "run_type": "test",
+      "created_at": "2025-01-18T01:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_242",
+      "run_type": "test",
+      "created_at": "2025-01-19T02:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_243",
+      "run_type": "test",
+      "created_at": "2025-01-20T03:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_244",
+      "run_type": "test",
+      "created_at": "2025-01-21T04:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_245",
+      "run_type": "test",
+      "created_at": "2025-01-22T05:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_246",
+      "run_type": "test",
+      "created_at": "2025-01-23T06:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_247",
+      "run_type": "test",
+      "created_at": "2025-01-24T07:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_248",
+      "run_type": "test",
+      "created_at": "2025-01-25T08:00:00Z"
+    },
+    {
+      "id": "ar_prune_test_249",
+      "run_type": "test",
+      "created_at": "2025-01-26T09:00:00Z"
+    },
+    {
+      "id": "ar_70d27f8878d8",
+      "run_type": "test_prune_trigger",
+      "created_at": "2026-01-03T04:57:18.431810+00:00",
+      "meta": {},
+      "warnings": [
+        "followups unavailable: ModuleNotFoundError: No module named 'backend.app.followups'"
+      ],
+      "results": {
+        "bill_calendar_next_30": {
+          "start": "2026-01-02",
+          "end": "2026-02-01",
+          "days": [
+            {
+              "date": "2026-02-01",
+              "total": 9500.0,
+              "items": [
+                {
+                  "id": "run_3356ffe7eb",
+                  "obligation_id": "ob_6038e7c40571",
+                  "name": "Rent",
+                  "amount": 1600.0,
+                  "currency": "CAD",
+                  "due_date": "2026-02-01",
+                  "priority": "A",
+                  "pay_from": "personal",
+                  "autopay_enabled": true,
+                  "autopay_verified": true,
+                  "status": "scheduled",
+                  "created_at": "2026-01-03T04:57:18.421570+00:00"
+                },
+                {
+                  "id": "run_7c72a97dbb",
+                  "obligation_id": "ob_71db6a268793",
+                  "name": "Rent",
+                  "amount": 1500.0,
+                  "currency": "CAD",
+                  "due_date": "2026-02-01",
+                  "priority": "A",
+                  "pay_from": "personal",
+                  "autopay_enabled": false,
+                  "autopay_verified": false,
+                  "status": "scheduled",
+                  "created_at": "2026-01-03T04:57:18.421587+00:00"
+                },
+                {
+                  "id": "run_4513ebb4d6",
+                  "obligation_id": "ob_035b9c0dc862",
+                  "name": "Rent",
+                  "amount": 1600.0,
+                  "currency": "CAD",
+                  "due_date": "2026-02-01",
+                  "priority": "A",
+                  "pay_from": "personal",
+                  "autopay_enabled": false,
+                  "autopay_verified": false,
+                  "status": "scheduled",
+                  "created_at": "2026-01-03T04:57:18.421598+00:00"
+                },
+                {
+                  "id": "run_ecc0b66830",
+                  "obligation_id": "ob_bc362015ab85",
+                  "name": "Rent",
+                  "amount": 1600.0,
+                  "currency": "CAD",
+                  "due_date": "2026-02-01",
+                  "priority": "A",
+                  "pay_from": "personal",
+                  "autopay_enabled": false,
+                  "autopay_verified": false,
+                  "status": "scheduled",
+                  "created_at": "2026-01-03T04:57:18.421607+00:00"
+                },
+                {
+                  "id": "run_f191b3ad9f",
+                  "obligation_id": "ob_178af0b84d51",
+                  "name": "Rent",
+                  "amount": 1600.0,
+                  "currency": "CAD",
+                  "due_date": "2026-02-01",
+                  "priority": "A",
+                  "pay_from": "personal",
+                  "autopay_enabled": true,
+                  "autopay_verified": true,
+                  "status": "scheduled",
+                  "created_at": "2026-01-03T04:57:18.421616+00:00"
+                },
+                {
+                  "id": "run_a5f6d02554",
+                  "obligation_id": "ob_22f2021e02db",
+                  "name": "Rent",
+                  "amount": 1600.0,
+                  "currency": "CAD",
+                  "due_date": "2026-02-01",
+                  "priority": "A",
+                  "pay_from": "personal",
+                  "autopay_enabled": true,
+                  "autopay_verified": true,
+                  "status": "scheduled",
+                  "created_at": "2026-01-03T04:57:18.421625+00:00"
+                }
+              ]
+            }
+          ],
+          "warnings": [
+            "Shield is enabled at tier green."
+          ],
+          "coverage": {
+            "ok": true,
+            "covered": null,
+            "monthly_required": 9500.0,
+            "buffer_required": 11875.0,
+            "autopay_verified": 3,
+            "autopay_total": 3,
+            "note": "coverage requires capital module providing a personal cash balance",
+            "updated_at": "2026-01-03T04:57:18.422024+00:00"
+          },
+          "shield": {
+            "enabled": true,
+            "tier": "green",
+            "reserve_floor": 0.0,
+            "min_deals_pipeline": 0,
+            "notes": "Updated config",
+            "actions_by_tier": {
+              "green": [
+                "review_followups"
+              ],
+              "yellow": [
+                "audit_expenses",
+                "focus_boring_engines",
+                "review_followups"
+              ],
+              "orange": [
+                "pause_expansion",
+                "reduce_marketing",
+                "focus_boring_engines",
+                "review_legal_flags"
+              ],
+              "red": [
+                "pause_expansion",
+                "freeze_hiring",
+                "audit_expenses",
+                "manual_override_required"
+              ]
+            },
+            "updated_at": "2026-01-03T03:31:27.313298+00:00"
+          }
+        },
+        "obligations_status": {
+          "ok": true,
+          "covered": null,
+          "monthly_required": 9500.0,
+          "buffer_required": 11875.0,
+          "autopay_verified": 3,
+          "autopay_total": 3,
+          "note": "coverage requires capital module providing a personal cash balance",
+          "updated_at": "2026-01-03T04:57:18.427331+00:00"
+        },
+        "followups_due": null,
+        "budget_month_snapshot": null,
+        "reorder_candidates": {
+          "items": [],
+          "note": "Inventory/Pantry module not installed yet. Add Pantry/Inventory packs to enable auto-reorder candidates."
+        }
+      }
+    }
+  ]
+}

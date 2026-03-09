@@ -15,11 +15,9 @@ from ..schemas.builder import (
 
 router = APIRouter(prefix="/builder", tags=["builder"])
 
-
 def _path_is_allowed(path: str) -> bool:
     norm = path.replace("\\", "/").strip().lstrip("./")
     return any(norm.startswith(d + "/") or norm == d for d in settings.BUILDER_ALLOWED_DIRS)
-
 
 @router.post("/register", response_model=RegisterOut)
 def register(payload: RegisterIn, db: Session = Depends(get_db), _: bool = Depends(require_builder_key)):
@@ -27,23 +25,18 @@ def register(payload: RegisterIn, db: Session = Depends(get_db), _: bool = Depen
     db.commit()
     return RegisterOut(ok=True, message=f"Welcome, {payload.agent_name}.")
 
-
 @router.get("/tasks", response_model=List[TaskOut])
 def list_tasks(db: Session = Depends(get_db), _: bool = Depends(require_builder_key)):
     rows = db.query(BuilderTask).order_by(BuilderTask.id.desc()).limit(50).all()
     return [TaskOut(id=r.id, title=r.title, scope=r.scope, status=r.status, diff_summary=r.diff_summary) for r in rows]
 
-
 @router.post("/tasks", response_model=DraftOut)
 def create_task(payload: TaskIn, db: Session = Depends(get_db), _: bool = Depends(require_builder_key)):
     # Heimdall will later POST /apply with files; for now create placeholder
     t = BuilderTask(title=payload.title, scope=payload.scope, status="queued", plan=payload.plan or "")
-    db.add(t)
-    db.commit()
-    db.refresh(t)
+    db.add(t); db.commit(); db.refresh(t)
     # Empty draft (Heimdall will update via /apply with approve=false first)
     return DraftOut(task_id=t.id, files=[], diff_summary="queued")
-
 
 def _read_text(path: str) -> str:
     try:
@@ -104,6 +97,7 @@ def apply(payload: ApplyIn, db: Session = Depends(get_db), _: bool = Depends(req
         proposed = []
 
     if not payload.approve:
+        # dry-run diffs using the attached proposed files
         diffs = []
         combined_patch_parts: List[str] = []
         for f in proposed:
@@ -117,6 +111,7 @@ def apply(payload: ApplyIn, db: Session = Depends(get_db), _: bool = Depends(req
                 combined_patch_parts.append(patch)
         t.diff_summary = f"{sum(1 for d in diffs if d['diff'])} files changed"
         db.add(t); db.commit()
+        # Return a synthetic patch file in the DraftOut for convenience
         patch_file = FileSpec(path="__DIFF__.patch", content="".join(combined_patch_parts), mode="add")
         return DraftOut(task_id=t.id, files=[patch_file], diff_summary=t.diff_summary or "")
 
@@ -131,7 +126,7 @@ def apply(payload: ApplyIn, db: Session = Depends(get_db), _: bool = Depends(req
         if len(content.encode("utf-8")) > settings.BUILDER_MAX_FILE_BYTES:
             raise HTTPException(status_code=413, detail=f"file too large: {path}")
         os.makedirs(os.path.dirname(path), exist_ok=True)
-        if mode not in ("add", "replace"):
+        if mode not in ("add", "replace"): 
             raise HTTPException(status_code=400, detail=f"bad mode for {path}")
         with open(path, "w", encoding="utf-8") as fh:
             fh.write(content)
@@ -141,6 +136,7 @@ def apply(payload: ApplyIn, db: Session = Depends(get_db), _: bool = Depends(req
     db.add(BuilderEvent(kind="apply", msg=f"applied {len(wrote)} files", meta_json=json.dumps(wrote)))
     db.commit()
 
+    # Optional git autocommit/push
     if settings.GIT_ENABLE_AUTOCOMMIT:
         repo_dir = settings.GIT_REPO_DIR or os.getcwd()
         msg = f"builder: apply task {t.id} ({len(wrote)} files)"
@@ -156,7 +152,6 @@ def apply(payload: ApplyIn, db: Session = Depends(get_db), _: bool = Depends(req
         db.add(BuilderEvent(kind="git", msg="autocommit", meta_json=json.dumps(res)))
         db.commit()
     return DraftOut(task_id=t.id, files=proposed, diff_summary=f"applied {len(wrote)} files")
-
 
 @router.post("/telemetry")
 def telemetry(payload: TelemetryIn, db: Session = Depends(get_db), _: bool = Depends(require_builder_key)):

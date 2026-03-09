@@ -1,0 +1,161 @@
+{
+  "at": "2026-01-11T00:42:08.301172+00:00",
+  "freeze": {
+    "frozen": false,
+    "frozen_at": "2026-01-11T00:39:37.906724+00:00",
+    "frozen_by": "Bryan",
+    "reason": "Reopening"
+  },
+  "policy": {},
+  "counts": {
+    "capabilities_total": 17,
+    "capabilities_certified": 7
+  },
+  "certified_capabilities": [
+    {
+      "id": "banking_intake_wizard",
+      "name": "Banking Intake Wizard",
+      "risk_class": "SAFE",
+      "certification": {
+        "certified": true,
+        "certified_at": "2026-01-11T00:39:18.033666+00:00",
+        "certified_by": "System",
+        "cert_notes": "CERTIFIED entry during initial setup",
+        "test_log": []
+      }
+    },
+    {
+      "id": "handoff_pack_generator",
+      "name": "Handoff Pack Generator (EIA/Accountant/Lawyer)",
+      "risk_class": "SAFE",
+      "certification": {
+        "certified": true,
+        "certified_at": "2026-01-11T00:39:18.598264+00:00",
+        "certified_by": "System",
+        "cert_notes": "CERTIFIED entry during initial setup",
+        "test_log": []
+      }
+    },
+    {
+      "id": "export_cleanup_retention",
+      "name": "Export Cleanup & Retention (Safe Prune)",
+      "risk_class": "SAFE",
+      "certification": {
+        "certified": true,
+        "certified_at": "2026-01-11T00:39:18.897607+00:00",
+        "certified_by": "System",
+        "cert_notes": "CERTIFIED entry during initial setup",
+        "test_log": []
+      }
+    },
+    {
+      "id": "repo_smoke_check",
+      "name": "Repo Smoke Check (Secrets/Config Drift)",
+      "risk_class": "SAFE",
+      "certification": {
+        "certified": true,
+        "certified_at": "2026-01-11T00:39:20.745972+00:00",
+        "certified_by": "System",
+        "cert_notes": "CERTIFIED entry during initial setup",
+        "test_log": []
+      }
+    },
+    {
+      "id": "deal_packet_generator",
+      "name": "Deal Packet Generator (Lawyer-Ready)",
+      "risk_class": "SAFE",
+      "certification": {
+        "certified": true,
+        "certified_at": "2026-01-11T00:42:06.204290+00:00",
+        "certified_by": "Bryan",
+        "cert_notes": "Verified local output only",
+        "test_log": [
+          {
+            "at": "2026-01-11T00:35:44.806228+00:00",
+            "line": "Generated packet folder successfully"
+          },
+          {
+            "at": "2026-01-11T00:42:04.426067+00:00",
+            "line": "Ran script; output folder created"
+          },
+          {
+            "at": "2026-01-11T00:42:06.204305+00:00",
+            "line": "Ran script; output folder created"
+          }
+        ]
+      }
+    },
+    {
+      "id": "eia_application_pack",
+      "name": "EIA Application Pack Builder",
+      "risk_class": "SAFE",
+      "certification": {
+        "certified": true,
+        "certified_at": "2026-01-11T00:42:06.204777+00:00",
+        "certified_by": "Bryan",
+        "cert_notes": "Verified local output only",
+        "test_log": [
+          {
+            "at": "2026-01-11T00:35:48.105671+00:00",
+            "line": "Created EIA pack folder successfully"
+          },
+          {
+            "at": "2026-01-11T00:35:58.339346+00:00",
+            "line": "Created EIA pack folder successfully"
+          },
+          {
+            "at": "2026-01-11T00:42:04.426774+00:00",
+            "line": "Ran script; output folder created"
+          },
+          {
+            "at": "2026-01-11T00:42:06.204784+00:00",
+            "line": "Ran script; output folder created"
+          }
+        ]
+      }
+    },
+    {
+      "id": "accountant_snapshot_pack",
+      "name": "Accountant Monthly Snapshot Pack",
+      "risk_class": "SAFE",
+      "certification": {
+        "certified": true,
+        "certified_at": "2026-01-11T00:42:06.205110+00:00",
+        "certified_by": "Bryan",
+        "cert_notes": "Verified local output only",
+        "test_log": [
+          {
+            "at": "2026-01-11T00:35:47.586771+00:00",
+            "line": "Created snapshot folder successfully"
+          },
+          {
+            "at": "2026-01-11T00:42:04.427204+00:00",
+            "line": "Ran script; output folder created"
+          },
+          {
+            "at": "2026-01-11T00:42:06.205115+00:00",
+            "line": "Ran script; output folder created"
+          }
+        ]
+      }
+    }
+  ],
+  "integrity": {
+    "registry_sha256": "385b0908dfd8ee468f8eb23e6293de2c726836f2183a200cdb0b796e89e6e4a0",
+    "freeze_sha256": "3b155142af64beda8cc84523e8bd4a270a53ef3c1e00623ecf7860601b70a642",
+    "capability_audit_sha256": "0ddad16359ae39f1e2dd749bb1f7ee763f946c0c6377530b0599d4eb4549ab18",
+    "prime_directive_audit_sha256": "070292deba37854541c9c8d6981e1d027faa15589c587287f6ac534ab2675123"
+  },
+  "audit_tails": {
+    "capability_audit_tail": [
+      "{\"at\": \"2026-01-11T00:42:04.426929+00:00\", \"actor\": \"Bryan\", \"action\": \"certify\", \"capability_id\": \"eia_application_pack\", \"details\": \"Verified local output only\", \"payload\": null}",
+      "{\"at\": \"2026-01-11T00:42:04.427314+00:00\", \"actor\": \"Bryan\", \"action\": \"certify\", \"capability_id\": \"accountant_snapshot_pack\", \"details\": \"Verified local output only\", \"payload\": null}",
+      "{\"at\": \"2026-01-11T00:42:06.204497+00:00\", \"actor\": \"Bryan\", \"action\": \"certify\", \"capability_id\": \"deal_packet_generator\", \"details\": \"Verified local output only\", \"payload\": null}",
+      "{\"at\": \"2026-01-11T00:42:06.204899+00:00\", \"actor\": \"Bryan\", \"action\": \"certify\", \"capability_id\": \"eia_application_pack\", \"details\": \"Verified local output only\", \"payload\": null}",
+      "{\"at\": \"2026-01-11T00:42:06.205259+00:00\", \"actor\": \"Bryan\", \"action\": \"certify\", \"capability_id\": \"accountant_snapshot_pack\", \"details\": \"Verified local output only\", \"payload\": null}"
+    ],
+    "prime_directive_audit_tail": [
+      "{\"at\": \"2026-01-11T00:42:03.721641+00:00\", \"subsystem\": \"test\", \"action\": \"self_test\", \"context\": {\"subsystem\": \"test\", \"action\": \"self_test\", \"irreversible\": false, \"projected_variance_pct\": 0.0, \"daily_loss_pct\": 0.0, \"drawdown_pct\": 0.0}, \"policy\": {\"max_daily_loss_pct\": 1.0, \"max_drawdown_pct\": 8.0, \"projection_miss_tolerance_pct\": 3.0, \"allow_irreversible\": false}, \"breaches\": []}"
+    ]
+  }
+}

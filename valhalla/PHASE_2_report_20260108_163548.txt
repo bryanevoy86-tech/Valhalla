@@ -1,0 +1,36 @@
+PHASE 2: REVENUE SIMULATION (READ-ONLY)
+=====================================
+UTC Timestamp: 2026-01-08T16:35:48.966038+00:00
+Data Source: fallback (no artifacts found)
+
+Bands (USD):
+------------
+[CONSERVATIVE]
+  Leads/day:              150
+  Avg score:              60.0
+  Expected closes/day:    4.5
+  Spread used (USD):      5400.0
+  Cost per lead (USD):    1.5
+  Profit/day (USD):       24075.0
+  Profit/week (USD):      168525.0
+  Profit/30d (USD):       722250.0
+
+[EXPECTED]
+  Leads/day:              150
+  Avg score:              60.0
+  Expected closes/day:    6.0
+  Spread used (USD):      10000.0
+  Cost per lead (USD):    1.5
+  Profit/day (USD):       59775.0
+  Profit/week (USD):      418425.0
+  Profit/30d (USD):       1793250.0
+
+[AGGRESSIVE]
+  Leads/day:              150
+  Avg score:              60.0
+  Expected closes/day:    6.9
+  Spread used (USD):      14700.0
+  Cost per lead (USD):    1.5
+  Profit/day (USD):       101205.0
+  Profit/week (USD):      708435.0
+  Profit/30d (USD):       3036150.0

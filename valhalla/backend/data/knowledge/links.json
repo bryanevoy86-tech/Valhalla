@@ -1,0 +1,33 @@
+{
+  "updated_at": "2026-01-03T03:54:34.383506+00:00",
+  "items": [
+    {
+      "id": "kl_0b4442a79d72",
+      "entity_type": "partner",
+      "entity_id": "pt_cc32dbb5edfb",
+      "sources": [
+        {
+          "source_type": "note",
+          "ref": "pn_abc123",
+          "title": "Call Recap",
+          "snippet": "Discussed 10-15% preferred return",
+          "meta": {}
+        },
+        {
+          "source_type": "doc",
+          "ref": "doc_xyz789",
+          "title": "JV Agreement",
+          "snippet": "Standard terms with custom structure",
+          "meta": {}
+        }
+      ],
+      "tags": [
+        "jv",
+        "winnipeg"
+      ],
+      "meta": {},
+      "created_at": "2026-01-03T03:54:34.381845+00:00",
+      "updated_at": "2026-01-03T03:54:34.381845+00:00"
+    }
+  ]
+}

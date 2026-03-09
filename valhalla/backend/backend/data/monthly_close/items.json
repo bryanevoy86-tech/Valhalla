@@ -1,0 +1,4154 @@
+{
+  "updated_at": "2026-01-03T08:47:29.769537+00:00",
+  "items": [
+    {
+      "id": "mcl_f53e46bc94ca",
+      "month": "2026-01",
+      "ledger": {
+        "date_from": "2026-01-01",
+        "date_to": "2026-01-31",
+        "income": 52000.0,
+        "expense": 10000.0,
+        "net": 42000.0,
+        "count": 48
+      },
+      "bills_buffer": {
+        "days": 30,
+        "required": 41100.0,
+        "items": [
+          {
+            "date": "2026-01-06",
+            "obligation_id": "obl_c52707b400ad",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-06",
+            "obligation_id": "obl_ea13dc882cbe",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-06",
+            "obligation_id": "obl_784b526a577f",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-06",
+            "obligation_id": "obl_3534e2db3a3e",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-06",
+            "obligation_id": "obl_d8232e143479",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-06",
+            "obligation_id": "obl_b6d7d645d1c7",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-08",
+            "obligation_id": "obl_d37d48f04470",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-08",
+            "obligation_id": "obl_cc08356d624a",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-08",
+            "obligation_id": "obl_6ee3549e0c1d",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-13",
+            "obligation_id": "obl_c52707b400ad",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-13",
+            "obligation_id": "obl_ea13dc882cbe",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-13",
+            "obligation_id": "obl_784b526a577f",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-13",
+            "obligation_id": "obl_3534e2db3a3e",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-13",
+            "obligation_id": "obl_d8232e143479",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-13",
+            "obligation_id": "obl_b6d7d645d1c7",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_316c4d38be11",
+            "name": "Bill 2",
+            "amount": 50.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_4b9a00167617",
+            "name": "Bill 2",
+            "amount": 50.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_2a5df7280642",
+            "name": "Bill 2",
+            "amount": 50.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_d37d48f04470",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_cc08356d624a",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_6ee3549e0c1d",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_2ea4d49b540e",
+            "name": "Internet",
+            "amount": 150.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_13b9f57d2304",
+            "name": "Internet",
+            "amount": 150.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_5176783ccf00",
+            "name": "Internet",
+            "amount": 150.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_3e2e479b8195",
+            "name": "Utilities",
+            "amount": 200.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_b8e3bd52bae4",
+            "name": "Utilities",
+            "amount": 200.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_97e7210bf2d5",
+            "name": "Utilities",
+            "amount": 200.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-20",
+            "obligation_id": "obl_c52707b400ad",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-20",
+            "obligation_id": "obl_ea13dc882cbe",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-20",
+            "obligation_id": "obl_784b526a577f",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-20",
+            "obligation_id": "obl_3534e2db3a3e",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-20",
+            "obligation_id": "obl_d8232e143479",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-20",
+            "obligation_id": "obl_b6d7d645d1c7",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-22",
+            "obligation_id": "obl_d37d48f04470",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-22",
+            "obligation_id": "obl_cc08356d624a",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-22",
+            "obligation_id": "obl_6ee3549e0c1d",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-27",
+            "obligation_id": "obl_c52707b400ad",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-27",
+            "obligation_id": "obl_ea13dc882cbe",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-27",
+            "obligation_id": "obl_784b526a577f",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-27",
+            "obligation_id": "obl_3534e2db3a3e",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-27",
+            "obligation_id": "obl_d8232e143479",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-27",
+            "obligation_id": "obl_b6d7d645d1c7",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-29",
+            "obligation_id": "obl_d37d48f04470",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-29",
+            "obligation_id": "obl_cc08356d624a",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-29",
+            "obligation_id": "obl_6ee3549e0c1d",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_81554091d4d2",
+            "name": "Bill",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "off"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_8df2c835cc7b",
+            "name": "Bill",
+            "amount": 500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_3220f86d1913",
+            "name": "Bill",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "off"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_8465d1c000f0",
+            "name": "Bill",
+            "amount": 500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_719aabdfc8da",
+            "name": "Bill",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "off"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_ad520b87d020",
+            "name": "Bill",
+            "amount": 500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_8b055f20b5d4",
+            "name": "Bill 1",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_9cd11224ac84",
+            "name": "Bill 1",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_a2b8090f152c",
+            "name": "Bill 1",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_7a6606368f16",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "Landlord",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_07e9a856632e",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "housing",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_2c4931eeb6dd",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_71610944537f",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_4c3fdafbcb85",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_f6ee40fba990",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "off"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_f0e578b06c40",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "Landlord",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_9181a7e725f8",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "housing",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_1ffdfa020892",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_fce8adacfe25",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_604cbe0c2acf",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_43b2098a8754",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "off"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_7ab2c76b5117",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "Landlord",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_0cc765852447",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "housing",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_6db857c09e9d",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_698047e2ebbd",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_721dde6d66e0",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_874aa58129cd",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "off"
+          }
+        ],
+        "warnings": []
+      },
+      "warnings": [],
+      "created_at": "2026-01-03T08:47:16.976436+00:00"
+    },
+    {
+      "id": "mcl_340bc6e08903",
+      "month": "2025-12",
+      "ledger": {
+        "date_from": "2025-12-01",
+        "date_to": "2025-12-31",
+        "income": 0.0,
+        "expense": 0.0,
+        "net": 0.0,
+        "count": 0
+      },
+      "bills_buffer": {
+        "days": 30,
+        "required": 41100.0,
+        "items": [
+          {
+            "date": "2026-01-06",
+            "obligation_id": "obl_c52707b400ad",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-06",
+            "obligation_id": "obl_ea13dc882cbe",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-06",
+            "obligation_id": "obl_784b526a577f",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-06",
+            "obligation_id": "obl_3534e2db3a3e",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-06",
+            "obligation_id": "obl_d8232e143479",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-06",
+            "obligation_id": "obl_b6d7d645d1c7",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-08",
+            "obligation_id": "obl_d37d48f04470",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-08",
+            "obligation_id": "obl_cc08356d624a",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-08",
+            "obligation_id": "obl_6ee3549e0c1d",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-13",
+            "obligation_id": "obl_c52707b400ad",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-13",
+            "obligation_id": "obl_ea13dc882cbe",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-13",
+            "obligation_id": "obl_784b526a577f",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-13",
+            "obligation_id": "obl_3534e2db3a3e",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-13",
+            "obligation_id": "obl_d8232e143479",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-13",
+            "obligation_id": "obl_b6d7d645d1c7",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_316c4d38be11",
+            "name": "Bill 2",
+            "amount": 50.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_4b9a00167617",
+            "name": "Bill 2",
+            "amount": 50.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_2a5df7280642",
+            "name": "Bill 2",
+            "amount": 50.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_d37d48f04470",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_cc08356d624a",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_6ee3549e0c1d",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_2ea4d49b540e",
+            "name": "Internet",
+            "amount": 150.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_13b9f57d2304",
+            "name": "Internet",
+            "amount": 150.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_5176783ccf00",
+            "name": "Internet",
+            "amount": 150.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_3e2e479b8195",
+            "name": "Utilities",
+            "amount": 200.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_b8e3bd52bae4",
+            "name": "Utilities",
+            "amount": 200.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_97e7210bf2d5",
+            "name": "Utilities",
+            "amount": 200.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-20",
+            "obligation_id": "obl_c52707b400ad",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-20",
+            "obligation_id": "obl_ea13dc882cbe",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-20",
+            "obligation_id": "obl_784b526a577f",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-20",
+            "obligation_id": "obl_3534e2db3a3e",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-20",
+            "obligation_id": "obl_d8232e143479",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-20",
+            "obligation_id": "obl_b6d7d645d1c7",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-22",
+            "obligation_id": "obl_d37d48f04470",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-22",
+            "obligation_id": "obl_cc08356d624a",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-22",
+            "obligation_id": "obl_6ee3549e0c1d",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-27",
+            "obligation_id": "obl_c52707b400ad",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-27",
+            "obligation_id": "obl_ea13dc882cbe",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-27",
+            "obligation_id": "obl_784b526a577f",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-27",
+            "obligation_id": "obl_3534e2db3a3e",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-27",
+            "obligation_id": "obl_d8232e143479",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-27",
+            "obligation_id": "obl_b6d7d645d1c7",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-29",
+            "obligation_id": "obl_d37d48f04470",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-29",
+            "obligation_id": "obl_cc08356d624a",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-29",
+            "obligation_id": "obl_6ee3549e0c1d",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_81554091d4d2",
+            "name": "Bill",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "off"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_8df2c835cc7b",
+            "name": "Bill",
+            "amount": 500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_3220f86d1913",
+            "name": "Bill",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "off"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_8465d1c000f0",
+            "name": "Bill",
+            "amount": 500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_719aabdfc8da",
+            "name": "Bill",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "off"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_ad520b87d020",
+            "name": "Bill",
+            "amount": 500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_8b055f20b5d4",
+            "name": "Bill 1",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_9cd11224ac84",
+            "name": "Bill 1",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_a2b8090f152c",
+            "name": "Bill 1",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_7a6606368f16",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "Landlord",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_07e9a856632e",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "housing",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_2c4931eeb6dd",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_71610944537f",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_4c3fdafbcb85",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_f6ee40fba990",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "off"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_f0e578b06c40",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "Landlord",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_9181a7e725f8",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "housing",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_1ffdfa020892",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_fce8adacfe25",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_604cbe0c2acf",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_43b2098a8754",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "off"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_7ab2c76b5117",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "Landlord",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_0cc765852447",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "housing",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_6db857c09e9d",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_698047e2ebbd",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_721dde6d66e0",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_874aa58129cd",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "off"
+          }
+        ],
+        "warnings": []
+      },
+      "warnings": [],
+      "created_at": "2026-01-03T08:47:16.982084+00:00"
+    },
+    {
+      "id": "mcl_e323a8943ca5",
+      "month": "2026-01",
+      "ledger": {
+        "date_from": "2026-01-01",
+        "date_to": "2026-01-31",
+        "income": 52000.0,
+        "expense": 10050.0,
+        "net": 41950.0,
+        "count": 49
+      },
+      "bills_buffer": {
+        "days": 30,
+        "required": 41550.0,
+        "items": [
+          {
+            "date": "2026-01-06",
+            "obligation_id": "obl_c52707b400ad",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-06",
+            "obligation_id": "obl_ea13dc882cbe",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-06",
+            "obligation_id": "obl_784b526a577f",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-06",
+            "obligation_id": "obl_3534e2db3a3e",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-06",
+            "obligation_id": "obl_d8232e143479",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-06",
+            "obligation_id": "obl_b6d7d645d1c7",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-08",
+            "obligation_id": "obl_d37d48f04470",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-08",
+            "obligation_id": "obl_cc08356d624a",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-08",
+            "obligation_id": "obl_6ee3549e0c1d",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-13",
+            "obligation_id": "obl_c52707b400ad",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-13",
+            "obligation_id": "obl_ea13dc882cbe",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-13",
+            "obligation_id": "obl_784b526a577f",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-13",
+            "obligation_id": "obl_3534e2db3a3e",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-13",
+            "obligation_id": "obl_d8232e143479",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-13",
+            "obligation_id": "obl_b6d7d645d1c7",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_316c4d38be11",
+            "name": "Bill 2",
+            "amount": 50.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_4b9a00167617",
+            "name": "Bill 2",
+            "amount": 50.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_2a5df7280642",
+            "name": "Bill 2",
+            "amount": 50.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_d37d48f04470",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_cc08356d624a",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_6ee3549e0c1d",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_2ea4d49b540e",
+            "name": "Internet",
+            "amount": 150.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_13b9f57d2304",
+            "name": "Internet",
+            "amount": 150.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_5176783ccf00",
+            "name": "Internet",
+            "amount": 150.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_704ed6776342",
+            "name": "Internet",
+            "amount": 150.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_546bd7d0a01b",
+            "name": "Internet",
+            "amount": 150.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_391f41848b20",
+            "name": "Internet",
+            "amount": 150.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_3e2e479b8195",
+            "name": "Utilities",
+            "amount": 200.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_b8e3bd52bae4",
+            "name": "Utilities",
+            "amount": 200.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_97e7210bf2d5",
+            "name": "Utilities",
+            "amount": 200.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-20",
+            "obligation_id": "obl_c52707b400ad",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-20",
+            "obligation_id": "obl_ea13dc882cbe",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-20",
+            "obligation_id": "obl_784b526a577f",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-20",
+            "obligation_id": "obl_3534e2db3a3e",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-20",
+            "obligation_id": "obl_d8232e143479",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-20",
+            "obligation_id": "obl_b6d7d645d1c7",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-22",
+            "obligation_id": "obl_d37d48f04470",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-22",
+            "obligation_id": "obl_cc08356d624a",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-22",
+            "obligation_id": "obl_6ee3549e0c1d",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-27",
+            "obligation_id": "obl_c52707b400ad",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-27",
+            "obligation_id": "obl_ea13dc882cbe",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-27",
+            "obligation_id": "obl_784b526a577f",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-27",
+            "obligation_id": "obl_3534e2db3a3e",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-27",
+            "obligation_id": "obl_d8232e143479",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-27",
+            "obligation_id": "obl_b6d7d645d1c7",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-29",
+            "obligation_id": "obl_d37d48f04470",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-29",
+            "obligation_id": "obl_cc08356d624a",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-29",
+            "obligation_id": "obl_6ee3549e0c1d",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_81554091d4d2",
+            "name": "Bill",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "off"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_8df2c835cc7b",
+            "name": "Bill",
+            "amount": 500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_3220f86d1913",
+            "name": "Bill",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "off"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_8465d1c000f0",
+            "name": "Bill",
+            "amount": 500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_719aabdfc8da",
+            "name": "Bill",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "off"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_ad520b87d020",
+            "name": "Bill",
+            "amount": 500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_8b055f20b5d4",
+            "name": "Bill 1",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_9cd11224ac84",
+            "name": "Bill 1",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_a2b8090f152c",
+            "name": "Bill 1",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_7a6606368f16",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "Landlord",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_07e9a856632e",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "housing",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_2c4931eeb6dd",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_71610944537f",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_4c3fdafbcb85",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_f6ee40fba990",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "off"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_f0e578b06c40",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "Landlord",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_9181a7e725f8",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "housing",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_1ffdfa020892",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_fce8adacfe25",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_604cbe0c2acf",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_43b2098a8754",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "off"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_7ab2c76b5117",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "Landlord",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_0cc765852447",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "housing",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_6db857c09e9d",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_698047e2ebbd",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_721dde6d66e0",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_874aa58129cd",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "off"
+          }
+        ],
+        "warnings": []
+      },
+      "warnings": [],
+      "created_at": "2026-01-03T08:47:17.109830+00:00"
+    },
+    {
+      "id": "mcl_b18dde4cfd08",
+      "month": "2026-01",
+      "ledger": {
+        "date_from": "2026-01-01",
+        "date_to": "2026-01-31",
+        "income": 52000.0,
+        "expense": 10250.0,
+        "net": 41750.0,
+        "count": 50
+      },
+      "bills_buffer": {
+        "days": 30,
+        "required": 41550.0,
+        "items": [
+          {
+            "date": "2026-01-06",
+            "obligation_id": "obl_c52707b400ad",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-06",
+            "obligation_id": "obl_ea13dc882cbe",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-06",
+            "obligation_id": "obl_784b526a577f",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-06",
+            "obligation_id": "obl_3534e2db3a3e",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-06",
+            "obligation_id": "obl_d8232e143479",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-06",
+            "obligation_id": "obl_b6d7d645d1c7",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-08",
+            "obligation_id": "obl_d37d48f04470",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-08",
+            "obligation_id": "obl_cc08356d624a",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-08",
+            "obligation_id": "obl_6ee3549e0c1d",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-13",
+            "obligation_id": "obl_c52707b400ad",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-13",
+            "obligation_id": "obl_ea13dc882cbe",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-13",
+            "obligation_id": "obl_784b526a577f",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-13",
+            "obligation_id": "obl_3534e2db3a3e",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-13",
+            "obligation_id": "obl_d8232e143479",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-13",
+            "obligation_id": "obl_b6d7d645d1c7",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_316c4d38be11",
+            "name": "Bill 2",
+            "amount": 50.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_4b9a00167617",
+            "name": "Bill 2",
+            "amount": 50.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_2a5df7280642",
+            "name": "Bill 2",
+            "amount": 50.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_d37d48f04470",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_cc08356d624a",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_6ee3549e0c1d",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_2ea4d49b540e",
+            "name": "Internet",
+            "amount": 150.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_13b9f57d2304",
+            "name": "Internet",
+            "amount": 150.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_5176783ccf00",
+            "name": "Internet",
+            "amount": 150.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_704ed6776342",
+            "name": "Internet",
+            "amount": 150.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_546bd7d0a01b",
+            "name": "Internet",
+            "amount": 150.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_391f41848b20",
+            "name": "Internet",
+            "amount": 150.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_3e2e479b8195",
+            "name": "Utilities",
+            "amount": 200.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_b8e3bd52bae4",
+            "name": "Utilities",
+            "amount": 200.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_97e7210bf2d5",
+            "name": "Utilities",
+            "amount": 200.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-20",
+            "obligation_id": "obl_c52707b400ad",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-20",
+            "obligation_id": "obl_ea13dc882cbe",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-20",
+            "obligation_id": "obl_784b526a577f",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-20",
+            "obligation_id": "obl_3534e2db3a3e",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-20",
+            "obligation_id": "obl_d8232e143479",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-20",
+            "obligation_id": "obl_b6d7d645d1c7",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-22",
+            "obligation_id": "obl_d37d48f04470",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-22",
+            "obligation_id": "obl_cc08356d624a",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-22",
+            "obligation_id": "obl_6ee3549e0c1d",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-27",
+            "obligation_id": "obl_c52707b400ad",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-27",
+            "obligation_id": "obl_ea13dc882cbe",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-27",
+            "obligation_id": "obl_784b526a577f",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-27",
+            "obligation_id": "obl_3534e2db3a3e",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-27",
+            "obligation_id": "obl_d8232e143479",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-27",
+            "obligation_id": "obl_b6d7d645d1c7",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-29",
+            "obligation_id": "obl_d37d48f04470",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-29",
+            "obligation_id": "obl_cc08356d624a",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-29",
+            "obligation_id": "obl_6ee3549e0c1d",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_81554091d4d2",
+            "name": "Bill",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "off"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_8df2c835cc7b",
+            "name": "Bill",
+            "amount": 500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_3220f86d1913",
+            "name": "Bill",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "off"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_8465d1c000f0",
+            "name": "Bill",
+            "amount": 500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_719aabdfc8da",
+            "name": "Bill",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "off"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_ad520b87d020",
+            "name": "Bill",
+            "amount": 500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_8b055f20b5d4",
+            "name": "Bill 1",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_9cd11224ac84",
+            "name": "Bill 1",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_a2b8090f152c",
+            "name": "Bill 1",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_7a6606368f16",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "Landlord",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_07e9a856632e",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "housing",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_2c4931eeb6dd",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_71610944537f",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_4c3fdafbcb85",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_f6ee40fba990",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "off"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_f0e578b06c40",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "Landlord",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_9181a7e725f8",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "housing",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_1ffdfa020892",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_fce8adacfe25",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_604cbe0c2acf",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_43b2098a8754",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "off"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_7ab2c76b5117",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "Landlord",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_0cc765852447",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "housing",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_6db857c09e9d",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_698047e2ebbd",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_721dde6d66e0",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_874aa58129cd",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "off"
+          }
+        ],
+        "warnings": []
+      },
+      "warnings": [],
+      "created_at": "2026-01-03T08:47:29.628816+00:00"
+    },
+    {
+      "id": "mcl_a31858f0002d",
+      "month": "2025-12",
+      "ledger": {
+        "date_from": "2025-12-01",
+        "date_to": "2025-12-31",
+        "income": 0.0,
+        "expense": 0.0,
+        "net": 0.0,
+        "count": 0
+      },
+      "bills_buffer": {
+        "days": 30,
+        "required": 41550.0,
+        "items": [
+          {
+            "date": "2026-01-06",
+            "obligation_id": "obl_c52707b400ad",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-06",
+            "obligation_id": "obl_ea13dc882cbe",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-06",
+            "obligation_id": "obl_784b526a577f",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-06",
+            "obligation_id": "obl_3534e2db3a3e",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-06",
+            "obligation_id": "obl_d8232e143479",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-06",
+            "obligation_id": "obl_b6d7d645d1c7",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-08",
+            "obligation_id": "obl_d37d48f04470",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-08",
+            "obligation_id": "obl_cc08356d624a",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-08",
+            "obligation_id": "obl_6ee3549e0c1d",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-13",
+            "obligation_id": "obl_c52707b400ad",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-13",
+            "obligation_id": "obl_ea13dc882cbe",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-13",
+            "obligation_id": "obl_784b526a577f",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-13",
+            "obligation_id": "obl_3534e2db3a3e",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-13",
+            "obligation_id": "obl_d8232e143479",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-13",
+            "obligation_id": "obl_b6d7d645d1c7",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_316c4d38be11",
+            "name": "Bill 2",
+            "amount": 50.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_4b9a00167617",
+            "name": "Bill 2",
+            "amount": 50.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_2a5df7280642",
+            "name": "Bill 2",
+            "amount": 50.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_d37d48f04470",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_cc08356d624a",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_6ee3549e0c1d",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_2ea4d49b540e",
+            "name": "Internet",
+            "amount": 150.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_13b9f57d2304",
+            "name": "Internet",
+            "amount": 150.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_5176783ccf00",
+            "name": "Internet",
+            "amount": 150.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_704ed6776342",
+            "name": "Internet",
+            "amount": 150.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_546bd7d0a01b",
+            "name": "Internet",
+            "amount": 150.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_391f41848b20",
+            "name": "Internet",
+            "amount": 150.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_3e2e479b8195",
+            "name": "Utilities",
+            "amount": 200.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_b8e3bd52bae4",
+            "name": "Utilities",
+            "amount": 200.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_97e7210bf2d5",
+            "name": "Utilities",
+            "amount": 200.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-20",
+            "obligation_id": "obl_c52707b400ad",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-20",
+            "obligation_id": "obl_ea13dc882cbe",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-20",
+            "obligation_id": "obl_784b526a577f",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-20",
+            "obligation_id": "obl_3534e2db3a3e",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-20",
+            "obligation_id": "obl_d8232e143479",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-20",
+            "obligation_id": "obl_b6d7d645d1c7",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-22",
+            "obligation_id": "obl_d37d48f04470",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-22",
+            "obligation_id": "obl_cc08356d624a",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-22",
+            "obligation_id": "obl_6ee3549e0c1d",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-27",
+            "obligation_id": "obl_c52707b400ad",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-27",
+            "obligation_id": "obl_ea13dc882cbe",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-27",
+            "obligation_id": "obl_784b526a577f",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-27",
+            "obligation_id": "obl_3534e2db3a3e",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-27",
+            "obligation_id": "obl_d8232e143479",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-27",
+            "obligation_id": "obl_b6d7d645d1c7",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-29",
+            "obligation_id": "obl_d37d48f04470",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-29",
+            "obligation_id": "obl_cc08356d624a",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-29",
+            "obligation_id": "obl_6ee3549e0c1d",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_81554091d4d2",
+            "name": "Bill",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "off"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_8df2c835cc7b",
+            "name": "Bill",
+            "amount": 500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_3220f86d1913",
+            "name": "Bill",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "off"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_8465d1c000f0",
+            "name": "Bill",
+            "amount": 500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_719aabdfc8da",
+            "name": "Bill",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "off"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_ad520b87d020",
+            "name": "Bill",
+            "amount": 500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_8b055f20b5d4",
+            "name": "Bill 1",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_9cd11224ac84",
+            "name": "Bill 1",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_a2b8090f152c",
+            "name": "Bill 1",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_7a6606368f16",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "Landlord",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_07e9a856632e",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "housing",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_2c4931eeb6dd",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_71610944537f",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_4c3fdafbcb85",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_f6ee40fba990",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "off"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_f0e578b06c40",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "Landlord",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_9181a7e725f8",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "housing",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_1ffdfa020892",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_fce8adacfe25",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_604cbe0c2acf",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_43b2098a8754",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "off"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_7ab2c76b5117",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "Landlord",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_0cc765852447",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "housing",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_6db857c09e9d",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_698047e2ebbd",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_721dde6d66e0",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_874aa58129cd",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "off"
+          }
+        ],
+        "warnings": []
+      },
+      "warnings": [],
+      "created_at": "2026-01-03T08:47:29.638772+00:00"
+    },
+    {
+      "id": "mcl_ff3574d328f6",
+      "month": "2026-01",
+      "ledger": {
+        "date_from": "2026-01-01",
+        "date_to": "2026-01-31",
+        "income": 52000.0,
+        "expense": 10300.0,
+        "net": 41700.0,
+        "count": 51
+      },
+      "bills_buffer": {
+        "days": 30,
+        "required": 42000.0,
+        "items": [
+          {
+            "date": "2026-01-06",
+            "obligation_id": "obl_c52707b400ad",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-06",
+            "obligation_id": "obl_ea13dc882cbe",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-06",
+            "obligation_id": "obl_784b526a577f",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-06",
+            "obligation_id": "obl_3534e2db3a3e",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-06",
+            "obligation_id": "obl_d8232e143479",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-06",
+            "obligation_id": "obl_b6d7d645d1c7",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-08",
+            "obligation_id": "obl_d37d48f04470",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-08",
+            "obligation_id": "obl_cc08356d624a",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-08",
+            "obligation_id": "obl_6ee3549e0c1d",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-13",
+            "obligation_id": "obl_c52707b400ad",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-13",
+            "obligation_id": "obl_ea13dc882cbe",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-13",
+            "obligation_id": "obl_784b526a577f",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-13",
+            "obligation_id": "obl_3534e2db3a3e",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-13",
+            "obligation_id": "obl_d8232e143479",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-13",
+            "obligation_id": "obl_b6d7d645d1c7",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_316c4d38be11",
+            "name": "Bill 2",
+            "amount": 50.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_4b9a00167617",
+            "name": "Bill 2",
+            "amount": 50.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_2a5df7280642",
+            "name": "Bill 2",
+            "amount": 50.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_d37d48f04470",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_cc08356d624a",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_6ee3549e0c1d",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_2ea4d49b540e",
+            "name": "Internet",
+            "amount": 150.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_13b9f57d2304",
+            "name": "Internet",
+            "amount": 150.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_5176783ccf00",
+            "name": "Internet",
+            "amount": 150.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_704ed6776342",
+            "name": "Internet",
+            "amount": 150.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_546bd7d0a01b",
+            "name": "Internet",
+            "amount": 150.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_391f41848b20",
+            "name": "Internet",
+            "amount": 150.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_fee2301c2e73",
+            "name": "Internet",
+            "amount": 150.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_4772dcced8f3",
+            "name": "Internet",
+            "amount": 150.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_a422eac7c3b3",
+            "name": "Internet",
+            "amount": 150.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_3e2e479b8195",
+            "name": "Utilities",
+            "amount": 200.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_b8e3bd52bae4",
+            "name": "Utilities",
+            "amount": 200.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-15",
+            "obligation_id": "obl_97e7210bf2d5",
+            "name": "Utilities",
+            "amount": 200.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-20",
+            "obligation_id": "obl_c52707b400ad",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-20",
+            "obligation_id": "obl_ea13dc882cbe",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-20",
+            "obligation_id": "obl_784b526a577f",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-20",
+            "obligation_id": "obl_3534e2db3a3e",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-20",
+            "obligation_id": "obl_d8232e143479",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-20",
+            "obligation_id": "obl_b6d7d645d1c7",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-22",
+            "obligation_id": "obl_d37d48f04470",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-22",
+            "obligation_id": "obl_cc08356d624a",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-22",
+            "obligation_id": "obl_6ee3549e0c1d",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-27",
+            "obligation_id": "obl_c52707b400ad",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-27",
+            "obligation_id": "obl_ea13dc882cbe",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-27",
+            "obligation_id": "obl_784b526a577f",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-27",
+            "obligation_id": "obl_3534e2db3a3e",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-27",
+            "obligation_id": "obl_d8232e143479",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "food",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-27",
+            "obligation_id": "obl_b6d7d645d1c7",
+            "name": "Food",
+            "amount": 400.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-29",
+            "obligation_id": "obl_d37d48f04470",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-29",
+            "obligation_id": "obl_cc08356d624a",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-01-29",
+            "obligation_id": "obl_6ee3549e0c1d",
+            "name": "Groceries",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_81554091d4d2",
+            "name": "Bill",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "off"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_8df2c835cc7b",
+            "name": "Bill",
+            "amount": 500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_3220f86d1913",
+            "name": "Bill",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "off"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_8465d1c000f0",
+            "name": "Bill",
+            "amount": 500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_719aabdfc8da",
+            "name": "Bill",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "off"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_ad520b87d020",
+            "name": "Bill",
+            "amount": 500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_8b055f20b5d4",
+            "name": "Bill 1",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_9cd11224ac84",
+            "name": "Bill 1",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_a2b8090f152c",
+            "name": "Bill 1",
+            "amount": 100.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_7a6606368f16",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "Landlord",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_07e9a856632e",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "housing",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_2c4931eeb6dd",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_71610944537f",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_4c3fdafbcb85",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_f6ee40fba990",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "off"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_f0e578b06c40",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "Landlord",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_9181a7e725f8",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "housing",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_1ffdfa020892",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_fce8adacfe25",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_604cbe0c2acf",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_43b2098a8754",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "off"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_7ab2c76b5117",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "Landlord",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_0cc765852447",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "housing",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_6db857c09e9d",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_698047e2ebbd",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_721dde6d66e0",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "unknown"
+          },
+          {
+            "date": "2026-02-01",
+            "obligation_id": "obl_874aa58129cd",
+            "name": "Rent",
+            "amount": 1500.0,
+            "pay_to": "",
+            "category": "household",
+            "autopay_status": "off"
+          }
+        ],
+        "warnings": []
+      },
+      "warnings": [],
+      "created_at": "2026-01-03T08:47:29.768155+00:00"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+type: job
+name: mini_py
+python: |
+  import os, time
+  print("hi from python job")
+  print("JOB_NAME:", os.environ.get("HEIMDALL_JOB_NAME"))
+  print("sleeping a bit...")
+  time.sleep(1)
+  print("bye")
+timeout: 20

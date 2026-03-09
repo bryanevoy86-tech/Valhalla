@@ -1,0 +1,9 @@
+type: publish
+name: routes_and_migrations
+sources:
+  - "backend/generated_routes/**/*.py"
+  - "migrations/generated/**/*.sql"
+strip_prefixes:
+  - "backend/"
+  - "migrations/"
+note: "Just the latest routes + migration SQL, trimmed paths"

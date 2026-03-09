@@ -1,0 +1,10 @@
+type: bundle
+tasks:
+  - { type: scaffold_model, name: export_job, table: export_jobs, columns:
+      [ {name: id, type: bigserial, primary_key: true},
+        {name: status, type: text, not_null: true, default: 'pending'},
+        {name: progress, type: int, not_null: true, default: 0},
+        {name: created_at, type: timestamptz, not_null: true, default: now()} ] }
+  - { type: run_migration, file: migrations/generated/export_job.sql }
+  - { type: scaffold_route, name: export_jobs_health, path: /export_jobs/health, method: GET,
+      response: {"ok": true, "service": "export_jobs"} }

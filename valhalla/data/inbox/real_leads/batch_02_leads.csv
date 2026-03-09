@@ -1,0 +1,51 @@
+lead_id,name,phone,email,city,property_type,budget,segment,source,score,interested_in,created_at
+PHASE3_B2_L051,Contact 1,+1 (204) 258-9820,contact1@example.com,Thompson,Single Family,"$795,373",Suburban,Phone,100,sell,2025-11-09T16:11:03.565884
+PHASE3_B2_L052,Contact 2,+1 (204) 984-1369,contact2@example.com,Selkirk,Townhouse,"$185,962",Fixer-Upper,Instagram,54,buy,2025-12-02T16:11:03.565884
+PHASE3_B2_L053,Contact 3,+1 (204) 788-9958,contact3@example.com,Portage la Prairie,Multi-Unit,"$554,283",Development,Event,97,sell,2025-10-15T16:11:03.565884
+PHASE3_B2_L054,Contact 4,+1 (204) 844-7122,contact4@example.com,Neepawa,Apartment,"$659,741",New Construction,Instagram,100,buy,2025-11-01T16:11:03.565884
+PHASE3_B2_L055,Contact 5,+1 (204) 902-1883,contact5@example.com,Winnipeg,Mobile Home,"$478,568",New Construction,Website,83,buy,2025-12-08T16:11:03.565884
+PHASE3_B2_L056,Contact 6,+1 (204) 658-1267,contact6@example.com,Neepawa,Townhouse,"$422,308",Commercial,Facebook,70,invest,2025-12-08T16:11:03.565884
+PHASE3_B2_L057,Contact 7,+1 (204) 791-2573,contact7@example.com,Brandon,Mobile Home,"$227,399",Development,Referral,55,invest,2025-10-30T16:11:03.565884
+PHASE3_B2_L058,Contact 8,+1 (204) 749-6062,contact8@example.com,Selkirk,Mixed-Use,"$488,504",New Construction,Event,81,buy,2025-12-13T16:11:03.565884
+PHASE3_B2_L059,Contact 9,+1 (204) 891-8583,contact9@example.com,Thompson,Mobile Home,"$241,733",Condo,Google Ads,59,invest,2025-12-08T16:11:03.565884
+PHASE3_B2_L060,Contact 10,+1 (204) 840-2887,contact10@example.com,Virden,Land,"$499,105",Condo,Referral,92,buy,2025-11-03T16:11:03.565884
+PHASE3_B2_L061,Contact 11,+1 (204) 816-6179,contact11@example.com,Brandon,Mobile Home,"$482,759",Development,Instagram,71,buy,2025-12-04T16:11:03.565884
+PHASE3_B2_L062,Contact 12,+1 (204) 851-7713,contact12@example.com,Thompson,Commercial Space,"$219,853",Development,Instagram,46,buy,2025-11-25T16:11:03.565884
+PHASE3_B2_L063,Contact 13,+1 (204) 603-1507,contact13@example.com,Portage la Prairie,Mixed-Use,"$444,203",Investment,Walk-in,84,invest,2026-01-05T16:11:03.565884
+PHASE3_B2_L064,Contact 14,+1 (204) 428-6929,contact14@example.com,Selkirk,Mixed-Use,"$284,505",Urban,Direct Mail,62,invest,2025-12-05T16:11:03.565884
+PHASE3_B2_L065,Contact 15,+1 (204) 465-9671,contact15@example.com,Winnipeg,Mobile Home,"$556,577",Residential,Facebook,75,buy,2025-11-19T16:11:03.565884
+PHASE3_B2_L066,Contact 16,+1 (204) 463-6158,contact16@example.com,Neepawa,Mixed-Use,"$297,482",Condo,Facebook,66,sell,2025-11-09T16:11:03.565884
+PHASE3_B2_L067,Contact 17,+1 (204) 821-6864,contact17@example.com,Altona,Commercial Space,"$234,924",New Construction,Phone,62,buy,2025-12-11T16:11:03.565884
+PHASE3_B2_L068,Contact 18,+1 (204) 242-5706,contact18@example.com,Morden,Multi-Unit,"$237,860",Investment,Referral,49,sell,2025-10-21T16:11:03.565884
+PHASE3_B2_L069,Contact 19,+1 (204) 527-8737,contact19@example.com,Morden,Mobile Home,"$686,115",Investment,Instagram,100,sell,2025-12-22T16:11:03.565884
+PHASE3_B2_L070,Contact 20,+1 (204) 939-7057,contact20@example.com,Brandon,Single Family,"$314,666",Development,Facebook,70,invest,2025-11-01T16:11:03.565884
+PHASE3_B2_L071,Contact 21,+1 (204) 545-1827,contact21@example.com,Selkirk,Multi-Unit,"$526,635",New Construction,Google Ads,92,buy,2025-11-03T16:11:03.565884
+PHASE3_B2_L072,Contact 22,+1 (204) 959-7252,contact22@example.com,Morden,Multi-Unit,"$405,879",Suburban,Referral,67,invest,2025-11-30T16:11:03.565884
+PHASE3_B2_L073,Contact 23,+1 (204) 483-4333,contact23@example.com,Portage la Prairie,Land,"$181,750",New Construction,Facebook,57,sell,2025-11-04T16:11:03.565884
+PHASE3_B2_L074,Contact 24,+1 (204) 450-8431,contact24@example.com,Altona,Multi-Unit,"$662,913",Investment,Email,100,sell,2025-12-07T16:11:03.565884
+PHASE3_B2_L075,Contact 25,+1 (204) 808-4526,contact25@example.com,Virden,Single Family,"$439,806",Fixer-Upper,Direct Mail,77,buy,2025-12-25T16:11:03.565884
+PHASE3_B2_L076,Contact 26,+1 (204) 441-3080,contact26@example.com,Thompson,Multi-Unit,"$381,149",Fixer-Upper,Instagram,59,invest,2026-01-07T16:11:03.565884
+PHASE3_B2_L077,Contact 27,+1 (204) 507-7698,contact27@example.com,Neepawa,Commercial Space,"$345,579",Investment,Google Ads,49,invest,2025-10-25T16:11:03.565884
+PHASE3_B2_L078,Contact 28,+1 (204) 680-7390,contact28@example.com,Selkirk,Land,"$559,132",Rural,Direct Mail,96,sell,2025-12-25T16:11:03.565884
+PHASE3_B2_L079,Contact 29,+1 (204) 550-4390,contact29@example.com,Thompson,Multi-Unit,"$453,160",Rural,Referral,87,buy,2026-01-06T16:11:03.565884
+PHASE3_B2_L080,Contact 30,+1 (204) 687-7874,contact30@example.com,Altona,Commercial Space,"$744,159",Suburban,Instagram,100,sell,2025-10-16T16:11:03.565884
+PHASE3_B2_L081,Contact 31,+1 (204) 708-6716,contact31@example.com,Thompson,Apartment,"$357,793",Residential,Walk-in,53,invest,2025-12-11T16:11:03.565884
+PHASE3_B2_L082,Contact 32,+1 (204) 601-3619,contact32@example.com,Neepawa,Mixed-Use,"$496,904",New Construction,Facebook,81,sell,2025-12-14T16:11:03.565884
+PHASE3_B2_L083,Contact 33,+1 (204) 876-6216,contact33@example.com,Brandon,Mobile Home,"$544,248",Fixer-Upper,Direct Mail,83,invest,2025-12-18T16:11:03.565884
+PHASE3_B2_L084,Contact 34,+1 (204) 899-1254,contact34@example.com,Neepawa,Apartment,"$634,670",Commercial,Phone,93,invest,2025-11-29T16:11:03.565884
+PHASE3_B2_L085,Contact 35,+1 (204) 681-5191,contact35@example.com,Virden,Commercial Space,"$177,119",Urban,Facebook,56,invest,2025-11-18T16:11:03.565884
+PHASE3_B2_L086,Contact 36,+1 (204) 891-5753,contact36@example.com,Thompson,Townhouse,"$155,656",Rural,Direct Mail,49,invest,2025-12-31T16:11:03.565884
+PHASE3_B2_L087,Contact 37,+1 (204) 896-9045,contact37@example.com,Brandon,Land,"$578,300",Suburban,Direct Mail,100,invest,2025-12-08T16:11:03.565884
+PHASE3_B2_L088,Contact 38,+1 (204) 871-7643,contact38@example.com,Virden,Single Family,"$635,180",Urban,Phone,99,buy,2025-10-15T16:11:03.565884
+PHASE3_B2_L089,Contact 39,+1 (204) 288-6033,contact39@example.com,Brandon,Mobile Home,"$552,160",Rural,Instagram,94,buy,2025-12-04T16:11:03.565884
+PHASE3_B2_L090,Contact 40,+1 (204) 312-7862,contact40@example.com,Dauphin,Mixed-Use,"$235,118",Development,Email,62,sell,2025-12-16T16:11:03.565884
+PHASE3_B2_L091,Contact 41,+1 (204) 613-8623,contact41@example.com,Selkirk,Land,"$668,801",Fixer-Upper,Facebook,100,buy,2025-10-28T16:11:03.565884
+PHASE3_B2_L092,Contact 42,+1 (204) 742-2860,contact42@example.com,Neepawa,Land,"$281,570",Fixer-Upper,Facebook,41,sell,2025-12-24T16:11:03.565884
+PHASE3_B2_L093,Contact 43,+1 (204) 794-9441,contact43@example.com,Altona,Multi-Unit,"$491,533",Residential,Phone,71,sell,2026-01-05T16:11:03.565884
+PHASE3_B2_L094,Contact 44,+1 (204) 741-7282,contact44@example.com,Brandon,Apartment,"$307,853",Fixer-Upper,Google Ads,66,sell,2026-01-01T16:11:03.565884
+PHASE3_B2_L095,Contact 45,+1 (204) 252-1461,contact45@example.com,Portage la Prairie,Single Family,"$642,881",Development,Walk-in,100,buy,2025-10-13T16:11:03.565884
+PHASE3_B2_L096,Contact 46,+1 (204) 837-9245,contact46@example.com,Morden,Mixed-Use,"$298,521",Residential,Direct Mail,56,sell,2025-12-02T16:11:03.565884
+PHASE3_B2_L097,Contact 47,+1 (204) 254-5530,contact47@example.com,Selkirk,Single Family,"$635,189",Development,Website,100,invest,2026-01-05T16:11:03.565884
+PHASE3_B2_L098,Contact 48,+1 (204) 471-1007,contact48@example.com,Neepawa,Mixed-Use,"$607,383",Fixer-Upper,Instagram,88,sell,2026-01-05T16:11:03.565884
+PHASE3_B2_L099,Contact 49,+1 (204) 326-7240,contact49@example.com,Altona,Multi-Unit,"$185,418",Urban,Email,56,sell,2025-11-15T16:11:03.565884
+PHASE3_B2_L100,Contact 50,+1 (204) 965-6483,contact50@example.com,Brandon,Mixed-Use,"$637,371",Commercial,Walk-in,85,sell,2025-11-06T16:11:03.565884

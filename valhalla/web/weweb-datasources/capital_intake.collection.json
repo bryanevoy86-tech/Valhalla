@@ -1,0 +1,8 @@
+{
+  "name": "capital_intake.collection",
+  "datasource": "Valhalla API",
+  "requests": [
+    {"name":"list","method":"GET","url":"/capital/intake","cacheSeconds": 0},
+    {"name":"create","method":"POST","url":"/capital/intake","bodyTemplate": {"source":"","amount":0,"currency":"USD","note":""}}
+  ]
+}

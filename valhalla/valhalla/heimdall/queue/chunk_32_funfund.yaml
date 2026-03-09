@@ -1,0 +1,8 @@
+kind: frontend
+name: funfund
+actions:
+  - type: create_page
+    path: frontend/pages/Funfund.autogen.jsx
+    route: "/funfund"
+    requiresRole: ["operator","admin","owner"]
+notes: "API in backend/app/routers/funfund.py; autogen stub appears if full page not added."

@@ -1,0 +1,70 @@
+from fastapi import APIRouter, HTTPException
+from typing import Dict, List
+from pydantic import BaseModel
+from datetime import datetime, date
+from backend.db import get_conn
+
+router = APIRouter(prefix="{{ prefix }}", tags=["{{ tag }}"])
+
+# ---- schemas ----
+class {{ item_create_class }}(BaseModel):
+{% for f in fields -%}
+    {{ f.name }}: {{ f.py_type }}{% if f.default is not none %} = {{ f.default }}{% endif %}
+{% endfor %}
+
+class {{ item_class }}({{ item_create_class }}):
+    id: int
+
+# ---- SQL constants (static strings from template, safe) ----
+TABLE = "{{ table }}"
+COLS = "{{ cols_csv }}"                # "id, title, done"
+COLS_LIST = [{{ cols_list }}]          # ["id", "title", "done"]
+INSERT_COLS = "{{ insert_cols_csv }}"  # "title, done"
+PLACEHOLDERS = "{{ placeholders }}"    # "%s, %s"
+
+# ---- helpers ----
+def _row_to_dict(row) -> Dict:
+    return {k: v for k, v in zip(COLS_LIST, row)}
+
+# ---- endpoints ----
+@router.get("/", response_model=List[{{ item_class }}])
+async def list_{{ resource }}():
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(f"SELECT {COLS} FROM {TABLE} ORDER BY id ASC")
+            rows = cur.fetchall()
+    return [_row_to_dict(r) for r in rows]
+
+@router.post("/", response_model={{ item_class }})
+async def create_{{ resource }}(payload: {{ item_create_class }}):
+    values = [payload.{{ f.name }}{% if not loop.last %}, {% endif %}{% endfor %}]
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                f"INSERT INTO {TABLE} ({INSERT_COLS}) VALUES ({PLACEHOLDERS}) RETURNING {COLS}",
+                values
+            )
+            row = cur.fetchone()
+    if not row:
+        raise HTTPException(500, "insert failed")
+    return _row_to_dict(row)
+
+@router.get("/{item_id}", response_model={{ item_class }})
+async def get_{{ resource }}(item_id: int):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(f"SELECT {COLS} FROM {TABLE} WHERE id = %s", (item_id,))
+            row = cur.fetchone()
+    if not row:
+        raise HTTPException(404, "not found")
+    return _row_to_dict(row)
+
+@router.delete("/{item_id}", response_model=dict)
+async def delete_{{ resource }}(item_id: int):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(f"DELETE FROM {TABLE} WHERE id = %s RETURNING id", (item_id,))
+            ret = cur.fetchone()
+    if not ret:
+        raise HTTPException(404, "not found")
+    return {"deleted": ret[0]}

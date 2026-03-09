@@ -1,0 +1,101 @@
+{
+  "timestamp": "2026-01-07T22:03:44.751349",
+  "summary": {
+    "total_rows": 10,
+    "valid_leads": 10,
+    "invalid_leads": 0,
+    "success_rate": "100.0%"
+  },
+  "leads": [
+    {
+      "name": "John Doe",
+      "email": "john.doe@realestate.com",
+      "value": 500000.0,
+      "location": "Houston TX",
+      "phone": "713-555-0123",
+      "source": "CSV_IMPORT",
+      "ingestion_date": "2026-01-07T22:03:44.726603"
+    },
+    {
+      "name": "Jane Smith",
+      "email": "jane.smith@homes.com",
+      "value": 750000.0,
+      "location": "Dallas TX",
+      "phone": "214-555-0456",
+      "source": "CSV_IMPORT",
+      "ingestion_date": "2026-01-07T22:03:44.728537"
+    },
+    {
+      "name": "Bob Wilson",
+      "email": "bob.wilson@properties.com",
+      "value": 600000.0,
+      "location": "Austin TX",
+      "phone": "512-555-0789",
+      "source": "CSV_IMPORT",
+      "ingestion_date": "2026-01-07T22:03:44.730372"
+    },
+    {
+      "name": "Sarah Johnson",
+      "email": "sarah.j@realestateplus.com",
+      "value": 950000.0,
+      "location": "San Antonio TX",
+      "phone": "210-555-0321",
+      "source": "CSV_IMPORT",
+      "ingestion_date": "2026-01-07T22:03:44.732114"
+    },
+    {
+      "name": "Mike Brown",
+      "email": "mike.brown@homebuyers.com",
+      "value": 425000.0,
+      "location": "Houston TX",
+      "phone": "713-555-0654",
+      "source": "CSV_IMPORT",
+      "ingestion_date": "2026-01-07T22:03:44.733908"
+    },
+    {
+      "name": "Emily Davis",
+      "email": "emily.davis@realty.com",
+      "value": 825000.0,
+      "location": "Dallas TX",
+      "phone": "214-555-0987",
+      "source": "CSV_IMPORT",
+      "ingestion_date": "2026-01-07T22:03:44.735947"
+    },
+    {
+      "name": "David Martinez",
+      "email": "david.m@properties.com",
+      "value": 550000.0,
+      "location": "Austin TX",
+      "phone": "512-555-1234",
+      "source": "CSV_IMPORT",
+      "ingestion_date": "2026-01-07T22:03:44.738512"
+    },
+    {
+      "name": "Jennifer Lee",
+      "email": "jen.lee@homes.com",
+      "value": 1200000.0,
+      "location": "San Antonio TX",
+      "phone": "210-555-5678",
+      "source": "CSV_IMPORT",
+      "ingestion_date": "2026-01-07T22:03:44.741566"
+    },
+    {
+      "name": "James Anderson",
+      "email": "james.a@realestateplus.com",
+      "value": 680000.0,
+      "location": "Houston TX",
+      "phone": "713-555-9999",
+      "source": "CSV_IMPORT",
+      "ingestion_date": "2026-01-07T22:03:44.743652"
+    },
+    {
+      "name": "Lisa Taylor",
+      "email": "lisa.t@homebuyers.com",
+      "value": 890000.0,
+      "location": "Dallas TX",
+      "phone": "214-555-8888",
+      "source": "CSV_IMPORT",
+      "ingestion_date": "2026-01-07T22:03:44.745771"
+    }
+  ]
+}

@@ -1,0 +1,275 @@
+{
+  "updated_at": "2026-01-03T07:52:32.247166+00:00",
+  "items": [
+    {
+      "id": "ye_f18875df55cc",
+      "created_at": "2026-01-03T07:52:05.295912+00:00",
+      "export": {
+        "year": 2026,
+        "currency": "CAD",
+        "generated_at": "2026-01-03T07:52:05.295814+00:00",
+        "totals": {
+          "receipts_total": 0.0,
+          "payments_total": 0.0,
+          "grand_total": 0.0
+        },
+        "by_month": {},
+        "receipt_by_category": {},
+        "receipt_by_risk": {
+          "safe": 0.0,
+          "medium": 0.0,
+          "aggressive": 0.0,
+          "unknown": 0.0
+        },
+        "counts": {
+          "receipts": 0,
+          "payments": 0
+        },
+        "warnings": [
+          "payments unavailable: AttributeError: module 'backend.app.core_gov.budget.store' has no attribute 'list_payments'"
+        ],
+        "note": "Export is informational and audit-ready structure. Improve by categorizing receipts and adding tags."
+      }
+    },
+    {
+      "id": "ye_2050d6af4c0f",
+      "created_at": "2026-01-03T07:52:05.302257+00:00",
+      "export": {
+        "year": 2026,
+        "currency": "CAD",
+        "generated_at": "2026-01-03T07:52:05.302204+00:00",
+        "totals": {
+          "receipts_total": 0.0,
+          "payments_total": 0.0,
+          "grand_total": 0.0
+        },
+        "by_month": {},
+        "receipt_by_category": {},
+        "receipt_by_risk": {
+          "safe": 0.0,
+          "medium": 0.0,
+          "aggressive": 0.0,
+          "unknown": 0.0
+        },
+        "counts": {
+          "receipts": 0,
+          "payments": 0
+        },
+        "warnings": [
+          "payments unavailable: AttributeError: module 'backend.app.core_gov.budget.store' has no attribute 'list_payments'"
+        ],
+        "note": "Export is informational and audit-ready structure. Improve by categorizing receipts and adding tags."
+      }
+    },
+    {
+      "id": "ye_833f23bfc089",
+      "created_at": "2026-01-03T07:52:05.330018+00:00",
+      "export": {
+        "year": 2026,
+        "currency": "CAD",
+        "generated_at": "2026-01-03T07:52:05.329959+00:00",
+        "totals": {
+          "receipts_total": 0.0,
+          "payments_total": 0.0,
+          "grand_total": 0.0
+        },
+        "by_month": {},
+        "receipt_by_category": {},
+        "receipt_by_risk": {
+          "safe": 0.0,
+          "medium": 0.0,
+          "aggressive": 0.0,
+          "unknown": 0.0
+        },
+        "counts": {
+          "receipts": 0,
+          "payments": 0
+        },
+        "warnings": [
+          "payments unavailable: AttributeError: module 'backend.app.core_gov.budget.store' has no attribute 'list_payments'"
+        ],
+        "note": "Export is informational and audit-ready structure. Improve by categorizing receipts and adding tags."
+      }
+    },
+    {
+      "id": "ye_11555305d62b",
+      "created_at": "2026-01-03T07:52:23.720771+00:00",
+      "export": {
+        "year": 2026,
+        "currency": "CAD",
+        "generated_at": "2026-01-03T07:52:23.720729+00:00",
+        "totals": {
+          "receipts_total": 0.0,
+          "payments_total": 0.0,
+          "grand_total": 0.0
+        },
+        "by_month": {},
+        "receipt_by_category": {},
+        "receipt_by_risk": {
+          "safe": 0.0,
+          "medium": 0.0,
+          "aggressive": 0.0,
+          "unknown": 0.0
+        },
+        "counts": {
+          "receipts": 0,
+          "payments": 0
+        },
+        "warnings": [
+          "payments unavailable: AttributeError: module 'backend.app.core_gov.budget.store' has no attribute 'list_payments'"
+        ],
+        "note": "Export is informational and audit-ready structure. Improve by categorizing receipts and adding tags."
+      }
+    },
+    {
+      "id": "ye_df1e8fac5a34",
+      "created_at": "2026-01-03T07:52:23.726151+00:00",
+      "export": {
+        "year": 2026,
+        "currency": "CAD",
+        "generated_at": "2026-01-03T07:52:23.726095+00:00",
+        "totals": {
+          "receipts_total": 0.0,
+          "payments_total": 0.0,
+          "grand_total": 0.0
+        },
+        "by_month": {},
+        "receipt_by_category": {},
+        "receipt_by_risk": {
+          "safe": 0.0,
+          "medium": 0.0,
+          "aggressive": 0.0,
+          "unknown": 0.0
+        },
+        "counts": {
+          "receipts": 0,
+          "payments": 0
+        },
+        "warnings": [
+          "payments unavailable: AttributeError: module 'backend.app.core_gov.budget.store' has no attribute 'list_payments'"
+        ],
+        "note": "Export is informational and audit-ready structure. Improve by categorizing receipts and adding tags."
+      }
+    },
+    {
+      "id": "ye_c6fa6ad0429d",
+      "created_at": "2026-01-03T07:52:23.752713+00:00",
+      "export": {
+        "year": 2026,
+        "currency": "CAD",
+        "generated_at": "2026-01-03T07:52:23.752670+00:00",
+        "totals": {
+          "receipts_total": 0.0,
+          "payments_total": 0.0,
+          "grand_total": 0.0
+        },
+        "by_month": {},
+        "receipt_by_category": {},
+        "receipt_by_risk": {
+          "safe": 0.0,
+          "medium": 0.0,
+          "aggressive": 0.0,
+          "unknown": 0.0
+        },
+        "counts": {
+          "receipts": 0,
+          "payments": 0
+        },
+        "warnings": [
+          "payments unavailable: AttributeError: module 'backend.app.core_gov.budget.store' has no attribute 'list_payments'"
+        ],
+        "note": "Export is informational and audit-ready structure. Improve by categorizing receipts and adding tags."
+      }
+    },
+    {
+      "id": "ye_983214a22137",
+      "created_at": "2026-01-03T07:52:32.193257+00:00",
+      "export": {
+        "year": 2026,
+        "currency": "CAD",
+        "generated_at": "2026-01-03T07:52:32.193216+00:00",
+        "totals": {
+          "receipts_total": 0.0,
+          "payments_total": 0.0,
+          "grand_total": 0.0
+        },
+        "by_month": {},
+        "receipt_by_category": {},
+        "receipt_by_risk": {
+          "safe": 0.0,
+          "medium": 0.0,
+          "aggressive": 0.0,
+          "unknown": 0.0
+        },
+        "counts": {
+          "receipts": 0,
+          "payments": 0
+        },
+        "warnings": [
+          "payments unavailable: AttributeError: module 'backend.app.core_gov.budget.store' has no attribute 'list_payments'"
+        ],
+        "note": "Export is informational and audit-ready structure. Improve by categorizing receipts and adding tags."
+      }
+    },
+    {
+      "id": "ye_780fb0293bca",
+      "created_at": "2026-01-03T07:52:32.197636+00:00",
+      "export": {
+        "year": 2026,
+        "currency": "CAD",
+        "generated_at": "2026-01-03T07:52:32.197596+00:00",
+        "totals": {
+          "receipts_total": 0.0,
+          "payments_total": 0.0,
+          "grand_total": 0.0
+        },
+        "by_month": {},
+        "receipt_by_category": {},
+        "receipt_by_risk": {
+          "safe": 0.0,
+          "medium": 0.0,
+          "aggressive": 0.0,
+          "unknown": 0.0
+        },
+        "counts": {
+          "receipts": 0,
+          "payments": 0
+        },
+        "warnings": [
+          "payments unavailable: AttributeError: module 'backend.app.core_gov.budget.store' has no attribute 'list_payments'"
+        ],
+        "note": "Export is informational and audit-ready structure. Improve by categorizing receipts and adding tags."
+      }
+    },
+    {
+      "id": "ye_231c374dcf17",
+      "created_at": "2026-01-03T07:52:32.246281+00:00",
+      "export": {
+        "year": 2026,
+        "currency": "CAD",
+        "generated_at": "2026-01-03T07:52:32.246238+00:00",
+        "totals": {
+          "receipts_total": 0.0,
+          "payments_total": 0.0,
+          "grand_total": 0.0
+        },
+        "by_month": {},
+        "receipt_by_category": {},
+        "receipt_by_risk": {
+          "safe": 0.0,
+          "medium": 0.0,
+          "aggressive": 0.0,
+          "unknown": 0.0
+        },
+        "counts": {
+          "receipts": 0,
+          "payments": 0
+        },
+        "warnings": [
+          "payments unavailable: AttributeError: module 'backend.app.core_gov.budget.store' has no attribute 'list_payments'"
+        ],
+        "note": "Export is informational and audit-ready structure. Improve by categorizing receipts and adding tags."
+      }
+    }
+  ]
+}

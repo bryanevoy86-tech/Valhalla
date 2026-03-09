@@ -3,4 +3,3 @@ template: demo/hello.txt.j2
 output: out/hello.txt
 context:
   name: "Bryan"
-  timestamp: "!now"

@@ -4,6 +4,7 @@ Background jobs for generating and updating embeddings on research documents.
 
 import json
 from sqlalchemy.orm import Session
+
 from app.core.db import SessionLocal
 from app.core.embedding_utils import embed_text
 from app.models.research import ResearchDoc

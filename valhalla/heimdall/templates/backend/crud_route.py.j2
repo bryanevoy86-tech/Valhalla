@@ -1,0 +1,43 @@
+from fastapi import APIRouter, HTTPException
+from typing import Dict, List
+from pydantic import BaseModel
+from datetime import datetime, date
+
+router = APIRouter(prefix="{{ prefix }}", tags=["{{ tag }}"])
+
+class {{ item_create_class }}(BaseModel):
+{% for f in fields -%}
+    {{ f.name }}: {{ f.py_type }}{% if f.default is not none %} = {{ f.default }}{% endif %}
+{% endfor %}
+
+class {{ item_class }}({{ item_create_class }}):
+    id: int
+
+_STORE: Dict[int, {{ item_class }}] = {}
+_COUNTER = 0
+
+@router.get("/", response_model=List[{{ item_class }}])
+async def list_{{ resource }}():
+    return list(_STORE.values())
+
+@router.post("/", response_model={{ item_class }})
+async def create_{{ resource }}(payload: {{ item_create_class }}):
+    global _COUNTER
+    _COUNTER += 1
+    item = {{ item_class }}(id=_COUNTER, **payload.model_dump())
+    _STORE[_COUNTER] = item
+    return item
+
+@router.get("/{item_id}", response_model={{ item_class }})
+async def get_{{ resource }}(item_id: int):
+    item = _STORE.get(item_id)
+    if not item:
+        raise HTTPException(404, "not found")
+    return item
+
+@router.delete("/{item_id}", response_model=dict)
+async def delete_{{ resource }}(item_id: int):
+    if item_id in _STORE:
+        del _STORE[item_id]
+        return {"deleted": item_id}
+    raise HTTPException(404, "not found")

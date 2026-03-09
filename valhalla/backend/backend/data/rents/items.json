@@ -1,0 +1,151 @@
+{
+  "updated_at": "2026-01-03T08:22:27.793449+00:00",
+  "items": [
+    {
+      "id": "rent_27f0513e8b3e",
+      "property_id": "prop_2f98c483",
+      "gross_rent": 2000.0,
+      "other_income": 200.0,
+      "expenses_monthly": {
+        "tax": 300.0,
+        "insurance": 150.0
+      },
+      "loan_pmt_monthly": 1000.0,
+      "notes": "",
+      "meta": {},
+      "status": "active",
+      "created_at": "2026-01-03T08:22:19.895237+00:00",
+      "updated_at": "2026-01-03T08:22:19.895253+00:00"
+    },
+    {
+      "id": "rent_84742a6bab01",
+      "property_id": "prop_bf859d5b",
+      "gross_rent": 2000.0,
+      "other_income": 200.0,
+      "expenses_monthly": {
+        "tax": 300.0,
+        "insurance": 150.0
+      },
+      "loan_pmt_monthly": 0.0,
+      "notes": "",
+      "meta": {},
+      "status": "active",
+      "created_at": "2026-01-03T08:22:19.900577+00:00",
+      "updated_at": "2026-01-03T08:22:19.900592+00:00"
+    },
+    {
+      "id": "rent_7acb507421dc",
+      "property_id": "prop_9dcebe7a",
+      "gross_rent": 3000.0,
+      "other_income": 0.0,
+      "expenses_monthly": {
+        "tax": 300.0
+      },
+      "loan_pmt_monthly": 1000.0,
+      "notes": "",
+      "meta": {},
+      "status": "active",
+      "created_at": "2026-01-03T08:22:19.903137+00:00",
+      "updated_at": "2026-01-03T08:22:19.903143+00:00"
+    },
+    {
+      "id": "rent_fed17822e297",
+      "property_id": "prop_9416171e",
+      "gross_rent": 2500.0,
+      "other_income": 0.0,
+      "expenses_monthly": {},
+      "loan_pmt_monthly": 1000.0,
+      "notes": "",
+      "meta": {},
+      "status": "active",
+      "created_at": "2026-01-03T08:22:19.905835+00:00",
+      "updated_at": "2026-01-03T08:22:19.905848+00:00"
+    },
+    {
+      "id": "rent_58a0a337ba34",
+      "property_id": "prop_ba020748",
+      "gross_rent": 3000.0,
+      "other_income": 0.0,
+      "expenses_monthly": {},
+      "loan_pmt_monthly": 1200.0,
+      "notes": "",
+      "meta": {},
+      "status": "active",
+      "created_at": "2026-01-03T08:22:19.961643+00:00",
+      "updated_at": "2026-01-03T08:22:19.961650+00:00"
+    },
+    {
+      "id": "rent_a9ca41215fcf",
+      "property_id": "prop_13f2b4ac",
+      "gross_rent": 2000.0,
+      "other_income": 200.0,
+      "expenses_monthly": {
+        "tax": 300.0,
+        "insurance": 150.0
+      },
+      "loan_pmt_monthly": 1000.0,
+      "notes": "",
+      "meta": {},
+      "status": "active",
+      "created_at": "2026-01-03T08:22:27.692509+00:00",
+      "updated_at": "2026-01-03T08:22:27.692521+00:00"
+    },
+    {
+      "id": "rent_8b310b04d6de",
+      "property_id": "prop_43141ccc",
+      "gross_rent": 2000.0,
+      "other_income": 200.0,
+      "expenses_monthly": {
+        "tax": 300.0,
+        "insurance": 150.0
+      },
+      "loan_pmt_monthly": 0.0,
+      "notes": "",
+      "meta": {},
+      "status": "active",
+      "created_at": "2026-01-03T08:22:27.695286+00:00",
+      "updated_at": "2026-01-03T08:22:27.695294+00:00"
+    },
+    {
+      "id": "rent_4cba234119d5",
+      "property_id": "prop_255f64cf",
+      "gross_rent": 3000.0,
+      "other_income": 0.0,
+      "expenses_monthly": {
+        "tax": 300.0
+      },
+      "loan_pmt_monthly": 1000.0,
+      "notes": "",
+      "meta": {},
+      "status": "active",
+      "created_at": "2026-01-03T08:22:27.698326+00:00",
+      "updated_at": "2026-01-03T08:22:27.698334+00:00"
+    },
+    {
+      "id": "rent_de136c042772",
+      "property_id": "prop_665358a0",
+      "gross_rent": 2500.0,
+      "other_income": 0.0,
+      "expenses_monthly": {},
+      "loan_pmt_monthly": 1000.0,
+      "notes": "",
+      "meta": {},
+      "status": "active",
+      "created_at": "2026-01-03T08:22:27.701126+00:00",
+      "updated_at": "2026-01-03T08:22:27.701134+00:00"
+    },
+    {
+      "id": "rent_67737f756c6d",
+      "property_id": "prop_b4b09ca5",
+      "gross_rent": 3000.0,
+      "other_income": 0.0,
+      "expenses_monthly": {},
+      "loan_pmt_monthly": 1200.0,
+      "notes": "",
+      "meta": {},
+      "status": "active",
+      "created_at": "2026-01-03T08:22:27.792892+00:00",
+      "updated_at": "2026-01-03T08:22:27.792900+00:00"
+    }
+  ]
+}

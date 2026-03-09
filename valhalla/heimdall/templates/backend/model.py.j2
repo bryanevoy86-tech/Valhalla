@@ -1,0 +1,9 @@
+from __future__ import annotations
+from typing import Any, Dict, Optional
+from datetime import datetime, date
+from pydantic import BaseModel, Field
+
+class {{ class_name }}(BaseModel):
+{% for f in fields -%}
+    {{ f.name }}: {{ f.py_type }}{% if f.default is not none %} = {{ f.default }}{% endif %}
+{% endfor %}

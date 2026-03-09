@@ -1,0 +1,105 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<div class="panel">
+  <div class="flex mb-8 items-center justify-between">
+    <span class="badge">Publish Now</span>
+    <small class="muted">Create and enqueue a <code>type: publish</code> task.</small>
+  </div>
+
+  <div class="form">
+    <label>Preset</label>
+    <select id="preset">
+      <option value="default">Default sources (from config)</option>
+      <option value="job">Latest job (optionally include stdout/stderr)</option>
+      <option value="globs">Custom globs (one per line)</option>
+    </select>
+
+    <div class="grid">
+      <div>
+        <label>Name (zip prefix)</label>
+        <input id="name" placeholder="bundle" />
+      </div>
+      <div>
+        <label>Note (optional)</label>
+        <input id="note" placeholder="Short description for manifest" />
+      </div>
+    </div>
+
+    <div id="jobFields" class="mt-6" style="display:none;">
+      <label>Job name (for “Latest job” preset)</label>
+      <input id="from_job" placeholder="api_smoke" />
+      <div class="grid">
+        <label class="checkbox"><input type="checkbox" id="inc_out" /> Include stdout</label>
+        <label class="checkbox"><input type="checkbox" id="inc_err" /> Include stderr</label>
+      </div>
+    </div>
+
+    <div id="globsFields" class="mt-6" style="display:none;">
+      <label>Sources (one glob per line)</label>
+      <textarea id="sources" rows="5" placeholder="backend/generated_routes/**/*.py&#10;migrations/generated/**/*.sql"></textarea>
+      <label class="mt-4">Strip prefixes (optional, one per line)</label>
+      <textarea id="strip" rows="3" placeholder="backend/&#10;migrations/"></textarea>
+    </div>
+
+    <div class="mt-8">
+      <button class="btn" id="enqueueBtn">Enqueue</button>
+      <span id="status" class="muted ml-4"></span>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const preset = document.getElementById('preset');
+  const jobFields = document.getElementById('jobFields');
+  const globsFields = document.getElementById('globsFields');
+  function refresh() {
+    const p = preset.value;
+    jobFields.style.display = (p === 'job') ? '' : 'none';
+    globsFields.style.display = (p === 'globs') ? '' : 'none';
+  }
+  preset.addEventListener('change', refresh);
+  refresh();
+
+  function linesToList(txt) {
+    return (txt || '').split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+  }
+
+  async function enqueue() {
+    const status = document.getElementById('status');
+    status.textContent = 'Submitting…';
+    const body = {
+      name: document.getElementById('name').value.trim(),
+      note: document.getElementById('note').value.trim()
+    };
+    const p = document.getElementById('preset').value;
+    if (p === 'job') {
+      body.from_job = document.getElementById('from_job').value.trim();
+      body.include_stdout = document.getElementById('inc_out').checked;
+      body.include_stderr = document.getElementById('inc_err').checked;
+    } else if (p === 'globs') {
+      body.sources = linesToList(document.getElementById('sources').value);
+      body.strip_prefixes = linesToList(document.getElementById('strip').value);
+    }
+    try {
+      const res = await fetch(tlink('/admin/heimdall/publish-now'), {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(body)
+      });
+      const js = await res.json();
+      if (js.ok) {
+        status.innerHTML = '✅ Enqueued. <a href="#" onclick="location.href=tlink(\'/admin/heimdall/ui/artifacts\')">Go to Artifacts</a>';
+      } else {
+        status.textContent = '⚠️ Validation failed: ' + JSON.stringify(js.errors || js, null, 2);
+      }
+    } catch (e) {
+      status.textContent = '❌ Error: ' + e;
+    }
+  }
+  document.getElementById('enqueueBtn').addEventListener('click', function(ev){
+    ev.preventDefault(); enqueue();
+  });
+})();
+</script>
+{% endblock %}

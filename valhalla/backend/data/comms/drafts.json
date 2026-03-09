@@ -1,0 +1,19 @@
+{
+  "updated_at": "2026-01-03T01:59:26.849663+00:00",
+  "items": [
+    {
+      "id": "msg_89a7d2949f66",
+      "channel": "sms",
+      "to": "",
+      "subject": "",
+      "body": "Test",
+      "deal_id": null,
+      "contact_id": null,
+      "buyer_id": null,
+      "tags": [],
+      "status": "draft",
+      "created_at": "2026-01-03T01:59:26.849316+00:00",
+      "updated_at": "2026-01-03T01:59:26.849316+00:00"
+    }
+  ]
+}

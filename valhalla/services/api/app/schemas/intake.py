@@ -1,15 +1,35 @@
-from pydantic import BaseModel, Field, ConfigDict, condecimal
-from typing import Optional
-from datetime import datetime
+"""
+Schemas for lead intake and normalization.
+"""
 
-class CapitalIn(BaseModel):
-    source: str = Field(..., max_length=100)
-    amount: condecimal(max_digits=18, decimal_places=2)
-    currency: str = "CAD"
-    note: Optional[str] = None
+from pydantic import BaseModel, EmailStr, ConfigDict
+from typing import Optional, Any, Dict
 
-class CapitalOut(CapitalIn):
-    model_config = ConfigDict(from_attributes=True)
-    
+
+class LeadIn(BaseModel):
+    source: Optional[str] = None
+    name: Optional[str] = None
+    email: Optional[EmailStr] = None
+    phone: Optional[str] = None
+    address: Optional[str] = None
+    region: Optional[str] = None
+    property_type: Optional[str] = None
+    price: Optional[float] = None
+    beds: Optional[int] = None
+    baths: Optional[int] = None
+    notes: Optional[str] = None
+    raw: Optional[Dict[str, Any]] = None  # original payload if any
+
+
+class LeadOut(LeadIn):
     id: int
-    created_at: datetime
+    status: str
+    deal_id: Optional[int] = None
+    
+    model_config = ConfigDict(from_attributes=True)
+
+
+class NormalizeOut(BaseModel):
+    ok: bool
+    lead_id: int
+    deal_id: Optional[int] = None

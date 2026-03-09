@@ -1,0 +1,4 @@
+Checkpoint,Time,CyclesCompleted,LeadsProcessed,CPU_Est,Memory_MB,Status
+1,02:13:43,?,?,2.3,13.5,STABLE
+2,04:13:44,?,?,2.3,13.5,STABLE
+3,06:13:44,?,?,2.3,13.5,STABLE

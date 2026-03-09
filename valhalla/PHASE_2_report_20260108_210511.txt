@@ -1,0 +1,36 @@
+PHASE 2: REVENUE SIMULATION (READ-ONLY)
+=====================================
+UTC Timestamp: 2026-01-08T21:05:11.807285+00:00
+Data Source: csv:C:\dev\valhalla\ops\exports\sandbox_leads_20260108_210452.csv
+
+Bands (USD):
+------------
+[CONSERVATIVE]
+  Leads/day:              3
+  Avg score:              65.0
+  Expected closes/day:    0.135
+  Spread used (USD):      5400.0
+  Cost per lead (USD):    1.5
+  Profit/day (USD):       724.5
+  Profit/week (USD):      5071.5
+  Profit/30d (USD):       21735.0
+
+[EXPECTED]
+  Leads/day:              3
+  Avg score:              65.0
+  Expected closes/day:    0.18
+  Spread used (USD):      10000.0
+  Cost per lead (USD):    1.5
+  Profit/day (USD):       1795.5
+  Profit/week (USD):      12568.5
+  Profit/30d (USD):       53865.0
+
+[AGGRESSIVE]
+  Leads/day:              3
+  Avg score:              65.0
+  Expected closes/day:    0.207
+  Spread used (USD):      14700.0
+  Cost per lead (USD):    1.5
+  Profit/day (USD):       3038.4
+  Profit/week (USD):      21268.8
+  Profit/30d (USD):       91152.0

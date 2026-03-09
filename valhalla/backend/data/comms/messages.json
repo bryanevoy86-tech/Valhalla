@@ -1,0 +1,28 @@
+{
+  "updated_at": "2026-01-03T04:04:07.327593+00:00",
+  "items": [
+    {
+      "id": "cm_eb8597abf874",
+      "title": "Buyer Introduction",
+      "channel": "email",
+      "status": "sent",
+      "tone": "firm",
+      "to": "buyer@example.com",
+      "subject": "Off-Market Opportunity",
+      "body": "Hi there, I have an interesting deal for you. Let me know if interested.",
+      "deal_id": "dl_123",
+      "contact_id": "",
+      "partner_id": "",
+      "tags": [
+        "buyer",
+        "deal"
+      ],
+      "meta": {
+        "delivery_status": "delivered"
+      },
+      "sent_at": "2026-01-03T04:04:07.326887+00:00",
+      "created_at": "2026-01-03T04:04:07.316913+00:00",
+      "updated_at": "2026-01-03T04:04:07.326907+00:00"
+    }
+  ]
+}

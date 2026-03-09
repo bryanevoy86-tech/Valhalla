@@ -1,0 +1,24 @@
+{
+  "timestamp": "2026-01-08T23:52:17.681072",
+  "status": {
+    "blocks_confirmed": true,
+    "sandbox_enabled": true,
+    "dry_run_enabled": true,
+    "worker_started": true,
+    "lead_collection_launched": true,
+    "ops_cockpit_ready": true
+  },
+  "components": [
+    "db_isolation",
+    "sandbox_orchestrator",
+    "dry_run_lock",
+    "worker_process",
+    "lead_ingestor",
+    "verification_suite",
+    "brain_orchestrator",
+    "learning_orchestrator"
+  ],
+  "test_leads": 3,
+  "total_blocks": 30,
+  "all_passed": true
+}

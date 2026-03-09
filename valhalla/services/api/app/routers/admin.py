@@ -3,16 +3,17 @@ Simple migration runner endpoint to create research tables.
 This can be called via the API to run migrations without shell access.
 """
 
-from fastapi import APIRouter, HTTPException, Header
+from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy import text
 import subprocess
 import os
-from typing import Optional
+from app.metrics.service import MetricsService
+from app.metrics.schemas import MetricsOut
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 
-def require_admin_key(x_admin_key: Optional[str] = Header(None)):
+def require_admin_key(x_admin_key: str = None):
     """Require admin key for sensitive operations"""
     expected = os.getenv("HEIMDALL_BUILDER_API_KEY", "")
     if not expected or x_admin_key != expected:
@@ -21,13 +22,11 @@ def require_admin_key(x_admin_key: Optional[str] = Header(None)):
 
 
 @router.post("/migrate")
-def run_migrations(x_admin_key: Optional[str] = Header(None)):
+def run_migrations(_: bool = Depends(require_admin_key)):
     """
     Run Alembic migrations to create/update database tables.
     Requires X-Admin-Key header with HEIMDALL_BUILDER_API_KEY value.
     """
-    require_admin_key(x_admin_key)
-    
     try:
         result = subprocess.run(
             ["alembic", "upgrade", "head"],
@@ -46,17 +45,12 @@ def run_migrations(x_admin_key: Optional[str] = Header(None)):
 
 
 @router.get("/db/check")
-def check_database(x_admin_key: Optional[str] = Header(None)):
+def check_database(_: bool = Depends(require_admin_key)):
     """
     Check if research tables exist in the database.
     Requires X-Admin-Key header.
     """
-    require_admin_key(x_admin_key)
-    
-    try:
-        from app.core.db import SessionLocal
-    except:
-        from valhalla.services.api.app.core.db import SessionLocal
+    from app.core.db import SessionLocal
     
     db = SessionLocal()
     try:
@@ -86,3 +80,9 @@ def check_database(x_admin_key: Optional[str] = Header(None)):
         return {"ok": False, "error": str(e)}
     finally:
         db.close()
+
+
+@router.get("/metrics", response_model=MetricsOut)
+def get_admin_metrics():
+    """Return runtime metrics counters for admin overview."""
+    return MetricsService.get_metrics()

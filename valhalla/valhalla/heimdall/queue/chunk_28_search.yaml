@@ -1,0 +1,8 @@
+kind: frontend
+name: search
+actions:
+  - type: create_page
+    path: frontend/pages/Search.autogen.jsx
+    route: "/search"
+    requiresRole: ["viewer","operator","admin"]
+notes: "Full API in backend/app/routers/search.py; this autogen page is a placeholder."

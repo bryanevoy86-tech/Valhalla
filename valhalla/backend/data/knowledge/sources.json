@@ -1,0 +1,86 @@
+{
+  "updated_at": "2026-01-03T03:24:07.005653+00:00",
+  "items": [
+    {
+      "id": "ks_fa3ff2300240",
+      "source_title": "Valhalla budgeting rules",
+      "source_type": "note",
+      "source_ref": "",
+      "tags": [
+        "budget",
+        "rules",
+        "essential"
+      ],
+      "meta": {},
+      "created_at": "2026-01-03T03:23:06.643005+00:00",
+      "updated_at": "2026-01-03T03:23:06.643005+00:00"
+    },
+    {
+      "id": "ks_f71baf183502",
+      "source_title": "Property investment criteria",
+      "source_type": "doc",
+      "source_ref": "criteria_2026_v2",
+      "tags": [
+        "investing",
+        "criteria"
+      ],
+      "meta": {},
+      "created_at": "2026-01-03T03:23:06.647073+00:00",
+      "updated_at": "2026-01-03T03:23:06.647073+00:00"
+    },
+    {
+      "id": "ks_54994f63c3b4",
+      "source_title": "Valhalla budgeting rules",
+      "source_type": "note",
+      "source_ref": "",
+      "tags": [
+        "budget",
+        "rules",
+        "essential"
+      ],
+      "meta": {},
+      "created_at": "2026-01-03T03:23:37.526715+00:00",
+      "updated_at": "2026-01-03T03:23:37.526715+00:00"
+    },
+    {
+      "id": "ks_c45c85bbfb00",
+      "source_title": "Property investment criteria",
+      "source_type": "doc",
+      "source_ref": "criteria_2026_v2",
+      "tags": [
+        "investing",
+        "criteria"
+      ],
+      "meta": {},
+      "created_at": "2026-01-03T03:23:37.531604+00:00",
+      "updated_at": "2026-01-03T03:23:37.531604+00:00"
+    },
+    {
+      "id": "ks_b21a186c991b",
+      "source_title": "Valhalla budgeting rules",
+      "source_type": "note",
+      "source_ref": "",
+      "tags": [
+        "budget",
+        "rules",
+        "essential"
+      ],
+      "meta": {},
+      "created_at": "2026-01-03T03:24:06.998085+00:00",
+      "updated_at": "2026-01-03T03:24:06.998085+00:00"
+    },
+    {
+      "id": "ks_4348d0a158d4",
+      "source_title": "Property investment criteria",
+      "source_type": "doc",
+      "source_ref": "criteria_2026_v2",
+      "tags": [
+        "investing",
+        "criteria"
+      ],
+      "meta": {},
+      "created_at": "2026-01-03T03:24:07.005148+00:00",
+      "updated_at": "2026-01-03T03:24:07.005148+00:00"
+    }
+  ]
+}

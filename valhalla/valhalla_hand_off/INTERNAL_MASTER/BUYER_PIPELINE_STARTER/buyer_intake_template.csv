@@ -1,0 +1,2 @@
+buyer_id,name,company,email,phone,preferred_areas,price_min,price_max,buy_type,cash_or_finance,close_speed_days,notes,reliability_score
+B001,Example Buyer,Example Co,buyer@example.com,2045550123,"Winnipeg North; Winnipeg West",120000,350000,wholesale,cash,7,"prefers vacant properties",70

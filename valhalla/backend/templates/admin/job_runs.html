@@ -1,0 +1,54 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<div class="panel">
+  <div class="flex items-center justify-between">
+    <span class="badge">Job Runs</span>
+    <small class="muted"><code>{{ name }}</code></small>
+  </div>
+  <table class="table">
+    <thead><tr><th>Run</th><th>Started</th><th>Ended</th><th>RC</th><th>Actions</th></tr></thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td><code>{{ r.ts }}</code></td>
+        <td><small>{{ r.started }}</small></td>
+        <td><small>{{ r.ended }}</small></td>
+        <td>{% if r.rc == 0 %}<span class="badge">OK</span>{% elif r.rc is none %}<span class="muted">?</span>{% else %}<span class="badge warn">ERR</span>{% endif %}</td>
+        <td>
+          <a href="#" onclick="window.open(tlink('/admin/heimdall/ui/job-tail?name={{ name | urlencode }}&ts={{ r.ts | urlencode }}'),'_blank')">tail</a>
+          · <a href="#" onclick="location.href=tlink('/admin/heimdall/ui/job-artifacts?name={{ name | urlencode }}&ts={{ r.ts | urlencode }}')">artifacts</a>
+          {% if request.state.role == 'admin' %}
+            · <a href="#" onclick="zipRun('{{ name | escape }}','{{ r.ts | escape }}'); return false;">zip</a>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+      {% if rows|length == 0 %}
+      <tr><td colspan="5"><small class="muted">No runs yet.</small></td></tr>
+      {% endif %}
+    </tbody>
+  </table>
+  <div id="zip_status" class="muted mt-4"></div>
+</div>
+
+<script>
+async function zipRun(name, ts){
+  const st = document.getElementById('zip_status');
+  st.textContent = 'Zipping…';
+  try{
+    const res = await fetch(tlink('/admin/heimdall/job-zip-run'), {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({name, ts})
+    });
+    const js = await res.json();
+    if(js.ok){
+      st.innerHTML = `✅ Created <code>${js.zip}</code> — <a href="${tlink('/admin/heimdall/ui/download?rel='+encodeURIComponent(js.zip))}" target="_blank">download</a>`;
+    }else{
+      st.innerHTML = `⚠️ ${js.error || 'failed'}`;
+    }
+  }catch(e){
+    st.textContent = '❌ '+e;
+  }
+}
+</script>
+{% endblock %}

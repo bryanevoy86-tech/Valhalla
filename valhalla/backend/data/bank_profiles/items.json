@@ -1,0 +1,95 @@
+{
+  "updated_at": "2026-01-03T08:01:16.667962+00:00",
+  "items": [
+    {
+      "id": "bp_db2e2a7e9b56",
+      "name": "RBC",
+      "mapping": {
+        "date": "Date",
+        "description": "Description",
+        "amount": "Amount"
+      },
+      "notes": "RBC CSV profile",
+      "created_at": "2026-01-03T07:59:25.282058+00:00",
+      "updated_at": "2026-01-03T07:59:25.282069+00:00"
+    },
+    {
+      "id": "bp_a2d44ce8340b",
+      "name": "Profile1",
+      "mapping": {
+        "date": "D"
+      },
+      "notes": "",
+      "created_at": "2026-01-03T07:59:25.286386+00:00",
+      "updated_at": "2026-01-03T07:59:25.286394+00:00"
+    },
+    {
+      "id": "bp_80707dc226dd",
+      "name": "GetTest",
+      "mapping": {
+        "test": "field"
+      },
+      "notes": "",
+      "created_at": "2026-01-03T07:59:25.289662+00:00",
+      "updated_at": "2026-01-03T07:59:25.289674+00:00"
+    },
+    {
+      "id": "bp_3e64d3bc9c7c",
+      "name": "Workflow_6e72e03d",
+      "mapping": {
+        "date": "Date",
+        "description": "Description",
+        "amount": "Amount",
+        "account": "Account"
+      },
+      "notes": "",
+      "created_at": "2026-01-03T07:59:25.567409+00:00",
+      "updated_at": "2026-01-03T07:59:25.567438+00:00"
+    },
+    {
+      "id": "bp_09270e915ba9",
+      "name": "RBC",
+      "mapping": {
+        "date": "Date",
+        "description": "Description",
+        "amount": "Amount"
+      },
+      "notes": "RBC CSV profile",
+      "created_at": "2026-01-03T08:01:16.463190+00:00",
+      "updated_at": "2026-01-03T08:01:16.463203+00:00"
+    },
+    {
+      "id": "bp_688c53bac0fc",
+      "name": "Profile1",
+      "mapping": {
+        "date": "D"
+      },
+      "notes": "",
+      "created_at": "2026-01-03T08:01:16.467897+00:00",
+      "updated_at": "2026-01-03T08:01:16.467906+00:00"
+    },
+    {
+      "id": "bp_c0c3510a784d",
+      "name": "GetTest",
+      "mapping": {
+        "test": "field"
+      },
+      "notes": "",
+      "created_at": "2026-01-03T08:01:16.470153+00:00",
+      "updated_at": "2026-01-03T08:01:16.470162+00:00"
+    },
+    {
+      "id": "bp_09a3e14f4a91",
+      "name": "Workflow_13e27d32",
+      "mapping": {
+        "date": "Date",
+        "description": "Description",
+        "amount": "Amount",
+        "account": "Account"
+      },
+      "notes": "",
+      "created_at": "2026-01-03T08:01:16.667320+00:00",
+      "updated_at": "2026-01-03T08:01:16.667330+00:00"
+    }
+  ]
+}

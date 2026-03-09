@@ -1,0 +1,112 @@
+type: bundle
+tasks:
+  # ---------- SCHEDULES ----------
+  - type: schedule
+    name: autopilot_build_loop
+    timezone: America/Toronto
+    cron: { minute: "*/15" }
+    task: { type: job, name: generate_from_manifest, shell: "python scripts/generate_from_manifest.py", sandbox: false, timeout: 180 }
+
+  - type: schedule
+    name: knowledge_ingest_hourly
+    timezone: America/Toronto
+    cron: { minute: 7 }
+    task: { type: job, name: ingest_sources, shell: "python scripts/ingest/ingest_sources.py", sandbox: false, timeout: 300 }
+
+  - type: schedule
+    name: knowledge_ingest_daily
+    timezone: America/Toronto
+    cron: { hour: 2, minute: 21 }
+    task: { type: job, name: ingest_sources_daily, shell: "python scripts/ingest/ingest_sources.py", sandbox: false, timeout: 600 }
+
+  - type: schedule
+    name: knowledge_summarize_hourly
+    timezone: America/Toronto
+    cron: { minute: 17 }
+    task: { type: job, name: summarize_new_docs, shell: "python scripts/ingest/summarize_new_docs.py", sandbox: false, timeout: 240 }
+
+  - type: schedule
+    name: learning_twice_hourly
+    timezone: America/Toronto
+    cron: { minute: "5,35" }
+    task: { type: job, name: derive_lessons, shell: "python scripts/learn/derive_lessons.py", sandbox: false, timeout: 120 }
+
+  - type: schedule
+    name: nightly_publish
+    timezone: America/Toronto
+    cron: { hour: 3, minute: 15 }
+    task: { type: publish, name: nightly_bundle, note: "nightly autopilot bundle" }
+
+  - type: schedule
+    name: autopilot_heartbeat
+    timezone: America/Toronto
+    cron: { minute: "*/30" }
+    task:
+      type: job
+      name: echo_tick
+      shell: |
+        echo "tick $(date) — Heimdall autopilot alive"
+        mkdir -p artifacts && date > artifacts/when.txt
+      sandbox: true
+      timeout: 60
+
+  # ---------- ONE-TIME KICKOFFS ----------
+  - { type: job, name: ingest_sources_boot,       shell: "python scripts/ingest/ingest_sources.py",       sandbox: false, timeout: 300 }
+  - { type: job, name: summarize_new_docs_boot,   shell: "python scripts/ingest/summarize_new_docs.py",   sandbox: false, timeout: 240 }
+  - { type: job, name: derive_lessons_boot,       shell: "python scripts/learn/derive_lessons.py",        sandbox: false, timeout: 120 }
+  - { type: job, name: generate_from_manifest_boot, shell: "python scripts/generate_from_manifest.py",    sandbox: false, timeout: 180 }
+
+  # Optional: immediate publish so you see bundled outputs right away
+  - { type: publish, name: seed_bundle, note: "seed bundle" }
+
+  - type: schedule
+    name: knowledge_ingest_hourly
+    timezone: America/Toronto
+    cron: { minute: 7 }
+    task: { type: job, name: ingest_sources, shell: "python scripts/ingest/ingest_sources.py", sandbox: false, timeout: 300 }
+
+  - type: schedule
+    name: knowledge_ingest_daily
+    timezone: America/Toronto
+    cron: { hour: 2, minute: 21 }
+    task: { type: job, name: ingest_sources_daily, shell: "python scripts/ingest/ingest_sources.py", sandbox: false, timeout: 600 }
+
+  - type: schedule
+    name: knowledge_summarize_hourly
+    timezone: America/Toronto
+    cron: { minute: 17 }
+    task: { type: job, name: summarize_new_docs, shell: "python scripts/ingest/summarize_new_docs.py", sandbox: false, timeout: 240 }
+
+  - type: schedule
+    name: learning_twice_hourly
+    timezone: America/Toronto
+    cron: { minute: "5,35" }
+    task: { type: job, name: derive_lessons, shell: "python scripts/learn/derive_lessons.py", sandbox: false, timeout: 120 }
+
+  - type: schedule
+    name: nightly_publish
+    timezone: America/Toronto
+    cron: { hour: 3, minute: 15 }
+    task: { type: publish, name: nightly_bundle, note: "nightly autopilot bundle" }
+
+  - type: schedule
+    name: autopilot_heartbeat
+    timezone: America/Toronto
+    cron: { minute: "*/30" }
+    task:
+      type: job
+      name: echo_tick
+      shell: |
+        echo "tick $(date) — Heimdall autopilot alive"
+        mkdir -p artifacts && date > artifacts/when.txt
+      sandbox: true
+      timeout: 60
+
+  # ---------- ONE-TIME KICKOFFS ----------
+  - { type: job, name: ingest_sources_boot,       shell: "python scripts/ingest/ingest_sources.py",       sandbox: false, timeout: 300 }
+  - { type: job, name: summarize_new_docs_boot,   shell: "python scripts/ingest/summarize_new_docs.py",   sandbox: false, timeout: 240 }
+  - { type: job, name: derive_lessons_boot,       shell: "python scripts/learn/derive_lessons.py",        sandbox: false, timeout: 120 }
+  - { type: job, name: generate_from_manifest_boot, shell: "python scripts/generate_from_manifest.py",    sandbox: false, timeout: 180 }
+
+  # Optional: immediate publish so you see bundled outputs right away
+  - { type: publish, name: seed_bundle, note: "seed bundle" }

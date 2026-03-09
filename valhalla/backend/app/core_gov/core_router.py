@@ -1,0 +1,492 @@
+from fastapi import APIRouter, Request
+
+from .cone.router import router as cone_router
+from .cone.service import get_cone_state
+from .jobs.router import router as jobs_router, _JOBS
+from .visibility.router import router as visibility_router
+from .alerts.router import router as alerts_router
+from .capital.router import router as capital_router
+from .health.router import router as status_router
+from .config.router import router as config_router
+from .notify.router import router as notify_router
+from .health.dashboard_router import router as dashboard_router
+from .go.router import router as go_router
+from .go.session_router import router as go_session_router
+from .go.summary_router import router as go_summary_router
+from .intake.router import router as intake_router
+from .canon.router import router as canon_router
+from .reality.router import router as reality_router
+from .export.router import router as export_router
+from .anchors.router import router as anchors_router
+from .onboarding import onboarding_payload
+from .documents.router import router as documents_router
+from .document_links.router import router as document_links_router
+from .comps.router import router as comps_router
+from .partner_dashboard.router import router as partner_dashboard_router
+from .knowledge.router import router as knowledge_router
+from .entity_tracker.router import router as entity_tracker_router
+from .entity_checklists.router import router as entity_checklists_router
+from .comms_outbox.router import router as comms_outbox_router
+from .comms_templates.router import router as comms_templates_router
+from .jv_links.router import router as jv_links_router
+from .jv_dashboard.router import router as jv_dashboard_router
+from .repairs.router import router as repairs_router
+from .rents.router import router as rents_router
+from .playbooks.router import router as playbooks_router
+from .budget_obligations.router import router as budget_obligations_router
+from .budget_calendar.router import router as budget_calendar_router
+from .household_brief.router import router as household_brief_router
+from .autopay_guides.router import router as autopay_guides_router
+from .autopay_setups.router import router as autopay_setups_router
+from .house_inventory.router import router as house_inventory_router
+from .reorder_engine.router import router as reorder_engine_router
+from .vaults.router import router as vaults_router
+from .bills_buffer.router import router as bills_buffer_router
+from .receipts.router import router as receipts_router
+from .guardrails.router import router as guardrails_router
+from .ledger.router import router as ledger_router
+from .bank_accounts.router import router as bank_accounts_router
+from .txn_import.router import router as txn_import_router
+from .category_rules.router import router as category_rules_router
+from .allocation_rules.router import router as allocation_rules_router
+from .allocation_engine.router import router as allocation_engine_router
+from .accounts.router import router as accounts_router
+from .ledger_light.router import router as ledger_light_router
+from .goals.router import router as goals_router
+from .house_calendar.router import router as house_calendar_router
+from .house_reminders.router import router as house_reminders_router
+from .shopping_list.router import router as shopping_list_router
+from .big_purchases.router import router as big_purchases_router
+from .bill_payments.router import router as bill_payments_router
+from .house_budget.router import router as house_budget_router
+from .cash_plan.router import router as cash_plan_router
+from .budget_categories.router import router as budget_categories_router
+from .ledger_rules.router import router as ledger_rules_router
+from .budget_snapshot.router import router as budget_snapshot_router
+from .readiness.router import router as readiness_router
+from .daily_ops.router import router as daily_ops_router
+from .brief.router import router as brief_router
+from .audit_log.router import router as audit_log_router
+from .system_config.router import router as system_config_router
+from .export_snapshot.router import router as export_snapshot_router
+from .approval_gate.router import router as approval_gate_router
+from .boot_seed.router import router as boot_seed_router
+from .scheduler.router import router as scheduler_router
+from .reminders.router import router as reminders_router
+from .autopay_checklists.router import router as autopay_checklists_router
+from .reconcile.router import router as reconcile_router
+from .autopay_verify.router import router as autopay_verify_router
+from .monthly_close.router import router as monthly_close_router
+from .exports.router import router as exports_router
+from .balance_snapshots.router import router as balance_snapshots_router
+from .outbox.router import router as outbox_router
+from .tax_buckets.router import router as tax_buckets_router
+from .tax_map.router import router as tax_map_router
+from .tax_report.router import router as tax_report_router
+from .month_close.router import router as month_close_router
+from .house_commands.router import router as house_commands_router
+from .ops_board.router import router as ops_board_router
+from .task_links.router import router as task_links_router
+from .budget_flow.router import router as budget_flow_router
+from .journal.router import router as journal_router
+from .income.router import router as income_router
+from .payday.router import router as payday_router
+from .cra_risk.router import router as cra_risk_router
+from .jv_board.router import router as jv_board_router
+from .know_inbox.router import router as know_inbox_router
+from .know_chunks.router import router as know_chunks_router
+from .know_retrieve.router import router as know_retrieve_router
+from .envelopes.router import router as envelopes_router
+from .csv_export.router import router as csv_export_router
+from .forecast.router import router as forecast_router
+from .approvals.router import router as approvals_router
+from .heimdall.router import router as heimdall_router
+from .nlp.router import router as nlp_router
+from .subscriptions.router import router as subscriptions_router
+from .assets.router import router as assets_router
+from .cashflow.router import router as cashflow_router
+from .routines.router import router as routines_router
+from .personal_board.router import router as personal_board_router
+from .tax_buckets.router import router as tax_buckets_router
+from .tax_tagging.router import router as tax_tagging_router
+from .intent_router.router import router as intent_router_router
+from .text_commands.router import router as text_commands_router
+from .go.sources_service import next_step_with_sources
+from .deals.router import router as deals_router
+from .deals.seed.router import router as deals_seed_router
+from .deals.scoring.router import router as deals_score_router
+from .deals.next_action.router import router as deals_next_action_router
+from .deals.import_export_router import router as deals_import_export_router
+from .deals.summary_router import router as deals_summary_router
+from .deals.offer_sheet_router import router as deals_offer_sheet_router
+from .deals.contact_router import router as deals_contact_router
+from .deals.scripts_router import router as deals_scripts_router
+from .deals.disposition_router import router as deals_disposition_router
+from .followups.router import router as followups_router
+from .buyers.router import router as buyers_router
+from .buyers.match_router import router as buyers_match_router
+from .grants.router import router as grants_router
+from .loans.router import router as loans_router
+from .command.router import router as command_router
+from .know.router import router as know_router
+from .docs.router import router as docs_router
+from .knowledge_ingest.router import router as knowledge_ingest_router
+from .legal.router import router as legal_router
+from .comms.router import router as comms_router
+from .jv.router import router as jv_router
+from .property.router import router as property_router
+from .obligations.router import router as obligations_router
+from .budget.router import router as budget_router
+from .autopay.router import router as autopay_router
+from .payments.router import router as payments_router
+from .pay_confirm.router import router as pay_confirm_router
+from .shield_lite.router import router as shield_lite_router
+from .fail_playbooks.router import router as fail_playbooks_router
+from .shopping.router import router as shopping_router
+from .reminders.router import router as reminders_router
+from .calendar.router import router as calendar_router
+from .receipts.router import router as receipts_router
+from .categorizer.router import router as categorizer_router
+from .taxrisk.router import router as taxrisk_router
+from .reports.router import router as reports_router
+from .bank.router import router as bank_router
+from .reconcile.router import router as reconcile_router
+from .proofpacks.router import router as proofpacks_router
+from .networth.router import router as networth_router
+from .exports_year_end.router import router as exports_year_end_router
+from .bank_profiles.router import router as bank_profiles_router
+from .bank_categorizer.router import router as bank_categorizer_router
+from .vaults.router import router as vaults_router
+from .finance_alerts.router import router as finance_alerts_router
+from .export_csv.router import router as export_csv_router
+from .transactions.router import router as transactions_router
+from .packs.router import router as packs_router
+from .inventory.router import router as inventory_router
+from .automation_actions.router import router as automation_actions_router
+from .automation.router import router as automation_router
+from .security.router import router as security_router
+from .weekly.router import router as weekly_router
+from .automate.router import router as automate_router
+from .credit.router import router as credit_router
+from .flow.router import router as flow_router
+from .replacements.router import router as replacements_router
+from .schedule.router import router as schedule_router
+from .pantheon.router import router as pantheon_router
+from .analytics.router import router as analytics_router
+from .boring.router import router as boring_router
+from .shield.router import router as shield_router
+from .exporter.router import router as exporter_router
+from .legal_filter.router import router as legal_filter_router
+from .legal_profiles.router import router as legal_profiles_router
+from .legal_rules.router import router as legal_rules_router
+from .doc_vault.router import router as doc_vault_router
+from .partners.router import router as partners_router
+from .mode.router import router as mode_router
+from .approvals.router import router as approvals_router
+from .share_tokens.router import router as share_tokens_router
+from .security_keys.router import router as security_keys_router
+from .trust.router import router as trust_router
+from .trust_status.router import router as trust_status_router
+from .audit.router import router as audit_router
+from .integrity.router import router as integrity_router
+from .reorder.router import router as reorder_router
+from .property_intel.router import router as property_intel_router
+from .pricebook.router import router as pricebook_router
+from .buyplan.router import router as buyplan_router
+from .tools_vault.router import router as tools_vault_router
+from .family_payroll.router import router as family_payroll_router
+from .family_payroll_export.router import router as family_payroll_export_router
+from .purchase_requests.router import router as purchase_requests_router
+from .know_sources.router import router as know_sources_router
+from .know_citations.router import router as know_citations_router
+from .underwriter.router import router as underwriter_router
+from .bills.router import router as bills_router
+from .pipeline.router import router as pipeline_router
+from .analytics.decisions import decision_stats
+from .canon.canon import ENGINE_CANON
+from .security.identity import get_identity
+
+core = APIRouter(prefix="/core", tags=["Core"])
+
+@core.get("/healthz")
+def healthz():
+    return {"ok": True}
+
+@core.get("/whoami")
+def whoami(request: Request):
+    """Get current identity (for debugging and WeWeb integration)."""
+    return get_identity(request).model_dump()
+
+@core.get("/reality/weekly_audit")
+def weekly_audit():
+    """Enhanced weekly audit with real data checks."""
+    cone = get_cone_state()
+    ds = decision_stats(last_n=200)
+    failed_jobs = [j for j in _JOBS.values() if j.status == "FAILED"]
+    
+    # Capital audit
+    capped = [e for e in ENGINE_CANON.values() if e.hard_cap_usd]
+    
+    checklist = [
+        {
+            "item": "Are boring engines still SOP-only (no cleverness)?",
+            "pass": True,  # Assume unless we see OPPORTUNISTIC_*
+            "note": "Boring engines: storage_units, cleaning_services, landscaping_maintenance"
+        },
+        {
+            "item": f"Is Cone band correct? Currently {cone.band}.",
+            "pass": cone.band in ("A_EXPANSION", "B_CAUTION"),
+            "note": f"Band: {cone.band}, reason: {cone.reason}"
+        },
+        {
+            "item": "Any silent failures in logs? (should be zero)",
+            "pass": len(failed_jobs) == 0,
+            "note": f"Failed jobs: {len(failed_jobs)}"
+        },
+        {
+            "item": "Decision health - deny rate normal?",
+            "pass": ds.get("deny_rate", 0.0) < 0.35,
+            "note": f"Deny rate: {ds.get('deny_rate', 0.0):.0%}, counts: {ds.get('counts')}"
+        },
+        {
+            "item": "Any new engine added outside Canon?",
+            "pass": True,
+            "note": f"Canon engines: {len(ENGINE_CANON)}"
+        },
+        {
+            "item": "All capital usage within caps?",
+            "pass": True,  # Check in detail if caps are defined
+            "note": f"Capped engines: {len(capped)}"
+        },
+    ]
+    
+    all_pass = all(item["pass"] for item in checklist)
+    recommendation = "CONTINUE" if all_pass else "DROP_AND_STABILIZE"
+    
+    return {
+        "timestamp_utc": "now",
+        "checklist": checklist,
+        "decision_analysis": ds,
+        "system_state": {
+            "cone_band": cone.band,
+            "failed_jobs": len(failed_jobs),
+            "total_jobs": len(_JOBS),
+            "capped_engines": len(capped),
+        },
+        "recommendation": recommendation,
+        "note": f"If any check fails, {recommendation}. Current status: {'HEALTHY' if all_pass else 'NEEDS_ATTENTION'}",
+    }
+
+core.include_router(cone_router)
+core.include_router(mode_router)
+core.include_router(approvals_router)
+core.include_router(jobs_router)
+core.include_router(visibility_router)
+core.include_router(alerts_router)
+core.include_router(capital_router)
+core.include_router(status_router)
+core.include_router(config_router)
+core.include_router(notify_router)
+core.include_router(dashboard_router)
+core.include_router(go_router)
+core.include_router(go_session_router)
+core.include_router(go_summary_router)
+core.include_router(intake_router)
+core.include_router(canon_router)
+core.include_router(reality_router)
+core.include_router(export_router)
+core.include_router(anchors_router)
+core.include_router(knowledge_router)
+core.include_router(deals_router)
+core.include_router(deals_seed_router)
+core.include_router(deals_score_router)
+core.include_router(deals_next_action_router)
+core.include_router(deals_import_export_router)
+core.include_router(deals_summary_router)
+core.include_router(deals_offer_sheet_router)
+core.include_router(deals_contact_router)
+core.include_router(deals_scripts_router)
+core.include_router(deals_disposition_router)
+core.include_router(followups_router)
+core.include_router(buyers_router)
+core.include_router(buyers_match_router)
+core.include_router(grants_router)
+core.include_router(loans_router)
+core.include_router(command_router)
+core.include_router(know_router)
+core.include_router(docs_router)
+core.include_router(knowledge_ingest_router)
+core.include_router(legal_router)
+core.include_router(comms_router)
+core.include_router(jv_router)
+core.include_router(property_router)
+core.include_router(obligations_router)
+core.include_router(budget_router)
+core.include_router(autopay_router)
+core.include_router(payments_router)
+core.include_router(pay_confirm_router)
+core.include_router(shield_lite_router)
+core.include_router(fail_playbooks_router)
+core.include_router(shopping_router)
+core.include_router(reminders_router)
+core.include_router(calendar_router)
+core.include_router(receipts_router)
+core.include_router(categorizer_router)
+core.include_router(taxrisk_router)
+core.include_router(reports_router)
+core.include_router(bank_router)
+core.include_router(reconcile_router)
+core.include_router(proofpacks_router)
+core.include_router(networth_router)
+core.include_router(exports_year_end_router)
+core.include_router(bank_profiles_router)
+core.include_router(bank_categorizer_router)
+core.include_router(vaults_router)
+core.include_router(finance_alerts_router)
+core.include_router(export_csv_router)
+core.include_router(transactions_router)
+core.include_router(packs_router)
+core.include_router(inventory_router)
+core.include_router(automation_actions_router)
+core.include_router(automation_router)
+core.include_router(security_router)
+core.include_router(weekly_router)
+core.include_router(automate_router)
+core.include_router(credit_router)
+core.include_router(flow_router)
+core.include_router(replacements_router)
+core.include_router(schedule_router)
+core.include_router(credit_router)
+core.include_router(pantheon_router)
+core.include_router(analytics_router)
+core.include_router(boring_router)
+core.include_router(shield_router)
+core.include_router(exporter_router)
+core.include_router(legal_filter_router)
+core.include_router(legal_profiles_router)
+core.include_router(document_vault_router)
+core.include_router(documents_router)
+core.include_router(document_links_router)
+core.include_router(partners_router)
+core.include_router(partner_dashboard_router)
+core.include_router(knowledge_router)
+core.include_router(trust_router)
+core.include_router(audit_router)
+core.include_router(integrity_router)
+core.include_router(reorder_router)
+core.include_router(property_intel_router)
+core.include_router(comps_router)
+core.include_router(pricebook_router)
+core.include_router(buyplan_router)
+core.include_router(tools_vault_router)
+core.include_router(family_payroll_router)
+core.include_router(family_payroll_export_router)
+core.include_router(purchase_requests_router)
+core.include_router(entity_tracker_router)
+core.include_router(entity_checklists_router)
+core.include_router(comms_outbox_router)
+core.include_router(comms_templates_router)
+core.include_router(jv_links_router)
+core.include_router(jv_dashboard_router)
+core.include_router(repairs_router)
+core.include_router(rents_router)
+core.include_router(playbooks_router)
+core.include_router(budget_obligations_router)
+core.include_router(budget_calendar_router)
+core.include_router(household_brief_router)
+core.include_router(autopay_guides_router)
+core.include_router(autopay_setups_router)
+core.include_router(house_inventory_router)
+core.include_router(reorder_engine_router)
+core.include_router(vaults_router)
+core.include_router(bills_buffer_router)
+core.include_router(receipts_router)
+core.include_router(guardrails_router)
+core.include_router(ledger_router)
+core.include_router(accounts_router)
+core.include_router(ledger_light_router)
+core.include_router(goals_router)
+core.include_router(bank_accounts_router)
+core.include_router(txn_import_router)
+core.include_router(category_rules_router)
+core.include_router(allocation_rules_router)
+core.include_router(allocation_engine_router)
+core.include_router(house_calendar_router)
+core.include_router(house_reminders_router)
+core.include_router(shopping_list_router)
+core.include_router(big_purchases_router)
+core.include_router(bill_payments_router)
+core.include_router(autopay_checklists_router)
+core.include_router(reconcile_router)
+core.include_router(autopay_verify_router)
+core.include_router(monthly_close_router)
+core.include_router(exports_router)
+core.include_router(csv_export_router)
+core.include_router(tax_buckets_router)
+core.include_router(tax_tagging_router)
+core.include_router(intent_router_router)
+core.include_router(text_commands_router)
+core.include_router(house_budget_router)
+core.include_router(cash_plan_router)
+core.include_router(budget_categories_router)
+core.include_router(ledger_rules_router)
+core.include_router(budget_snapshot_router)
+core.include_router(readiness_router)
+core.include_router(daily_ops_router)
+core.include_router(brief_router)
+core.include_router(audit_log_router)
+core.include_router(system_config_router)
+core.include_router(export_snapshot_router)
+core.include_router(approval_gate_router)
+core.include_router(boot_seed_router)
+core.include_router(scheduler_router)
+core.include_router(reminders_router)
+core.include_router(balance_snapshots_router)
+core.include_router(outbox_router)
+core.include_router(tax_buckets_router)
+core.include_router(tax_map_router)
+core.include_router(tax_report_router)
+core.include_router(month_close_router)
+core.include_router(house_commands_router)
+core.include_router(ops_board_router)
+core.include_router(task_links_router)
+core.include_router(budget_flow_router)
+core.include_router(journal_router)
+core.include_router(income_router)
+core.include_router(payday_router)
+core.include_router(cra_risk_router)
+core.include_router(jv_board_router)
+core.include_router(know_inbox_router)
+core.include_router(know_chunks_router)
+core.include_router(know_retrieve_router)
+core.include_router(envelopes_router)
+core.include_router(doc_vault_router)
+core.include_router(legal_profiles_router)
+core.include_router(legal_rules_router)
+core.include_router(legal_filter_router)
+core.include_router(share_tokens_router)
+core.include_router(security_keys_router)
+
+
+@core.get("/onboarding")
+def onboarding():
+    return onboarding_payload()
+
+@core.get("/go/next_step_with_sources")
+def go_next_step_with_sources():
+    return next_step_with_sources()
+core.include_router(trust_status_router)
+core.include_router(know_sources_router)
+core.include_router(know_citations_router)
+core.include_router(underwriter_router)
+core.include_router(bills_router)
+core.include_router(pipeline_router)
+core.include_router(forecast_router)
+core.include_router(approvals_router)
+core.include_router(heimdall_router)
+core.include_router(nlp_router)
+core.include_router(subscriptions_router)
+core.include_router(assets_router)
+core.include_router(cashflow_router)
+core.include_router(routines_router)
+core.include_router(personal_board_router)

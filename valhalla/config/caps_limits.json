@@ -1,0 +1,12 @@
+{
+  "sandbox": {
+    "max_leads_per_cycle": 25,
+    "max_exports_keep_days": 14,
+    "max_reports_keep_days": 30
+  },
+  "phase4_pilot": {
+    "max_leads_per_day": 25,
+    "max_outbound_attempts_per_day": 0,
+    "require_human_approval": true
+  }
+}

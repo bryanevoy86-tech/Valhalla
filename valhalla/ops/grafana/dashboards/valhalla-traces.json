@@ -1,0 +1,36 @@
+{
+  "uid": "valhalla-traces",
+  "title": "Valhalla — Traces (Tempo)",
+  "tags": ["valhalla","traces"],
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "panels": [
+    {
+      "type": "traces",
+      "title": "Service traces",
+      "gridPos": {"h":18,"w":24,"x":0,"y":0},
+      "options": {
+        "tracesDatasource": "Tempo",
+        "query": {
+          "queryType": "traceql",
+          "query": "{ service.name = \"valhalla-backend\" } | limit 200"
+        },
+        "spanBar": {"type":"Service"},
+        "showTable": true
+      }
+    },
+    {
+      "type": "nodeGraph",
+      "title": "Service graph (last 15m)",
+      "gridPos": {"h":10,"w":24,"x":0,"y":18},
+      "targets": [
+        {
+          "datasource": "Tempo",
+          "queryType": "traceql",
+          "query": "{ service.name = \"valhalla-backend\" }"
+        }
+      ]
+    }
+  ]
+}

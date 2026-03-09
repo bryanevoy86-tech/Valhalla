@@ -1,0 +1,6 @@
+type: publish
+name: smoke_bundle
+from_job: api_smoke     # picks the latest run for this job
+include_stdout: true
+include_stderr: true
+note: "API smoke outputs + artifacts"

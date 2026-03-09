@@ -1,0 +1,9 @@
+type: job
+name: demo_fail
+shell: |
+  echo "uh oh"
+  exit 2
+timeout: 20
+notify:
+  on_success: false
+  on_failure: true

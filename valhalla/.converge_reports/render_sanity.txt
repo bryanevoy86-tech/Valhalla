@@ -1,0 +1,157 @@
+Render sanity scan (quick indicators):
+
+1) PORT binding sanity:
+  No obvious hardcoded ports found (good).
+
+2) localhost references (breaks production):
+   - ./auth_client.py
+   - ./backend/app/core/config.py
+   - ./backend/app/main.py
+   - ./backend/app/observability/canary.py
+   - ./backend/app/observability/replay.py
+   - ./backend/app/observability/tracing.py
+   - ./backend/app/observability/warmer.py
+   - ./backend/metrics/otel.py
+   - ./example_apply_workflow.py
+   - ./frontend/src/lib/api.ts
+   - ./install_auth.py
+   - ./ops/k6/basic.js
+   - ./services/api/app/routers/admin_ops.py
+   - ./services/api/app/tests/test_model_provider.py
+   - ./services/api/final_validation.py
+   - ./services/api/tests/integration/test_contracts_live.py
+   - ./services/api/tests/test_contracts.py
+   - ./services/api/tests/test_grants.py
+   - ./services/api/tests/test_health.py
+   - ./services/api/tests/test_intake_notify.py
+   - ./services/api/tests/test_matching.py
+   - ./services/api/tests/test_metrics_capital.py
+   - ./services/api/tests/test_reports.py
+   - ./services/api/tests/test_smoke.py
+   - ./services/auth_service.py
+   - ./test_core_gov.py
+   - ./test_endpoints.py
+   - ./test_endpoints_live.py
+   - ./test_pack_b.py
+   - ./test_pack_c.py
+   - ./test_pack_d.py
+   - ./test_pack_j.py
+   - ./test_pack_j_live.py
+   - ./test_pack_k_live.py
+   - ./test_pack_legal_partners_knowledge.py
+   - ./test_pack_lmn.py
+   - ./test_session_direct.py
+   - ./test_session_persistence.py
+   - ./test_telemetry.py
+   - ./tools/auto_build.py
+   - ./valhalla/backend/metrics/otel.py
+   - ./valhalla/frontend/src/lib/api.ts
+
+3) Health endpoint presence (should exist and be lightweight):
+   - ./app/routers/runbook_status.py
+   - ./auth_client.py
+   - ./backend/app/api/routes/health.py
+   - ./backend/app/core/health/router.py
+   - ./backend/app/core_gov/autopay_setups/router.py
+   - ./backend/app/core_gov/budget/router.py
+   - ./backend/app/core_gov/capital/router.py
+   - ./backend/app/core_gov/core_router.py
+   - ./backend/app/core_gov/entity_tracker/router.py
+   - ./backend/app/core_gov/flow/router.py
+   - ./backend/app/core_gov/health/router.py
+   - ./backend/app/core_gov/obligations/router.py
+   - ./backend/app/core_gov/trust_status/router.py
+   - ./backend/app/core_gov/vaults/router.py
+   - ./backend/app/core_gov/weekly/service.py
+   - ./backend/app/public_router.py
+   - ./backend/app/routers/admin_bluegreen.py
+   - ./backend/app/routers/admin_canary.py
+   - ./backend/app/routers/admin_health.py
+   - ./backend/app/routers/admin_observability.py
+   - ./backend/app/routers/funfund.py
+   - ./backend/app/routers/health.py
+   - ./backend/app/routers/shield.py
+   - ./backend/app/tests/test_health.py
+   - ./backend/main.py
+   - ./backend/tests/test_core_gov_smoke.py
+   - ./generated/ping.route.preview.py
+   - ./generated/route.route.preview.py
+   - ./mock_api.py
+   - ./ops/k6/basic.js
+   - ./run_health_test.py
+   - ./services/api/app/api/v1/arbitration.py
+   - ./services/api/app/core/execution_class_middleware.py
+   - ./services/api/app/core/go_live_middleware.py
+   - ./services/api/app/core/prelaunch/arbitrage_guard/router.py
+   - ./services/api/app/core/prelaunch/eia_guardian/router.py
+   - ./services/api/app/core/prelaunch/health_endpoint/router.py
+   - ./services/api/app/health/service.py
+   - ./services/api/app/king/router.py
+   - ./services/api/app/main.py
+   - ./services/api/app/resort/router.py
+   - ./services/api/app/routers/admin_healthcheck.py
+   - ./services/api/app/routers/admin_heimdall.py
+   - ./services/api/app/routers/banking_structure_planner.py
+   - ./services/api/app/routers/blackice.py
+   - ./services/api/app/routers/brrrr_planner.py
+   - ./services/api/app/routers/contract_engine.py
+   - ./services/api/app/routers/contracts_lifecycle.py
+   - ./services/api/app/routers/cra_organization.py
+   - ./services/api/app/routers/deal_finalization.py
+
+4) CORS references (WeWeb -> Render needs correct CORS):
+   - ./backend/app/core_gov/settings/config.py
+   - ./backend/app/main.py
+   - ./install_auth.py
+   - ./services/api/app/core/config.py
+   - ./services/api/app/core/settings.py
+   - ./services/api/app/main.py
+   - ./services/api/app/tests/test_production_hardening.py
+   - ./services/api/main.py
+   - ./services/auth_service.py
+   - ./test_pack_e_full.py
+   - ./tools/render_sanity_scan.py
+   - ./valhalla/services/api/app/core/config.py
+   - ./valhalla/services/api/app/core/settings.py
+   - ./valhalla/services/api/app/main.py
+   - ./valhalla/services/api/main.py
+
+5) ENV var usage (confirm these are set in Render service env):
+   - ./SANDBOX_PERSISTENT.py
+   - ./alembic/env.py
+   - ./app/ai/providers.py
+   - ./backend/app/core_gov/settings/config.py
+   - ./backend/app/services/billing.py
+   - ./backend/heimdall_service.py
+   - ./backend/main.py
+   - ./backend/notify.py
+   - ./backend/security/malware_scan.py
+   - ./backend/storage/gcs.py
+   - ./backend/storage/s3.py
+   - ./backend/utils/notify.py
+   - ./frontend/src/lib/api.ts
+   - ./scripts/ci/auto_pr.py
+   - ./scripts/generate_from_manifest.py
+   - ./services/api/alembic/env.py
+   - ./services/api/app/core/settings.py
+   - ./services/api/app/providers/docusign_adapter.py
+   - ./services/api/app/providers/stripe_adapter.py
+   - ./services/api/app/routers/admin_heimdall.py
+   - ./services/api/app/routers/admin_system_summary.py
+   - ./services/api/app/security/auth.py
+   - ./services/api/app/services/runbook.py
+   - ./services/api/main.py
+   - ./services/api/security/auth.py
+   - ./services/auth_service.py
+   - ./test_builder_api.py
+   - ./tools/ops/daily_digest.py
+   - ./tools/render_sanity_scan.py
+   - ./valhalla/backend/app/services/billing.py
+   - ./valhalla/backend/security/malware_scan.py
+   - ./valhalla/backend/storage/gcs.py
+   - ./valhalla/backend/storage/s3.py
+   - ./valhalla/backend/utils/notify.py
+   - ./valhalla/frontend/src/lib/api.ts
+   - ./valhalla/services/api/security/auth.py
+
+Note: This is a heuristic scan. Final truth is always Render Logs at boot + first request.

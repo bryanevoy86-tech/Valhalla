@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Notifications Dashboard</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; margin: 24px; background: #f9fafb; }
+    .container { max-width: 900px; margin: 0 auto; }
+    .card { border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; background: #fff; margin-bottom: 12px; }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .badge { background: #ef4444; color: #fff; border-radius: 12px; padding: 2px 8px; font-size: 12px; font-weight: 600; }
+    button { background:#2563eb;color:#fff;border:none;border-radius:6px;padding:8px 16px;cursor:pointer;font-size:14px; }
+    button:hover { background:#1d4ed8; }
+    button.secondary { background:#6b7280; }
+    button.secondary:hover { background:#4b5563; }
+    input, textarea { padding:8px; border:1px solid #e5e7eb; border-radius:6px; width: 100%; box-sizing: border-box; }
+    .notification { border-left: 4px solid #2563eb; padding: 12px; margin-bottom: 8px; border-radius: 4px; background: #f9fafb; }
+    .notification.unread { background: #eff6ff; border-left-color: #3b82f6; }
+    .notification.read { background: #f9fafb; border-left-color: #9ca3af; opacity: 0.7; }
+    .notification-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+    .notification-user { font-weight: 600; color: #111827; }
+    .notification-time { font-size: 12px; color: #6b7280; }
+    .notification-content { color: #374151; margin-bottom: 8px; }
+    .notification-actions { display: flex; gap: 8px; }
+    .notification-actions button { padding: 4px 8px; font-size: 12px; }
+    .row { display: flex; gap: 8px; margin-bottom: 12px; }
+    .empty-state { text-align: center; padding: 32px; color: #6b7280; }
+  </style>
+  <script>
+    let currentUser = 'user_123';
+
+    async function createNotification() {
+      const userId = document.getElementById('userId').value || currentUser;
+      const content = document.getElementById('content').value;
+      
+      if (!content.trim()) {
+        alert('Please enter notification content');
+        return;
+      }
+
+      const res = await fetch('/api/notifications/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userId, content: content })
+      });
+      
+      if (res.ok) {
+        document.getElementById('content').value = '';
+        await loadNotifications();
+        await updateUnreadCount();
+      } else {
+        alert('Failed to create notification');
+      }
+    }
+
+    async function loadNotifications() {
+      const userId = document.getElementById('filterUser').value;
+      const url = userId ? `/api/notifications/list?user_id=${userId}&limit=50` : '/api/notifications/list?limit=50';
+      
+      const res = await fetch(url);
+      if (!res.ok) return;
+      
+      const notifications = await res.json();
+      const container = document.getElementById('notifications-container');
+      
+      if (notifications.length === 0) {
+        container.innerHTML = '<div class="empty-state">No notifications yet. Create one to get started!</div>';
+        return;
+      }
+      
+      container.innerHTML = '';
+      notifications.forEach((notif, index) => {
+        const div = document.createElement('div');
+        div.className = `notification ${notif.is_read ? 'read' : 'unread'}`;
+        div.innerHTML = `
+          <div class="notification-header">
+            <span class="notification-user">${notif.user_id}</span>
+            <span class="notification-time">${new Date(notif.timestamp).toLocaleString()}</span>
+          </div>
+          <div class="notification-content">${notif.content}</div>
+          <div class="notification-actions">
+            ${!notif.is_read ? `<button onclick="markAsRead('${notif.user_id}', ${index})">Mark as Read</button>` : '<span style="color:#10b981;font-size:12px;">✓ Read</span>'}
+          </div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    async function markAsRead(userId, index) {
+      const res = await fetch(`/api/notifications/mark-read/${userId}/${index}`, {
+        method: 'POST'
+      });
+      
+      if (res.ok) {
+        await loadNotifications();
+        await updateUnreadCount();
+      } else {
+        alert('Failed to mark notification as read');
+      }
+    }
+
+    async function updateUnreadCount() {
+      const userId = document.getElementById('filterUser').value || currentUser;
+      const res = await fetch(`/api/notifications/unread-count/${userId}`);
+      if (!res.ok) return;
+      
+      const data = await res.json();
+      const badge = document.getElementById('unread-badge');
+      if (data.unread_count > 0) {
+        badge.textContent = data.unread_count;
+        badge.style.display = 'inline-block';
+      } else {
+        badge.style.display = 'none';
+      }
+    }
+
+    window.addEventListener('load', async () => {
+      await loadNotifications();
+      await updateUnreadCount();
+      // Auto-refresh every 5 seconds
+      setInterval(async () => {
+        await loadNotifications();
+        await updateUnreadCount();
+      }, 5000);
+    });
+  </script>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Real-Time Notifications <span id="unread-badge" class="badge" style="display:none;">0</span></h1>
+      <button onclick="loadNotifications()">🔄 Refresh</button>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0;">Create Notification</h3>
+      <div class="row">
+        <input id="userId" placeholder="User ID (e.g., user_123)" value="user_123" style="flex: 1;" />
+      </div>
+      <div class="row">
+        <textarea id="content" placeholder="Notification content..." rows="3"></textarea>
+      </div>
+      <button onclick="createNotification()">Send Notification</button>
+    </div>
+
+    <div class="card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <h3 style="margin:0;">Notifications</h3>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <input id="filterUser" placeholder="Filter by user ID" style="width: 200px;" />
+          <button class="secondary" onclick="loadNotifications()">Filter</button>
+        </div>
+      </div>
+      <div id="notifications-container">
+        <div class="empty-state">Loading notifications...</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

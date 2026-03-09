@@ -1,0 +1,104 @@
+{
+  "updated_at": "2026-01-03T03:54:34.362885+00:00",
+  "items": [
+    {
+      "key": "CA:MB",
+      "name": "Manitoba",
+      "rules": [
+        {
+          "id": "mb_assignment_disclosure",
+          "when": {
+            "field": "strategy",
+            "op": "in",
+            "value": [
+              "wholesale",
+              "assignment"
+            ]
+          },
+          "outcome": "flagged",
+          "severity": "medium",
+          "message": "Assignment/wholesale strategy: ensure disclosure language and compliant paperwork is used.",
+          "next_actions": [
+            "Use Valhalla offer templates with assignment disclosure.",
+            "Confirm advertising rules + representation wording."
+          ]
+        },
+        {
+          "id": "mb_unknown_entity",
+          "when": {
+            "field": "buyer.entity_type",
+            "op": "eq",
+            "value": ""
+          },
+          "outcome": "flagged",
+          "severity": "low",
+          "message": "Buyer entity type missing: confirm personal vs corporation/trust.",
+          "next_actions": [
+            "Set buyer.entity_type in deal/contact data."
+          ]
+        },
+        {
+          "id": "mb_missing_id_verification",
+          "when": {
+            "field": "seller.id_verified",
+            "op": "eq",
+            "value": false
+          },
+          "outcome": "flagged",
+          "severity": "medium",
+          "message": "Seller ID not verified: risk of fraud / unenforceable agreement.",
+          "next_actions": [
+            "Verify seller identity before signing final offer."
+          ]
+        }
+      ],
+      "meta": {
+        "version": 1
+      },
+      "created_at": "2026-01-03T03:54:34.362573+00:00",
+      "updated_at": "2026-01-03T03:54:34.362573+00:00"
+    },
+    {
+      "key": "US:FL",
+      "name": "Florida",
+      "rules": [
+        {
+          "id": "fl_assignment_attention",
+          "when": {
+            "field": "strategy",
+            "op": "in",
+            "value": [
+              "wholesale",
+              "assignment"
+            ]
+          },
+          "outcome": "flagged",
+          "severity": "medium",
+          "message": "FL wholesale: confirm contract assignability + local practice requirements.",
+          "next_actions": [
+            "Use Florida-specific templates and verify assignability clause."
+          ]
+        },
+        {
+          "id": "fl_missing_disclosures",
+          "when": {
+            "field": "disclosures.complete",
+            "op": "eq",
+            "value": false
+          },
+          "outcome": "flagged",
+          "severity": "low",
+          "message": "Disclosures not marked complete: verify required disclosures for transaction type.",
+          "next_actions": [
+            "Mark disclosures.complete=true once validated."
+          ]
+        }
+      ],
+      "meta": {
+        "version": 1
+      },
+      "created_at": "2026-01-03T03:54:34.362573+00:00",
+      "updated_at": "2026-01-03T03:54:34.362573+00:00"
+    }
+  ]
+}

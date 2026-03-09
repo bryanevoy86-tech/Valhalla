@@ -1,0 +1,5 @@
+{
+  "to": "test@example.com",
+  "subject": "SANDBOX approval test",
+  "body_text": "This should queue for approval, not send."
+}

@@ -1,0 +1,4 @@
+type: publish
+name: daily_bundle
+note: "Default sources snapshot"
+# no sources/from_job -> uses artifacts.default_sources from config

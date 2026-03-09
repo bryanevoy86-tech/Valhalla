@@ -1,240 +1,211 @@
+﻿from __future__ import annotations
+
 import os
-import sys
-from pathlib import Path
-
-# CRITICAL: Set up sys.path BEFORE any app.* imports
-# This handles both local (/app/services/api) and Render (/app/valhalla/services/api) structures
-current_file = Path(__file__).resolve()
-api_dir = current_file.parent  # /app/services/api or /app/valhalla/services/api
-if api_dir not in [Path(p) for p in sys.path]:
-    sys.path.insert(0, str(api_dir))
-    print(f"INFO: Added to sys.path: {api_dir}")
-
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
+from app.core.policy.router import router as policy_router
+from app.security.auth import router as ops_router  # owner auth (+ /ops/token)
+from app.routers.admin_go_live import router as admin_go_live_router
+from app.routers.engine_admin import router as engine_admin_router
+from app.routers.outcomes import router as outcomes_router
+from app.routers.intake import router as intake_router
+from app.routers.intake_admin import router as intake_admin_router
+from app.routers.metrics import router as metrics_router
+from app.routers.runbook_status import router as runbook_status_router
+from app.routers import runbook as governance_runbook_router
+from app.routers import go_live as governance_go_live_router
 from app.core.settings import settings
 
-# Core routers (should always be available)
-from app.routers.health import router as health_router
-from app.routers.metrics import router as metrics_router
-from app.routers.capital import router as capital_router
-from app.routers.telemetry import router as telemetry_router
-from app.routers.admin import router as admin_router
 
-# Pack routers with error handling
-GRANTS_AVAILABLE = False
-BUYERS_AVAILABLE = False
-DEALS_AVAILABLE = False
-MATCH_AVAILABLE = False
-CONTRACTS_AVAILABLE = False
-INTAKE_AVAILABLE = False
-NOTIFY_AVAILABLE = False
-
-try:
-    from app.routers.grants import router as grants_router
-    GRANTS_AVAILABLE = True
-except Exception as e:
-    print(f"WARNING: Could not import grants router: {e}")
-    grants_router = None
-
-try:
-    from app.routers.buyers import router as buyers_router
-    BUYERS_AVAILABLE = True
-except Exception as e:
-    print(f"WARNING: Could not import buyers router: {e}")
-    buyers_router = None
-
-try:
-    from app.routers.deals import router as deals_router
-    DEALS_AVAILABLE = True
-except Exception as e:
-    print(f"WARNING: Could not import deals router: {e}")
-    deals_router = None
-
-try:
-    from app.routers.match import router as match_router
-    MATCH_AVAILABLE = True
-except Exception as e:
-    print(f"WARNING: Could not import match router: {e}")
-    match_router = None
-
-try:
-    from app.routers.contracts import router as contracts_router
-    CONTRACTS_AVAILABLE = True
-except Exception as e:
-    print(f"WARNING: Could not import contracts router: {e}")
-    contracts_router = None
-
-try:
-    from app.routers.intake import router as intake_router
-    INTAKE_AVAILABLE = True
-except Exception as e:
-    print(f"WARNING: Could not import intake router: {e}")
-    intake_router = None
-
-try:
-    from app.routers.notify import router as notify_router
-    NOTIFY_AVAILABLE = True
-except Exception as e:
-    print(f"WARNING: Could not import notify router: {e}")
-    notify_router = None
-
-# Try importing builder router with error handling
-try:
-    from app.routers.builder import router as builder_router
-    BUILDER_AVAILABLE = True
-except Exception as e:
-    print(f"WARNING: Could not import builder router: {e}")
-    BUILDER_AVAILABLE = False
-    builder_router = None
-
-# Try importing reports router (will be created by builder)
-try:
-    from app.routers.reports import router as reports_router
-    REPORTS_AVAILABLE = True
-except Exception as e:
-    print(f"INFO: Reports router not yet available: {e}")
-    REPORTS_AVAILABLE = False
-    reports_router = None
-
-# Try importing research and playbooks routers
-try:
-    from app.routers.research import router as research_router
-    from app.routers.playbooks import router as playbooks_router
-    from app.routers.jobs import router as jobs_router
-    from app.routers.research_semantic import router as research_semantic_router
-    RESEARCH_AVAILABLE = True
-    RESEARCH_ERROR = None
-except Exception as e:
-    import traceback
-    RESEARCH_ERROR = f"{str(e)}\n{traceback.format_exc()}"
-    print(f"WARNING: Research/Playbooks/Jobs routers not available: {e}")
-    print(f"Full traceback: {traceback.format_exc()}")
-    RESEARCH_AVAILABLE = False
-    research_router = None
-    playbooks_router = None
-    jobs_router = None
-    research_semantic_router = None
+def _truthy(v: str | None, default: bool = False) -> bool:
+    if v is None:
+        return default
+    return v.strip().lower() in {"1", "true", "yes", "y", "on"}
 
 
-app = FastAPI(title="Valhalla API", version="3.4")
+APP_ENV = (os.getenv("APP_ENV") or "dev").strip().lower()
+PUBLIC_DOCS = _truthy(os.getenv("VALHALLA_PUBLIC_DOCS"), False)
 
-# Auto-create tables on startup (dev-friendly; safe if tables already exist)
-try:
-    from app.core.db import Base, engine
-    @app.on_event("startup")
-    def startup_create_tables():
-        try:
-            Base.metadata.create_all(bind=engine)
-        except Exception as e:
-            print(f"WARNING: Failed to auto-create tables on startup: {e}")
-except Exception as e:
-    print(f"INFO: Skipping auto-create tables setup: {e}")
+docs_url = "/docs"
+openapi_url = "/openapi.json"
+redoc_url = "/redoc"
 
-# CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=getattr(settings, "CORS_ALLOWED_ORIGINS", []),
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type", "X-Requested-With", "X-API-Key"],
+# Security hardening: disable docs in production unless explicitly enabled
+if APP_ENV == "production" and not PUBLIC_DOCS:
+    docs_url = None
+    openapi_url = None
+    redoc_url = None
+
+
+app = FastAPI(
+    title="Valhalla API",
+    version="0.1.0",
+    docs_url=docs_url,
+    openapi_url=openapi_url,
+    redoc_url=redoc_url,
 )
 
-# Register routers (core routers always available)
-app.include_router(health_router, prefix="/api")
-app.include_router(metrics_router, prefix="/api")
-app.include_router(capital_router, prefix="/api")
-app.include_router(telemetry_router, prefix="/api")
-app.include_router(admin_router, prefix="/api")
+# CORS: Support WeWeb (editor/preview/app) + localhost dev + custom origins from env
+ALLOWED_ORIGINS = [
+    "https://editor.weweb.io",
+    "https://app.weweb.io",
+    "https://preview.weweb.io",
+    "http://localhost:3000",      # Local WeWeb dev
+    "http://localhost:5173",      # Local Vite/dev server
+] + settings.cors_allowed_origins
 
-# Pack routers (with availability checks)
-if GRANTS_AVAILABLE:
-    app.include_router(grants_router, prefix="/api")
-else:
-    print("WARNING: Grants router not registered")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=ALLOWED_ORIGINS,
+    allow_origin_regex=r"^https:\/\/.*\.weweb\.io$|^https:\/\/.*\.weweb\.app$",
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    max_age=86400,  # Cache preflight for 24 hours
+)
 
-if BUYERS_AVAILABLE:
-    app.include_router(buyers_router, prefix="/api")
-else:
-    print("WARNING: Buyers router not registered")
+# Routers
+# NOTE: Two runbook endpoints exist (kept for backward compatibility):
+#   - /api/runbook/status (runbook_status_router): Legacy unified health
+#   - /api/governance/runbook/status (governance_runbook_router): Canonical governance/blockers/policies
+# RECOMMENDED: Use /api/governance/runbook/status for go-live monitoring + WeWeb health
+# TODO: Consider deprecating /api/runbook/status after migration period
 
-if DEALS_AVAILABLE:
-    app.include_router(deals_router, prefix="/api")
-else:
-    print("WARNING: Deals router not registered")
+app.include_router(policy_router)
+app.include_router(ops_router)  # /ops/* guarded endpoints
+app.include_router(admin_go_live_router, prefix="/api")  # /api/admin/* go-live endpoints
+app.include_router(engine_admin_router)  # /api/engines/* (Heimdall-governed)
+app.include_router(outcomes_router)  # /api/outcomes (closed-loop learning)
+app.include_router(intake_router)  # /api/intake (quarantine-first)
+app.include_router(intake_admin_router)  # /api/intake/admin (promotion)
+app.include_router(metrics_router)  # /api/metrics (gate inputs)
+app.include_router(runbook_status_router)  # /api/runbook/status (legacy health)
+app.include_router(governance_runbook_router.router, prefix="/api")  # /api/governance/runbook/status (canonical)
+app.include_router(governance_go_live_router.router, prefix="/api")  # /api/governance/go-live/* (go-live control)
 
-if MATCH_AVAILABLE:
-    app.include_router(match_router, prefix="/api")
-else:
-    print("WARNING: Match router not registered")
+# --- Notification API (System Email) ---
+from app.api.notify.test_email_router import router as notify_test_router
+app.include_router(notify_test_router, prefix="/api")  # /api/notify/test-email
 
-if CONTRACTS_AVAILABLE:
-    app.include_router(contracts_router, prefix="/api")
-else:
-    print("WARNING: Contracts router not registered")
+# --- Outbox & Jobs Routers (email/webhook dispatch) ---
+try:
+    from app.routers import notify
+    app.include_router(notify.router, prefix="/api")  # /api/notify/email, /api/notify/webhook
+    print("[main.py] Notify router registered")
+except Exception as e:
+    print(f"[main.py] Skipping notify router: {e}")
 
-if INTAKE_AVAILABLE:
-    app.include_router(intake_router, prefix="/api")
-else:
-    print("WARNING: Intake router not registered")
+try:
+    from app.routers import jobs
+    app.include_router(jobs.router, prefix="/api")  # /api/jobs/notify/dispatch, etc
+    print("[main.py] Jobs router registered")
+except Exception as e:
+    print(f"[main.py] Skipping jobs router: {e}")
 
-if NOTIFY_AVAILABLE:
-    app.include_router(notify_router, prefix="/api")
-else:
-    print("WARNING: Notify router not registered")
+# --- Test Email Router (SANDBOX-safe SMTP verification) ---
+try:
+    from app.routers import notify_test
+    app.include_router(notify_test.router)  # /api/notify/test-email (no prefix override)
+    print("[main.py] Notify test router registered")
+except Exception as e:
+    print(f"[main.py] Skipping notify_test router: {e}")
 
-if BUILDER_AVAILABLE:
-    app.include_router(builder_router, prefix="/api")
-else:
-    print("WARNING: Builder router not registered")
-    
-if REPORTS_AVAILABLE:
-    app.include_router(reports_router, prefix="/api")
-else:
-    print("INFO: Reports router not registered (will be available after builder creates it)")
-    
-if RESEARCH_AVAILABLE:
-    app.include_router(research_router, prefix="/api")
-    app.include_router(playbooks_router, prefix="/api")
-    app.include_router(jobs_router, prefix="/api")
-    app.include_router(research_semantic_router, prefix="/api")
-else:
-    print("INFO: Research/Playbooks/Jobs routers not registered")
+# --- SANDBOX Visibility + Approvals (queues real-world effects for review) ---
+try:
+    from app.api.sandbox.router import router as sandbox_router
+    app.include_router(sandbox_router, prefix="/api")  # /api/sandbox/*
+    print("[main.py] Sandbox activity router registered")
+except Exception as e:
+    print(f"[main.py] Skipping sandbox router: {e}")
+
+try:
+    from app.api.approvals.router import router as approvals_router
+    app.include_router(approvals_router, prefix="/api")  # /api/approvals/*
+    print("[main.py] Approvals router registered")
+except Exception as e:
+    print(f"[main.py] Skipping approvals router: {e}")
+
+# --- Governance API (Engine activation, readiness tracking) ---
+try:
+    from app.api.governance.router import router as governance_router
+    app.include_router(governance_router, prefix="/api")  # /api/governance/*
+    print("[main.py] Governance router registered")
+except Exception as e:
+    print(f"[main.py] Skipping governance router: {e}")
+
+# --- Arbitrage Phase A (Observation + simulation) ---
+try:
+    from app.api.arbitrage.router import router as arbitrage_router
+    app.include_router(arbitrage_router, prefix="/api")  # /api/arbitrage/*
+    print("[main.py] Arbitrage router registered")
+except Exception as e:
+    print(f"[main.py] Error registering arbitrage router: {e}")
+
+try:
+    from app.jobs.arbitrage_jobs import router as arbitrage_jobs_router
+    app.include_router(arbitrage_jobs_router, prefix="/api")  # /api/jobs/arbitrage/*
+    print("[main.py] Arbitrage jobs router registered")
+except Exception as e:
+    print(f"[main.py] Error registering arbitrage jobs router: {e}")
+
+# DEBUG: Route list endpoint (always available for debugging)
+def _get_debug_routes():
+    """Helper to list all routes."""
+    return sorted({f"{r.methods if hasattr(r, 'methods') else '?'} {r.path}" 
+                   for r in app.router.routes 
+                   if hasattr(r, 'path')})
+
+@app.get("/__routes", include_in_schema=False)
+def __routes():
+    """Debug endpoint: list all registered routes."""
+    return JSONResponse(_get_debug_routes())
 
 
-@app.get("/")
-def root():
-    return {"service": "valhalla-api", "version": "3.4"}
+@app.get("/debug/main-loaded", include_in_schema=False)
+def debug_main_loaded():
+    """Debug endpoint to verify which main.py is loaded."""
+    return {"message": "services/api/main.py is loaded"}
 
 
-@app.get("/debug/routes")
+@app.get("/debug/routes", include_in_schema=False)
 def debug_routes():
-    """Debug endpoint to see registered routes and router availability"""
-    routes = []
-    for route in app.routes:
-        if hasattr(route, 'path') and hasattr(route, 'methods'):
-            routes.append({"path": route.path, "methods": list(route.methods)})
-    return {
-        "grants_available": GRANTS_AVAILABLE,
-        "buyers_available": BUYERS_AVAILABLE,
-        "deals_available": DEALS_AVAILABLE,
-        "match_available": MATCH_AVAILABLE,
-        "contracts_available": CONTRACTS_AVAILABLE,
-        "intake_available": INTAKE_AVAILABLE,
-        "notify_available": NOTIFY_AVAILABLE,
-        "builder_available": BUILDER_AVAILABLE,
-        "reports_available": REPORTS_AVAILABLE,
-        "research_available": RESEARCH_AVAILABLE,
-        "research_error": RESEARCH_ERROR if 'RESEARCH_ERROR' in globals() else None,
-        "total_routes": len(app.routes),
-        "routes": routes
-    }
+    """List all registered routes (available in dev/staging for debugging)."""
+    if APP_ENV == "production" and not os.getenv("EXPOSE_DEBUG_ROUTES"):
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Not available in production")
+    return _get_debug_routes()
 
 
-# Compatibility health endpoint for tests/runtime expecting /api/health
-@app.get("/api/health")
-def health():
-    return {"ok": True, "app": "Valhalla Backend", "version": "3.4"}
+@app.api_route("/", methods=["GET", "HEAD"])
+def root(_: Response):
+    return {"ok": True, "service": "valhalla-api"}
 
-# NOTE: Render uses: uvicorn main:app --host 0.0.0.0 --port $PORT
+
+@app.get("/health", summary="Health check")
+def health() -> dict[str, str]:
+    return {"status": "ok"}
+
+
+@app.get("/healthz", summary="Health check alias")
+def healthz() -> dict[str, str]:
+    return {"status": "ok"}
+
+
+@app.get("/governance", summary="Governance root hint")
+def governance_root():
+    """Root governance endpoint redirects to canonical status endpoint."""
+    return JSONResponse(
+        status_code=200,
+        content={
+            "ok": True,
+            "hint": "Use /api/governance/runbook/status for full governance status",
+            "status_endpoint": "/api/governance/runbook/status",
+        },
+    )
+
+
+@app.exception_handler(404)
+def not_found(_, __):
+    return JSONResponse(status_code=404, content={"detail": "Not Found"})

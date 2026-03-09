@@ -1,0 +1,147 @@
+{
+  "updated_at": "2026-01-03T04:04:07.074985+00:00",
+  "items": [
+    {
+      "id": "dc_58e2c04e7fa0",
+      "doc_type": "receipt",
+      "title": "Walmart groceries receipt",
+      "file_ref": "photos/receipt_2026-01-02.jpg",
+      "amount": 120.5,
+      "currency": "CAD",
+      "date": "2026-01-02",
+      "merchant": "Walmart Supercenter",
+      "tags": [
+        "groceries",
+        "household"
+      ],
+      "links": {},
+      "notes": "Grocery run + household items",
+      "status": "active",
+      "meta": {},
+      "created_at": "2026-01-03T03:23:06.635075+00:00",
+      "updated_at": "2026-01-03T03:23:06.641408+00:00"
+    },
+    {
+      "id": "dc_fb72f070b515",
+      "doc_type": "invoice",
+      "title": "Q1 office supplies invoice",
+      "file_ref": "invoices/office_2026_q1.pdf",
+      "amount": 450.0,
+      "currency": "CAD",
+      "date": "2026-01-10",
+      "merchant": "Staples",
+      "tags": [
+        "office",
+        "supplies"
+      ],
+      "links": {},
+      "notes": "",
+      "status": "active",
+      "meta": {},
+      "created_at": "2026-01-03T03:23:06.638600+00:00",
+      "updated_at": "2026-01-03T03:23:06.638600+00:00"
+    },
+    {
+      "id": "dc_c246e999eb83",
+      "doc_type": "receipt",
+      "title": "Walmart groceries receipt",
+      "file_ref": "photos/receipt_2026-01-02.jpg",
+      "amount": 120.5,
+      "currency": "CAD",
+      "date": "2026-01-02",
+      "merchant": "Walmart Supercenter",
+      "tags": [
+        "groceries",
+        "household"
+      ],
+      "links": {},
+      "notes": "Grocery run + household items",
+      "status": "active",
+      "meta": {},
+      "created_at": "2026-01-03T03:23:37.518947+00:00",
+      "updated_at": "2026-01-03T03:23:37.524506+00:00"
+    },
+    {
+      "id": "dc_1fdb89e734e1",
+      "doc_type": "invoice",
+      "title": "Q1 office supplies invoice",
+      "file_ref": "invoices/office_2026_q1.pdf",
+      "amount": 450.0,
+      "currency": "CAD",
+      "date": "2026-01-10",
+      "merchant": "Staples",
+      "tags": [
+        "office",
+        "supplies"
+      ],
+      "links": {},
+      "notes": "",
+      "status": "active",
+      "meta": {},
+      "created_at": "2026-01-03T03:23:37.521348+00:00",
+      "updated_at": "2026-01-03T03:23:37.521348+00:00"
+    },
+    {
+      "id": "dc_d828d739bc05",
+      "doc_type": "receipt",
+      "title": "Walmart groceries receipt",
+      "file_ref": "photos/receipt_2026-01-02.jpg",
+      "amount": 120.5,
+      "currency": "CAD",
+      "date": "2026-01-02",
+      "merchant": "Walmart Supercenter",
+      "tags": [
+        "groceries",
+        "household"
+      ],
+      "links": {},
+      "notes": "Grocery run + household items",
+      "status": "active",
+      "meta": {},
+      "created_at": "2026-01-03T03:24:06.990635+00:00",
+      "updated_at": "2026-01-03T03:24:06.995492+00:00"
+    },
+    {
+      "id": "dc_35206077211a",
+      "doc_type": "invoice",
+      "title": "Q1 office supplies invoice",
+      "file_ref": "invoices/office_2026_q1.pdf",
+      "amount": 450.0,
+      "currency": "CAD",
+      "date": "2026-01-10",
+      "merchant": "Staples",
+      "tags": [
+        "office",
+        "supplies"
+      ],
+      "links": {},
+      "notes": "",
+      "status": "active",
+      "meta": {},
+      "created_at": "2026-01-03T03:24:06.992267+00:00",
+      "updated_at": "2026-01-03T03:24:06.992267+00:00"
+    },
+    {
+      "id": "dc_6b9512985f34",
+      "title": "Lease Agreement (Updated)",
+      "doc_type": "contract",
+      "visibility": "shareable",
+      "file_path": "/docs/lease_2024.pdf",
+      "blob_ref": "",
+      "mime": "application/pdf",
+      "sha256": "",
+      "tags": [
+        "lease",
+        "property",
+        "executed"
+      ],
+      "links": {
+        "property": "pi_abc123"
+      },
+      "notes": "Main lease document",
+      "meta": {},
+      "created_at": "2026-01-03T04:04:07.066617+00:00",
+      "updated_at": "2026-01-03T04:04:07.074553+00:00"
+    }
+  ]
+}

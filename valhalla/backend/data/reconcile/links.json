@@ -1,0 +1,113 @@
+{
+  "updated_at": "2026-01-03T07:52:32.242389+00:00",
+  "items": [
+    {
+      "id": "rl_cf9b373f5f3e",
+      "bank_txn_id": "bt_123",
+      "target_type": "receipt",
+      "target_id": "rc_456",
+      "note": "manual match",
+      "meta": {},
+      "created_at": "2026-01-03T07:52:05.082582+00:00"
+    },
+    {
+      "id": "rl_bd645b0570a5",
+      "bank_txn_id": "bt_101",
+      "target_type": "receipt",
+      "target_id": "rc_201",
+      "note": "link1",
+      "meta": {},
+      "created_at": "2026-01-03T07:52:05.087061+00:00"
+    },
+    {
+      "id": "rl_4755877a7813",
+      "bank_txn_id": "bt_102",
+      "target_type": "payment",
+      "target_id": "p_301",
+      "note": "link2",
+      "meta": {},
+      "created_at": "2026-01-03T07:52:05.089255+00:00"
+    },
+    {
+      "id": "rl_e9d74e577d4d",
+      "bank_txn_id": "bt_test123",
+      "target_type": "receipt",
+      "target_id": "rc_test456",
+      "note": "test link",
+      "meta": {},
+      "created_at": "2026-01-03T07:52:05.325713+00:00"
+    },
+    {
+      "id": "rl_d91d846f91fa",
+      "bank_txn_id": "bt_123",
+      "target_type": "receipt",
+      "target_id": "rc_456",
+      "note": "manual match",
+      "meta": {},
+      "created_at": "2026-01-03T07:52:23.564485+00:00"
+    },
+    {
+      "id": "rl_dd72d7210ab4",
+      "bank_txn_id": "bt_101",
+      "target_type": "receipt",
+      "target_id": "rc_201",
+      "note": "link1",
+      "meta": {},
+      "created_at": "2026-01-03T07:52:23.568192+00:00"
+    },
+    {
+      "id": "rl_e98fadb577d0",
+      "bank_txn_id": "bt_102",
+      "target_type": "payment",
+      "target_id": "p_301",
+      "note": "link2",
+      "meta": {},
+      "created_at": "2026-01-03T07:52:23.570998+00:00"
+    },
+    {
+      "id": "rl_f66929b25b5d",
+      "bank_txn_id": "bt_test123",
+      "target_type": "receipt",
+      "target_id": "rc_test456",
+      "note": "test link",
+      "meta": {},
+      "created_at": "2026-01-03T07:52:23.749102+00:00"
+    },
+    {
+      "id": "rl_2a365fb9d3d2",
+      "bank_txn_id": "bt_123",
+      "target_type": "receipt",
+      "target_id": "rc_456",
+      "note": "manual match",
+      "meta": {},
+      "created_at": "2026-01-03T07:52:32.055446+00:00"
+    },
+    {
+      "id": "rl_f51931eb8f00",
+      "bank_txn_id": "bt_101",
+      "target_type": "receipt",
+      "target_id": "rc_201",
+      "note": "link1",
+      "meta": {},
+      "created_at": "2026-01-03T07:52:32.060478+00:00"
+    },
+    {
+      "id": "rl_f62effe746e0",
+      "bank_txn_id": "bt_102",
+      "target_type": "payment",
+      "target_id": "p_301",
+      "note": "link2",
+      "meta": {},
+      "created_at": "2026-01-03T07:52:32.062796+00:00"
+    },
+    {
+      "id": "rl_67411ad46367",
+      "bank_txn_id": "bt_test123",
+      "target_type": "receipt",
+      "target_id": "rc_test456",
+      "note": "test link",
+      "meta": {},
+      "created_at": "2026-01-03T07:52:32.241597+00:00"
+    }
+  ]
+}

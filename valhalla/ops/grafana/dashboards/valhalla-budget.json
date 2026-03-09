@@ -1,0 +1,54 @@
+{
+  "uid": "valhalla-budget",
+  "title": "Valhalla — Error Budget",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "tags": ["valhalla","slo","budget"],
+  "panels": [
+    {
+      "type": "gauge",
+      "title": "Availability (30d rolling)",
+      "gridPos": {"h":6,"w":8,"x":0,"y":0},
+      "fieldConfig": {"defaults":{"min":0,"max":1,"unit":"percentunit"}},
+      "targets":[{"expr":"avg_over_time(valhalla:slo_availability_ratio:24h[30d])"}]
+    },
+    {
+      "type": "gauge",
+      "title": "Remaining Error Budget (est.)",
+      "description": "Approximate remaining fraction = max(0, 1 - (1 - availability_30d)/error_budget)",
+      "gridPos": {"h":6,"w":8,"x":8,"y":0},
+      "fieldConfig": {"defaults":{"min":0,"max":1,"unit":"percentunit"}},
+      "targets":[
+        {
+          "expr":"clamp_min( 1 - ((1 - avg_over_time(valhalla:slo_availability_ratio:24h[30d])) / (1 - valhalla:slo_target)), 0 )"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Current Burn Rates",
+      "gridPos": {"h":6,"w":8,"x":16,"y":0},
+      "targets":[{"expr":"valhalla:burnrate:5m"},{"expr":"valhalla:burnrate:30m"}],
+      "options":{"reduceOptions":{"calcs":["lastNotNull"]},"orientation":"horizontal"}
+    },
+    {
+      "type": "timeseries",
+      "title": "Availability (5m/30m/24h)",
+      "gridPos": {"h":8,"w":12,"x":0,"y":6},
+      "targets":[
+        {"expr":"valhalla:slo_availability_ratio:5m"},
+        {"expr":"valhalla:slo_availability_ratio:30m"},
+        {"expr":"valhalla:slo_availability_ratio:24h"}
+      ],
+      "legend":{"show":true}
+    },
+    {
+      "type": "timeseries",
+      "title": "Endpoint Burn (top offenders)",
+      "gridPos": {"h":8,"w":12,"x":12,"y":6},
+      "targets":[{"expr":"topk(5, valhalla:burnrate:30m:by_endpoint)"}],
+      "legend":{"show":true}
+    }
+  ]
+}

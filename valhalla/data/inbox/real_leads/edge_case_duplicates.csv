@@ -1,0 +1,6 @@
+lead_id,name,phone,email
+EDGE_DUP_001,Contact A,555-0001,a@example.com
+EDGE_DUP_001,Contact A Dup,555-0001,a@example.com
+EDGE_DUP_002,Contact B,555-0002,b@example.com
+EDGE_DUP_002,Contact B Dup,555-0002,b@example.com
+EDGE_DUP_001,Contact A Again,555-0001,a@example.com

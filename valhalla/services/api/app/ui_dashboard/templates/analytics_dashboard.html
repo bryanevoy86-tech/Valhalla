@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Analytics Dashboard</title>
+    <style>
+        body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; margin: 24px; }
+        .container { max-width: 900px; margin: 0 auto; }
+        .card { border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px 16px; background: #fff; }
+    </style>
+    <script>
+        async function fetchActivity() {
+            const userId = document.getElementById('userId').value || 'user_123';
+            const res = await fetch(`/api/analytics/user-activity/${userId}`);
+            if (!res.ok) return;
+            const data = await res.json();
+            const container = document.getElementById('activity-container');
+            container.innerHTML = '';
+            data.forEach(activity => {
+                const d = document.createElement('div');
+                d.className = 'card';
+                d.innerText = `${activity.action} at ${activity.timestamp}`;
+                container.appendChild(d);
+            });
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>User Analytics Dashboard</h1>
+        <div style="margin-bottom: 12px;">
+            <input id="userId" placeholder="user id" value="user_123" />
+            <button onclick="fetchActivity()" style="background:#111827;color:#fff;border:none;border-radius:6px;padding:8px 12px;cursor:pointer;">Fetch Activity</button>
+        </div>
+        <div id="activity-container"></div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,5 @@
+type: scaffold_route
+resource: ping
+method: GET
+path: /ping
+response: {"pong": true}

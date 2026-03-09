@@ -1,5 +1,11 @@
 from fastapi import APIRouter
-router = APIRouter()
-@router.get("/admin/secscan")
-def get_admin_secscan():
-    return {"message": "admin_secscan works"}
+from fastapi.responses import JSONResponse
+
+from app.observability import secscan
+
+router = APIRouter(prefix="/admin/secscan", tags=["admin-secscan"])
+
+
+@router.get("/scan")
+def scan():
+    return JSONResponse(secscan.scan_recent())

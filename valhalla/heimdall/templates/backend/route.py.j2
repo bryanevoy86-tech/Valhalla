@@ -1,0 +1,7 @@
+from fastapi import APIRouter
+
+router = APIRouter(prefix="{{ prefix }}", tags=["{{ tag }}"])
+
+@router.{{ method|lower }}("{{ path }}")
+async def {{ func_name }}():
+    return {{ response }}

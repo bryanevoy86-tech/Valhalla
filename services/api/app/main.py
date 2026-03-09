@@ -1,11 +1,14 @@
 import os
+import sys
 import asyncio
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 
+# Now imports of 'from app.xxx' will resolve to this package
 from app.observability import drift, retention
 from app.core.db import verify_schema_initialized
 from app.core.settings import settings
@@ -742,21 +745,8 @@ try:
 except Exception as e:
     print(f"[app.main] Skipping backup router: {e}")
 
-# PACK: Jobs Router (notification dispatch, research jobs, etc)
-try:
-    from app.routers import jobs
-    app.include_router(jobs.router, prefix="/api")
-    print("[app.main] Jobs router registered")
-except Exception as e:
-    print(f"[app.main] Skipping jobs router: {e}")
-
-# PACK: Notify Router (queue webhooks and emails for dispatch)
-try:
-    from app.routers import notify
-    app.include_router(notify.router, prefix="/api")
-    print("[app.main] Notify router registered")
-except Exception as e:
-    print(f"[app.main] Skipping notify router: {e}")
+# NOTE: Jobs and Notify routers are registered via router_registry above (lines 237-238)
+# Removed duplicate registrations here
 
 try:
     from app.api.v1.security import router as security_router
@@ -870,53 +860,8 @@ try:
 except Exception as e:
     print(f"[app.main] Skipping portfolio_dashboard router: {e}")
 
-# Governance King router
-try:
-    from app.routers import governance_king
-    app.include_router(governance_king.router, prefix="/api")
-    print("[app.main] Governance King router registered")
-except Exception as e:
-    print(f"[app.main] Skipping governance_king router: {e}")
-
-# Governance Queen router
-try:
-    from app.routers import governance_queen
-    app.include_router(governance_queen.router, prefix="/api")
-    print("[app.main] Governance Queen router registered")
-except Exception as e:
-    print(f"[app.main] Skipping governance_queen router: {e}")
-
-# Governance Odin router
-try:
-    from app.routers import governance_odin
-    app.include_router(governance_odin.router, prefix="/api")
-    print("[app.main] Governance Odin router registered")
-except Exception as e:
-    print(f"[app.main] Skipping governance_odin router: {e}")
-
-# Governance Loki router
-try:
-    from app.routers import governance_loki
-    app.include_router(governance_loki.router, prefix="/api")
-    print("[app.main] Governance Loki router registered")
-except Exception as e:
-    print(f"[app.main] Skipping governance_loki router: {e}")
-
-# Governance Tyr router
-try:
-    from app.routers import governance_tyr
-    app.include_router(governance_tyr.router, prefix="/api")
-    print("[app.main] Governance Tyr router registered")
-except Exception as e:
-    print(f"[app.main] Skipping governance_tyr router: {e}")
-
-# Governance Orchestrator router (calls all five gods)
-try:
-    from app.routers import governance_orchestrator
-    app.include_router(governance_orchestrator.router, prefix="/api")
-    print("[app.main] Governance Orchestrator router registered")
-except Exception as e:
-    print(f"[app.main] Skipping governance_orchestrator router: {e}")
+# NOTE: Governance routers (King, Queen, Odin, Loki, Tyr, Orchestrator) are
+# registered at lines 264-269. Removed duplicate registrations here.
 
 # PACK W: System Status router (system metadata and completion status)
 try:
@@ -1371,13 +1316,8 @@ try:
 except Exception as e:
     print(f"[app.main] Skipping tuning_rules router: {e}")
 
-# Workflow Guardrails (safety constraints)
-try:
-    from app.routers import workflow_guardrails
-    app.include_router(workflow_guardrails.router)
-    print("[app.main] Workflow guardrails router registered")
-except Exception as e:
-    print(f"[app.main] Skipping workflow_guardrails router: {e}")
+# NOTE: Workflow guardrails already registered at line 1026 (PACK AQ)
+# Removed duplicate registration here
 
 # PACK TY: Route Index & Debug Explorer router (enumerate all mounted routes)
 try:
@@ -1395,13 +1335,8 @@ try:
 except Exception as e:
     print(f"[app.main] Skipping system_config router: {e}")
 
-# PACK UA: Feature Flag Engine router (toggle features on/off, safe experiments)
-try:
-    from app.routers import feature_flags
-    app.include_router(feature_flags.router)
-    print("[app.main] Feature flags router registered")
-except Exception as e:
-    print(f"[app.main] Skipping feature_flags router: {e}")
+# NOTE: Feature flags router already registered at line 1083 (PACK AX)
+# Removed duplicate registration here
 
 # PACK UB: Deployment Profile & Smoke Test Runner router (deployment info + health checks)
 try:
@@ -1486,13 +1421,8 @@ try:
 except Exception as e:
     print(f"[app.main] Skipping opportunity router: {e}")
 
-# PACK CI3: Trajectory Engine router
-try:
-    from app.routers import trajectory
-    app.include_router(trajectory.router)
-    print("[app.main] Trajectory router registered")
-except Exception as e:
-    print(f"[app.main] Skipping trajectory router: {e}")
+# NOTE: Trajectory already registered at line 1303 (PACK L0-09)
+# Removed duplicate CI3 registration here
 
 # PACK CI4: Insight Synthesizer router
 try:
@@ -1502,13 +1432,8 @@ try:
 except Exception as e:
     print(f"[app.main] Skipping insight router: {e}")
 
-# PACK CI5: Heimdall Tuning Ruleset Engine router
-try:
-    from app.routers import tuning_rules
-    app.include_router(tuning_rules.router)
-    print("[app.main] Tuning rules router registered")
-except Exception as e:
-    print(f"[app.main] Skipping tuning_rules router: {e}")
+# NOTE: Tuning rules already registered at line 1311 (PACK L0-09)
+# Removed duplicate CI5 registration here
 
 # PACK CI6: Trigger & Threshold Engine router
 try:
@@ -1518,13 +1443,8 @@ try:
 except Exception as e:
     print(f"[app.main] Skipping triggers router: {e}")
 
-# PACK CI7: Strategic Mode Engine router
-try:
-    from app.routers import strategic_mode
-    app.include_router(strategic_mode.router)
-    print("[app.main] Strategic mode router registered")
-except Exception as e:
-    print(f"[app.main] Skipping strategic_mode router: {e}")
+# NOTE: Strategic mode already registered at line 1279 (PACK L0-09)
+# Removed duplicate CI7 registration here
 
 # PACK CI8: Narrative / Chapter Engine router
 try:
@@ -1542,13 +1462,8 @@ try:
 except Exception as e:
     print(f"[app.main] Skipping decision_outcome router: {e}")
 
-# PACK CL11: Strategic Memory Timeline router
-try:
-    from app.routers import strategic_event
-    app.include_router(strategic_event.router)
-    print("[app.main] Strategic event router registered")
-except Exception as e:
-    print(f"[app.main] Skipping strategic_event router: {e}")
+# NOTE: Strategic event already registered at line 1287 (PACK L0-09)
+# Removed duplicate CL11 registration here
 
 # PACK CL12: Model Provider Registry router
 try:
@@ -2061,12 +1976,6 @@ try:
     print("[app.main] System state router registered")
 except Exception as e:
     print(f"[app.main] Skipping system router: {e}")
-
-# --- Health Check Endpoint (required by Render) ----
-@app.get("/api/health")
-def health():
-    """Health check endpoint for Render deployment."""
-    return {"status": "ok"}
 
 print("=" * 80)
 print("=== APP INITIALIZATION COMPLETE ===")

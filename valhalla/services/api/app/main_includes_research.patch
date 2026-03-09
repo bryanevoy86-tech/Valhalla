@@ -1,0 +1,18 @@
+--- services/api/main.py (showing research integration pattern)
++++ services/api/main.py
+@@ -95,6 +95,7 @@
+ 
+ # Try importing research and playbooks routers
+ try:
++    # research.py now re-exports from app.research.routers
+     from app.routers.research import router as research_router
+     from app.routers.playbooks import router as playbooks_router
+     from app.routers.jobs import router as jobs_router
+@@ -190,6 +191,7 @@
+     print("INFO: Reports router not registered (will be available after builder creates it)")
+     
+ if RESEARCH_AVAILABLE:
++    # Includes new in-memory research agent router
+     app.include_router(research_router, prefix="/api")
+     app.include_router(playbooks_router, prefix="/api")
+     app.include_router(jobs_router, prefix="/api")

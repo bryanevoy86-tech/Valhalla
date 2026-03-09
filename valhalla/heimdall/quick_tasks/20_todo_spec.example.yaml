@@ -1,0 +1,13 @@
+type: spec
+name: todo                       # feature/model name (used for filenames)
+resource: todo                   # REST resource (pluralized for path if prefix omitted)
+storage: db                      # memory | db
+table: todos                     # required if storage=db (defaults to resource + "s" if omitted)
+
+fields:                           # declare fields; "id" is auto-added if missing (bigserial PK)
+  - { name: title, type: text, not_null: true }
+  - { name: done,  type: bool, not_null: true, default: false }
+
+routes:                           # optional extra single-endpoint routes (beyond CRUD)
+  - { name: todo_stats, method: GET, path: /todos/stats,
+      response: {"total": 0, "done": 0} }

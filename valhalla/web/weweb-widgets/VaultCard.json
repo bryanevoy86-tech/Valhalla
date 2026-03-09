@@ -1,0 +1,10 @@
+{
+  "name": "VaultCard",
+  "props": {"title":"string","amount":"number","period":"string"},
+  "binding": {
+    "title": "item.vault",
+    "amount": "item.amount",
+    "period": "global.period"
+  },
+  "style": {"radius":"2xl","shadow":"lg","padding":"xl"}
+}

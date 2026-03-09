@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Messaging Dashboard</title>
+  <style>
+    body { font-family: Segoe UI, Arial, sans-serif; background: #f5f7fb; padding: 24px; }
+    .wrap { max-width: 1100px; margin: 0 auto; }
+    h1 { color: #333; }
+    .grid { display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+    .card { background: #fff; border-radius: 8px; box-shadow: 0 10px 24px rgba(0,0,0,0.06); padding: 20px; }
+    .card h2 { margin: 0 0 12px; color: #4a56e2; }
+    label { display:block; margin: 8px 0 4px; color: #444; }
+    input, textarea { width: 100%; padding: 10px; border: 1px solid #dfe3ee; border-radius: 6px; }
+    textarea { min-height: 100px; }
+    button { background: linear-gradient(135deg,#667eea,#764ba2); color: #fff; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; margin-top: 10px; }
+    .result { margin-top: 10px; font-size: 13px; }
+    .ok { color: #0a7a3e; }
+    .err { color: #b00020; }
+    .badge { display:inline-block; background: #e8eafc; color:#3942d6; padding:3px 8px; border-radius: 12px; font-size: 12px; margin-right: 6px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>✉️ Messaging (Email & SMS)</h1>
+    <p>Send test emails/SMS, manage templates, and notify users respecting their preferences.</p>
+
+    <div class="grid">
+      <div class="card">
+        <h2>Send Email</h2>
+        <label>To (email)</label>
+        <input id="email-to" placeholder="user@example.com" />
+        <label>Subject</label>
+        <input id="email-subject" placeholder="Subject" />
+        <label>Body</label>
+        <textarea id="email-body" placeholder="Plain text or HTML"></textarea>
+        <label><input type="checkbox" id="email-html" /> HTML</label>
+        <button onclick="sendEmail()">Send Email</button>
+        <div id="email-result" class="result"></div>
+      </div>
+
+      <div class="card">
+        <h2>Send SMS</h2>
+        <label>To (phone)</label>
+        <input id="sms-to" placeholder="+15551234567" />
+        <label>Message</label>
+        <textarea id="sms-message" placeholder="Message"></textarea>
+        <button onclick="sendSMS()">Send SMS</button>
+        <div id="sms-result" class="result"></div>
+      </div>
+
+      <div class="card">
+        <h2>Send With Template</h2>
+        <label>Template Name</label>
+        <input id="tmpl-name" placeholder="welcome" />
+        <label>To (email) or User ID</label>
+        <input id="tmpl-to" placeholder="user@example.com (optional)" />
+        <input id="tmpl-user-id" placeholder="User ID (optional)" />
+        <label>Variables (JSON)</label>
+        <textarea id="tmpl-vars" placeholder='{"user_name": "Alice", "verification_link": "https://..."}'></textarea>
+        <button onclick="sendWithTemplate()">Send With Template</button>
+        <div id="tmpl-result" class="result"></div>
+      </div>
+
+      <div class="card">
+        <h2>Notify User by Preferences</h2>
+        <label>User ID</label>
+        <input id="notify-user-id" placeholder="1" />
+        <label>Email Subject</label>
+        <input id="notify-subject" placeholder="Subject" />
+        <label>Email Body</label>
+        <textarea id="notify-body" placeholder="Body"></textarea>
+        <label>SMS Message (optional)</label>
+        <textarea id="notify-sms" placeholder="Only used if user allows SMS"></textarea>
+        <button onclick="notifyUser()">Notify User</button>
+        <div id="notify-result" class="result"></div>
+      </div>
+
+      <div class="card">
+        <h2>Templates</h2>
+        <div id="tmpl-list"></div>
+        <div style="margin-top:10px;">
+          <span class="badge">Use /api/messaging/templates to manage</span>
+          <button onclick="loadTemplates()">Refresh Templates</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API = '/api/messaging';
+
+    function show(el, ok, msg){
+      const d = document.getElementById(el);
+      d.className = 'result ' + (ok ? 'ok' : 'err');
+      d.textContent = msg;
+    }
+
+    async function sendEmail(){
+      const to = document.getElementById('email-to').value;
+      const subject = document.getElementById('email-subject').value;
+      const body = document.getElementById('email-body').value;
+      const html = document.getElementById('email-html').checked;
+      const r = await fetch(`${API}/send-email`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({to, subject, body, html})});
+      const j = await r.json();
+      show('email-result', r.ok, r.ok ? 'Email sent' : (j.detail || j.message));
+    }
+
+    async function sendSMS(){
+      const to = document.getElementById('sms-to').value;
+      const message = document.getElementById('sms-message').value;
+      const r = await fetch(`${API}/send-sms`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({to, message})});
+      const j = await r.json();
+      show('sms-result', r.ok, r.ok ? 'SMS sent' : (j.detail || j.message));
+    }
+
+    async function sendWithTemplate(){
+      const template_name = document.getElementById('tmpl-name').value;
+      const to = document.getElementById('tmpl-to').value || null;
+      const user_id = parseInt(document.getElementById('tmpl-user-id').value || '0') || null;
+      let variables = {};
+      try{ variables = JSON.parse(document.getElementById('tmpl-vars').value || '{}'); }catch(e){}
+      const r = await fetch(`${API}/send-with-template`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({template_name, to, user_id, variables})});
+      const j = await r.json();
+      show('tmpl-result', r.ok, r.ok ? 'Email sent' : (j.detail || j.message));
+    }
+
+    async function notifyUser(){
+      const user_id = parseInt(document.getElementById('notify-user-id').value);
+      const subject = document.getElementById('notify-subject').value;
+      const body = document.getElementById('notify-body').value;
+      const sms_message = document.getElementById('notify-sms').value || null;
+      const r = await fetch(`${API}/notify-user`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({user_id, subject, body, sms_message})});
+      const j = await r.json();
+      show('notify-result', r.ok, r.ok ? 'Notified user' : (j.detail || j.message));
+    }
+
+    async function loadTemplates(){
+      const r = await fetch(`${API}/templates`);
+      const j = await r.json();
+      const list = document.getElementById('tmpl-list');
+      if(!Array.isArray(j) || j.length === 0){ list.textContent = 'No templates.'; return; }
+      list.innerHTML = j.map(t => `<div><b>${t.template_name}</b> — ${t.subject}</div>`).join('');
+    }
+
+    window.addEventListener('load', loadTemplates);
+  </script>
+</body>
+</html>

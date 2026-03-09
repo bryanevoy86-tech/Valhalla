@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Role Permissions Dashboard</title>
+    <style>
+        body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; margin: 24px; }
+        .container { max-width: 900px; margin: 0 auto; }
+        .card { border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px 16px; background: #fff; }
+    </style>
+    <script>
+        async function fetchPermissions() {
+            const role = document.getElementById('role').value || 'admin';
+            const res = await fetch(`/api/roles/${role}`);
+            if (!res.ok) return;
+            const data = await res.json();
+            const container = document.getElementById('permissions-container');
+            container.innerHTML = '';
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.innerHTML = `<h3>Permissions for ${data.role}</h3><p>${data.permissions.join(', ')}</p><div style="color:#6b7280;">Created at: ${data.created_at}</div>`;
+            container.appendChild(card);
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>Role Permissions</h1>
+        <div style="margin-bottom: 12px;">
+            <input id="role" placeholder="role" value="admin" />
+            <button onclick="fetchPermissions()" style="background:#111827;color:#fff;border:none;border-radius:6px;padding:8px 12px;cursor:pointer;">Fetch Permissions</button>
+        </div>
+        <div id="permissions-container"></div>
+    </div>
+</body>
+</html>

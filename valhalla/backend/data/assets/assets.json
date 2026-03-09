@@ -1,0 +1,33 @@
+{
+  "updated_at": "2026-01-04T05:01:18.681560+00:00",
+  "items": [
+    {
+      "id": "ast_383911ed3e67",
+      "name": "Refrigerator",
+      "kind": "appliance",
+      "purchase_date": "2023-01-15T00:00:00",
+      "purchase_price": 1200.0,
+      "warranty_months": 24,
+      "serial": "",
+      "location": "",
+      "notes": "",
+      "status": "active",
+      "created_at": "2026-01-04T05:01:01.701615+00:00",
+      "updated_at": "2026-01-04T05:01:01.701629+00:00"
+    },
+    {
+      "id": "ast_7b6e29396e0a",
+      "name": "Refrigerator",
+      "kind": "appliance",
+      "purchase_date": "2023-01-15T00:00:00",
+      "purchase_price": 1200.0,
+      "warranty_months": 24,
+      "serial": "",
+      "location": "",
+      "notes": "",
+      "status": "active",
+      "created_at": "2026-01-04T05:01:18.680686+00:00",
+      "updated_at": "2026-01-04T05:01:18.680696+00:00"
+    }
+  ]
+}

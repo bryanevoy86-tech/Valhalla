@@ -1,0 +1,67 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Heimdall Admin</title>
+  <link rel="stylesheet" href="/static/admin.css">
+  <script>
+    // Read token from ?token=... to reuse in fetch and links
+    const usp = new URLSearchParams(location.search);
+    const token = usp.get('token') || '';
+    window._heimdallToken = token;
+    function tlink(path){ return token ? (path + (path.includes('?')?'&':'?') + 'token=' + encodeURIComponent(token)) : path; }
+  </script>
+</head>
+<body>
+  <div class="nav">
+    <a href="#" onclick="location.href=tlink('/admin/heimdall/ui')">Dashboard</a>
+    <a href="#" onclick="location.href=tlink('/admin/heimdall/ui/queue')">Queue</a>
+    <a href="#" onclick="location.href=tlink('/admin/heimdall/ui/errors')">Errors</a>
+    <a href="#" onclick="location.href=tlink('/admin/heimdall/ui/previews')">Previews</a>
+    <a href="#" onclick="location.href=tlink('/admin/heimdall/ui/jobs')">Jobs</a>
+    <a href="#" onclick="location.href=tlink('/admin/heimdall/ui/schedules')">Schedules</a>
+    <a href="#" onclick="location.href=tlink('/admin/heimdall/ui/artifacts')">Artifacts</a>
+    {% if request.state.role == 'admin' %}
+      <a href="#" onclick="location.href=tlink('/admin/heimdall/ui/publish')">Publish Now</a>
+    <a href="#" onclick="location.href=tlink('/admin/heimdall/ui/compose2')"><b>Compose v2</b></a>
+    <a href="#" onclick="location.href=tlink('/admin/heimdall/ui/knowledge')">Knowledge</a>
+    {% endif %}
+    <a href="#" onclick="location.href=tlink('/admin/heimdall/ui/timeline')">Timeline</a>
+    <span style="margin-left:auto"></span>
+    <span class="muted">role: <code>{{ request.state.role or 'admin' }}</code></span>
+    {% if request.state.read_only %}
+      <span class="badge warn" title="Global read-only is enabled">read-only</span>
+    {% endif %}
+  </div>
+  <style>
+    .form label { display:block; font-weight:600; margin: 8px 0 6px; }
+    .form input, .form select, .form textarea { width:100%; padding:8px; border:1px solid #ddd; border-radius:6px; }
+    .grid { display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
+    .btn { padding:8px 14px; border-radius:8px; border:1px solid #444; cursor:pointer; }
+    .checkbox { display:flex; align-items:center; gap:8px; margin-top:8px; }
+    .muted { color:#666; }
+    .ml-4 { margin-left: 1rem; }
+    .mt-4 { margin-top: 1rem; }
+    .mt-6 { margin-top: 1.5rem; }
+    .mt-8 { margin-top: 2rem; }
+    .mb-8 { margin-bottom: 2rem; }
+    .badge.warn { background:#fff3cd; color:#8a6d3b; border:1px solid #f0e0a6; padding:2px 6px; border-radius:6px; }
+  </style>
+  <div class="wrap">
+    {% block content %}{% endblock %}
+    <div class="panel"><small>Heimdall Admin • {{ now }}</small></div>
+  </div>
+     .form label { display:block; font-weight:600; margin: 8px 0 6px; }
+     .form input, .form select, .form textarea { width:100%; padding:8px; border:1px solid #ddd; border-radius:6px; }
+     .grid { display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
+     .btn { padding:8px 14px; border-radius:8px; border:1px solid #444; cursor:pointer; }
+     .checkbox { display:flex; align-items:center; gap:8px; margin-top:8px; }
+     .muted { color:#666; }
+     .ml-4 { margin-left: 1rem; }
+     .mt-4 { margin-top: 1rem; }
+     .mt-6 { margin-top: 1.5rem; }
+     .mt-8 { margin-top: 2rem; }
+     .mb-8 { margin-bottom: 2rem; }
+     .flex { display: flex; }
+     .items-center { align-items: center; }
+     .justify-between { justify-content: space-between; }

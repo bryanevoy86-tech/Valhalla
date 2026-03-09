@@ -1,0 +1,104 @@
+{
+  "version": 1,
+  "features": [
+    {
+      "name": "user",
+      "fields": [
+        {"name": "email", "type": "text", "not_null": true},
+        {"name": "display_name", "type": "text"},
+        {"name": "created_at", "type": "timestamptz", "default": "now()"}
+      ],
+      "routes": [{"name": "user_ping", "method": "GET", "path": "/users/ping", "response": {"ok": true}}]
+    },
+    {
+      "name": "team",
+      "fields": [
+        {"name": "name", "type": "text", "not_null": true},
+        {"name": "created_at", "type": "timestamptz", "default": "now()"}
+      ]
+    },
+    {
+      "name": "project",
+      "fields": [
+        {"name": "team_id", "type": "bigint"},
+        {"name": "name", "type": "text", "not_null": true},
+        {"name": "status", "type": "text", "default": "active"},
+        {"name": "created_at", "type": "timestamptz", "default": "now()"}
+      ]
+    },
+    {
+      "name": "ticket",
+      "fields": [
+        {"name": "project_id", "type": "bigint"},
+        {"name": "title", "type": "text", "not_null": true},
+        {"name": "body", "type": "text"},
+        {"name": "priority", "type": "text", "default": "medium"},
+        {"name": "status", "type": "text", "default": "open"},
+        {"name": "created_at", "type": "timestamptz", "default": "now()"}
+      ]
+    },
+    {
+      "name": "comment",
+      "fields": [
+        {"name": "ticket_id", "type": "bigint"},
+        {"name": "author_id", "type": "bigint"},
+        {"name": "body", "type": "text"},
+        {"name": "created_at", "type": "timestamptz", "default": "now()"}
+      ]
+    },
+    {
+      "name": "label",
+      "fields": [
+        {"name": "name", "type": "text", "not_null": true},
+        {"name": "color", "type": "text", "default": "#888888"}
+      ]
+    },
+    {
+      "name": "attachment",
+      "fields": [
+        {"name": "ticket_id", "type": "bigint"},
+        {"name": "filename", "type": "text"},
+        {"name": "size_bytes", "type": "bigint"}
+      ]
+    },
+    {
+      "name": "notification",
+      "fields": [
+        {"name": "user_id", "type": "bigint"},
+        {"name": "kind", "type": "text"},
+        {"name": "payload", "type": "jsonb"},
+        {"name": "read", "type": "bool", "default": "false"},
+        {"name": "created_at", "type": "timestamptz", "default": "now()"}
+      ]
+    },
+    {
+      "name": "audit_log",
+      "fields": [
+        {"name": "actor_id", "type": "bigint"},
+        {"name": "action", "type": "text"},
+        {"name": "entity", "type": "text"},
+        {"name": "metadata", "type": "jsonb"},
+        {"name": "created_at", "type": "timestamptz", "default": "now()"}
+      ]
+    },
+    {
+      "name": "webhook",
+      "fields": [
+        {"name": "target_url", "type": "text"},
+        {"name": "secret", "type": "text"},
+        {"name": "active", "type": "bool", "default": "true"}
+      ]
+    },
+    {
+      "name": "event",
+      "fields": [
+        {"name": "topic", "type": "text"},
+        {"name": "data", "type": "jsonb"},
+        {"name": "created_at", "type": "timestamptz", "default": "now()"}
+      ]
+    }
+  ],
+  "defaults": {
+    "storage": "auto"
+  }
+}

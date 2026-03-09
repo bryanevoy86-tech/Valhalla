@@ -1,0 +1,5 @@
+﻿{
+  "title": "Pack6: WeWeb datasources & cards",
+  "scope": "web",
+  "plan": "Create WeWeb datasources for Valhalla API bindings and reusable UI card components for metrics, vault, and telemetry displays"
+}

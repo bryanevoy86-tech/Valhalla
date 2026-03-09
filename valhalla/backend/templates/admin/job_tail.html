@@ -1,0 +1,64 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<div class="panel">
+  <div class="flex items-center justify-between">
+    <span class="badge">Job Tail</span>
+    <small class="muted"><code>{{ name }}</code> @ <code>{{ ts }}</code></small>
+  </div>
+  <div class="grid" style="grid-template-columns:1fr 1fr;">
+    <div>
+      <div><b>stdout</b></div>
+      <pre id="out" style="height:320px; overflow:auto; background:#111; color:#ddd; padding:8px; border-radius:6px;"></pre>
+    </div>
+    <div>
+      <div><b>stderr</b></div>
+      <pre id="err" style="height:320px; overflow:auto; background:#111; color:#ddd; padding:8px; border-radius:6px;"></pre>
+    </div>
+  </div>
+  <div class="mt-6">
+    <label>Tail bytes</label>
+    <input id="nbytes" type="number" min="500" step="500" value="{{ tail_bytes }}" style="width:140px" />
+    <button class="btn" id="refresh">Refresh</button>
+    <label class="checkbox" style="margin-left:12px;"><input type="checkbox" id="auto" checked /> Auto-refresh (3s)</label>
+  </div>
+</div>
+
+<script>
+(function(){
+  const name = {{ name | tojson }};
+  const ts = {{ ts | tojson }};
+  let bytes = {{ tail_bytes }};
+  let timer = null;
+
+  async function load() {
+    const url = tlink(`/admin/heimdall/api/job-tail?name=${encodeURIComponent(name)}&ts=${encodeURIComponent(ts)}&bytes=${bytes}`);
+    const res = await fetch(url);
+    const js = await res.json();
+    const out = document.getElementById('out');
+    const err = document.getElementById('err');
+    out.textContent = js.stdout && js.stdout.exists ? js.stdout.tail : '[no stdout yet]';
+    err.textContent = js.stderr && js.stderr.exists ? js.stderr.tail : '[no stderr yet]';
+    // Scroll to bottom
+    out.scrollTop = out.scrollHeight;
+    err.scrollTop = err.scrollHeight;
+  }
+
+  function startAuto(){
+    if (timer) clearInterval(timer);
+    if (document.getElementById('auto').checked) {
+      timer = setInterval(load, 3000);
+    }
+  }
+
+  document.getElementById('refresh').onclick = () => {
+    const n = parseInt(document.getElementById('nbytes').value || '0', 10);
+    bytes = isNaN(n) || n <= 0 ? bytes : n;
+    load();
+  };
+  document.getElementById('auto').onchange = startAuto;
+
+  load();
+  startAuto();
+})();
+</script>
+{% endblock %}

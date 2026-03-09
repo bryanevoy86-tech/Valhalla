@@ -1,0 +1,27 @@
+{
+  "updated_at": "2026-01-04T05:01:18.686793+00:00",
+  "items": [
+    {
+      "id": "mnt_917bf0eab8c6",
+      "asset_id": "ast_test",
+      "title": "Oil change",
+      "cadence": "quarterly",
+      "due_date": "",
+      "notes": "",
+      "status": "open",
+      "created_at": "2026-01-04T05:01:01.708072+00:00",
+      "updated_at": "2026-01-04T05:01:01.708080+00:00"
+    },
+    {
+      "id": "mnt_97ed9f048b3b",
+      "asset_id": "ast_test",
+      "title": "Oil change",
+      "cadence": "quarterly",
+      "due_date": "",
+      "notes": "",
+      "status": "open",
+      "created_at": "2026-01-04T05:01:18.686233+00:00",
+      "updated_at": "2026-01-04T05:01:18.686241+00:00"
+    }
+  ]
+}

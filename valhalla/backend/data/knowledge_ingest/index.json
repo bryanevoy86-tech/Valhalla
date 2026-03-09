@@ -1,0 +1,31 @@
+{
+  "updated_at": "2026-01-03T04:04:07.147330+00:00",
+  "items": [
+    {
+      "item_id": "ki_1034254ef3a3",
+      "chunk_id": "kc_2b753b3a1550",
+      "freq": {
+        "looking": 1,
+        "grants": 1,
+        "loans": 1,
+        "small": 1,
+        "business": 2,
+        "administration": 1,
+        "sba": 1,
+        "programs": 1,
+        "available": 1,
+        "also": 1,
+        "checking": 1,
+        "credit": 1,
+        "options": 1
+      },
+      "title": "Funding Research",
+      "source_type": "note",
+      "source_ref": "",
+      "tags": [
+        "funding",
+        "research"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+type: bundle
+tasks:
+  - { type: scaffold_model, name: todo, table: todos, columns:
+      [ {name: id, type: bigserial, primary_key: true},
+        {name: title, type: text, not_null: true},
+        {name: done,  type: bool, not_null: true, default: false} ] }
+  - { type: run_migration, file: migrations/generated/todo.sql }
+  - { type: scaffold_crud, resource: todo, storage: db, table: todos,
+      fields: [ {name: title, type: text}, {name: done, type: bool, default: false} ] }

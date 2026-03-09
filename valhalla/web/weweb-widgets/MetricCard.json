@@ -1,0 +1,10 @@
+{
+  "name": "MetricCard",
+  "props": {"label":"string","value":"number","sub":"string"},
+  "binding": {
+    "label": "item.name",
+    "value": "item.value",
+    "sub": "item.unit"
+  },
+  "style": {"radius":"xl","shadow":"md","padding":"lg"}
+}

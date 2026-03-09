@@ -1,0 +1,49 @@
+{
+  "items": [
+    {
+      "created_at_utc": "2026-01-01T09:59:35.341323Z",
+      "cone": {
+        "band": "B",
+        "reason": "Boot default: caution until governance KPIs are green",
+        "updated_at_utc": "2026-01-01T09:59:33.726807Z"
+      },
+      "lite": {
+        "status": "unknown"
+      },
+      "go_session": {
+        "active": false,
+        "started_at_utc": "2026-01-01T09:34:05.283144Z",
+        "ended_at_utc": "2026-01-01T09:34:12.382347Z",
+        "cone_band": "B",
+        "status": "green",
+        "notes": "Ended after restart",
+        "snapshot": {
+          "cone": {
+            "band": "B",
+            "reason": "Boot default: caution until governance KPIs are green",
+            "updated_at_utc": "2026-01-01T09:34:04.909677Z",
+            "metrics": {}
+          },
+          "status": {
+            "status": "green",
+            "reasons": []
+          }
+        }
+      },
+      "next": {
+        "cone_band": "B",
+        "status": "green",
+        "next_step": {
+          "id": "preflight_view_dashboard",
+          "title": "Open the Dashboard and confirm status + Cone band",
+          "why": "You only operate when the system is visible. No invisible running.",
+          "band_min": "D",
+          "blocked_if_red": false,
+          "done": false,
+          "notes": null
+        },
+        "message": "Next step ready."
+      }
+    }
+  ]
+}

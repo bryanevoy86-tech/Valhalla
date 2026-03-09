@@ -1,0 +1,16 @@
+{
+  "updated_at": "2026-01-04T01:34:35.172798+00:00",
+  "items": {
+    "canada_corp_registered": false,
+    "bank_account_opened": false,
+    "accounting_system_ready": false,
+    "master_trust_panama": false,
+    "subtrust_canada": false,
+    "subtrust_philippines": false,
+    "subtrust_nz": false,
+    "subtrust_uae": false,
+    "privacy_layering": false,
+    "insurance_stack": false
+  },
+  "notes": ""
+}

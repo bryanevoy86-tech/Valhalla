@@ -6,8 +6,8 @@ NOT semantic quality - replace with real embedding model (OpenAI, Cohere) later.
 
 import hashlib
 import math
+import os
 from typing import List
-from .config import settings
 
 
 def _hash_f32(s: str) -> float:
@@ -25,7 +25,7 @@ def local_embed(text: str, dim: int | None = None) -> List[float]:
     
     Args:
         text: Input text to embed
-        dim: Vector dimension (defaults to settings.EMBEDDING_DIM)
+        dim: Vector dimension (defaults to EMBEDDING_DIM env var or 256)
     
     Returns:
         L2-normalized float vector of length dim
@@ -34,7 +34,8 @@ def local_embed(text: str, dim: int | None = None) -> List[float]:
     Documents with similar text structure (not meaning) may have similar vectors.
     Replace with a real embedding model for production use.
     """
-    dim = dim or settings.EMBEDDING_DIM
+    if dim is None:
+        dim = int(os.getenv("EMBEDDING_DIM", "256"))
     
     if not text:
         return [0.0] * dim
@@ -70,14 +71,16 @@ def embed_text(text: str) -> List[float]:
     
     Future: Add OpenAI, Cohere, or other providers via EMBEDDING_PROVIDER setting.
     """
-    if settings.EMBEDDING_PROVIDER == "local":
-        return local_embed(text, settings.EMBEDDING_DIM)
+    provider = os.getenv("EMBEDDING_PROVIDER", "local")
+    
+    if provider == "local":
+        return local_embed(text)
     
     # Future: plug external providers here
-    # elif settings.EMBEDDING_PROVIDER == "openai":
+    # elif provider == "openai":
     #     return openai_embed(text)
-    # elif settings.EMBEDDING_PROVIDER == "cohere":
+    # elif provider == "cohere":
     #     return cohere_embed(text)
     
     # Fallback to local if provider not implemented
-    return local_embed(text, settings.EMBEDDING_DIM)
+    return local_embed(text)

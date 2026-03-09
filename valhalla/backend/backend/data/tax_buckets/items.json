@@ -1,0 +1,443 @@
+{
+  "updated_at": "2026-01-03T08:47:29.793572+00:00",
+  "items": [
+    {
+      "id": "txb_882fd7816319",
+      "code": "HOME_OFFICE_001",
+      "name": "Home Office",
+      "risk": "safe",
+      "notes": "work from home",
+      "status": "active",
+      "meta": {},
+      "created_at": "2026-01-03T08:47:17.013510+00:00",
+      "updated_at": "2026-01-03T08:47:17.013525+00:00"
+    },
+    {
+      "id": "txb_dfcef3a4af0e",
+      "code": "HOME_OFFICE",
+      "name": "Home Office",
+      "risk": "safe",
+      "notes": "seeded",
+      "status": "active",
+      "meta": {
+        "seed": true
+      },
+      "created_at": "2026-01-03T08:47:17.017243+00:00",
+      "updated_at": "2026-01-03T08:47:17.017251+00:00"
+    },
+    {
+      "id": "txb_310bf361a58a",
+      "code": "VEHICLE",
+      "name": "Vehicle/Mileage",
+      "risk": "safe",
+      "notes": "seeded",
+      "status": "active",
+      "meta": {
+        "seed": true
+      },
+      "created_at": "2026-01-03T08:47:17.018370+00:00",
+      "updated_at": "2026-01-03T08:47:17.018375+00:00"
+    },
+    {
+      "id": "txb_8a71cd6fd79e",
+      "code": "MARKETING",
+      "name": "Marketing/Advertising",
+      "risk": "safe",
+      "notes": "seeded",
+      "status": "active",
+      "meta": {
+        "seed": true
+      },
+      "created_at": "2026-01-03T08:47:17.019315+00:00",
+      "updated_at": "2026-01-03T08:47:17.019320+00:00"
+    },
+    {
+      "id": "txb_be3051c8e1a3",
+      "code": "TOOLS",
+      "name": "Tools/Equipment",
+      "risk": "safe",
+      "notes": "seeded",
+      "status": "active",
+      "meta": {
+        "seed": true
+      },
+      "created_at": "2026-01-03T08:47:17.020189+00:00",
+      "updated_at": "2026-01-03T08:47:17.020194+00:00"
+    },
+    {
+      "id": "txb_6bf280d6a958",
+      "code": "PHONE_INTERNET",
+      "name": "Phone/Internet",
+      "risk": "safe",
+      "notes": "seeded",
+      "status": "active",
+      "meta": {
+        "seed": true
+      },
+      "created_at": "2026-01-03T08:47:17.021389+00:00",
+      "updated_at": "2026-01-03T08:47:17.021396+00:00"
+    },
+    {
+      "id": "txb_1dc1dd6d64d3",
+      "code": "PRO_SERVICES",
+      "name": "Professional Services",
+      "risk": "safe",
+      "notes": "seeded",
+      "status": "active",
+      "meta": {
+        "seed": true
+      },
+      "created_at": "2026-01-03T08:47:17.022385+00:00",
+      "updated_at": "2026-01-03T08:47:17.022390+00:00"
+    },
+    {
+      "id": "txb_4d13505738db",
+      "code": "EDUCATION",
+      "name": "Training/Education",
+      "risk": "safe",
+      "notes": "seeded",
+      "status": "active",
+      "meta": {
+        "seed": true
+      },
+      "created_at": "2026-01-03T08:47:17.023513+00:00",
+      "updated_at": "2026-01-03T08:47:17.023519+00:00"
+    },
+    {
+      "id": "txb_abd392563529",
+      "code": "MEALS",
+      "name": "Meals (Business)",
+      "risk": "aggressive",
+      "notes": "seeded",
+      "status": "active",
+      "meta": {
+        "seed": true
+      },
+      "created_at": "2026-01-03T08:47:17.024494+00:00",
+      "updated_at": "2026-01-03T08:47:17.024499+00:00"
+    },
+    {
+      "id": "txb_4f87427a4ebe",
+      "code": "HOME_OFFICE",
+      "name": "Home Office",
+      "risk": "safe",
+      "notes": "seeded",
+      "status": "active",
+      "meta": {
+        "seed": true
+      },
+      "created_at": "2026-01-03T08:47:17.117388+00:00",
+      "updated_at": "2026-01-03T08:47:17.117414+00:00"
+    },
+    {
+      "id": "txb_ee70822ed48b",
+      "code": "VEHICLE",
+      "name": "Vehicle/Mileage",
+      "risk": "safe",
+      "notes": "seeded",
+      "status": "active",
+      "meta": {
+        "seed": true
+      },
+      "created_at": "2026-01-03T08:47:17.123070+00:00",
+      "updated_at": "2026-01-03T08:47:17.123079+00:00"
+    },
+    {
+      "id": "txb_fb07544827e6",
+      "code": "MARKETING",
+      "name": "Marketing/Advertising",
+      "risk": "safe",
+      "notes": "seeded",
+      "status": "active",
+      "meta": {
+        "seed": true
+      },
+      "created_at": "2026-01-03T08:47:17.124472+00:00",
+      "updated_at": "2026-01-03T08:47:17.124479+00:00"
+    },
+    {
+      "id": "txb_976e4a10acae",
+      "code": "TOOLS",
+      "name": "Tools/Equipment",
+      "risk": "safe",
+      "notes": "seeded",
+      "status": "active",
+      "meta": {
+        "seed": true
+      },
+      "created_at": "2026-01-03T08:47:17.126088+00:00",
+      "updated_at": "2026-01-03T08:47:17.126100+00:00"
+    },
+    {
+      "id": "txb_6c19c51d63d0",
+      "code": "PHONE_INTERNET",
+      "name": "Phone/Internet",
+      "risk": "safe",
+      "notes": "seeded",
+      "status": "active",
+      "meta": {
+        "seed": true
+      },
+      "created_at": "2026-01-03T08:47:17.127471+00:00",
+      "updated_at": "2026-01-03T08:47:17.127478+00:00"
+    },
+    {
+      "id": "txb_a666159a6d06",
+      "code": "PRO_SERVICES",
+      "name": "Professional Services",
+      "risk": "safe",
+      "notes": "seeded",
+      "status": "active",
+      "meta": {
+        "seed": true
+      },
+      "created_at": "2026-01-03T08:47:17.128990+00:00",
+      "updated_at": "2026-01-03T08:47:17.129000+00:00"
+    },
+    {
+      "id": "txb_8855484bbccd",
+      "code": "EDUCATION",
+      "name": "Training/Education",
+      "risk": "safe",
+      "notes": "seeded",
+      "status": "active",
+      "meta": {
+        "seed": true
+      },
+      "created_at": "2026-01-03T08:47:17.131745+00:00",
+      "updated_at": "2026-01-03T08:47:17.131764+00:00"
+    },
+    {
+      "id": "txb_e45cd0970e53",
+      "code": "MEALS",
+      "name": "Meals (Business)",
+      "risk": "aggressive",
+      "notes": "seeded",
+      "status": "active",
+      "meta": {
+        "seed": true
+      },
+      "created_at": "2026-01-03T08:47:17.134275+00:00",
+      "updated_at": "2026-01-03T08:47:17.134288+00:00"
+    },
+    {
+      "id": "txb_e11b7fa91b34",
+      "code": "HOME_OFFICE_001",
+      "name": "Home Office",
+      "risk": "safe",
+      "notes": "work from home",
+      "status": "active",
+      "meta": {},
+      "created_at": "2026-01-03T08:47:29.668963+00:00",
+      "updated_at": "2026-01-03T08:47:29.668976+00:00"
+    },
+    {
+      "id": "txb_a619b3dc3ed6",
+      "code": "HOME_OFFICE",
+      "name": "Home Office",
+      "risk": "safe",
+      "notes": "seeded",
+      "status": "active",
+      "meta": {
+        "seed": true
+      },
+      "created_at": "2026-01-03T08:47:29.672624+00:00",
+      "updated_at": "2026-01-03T08:47:29.672635+00:00"
+    },
+    {
+      "id": "txb_06ab8cf02165",
+      "code": "VEHICLE",
+      "name": "Vehicle/Mileage",
+      "risk": "safe",
+      "notes": "seeded",
+      "status": "active",
+      "meta": {
+        "seed": true
+      },
+      "created_at": "2026-01-03T08:47:29.674447+00:00",
+      "updated_at": "2026-01-03T08:47:29.674456+00:00"
+    },
+    {
+      "id": "txb_ff6280446bdd",
+      "code": "MARKETING",
+      "name": "Marketing/Advertising",
+      "risk": "safe",
+      "notes": "seeded",
+      "status": "active",
+      "meta": {
+        "seed": true
+      },
+      "created_at": "2026-01-03T08:47:29.676133+00:00",
+      "updated_at": "2026-01-03T08:47:29.676141+00:00"
+    },
+    {
+      "id": "txb_d60737b32970",
+      "code": "TOOLS",
+      "name": "Tools/Equipment",
+      "risk": "safe",
+      "notes": "seeded",
+      "status": "active",
+      "meta": {
+        "seed": true
+      },
+      "created_at": "2026-01-03T08:47:29.677770+00:00",
+      "updated_at": "2026-01-03T08:47:29.677779+00:00"
+    },
+    {
+      "id": "txb_7df5415e239d",
+      "code": "PHONE_INTERNET",
+      "name": "Phone/Internet",
+      "risk": "safe",
+      "notes": "seeded",
+      "status": "active",
+      "meta": {
+        "seed": true
+      },
+      "created_at": "2026-01-03T08:47:29.679866+00:00",
+      "updated_at": "2026-01-03T08:47:29.679885+00:00"
+    },
+    {
+      "id": "txb_fcdd093b9483",
+      "code": "PRO_SERVICES",
+      "name": "Professional Services",
+      "risk": "safe",
+      "notes": "seeded",
+      "status": "active",
+      "meta": {
+        "seed": true
+      },
+      "created_at": "2026-01-03T08:47:29.682643+00:00",
+      "updated_at": "2026-01-03T08:47:29.682657+00:00"
+    },
+    {
+      "id": "txb_436d2f712772",
+      "code": "EDUCATION",
+      "name": "Training/Education",
+      "risk": "safe",
+      "notes": "seeded",
+      "status": "active",
+      "meta": {
+        "seed": true
+      },
+      "created_at": "2026-01-03T08:47:29.684554+00:00",
+      "updated_at": "2026-01-03T08:47:29.684562+00:00"
+    },
+    {
+      "id": "txb_1939a3bcdfd0",
+      "code": "MEALS",
+      "name": "Meals (Business)",
+      "risk": "aggressive",
+      "notes": "seeded",
+      "status": "active",
+      "meta": {
+        "seed": true
+      },
+      "created_at": "2026-01-03T08:47:29.686306+00:00",
+      "updated_at": "2026-01-03T08:47:29.686316+00:00"
+    },
+    {
+      "id": "txb_51eebf4b3289",
+      "code": "HOME_OFFICE",
+      "name": "Home Office",
+      "risk": "safe",
+      "notes": "seeded",
+      "status": "active",
+      "meta": {
+        "seed": true
+      },
+      "created_at": "2026-01-03T08:47:29.778630+00:00",
+      "updated_at": "2026-01-03T08:47:29.778641+00:00"
+    },
+    {
+      "id": "txb_d5605f49c035",
+      "code": "VEHICLE",
+      "name": "Vehicle/Mileage",
+      "risk": "safe",
+      "notes": "seeded",
+      "status": "active",
+      "meta": {
+        "seed": true
+      },
+      "created_at": "2026-01-03T08:47:29.780693+00:00",
+      "updated_at": "2026-01-03T08:47:29.780707+00:00"
+    },
+    {
+      "id": "txb_1171fb386eca",
+      "code": "MARKETING",
+      "name": "Marketing/Advertising",
+      "risk": "safe",
+      "notes": "seeded",
+      "status": "active",
+      "meta": {
+        "seed": true
+      },
+      "created_at": "2026-01-03T08:47:29.782874+00:00",
+      "updated_at": "2026-01-03T08:47:29.782888+00:00"
+    },
+    {
+      "id": "txb_9e9668c3c94d",
+      "code": "TOOLS",
+      "name": "Tools/Equipment",
+      "risk": "safe",
+      "notes": "seeded",
+      "status": "active",
+      "meta": {
+        "seed": true
+      },
+      "created_at": "2026-01-03T08:47:29.784757+00:00",
+      "updated_at": "2026-01-03T08:47:29.784766+00:00"
+    },
+    {
+      "id": "txb_c4fdef02162e",
+      "code": "PHONE_INTERNET",
+      "name": "Phone/Internet",
+      "risk": "safe",
+      "notes": "seeded",
+      "status": "active",
+      "meta": {
+        "seed": true
+      },
+      "created_at": "2026-01-03T08:47:29.786575+00:00",
+      "updated_at": "2026-01-03T08:47:29.786583+00:00"
+    },
+    {
+      "id": "txb_038d20e2c5d9",
+      "code": "PRO_SERVICES",
+      "name": "Professional Services",
+      "risk": "safe",
+      "notes": "seeded",
+      "status": "active",
+      "meta": {
+        "seed": true
+      },
+      "created_at": "2026-01-03T08:47:29.788370+00:00",
+      "updated_at": "2026-01-03T08:47:29.788382+00:00"
+    },
+    {
+      "id": "txb_0778505772bd",
+      "code": "EDUCATION",
+      "name": "Training/Education",
+      "risk": "safe",
+      "notes": "seeded",
+      "status": "active",
+      "meta": {
+        "seed": true
+      },
+      "created_at": "2026-01-03T08:47:29.790885+00:00",
+      "updated_at": "2026-01-03T08:47:29.790895+00:00"
+    },
+    {
+      "id": "txb_7bd736b4c7c5",
+      "code": "MEALS",
+      "name": "Meals (Business)",
+      "risk": "aggressive",
+      "notes": "seeded",
+      "status": "active",
+      "meta": {
+        "seed": true
+      },
+      "created_at": "2026-01-03T08:47:29.792878+00:00",
+      "updated_at": "2026-01-03T08:47:29.792887+00:00"
+    }
+  ]
+}
