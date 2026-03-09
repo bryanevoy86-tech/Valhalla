@@ -2062,6 +2062,12 @@ try:
 except Exception as e:
     print(f"[app.main] Skipping system router: {e}")
 
+# --- Health Check Endpoint (required by Render) ----
+@app.get("/api/health")
+def health():
+    """Health check endpoint for Render deployment."""
+    return {"status": "ok"}
+
 print("=" * 80)
 print("=== APP INITIALIZATION COMPLETE ===")
 print("=== Server is ready for uvicorn lifespan handler ===")
