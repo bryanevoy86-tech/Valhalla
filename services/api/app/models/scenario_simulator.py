@@ -9,6 +9,7 @@ from app.models.base import Base
 
 class Scenario(Base):
     __tablename__ = "scenarios"
+    __table_args__ = ({"extend_existing": True},)
 
     id = Column(Integer, primary_key=True, index=True)
 

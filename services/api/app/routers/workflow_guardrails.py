@@ -99,78 +99,10 @@ def delete_guardrail(
     return None
 
 
-router = APIRouter(prefix="/workflow/guardrails", tags=["WorkflowGuardrails"])
-
-
-@router.post("/rules", response_model=WorkflowRuleOut)
-def create_rule_endpoint(
-    payload: WorkflowRuleCreate,
-    db: Session = Depends(get_db),
-):
-    """Create a workflow rule."""
-    return create_rule(db, payload)
-
-
-@router.patch("/rules/{rule_id}", response_model=WorkflowRuleOut)
-def update_rule_endpoint(
-    rule_id: int,
-    payload: WorkflowRuleUpdate,
-    db: Session = Depends(get_db),
-):
-    """Update a workflow rule."""
-    obj = update_rule(db, rule_id, payload)
-    if not obj:
-        raise HTTPException(status_code=404, detail="Rule not found")
-    return obj
-
-
-@router.get("/rules", response_model=List[WorkflowRuleOut])
-def list_rules_endpoint(
-    entity_type: Optional[str] = Query(None),
-    db: Session = Depends(get_db),
-):
-    """List workflow rules."""
-    return list_rules(db, entity_type=entity_type)
-
-
-@router.get("/check")
-def check_action_endpoint(
-    entity_type: str = Query(...),
-    action: str = Query(...),
-    role: str = Query(...),
-    db: Session = Depends(get_db),
-):
-    """Check if an action is allowed for a role."""
-    allowed = is_action_allowed(db, entity_type=entity_type, action=action, role=role)
-    return {"allowed": allowed}
-
-
-@router.post("/violations", response_model=WorkflowViolationOut)
-def record_violation_endpoint(
-    entity_type: str = Query(...),
-    action: str = Query(...),
-    actor: str = Query(...),
-    entity_id: Optional[str] = Query(None),
-    actor_role: Optional[str] = Query(None),
-    reason: str = Query(""),
-    db: Session = Depends(get_db),
-):
-    """Record a workflow violation."""
-    return record_violation(
-        db,
-        entity_type=entity_type,
-        entity_id=entity_id,
-        action=action,
-        actor=actor,
-        actor_role=actor_role,
-        reason=reason,
-    )
-
-
-@router.get("/violations", response_model=List[WorkflowViolationOut])
-def list_violations_endpoint(
-    limit: int = Query(50, ge=1, le=500),
-    db: Session = Depends(get_db),
-):
-    """List workflow violations."""
-    return list_violations(db, limit=limit)
+# COMMENTED OUT: Incomplete second router section
+# Missing schemas: WorkflowRuleOut, WorkflowRuleCreate, WorkflowRuleUpdate, WorkflowViolationOut
+# Missing functions: create_rule, update_rule, list_rules, is_action_allowed, record_violation, list_violations
+# Preserved primary router functionality for workflow guardrails above.
+#
+# router = APIRouter(prefix="/workflow/guardrails", tags=["WorkflowGuardrails"])
+# ... additional endpoints removed - see git history ...

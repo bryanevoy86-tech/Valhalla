@@ -9,6 +9,7 @@ from app.models.base import Base
 
 class NotificationChannel(Base):
     __tablename__ = "notification_channels"
+    __table_args__ = ({"extend_existing": True},)
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)

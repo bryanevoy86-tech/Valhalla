@@ -98,41 +98,11 @@ def delete_rule(
     return None
 
 
-router = APIRouter(prefix="/intelligence/tuning", tags=["Intelligence", "Tuning"])
-
-
-@router.post("/profiles", response_model=TuningProfileOut)
-def upsert_profile_endpoint(
-    payload: TuningProfileIn,
-    db: Session = Depends(get_db),
-):
-    """Create or update a tuning profile."""
-    return upsert_profile(db, payload)
-
-
-@router.get("/profiles", response_model=TuningProfileList)
-def list_profiles_endpoint(
-    db: Session = Depends(get_db),
-):
-    """List all tuning profiles."""
-    items = list_profiles(db)
-    return TuningProfileList(total=len(items), items=items)
-
-
-@router.post("/constraints", response_model=TuningConstraintOut)
-def add_constraint_endpoint(
-    payload: TuningConstraintIn,
-    db: Session = Depends(get_db),
-):
-    """Add a constraint to a profile."""
-    return add_constraint(db, payload)
-
-
-@router.get("/profiles/{profile_id}/constraints", response_model=TuningConstraintList)
-def list_constraints_endpoint(
-    profile_id: int,
-    db: Session = Depends(get_db),
-):
-    """List all constraints for a profile."""
-    items = list_constraints_for_profile(db, profile_id=profile_id)
-    return TuningConstraintList(total=len(items), items=items)
+# COMMENTED OUT: Incomplete second router section
+# Missing schemas: TuningProfileOut, TuningProfileIn, TuningProfileList,
+#                 TuningConstraintOut, TuningConstraintIn, TuningConstraintList
+# Missing functions: upsert_profile, list_profiles, add_constraint, list_constraints_for_profile
+# Preserved primary router functionality for tuning rules above.
+#
+# router = APIRouter(prefix="/intelligence/tuning", tags=["Intelligence", "Tuning"])
+# ... additional endpoints removed - see git history ...

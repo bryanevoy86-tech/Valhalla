@@ -14,6 +14,9 @@ from app.schemas.trajectory import (
     TrajectoryUpdate,
     TrajectoryOut,
     TrajectoryList,
+    TrajectorySnapshotIn,
+    TrajectorySnapshotOut,
+    TrajectorySnapshotList,
 )
 from app.services import trajectory as service
 from app.models.trajectory import Trajectory
@@ -117,15 +120,13 @@ def delete_trajectory(
     return None
 
 
-router = APIRouter(prefix="/intelligence/trajectory", tags=["Intelligence", "Trajectory"])
-
-
-@router.post("/targets", response_model=TrajectoryTargetOut)
-def create_target_endpoint(
-    payload: TrajectoryTargetIn,
-    db: Session = Depends(get_db),
-):
-    return create_trajectory_target(db, payload)
+# COMMENTED OUT: Incomplete second router section
+# Missing schemas: TrajectoryTargetOut, TrajectoryTargetIn
+# Missing functions: create_trajectory_target
+# Preserved primary router functionality for trajectory above.
+#
+# router = APIRouter(prefix="/intelligence/trajectory", tags=["Intelligence", "Trajectory"])
+# ... additional endpoints removed - see git history ...
 
 
 @router.post("/snapshots", response_model=TrajectorySnapshotOut)
