@@ -97,10 +97,7 @@ def delete_guardrail(
     if not success:
         raise HTTPException(status_code=404, detail="Guardrail not found")
     return None
-    record_violation,
-    list_violations,
-    is_action_allowed,
-)
+
 
 router = APIRouter(prefix="/workflow/guardrails", tags=["WorkflowGuardrails"])
 

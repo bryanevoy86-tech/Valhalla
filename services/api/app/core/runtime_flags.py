@@ -31,3 +31,11 @@ def is_armed():
 def is_sandbox():
     """Check if system is in SANDBOX mode (no real effects)."""
     return RUNTIME_MODE == RuntimeMode.SANDBOX
+
+
+def set_runtime_mode(mode: RuntimeMode):
+    """Set the runtime mode. Compatibility function."""
+    global RUNTIME_MODE
+    RUNTIME_MODE = mode
+    return RUNTIME_MODE
+

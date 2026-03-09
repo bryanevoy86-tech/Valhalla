@@ -96,9 +96,7 @@ def delete_rule(
     if not success:
         raise HTTPException(status_code=404, detail="Rule not found")
     return None
-    add_constraint,
-    list_constraints_for_profile,
-)
+
 
 router = APIRouter(prefix="/intelligence/tuning", tags=["Intelligence", "Tuning"])
 

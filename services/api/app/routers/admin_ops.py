@@ -1,4 +1,5 @@
 import asyncio
+import json
 import os
 import time
 import urllib.parse
@@ -22,7 +23,8 @@ def _gf_explore_prom(q: str, range_min: str = "now-1h", range_max: str = "now"):
       "queries":[{"expr":q, "refId":"A"}],
       "range":{"from":range_min, "to":range_max}
     }
-    return f"{GRAFANA}/explore?left={urllib.parse.quote_plus(str(payload).replace("'","\""))}"
+    payload_str = json.dumps(payload)
+    return f"{GRAFANA}/explore?left={urllib.parse.quote_plus(payload_str)}"
 
 def _logs_link(q: str):
     if not LOGS_TMPL: return None

@@ -633,10 +633,11 @@ except Exception as e:
 
 # --- System endpoints: root + health -----------------------------------------
 
-@app.get("/", tags=["System"])
+@app.api_route("/", methods=["GET", "HEAD"], tags=["System"])
 async def root():
     """
     Root endpoint – Heimdall status + welcome message.
+    Accepts both GET and HEAD requests.
     """
     return {
         "message": "Welcome to Valhalla Legacy API",
@@ -1267,13 +1268,14 @@ try:
 except Exception as e:
     print(f"[app.main] Skipping job router: {e}")
 
-# PACK L0-08: Scheduled Jobs router (legacy router, if different from job)
-try:
-    from app.routers import scheduled_jobs
-    app.include_router(scheduled_jobs.router)
-    print("[app.main] Scheduled jobs router registered")
-except Exception as e:
-    print(f"[app.main] Skipping scheduled_jobs router: {e}")
+# PACK L0-08: Scheduled Jobs router (legacy router, DEPRECATED - use job.py instead)
+# This router is commented out to avoid duplicate ScheduledJob table definitions
+# try:
+#     from app.routers import scheduled_jobs
+#     app.include_router(scheduled_jobs.router)
+#     print("[app.main] Scheduled jobs router registered")
+# except Exception as e:
+#     print(f"[app.main] Skipping scheduled_jobs router: {e}")
 
 # PACK L0-09: Strategic Decision Engine routers
 # Strategic Mode (operational modes)

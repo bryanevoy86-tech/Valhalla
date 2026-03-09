@@ -53,3 +53,8 @@ class HeimdallAuthority:
 
 # Global Heimdall instance
 HEIMDALL = HeimdallAuthority()
+
+
+def is_live() -> bool:
+    """Check if system is in LIVE mode for executing real transactions."""
+    return RUNTIME_MODE == RuntimeMode.LIVE

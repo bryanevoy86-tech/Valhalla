@@ -91,12 +91,6 @@ def delete_event(
     if not success:
         raise HTTPException(status_code=404, detail="Event not found")
     return None
-    db: Session = Depends(get_db),
-):
-    """
-    Add a strategic event to the long-term timeline.
-    """
-    return create_strategic_event(db, payload)
 
 
 @router.get("/", response_model=StrategicEventList)

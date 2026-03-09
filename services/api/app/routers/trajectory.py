@@ -115,7 +115,7 @@ def delete_trajectory(
     if not success:
         raise HTTPException(status_code=404, detail="Trajectory not found")
     return None
-)
+
 
 router = APIRouter(prefix="/intelligence/trajectory", tags=["Intelligence", "Trajectory"])
 
