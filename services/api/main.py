@@ -1,5 +1,3 @@
-﻿from services.api.app.main import app
+from app.main import app
 
-print("[main.py] Delegating to services.api.app.main:app")
-
-
+print("[main.py] Delegating to app.main:app")
