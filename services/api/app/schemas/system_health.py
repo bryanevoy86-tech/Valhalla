@@ -25,7 +25,7 @@ class SystemHealthSnapshotOut(SystemHealthSnapshotBase):
     created_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # PACK TX: Health, Readiness & Metrics schemas

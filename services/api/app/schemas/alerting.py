@@ -20,7 +20,7 @@ class AlertChannelOut(AlertChannelBase):
     created_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class AlertRuleBase(BaseModel):
@@ -48,4 +48,4 @@ class AlertRuleOut(AlertRuleBase):
     created_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True

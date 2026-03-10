@@ -49,4 +49,4 @@ class EmpireStatusOut(BaseModel):
     compliance: EmpireComplianceSummary
 
     class Config:
-        orm_mode = True
+        from_attributes = True

@@ -26,4 +26,4 @@ class LegalProfileOut(LegalProfileBase):
     active: bool
 
     class Config:
-        orm_mode = True
+        from_attributes = True

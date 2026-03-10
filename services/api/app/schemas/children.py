@@ -20,7 +20,7 @@ class ChildOut(ChildBase):
     created_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class ChoreBase(BaseModel):
     title: str
@@ -46,7 +46,7 @@ class ChoreOut(ChoreBase):
     created_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class CoinLedgerCreate(BaseModel):
     child_id: int
@@ -59,4 +59,4 @@ class CoinLedgerOut(CoinLedgerCreate):
     created_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True

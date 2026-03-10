@@ -20,7 +20,7 @@ class TenantOut(TenantBase):
     created_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class LeaseBase(BaseModel):
@@ -44,7 +44,7 @@ class LeaseOut(LeaseBase):
     created_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class RentPaymentBase(BaseModel):
@@ -74,4 +74,4 @@ class RentPaymentOut(RentPaymentBase):
     updated_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True

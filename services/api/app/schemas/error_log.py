@@ -26,4 +26,4 @@ class ErrorLogOut(ErrorLogCreate):
     resolved_at: Optional[datetime]
 
     class Config:
-        orm_mode = True
+        from_attributes = True

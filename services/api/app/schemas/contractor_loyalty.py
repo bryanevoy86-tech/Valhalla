@@ -19,7 +19,7 @@ class ContractorRankOut(ContractorRankBase):
     id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class ContractorLoyaltyVaultBase(BaseModel):
@@ -50,4 +50,4 @@ class ContractorLoyaltyVaultOut(ContractorLoyaltyVaultBase):
     updated_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
