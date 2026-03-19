@@ -204,6 +204,16 @@ print("=" * 80)
 print("=== ROUTER REGISTRY COMPLETE ===")
 print("=" * 80)
 
+# --- Email Notification Routers (test-email and daily-ops-email endpoints) ---
+try:
+    from app.api.notify.test_email_router import router as test_email_router
+    app.include_router(test_email_router, prefix="/api")
+    print("[app.main] Test email router registered with /api/notify endpoints")
+except Exception as e:
+    print(f"[app.main] Warning: Could not register test_email_router: {e}")
+    import traceback
+    traceback.print_exc()
+
 # --- Governance System: Always-on registration --------------------------------
 # Register all governance routers to ensure endpoints exist for runtime and tests
 from app.routers import governance_king, governance_queen, governance_odin, governance_loki, governance_tyr
@@ -1978,6 +1988,30 @@ try:
     print("[app.main] System state router registered")
 except Exception as e:
     print(f"[app.main] Skipping system router: {e}")
+
+# Module 51: Exports/Packs endpoint
+try:
+    from app.routers import exports_packs
+    app.include_router(exports_packs.router)
+    print("[app.main] Exports packs router registered")
+except Exception as e:
+    print(f"[app.main] Skipping exports_packs router: {e}")
+
+# Module 51b: Exports/Month endpoint
+try:
+    from app.routers import exports_month
+    app.include_router(exports_month.router)
+    print("[app.main] Exports month router registered")
+except Exception as e:
+    print(f"[app.main] Skipping exports_month router: {e}")
+
+# Module 52: Lead Acquisition Engine
+try:
+    from app.routers import lead_engine
+    app.include_router(lead_engine.router)
+    print("[app.main] Lead engine router registered")
+except Exception as e:
+    print(f"[app.main] Skipping lead_engine router: {e}")
 
 print("=" * 80)
 print("=== APP INITIALIZATION COMPLETE ===")
