@@ -4,9 +4,9 @@ from sqlalchemy.orm import Session
 from . import models, schemas
 
 
-def create_template(db: Session, data: schemas.ContractTemplateCreate) -> models.ContractTemplate:
+def create_template(db: Session, data: schemas.ContractTemplateCreate) -> models.ContractTemplatePrelaunch:
     """Create a new contract template."""
-    t = models.ContractTemplate(**data.model_dump())
+    t = models.ContractTemplatePrelaunch(**data.model_dump())
     db.add(t)
     db.commit()
     db.refresh(t)
@@ -15,7 +15,7 @@ def create_template(db: Session, data: schemas.ContractTemplateCreate) -> models
 
 def list_templates(db: Session):
     """List all contract templates."""
-    return db.query(models.ContractTemplate).order_by(models.ContractTemplate.name).all()
+    return db.query(models.ContractTemplatePrelaunch).order_by(models.ContractTemplatePrelaunch.name).all()
 
 
 def analyze_contract(

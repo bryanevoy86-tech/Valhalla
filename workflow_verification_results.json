@@ -1,0 +1,139 @@
+{
+  "timestamp": "2026-03-27T10:50:48.417680",
+  "deal_id": 1,
+  "results": {
+    "list_deals": {
+      "status": 200,
+      "count": 1,
+      "has_deal_1": true,
+      "data": [
+        {
+          "id": 1,
+          "created_at": "2026-03-27T15:07:26.210996Z",
+          "updated_at": "2026-03-27T15:07:26.211020Z",
+          "lead_id": 1,
+          "title": "Test Deal - Workflow Verification",
+          "stage": "draft",
+          "status": "active",
+          "arv": "350000.00",
+          "estimated_repair_cost": "50000.00",
+          "max_allowable_offer": "280000.00",
+          "target_assignment_fee": "7000.00",
+          "score": "75.50",
+          "notes": "Seeded for workflow verification",
+          "disposition_status": "active"
+        }
+      ]
+    },
+    "heimdall_analyze": {
+      "status": 200,
+      "deal_id": 1,
+      "current_stage": "active",
+      "blockers": [],
+      "recommendations": {
+        "next_valid_stages": [],
+        "recommended_stage": null,
+        "recommendation_reason": "No valid transitions from this stage",
+        "can_advance_now": false,
+        "why_cannot_advance": "Unknown blocker"
+      },
+      "full_response": {
+        "deal_id": 1,
+        "analysis_timestamp": "2026-03-27T15:50:48.207427Z",
+        "current_stage": "active",
+        "deal_data": {
+          "id": 1,
+          "status": "active",
+          "stage": "draft",
+          "arv": 350000.0,
+          "estimated_repair_cost": 50000.0,
+          "max_allowable_offer": 280000.0,
+          "score": 75.5,
+          "created_at": "2026-03-27 15:07:26.210996+00:00",
+          "title": "Test Deal - Workflow Verification"
+        },
+        "offer_data": null,
+        "contract_data": null,
+        "buyer_match_data": null,
+        "missing_fields": [
+          "deal.repairs",
+          "offer"
+        ],
+        "blocker_flags": [],
+        "risk_flags": [],
+        "recommendations": {
+          "next_valid_stages": [],
+          "recommended_stage": null,
+          "recommendation_reason": "No valid transitions from this stage",
+          "can_advance_now": false,
+          "why_cannot_advance": "Unknown blocker"
+        }
+      }
+    },
+    "heimdall_advance": {
+      "status": 200,
+      "deal_id": 1,
+      "action": "stage_advance_rejected",
+      "previous_stage": "active",
+      "new_stage": null,
+      "result": "rejected",
+      "full_response": {
+        "deal_id": 1,
+        "action": "stage_advance_rejected",
+        "previous_stage": "active",
+        "new_stage": null,
+        "approved_by": null,
+        "timestamp": "2026-03-27T15:50:48.398657Z",
+        "result": "rejected",
+        "reason": "Invalid transition from active to lead_received",
+        "notes": null,
+        "blocker_overrides": []
+      }
+    },
+    "audit_trail": {
+      "status": 200,
+      "event_count": 1,
+      "data": [
+        {
+          "id": 1,
+          "created_at": "2026-03-27T15:50:48.223046",
+          "action": "heimdall_stage_advance_rejected",
+          "entity_type": "deal",
+          "entity_id": 1,
+          "previous_value": null,
+          "new_value": null,
+          "user_id": "system",
+          "notes": null
+        }
+      ]
+    },
+    "dashboard_pipeline": {
+      "status": 200,
+      "total_deals": 1,
+      "deals_count": 1,
+      "has_deal_1": true,
+      "full_response": {
+        "total_deals": 1,
+        "deals": [
+          {
+            "deal_id": 1,
+            "title": "Test Deal - Workflow Verification",
+            "stage": "draft",
+            "score": 75.5,
+            "contract_status": "pending",
+            "buyer_status": "unmatched",
+            "last_updated": "2026-03-27T15:07:26.211020Z"
+          }
+        ]
+      }
+    }
+  },
+  "success_criteria": {
+    "step1_list_shows_deal": true,
+    "step2_analyze_returns_200_or_200range": true,
+    "step3_advance_returns_200_or_200range": true,
+    "step4_audit_returns_200": true,
+    "step5_dashboard_shows_deal": true,
+    "no_500_errors": true
+  }
+}

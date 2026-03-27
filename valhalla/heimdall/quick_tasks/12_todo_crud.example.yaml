@@ -1,7 +1,0 @@
-type: scaffold_crud
-resource: todo
-# prefix: /todos        # optional; defaults to "/{resource}s"
-# tag: Todos            # optional
-fields:
-  - { name: title, type: text }
-  - { name: done,  type: bool, default: false }

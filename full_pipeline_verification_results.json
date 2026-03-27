@@ -1,0 +1,41 @@
+{
+  "test_deal_id": 11,
+  "test_timestamp": "2026-03-27T16:51:49.876159Z",
+  "stages_completed": [
+    "preliminary_analysis (initial)",
+    "offer_ready (advancement 1)",
+    "under_contract (advancement 2)",
+    "closed (advancement 3)"
+  ],
+  "relationships": {
+    "offer_created": true,
+    "offer_linked_to_deal": true,
+    "contract_created": true,
+    "contract_linked_to_deal": true,
+    "contract_linked_to_offer": true
+  },
+  "audit_status": {
+    "total_events": 20,
+    "actions_recorded": [
+      "heimdall_stage_advanced",
+      "heimdall_recommended_stage",
+      "heimdall_analyzed_deal",
+      "heimdall_stage_advance_rejected"
+    ]
+  },
+  "dashboard_status": {
+    "deal_visible": true,
+    "stage_correct": true
+  },
+  "success_criteria": {
+    "stage_1_preliminary_analysis": true,
+    "stage_2_offer_ready": true,
+    "stage_3_under_contract": true,
+    "stage_4_closed": true,
+    "offer_relationship": true,
+    "contract_relationship": true,
+    "audit_trail_complete": true,
+    "dashboard_reflects": true,
+    "no_errors_occurred": true
+  }
+}

@@ -36,6 +36,7 @@ class SignProvider(str, enum.Enum):
 
 class ContractTemplate(Base):
     __tablename__ = "contract_templates"
+    __table_args__ = {'extend_existing': True}
 
     id = Column(String, primary_key=True)
     code = Column(String, nullable=False, unique=True)
@@ -50,6 +51,7 @@ class ContractTemplate(Base):
 
 class Contract(Base):
     __tablename__ = "contracts"
+    __table_args__ = {'extend_existing': True}
 
     id = Column(String, primary_key=True)
     template_id = Column(String, ForeignKey("contract_templates.id"), nullable=False)
@@ -70,7 +72,9 @@ class Contract(Base):
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
-    template = relationship("ContractTemplate")
+    # Note: template relationship removed due to SQLAlchemy extend_existing conflicts
+    # Can be loaded explicitly in queries if needed with joinedload or similar
+    
     parties = relationship("ContractParty", back_populates="contract", cascade="all, delete-orphan")
     documents = relationship("ContractDocument", back_populates="contract", cascade="all, delete-orphan")
     events = relationship("ContractEvent", back_populates="contract", cascade="all, delete-orphan")
@@ -108,11 +112,13 @@ class ContractParty(Base):
 
     __table_args__ = (
         Index("ix_contract_parties_contract_role", "contract_id", "role"),
+        {'extend_existing': True},
     )
 
 
 class ContractDocument(Base):
     __tablename__ = "contract_documents"
+    __table_args__ = {'extend_existing': True}
 
     id = Column(String, primary_key=True)
     contract_id = Column(String, ForeignKey("contracts.id"), nullable=False, index=True)
@@ -147,6 +153,7 @@ class ContractEnvelope(Base):
 
     __table_args__ = (
         UniqueConstraint("provider", "provider_envelope_id", name="uq_provider_envelope"),
+        {'extend_existing': True},
     )
 
 
@@ -166,6 +173,7 @@ class ContractEvent(Base):
 
     __table_args__ = (
         Index("ix_contract_events_contract_time", "contract_id", "created_at"),
+        {'extend_existing': True},
     )
 
 

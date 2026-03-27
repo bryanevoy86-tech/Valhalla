@@ -1,7 +1,0 @@
-{
-  "name": "metrics.collection",
-  "datasource": "Valhalla API",
-  "requests": [
-    {"name":"list_metrics","method":"GET","url":"/metrics","cacheSeconds": 30}
-  ]
-}

@@ -7,8 +7,8 @@ import uuid
 from app.models.base import Base
 
 
-class ContractTemplate(Base):
-    """Contract templates for various categories."""
+class ContractTemplatePrelaunch(Base):
+    """Contract templates for various categories (prelaunch experimental)."""
     __tablename__ = "contract_templates_prelaunch"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

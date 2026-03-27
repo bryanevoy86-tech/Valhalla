@@ -1,8 +1,0 @@
-kind: frontend
-name: admin-console
-actions:
-  - type: create_page
-    path: frontend/pages/AdminConsole.autogen.jsx
-    route: "/admin"
-    requiresRole: ["admin"]
-notes: "API in backend/app/routers/admin.py; autogen page is a placeholder if full page not added."

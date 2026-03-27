@@ -1,0 +1,163 @@
+{
+  "timestamp": "2026-03-27T16:34:45.050740",
+  "deals_tested": 5,
+  "dashboard": {
+    "total_deals": 6,
+    "deals_in_pipeline": null,
+    "found_deals": {
+      "A": 10,
+      "B": 11,
+      "C": 12,
+      "D": 13,
+      "E": 14
+    },
+    "all_found": true
+  },
+  "heimdall": {
+    "analyses": {
+      "A": {
+        "deal_id": 10,
+        "stage": "draft",
+        "blockers": [],
+        "risks": [],
+        "recommended_stage": "lead_received"
+      },
+      "B": {
+        "deal_id": 11,
+        "stage": "lead_received",
+        "blockers": [],
+        "risks": [],
+        "recommended_stage": "preliminary_analysis"
+      },
+      "C": {
+        "deal_id": 12,
+        "stage": "offer_presented",
+        "blockers": [],
+        "risks": [],
+        "recommended_stage": null
+      },
+      "D": {
+        "deal_id": 13,
+        "stage": "under_contract",
+        "blockers": [
+          "no_contract"
+        ],
+        "risks": [
+          "no_buyer_match",
+          "no_contract_yet"
+        ],
+        "recommended_stage": null
+      },
+      "E": {
+        "deal_id": 14,
+        "stage": "lead_received",
+        "blockers": [],
+        "risks": [],
+        "recommended_stage": "preliminary_analysis"
+      }
+    },
+    "all_success": true
+  },
+  "advancement": {
+    "paths": {
+      "success": [],
+      "rejection": [
+        {
+          "deal_id": 11,
+          "reason": "Invalid transition from lead_received to offer_received",
+          "recorded": true
+        }
+      ],
+      "override": []
+    }
+  },
+  "audit": {
+    "trails": {
+      "A": {
+        "deal_id": 10,
+        "event_count": 0,
+        "events": []
+      },
+      "B": {
+        "deal_id": 11,
+        "event_count": 3,
+        "events": [
+          {
+            "action": "heimdall_stage_advance_rejected",
+            "entity_id": 11
+          },
+          {
+            "action": "heimdall_stage_advance_rejected",
+            "entity_id": 11
+          },
+          {
+            "action": "heimdall_stage_advance_rejected",
+            "entity_id": 11
+          }
+        ]
+      },
+      "C": {
+        "deal_id": 12,
+        "event_count": 0,
+        "events": []
+      },
+      "D": {
+        "deal_id": 13,
+        "event_count": 0,
+        "events": []
+      },
+      "E": {
+        "deal_id": 14,
+        "event_count": 0,
+        "events": []
+      }
+    },
+    "all_clean": true
+  },
+  "relationships": {
+    "status": {
+      "A": {
+        "offer_count": 0,
+        "contract_count": 0,
+        "buyer_match_count": 0,
+        "offers_ok": true,
+        "contracts_ok": true
+      },
+      "B": {
+        "offer_count": 0,
+        "contract_count": 0,
+        "buyer_match_count": 0,
+        "offers_ok": true,
+        "contracts_ok": true
+      },
+      "C": {
+        "offer_count": 1,
+        "contract_count": 0,
+        "buyer_match_count": 0,
+        "offers_ok": true,
+        "contracts_ok": true
+      },
+      "D": {
+        "offer_count": 1,
+        "contract_count": 1,
+        "buyer_match_count": 0,
+        "offers_ok": true,
+        "contracts_ok": true
+      },
+      "E": {
+        "offer_count": 0,
+        "contract_count": 0,
+        "buyer_match_count": 0,
+        "offers_ok": true,
+        "contracts_ok": true
+      }
+    }
+  },
+  "summary": {
+    "dashboard_ok": true,
+    "heimdall_ok": true,
+    "audit_ok": true,
+    "relationship_ok": true
+  },
+  "overall_ok": true
+}

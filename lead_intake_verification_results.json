@@ -1,0 +1,171 @@
+{
+  "test_id": "lead_intake_2026-03-27T18:06:28.712072",
+  "timestamp": "2026-03-27T18:06:28.712130",
+  "stages": {
+    "1_entrypoint": {
+      "status": "success",
+      "route": "POST /api/leads",
+      "method": "POST",
+      "auth": "X-API-Key header",
+      "lead_id": 107,
+      "payload": {
+        "lead_name": "Test Lead - Intake Verification",
+        "lead_email": "lead.intake.test@example.com",
+        "lead_phone": "+1-555-0100",
+        "property_address": "123 Main Street",
+        "property_city": "Denver",
+        "property_state": "CO",
+        "property_zip": "80202",
+        "estimated_arv": 350000,
+        "source": "direct_api_test",
+        "lead_status": "new"
+      },
+      "response": {
+        "id": 107,
+        "lead_name": "Test Lead - Intake Verification",
+        "lead_email": "lead.intake.test@example.com",
+        "lead_phone": "+1-555-0100",
+        "property_address": "123 Main Street",
+        "property_city": "Denver",
+        "property_state": "CO",
+        "property_zip": "80202",
+        "estimated_arv": "350000.00",
+        "lead_status": "new",
+        "source": "direct_api_test",
+        "notes": null,
+        "created_at": "2026-03-27T18:06:29.025788",
+        "updated_at": "2026-03-27T18:06:29.025791"
+      }
+    },
+    "2_persist": {
+      "status": "success",
+      "db_record": {
+        "id": 107,
+        "lead_name": "Test Lead - Intake Verification",
+        "lead_email": "lead.intake.test@example.com",
+        "lead_phone": "+1-555-0100",
+        "source": "direct_api_test",
+        "lead_status": "new",
+        "property_address": "123 Main Street",
+        "property_city": "Denver",
+        "property_state": "CO",
+        "property_zip": "80202",
+        "estimated_arv": 350000,
+        "notes": null,
+        "created_at": "2026-03-27 18:06:29.025788",
+        "updated_at": "2026-03-27 18:06:29.025791"
+      },
+      "field_verification": {
+        "lead_name": true,
+        "lead_email": true,
+        "lead_phone": true,
+        "source": true,
+        "property_address": true,
+        "property_city": true,
+        "property_state": true,
+        "property_zip": true
+      }
+    },
+    "3_linkage": {
+      "status": "success",
+      "route": "POST /api/deals/from-lead/107",
+      "deal_id": 16,
+      "payload": {
+        "lead_id": 107,
+        "title": "Test Deal from Lead 107",
+        "stage": "lead_received",
+        "status": "active",
+        "arv": 350000,
+        "estimated_repair_cost": 30000,
+        "max_allowable_offer": 280000,
+        "target_assignment_fee": 15000,
+        "score": 75,
+        "notes": "Deal created from lead 107 via verification test",
+        "disposition_status": null
+      },
+      "response": {
+        "id": 16,
+        "created_at": "2026-03-27T18:06:29.210483",
+        "updated_at": "2026-03-27T18:06:29.210486",
+        "lead_id": 107,
+        "title": "Test Deal from Lead 107",
+        "stage": "lead_received",
+        "status": "active",
+        "arv": "350000.00",
+        "estimated_repair_cost": "30000.00",
+        "max_allowable_offer": "280000.00",
+        "target_assignment_fee": "15000.00",
+        "score": "75.00",
+        "notes": "Deal created from lead 107 via verification test",
+        "disposition_status": null
+      }
+    },
+    "4_field_mapping": {
+      "status": "success",
+      "db_record": {
+        "id": 16,
+        "lead_id": 107,
+        "title": "Test Deal from Lead 107",
+        "stage": "lead_received",
+        "status": "active",
+        "arv": 350000,
+        "estimated_repair_cost": 30000,
+        "max_allowable_offer": 280000,
+        "target_assignment_fee": 15000,
+        "score": 75,
+        "notes": "Deal created from lead 107 via verification test",
+        "disposition_status": null
+      },
+      "field_mapping": {
+        "lead_id_preserved": true,
+        "title_mapped": true,
+        "stage_defaults_lead_received": true,
+        "status_defaults_active": true,
+        "arv_mapped": true,
+        "repair_cost_mapped": true,
+        "mao_mapped": true,
+        "fee_mapped": true,
+        "score_mapped": true
+      }
+    },
+    "6_heimdall": {
+      "status": "failed",
+      "error": "{\"type\":\"about:blank\",\"title\":\"Builder key not configured\",\"status\":503,\"detail\":\"Builder key not configured\",\"instance\":\"http://testserver/api/heimdall/deals/16/analyze\",\"correlation_id\":\"9453ac24-c65d-48f2-bef5-f7113fd92dc0\",\"extra\":null}"
+    },
+    "7_advancement": {
+      "status": "blocked",
+      "can_advance": false,
+      "reason": "Prerequisites not met for deal intake from lead only"
+    },
+    "8_audit": {
+      "status": "success",
+      "total_events": 1,
+      "events": [
+        {
+          "id": 59,
+          "action": "created",
+          "entity_type": "deal",
+          "entity_id": 16,
+          "previous_value": null,
+          "new_value": "{\"title\": \"Test Deal from Lead 107\", \"stage\": \"lead_received\"}",
+          "notes": "Deal created from lead 107",
+          "created_at": "2026-03-27 18:06:29.344992"
+        }
+      ],
+      "has_created_event": true
+    }
+  },
+  "success_criteria": {
+    "criterion_1_led_creation": true,
+    "criterion_2_lead_persist": true,
+    "criterion_3_linkage": true,
+    "criterion_10_no_duplicate": true,
+    "criterion_4_field_mapping": true,
+    "criterion_5a_deals_list": true,
+    "criterion_5b_dashboard": false,
+    "criterion_6_heimdall": false,
+    "criterion_7_advancement": false,
+    "criterion_8_audit": true,
+    "criterion_9_no_500": true
+  }
+}

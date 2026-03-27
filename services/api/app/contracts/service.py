@@ -2,7 +2,7 @@
 import uuid
 from datetime import datetime
 from sqlalchemy.orm import Session
-from app.contracts.models import Contract, ContractEvent
+from app.models.contracts import Contract, ContractEvent
 from app.core.runtime_flags import is_live
 
 

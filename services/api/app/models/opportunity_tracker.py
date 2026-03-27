@@ -5,15 +5,16 @@ Models for opportunity tracking and user-defined scoring
 from sqlalchemy import Column, Integer, String, Float, DateTime, Text, JSON, UniqueConstraint, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from app.core.db import Base
+from app.models.base import Base
 
 
-class Opportunity(Base):
+class SideHustleOpportunity(Base):
     """
-    Side-hustle or arbitrage opportunity record.
+    Side-hustle or arbitrage opportunity record (PACK SK).
     User provides all estimates; system organizes and scores based on user criteria.
     """
-    __tablename__ = "opportunities"
+    __tablename__ = "side_hustle_opportunities"
+    __table_args__ = {'extend_existing': True}
 
     id = Column(Integer, primary_key=True)
     opportunity_id = Column(String(255), nullable=False, unique=True)
@@ -29,9 +30,10 @@ class Opportunity(Base):
     created_at = Column(DateTime, nullable=False, server_default=func.now())
     updated_at = Column(DateTime, nullable=False, server_default=func.now())
 
-    # Relationships
-    scores = relationship("OpportunityScore", back_populates="opportunity")
-    performance_logs = relationship("OpportunityPerformance", back_populates="opportunity")
+    # Note: Relationships removed to fix mapper initialization failure
+    # scores = relationship("OpportunityScore", back_populates="opportunity")
+    # performance_logs = relationship("OpportunityPerformance", back_populates="opportunity")
+    # Can be added back with proper foreign key constraints once core pipeline is stable
 
 
 class OpportunityScore(Base):
@@ -53,8 +55,8 @@ class OpportunityScore(Base):
     scored_at = Column(DateTime, nullable=False, server_default=func.now())
     updated_at = Column(DateTime, nullable=False, server_default=func.now())
 
-    # Relationships
-    opportunity = relationship("Opportunity", back_populates="scores")
+    # Note: back_populates="scores" removed because SideHustleOpportunity.scores relationship was disabled
+    # opportunity = relationship("Opportunity", back_populates="scores")
 
 
 class OpportunityPerformance(Base):
@@ -73,8 +75,8 @@ class OpportunityPerformance(Base):
     notes = Column(Text, nullable=True)
     created_at = Column(DateTime, nullable=False, server_default=func.now())
 
-    # Relationships
-    opportunity = relationship("Opportunity", back_populates="performance_logs")
+    # Note: back_populates="performance_logs" removed because SideHustleOpportunity.performance_logs relationship was disabled
+    # opportunity = relationship("Opportunity", back_populates="performance_logs")
 
 
 class OpportunitySummary(Base):

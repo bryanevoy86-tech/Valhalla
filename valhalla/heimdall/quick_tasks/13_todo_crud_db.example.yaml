@@ -1,7 +1,0 @@
-type: scaffold_crud
-resource: todo
-storage: db
-table: todos
-fields:
-  - { name: title, type: text }
-  - { name: done,  type: bool, default: false }

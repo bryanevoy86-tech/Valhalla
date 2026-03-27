@@ -2,37 +2,31 @@ import os
 import sys
 from pathlib import Path
 from logging.config import fileConfig
+from importlib import import_module
+
+# Load .env before any app imports
+from dotenv import load_dotenv
+load_dotenv()
 
 from sqlalchemy import create_engine, pool
 from alembic import context
 
-# Make sure project root (C:\dev\valhalla) is on sys.path
+# Make sure project root is on sys.path
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from db.base import Base
+# Set up module aliasing to use canonical app location
+# This mirrors the configuration in app/main.py
+if 'app' not in sys.modules:
+    sys.modules['app'] = import_module('services.api.app')
 
-# Import models so Alembic autogenerate can detect them.
-# Previous packs
-from app.models.pack_sp import CrisisEvent, CrisisResponsePlan, CrisisResolutionLog
-from app.models.pack_sq import HouseholdMember, SharedResponsibility, HouseholdExpense, MealPlan
-from app.models.pack_so import LegacyDocument, LegacyRecipient, SuccessionStage, SuccessionTransfer
+# Import from canonical Base (services/api/app/core/db.py)
+from services.api.app.core.db import Base
 
-# PACK ST, SU, SV
-from app.models.pack_st import FinancialIndicator, FinancialStressEvent, FinancialStressSummary
-from app.models.pack_su import SafetyCategory, SafetyChecklist, SafetyPlan, SafetyEventLog
-from app.models.pack_sv import EmpireGoal, GoalMilestone, ActionStep
-
-# PACK SW, SX, SY
-from app.models.pack_sw import LifeEvent, LifeMilestone, LifeTimelineSnapshot
-from app.models.pack_sx import EmotionalStateEntry, StabilityLog, NeutralSummary
-from app.models.pack_sy import StrategicDecision, DecisionRevision, DecisionChainSnapshot
-
-# PACK SZ, TA, TB
-from app.models.pack_sz import PhilosophyRecord, EmpirePrinciple, PhilosophySnapshot
-from app.models.pack_ta import RelationshipProfile, TrustEventLog, RelationshipMapSnapshot
-from app.models.pack_tb import DailyRhythmProfile, TempoRule, DailyTempoSnapshot
+# Import models so Alembic can detect them via metadata
+# IMPORTANT: These imports register models with Base.metadata
+import services.api.app.models  # noqa: F401
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

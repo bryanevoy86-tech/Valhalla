@@ -1,8 +1,0 @@
-kind: frontend
-name: reporting
-actions:
-  - type: create_page
-    path: frontend/pages/Reports.autogen.jsx
-    route: "/reports"
-    requiresRole: ["viewer","operator","admin"]
-notes: "Real API in backend/app/routers/reporting.py; this autogen page is a placeholder."

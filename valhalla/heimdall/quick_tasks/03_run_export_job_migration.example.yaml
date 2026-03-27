@@ -1,2 +1,0 @@
-type: run_migration
-file: migrations/generated/export_job.sql

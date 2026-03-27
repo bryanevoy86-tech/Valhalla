@@ -190,6 +190,15 @@ ROUTERS = [
     RouterSpec("contracts_pipeline", "app.routers.contracts_pipeline", required=True),
     RouterSpec("contracts_webhooks", "app.routers.contracts_webhooks", required=True),
 
+    # Heimdall: Deal analysis and stage management (REQUIRED for core operations)
+    RouterSpec("heimdall", "app.routers.heimdall", prefix="/api", required=True),
+
+    # Audit: Compliance and governance event log (REQUIRED for audit trail)
+    RouterSpec("audit", "app.routers.audit", prefix="/api", required=True),
+
+    # Dashboard: Operational pipeline visualization (REQUIRED for live visibility)
+    RouterSpec("operational_dashboard", "app.routers.operational_dashboard", prefix="/api", required=True),
+
     # ----- OPTIONAL (warn only) -----
     RouterSpec("jobs", "app.routers.jobs", prefix="/api", required=False),
     RouterSpec("notify", "app.routers.notify", prefix="/api", required=False),
@@ -368,15 +377,44 @@ except Exception as e:
     print(f"[app.main] Skipping heimdall activation module: {e}")
 
 # --- MODULE 67-76: Buyers Directory, Lead Intake, Wholesale Scoring, Offers, Contract Packaging, Disposition Matching --
-# Module 67-68: Buyers directory and roster
+# Module 67-68: Buyers directory and roster (DB-backed, persistent)
 try:
-    from app.buyers.router import router as buyers_router
+    from app.routers.buyers import router as buyers_router
     app.include_router(buyers_router, prefix="/api")
-    print("[app.main] Buyers router registered")
+    print("[app.main] DB-backed buyers router registered (persistent)")
 except Exception as e:
     print(f"[app.main] Skipping buyers router: {e}")
+    import traceback
+    traceback.print_exc()
 
-# Module 69-70: Lead intake and deals
+# Module 69: Lead management (lead acquisition, status tracking)
+try:
+    from app.leads.router import router as leads_router
+    app.include_router(leads_router, prefix="/api")
+    print("[app.main] Leads router registered")
+except Exception as e:
+    print(f"[app.main] Skipping leads router: {e}")
+
+# Module 69-70: Deal management and intake
+try:
+    from app.deals.router import router as deals_router
+    app.include_router(deals_router, prefix="/api")
+    print("[app.main] Deals router registered")
+except Exception as e:
+    print(f"[app.main] Skipping deals router: {e}")
+    import traceback
+    traceback.print_exc()
+
+# Module 71: Offer management
+try:
+    from app.offers.router import router as offers_router
+    app.include_router(offers_router, prefix="/api")
+    print("[app.main] Offers router registered")
+except Exception as e:
+    print(f"[app.main] Skipping offers router: {e}")
+    import traceback
+    traceback.print_exc()
+
 try:
     from app.deals.intake_router import router as deals_intake_router
     app.include_router(deals_intake_router, prefix="/api")

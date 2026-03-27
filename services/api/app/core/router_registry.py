@@ -23,12 +23,16 @@ def include_router_safe(app: FastAPI, spec: RouterSpec) -> None:
         router = getattr(m, spec.attr)
         if spec.prefix:
             app.include_router(router, prefix=spec.prefix)
+            print(f"[app.main] Registered router: {spec.name} ({spec.module}:{spec.attr}) prefix={spec.prefix}")
         else:
             app.include_router(router)
+            print(f"[app.main] Registered router: {spec.name} ({spec.module}:{spec.attr})")
         log.info("ROUTER_OK: %s (%s:%s) prefix=%s", spec.name, spec.module, spec.attr, spec.prefix)
     except Exception as e:
         msg = f"ROUTER_FAIL: {spec.name} ({spec.module}:{spec.attr}) -> {type(e).__name__}: {e}"
+        print(f"[app.main] ⚠️  {msg}")
         if spec.required:
             log.error(msg)
+            print(f"[app.main] ❌ CRITICAL: {msg}")
             raise
         log.warning(msg)

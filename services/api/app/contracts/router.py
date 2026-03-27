@@ -98,7 +98,7 @@ def get_contract_endpoint(
     db: Session = Depends(get_db)
 ):
     """Get contract details."""
-    from app.contracts.models import Contract
+    from app.models.contracts import Contract
     contract = db.query(Contract).filter(Contract.id == contract_id).first()
     if not contract:
         raise HTTPException(status_code=404, detail="Contract not found")

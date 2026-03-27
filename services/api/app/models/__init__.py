@@ -52,6 +52,11 @@ from app.models.model_provider import ModelProvider
 # Governance: Engine State (Core governance layer)
 from app.models.engine_state import EngineStateRow  # noqa: F401
 
+# Lead Acquisition Engine
+from app.models.lead_source import LeadSource
+from app.models.raw_lead import RawLead
+from app.models.normalized_lead import NormalizedLead
+
 __all__ = [
     "Professional",
     "InteractionLog",
@@ -92,4 +97,8 @@ __all__ = [
     "HumanLabel",
     # Governance
     "EngineReadiness",
+    # Lead Acquisition Engine
+    "LeadSource",
+    "RawLead",
+    "NormalizedLead",
 ]

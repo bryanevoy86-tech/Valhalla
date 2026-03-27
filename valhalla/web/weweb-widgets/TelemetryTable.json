@@ -1,9 +1,0 @@
-{
-  "name": "TelemetryTable",
-  "columns": [
-    {"key":"ts","label":"Time"},
-    {"key":"event","label":"Event"},
-    {"key":"meta","label":"Meta"}
-  ],
-  "dataBinding": "collection.result"
-}
