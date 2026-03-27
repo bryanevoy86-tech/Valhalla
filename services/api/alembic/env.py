@@ -147,14 +147,6 @@ from app.models.wholesale_deals import (
     WholesalePipelineSnapshot,
 )
 
-# PACK SK: Arbitrage/Side-Hustle Opportunity Tracker
-from app.models.opportunity_tracker import (
-    Opportunity,
-    OpportunityScore,
-    OpportunityPerformance,
-    OpportunitySummary,
-)
-
 # PACK SL: Personal Master Dashboard
 from app.models.personal_dashboard import (
     FocusArea,
