@@ -1,8 +1,8 @@
 # POST-DEPLOYMENT DEALS ENDPOINT VERIFICATION
 
-**Verification Date:** 2026-03-30 21:14 UTC  
-**Deployed Commit:** `8928d8f` - Updated remaining timestamp references  
-**Previous Commits:** 9170dd3, 9f3f06e, 0cf547b (full timestamp column alignment)  
+**Verification Date:** 2026-03-30 21:28 UTC (POST-DEPLOY TEST)  
+**Deployed Commit:** `c24cbd2` (HEAD) which includes 0cf547b, 9f3f06e, 9170dd3, 8928d8f  
+**Previous Commits:** All timestamp alignment commits stacked and deployed  
 **Blocker Fix:** Timestamp column name mismatch (created_at → created_ts, updated_at → updated_ts)
 
 ---
@@ -56,7 +56,7 @@ curl -i https://valhalla-api-ha6a.onrender.com/api/deals
 ```
 Status Code: 500
 Content-Type: application/json
-Date: Mon, 30 Mar 2026 21:14:53 GMT
+Date: Mon, 30 Mar 2026 21:28:45 GMT
 
 Body:
 {
@@ -65,12 +65,19 @@ Body:
   "status": 500,
   "detail": "An unexpected error occurred.",
   "instance": "http://valhalla-api-ha6a.onrender.com/api/deals",
-  "correlation_id": "2b4738b9-c628-4f48-8e28-f03cc321df69",
+  "correlation_id": "b3282227-43ca-43b8-b077-508cb0f1e186",
   "extra": null
 }
 ```
 
-**Status:** ❌ **FAIL** - Still returning 500 error (likely not yet deployed)
+**Status:** ❌ **FAIL** - Still returning 500 error
+
+**CRITICAL OBSERVATION:** Correlation ID changed (b3282227... vs previous 2b4738b9...). This indicates:
+- ✅ Render has redeployed the new code (fresh errors, not cached)
+- ❌ GET /api/deals still failing with generic error message
+- ⚠️ Root cause has changed or deployment has a different issue
+
+**Assessment:** Timestamp column fix deployed but endpoint still failing. New error requires investigation.
 
 ---
 
@@ -78,9 +85,12 @@ Body:
 
 **Frontend Status:** ⏳ **BLOCKED** - Do NOT retry yet
 
-Reason: Backend endpoint still returning 500 error. Timestamp column mismatch has been fixed in code, but Render deployment is still in progress.
+Reason: Backend endpoint still returning 500 error despite code deployment. Render rebuild completed but endpoint still erroring with generic message.
 
-**Recommendation:** Retry after 10 minutes when Render rebuild completes
+**Actions Needed:**
+1. Check Render logs for actual error (not generic 500)
+2. Confirm timestamp fix was actually deployed
+3. Verify database connectivity after code reload
 
 **Expected Result After Deployment:**
 - WeWeb GET /api/deals succeeds
@@ -128,29 +138,35 @@ Aligned ORM models and response schemas to match production DB column names:
 
 | Item | Status | Notes |
 |------|--------|-------|
-| GET /health | ✅ PASS | Server running, 200 OK |
-| GET /api/deals | ❌ FAIL | 500 error (deployment pending) |
+| GET /health | ✅ PASS | Server running, 200 OK (Mon 21:28 UTC) |
+| GET /api/deals | ❌ FAIL | 500 error with generic message |
 | Code changes | ✅ COMPLETE | All ORM/schema/service updates applied |
-| Commits pushed | ✅ COMPLETE | All 4 commits to origin/main |
-| Render deployment | ⏳ IN PROGRESS | Rebuild expected ~5-10 min from push |
-| Timestamp mismatch fix | ✅ FIXED (code level) | Column names aligned, awaiting deployment |
-| Frontend ready to retry | ❌ NOT YET | Wait for 200 response from /api/deals |
+| Commits pushed | ✅ COMPLETE | All commits stacked in c24cbd2 on origin/main |
+| Render deployment | ✅ COMPLETED | Rebuild successful, code deployed |
+| Timestamp mismatch fix | ✅ DEPLOYED | Code changes live on Render |
+| Frontend ready to retry | ❌ NOT YET | Endpoint still 500, needs investigation |
 
 ---
 
 ## Deployment Status
 
-**Code:** ✅ Complete and pushed to GitHub  
-**Render:** ⏳ Rebuilding (typical time: 5-10 minutes)  
-**Expected Fix:** GET /api/deals should return HTTP 200 after rebuild completes  
+**Code:** ✅ Complete and deployed to Render  
+**Render:** ✅ Redeployed successfully (correlation_id changed, fresh errors)  
+**Current Status:** Timestamp fix deployed but endpoint still returning 500 - new error to diagnose  
 
 ---
 
-## Next Action
+## Immediate Next Actions
 
-**For Frontend Team:** Retry Deals List in WeWeb after 21:25 UTC (2026-03-30)
+**Do NOT retry WeWeb yet** - Backend fully redeployed but endpoint still failing
 
-**Expected Behavior After Deployment:**
+**Diagnostic Steps Required:**
+1. Check Render App Logs for the actual error (not the generic 500 response)
+2. Verify database connection is working after code reload
+3. Confirm timestamp column access is actually working (not just code updated)
+4. Check if there's a migration issue or database schema problem
+
+**Expected Behavior Once Fixed:**
 - GET /api/deals returns HTTP 200
 - Response timestamp fields: `created_ts` and `updated_ts` (not `created_at`/`updated_at`)
 - Empty array `[]` if no deals exist, or list of deal objects
