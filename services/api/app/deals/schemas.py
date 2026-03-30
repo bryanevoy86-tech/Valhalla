@@ -3,7 +3,7 @@ Pydantic schemas for Deal management.
 
 Schemas for validation and serialization of deal data.
 """
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, field_serializer
 from datetime import datetime
 from typing import Optional
 from decimal import Decimal
@@ -57,13 +57,20 @@ class DealOut(BaseModel):
     title: str
     stage: str
     status: str
-    # Use str serialization for Decimal to ensure JSON compatibility
-    arv: Optional[str] = None
-    estimated_repair_cost: Optional[str] = None
-    max_allowable_offer: Optional[str] = None
-    target_assignment_fee: Optional[str] = None
-    score: Optional[str] = None
+    # Accept Decimal from ORM, serialize as str
+    arv: Optional[Decimal] = None
+    estimated_repair_cost: Optional[Decimal] = None
+    max_allowable_offer: Optional[Decimal] = None
+    target_assignment_fee: Optional[Decimal] = None
+    score: Optional[Decimal] = None
     notes: Optional[str] = None
     disposition_status: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
+
+    @field_serializer('arv', 'estimated_repair_cost', 'max_allowable_offer', 'target_assignment_fee', 'score', when_used='json')
+    def serialize_decimals(self, value: Optional[Decimal]) -> Optional[str]:
+        """Convert Decimal fields to strings for JSON serialization."""
+        if value is None:
+            return None
+        return str(value)
