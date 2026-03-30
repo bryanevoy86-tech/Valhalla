@@ -1217,12 +1217,14 @@ except Exception as e:
     print(f"[app.main] Skipping wholesale_deals router: {e}")
 
 # PACK SK: Arbitrage/Side-Hustle Opportunity Tracker router (user-scored opportunities, performance tracking)
-try:
-    from app.routers import opportunity_tracker
-    app.include_router(opportunity_tracker.router)
-    print("[app.main] Opportunity tracker router registered")
-except Exception as e:
-    print(f"[app.main] Skipping opportunity_tracker router: {e}")
+# NOTE: Opportunity model removed from canonical system (migration constraint fix)
+# Re-add this router when Opportunity model is properly migrated with short ID
+# try:
+#     from app.routers import opportunity_tracker
+#     app.include_router(opportunity_tracker.router)
+#     print("[app.main] Opportunity tracker router registered")
+# except Exception as e:
+#     print(f"[app.main] Skipping opportunity_tracker router: {e}")
 
 # PACK SL: Personal Master Dashboard router (life operations, routines, goals, family, mood)
 try:
