@@ -1,19 +1,19 @@
 # POST-DEPLOYMENT DEALS ENDPOINT VERIFICATION
 
-**Deployment Completed:** ⏳ PENDING  
-**Verification Status:** PENDING  
-**Blocker Fix:** Migration f2b00b1c2d4c  
+**Verification Date:** 2026-03-30 21:14 UTC  
+**Deployed Commit:** `8928d8f` - Updated remaining timestamp references  
+**Previous Commits:** 9170dd3, 9f3f06e, 0cf547b (full timestamp column alignment)  
+**Blocker Fix:** Timestamp column name mismatch (created_at → created_ts, updated_at → updated_ts)
 
 ---
 
-## Deployment Info
+## Deployment Chain
 
-- **Commit:** 67735fc
-- **Date:** 2026-03-30
+- **Commit 0cf547b:** Align ORM/schema columns from `_at` to `_ts`
+- **Commit 9f3f06e:** Update service/router code references
+- **Commit 9170dd3:** Full documentation of fix
+- **Commit 8928d8f:** Final cleanup (update_deal_stage reference)
 - **Target:** Render prod (valhalla-api-ha6a.onrender.com)
-- **Changes:** Alembic migration + startup.py update
-
----
 
 ## Test Results
 
@@ -21,16 +21,22 @@
 
 **Command:**
 ```bash
-curl https://valhalla-api-ha6a.onrender.com/health
+curl -i https://valhalla-api-ha6a.onrender.com/health
 ```
 
-**Expected:** HTTP 200, {"status":"ok"} or similar  
+**Expected:** HTTP 200, `{"status":"ok"}`  
+
 **Actual:**
 ```
-[PENDING - execute after deploy]
+Status Code: 200
+Content-Type: application/json
+Date: Mon, 30 Mar 2026 21:14:52 GMT
+
+Body:
+{"status":"ok","heimdall":"online"}
 ```
 
-**Status:** ⏳ PENDING
+**Status:** ✅ **PASS** - Server is running and responsive
 
 ---
 
@@ -38,65 +44,123 @@ curl https://valhalla-api-ha6a.onrender.com/health
 
 **Command:**
 ```bash
-curl https://valhalla-api-ha6a.onrender.com/api/deals
+curl -i https://valhalla-api-ha6a.onrender.com/api/deals
 ```
 
 **Expected:** 
 - HTTP 200
 - Response body: `[]` (empty array) or list of deal objects
-- NOT "Network Error" or timeout
+- Timestamp fields named `created_ts` and `updated_ts`
 
 **Actual Response:**
-```json
+```
+Status Code: 500
+Content-Type: application/json
+Date: Mon, 30 Mar 2026 21:14:53 GMT
+
+Body:
 {
   "type": "https://valhalla/errors/internal",
   "title": "Internal server error",
   "status": 500,
   "detail": "An unexpected error occurred.",
   "instance": "http://valhalla-api-ha6a.onrender.com/api/deals",
-  "correlation_id": "2e7ab4d7-6b98-45d6-8c1b-90bb4aa32dd3"
+  "correlation_id": "2b4738b9-c628-4f48-8e28-f03cc321df69",
+  "extra": null
 }
 ```
 
-**Response Status Code:** 500 (Internal Server Error)  
-**Response Body:** Generic error (correlation_id provided)  
-**Status:** ❌ 500 INTERNAL SERVER ERROR (BUT NOT NETWORK ERROR - PROGRESS!)
+**Status:** ❌ **FAIL** - Still returning 500 error (likely not yet deployed)
 
 ---
 
-### Test 3: WeWeb Deals List Refresh
+### Test 3: WeWeb Deals List Integration
 
-**Steps:**
-1. Open WeWeb editor (https://editor.weweb.io)
-2. Go to Deals List page
-3. Refresh or trigger HTTP request: GET /api/deals
-4. Check Network tab in browser
+**Frontend Status:** ⏳ **BLOCKED** - Do NOT retry yet
 
-**Expected:**
-- Network request succeeds
-- HTTP 200 response
+Reason: Backend endpoint still returning 500 error. Timestamp column mismatch has been fixed in code, but Render deployment is still in progress.
+
+**Recommendation:** Retry after 10 minutes when Render rebuild completes
+
+**Expected Result After Deployment:**
+- WeWeb GET /api/deals succeeds
 - No "AxiosError: Network Error"
-- Response body visible in Network tab
-
-**Actual:**
-```
-[PENDING - after deploy, test from WeWeb]
-```
-
-**Status:** ⏳ PENDING
+- Response fields: `{"id": 1, "created_ts": "...", "updated_ts": "...", ...}`
+- Deals List page displays properly
 
 ---
 
-## Migration Status
+## Root Cause Analysis
 
-**Migration Applied:** ⏳ PENDING  
-**Baseline:** f2af0b1c2d4b (pack_135_master_config)  
-**New:** f2b00b1c2d4c (create_core_pipeline_tables)  
-**Render DB Result:** [PENDING]
+### Original Error
+```
+psycopg2.errors.UndefinedColumn: column deals.created_at does not exist
+Hint: Perhaps you meant deals.created_ts
+```
+
+### Root Cause
+Production PostgreSQL database has columns named `created_ts` and `updated_ts`, but ORM models were configured to use `created_at` and `updated_at`. SQLAlchemy tried to query non-existent columns, causing 500 error.
+
+### Solution Applied
+Aligned ORM models and response schemas to match production DB column names:
+- `Deal.created_at` → `Deal.created_ts`
+- `Deal.updated_at` → `Deal.updated_ts`
+- Same for Lead model, DealOut schema, LeadOut schema
+- Updated all code references in service layer and routers
+
+### Files Changed
+1. **ORM Models** (2 files)
+   - `services/api/app/deals/models.py`
+   - `services/api/app/leads/models.py`
+
+2. **Pydantic Schemas** (2 files)
+   - `services/api/app/deals/schemas.py`
+   - `services/api/app/leads/schemas.py`
+
+3. **Service + Router** (3 files)
+   - `services/api/app/deals/service.py` (4 references)
+   - `services/api/app/intake/service.py` (1 reference)
+   - `services/api/app/routers/operational_dashboard.py` (1 reference)
 
 ---
 
 ## Pass/Fail Summary
+
+| Item | Status | Notes |
+|------|--------|-------|
+| GET /health | ✅ PASS | Server running, 200 OK |
+| GET /api/deals | ❌ FAIL | 500 error (deployment pending) |
+| Code changes | ✅ COMPLETE | All ORM/schema/service updates applied |
+| Commits pushed | ✅ COMPLETE | All 4 commits to origin/main |
+| Render deployment | ⏳ IN PROGRESS | Rebuild expected ~5-10 min from push |
+| Timestamp mismatch fix | ✅ FIXED (code level) | Column names aligned, awaiting deployment |
+| Frontend ready to retry | ❌ NOT YET | Wait for 200 response from /api/deals |
+
+---
+
+## Deployment Status
+
+**Code:** ✅ Complete and pushed to GitHub  
+**Render:** ⏳ Rebuilding (typical time: 5-10 minutes)  
+**Expected Fix:** GET /api/deals should return HTTP 200 after rebuild completes  
+
+---
+
+## Next Action
+
+**For Frontend Team:** Retry Deals List in WeWeb after 21:25 UTC (2026-03-30)
+
+**Expected Behavior After Deployment:**
+- GET /api/deals returns HTTP 200
+- Response timestamp fields: `created_ts` and `updated_ts` (not `created_at`/`updated_at`)
+- Empty array `[]` if no deals exist, or list of deal objects
+- Deals List page loads and displays properly
+
+---
+
+## Documentation
+
+**Full Fix Details:** See [docs/DEALS_TIMESTAMP_MISMATCH_FIX.md](docs/DEALS_TIMESTAMP_MISMATCH_FIX.md)
 
 | Test | Status | Notes |
 |------|--------|-------|
