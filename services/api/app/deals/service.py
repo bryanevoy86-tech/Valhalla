@@ -108,7 +108,7 @@ def update_deal(db: Session, deal_id: int, update: DealUpdate) -> Optional[Deal]
         if value is not None:
             setattr(db_deal, key, value)
     
-    db_deal.updated_at = datetime.utcnow()
+    db_deal.updated_ts = datetime.utcnow()
     db.commit()
     db.refresh(db_deal)
     return db_deal
@@ -134,7 +134,7 @@ def update_deal_score(db: Session, deal_id: int, score_update: DealScoreUpdate) 
     if score_update.notes:
         db_deal.notes = score_update.notes
     
-    db_deal.updated_at = datetime.utcnow()
+    db_deal.updated_ts = datetime.utcnow()
     db.commit()
     db.refresh(db_deal)
     return db_deal

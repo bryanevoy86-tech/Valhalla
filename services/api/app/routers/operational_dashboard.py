@@ -83,7 +83,7 @@ def get_pipeline(db: Session = Depends(get_db), _: bool = Depends(require_builde
             score=float(deal.score) if deal.score else 0.0,
             contract_status="pending",  # TODO: Join to contracts table
             buyer_status="unmatched",   # TODO: Join to buyer_matches table
-            last_updated=deal.updated_at or deal.created_at or datetime.utcnow()
+            last_updated=deal.updated_ts or deal.created_ts or datetime.utcnow()
         )
         pipeline_items.append(item)
     

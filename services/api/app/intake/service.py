@@ -24,7 +24,7 @@ def create_deal(source: str, payload: dict) -> dict:
     return {
         "id": deal.id,
         "source": deal.source,
-        "created_at": deal.created_at.isoformat()
+        "created_at": deal.created_ts.isoformat()
     }
 
 
