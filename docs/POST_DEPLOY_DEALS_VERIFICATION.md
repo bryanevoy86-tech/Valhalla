@@ -1,9 +1,10 @@
 # POST-DEPLOYMENT DEALS ENDPOINT VERIFICATION
 
-**Verification Date:** 2026-03-30 21:28 UTC (POST-DEPLOY TEST)  
-**Deployed Commit:** `c24cbd2` (HEAD) which includes 0cf547b, 9f3f06e, 9170dd3, 8928d8f  
-**Previous Commits:** All timestamp alignment commits stacked and deployed  
-**Blocker Fix:** Timestamp column name mismatch (created_at → created_ts, updated_at → updated_ts)
+**Verification Date:** 2026-03-30 21:35 UTC (FINAL VERIFICATION)  
+**Deployed Commit Hash:** `55f23e23edce8161c67cc78670d40a66b6fae44e`  
+**Full Commit Stack:** c24cbd2 (docs) ← 8928d8f ← 9170dd3 ← 9f3f06e ← 0cf547b (timestamp fix)  
+**Blocker Fix Applied:** Timestamp column name mismatch (created_at → created_ts, updated_at → updated_ts)  
+**Blocker Status:** ❌ **NOT RESOLVED** - Endpoint still returning 500 error
 
 ---
 
@@ -52,11 +53,13 @@ curl -i https://valhalla-api-ha6a.onrender.com/api/deals
 - Response body: `[]` (empty array) or list of deal objects
 - Timestamp fields named `created_ts` and `updated_ts`
 
-**Actual Response:**
+**Actual Response (21:35 UTC):**
 ```
 Status Code: 500
 Content-Type: application/json
-Date: Mon, 30 Mar 2026 21:28:45 GMT
+Date: Mon, 30 Mar 2026 21:35:56 GMT
+CF-RAY: 9e4a3f368f7eebb5-YYZ
+rndr-id: 74265db7-1f98-442c
 
 Body:
 {
@@ -65,19 +68,23 @@ Body:
   "status": 500,
   "detail": "An unexpected error occurred.",
   "instance": "http://valhalla-api-ha6a.onrender.com/api/deals",
-  "correlation_id": "b3282227-43ca-43b8-b077-508cb0f1e186",
+  "correlation_id": "d72d5277-0d40-4cd0-9829-03bc40b70e8f",
   "extra": null
 }
 ```
 
 **Status:** ❌ **FAIL** - Still returning 500 error
 
-**CRITICAL OBSERVATION:** Correlation ID changed (b3282227... vs previous 2b4738b9...). This indicates:
-- ✅ Render has redeployed the new code (fresh errors, not cached)
-- ❌ GET /api/deals still failing with generic error message
-- ⚠️ Root cause has changed or deployment has a different issue
+**CRITICAL FINDING:** 
+- Multiple test runs (21:14, 21:28, 21:35) all yield different correlation IDs
+  - 21:14: 2b4738b9-c628-4f48-8e28-f03cc321df69
+  - 21:28: b3282227-43ca-43b8-b077-508cb0f1e186
+  - 21:35: d72d5277-0d40-4cd0-9829-03bc40b70e8f
+- ✅ Confirms Render redeployed code (fresh request IDs, not cached)
+- ❌ Confirms timestamp fix deployed but endpoint still failing
+- ⚠️ Generic error "An unexpected error occurred" - actual error hidden
 
-**Assessment:** Timestamp column fix deployed but endpoint still failing. New error requires investigation.
+**Assessment:** Timestamp column fix is in production code, but /api/deals endpoint is still broken. The actual root cause is not the timestamp mismatch (that was fixed). Something else is preventing the endpoint from working.
 
 ---
 
@@ -102,21 +109,41 @@ Reason: Backend endpoint still returning 500 error despite code deployment. Rend
 
 ## Root Cause Analysis
 
-### Original Error
+### Original Error (Pre-Deployment)
 ```
 psycopg2.errors.UndefinedColumn: column deals.created_at does not exist
 Hint: Perhaps you meant deals.created_ts
 ```
 
-### Root Cause
-Production PostgreSQL database has columns named `created_ts` and `updated_ts`, but ORM models were configured to use `created_at` and `updated_at`. SQLAlchemy tried to query non-existent columns, causing 500 error.
+**Root Cause:** Production PostgreSQL database has columns named `created_ts` and `updated_ts`, but ORM models were configured to use `created_at` and `updated_at`. SQLAlchemy tried to query non-existent columns, causing 500 error.
 
 ### Solution Applied
-Aligned ORM models and response schemas to match production DB column names:
+Aligned ORM models and response schemas to match production DB column names in code:
 - `Deal.created_at` → `Deal.created_ts`
 - `Deal.updated_at` → `Deal.updated_ts`
 - Same for Lead model, DealOut schema, LeadOut schema
 - Updated all code references in service layer and routers
+
+**Status of Fix:** ✅ **DEPLOYED** to production code
+
+### Current Status (Post-Deployment)
+**Problem:** Timestamp fix deployed but endpoint still returning 500 error
+
+**Evidence:**
+1. Code changes are live (correlation IDs change = fresh code)
+2. Server is responding (/health works)
+3. Endpoint still returns generic 500, not specific UndefinedColumn error
+
+**Hypothesis:** 
+- Original UndefinedColumn error likely fixed by deployment
+- Different, hidden error preventing endpoint from completing
+- Possible causes: Migration issue, database connectivity, new AttributeError, or other runtime error
+
+**What We Don't Know Yet:**
+- The actual error from Render logs (generic 500 doesn't show it)
+- Whether timestamp columns are actually accessible
+- Whether migration succeeded
+- Whether there's a secondary issue
 
 ### Files Changed
 1. **ORM Models** (2 files)
@@ -138,39 +165,58 @@ Aligned ORM models and response schemas to match production DB column names:
 
 | Item | Status | Notes |
 |------|--------|-------|
-| GET /health | ✅ PASS | Server running, 200 OK (Mon 21:28 UTC) |
-| GET /api/deals | ❌ FAIL | 500 error with generic message |
-| Code changes | ✅ COMPLETE | All ORM/schema/service updates applied |
-| Commits pushed | ✅ COMPLETE | All commits stacked in c24cbd2 on origin/main |
-| Render deployment | ✅ COMPLETED | Rebuild successful, code deployed |
-| Timestamp mismatch fix | ✅ DEPLOYED | Code changes live on Render |
-| Frontend ready to retry | ❌ NOT YET | Endpoint still 500, needs investigation |
+| GET /health | ✅ PASS | Server running, 200 OK (Mon 21:35 UTC) |
+| GET /api/deals | ❌ FAIL | 500 error (correlation_id: d72d5277-0d40-4cd0-9829-03bc40b70e8f) |
+| Code changes | ✅ COMPLETE | All ORM/schema/service updates applied and deployed |
+| Commits pushed | ✅ COMPLETE | Deployed commit: 55f23e23edce8161c67cc78670d40a66b6fae44e |
+| Render deployment | ✅ COMPLETED | Multiple test cycles confirm fresh code (changing correlation IDs) |
+| Timestamp mismatch fix | ✅ DEPLOYED | Code changes live on Render, but not resolving the blocker |
+| Frontend ready to retry | ❌ NO | Timestamp fix deployed but /api/deals still returning 500 |
+| Blocker resolved | ❌ NO | Original UndefinedColumn error fixed in code, but endpoint still down |
 
 ---
 
 ## Deployment Status
 
 **Code:** ✅ Complete and deployed to Render  
-**Render:** ✅ Redeployed successfully (correlation_id changed, fresh errors)  
-**Current Status:** Timestamp fix deployed but endpoint still returning 500 - new error to diagnose  
+**Render:** ✅ Fully redeployed (confirmed by changing correlation IDs across 3 test runs)  
+**Current Status:** ❌ **BLOCKER NOT RESOLVED** - Timestamp fix in code but endpoint still 500  
+**Deployed Commit:** 55f23e23edce8161c67cc78670d40a66b6fae44e
+
+**Test Progression:**
+- 21:14 UTC: 500 error (correlation_id: 2b4738b9...)
+- 21:28 UTC: 500 error (correlation_id: b3282227...) 
+- 21:35 UTC: 500 error (correlation_id: d72d5277...) ← CURRENT
+
+**Conclusion:** The timestamp column name fix was successfully deployed to production, but the /api/deals endpoint is still broken. The blocker is **not resolved**.
 
 ---
 
 ## Immediate Next Actions
 
-**Do NOT retry WeWeb yet** - Backend fully redeployed but endpoint still failing
+**BLOCKER STATUS: NOT RESOLVED** ❌
 
-**Diagnostic Steps Required:**
-1. Check Render App Logs for the actual error (not the generic 500 response)
-2. Verify database connection is working after code reload
-3. Confirm timestamp column access is actually working (not just code updated)
-4. Check if there's a migration issue or database schema problem
+The timestamp column name fix has been successfully deployed to production code, but the /api/deals endpoint is still returning a 500 error.
 
-**Expected Behavior Once Fixed:**
-- GET /api/deals returns HTTP 200
-- Response timestamp fields: `created_ts` and `updated_ts` (not `created_at`/`updated_at`)
-- Empty array `[]` if no deals exist, or list of deal objects
-- Deals List page loads and displays properly
+**Why?**
+- ✅ Timestamp alignment code deployed 
+- ✅ Server responding (/health works)
+- ❌ Endpoint still 500 (generic "An unexpected error occurred")
+- ❌ Original error (UndefinedColumn) appears to be fixed, but new/different error blocking endpoint
+
+**Required Investigation:**
+1. **Check Render App Logs** → Settings → Logs in Render dashboard
+2. **Find the actual error** in logs for correlation_id: d72d5277-0d40-4cd0-9829-03bc40b70e8f
+3. **Determine root cause:**
+   - Is it a database connection issue?
+   - Is it a migration that didn't run?
+   - Is it a different code error not related to timestamp columns?
+   - Is there a new AttributeError or ImportError?
+
+**Frontend Status:**
+- ❌ **DO NOT retry Deals List** - endpoint still broken
+- Timestamp fix alone did not resolve the blocker
+- Need actual Render error log to diagnose further
 
 ---
 
