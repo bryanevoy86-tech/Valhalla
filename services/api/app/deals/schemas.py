@@ -3,7 +3,7 @@ Pydantic schemas for Deal management.
 
 Schemas for validation and serialization of deal data.
 """
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from datetime import datetime
 from typing import Optional
 from decimal import Decimal
@@ -49,7 +49,7 @@ class DealStageUpdate(BaseModel):
 
 
 class DealOut(BaseModel):
-    """Schema for deal outputs (responses)."""
+    """Schema for deal outputs (responses) - with JSON-safe serialization."""
     id: int
     created_at: datetime
     updated_at: datetime
@@ -57,13 +57,13 @@ class DealOut(BaseModel):
     title: str
     stage: str
     status: str
-    arv: Optional[Decimal] = None
-    estimated_repair_cost: Optional[Decimal] = None
-    max_allowable_offer: Optional[Decimal] = None
-    target_assignment_fee: Optional[Decimal] = None
-    score: Optional[Decimal] = None
+    # Use str serialization for Decimal to ensure JSON compatibility
+    arv: Optional[str] = None
+    estimated_repair_cost: Optional[str] = None
+    max_allowable_offer: Optional[str] = None
+    target_assignment_fee: Optional[str] = None
+    score: Optional[str] = None
     notes: Optional[str] = None
     disposition_status: Optional[str] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
