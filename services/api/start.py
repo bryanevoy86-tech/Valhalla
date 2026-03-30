@@ -12,6 +12,11 @@ if __name__ == "__main__":
         print("="*80)
         print("RUNNING DATABASE MIGRATIONS...")
         print("="*80)
+        
+        # Debug: Print database URL (redacted for security)
+        db_url = os.getenv("DATABASE_URL", "").replace(":", ":*****@", 1) if os.getenv("DATABASE_URL") else "[NOT SET]"
+        print(f"DATABASE_URL: {db_url}")
+        
         try:
             # alembic.ini is in the workspace root (/app in Docker, parent dirs locally)
             # Start from current dir and traverse up until we find alembic.ini
@@ -33,12 +38,18 @@ if __name__ == "__main__":
             if not workspace_root:
                 raise RuntimeError(f"Could not find alembic.ini starting from {current_dir}")
             
+            print(f"Workspace root: {workspace_root}")
+            
+            # Explicitly pass current environment to subprocess  
+            env = os.environ.copy()
+            
             result = subprocess.run(
                 ["alembic", "upgrade", "head"],
                 cwd=workspace_root,
                 capture_output=True,
                 text=True,
-                timeout=60
+                timeout=60,
+                env=env  # Explicitly pass environment
             )
             print(result.stdout)
             if result.stderr:
@@ -50,6 +61,7 @@ if __name__ == "__main__":
                 print("Core pipeline tables (leads, deals) require successful migration.")
                 print(f"Workspace root: {workspace_root}")
                 print(f"alembic.ini exists: {os.path.exists(os.path.join(workspace_root, 'alembic.ini'))}")
+                print(f"DATABASE_URL set: {'Yes' if os.getenv('DATABASE_URL') else 'No'}")
                 print("Please check database connection and alembic configuration.")
                 print("="*80)
                 sys.exit(1)
