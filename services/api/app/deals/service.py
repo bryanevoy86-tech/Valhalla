@@ -195,7 +195,7 @@ def update_deal_stage(
     
     # Update deal
     db_deal.stage = new_stage
-    db_deal.updated_at = datetime.utcnow()
+    db_deal.updated_ts = datetime.utcnow()
     db.commit()
     db.refresh(db_deal)
     return db_deal
