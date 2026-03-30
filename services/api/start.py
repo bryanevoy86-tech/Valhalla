@@ -13,10 +13,14 @@ if __name__ == "__main__":
         print("RUNNING DATABASE MIGRATIONS...")
         print("="*80)
         try:
-            # Change to the workspace directory where alembic.ini is located
-            workspace_root = "/app"  # In Docker
-            if not os.path.exists(workspace_root):
-                workspace_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            # alembic.ini is in the workspace root, not in services/api
+            # In Docker: /app/alembic.ini
+            # Locally: ../../../alembic.ini (relative to services/api)
+            workspace_root = "/app"
+            if not os.path.exists(os.path.join(workspace_root, "alembic.ini")):
+                # Fallback: try to find it relative to current script
+                script_dir = os.path.dirname(os.path.abspath(__file__))
+                workspace_root = os.path.dirname(os.path.dirname(script_dir))
             
             result = subprocess.run(
                 ["alembic", "upgrade", "head"],
@@ -33,6 +37,8 @@ if __name__ == "__main__":
                 print("="*80)
                 print(f"❌ STARTUP FAILED: Migrations failed with code {result.returncode}")
                 print("Core pipeline tables (leads, deals) require successful migration.")
+                print(f"Workspace root: {workspace_root}")
+                print(f"alembic.ini exists: {os.path.exists(os.path.join(workspace_root, 'alembic.ini'))}")
                 print("Please check database connection and alembic configuration.")
                 print("="*80)
                 sys.exit(1)
