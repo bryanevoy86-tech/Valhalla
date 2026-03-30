@@ -32,8 +32,8 @@ def upgrade() -> None:
         op.execute("""
             CREATE TABLE IF NOT EXISTS leads (
                 id SERIAL PRIMARY KEY,
-                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                created_ts TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_ts TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 source VARCHAR(255),
                 lead_name VARCHAR(255),
                 lead_email VARCHAR(255),
@@ -57,8 +57,8 @@ def upgrade() -> None:
         op.execute("""
             CREATE TABLE IF NOT EXISTS deals (
                 id SERIAL PRIMARY KEY,
-                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                created_ts TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_ts TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 lead_id INTEGER NOT NULL REFERENCES leads(id),
                 title VARCHAR(255) NOT NULL,
                 stage VARCHAR(50) DEFAULT 'lead_received' NOT NULL,
@@ -83,8 +83,8 @@ def upgrade() -> None:
         op.create_table(
             'leads',
             sa.Column('id', sa.Integer, primary_key=True, index=True),
-            sa.Column('created_at', sa.DateTime, server_default=sa.func.now()),
-            sa.Column('updated_at', sa.DateTime, server_default=sa.func.now()),
+            sa.Column('created_ts', sa.DateTime, server_default=sa.func.now()),
+            sa.Column('updated_ts', sa.DateTime, server_default=sa.func.now()),
             sa.Column('source', sa.String(255), nullable=True, index=True),
             sa.Column('lead_name', sa.String(255), nullable=True),
             sa.Column('lead_email', sa.String(255), nullable=True),
@@ -101,8 +101,8 @@ def upgrade() -> None:
         op.create_table(
             'deals',
             sa.Column('id', sa.Integer, primary_key=True, index=True),
-            sa.Column('created_at', sa.DateTime, server_default=sa.func.now()),
-            sa.Column('updated_at', sa.DateTime, server_default=sa.func.now()),
+            sa.Column('created_ts', sa.DateTime, server_default=sa.func.now()),
+            sa.Column('updated_ts', sa.DateTime, server_default=sa.func.now()),
             sa.Column('lead_id', sa.Integer, sa.ForeignKey('leads.id'), nullable=False, index=True),
             sa.Column('title', sa.String(255), nullable=False),
             sa.Column('stage', sa.String(50), nullable=False, default='lead_received', index=True),
