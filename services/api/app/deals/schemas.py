@@ -51,8 +51,8 @@ class DealStageUpdate(BaseModel):
 class DealOut(BaseModel):
     """Schema for deal outputs (responses) - with JSON-safe serialization."""
     id: int
-    created_at: datetime
-    updated_at: datetime
+    created_ts: datetime
+    updated_ts: datetime
     lead_id: int
     title: str
     stage: str

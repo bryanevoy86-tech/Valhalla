@@ -46,8 +46,8 @@ class LeadOut(BaseModel):
     lead_status: str
     source: str
     notes: Optional[str] = None
-    created_at: datetime
-    updated_at: datetime
+    created_ts: datetime
+    updated_ts: datetime
 
     class Config:
         from_attributes = True
