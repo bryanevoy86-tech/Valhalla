@@ -13,14 +13,25 @@ if __name__ == "__main__":
         print("RUNNING DATABASE MIGRATIONS...")
         print("="*80)
         try:
-            # alembic.ini is in the workspace root, not in services/api
-            # In Docker: /app/alembic.ini
-            # Locally: ../../../alembic.ini (relative to services/api)
-            workspace_root = "/app"
-            if not os.path.exists(os.path.join(workspace_root, "alembic.ini")):
-                # Fallback: try to find it relative to current script
-                script_dir = os.path.dirname(os.path.abspath(__file__))
-                workspace_root = os.path.dirname(os.path.dirname(script_dir))
+            # alembic.ini is in the workspace root (/app in Docker, parent dirs locally)
+            # Start from current dir and traverse up until we find alembic.ini
+            current_dir = os.path.abspath(".")
+            workspace_root = None
+            
+            # First check common Docker path
+            if os.path.exists("/app/alembic.ini"):
+                workspace_root = "/app"
+            else:
+                # Search up from current directory
+                search_dir = current_dir
+                for _ in range(5):  # Search up to 5 levels
+                    if os.path.exists(os.path.join(search_dir, "alembic.ini")):
+                        workspace_root = search_dir
+                        break
+                    search_dir = os.path.dirname(search_dir)
+            
+            if not workspace_root:
+                raise RuntimeError(f"Could not find alembic.ini starting from {current_dir}")
             
             result = subprocess.run(
                 ["alembic", "upgrade", "head"],
