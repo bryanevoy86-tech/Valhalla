@@ -47,13 +47,20 @@ curl https://valhalla-api-ha6a.onrender.com/api/deals
 - NOT "Network Error" or timeout
 
 **Actual Response:**
-```
-[PENDING - execute after deploy]
+```json
+{
+  "type": "https://valhalla/errors/internal",
+  "title": "Internal server error",
+  "status": 500,
+  "detail": "An unexpected error occurred.",
+  "instance": "http://valhalla-api-ha6a.onrender.com/api/deals",
+  "correlation_id": "2e7ab4d7-6b98-45d6-8c1b-90bb4aa32dd3"
+}
 ```
 
-**Response Status Code:** [PENDING]  
-**Response Body:** [PENDING]  
-**Status:** ⏳ PENDING
+**Response Status Code:** 500 (Internal Server Error)  
+**Response Body:** Generic error (correlation_id provided)  
+**Status:** ❌ 500 INTERNAL SERVER ERROR (BUT NOT NETWORK ERROR - PROGRESS!)
 
 ---
 
