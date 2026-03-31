@@ -1,9 +1,8 @@
 """Deal intake models - real-world entry point."""
 from datetime import datetime
 from sqlalchemy import Column, String, DateTime, JSON
-from sqlalchemy.ext.declarative import declarative_base
 
-Base = declarative_base()
+from app.core.db import Base
 
 
 class DealIntakeRecord(Base):
