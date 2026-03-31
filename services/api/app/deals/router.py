@@ -53,7 +53,20 @@ async def create_deal_from_lead(lead_id: int, deal: DealCreate, db: Session = De
 @router.get("", response_model=List[DealOut])
 async def list_deals(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     """List all deals with pagination."""
-    return deal_service.get_all_deals(db, skip=skip, limit=limit)
+    try:
+        deals = deal_service.get_all_deals(db, skip=skip, limit=limit)
+        return deals
+    except Exception as e:
+        import traceback
+        print("\n" + "="*70)
+        print("🔴 === DEALS ENDPOINT ERROR (GET /api/deals) ===")
+        print("="*70)
+        print(f"Exception Type: {type(e).__name__}")
+        print(f"Exception Message: {str(e)}")
+        print("\nFull Traceback:")
+        traceback.print_exc()
+        print("="*70 + "\n")
+        raise
 
 
 @router.get("/{deal_id}", response_model=DealOut)
