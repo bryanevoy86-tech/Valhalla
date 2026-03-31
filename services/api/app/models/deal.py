@@ -12,8 +12,8 @@ class Deal(Base):
     __table_args__ = {'extend_existing': True}
     
     id = Column(Integer, primary_key=True, index=True)
-    created_at = Column(DateTime, nullable=True, default=datetime.utcnow)
-    updated_at = Column(DateTime, nullable=True, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_ts = Column(DateTime, nullable=True, default=datetime.utcnow)
+    updated_ts = Column(DateTime, nullable=True, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Foreign keys
     lead_id = Column(Integer, ForeignKey("leads.id"), nullable=False, index=True)
