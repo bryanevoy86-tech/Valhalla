@@ -4,7 +4,7 @@ import sqlalchemy as sa
 from datetime import datetime
 
 revision = "add_updated_ts_to_deals"
-down_revision = "pack_62_underwriter"
+down_revision = "20260205_final_consolidation"
 branch_labels = None
 depends_on = None
 
