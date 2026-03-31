@@ -1,19 +1,20 @@
 # POST-DEPLOYMENT DEALS ENDPOINT VERIFICATION
 
-**Verification Date:** 2026-03-30 21:35 UTC (FINAL VERIFICATION)  
-**Deployed Commit Hash:** `55f23e23edce8161c67cc78670d40a66b6fae44e`  
-**Full Commit Stack:** c24cbd2 (docs) ← 8928d8f ← 9170dd3 ← 9f3f06e ← 0cf547b (timestamp fix)  
-**Blocker Fix Applied:** Timestamp column name mismatch (created_at → created_ts, updated_at → updated_ts)  
-**Blocker Status:** ❌ **NOT RESOLVED** - Endpoint still returning 500 error
+**Verification Date:** 2026-03-31 03:11 UTC (FINAL TEST)  
+**Base Commit Hash:** `23cb487` (docs: add blocker fix status and log verification guide)  
+**Core Fix Commit:** `de35070` (fix: correct migration dependency to resolve Alembic heads conflict)  
+**Migration Commit:** `afd18fd` (fix: add missing updated_ts column to deals table)  
+**Blocker Status:** ⏳ **AWAITING LOG VERIFICATION** - Infrastructure deployed, endpoint still 500
 
 ---
 
 ## Deployment Chain
 
-- **Commit 0cf547b:** Align ORM/schema columns from `_at` to `_ts`
-- **Commit 9f3f06e:** Update service/router code references
-- **Commit 9170dd3:** Full documentation of fix
-- **Commit 8928d8f:** Final cleanup (update_deal_stage reference)
+- **Commit c945ee0:** Add explicit error logging to GET /api/deals endpoint  
+- **Commit d5c4af0:** Remove legacy timestamp columns from models/deal.py  
+- **Commit afd18fd:** Add missing updated_ts column to deals table  
+- **Commit de35070:** Correct migration dependency to resolve Alembic heads conflict  
+- **Commit 23cb487:** Add blocker fix status and log verification guide  
 - **Target:** Render prod (valhalla-api-ha6a.onrender.com)
 
 ## Test Results
@@ -27,17 +28,22 @@ curl -i https://valhalla-api-ha6a.onrender.com/health
 
 **Expected:** HTTP 200, `{"status":"ok"}`  
 
-**Actual:**
+**Actual (2026-03-31 03:11 UTC):**
 ```
-Status Code: 200
+HTTP/1.1 200 OK
+Date: Tue, 31 Mar 2026 03:11:07 GMT
 Content-Type: application/json
-Date: Mon, 30 Mar 2026 21:14:52 GMT
+Transfer-Encoding: chunked
+Connection: close
+x-request-id: 098ed610-2802-44b4-a7a2-b0db41a18ac9
+x-render-origin-server: uvicorn
+CF-RAY: 9e4c2a39cdd12914-YVR
 
 Body:
 {"status":"ok","heimdall":"online"}
 ```
 
-**Status:** ✅ **PASS** - Server is running and responsive
+**Status:** ✅ **PASS** - Service is running successfully
 
 ---
 
@@ -50,16 +56,18 @@ curl -i https://valhalla-api-ha6a.onrender.com/api/deals
 
 **Expected:** 
 - HTTP 200
-- Response body: `[]` (empty array) or list of deal objects
-- Timestamp fields named `created_ts` and `updated_ts`
+- Response: `[]` (empty array) or array of deal objects
+- Fields include: `created_ts`, `updated_ts`
 
-**Actual Response (21:35 UTC):**
+**Actual (2026-03-31 03:11 UTC):**
 ```
-Status Code: 500
+HTTP/1.1 500 Internal Server Error
+Date: Tue, 31 Mar 2026 03:11:20 GMT
 Content-Type: application/json
-Date: Mon, 30 Mar 2026 21:35:56 GMT
-CF-RAY: 9e4a3f368f7eebb5-YYZ
-rndr-id: 74265db7-1f98-442c
+Transfer-Encoding: chunked
+x-request-id: 83e2d8aa-8df6-49c2-9c23-c24e9e84b3cc
+rndr-id: 375541b2-724a-4e8a
+CF-RAY: 9e4c2a39cdd12914-YVR
 
 Body:
 {
@@ -68,23 +76,14 @@ Body:
   "status": 500,
   "detail": "An unexpected error occurred.",
   "instance": "http://valhalla-api-ha6a.onrender.com/api/deals",
-  "correlation_id": "d72d5277-0d40-4cd0-9829-03bc40b70e8f",
+  "correlation_id": "13f4d6c5-cb16-4c7a-a168-a9ad42a3e00f",
   "extra": null
 }
 ```
 
 **Status:** ❌ **FAIL** - Still returning 500 error
 
-**CRITICAL FINDING:** 
-- Multiple test runs (21:14, 21:28, 21:35) all yield different correlation IDs
-  - 21:14: 2b4738b9-c628-4f48-8e28-f03cc321df69
-  - 21:28: b3282227-43ca-43b8-b077-508cb0f1e186
-  - 21:35: d72d5277-0d40-4cd0-9829-03bc40b70e8f
-- ✅ Confirms Render redeployed code (fresh request IDs, not cached)
-- ❌ Confirms timestamp fix deployed but endpoint still failing
-- ⚠️ Generic error "An unexpected error occurred" - actual error hidden
-
-**Assessment:** Timestamp column fix is in production code, but /api/deals endpoint is still broken. The actual root cause is not the timestamp mismatch (that was fixed). Something else is preventing the endpoint from working.
+**Correlation ID:** `13f4d6c5-cb16-4c7a-a168-a9ad42a3e00f` (for log analysis)
 
 ---
 
