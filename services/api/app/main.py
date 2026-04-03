@@ -13,6 +13,7 @@ from app.observability import drift, retention
 from app.core.db import verify_schema_initialized
 from app.core.settings import settings
 from app.middleware.safety import safety_guard
+from app.core.error_logging import RequestLoggingMiddleware
 
 log = logging.getLogger("valhalla.startup")
 
@@ -20,6 +21,16 @@ log = logging.getLogger("valhalla.startup")
 print("=" * 80)
 print("=== APP MODULE LOADING STARTED ===")
 print("=" * 80)
+
+# Configure basic logging if not already configured
+if not logging.getLogger().handlers:
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        handlers=[
+            logging.StreamHandler(sys.stdout),
+        ]
+    )
 
 # --- Startup/Shutdown Handler -------------------------------------------------
 
@@ -135,6 +146,9 @@ app.add_middleware(
     expose_headers=["*"],
     max_age=86400,            # 24 hours for preflight cache
 )
+
+# --- Input Sanitization Request Logging Middleware --------
+app.add_middleware(RequestLoggingMiddleware)
 
 # --- DEBUG: Route List Endpoint (remove after debugging) ----------------------
 from fastapi.responses import JSONResponse
