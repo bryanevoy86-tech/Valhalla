@@ -10,6 +10,7 @@ from typing import Any, Dict, Optional
 from datetime import datetime
 from fastapi import Request
 from fastapi.responses import JSONResponse
+from starlette.middleware.base import BaseHTTPMiddleware
 
 # Configure logger
 logger = logging.getLogger(__name__)
@@ -109,13 +110,10 @@ class APIErrorLogger:
             logger.info(f"Sanitization: {json.dumps(log_data, default=str)}")
 
 
-class RequestLoggingMiddleware:
+class RequestLoggingMiddleware(BaseHTTPMiddleware):
     """Middleware to log all incoming requests and responses."""
     
-    def __init__(self, app):
-        self.app = app
-    
-    async def __call__(self, request: Request, call_next):
+    async def dispatch(self, request: Request, call_next):
         """Log request and response."""
         try:
             # Log request
