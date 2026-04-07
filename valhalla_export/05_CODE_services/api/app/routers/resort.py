@@ -1,0 +1,1 @@
+from app.resort.router import router  # re-export for main include_router

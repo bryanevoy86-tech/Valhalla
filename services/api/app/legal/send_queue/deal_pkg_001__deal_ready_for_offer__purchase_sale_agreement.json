@@ -1,0 +1,37 @@
+{
+  "approval_id": "deal_pkg_001__deal_ready_for_offer__purchase_sale_agreement",
+  "template_key": "purchase_sale_agreement",
+  "recipients": [
+    "lawyer@example.com"
+  ],
+  "cc": [
+    "accountant@example.com"
+  ],
+  "subject": "Draft Purchase Agreement - 789 Package Rd",
+  "body_intro": "Please review and finalize this purchase_sale_agreement draft for 789 Package Rd.",
+  "document_path": "D:\\dev\\services\\api\\app\\legal\\generated\\purchase_sale_agreement__789 Package Rd__20260407T021721Z.txt",
+  "payload": {
+    "date": "2026-04-07",
+    "seller_name": "John Seller",
+    "buyer_name": "Valhalla Legacy Inc.",
+    "your_company": "Valhalla Legacy Inc.",
+    "property_address": "789 Package Rd",
+    "purchase_price": "210000",
+    "earnest_money": "3000",
+    "title_company": "Example Title Co.",
+    "inspection_days": "10",
+    "closing_date": "2026-05-01",
+    "additional_terms": "Subject to lawyer review before final execution.",
+    "contract_date": "2026-04-07",
+    "assignment_fee": "",
+    "agreement_term": "12 months",
+    "partner_name": "",
+    "your_split": "",
+    "partner_split": "",
+    "roles": ""
+  },
+  "approved": false,
+  "sent": false,
+  "created_at": "2026-04-07T02:17:21.723619+00:00",
+  "sent_at": null
+}

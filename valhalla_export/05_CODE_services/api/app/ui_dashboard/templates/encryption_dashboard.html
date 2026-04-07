@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Encryption Dashboard</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; margin: 24px; }
+    .container { max-width: 900px; margin: 0 auto; }
+    .card { border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px 16px; background: #fff; margin-bottom: 12px; }
+    button { background:#111827;color:#fff;border:none;border-radius:6px;padding:8px 12px;cursor:pointer; }
+    input, textarea { width: 100%; padding:6px 8px; border:1px solid #e5e7eb; border-radius:6px; }
+    .row { display:flex; gap:8px; align-items:center; }
+  </style>
+  <script>
+    let lastKey = '';
+    let lastEncrypted = '';
+
+    async function encryptData() {
+      const data = document.getElementById('plaintext').value || 'Sensitive information to encrypt';
+      const res = await fetch('/api/encryption/encrypt', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data })
+      });
+      const result = await res.json();
+      lastKey = result.encryption_key;
+      lastEncrypted = result.data;
+      const el = document.getElementById('encryption-container');
+      el.innerHTML = `<div class="card"><h3>Encrypted</h3><div>Data: <code>${result.data}</code></div><div>Key: <code>${result.encryption_key}</code></div></div>`;
+    }
+
+    async function decryptData() {
+      const encryptedData = document.getElementById('ciphertext').value || lastEncrypted;
+      const encryptionKey = document.getElementById('key').value || lastKey;
+      const res = await fetch('/api/encryption/decrypt', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ encrypted_data: encryptedData, encryption_key: encryptionKey })
+      });
+      const result = await res.text();
+      const el = document.getElementById('encryption-container');
+      el.innerHTML += `<div class="card"><h3>Decrypted</h3><div>Data: <code>${result}</code></div></div>`;
+    }
+  </script>
+</head>
+<body>
+  <div class="container">
+    <h1>Encryption Dashboard</h1>
+    <div class="card">
+      <h3>Encrypt</h3>
+      <textarea id="plaintext" rows="3" placeholder="Enter text to encrypt"></textarea>
+      <div style="margin-top: 8px;"><button onclick="encryptData()">Encrypt Data</button></div>
+    </div>
+    <div class="card">
+      <h3>Decrypt</h3>
+      <textarea id="ciphertext" rows="3" placeholder="Paste encrypted data (or use last encrypted)"></textarea>
+      <input id="key" placeholder="Paste encryption key (or use last key)" style="margin-top:8px;" />
+      <div style="margin-top: 8px;"><button onclick="decryptData()">Decrypt Data</button></div>
+    </div>
+    <div id="encryption-container"></div>
+  </div>
+</body>
+</html>

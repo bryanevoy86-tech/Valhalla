@@ -1,7 +1,7 @@
 """0075 pack ug notifications
 
 Revision ID: 0075
-Revises: 0074
+Revises: 0074_pack_ue_maintenance
 Create Date: 2024-01-20 12:00:00.000000
 
 """
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = "0075"
-down_revision = "0074"
+down_revision = "0074_pack_ue_maintenance"
 branch_labels = None
 depends_on = None
 

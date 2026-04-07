@@ -1,0 +1,15 @@
+{
+  "template_key": "assignment_of_contract",
+  "title": "Assignment of Contract",
+  "description": "Draft assignment agreement for lawyer review and finalization.",
+  "required_fields": [
+    "date",
+    "your_company",
+    "buyer_name",
+    "contract_date",
+    "property_address",
+    "assignment_fee"
+  ],
+  "subject": "Draft Assignment Agreement - {{property_address}}",
+  "body_text": "ASSIGNMENT OF CONTRACT\n\nDate: {{date}}\n\nAssignor (Original Buyer): {{your_company}}\nAssignee (End Buyer): {{buyer_name}}\n\nOriginal Contract Date: {{contract_date}}\nProperty Address: {{property_address}}\n\nAssignment Fee: ${{assignment_fee}}\n\nThe Assignor hereby assigns all rights, title, and interest in the original Purchase Agreement to the Assignee.\n\nAssignee agrees to:\n- Perform under the original contract terms\n- Pay the assignment fee\n- Not contact Seller directly without consent\n\nNON-CIRCUMVENTION:\nAssignee agrees not to bypass Assignor in this or future transactions.\n\nAS-IS:\nAssignee accepts the property in its current condition.\n\nSignatures:\n\nAssignor: ___________________________\nAssignee: ___________________________"
+}

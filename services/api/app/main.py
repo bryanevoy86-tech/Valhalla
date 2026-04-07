@@ -43,6 +43,31 @@ async def lifespan(app: FastAPI):
     print("=" * 80)
     log.info("LIFESPAN: startup begin")
     
+    # Initialize Module Registry
+    try:
+        print("LIFESPAN: initializing module registry")
+        log.info("LIFESPAN: initializing module registry")
+        from app.core_activation import initialize_registry, get_registry
+        from app.core_activation.module_setup_hooks import register_all_setup_hooks
+        
+        # Initialize with empty feature flags dict (will be populated from feature flags system)
+        registry = initialize_registry({})
+        log.info("LIFESPAN: module registry initialized successfully")
+        print("LIFESPAN: module registry initialized successfully")
+        
+        # Register all module setup hooks
+        register_all_setup_hooks(registry)
+        log.info("LIFESPAN: module setup hooks registered")
+        print("LIFESPAN: module setup hooks registered")
+        
+        # Store registry in app state for access in endpoints
+        app.state.module_registry = registry
+        log.info("LIFESPAN: module registry stored in app state")
+    except Exception as e:
+        print(f"LIFESPAN: Exception during module registry initialization: {type(e).__name__}: {e}")
+        log.exception("LIFESPAN: module registry initialization failed")
+        raise
+    
     # Verify schema is initialized (migrations applied)
     try:
         print("LIFESPAN: about to call verify_schema_initialized()")
@@ -287,6 +312,36 @@ except Exception as e:
     traceback.print_exc()
     raise
 
+try:
+    print("About to import legal routes...")
+    from app.legal.routes import router as legal_router
+    print("[OK] legal routes imported")
+except Exception as e:
+    print(f"ERROR importing legal routes: {e}")
+    import traceback
+    traceback.print_exc()
+    raise
+
+try:
+    print("About to import finance routes...")
+    from app.finance.routes import router as finance_router
+    print("[OK] finance routes imported")
+except Exception as e:
+    print(f"ERROR importing finance routes: {e}")
+    import traceback
+    traceback.print_exc()
+    raise
+
+try:
+    print("About to import compliance routes...")
+    from app.compliance.routes import router as compliance_router
+    print("[OK] compliance routes imported")
+except Exception as e:
+    print(f"ERROR importing compliance routes: {e}")
+    import traceback
+    traceback.print_exc()
+    raise
+
 # NOTE: These are kept for backward compatibility but are now registered via router_registry above
 # If you're seeing duplicates in /api/system/selftest, comment out the old blocks below
 # app.include_router(governance_king.router, prefix="/api")
@@ -308,6 +363,9 @@ app.include_router(governance_policy.router, prefix="/api")
 app.include_router(governance_go_live.router, prefix="/api")
 app.include_router(governance_risk.router, prefix="/api")
 app.include_router(governance_heimdall.router, prefix="/api")
+app.include_router(legal_router)  # Legal document system (prefix already in router)
+app.include_router(finance_router)  # Finance core engine (prefix already in router)
+app.include_router(compliance_router)  # Compliance & EIA mode controller (prefix already in router)
 app.include_router(governance_regression.router, prefix="/api")
 app.include_router(governance_runbook.router, prefix="/api")
 
@@ -732,6 +790,18 @@ def version():
 @app.get("/api/features")
 def features():
     return [{"id": 1, "name": "valhalla"}]
+
+
+# --- EIA Report Router (Compliance & Reporting) ------------------------------
+
+try:
+    from app.core_eia.eia_report_router import router as eia_report_router
+    app.include_router(eia_report_router)
+    print("[app.main] EIA report router registered")
+except Exception as e:
+    print(f"[app.main] Skipping EIA report router: {e}")
+    import traceback
+    traceback.print_exc()
 
 
 # --- API v1 router (optional, but safe) --------------------------------------

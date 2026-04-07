@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>System Health Dashboard</title>
+    <style>
+        body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; margin: 24px; }
+        .container { max-width: 900px; margin: 0 auto; }
+        .card { border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px 16px; background: #fff; }
+        .ok { color: #16a34a; }
+        .bad { color: #dc2626; }
+    </style>
+    <script>
+        async function fetchHealth() {
+            const res = await fetch('/api/ui-dashboard/health-dashboard');
+            if (!res.ok) return;
+            const data = await res.json();
+            const statusEl = document.getElementById('status');
+            const tsEl = document.getElementById('ts');
+            const recoveryEl = document.getElementById('recovery');
+            statusEl.className = data.status === 'Healthy' ? 'ok' : 'bad';
+            statusEl.textContent = data.status;
+            tsEl.textContent = data.last_checked;
+            recoveryEl.textContent = data.recovery_action_taken || '';
+        }
+        window.addEventListener('load', () => {
+            fetchHealth();
+            setInterval(fetchHealth, 5000);
+        });
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>System Health</h1>
+        <div class="card">
+            <div>Service: <strong>System</strong></div>
+            <div>Status: <strong id="status">—</strong></div>
+            <div>Last checked: <span id="ts">—</span></div>
+            <div id="recovery" style="margin-top:8px; color:#6b7280;"></div>
+        </div>
+    </div>
+</body>
+</html>

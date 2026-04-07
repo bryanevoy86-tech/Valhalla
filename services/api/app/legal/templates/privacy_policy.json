@@ -1,0 +1,8 @@
+{
+  "template_key": "privacy_policy",
+  "title": "Privacy Policy",
+  "description": "Draft privacy policy for lawyer review and finalization.",
+  "required_fields": [],
+  "subject": "Draft Privacy Policy",
+  "body_text": "PRIVACY POLICY\n\nWe collect:\n- Contact information\n- Deal-related data\n\nWe use data to:\n- Operate the platform\n- Facilitate transactions\n\nWe do NOT sell personal data.\n\nUsers consent to data usage by using the platform."
+}

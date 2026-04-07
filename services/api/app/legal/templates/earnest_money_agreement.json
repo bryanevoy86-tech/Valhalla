@@ -1,0 +1,13 @@
+{
+  "template_key": "earnest_money_agreement",
+  "title": "Earnest Money Agreement",
+  "description": "Draft earnest money agreement for lawyer review and finalization.",
+  "required_fields": [
+    "buyer_name",
+    "property_address",
+    "earnest_money",
+    "title_company"
+  ],
+  "subject": "Draft Earnest Money Agreement - {{property_address}}",
+  "body_text": "EARNEST MONEY AGREEMENT\n\nBuyer: {{buyer_name}}\nProperty: {{property_address}}\n\nEarnest Money Deposit: ${{earnest_money}}\n\nHeld by: {{title_company}}\n\nConditions:\n- Refundable during inspection period\n- Non-refundable after inspection unless otherwise stated\n\nDefault:\n- If Buyer defaults -> deposit forfeited\n- If Seller defaults -> deposit returned\n\nSigned:\n\nBuyer: ___________________________\nHolder: ___________________________"
+}

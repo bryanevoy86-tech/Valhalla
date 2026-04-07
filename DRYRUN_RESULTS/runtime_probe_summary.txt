@@ -1,0 +1,7 @@
+﻿VALHALLA RUNTIME PROBE SUMMARY
+Generated: 2026-04-07T14:06:25.7609567-05:00
+
+http://127.0.0.1:4000/health | ok=True | status=200 | elapsed_ms=50 | error=
+http://127.0.0.1:4000/api/compliance/mode | ok=True | status=200 | elapsed_ms=50 | error=
+http://127.0.0.1:4000/api/legal/templates | ok=True | status=200 | elapsed_ms=196 | error=
+http://127.0.0.1:4000/api/finance/status/summary | ok=True | status=200 | elapsed_ms=16 | error=

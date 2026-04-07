@@ -4,7 +4,7 @@ from alembic import op
 import sqlalchemy as sa
 
 revision = "0070_pack_tz_system_config"
-down_revision = "0069_pack_tv_system_logs"
+down_revision = "0069"
 branch_labels = None
 depends_on = None
 

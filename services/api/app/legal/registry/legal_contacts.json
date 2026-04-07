@@ -1,0 +1,44 @@
+{
+  "defaults": {
+    "lawyer_email": "",
+    "accountant_email": "",
+    "title_company": "",
+    "title_company_email": "",
+    "cc": []
+  },
+  "companies": {
+    "Valhalla Legacy Inc.": {
+      "defaults": {
+        "lawyer_email": "",
+        "accountant_email": "",
+        "title_company": "",
+        "title_company_email": "",
+        "cc": []
+      },
+      "regions": {
+        "MB": {
+          "lawyer_email": "",
+          "accountant_email": "",
+          "title_company": "",
+          "title_company_email": "",
+          "cc": []
+        },
+        "ON": {
+          "lawyer_email": "",
+          "accountant_email": "",
+          "title_company": "",
+          "title_company_email": "",
+          "cc": []
+        }
+      },
+      "deal_types": {
+        "wholesale": {
+          "cc": []
+        },
+        "jv": {
+          "cc": []
+        }
+      }
+    }
+  }
+}

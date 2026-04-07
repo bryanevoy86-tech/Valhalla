@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Advanced Negotiation Techniques</title>
+  <style>
+    body { font-family: Segoe UI, Arial, sans-serif; background: #f6f7fb; padding: 24px; }
+    .wrap { max-width: 1200px; margin: 0 auto; }
+    h1 { color: #333; }
+    .grid { display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); }
+    .card { background: #fff; border-radius: 8px; box-shadow: 0 10px 24px rgba(0,0,0,0.06); padding: 20px; }
+    .card h2 { margin: 0 0 12px; color: #4a56e2; }
+    label { display:block; margin: 8px 0 4px; color: #444; font-weight: 500; }
+    input, select, textarea { width: 100%; padding: 10px; border: 1px solid #dfe3ee; border-radius: 6px; }
+    textarea { resize: vertical; min-height: 80px; }
+    button { background: linear-gradient(135deg,#667eea,#764ba2); color: #fff; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; margin-top: 10px; }
+    button:hover { opacity: 0.9; }
+    .result { margin-top: 10px; font-size: 13px; }
+    .ok { color: #0a7a3e; }
+    .err { color: #b00020; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { border-bottom: 1px solid #eee; padding: 8px; text-align: left; font-size: 13px; }
+    th { background: #f8f9fa; font-weight: 600; }
+    .score-bar { display: inline-block; height: 8px; border-radius: 4px; background: linear-gradient(to right, #ff6b6b 0%, #ffd93d 50%, #6bcf7f 100%); }
+    .score-high { color: #388e3c; font-weight: 600; }
+    .score-med { color: #f57c00; font-weight: 600; }
+    .score-low { color: #d32f2f; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>🤖 Advanced Negotiation Techniques</h1>
+    <div class="grid">
+      <div class="card">
+        <h2>Add Technique</h2>
+        <label>Technique Name</label>
+        <input id="tech-name" placeholder="e.g., Anchoring Bias" />
+        <label>Description</label>
+        <textarea id="tech-desc" placeholder="Explain the technique..."></textarea>
+        <label>Effectiveness Score (0-100)</label>
+        <input id="tech-score" type="number" min="0" max="100" placeholder="85" />
+        <label>Type</label>
+        <input id="tech-type" placeholder="e.g., Persuasion, Framing, Anchoring" />
+        <button onclick="createTechnique()">Add Technique</button>
+        <div id="create-result" class="result"></div>
+      </div>
+      <div class="card">
+        <h2>Top Techniques</h2>
+        <label>Minimum Score</label>
+        <input id="min-score" type="number" min="0" max="100" value="70" />
+        <label>Type Filter (optional)</label>
+        <select id="filter-type">
+          <option value="">All Types</option>
+          <option value="Persuasion">Persuasion</option>
+          <option value="Framing">Framing</option>
+          <option value="Anchoring">Anchoring</option>
+          <option value="Rapport">Rapport</option>
+          <option value="Concession">Concession</option>
+        </select>
+        <button onclick="loadTopTechniques()">Load Top Techniques</button>
+        <div id="list-result" class="result"></div>
+      </div>
+    </div>
+    <div class="card" style="margin-top: 20px;">
+      <h2>Technique Library</h2>
+      <div style="overflow:auto">
+        <table id="techniques-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Type</th>
+              <th>Score</th>
+              <th style="width:40%">Description</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <script>
+    const API = '/api/advanced-negotiation-techniques';
+    function show(el, ok, msg){ const d=document.getElementById(el); d.className='result '+(ok?'ok':'err'); d.textContent=msg; }
+    function getScoreClass(score){ return score>=80?'score-high':(score>=50?'score-med':'score-low'); }
+    
+    async function createTechnique(){
+      const technique_name = document.getElementById('tech-name').value;
+      const description = document.getElementById('tech-desc').value;
+      const effectiveness_score = parseFloat(document.getElementById('tech-score').value);
+      const technique_type = document.getElementById('tech-type').value || null;
+      const r = await fetch(`${API}/`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({technique_name, description, effectiveness_score, technique_type})});
+      const j = await r.json();
+      if(r.ok){
+        show('create-result', true, `Created technique #${j.id} (${j.technique_name})`);
+        loadTopTechniques();
+      } else {
+        show('create-result', false, j.detail || 'Error');
+      }
+    }
+    
+    async function loadTopTechniques(){
+      const minScore = document.getElementById('min-score').value;
+      const filterType = document.getElementById('filter-type').value;
+      const url = filterType ? `${API}/?technique_type=${encodeURIComponent(filterType)}` : `${API}/top?min_score=${minScore}`;
+      const r = await fetch(url);
+      const list = await r.json();
+      const tbody = document.querySelector('#techniques-table tbody');
+      tbody.innerHTML = (Array.isArray(list)?list:[]).map(t=>`
+        <tr>
+          <td>${t.id}</td>
+          <td><strong>${t.technique_name}</strong></td>
+          <td>${t.technique_type||'-'}</td>
+          <td><span class="${getScoreClass(t.effectiveness_score)}">${t.effectiveness_score.toFixed(1)}</span></td>
+          <td style="font-size:12px;">${t.description.substring(0,100)}${t.description.length>100?'...':''}</td>
+          <td><button style="padding:4px 8px; font-size:11px;" onclick="updateScore(${t.id})">Update Score</button></td>
+        </tr>
+      `).join('');
+      show('list-result', r.ok, r.ok?`Loaded ${Array.isArray(list)?list.length:0} techniques`:'Error');
+    }
+    
+    async function updateScore(techId){
+      const newScore = prompt('Enter new effectiveness score (0-100):');
+      if(!newScore) return;
+      const r = await fetch(`${API}/${techId}/score?new_score=${encodeURIComponent(newScore)}`, {method:'PUT'});
+      if(r.ok){
+        alert('Score updated!');
+        loadTopTechniques();
+      } else {
+        const j = await r.json();
+        alert('Error: ' + (j.detail || 'Failed'));
+      }
+    }
+    
+    // Auto-load on page load
+    loadTopTechniques();
+  </script>
+</body>
+</html>

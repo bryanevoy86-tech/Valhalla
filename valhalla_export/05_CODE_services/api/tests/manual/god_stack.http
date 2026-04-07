@@ -1,0 +1,59 @@
+### 1) Create a GodCase
+POST http://127.0.0.1:4000/god-cases/registry
+Content-Type: application/json
+
+{
+  "title": "Test Heimdall + Loki rescan flow",
+  "source_type": "deal",
+  "status": "open",
+  "payload": {
+    "description": "End-to-end test case for dual-god review pipeline",
+    "priority": "high"
+  }
+}
+
+### 2) List all GodCases
+GET http://127.0.0.1:4000/god-cases/registry
+
+### 3) Get specific GodCase (replace {case_id})
+GET http://127.0.0.1:4000/god-cases/registry/{case_id}
+
+### 4) Mark a case as needing rescan (replace {case_id})
+POST http://127.0.0.1:4000/god-cases/{case_id}/request-rescan
+Content-Type: application/json
+
+### 5) Add specialist feedback (replace {case_id})
+POST http://127.0.0.1:4000/god-cases/{case_id}/feedback
+Content-Type: application/json
+
+{
+  "specialist_role": "lawyer",
+  "specialist_name": "Sarah Johnson",
+  "notes": "Specialist changed structure — both gods must re-evaluate.",
+  "suggested_changes": {
+    "contract_clause": "Update indemnification section"
+  }
+}
+
+### 6) Mark rescan complete (replace {case_id})
+POST http://127.0.0.1:4000/god-cases/{case_id}/rescan-complete
+Content-Type: application/json
+
+{
+  "heimdall_output": {
+    "decision": "approve",
+    "confidence": 0.92
+  },
+  "loki_output": {
+    "critique": "minimal risk detected",
+    "severity": "low"
+  },
+  "arbitration_output": {
+    "recommendation": "proceed",
+    "merged_risk_tier": "low"
+  },
+  "status": "closed"
+}
+
+### 7) List feedback for a case (replace {case_id})
+GET http://127.0.0.1:4000/god-cases/{case_id}/feedback

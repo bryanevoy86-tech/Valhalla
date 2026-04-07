@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Automated Deal Analyzer</title>
+  <style>
+    body { font-family: Segoe UI, Arial, sans-serif; background: #f6f7fb; padding: 24px; }
+    .wrap { max-width: 1200px; margin: 0 auto; }
+    h1 { color: #333; }
+    .grid { display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); }
+    .card { background: #fff; border-radius: 8px; box-shadow: 0 10px 24px rgba(0,0,0,0.06); padding: 20px; }
+    .card h2 { margin: 0 0 12px; color: #4a56e2; }
+    label { display:block; margin: 8px 0 4px; color: #444; font-weight: 500; }
+    input, select { width: 100%; padding: 10px; border: 1px solid #dfe3ee; border-radius: 6px; }
+    button { background: linear-gradient(135deg,#667eea,#764ba2); color: #fff; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; margin-top: 10px; }
+    button:hover { opacity: 0.9; }
+    .result { margin-top: 10px; font-size: 13px; }
+    .ok { color: #0a7a3e; }
+    .err { color: #b00020; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { border-bottom: 1px solid #eee; padding: 8px; text-align: left; font-size: 13px; }
+    th { background: #f8f9fa; font-weight: 600; }
+    .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+    .badge-pass { background: #e8f5e9; color: #388e3c; }
+    .badge-review { background: #fff3e0; color: #f57c00; }
+    .badge-reject { background: #ffebee; color: #d32f2f; }
+    .metric { display: inline-block; margin-right: 15px; }
+    .metric-label { font-size: 11px; color: #666; }
+    .metric-value { font-size: 16px; font-weight: 600; color: #333; }
+    .risk-low { color: #388e3c; }
+    .risk-med { color: #f57c00; }
+    .risk-high { color: #d32f2f; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>🏠 Automated Deal Analyzer</h1>
+    <div class="grid">
+      <div class="card">
+        <h2>Analyze New Deal</h2>
+        <label>Property Address</label>
+        <input id="deal-address" placeholder="123 Main St, City, State" />
+        <label>Purchase Price ($)</label>
+        <input id="deal-purchase" type="number" min="0" placeholder="150000" />
+        <label>Rehab Cost ($)</label>
+        <input id="deal-rehab" type="number" min="0" placeholder="30000" />
+        <label>ARV - After Repair Value ($)</label>
+        <input id="deal-arv" type="number" min="0" placeholder="220000" />
+        <button onclick="analyzeDeal()">Analyze Deal</button>
+        <div id="analyze-result" class="result"></div>
+      </div>
+      <div class="card">
+        <h2>Filter Deals</h2>
+        <label>Filter by AI Recommendation</label>
+        <select id="filter-rec">
+          <option value="">All Deals</option>
+          <option value="pass">✅ Pass</option>
+          <option value="review">⚠️ Review</option>
+          <option value="reject">❌ Reject</option>
+        </select>
+        <label>Minimum ROI (%)</label>
+        <input id="filter-roi" type="number" min="0" placeholder="20" />
+        <button onclick="loadDeals()">Load Deals</button>
+        <div id="list-result" class="result"></div>
+      </div>
+    </div>
+    <div class="card" style="margin-top: 20px;">
+      <h2>Deal Analysis Results</h2>
+      <div style="overflow:auto">
+        <table id="deals-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Address</th>
+              <th>Investment</th>
+              <th>Profit</th>
+              <th>ROI %</th>
+              <th>Risk</th>
+              <th>AI Rec</th>
+              <th>Analyzed</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <script>
+    const API = '/api/deal-analyzer';
+    function show(el, ok, msg){ const d=document.getElementById(el); d.className='result '+(ok?'ok':'err'); d.textContent=msg; }
+    function getBadgeClass(rec){ return 'badge badge-' + rec; }
+    function getRiskClass(risk){ return risk>=60?'risk-high':(risk>=30?'risk-med':'risk-low'); }
+    
+    async function analyzeDeal(){
+      const property_address = document.getElementById('deal-address').value;
+      const purchase_price = parseFloat(document.getElementById('deal-purchase').value);
+      const rehab_cost = parseFloat(document.getElementById('deal-rehab').value);
+      const arv = parseFloat(document.getElementById('deal-arv').value);
+      const r = await fetch(`${API}/analyze`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({property_address, purchase_price, rehab_cost, arv})});
+      const j = await r.json();
+      if(r.ok){
+        const profit = j.expected_profit.toFixed(0);
+        const roi = j.roi.toFixed(1);
+        show('analyze-result', true, `✅ Analysis complete! ROI: ${roi}% | Profit: $${profit} | Recommendation: ${j.ai_recommendation.toUpperCase()}`);
+        loadDeals();
+      } else {
+        show('analyze-result', false, j.detail || 'Error');
+      }
+    }
+    
+    async function loadDeals(){
+      const filterRec = document.getElementById('filter-rec').value;
+      const filterRoi = document.getElementById('filter-roi').value;
+      let url = `${API}/`;
+      const params = [];
+      if(filterRec) params.push(`recommendation=${encodeURIComponent(filterRec)}`);
+      if(filterRoi) params.push(`min_roi=${encodeURIComponent(filterRoi)}`);
+      if(params.length > 0) url += '?' + params.join('&');
+      
+      const r = await fetch(url);
+      const list = await r.json();
+      const tbody = document.querySelector('#deals-table tbody');
+      tbody.innerHTML = (Array.isArray(list)?list:[]).map(d=>{
+        const investment = d.purchase_price + d.rehab_cost;
+        return `
+        <tr>
+          <td>${d.id}</td>
+          <td style="font-size:11px;">${d.property_address.substring(0,30)}${d.property_address.length>30?'...':''}</td>
+          <td>$${investment.toLocaleString()}</td>
+          <td><strong>$${d.expected_profit.toLocaleString()}</strong></td>
+          <td><strong>${d.roi.toFixed(1)}%</strong></td>
+          <td class="${getRiskClass(d.risk_score||0)}">${(d.risk_score||0).toFixed(0)}</td>
+          <td><span class="${getBadgeClass(d.ai_recommendation)}">${d.ai_recommendation}</span></td>
+          <td>${new Date(d.created_at).toLocaleDateString()}</td>
+        </tr>
+      `}).join('');
+      show('list-result', r.ok, r.ok?`Loaded ${Array.isArray(list)?list.length:0} analyses`:'Error');
+    }
+    
+    // Auto-load on page load
+    loadDeals();
+  </script>
+</body>
+</html>

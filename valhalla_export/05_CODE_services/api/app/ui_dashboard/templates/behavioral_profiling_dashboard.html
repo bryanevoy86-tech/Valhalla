@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Behavioral Profiling</title>
+  <style>
+    body { font-family: Segoe UI, Arial, sans-serif; background: #f5f7fb; padding: 24px; }
+    .wrap { max-width: 1200px; margin: 0 auto; }
+    h1 { color: #333; }
+    .grid { display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); }
+    .card { background: #fff; border-radius: 8px; box-shadow: 0 10px 24px rgba(0,0,0,0.06); padding: 20px; }
+    .card h2 { margin: 0 0 12px; color: #4a56e2; }
+    label { display:block; margin: 8px 0 4px; color: #444; font-weight: 500; }
+    input, select, textarea { width: 100%; padding: 10px; border: 1px solid #dfe3ee; border-radius: 6px; }
+    textarea { resize: vertical; min-height: 60px; }
+    button { background: linear-gradient(135deg,#667eea,#764ba2); color: #fff; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; margin-top: 10px; }
+    button:hover { opacity: 0.9; }
+    .result { margin-top: 10px; font-size: 13px; }
+    .ok { color: #0a7a3e; }
+    .err { color: #b00020; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { border-bottom: 1px solid #eee; padding: 8px; text-align: left; font-size: 13px; }
+    th { background: #f8f9fa; font-weight: 600; }
+    .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+    .badge-high { background: #e8f5e9; color: #388e3c; }
+    .badge-medium { background: #fff3e0; color: #f57c00; }
+    .badge-low { background: #ffebee; color: #d32f2f; }
+    .strategy-box { background: #f8f9fa; border-left: 4px solid #4a56e2; padding: 12px; margin-top: 10px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>🧑‍💼 AI Behavioral Profiling</h1>
+    <div class="grid">
+      <div class="card">
+        <h2>Create Profile</h2>
+        <label>User ID</label>
+        <input id="bp-user-id" type="number" placeholder="1" />
+        <label>Lead ID (optional)</label>
+        <input id="bp-lead-id" type="number" placeholder="Leave empty if N/A" />
+        <label>Behavioral Score (0-100)</label>
+        <input id="bp-score" type="number" min="0" max="100" placeholder="65" />
+        <label>Interests (comma-separated)</label>
+        <textarea id="bp-interests" placeholder="real estate, investing, negotiation"></textarea>
+        <label>Engagement Level</label>
+        <select id="bp-level">
+          <option value="low">Low</option>
+          <option value="medium" selected>Medium</option>
+          <option value="high">High</option>
+        </select>
+        <button onclick="createProfile()">Create Profile</button>
+        <div id="create-result" class="result"></div>
+      </div>
+      <div class="card">
+        <h2>AI Strategy Generator</h2>
+        <label>User ID</label>
+        <input id="strat-user-id" type="number" placeholder="1" />
+        <button onclick="getStrategy()">Generate Strategy</button>
+        <div id="strategy-result" class="result"></div>
+        <div id="strategy-display"></div>
+      </div>
+    </div>
+    <div class="card" style="margin-top: 20px;">
+      <h2>Behavioral Profiles</h2>
+      <label>Filter by Engagement Level</label>
+      <select id="filter-level">
+        <option value="">All Levels</option>
+        <option value="high">High</option>
+        <option value="medium">Medium</option>
+        <option value="low">Low</option>
+      </select>
+      <button onclick="listProfiles()">Load Profiles</button>
+      <div id="list-result" class="result"></div>
+      <div style="overflow:auto">
+        <table id="profiles-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>User</th>
+              <th>Lead</th>
+              <th>Score</th>
+              <th>Level</th>
+              <th>Interests</th>
+              <th>Last Engaged</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <script>
+    const API = '/api/behavioral-profiles';
+    function show(el, ok, msg){ const d=document.getElementById(el); d.className='result '+(ok?'ok':'err'); d.textContent=msg; }
+    function getBadgeClass(level){ return 'badge badge-' + level; }
+    
+    async function createProfile(){
+      const user_id = parseInt(document.getElementById('bp-user-id').value);
+      const lead_id_raw = document.getElementById('bp-lead-id').value;
+      const lead_id = lead_id_raw ? parseInt(lead_id_raw) : null;
+      const behavioral_score = parseFloat(document.getElementById('bp-score').value);
+      const interests = document.getElementById('bp-interests').value;
+      const engagement_level = document.getElementById('bp-level').value;
+      const r = await fetch(`${API}/`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({user_id, lead_id, behavioral_score, interests, engagement_level})});
+      const j = await r.json();
+      if(r.ok){
+        show('create-result', true, `Created profile #${j.id} for user ${j.user_id}`);
+        listProfiles();
+      } else {
+        show('create-result', false, j.detail || 'Error');
+      }
+    }
+    
+    async function listProfiles(){
+      const filterLevel = document.getElementById('filter-level').value;
+      const url = filterLevel ? `${API}/?engagement_level=${encodeURIComponent(filterLevel)}` : `${API}/`;
+      const r = await fetch(url);
+      const list = await r.json();
+      const tbody = document.querySelector('#profiles-table tbody');
+      tbody.innerHTML = (Array.isArray(list)?list:[]).map(p=>`
+        <tr>
+          <td>${p.id}</td>
+          <td>${p.user_id}</td>
+          <td>${p.lead_id||'-'}</td>
+          <td><strong>${p.behavioral_score.toFixed(1)}</strong></td>
+          <td><span class="${getBadgeClass(p.engagement_level)}">${p.engagement_level}</span></td>
+          <td style="font-size:11px;">${(p.interests||'').substring(0,40)}${(p.interests||'').length>40?'...':''}</td>
+          <td>${p.last_engaged_at ? new Date(p.last_engaged_at).toLocaleDateString() : '-'}</td>
+        </tr>
+      `).join('');
+      show('list-result', r.ok, r.ok?`Loaded ${Array.isArray(list)?list.length:0} profiles`:'Error');
+    }
+    
+    async function getStrategy(){
+      const user_id = parseInt(document.getElementById('strat-user-id').value);
+      const r = await fetch(`${API}/strategy/${user_id}`);
+      const j = await r.json();
+      if(r.ok){
+        show('strategy-result', true, `Strategy generated (confidence: ${(j.confidence_score*100).toFixed(0)}%)`);
+        document.getElementById('strategy-display').innerHTML = `
+          <div class="strategy-box">
+            <strong>Recommended Strategy:</strong><br/>
+            ${j.recommended_strategy}<br/><br/>
+            <strong>Reasoning:</strong><br/>
+            ${j.reasoning}
+          </div>
+        `;
+      } else {
+        show('strategy-result', false, j.detail || 'Error');
+        document.getElementById('strategy-display').innerHTML = '';
+      }
+    }
+    
+    // Auto-load on page load
+    listProfiles();
+  </script>
+</body>
+</html>

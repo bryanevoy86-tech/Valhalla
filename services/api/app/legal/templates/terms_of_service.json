@@ -1,0 +1,8 @@
+{
+  "template_key": "terms_of_service",
+  "title": "Terms of Service",
+  "description": "Draft terms of service for lawyer review and finalization.",
+  "required_fields": [],
+  "subject": "Draft Terms of Service",
+  "body_text": "TERMS OF SERVICE\n\nUsers agree that:\n\n- Platform provides deal facilitation, not legal or financial advice\n- Users are responsible for their own due diligence\n- No guarantees of profit or outcomes\n\nCompany is not liable for decisions made by users.\n\nUse of platform constitutes agreement to these terms."
+}

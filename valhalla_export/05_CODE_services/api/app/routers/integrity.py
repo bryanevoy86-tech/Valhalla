@@ -1,0 +1,1 @@
+from app.integrity.router import router  # re-export for main include_router

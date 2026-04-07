@@ -1,0 +1,15 @@
+{
+  "template_key": "jv_agreement",
+  "title": "Joint Venture Agreement",
+  "description": "Draft JV agreement for lawyer review and finalization.",
+  "required_fields": [
+    "your_company",
+    "partner_name",
+    "property_address",
+    "your_split",
+    "partner_split",
+    "roles"
+  ],
+  "subject": "Draft JV Agreement - {{property_address}}",
+  "body_text": "JOINT VENTURE AGREEMENT\n\nParties:\n- {{your_company}}\n- {{partner_name}}\n\nDeal: {{property_address}}\n\nProfit Split:\n- {{your_company}}: {{your_split}}%\n- Partner: {{partner_split}}%\n\nRoles:\n{{roles}}\n\nProfits distributed upon closing.\n\nSigned:\n\nParty 1: ___________________________\nParty 2: ___________________________"
+}

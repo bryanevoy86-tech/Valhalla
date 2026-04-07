@@ -1,0 +1,13 @@
+{
+  "mode": "EIA_PROTECTED",
+  "eia_mode_active": true,
+  "personal_draws_allowed": false,
+  "eia_packet_required": true,
+  "deferred_draw_lock": true,
+  "business_only_money_flow": true,
+  "manual_override_required_for_exit": true,
+  "reserve_floor_required": true,
+  "last_updated_at": "2026-04-07T02:17:21.704304+00:00",
+  "last_updated_by": "test_runner",
+  "exit_completed_at": "2026-04-07T02:17:21.702798+00:00"
+}

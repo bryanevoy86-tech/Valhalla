@@ -1,0 +1,12 @@
+{
+  "template_key": "buyer_non_circumvention",
+  "title": "Buyer Non-Circumvention and Confidentiality",
+  "description": "Draft buyer protection agreement for lawyer review and finalization.",
+  "required_fields": [
+    "buyer_name",
+    "your_company",
+    "agreement_term"
+  ],
+  "subject": "Draft Buyer Confidentiality Agreement - {{buyer_name}}",
+  "body_text": "CONFIDENTIALITY & NON-CIRCUMVENTION AGREEMENT\n\nBuyer Name: {{buyer_name}}\n\nBuyer agrees that all deal information provided is confidential.\n\nBuyer agrees:\n- Not to contact Seller directly\n- Not to bypass or exclude {{your_company}} from any transaction\n- Not to share deal details with third parties\n\nViolation of this agreement may result in legal action and damages.\n\nTerm: {{agreement_term}}\n\nSigned:\n\nBuyer: ___________________________"
+}

@@ -1,0 +1,298 @@
+================================================================================
+                  VALHALLA PROJECT DIAGNOSTIC REPORT
+                        Generated: April 4, 2026
+================================================================================
+
+EXECUTIVE SUMMARY
+=================
+
+PROJECT STATUS: Extremely Complex, 200+ Router Modules Registered
+Python Version: 3.13.7
+Entry Point: services/api/main.py (uses app.main.py routing)
+Deployment: Docker + Uvicorn (via services/api/start.py)
+Database: PostgreSQL (requires alembic migrations)
+
+
+PROJECT ARCHITECTURE  
+====================
+
+Root Entry Points:
+  1. services/api/main.py        - Re-exports from services/api/app/main.py
+  2. services/api/app/main.py    - CANONICAL FastAPI app (200+ routers registered)
+  3. app/main.py                 - Thin wrapper for re-export
+
+Startup Flow:
+  services/api/start.py
+    → Runs alembic migrations first  
+    → Then starts: uvicorn services.api.main:app
+
+Dockerfile Command: python start.py
+Render Deploy: Uses render.yaml blueprint
+
+
+ROUTER INVENTORY (200+ ROUTERS ACTIVE)
+======================================
+
+Core System (REQUIRED=True):
+  ✓ system_selftest
+  ✓ governance_runbook
+  ✓ governance_policy
+  ✓ governance_risk
+  ✓ go_live
+  ✓ contracts_lifecycle
+  ✓ document_routing
+  ✓ deal_finalization
+  ✓ floor_control
+  ✓ contracts_pipeline
+  ✓ contracts_webhooks
+  ✓ heimdall (deal analysis)
+  ✓ audit (compliance log)
+  ✓ operational_dashboard
+
+Governance System (Always-on):
+  ✓ governance_king
+  ✓ governance_queen
+  ✓ governance_odin
+  ✓ governance_loki
+  ✓ governance_tyr
+  ✓ governance_orchestrator
+  ✓ heimdall_build_gate
+  ✓ heimdall_governance
+  ✓ regression
+  ✓ market_policy
+  ✓ followup_ladder
+  ✓ buyer_liquidity
+  ✓ offer_strategy
+
+Deals & Leads Pipeline (Module 69-76):
+  ✓ deals/router.py             → POST/GET /api/deals (root endpoints)
+  ✓ deals/intake_router.py      → POST /api/deals/intake
+  ✓ deals/contract_router.py    → POST /api/deals/lead-to-contract
+  ✓ leads/router.py             → Lead management
+  ✓ offers/router.py            → Offer management
+  ✓ buyers/match_router.py      → Buyer disposition matching
+
+Financial & Operations (Module 51-66):
+  ✓ banking               → Plaid bank linking
+  ✓ payments              → ACH payments
+  ✓ accounting            → QuickBooks operations
+  ✓ alerts                → Alert system
+  ✓ finops                → Financial operations tracking
+  ✓ capital               → Capital metrics
+  ✓ arbitrage             → Deal arbitrage
+
+Professional Services (Pack K-M):
+  ✓ pro_behavioral_extract      → Signal extraction
+  ✓ pro_alignment_engine        → Compatibility scoring
+  ✓ pro_scorecard               → Performance tracking
+  ✓ pro_retainer                → Retainer lifecycle
+  ✓ pro_handoff                 → Escalation packets
+  ✓ pro_tasks                   → Task assignment
+
+TOTAL ROUTER COUNT: 200+ modules (see full list in exported routers folder)
+
+Note: Due to the sheer scale, some routers may be:
+  - Partially implemented
+  - Not fully integrated
+  - In experimental state
+  - Awaiting feature enablement
+
+
+CRITICAL CONFIGURATION
+=======================
+
+Environment Variables Required (hardcoded in code):
+  ✗ DATABASE_URL              - PostgreSQL connection string
+  ✗ VALHALLA_JWT_SECRET       - JWT signing secret
+  ✓ APP_ENV                   - Set to 'production' in render.yaml
+  ✓ CORS_ALLOWED_ORIGINS      - Configured for WeWeb domains
+  ✓ WEWEB_SHARED_SECRET       - Placeholder (set in Render dashboard)
+
+Startup Checks (services/api/app/main.py):
+  ✓ CORS preflight middleware (OPTIONS always 200)
+  ✓ Request logging middleware
+  ✓ Global error handling
+  ✓ Correlation ID middleware
+  ✓ Read-only shield middleware
+  ✓ Go-Live enforcement middleware
+  ✓ Execution class middleware
+
+Database:
+  ✓ Alembic configured (alembic.ini at root)
+  ✓ Migrations auto-run on startup
+  ✓ Schema verification before app loads
+
+
+KNOWN ISSUES & GAPS
+===================
+
+1. INCOMPLETE START.PY LOGIC
+   - services/api/start.py exists but implementation incomplete
+   - Migrations may fail if DATABASE_URL not set
+   - No error handling if alembic fails during startup
+
+2. CIRCULAR IMPORTS AT LOAD TIME
+   - app/main.py → services/api/app/main.py (cross-reference)
+   - Requires careful import ordering
+   - Settings must initialize before any route imports
+
+3. 200+ ROUTERS = COMPLEXITY RISK
+   - Each router needs authentication/validation
+   - Route shadowing possible if prefixes overlap
+   - No central router registry (relies on manual include_router calls)
+   - Some routers may be dead code or incomplete
+
+4. MISSING FILES
+   - start.py at root doesn't exist (but services/api/start.py does)
+   - render.yaml references "python start.py" which won't work in Docker
+   - Should be: "python services/api/start.py" or "uvicorn ..."
+
+5. ENVIRONMENT VARIABLE MANAGEMENT
+   - .env.example exists in export but may not be in repo
+   - render.yaml has hardcoded placeholder values
+   - No automated secret rotation strategy
+
+
+DEPLOYMENT CHECKLIST FOR TEAM
+==============================
+
+Before going live, verify:
+
+[ ] DATABASE_URL configured in Render dashboard
+    - PostgreSQL connection string (internal)
+    - Matches render.yaml database service name
+
+[ ] VALHALLA_JWT_SECRET set (strong random value)
+    - Used for JWT token signing
+    - Should be 256+ bits of entropy
+
+[ ] Alembic migrations initialize correctly
+    - Run: alembic current (should show latest revision)
+    - Run: alembic downgrade -1 (test rollback)
+    - Run: alembic upgrade head (confirm upgrade path)
+
+[ ] All 200+ routers load without errors
+    - Check Render logs for "skipping router" warnings
+    - Ensure startup completes within timeout
+
+[ ] CORS origins configured
+    - Update CORS_ALLOWED_ORIGINS for your WeWeb domain
+    - Test preflight requests from browser
+
+[ ] API endpoints respond correctly
+    - Test POST /api/deals (requires auth)
+    - Test GET /api/health (public)
+    - Verify error responses
+
+[ ] No incomplete features blocking production
+    - Search for: TODO, FIXME, HACK, BLOCKED, TEMP_DISABLE
+    - Review commented-out code blocks
+    - Check for hardcoded placeholder values
+
+[ ] Authentication working
+    - Builder key required for many endpoints
+    - JWT tokens validated on protected routes
+
+[ ] Logging and monitoring configured
+    - Correlation IDs tracked in logs
+    - Error handlers return proper HTTP status codes
+
+
+ARCHITECTURAL CONCERNS
+======================
+
+1. SCALE
+   - 200+ routers is extremely high
+   - Risk of hidden bugs or incomplete implementations
+   - Maintenance burden on dev team
+
+2. CLEAR RESPONSIBILITY MATRIX NEEDED
+   - Which routers are production-ready?
+   - Which are experimental?
+   - Which are awaiting feature flags?
+
+3. INTEGRATION TESTING CRITICAL
+   - Each router depends on models/schemas
+   - Cross-router dependencies not well documented
+   - Need comprehensive integration tests
+
+4. MIGRATION STRATEGY
+   - Alembic auto-run could mask failed migrations
+   - Should log all migration operations
+   - Consider dry-run mode for production
+
+5. ERROR HANDLING
+   - Global error handlers in place
+   - But individual routers may have silent failures
+   - Need centralized error reporting
+
+
+QUICK TEAM START CHECKLIST
+===========================
+
+1. [ ] Read 00_EXPORT_SUMMARY.txt in exported archive
+2. [ ] Search codebase: grep -r "TODO\|FIXME\|HACK" services/api/app/routers/
+3. [ ] Verify router registration in services/api/app/main.py (lines 380-445)
+4. [ ] Test local startup: python -c "from services.api.main import app" (set env vars first)
+5. [ ] Review critical routers: deals, leads, offers, contracts
+6. [ ] Check database migration status
+7. [ ] Verify all required environment variables documented
+8. [ ] Set up monitoring/logging pipeline
+9. [ ] Create deployment runbook
+10. [ ] Establish feature flag strategy for incomplete routers
+
+
+ENTRY POINT SUMMARY
+===================
+
+Local Development:
+  1. Set environment variables (see .env.example)
+  2. Run: python services/api/start.py
+  3. or: uvicorn services.api.main:app --reload
+
+Docker:
+  1. Build: docker build -t valhalla .
+  2. Run: docker run -e DATABASE_URL=... -p 8000:8000 valhalla
+  3. Dockerfile runs: python start.py
+
+Render Deploy:
+  1. Blueprint: render.yaml at repo root
+  2. Service name: valhalla-api
+  3. Command: python start.py
+  4. Health check: GET /health
+  5. Port: 8000 (auto-mapped)
+
+
+REMAINING QUESTIONS FOR TEAM
+==============================
+
+1. Are all 200+ routers production-ready or experimental?
+2. Which routers are blocked on feature flags?
+3. What's the migration strategy for database schema changes?
+4. How are environment secrets managed (rotation, backup)?
+5. Is there a runbook for production incidents?
+6. Are there integration tests covering cross-router flows?
+7. What's the observability strategy (logging, tracing, metrics)?
+8. How are deprecated routers handled (versioning strategy)?
+
+
+EXPORT CONTENTS REMINDER
+========================
+
+The valhalla_export_20260403_230847.zip contains:
+
+  00_EXPORT_SUMMARY.txt         ← START HERE
+  01_REQUIREMENTS_*.txt         ← Python dependencies
+  02_ALEMBIC_STATE.txt          ← Migration history
+  03_CONFIG_*                   ← All config files
+  04_ALEMBIC/                   ← Migration scripts
+  05_CODE_services/             ← Full source code
+  05_CODE_app/                  ← App modules
+  06_DOCS/                      ← 398 documentation files
+  00_PROJECT_STRUCTURE.txt      ← File tree
+
+
+================================================================================
+Report Generated: 2026-04-04 by Diagnostic Script
+Next Step: Share with team and follow deployment checklist
+================================================================================

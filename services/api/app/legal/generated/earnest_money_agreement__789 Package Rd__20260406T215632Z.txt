@@ -1,0 +1,21 @@
+EARNEST MONEY AGREEMENT
+
+Buyer: Valhalla Legacy Inc.
+Property: 789 Package Rd
+
+Earnest Money Deposit: $3000
+
+Held by: Example Title Co.
+
+Conditions:
+- Refundable during inspection period
+- Non-refundable after inspection unless otherwise stated
+
+Default:
+- If Buyer defaults -> deposit forfeited
+- If Seller defaults -> deposit returned
+
+Signed:
+
+Buyer: ___________________________
+Holder: ___________________________

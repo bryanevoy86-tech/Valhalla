@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Advanced Lead Scraper</title>
+  <style>
+    body { font-family: Segoe UI, Arial, sans-serif; background: #f5f7fb; padding: 24px; }
+    .wrap { max-width: 1200px; margin: 0 auto; }
+    h1 { color: #333; }
+    .grid { display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); }
+    .card { background: #fff; border-radius: 8px; box-shadow: 0 10px 24px rgba(0,0,0,0.06); padding: 20px; }
+    .card h2 { margin: 0 0 12px; color: #4a56e2; }
+    label { display:block; margin: 8px 0 4px; color: #444; font-weight: 500; }
+    input, select { width: 100%; padding: 10px; border: 1px solid #dfe3ee; border-radius: 6px; }
+    button { background: linear-gradient(135deg,#667eea,#764ba2); color: #fff; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; margin-top: 10px; }
+    button:hover { opacity: 0.9; }
+    .result { margin-top: 10px; font-size: 13px; }
+    .ok { color: #0a7a3e; }
+    .err { color: #b00020; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { border-bottom: 1px solid #eee; padding: 8px; text-align: left; font-size: 13px; }
+    th { background: #f8f9fa; font-weight: 600; }
+    .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+    .badge-new { background: #e3f2fd; color: #1976d2; }
+    .badge-contacted { background: #fff3e0; color: #f57c00; }
+    .badge-qualified { background: #e8f5e9; color: #388e3c; }
+    .badge-disqualified { background: #ffebee; color: #d32f2f; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>🧑‍💼 Advanced Lead Scraper</h1>
+    <div class="grid">
+      <div class="card">
+        <h2>Create Lead</h2>
+        <label>Name</label>
+        <input id="lead-name" placeholder="John Doe" />
+        <label>Email</label>
+        <input id="lead-email" type="email" placeholder="john@example.com" />
+        <label>Phone</label>
+        <input id="lead-phone" placeholder="+1-555-0100" />
+        <label>Source</label>
+        <input id="lead-source" placeholder="Facebook, LinkedIn, Referral" />
+        <label>Status</label>
+        <select id="lead-status">
+          <option value="new">New</option>
+          <option value="contacted">Contacted</option>
+          <option value="qualified">Qualified</option>
+          <option value="disqualified">Disqualified</option>
+        </select>
+        <button onclick="createLead()">Create Lead</button>
+        <div id="create-result" class="result"></div>
+      </div>
+      <div class="card">
+        <h2>Filter & List Leads</h2>
+        <label>Filter by Status (optional)</label>
+        <select id="filter-status">
+          <option value="">All Leads</option>
+          <option value="new">New</option>
+          <option value="contacted">Contacted</option>
+          <option value="qualified">Qualified</option>
+          <option value="disqualified">Disqualified</option>
+        </select>
+        <button onclick="listLeads()">Load Leads</button>
+        <div id="list-result" class="result"></div>
+      </div>
+    </div>
+    <div class="card" style="margin-top: 20px;">
+      <h2>Lead Management</h2>
+      <div style="overflow:auto">
+        <table id="leads-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Phone</th>
+              <th>Source</th>
+              <th>Status</th>
+              <th>Created</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <script>
+    const API = '/api/leads';
+    function show(el, ok, msg){ const d=document.getElementById(el); d.className='result '+(ok?'ok':'err'); d.textContent=msg; }
+    function getBadgeClass(status){ return 'badge badge-' + status; }
+    
+    async function createLead(){
+      const name = document.getElementById('lead-name').value;
+      const email = document.getElementById('lead-email').value;
+      const phone = document.getElementById('lead-phone').value;
+      const source = document.getElementById('lead-source').value;
+      const status = document.getElementById('lead-status').value;
+      const r = await fetch(`${API}/`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({name, email, phone, source, status})});
+      const j = await r.json();
+      if(r.ok){
+        show('create-result', true, `Created lead #${j.id} (${j.name})`);
+        listLeads();
+      } else {
+        show('create-result', false, j.detail || 'Error');
+      }
+    }
+    
+    async function listLeads(){
+      const filterStatus = document.getElementById('filter-status').value;
+      const url = filterStatus ? `${API}/?status=${encodeURIComponent(filterStatus)}` : `${API}/`;
+      const r = await fetch(url);
+      const list = await r.json();
+      const tbody = document.querySelector('#leads-table tbody');
+      tbody.innerHTML = (Array.isArray(list)?list:[]).map(l=>`
+        <tr>
+          <td>${l.id}</td>
+          <td>${l.name}</td>
+          <td>${l.email}</td>
+          <td>${l.phone}</td>
+          <td>${l.source}</td>
+          <td><span class="${getBadgeClass(l.status)}">${l.status}</span></td>
+          <td>${new Date(l.created_at).toLocaleDateString()}</td>
+          <td><button style="padding:4px 8px; font-size:11px;" onclick="updateStatus(${l.id})">Update Status</button></td>
+        </tr>
+      `).join('');
+      show('list-result', r.ok, r.ok?`Loaded ${Array.isArray(list)?list.length:0} leads`:'Error');
+    }
+    
+    async function updateStatus(leadId){
+      const newStatus = prompt('Enter new status (new, contacted, qualified, disqualified):');
+      if(!newStatus) return;
+      const r = await fetch(`${API}/${leadId}/status`, {method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({status: newStatus})});
+      if(r.ok){
+        alert('Status updated!');
+        listLeads();
+      } else {
+        const j = await r.json();
+        alert('Error: ' + (j.detail || 'Failed'));
+      }
+    }
+    
+    // Auto-load on page load
+    listLeads();
+  </script>
+</body>
+</html>

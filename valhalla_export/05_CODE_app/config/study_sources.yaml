@@ -1,0 +1,22 @@
+# Example study sources for the learning pipeline
+sources:
+  - id: docs
+    type: filesystem
+    path: ./docs
+  - id: web
+    type: http
+    url: https://example.com/resources
+
+domains:
+  - name: Real Estate Wholesaling
+    sources:
+      - "https://example.com/wholesaling_guide"
+  - name: BRRRR
+    sources:
+      - "https://example.com/brrrr_basics"
+  - name: FX Arbitrage
+    sources:
+      - "https://example.com/fx_primer"
+  - name: Contractor Ops
+    sources:
+      - "https://example.com/contractor_best_practices"

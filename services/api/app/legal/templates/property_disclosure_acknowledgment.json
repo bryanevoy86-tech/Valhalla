@@ -1,0 +1,10 @@
+{
+  "template_key": "property_disclosure_acknowledgment",
+  "title": "Property Disclosure Acknowledgment",
+  "description": "Draft as-is disclosure acknowledgment for lawyer review and finalization.",
+  "required_fields": [
+    "buyer_name"
+  ],
+  "subject": "Draft Property Disclosure Acknowledgment - {{buyer_name}}",
+  "body_text": "PROPERTY DISCLOSURE ACKNOWLEDGMENT\n\nBuyer acknowledges that:\n\n- Property is sold AS-IS\n- No guarantees or warranties are provided\n- Buyer is responsible for all inspections and due diligence\n\nBuyer releases Seller and Assignor from liability regarding property condition.\n\nSigned:\n\nBuyer: ___________________________"
+}

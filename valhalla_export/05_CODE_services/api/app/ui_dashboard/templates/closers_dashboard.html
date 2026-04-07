@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>AI Closers & Negotiators</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+      body { font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 2rem; color: #0f172a; }
+      h1 { font-size: 1.5rem; margin-bottom: .5rem; }
+      .card { border: 1px solid #e2e8f0; border-radius: .75rem; padding: 1rem; margin-top: 1rem; }
+      .muted { color: #64748b; }
+      input, button { padding: .5rem .75rem; border-radius: .5rem; border: 1px solid #cbd5e1; }
+      button { background: #0ea5e9; color: white; border: none; cursor: pointer; }
+      button:hover { background: #0284c7; }
+      table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+      th, td { padding: .5rem; border-bottom: 1px solid #e2e8f0; text-align: left; }
+      .badge { display: inline-block; background: #e0f2fe; color: #0369a1; padding: .15rem .5rem; border-radius: 9999px; font-size: .75rem; }
+    </style>
+  </head>
+  <body>
+    <h1>AI Closers & Negotiators</h1>
+    <p class="muted">Create and track AI closer profiles and their performance.</p>
+
+    <div class="card">
+      <h2 style="font-size:1.1rem">Create Closer</h2>
+      <div style="display:flex; gap:.5rem; flex-wrap:wrap; margin-top:.5rem">
+        <input id="name" placeholder="Name" />
+        <input id="success_rate" type="number" min="0" max="100" step="0.01" placeholder="Success Rate %" />
+        <input id="current_target" placeholder="Current Target" />
+        <button onclick="createCloser()">Create</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 style="font-size:1.1rem">Closers</h2>
+      <table>
+        <thead>
+          <tr><th>Name</th><th>Success Rate</th><th>Current Target</th><th>Last Interaction</th></tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+
+    <script>
+      const api = `${location.origin}/api/ai-closers`;
+      async function refresh() {
+        const res = await fetch(api);
+        const data = await res.json();
+        const tbody = document.getElementById('rows');
+        tbody.innerHTML = '';
+        for (const c of data) {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td>${c.name}</td><td><span class="badge">${(c.success_rate ?? 0).toFixed(2)}%</span></td><td>${c.current_target ?? ''}</td><td>${c.last_interaction ?? ''}</td>`;
+          tbody.appendChild(tr);
+        }
+      }
+      async function createCloser() {
+        const payload = {
+          name: document.getElementById('name').value,
+          success_rate: parseFloat(document.getElementById('success_rate').value || '0'),
+          current_target: document.getElementById('current_target').value,
+        };
+        await fetch(api+'/', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
+        await refresh();
+      }
+      refresh();
+    </script>
+  </body>
+</html>

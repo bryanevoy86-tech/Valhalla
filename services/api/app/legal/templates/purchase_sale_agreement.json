@@ -1,0 +1,19 @@
+{
+  "template_key": "purchase_sale_agreement",
+  "title": "Purchase and Sale Agreement",
+  "description": "Draft purchase agreement for lawyer review and finalization.",
+  "required_fields": [
+    "date",
+    "seller_name",
+    "buyer_name",
+    "property_address",
+    "purchase_price",
+    "earnest_money",
+    "title_company",
+    "inspection_days",
+    "closing_date",
+    "additional_terms"
+  ],
+  "subject": "Draft Purchase Agreement - {{property_address}}",
+  "body_text": "PURCHASE AND SALE AGREEMENT\n\nDate: {{date}}\n\nSeller: {{seller_name}}\nBuyer: {{buyer_name}} (or assigns)\n\nProperty Address: {{property_address}}\n\nPurchase Price: ${{purchase_price}}\n\nEarnest Money Deposit: ${{earnest_money}} to be held by {{title_company}}\n\nInspection Period: {{inspection_days}} days from acceptance\n\nClosing Date: On or before {{closing_date}}\n\nASSIGNABILITY:\nBuyer may assign this Agreement without further consent from Seller.\n\nCONDITION OF PROPERTY:\nProperty is sold AS-IS. Seller makes no warranties or guarantees.\n\nACCESS:\nBuyer and/or assigns shall have reasonable access to the property for inspection.\n\nDEFAULT:\nIf Buyer defaults, earnest money may be forfeited.\nIf Seller defaults, Buyer may pursue legal remedies.\n\nADDITIONAL TERMS:\n{{additional_terms}}\n\nSignatures:\n\nSeller: ___________________________\nBuyer: ___________________________"
+}

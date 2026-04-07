@@ -1,0 +1,116 @@
+VALHALLA PHASE 2 EXECUTION REPORT
+=================================
+
+Task: ENFORCEMENT + LAUNCH CORE ACTIVATION
+
+What Phase 2 Does:
+- Activates launch_core route enforcement wrapper
+- Adds sophisticated route filtering and path-based access control
+- Implements launch startup checks with flags validation
+- Provides EIA status, check, and monthly report endpoints
+- Adds route pruning audit endpoint for visibility
+- Creates new launch-specific start file with cleaner initialization
+
+New/Updated Files:
+- services/api/main_launch.py (NEW) - Launch core wrapper with route filtering
+- services/api/start_launch.py (NEW) - Launch core entry point
+- services/api/app/core_launch/manifest.py (UPDATED) - New route filtering logic
+- services/api/app/core_flags/flags.py (UPDATED) - Phase 2 feature flags
+- services/api/app/core_eia/eia_core.py (UPDATED) - Phase 2 EIA signatures
+- services/api/app/core_audit/red_flags.py (UPDATED) - Phase 2 red flag format
+- services/api/app/core_launch/system_check.py (UPDATED) - Phase 2 startup checks
+
+Safety Backups Created:
+- services/api/_phase2_backup/main.py.phase2.bak
+- services/api/_phase2_backup/app_main.py.phase2.bak
+- services/api/_phase2_backup/start.py.phase2.bak
+
+Route Filtering Strategy:
+1. System paths - Always allowed: /, /health, /docs, /redoc, /openapi.json, etc.
+2. Launch-safe fragments - Allowed by path matching: /api/auth, /api/leads, /api/deals, /api/contracts, /api/eia, etc.
+3. Router name matching - Allowed if router name in LAUNCH_ROUTER_NAMES set
+4. Feature-locked paths - Blocked unless corresponding feature flag enabled:
+   - /api/payments (enable_payments flag)
+   - /api/banking (enable_banking flag)  
+   - /api/accounting (enable_accounting flag)
+   - /api/finops (enable_finops flag)
+   - /api/heimdall/auto (enable_heimdall_autonomy flag)
+
+Feature Flags (All Production-Safe Defaults):
+- launch_core_only: TRUE (enables route filtering)
+- enable_eia_tracking: TRUE (EIA compliance active)
+- require_eia_compliance: TRUE (compliance checks required)
+- enable_experimental: FALSE (no experimental routers)
+- enable_phase2_expansion: FALSE (phase 2 features disabled)
+- enable_heimdall_autonomy: FALSE (autonomy locked)
+- enable_finops: FALSE (finops locked)
+- enable_accounting: FALSE (accounting locked)
+- enable_banking: FALSE (banking locked)
+- enable_payments: FALSE (payments locked)
+
+New Launch API Endpoints:
+- GET /api/launch/status
+  Returns: mode, startup checks, feature flags, active router manifest, 
+           kept/pruned route counts, route previews
+
+- GET /api/eia/status
+  Returns: phase, startup checks, compliance status, monthly report template, 
+           red flag summary
+
+- POST /api/eia/check
+  Payload: { missing_receipts, unclassified_income, owner_draw, ... }
+  Returns: compliance check result, red flags
+
+- GET /api/eia/monthly-report
+  Query param: month (optional, defaults to current)
+  Returns: generated report with sections
+
+How to Verify Phase 2:
+
+1. Test app import:
+   python -c "from services.api.main_launch import app; print('Launch app OK'); print(f'Routes: {len(app.routes)}')"
+
+2. Check route filtering:
+   python -c "from services.api.main_launch import app; print(f'Total: {len(app.router.routes)}')"
+
+3. Start launch core server:
+   python services/api/start_launch.py
+
+4. Test launch endpoints:
+   curl http://localhost:8000/api/launch/status
+   curl http://localhost:8000/api/eia/status
+   curl -X POST http://localhost:8000/api/eia/check -H "Content-Type: application/json" -d "{\"missing_receipts\":true}"
+
+5. Verify core functionality still works:
+   curl http://localhost:8000/health
+   curl http://localhost:8000/docs (Swagger UI)
+
+Expected Outcomes:
+- Launch app loads successfully with all phase 2 systems
+- launch_status endpoint shows significantly fewer routes (500-800 vs 1318)
+- EIA endpoints respond with compliance data
+- Pruned routes show experimental, feature-locked, and non-launch routers
+- /health and /docs still respond (system paths always allowed)
+- Feature flags correctly block locked endpoints
+
+Success Criteria:
+✓ main_launch.py imports without errors
+✓ Route count reduced from 1318 to ~700-900 (50-70% reduction)
+✓ /api/launch/status returns pruning report
+✓ /api/eia/status returns compliance info
+✓ EIA check endpoint works with payloads
+✓ Feature-locked routes blocked unless flag enabled
+✓ System paths (/docs, /health) still accessible
+
+Rollback Instructions:
+If Phase 2 needs to be reverted:
+1. cp services/api/_phase2_backup/main.py.phase2.bak services/api/main.py
+2. cp services/api/_phase2_backup/app_main.py.phase2.bak services/api/app/main.py
+3. cp services/api/_phase2_backup/start.py.phase2.bak services/api/start.py
+4. Restart using: python services/api/start.py
+
+Next Steps:
+- Monitor /api/launch/status endpoint for route classification accuracy
+- Test EIA compliance checks with sample payloads
+- Prepare Phase 3 (feature flag enablement workflow)
+- Document Phase 2 deployment in team wiki

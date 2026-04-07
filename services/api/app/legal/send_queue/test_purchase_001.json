@@ -1,0 +1,29 @@
+{
+  "approval_id": "test_purchase_001",
+  "template_key": "purchase_sale_agreement",
+  "recipients": [
+    "lawyer@example.com"
+  ],
+  "cc": [
+    "accountant@example.com"
+  ],
+  "subject": "Draft Purchase Agreement - 123 Test St",
+  "body_intro": "Please review this legal draft.",
+  "document_path": "D:\\dev\\services\\api\\app\\legal\\generated\\purchase_sale_agreement__123 Test St__20260407T021721Z.txt",
+  "payload": {
+    "date": "2026-04-06",
+    "seller_name": "Test Seller",
+    "buyer_name": "Valhalla Legacy Inc.",
+    "property_address": "123 Test St",
+    "purchase_price": "100000",
+    "earnest_money": "1000",
+    "title_company": "Test Title",
+    "inspection_days": "10",
+    "closing_date": "2026-04-30",
+    "additional_terms": "Lawyer review required."
+  },
+  "approved": true,
+  "sent": false,
+  "created_at": "2026-04-07T02:17:21.737888+00:00",
+  "sent_at": null
+}

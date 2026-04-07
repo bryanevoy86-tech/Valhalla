@@ -1,0 +1,13 @@
+{
+  "month": "2026-04",
+  "generated_at": "2026-04-05T04:25:41.927045",
+  "income_summary": [],
+  "expense_summary": [],
+  "receipt_index": [],
+  "bank_checklist": [],
+  "notes": [
+    "initial launch packet",
+    "soft-live verification"
+  ],
+  "status": "PACKET_READY"
+}
