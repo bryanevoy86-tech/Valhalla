@@ -1,0 +1,36 @@
+{
+  "contacts": [
+    {
+      "id": 1,
+      "name": "David Mercer",
+      "type": "buyer",
+      "heat_score": 92,
+      "days_stale": 0,
+      "consent_sms": false,
+      "consent_email": true,
+      "preferred_channel": "phone",
+      "reason": "Stale high-value buyer. Needs immediate follow-up.",
+      "recommended_script": "Hey David, checking in to see what buy box you're actively looking for this week.",
+      "status": "actioned",
+      "last_action_at": "2026-04-08T21:40:07.671363+00:00",
+      "last_action_type": "video_call",
+      "action_count": 3
+    },
+    {
+      "id": 2,
+      "name": "Sarah Collins",
+      "type": "seller",
+      "heat_score": 81,
+      "days_stale": 0,
+      "consent_sms": true,
+      "consent_email": true,
+      "preferred_channel": "sms",
+      "reason": "Warm seller lead with recent activity.",
+      "recommended_script": "Hi Sarah, just wanted to follow up and see if you're still open to discussing the property.",
+      "status": "actioned",
+      "last_action_at": "2026-04-08T21:36:38.148396+00:00",
+      "last_action_type": "sms",
+      "action_count": 2
+    }
+  ]
+}

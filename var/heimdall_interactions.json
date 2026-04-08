@@ -1,0 +1,28 @@
+{
+  "interactions": [
+    {
+      "id": 1,
+      "contact_id": 1,
+      "contact_name": "David Mercer",
+      "interaction_type": "email_followup",
+      "notes": "Initial email followup after mark-actioned test",
+      "created_at": "2026-04-08T21:33:48.944627+00:00"
+    },
+    {
+      "id": 2,
+      "contact_id": 2,
+      "contact_name": "Sarah Collins",
+      "interaction_type": "sms",
+      "notes": "SMS followup",
+      "created_at": "2026-04-08T21:39:10.403157+00:00"
+    },
+    {
+      "id": 3,
+      "contact_id": 1,
+      "contact_name": "David Mercer",
+      "interaction_type": "video_call",
+      "notes": "Action recorded by Heimdall at 2026-04-08T21:40:07.671363+00:00",
+      "created_at": "2026-04-08T21:40:07.672544+00:00"
+    }
+  ]
+}
