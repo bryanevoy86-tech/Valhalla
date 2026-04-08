@@ -5,6 +5,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from app.services.heimdall_community_adapter import load_community_contacts
+
 STORE_PATH = Path("var/heimdall_contacts.json")
 
 
@@ -15,6 +17,21 @@ def _ensure_store() -> None:
 
 
 def load_contacts() -> list[dict[str, Any]]:
+    """
+    Preferred source: real Community module
+    Fallback source: local JSON file
+    """
+    community_contacts = load_community_contacts()
+    if community_contacts:
+        return community_contacts
+
+    _ensure_store()
+    data = json.loads(STORE_PATH.read_text(encoding="utf-8"))
+    return data.get("contacts", [])
+
+
+def load_local_contacts() -> list[dict[str, Any]]:
+    """Load only from local JSON store (for state tracking)."""
     _ensure_store()
     data = json.loads(STORE_PATH.read_text(encoding="utf-8"))
     return data.get("contacts", [])
@@ -33,8 +50,13 @@ def get_contact(contact_id: int) -> dict[str, Any] | None:
     return next((c for c in contacts if c["id"] == contact_id), None)
 
 
-def update_contact(contact_id: int, updates: dict[str, Any]) -> dict[str, Any] | None:
-    contacts = load_contacts()
+def get_local_contact(contact_id: int) -> dict[str, Any] | None:
+    contacts = load_local_contacts()
+    return next((c for c in contacts if c["id"] == contact_id), None)
+
+
+def update_local_contact(contact_id: int, updates: dict[str, Any]) -> dict[str, Any] | None:
+    contacts = load_local_contacts()
     updated_contact = None
 
     for idx, contact in enumerate(contacts):
@@ -51,7 +73,11 @@ def update_contact(contact_id: int, updates: dict[str, Any]) -> dict[str, Any] |
 
 
 def mark_actioned(contact_id: int, action_type: str) -> dict[str, Any] | None:
-    contacts = load_contacts()
+    """
+    For now, writes action state to local JSON tracking store.
+    In later phase, this can also write back to Community DB/service.
+    """
+    contacts = load_local_contacts()
     updated_contact = None
 
     for idx, contact in enumerate(contacts):

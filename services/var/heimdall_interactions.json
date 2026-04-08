@@ -1,0 +1,28 @@
+{
+  "interactions": [
+    {
+      "id": 1,
+      "contact_id": 2,
+      "contact_name": "Sarah Collins",
+      "interaction_type": "sms",
+      "notes": "Action recorded by Heimdall at 2026-04-08T21:36:38.148396+00:00",
+      "created_at": "2026-04-08T21:36:38.149708+00:00"
+    },
+    {
+      "id": 2,
+      "contact_id": 1,
+      "contact_name": "David Mercer",
+      "interaction_type": "phone_call",
+      "notes": "Action recorded by Heimdall at 2026-04-08T21:38:26.216222+00:00",
+      "created_at": "2026-04-08T21:38:26.217015+00:00"
+    },
+    {
+      "id": 3,
+      "contact_id": 2,
+      "contact_name": "Sarah Collins",
+      "interaction_type": "test_interaction",
+      "notes": "Testing from CLI",
+      "created_at": "2026-04-08T21:38:35.232485+00:00"
+    }
+  ]
+}

@@ -13,6 +13,7 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse, PlainTextResponse
 
 from app.routers.system_boot import router as system_boot_router
+from app.routers import jarvis
 from app.services.post_boot_init import run_post_boot_init
 
 logging.basicConfig(level=logging.INFO)
@@ -130,6 +131,9 @@ app = FastAPI(
 
 # Register system boot router first (admin endpoints)
 app.include_router(system_boot_router)
+
+# Register Heimdall/Jarvis router
+app.include_router(jarvis.router)
 
 # Auto-load all other routers from app/routers
 loaded_router_count = _autoload_router_modules(app)

@@ -1,6 +1,6 @@
 """
-Heimdall Scoring Engine
-Provides explainable contact priority scoring.
+Heimdall Scoring Engine - Money-First Mode
+Prioritizes fastest path to cash over everything else.
 """
 from __future__ import annotations
 
@@ -11,7 +11,8 @@ from app.services.jarvis_rules import JARVIS_RULES
 
 def score_contact(contact: dict[str, Any]) -> dict[str, Any]:
     """
-    Score a contact and return priority + explanation.
+    Score a contact with money-first priorities.
+    Focuses on: buyers (fastest cash) + staleness (urgency) + opportunity (never contacted).
     """
     heat_score = int(contact.get("heat_score", 0))
     days_stale = int(contact.get("days_stale", 0))
@@ -22,31 +23,37 @@ def score_contact(contact: dict[str, Any]) -> dict[str, Any]:
     score = heat_score
     reasons: list[str] = []
 
-    if contact_type == "buyer" and JARVIS_RULES.get("buyer_fast_cash_priority", False):
-        score += 15
-        reasons.append("Buyer prioritized for faster cash potential")
+    # ⚔️ MONEY-FIRST BOOST - Buyers are priority #1
+    if contact_type == "buyer":
+        score += 25
+        reasons.append("Buyer prioritized (fastest path to cash)")
 
-    if days_stale >= JARVIS_RULES.get("stale_lead_days", 3):
-        stale_boost = min(days_stale * 2, 20)
-        score += stale_boost
-        reasons.append(f"Stale follow-up urgency boost (+{stale_boost})")
+    # Staleness = urgency (contacted long ago = high opportunity)
+    if days_stale >= 3:
+        boost = min(days_stale * 3, 30)
+        score += boost
+        reasons.append(f"Stale urgency boost (+{boost})")
 
+    # Never contacted yet = high opportunity
     if action_count == 0:
-        score += 5
-        reasons.append("No actions logged yet")
+        score += 10
+        reasons.append("No prior action (high opportunity)")
 
+    # Recently actioned = deprioritize
     if status == "actioned":
-        score -= 25
+        score -= 30
         reasons.append("Recently actioned")
 
+    # Closed = not worth time
     if status == "closed":
         score -= 100
-        reasons.append("Closed contact deprioritized")
+        reasons.append("Closed contact")
 
+    # Priority thresholds (higher for money-first)
     priority = "low"
-    if score >= 90:
+    if score >= 100:
         priority = "high"
-    elif score >= 60:
+    elif score >= 70:
         priority = "medium"
 
     return {
@@ -54,3 +61,4 @@ def score_contact(contact: dict[str, Any]) -> dict[str, Any]:
         "priority": priority,
         "why": reasons,
     }
+

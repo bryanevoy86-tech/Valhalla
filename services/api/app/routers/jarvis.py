@@ -9,6 +9,8 @@ from app.services.jarvis_audit import log_event
 from app.services.jarvis_interactions import add_interaction
 from app.services.jarvis_store import get_contact, load_contacts, mark_actioned
 from app.services.heimdall_scoring import score_contact
+from app.services.heimdall_tasks import create_task, complete_task, get_pending_tasks, load_tasks
+from app.services.heimdall_outcomes import record_outcome
 
 router = APIRouter(prefix="/api/jarvis", tags=["jarvis"])
 
@@ -217,4 +219,76 @@ async def heimdall_mark_actioned(payload: dict[str, Any]) -> dict[str, Any]:
         "message": "Contact marked as actioned",
         "contact": updated,
         "interaction": interaction,
+    }
+
+
+@router.post("/create-task")
+async def heimdall_create_task(payload: dict[str, Any]) -> dict[str, Any]:
+    """Heimdall assigns a task to be completed."""
+    contact_id = payload.get("contact_id")
+    action = payload.get("action")
+    priority = payload.get("priority", "medium")
+
+    if not contact_id or not action:
+        raise HTTPException(status_code=400, detail="Missing contact_id or action")
+
+    task = create_task(int(contact_id), action, priority)
+
+    event = {
+        "agent": "Heimdall",
+        "event": "task_created",
+        "task_id": task["id"],
+        "contact_id": contact_id,
+        "action": action,
+        "priority": priority,
+    }
+    log_event("task_created", event)
+
+    return {
+        "ok": True,
+        "agent": "Heimdall",
+        "message": "Task created",
+        "task": task,
+    }
+
+
+@router.get("/tasks")
+async def heimdall_tasks() -> dict[str, Any]:
+    """View all pending tasks sorted by priority."""
+    pending = get_pending_tasks()
+
+    return {
+        "ok": True,
+        "agent": "Heimdall",
+        "count": len(pending),
+        "items": pending,
+    }
+
+
+@router.post("/record-outcome")
+async def heimdall_record_outcome(payload: dict[str, Any]) -> dict[str, Any]:
+    """Record the outcome of an action on a contact."""
+    contact_id = payload.get("contact_id")
+    result = payload.get("result")
+    notes = payload.get("notes")
+
+    if not contact_id or not result:
+        raise HTTPException(status_code=400, detail="Missing contact_id or result")
+
+    outcome = record_outcome(int(contact_id), result, notes)
+
+    event = {
+        "agent": "Heimdall",
+        "event": "outcome_recorded",
+        "contact_id": contact_id,
+        "result": result,
+        "notes": notes,
+    }
+    log_event("outcome_recorded", event)
+
+    return {
+        "ok": True,
+        "agent": "Heimdall",
+        "message": "Outcome recorded",
+        "outcome": outcome,
     }

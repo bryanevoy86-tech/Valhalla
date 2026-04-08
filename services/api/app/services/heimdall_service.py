@@ -511,3 +511,102 @@ def advance_stage_with_approval(
         "notes": "Stage advanced successfully",
         "blocker_overrides": [override_reason] if override_reason else [],
     }
+
+
+# ===== TASK MANAGEMENT =====
+
+import json
+from pathlib import Path
+
+TASKS_FILE = Path("var/heimdall_tasks.json")
+OUTCOMES_FILE = Path("var/heimdall_outcomes.json")
+
+
+def _ensure_var_dir() -> None:
+    """Ensure var directory exists."""
+    Path("var").mkdir(exist_ok=True)
+
+
+def create_task(contact_id: int, action: str, priority: str = "medium") -> Dict[str, Any]:
+    """Create a new task for Heimdall to track."""
+    _ensure_var_dir()
+    
+    # Load existing tasks
+    if TASKS_FILE.exists():
+        with open(TASKS_FILE) as f:
+            tasks = json.load(f)
+    else:
+        tasks = []
+    
+    # Generate new task ID
+    task_id = max([t.get("id", 0) for t in tasks], default=0) + 1
+    
+    # Create task
+    task = {
+        "id": task_id,
+        "contact_id": contact_id,
+        "action": action,
+        "priority": priority,
+        "status": "pending",
+        "created_at": datetime.utcnow().isoformat() + "Z",
+    }
+    
+    tasks.append(task)
+    
+    # Save
+    with open(TASKS_FILE, "w") as f:
+        json.dump(tasks, f, indent=2)
+    
+    return task
+
+
+def get_pending_tasks() -> List[Dict[str, Any]]:
+    """Get all pending tasks sorted by priority."""
+    _ensure_var_dir()
+    
+    if not TASKS_FILE.exists():
+        return []
+    
+    with open(TASKS_FILE) as f:
+        all_tasks = json.load(f)
+    
+    # Filter pending tasks and sort by priority
+    priority_order = {"critical": 0, "high": 1, "medium": 2, "low": 3}
+    pending = [t for t in all_tasks if t.get("status") == "pending"]
+    
+    return sorted(
+        pending,
+        key=lambda t: priority_order.get(t.get("priority", "medium"), 99)
+    )
+
+
+def record_outcome(contact_id: int, result: str, notes: Optional[str] = None) -> Dict[str, Any]:
+    """Record the outcome of an action on a contact."""
+    _ensure_var_dir()
+    
+    # Load existing outcomes
+    if OUTCOMES_FILE.exists():
+        with open(OUTCOMES_FILE) as f:
+            outcomes = json.load(f)
+    else:
+        outcomes = []
+    
+    # Generate new outcome ID
+    outcome_id = max([o.get("id", 0) for o in outcomes], default=0) + 1
+    
+    # Create outcome
+    outcome = {
+        "id": outcome_id,
+        "contact_id": contact_id,
+        "result": result,
+        "notes": notes,
+        "recorded_at": datetime.utcnow().isoformat() + "Z",
+    }
+    
+    outcomes.append(outcome)
+    
+    # Save
+    with open(OUTCOMES_FILE, "w") as f:
+        json.dump(outcomes, f, indent=2)
+    
+    return outcome
