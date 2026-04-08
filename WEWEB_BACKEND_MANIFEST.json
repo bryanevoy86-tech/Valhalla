@@ -1,0 +1,198 @@
+{
+  "generated_at": "2026-04-07T21:04:47.597855",
+  "base_url": "http://localhost:4000",
+  "health": {
+    "endpoint": "/health",
+    "method": "GET",
+    "description": "System health check"
+  },
+  "auth": {
+    "type": "jwt",
+    "notes": "Attach Authorization: Bearer <token> when enabled"
+  },
+  "core_endpoints": {
+    "activation": {
+      "summary": "/api/v1/activation/routes/summary",
+      "routes": "/api/v1/activation/routes"
+    },
+    "compliance": {
+      "mode": "/api/compliance/mode",
+      "exit_validate": "/api/compliance/eia/exit/validate",
+      "exit_execute": "/api/compliance/eia/exit/execute"
+    },
+    "legal": {
+      "templates": "/api/legal/templates",
+      "queue": "/api/legal/queue",
+      "approve": "/api/legal/approve/{approval_id}",
+      "approve_and_send": "/api/legal/approve-and-send/{approval_id}",
+      "stage_trigger": "/api/legal/trigger-from-stage",
+      "package_trigger": "/api/legal/trigger-package-from-stage",
+      "package_send": "/api/legal/approve-and-send-package",
+      "registry_resolve": "/api/legal/registry/resolve"
+    },
+    "finance": {
+      "ledger": "/api/finance/ledger/create",
+      "disbursement": "/api/finance/disbursement/plan",
+      "intent_queue": "/api/finance/intent/queue",
+      "intent_status": "/api/finance/intent/{intent_id}",
+      "intent_approve": "/api/finance/intent/{intent_id}/approve",
+      "freeze": "/api/finance/freeze",
+      "summary": "/api/finance/status/summary",
+      "feed": "/api/finance/status/feed",
+      "audit": "/api/finance/status/audit"
+    },
+    "community_relations": {
+      "list_contacts": {
+        "method": "GET",
+        "path": "/api/community/contacts"
+      },
+      "create_contact": {
+        "method": "POST",
+        "path": "/api/community/contacts"
+      },
+      "get_contact": {
+        "method": "GET",
+        "path": "/api/community/contacts/{contact_id}"
+      },
+      "update_contact": {
+        "method": "PATCH",
+        "path": "/api/community/contacts/{contact_id}"
+      },
+      "adjust_trust": {
+        "method": "POST",
+        "path": "/api/community/contacts/{contact_id}/adjust-trust"
+      },
+      "contact_next_action": {
+        "method": "GET",
+        "path": "/api/community/contacts/{contact_id}/next-action"
+      },
+      "contact_interactions": {
+        "method": "GET",
+        "path": "/api/community/contacts/{contact_id}/interactions"
+      },
+      "reputation_events": {
+        "method": "GET",
+        "path": "/api/community/contacts/{contact_id}/reputation-events"
+      },
+      "create_interaction": {
+        "method": "POST",
+        "path": "/api/community/interactions"
+      },
+      "list_interactions": {
+        "method": "GET",
+        "path": "/api/community/interactions"
+      },
+      "list_campaigns": {
+        "method": "GET",
+        "path": "/api/community/campaigns"
+      },
+      "create_campaign": {
+        "method": "POST",
+        "path": "/api/community/campaigns"
+      },
+      "update_campaign": {
+        "method": "PATCH",
+        "path": "/api/community/campaigns/{campaign_id}"
+      },
+      "list_tasks": {
+        "method": "GET",
+        "path": "/api/community/tasks"
+      },
+      "create_task": {
+        "method": "POST",
+        "path": "/api/community/tasks"
+      },
+      "update_task": {
+        "method": "PATCH",
+        "path": "/api/community/tasks/{task_id}"
+      },
+      "create_referral": {
+        "method": "POST",
+        "path": "/api/community/referrals"
+      },
+      "list_referrals": {
+        "method": "GET",
+        "path": "/api/community/referrals"
+      },
+      "hottest_contacts": {
+        "method": "GET",
+        "path": "/api/community/hottest-contacts"
+      },
+      "region_summary": {
+        "method": "GET",
+        "path": "/api/community/regions/{region}/summary"
+      },
+      "summary": {
+        "method": "GET",
+        "path": "/api/community/summary"
+      },
+      "stale_contacts": {
+        "method": "GET",
+        "path": "/api/community/stale-contacts"
+      },
+      "automation_run": {
+        "method": "POST",
+        "path": "/api/community/automation/run"
+      },
+      "contact_automation": {
+        "method": "POST",
+        "path": "/api/community/contacts/{contact_id}/automation"
+      },
+      "weekly_priority_queue": {
+        "method": "GET",
+        "path": "/api/community/weekly-priority-queue"
+      },
+      "overdue_follow_ups": {
+        "method": "GET",
+        "path": "/api/community/overdue-follow-ups"
+      },
+      "schedule_follow_up": {
+        "method": "POST",
+        "path": "/api/community/contacts/{contact_id}/schedule-follow-up"
+      },
+      "templates_list": {
+        "method": "GET",
+        "path": "/api/community/templates"
+      },
+      "templates_create": {
+        "method": "POST",
+        "path": "/api/community/templates"
+      },
+      "templates_update": {
+        "method": "PATCH",
+        "path": "/api/community/templates/{template_id}"
+      },
+      "preview_message": {
+        "method": "GET",
+        "path": "/api/community/contacts/{contact_id}/preview-message"
+      },
+      "send_template": {
+        "method": "POST",
+        "path": "/api/community/contacts/{contact_id}/send-template"
+      },
+      "message_logs": {
+        "method": "GET",
+        "path": "/api/community/message-logs"
+      }
+    }
+  },
+  "sample_flows": {
+    "legal_flow": {
+      "step_1": "POST /api/legal/trigger-package-from-stage",
+      "step_2": "GET /api/legal/queue/{approval_id}",
+      "step_3": "POST /api/legal/approve-and-send-package"
+    },
+    "finance_flow": {
+      "step_1": "POST /api/finance/intent/queue",
+      "step_2": "GET /api/finance/intent/{intent_id}",
+      "step_3": "POST /api/finance/intent/{intent_id}/approve"
+    }
+  },
+  "notes": [
+    "Use base_url + endpoint path",
+    "All endpoints return JSON",
+    "Approval gates required for legal + finance actions",
+    "EIA mode may block certain financial actions",
+    "Frontend should read routes dynamically via activation endpoints"
+  ]
+}
