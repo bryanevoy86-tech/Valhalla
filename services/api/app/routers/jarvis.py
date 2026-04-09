@@ -9,7 +9,13 @@ from app.services.jarvis_audit import log_event
 from app.services.jarvis_interactions import add_interaction
 from app.services.jarvis_store import get_contact, load_contacts, mark_actioned
 from app.services.heimdall_scoring import score_contact
-from app.services.heimdall_tasks import create_task, complete_task, get_pending_tasks, load_tasks
+from app.services.heimdall_tasks import (
+    create_task,
+    complete_task,
+    get_pending_tasks,
+    load_tasks,
+    create_task_if_missing,
+)
 from app.services.heimdall_outcomes import record_outcome
 from app.services.heimdall_feedback import best_channel_for_contact, record_feedback, get_contact_feedback
 
@@ -34,6 +40,38 @@ def _choose_channel(contact: dict[str, Any]) -> tuple[str, list[str]]:
     fallback = _base_channel(contact)
     contact_id = int(contact.get("id", 0))
     return best_channel_for_contact(contact_id=contact_id, fallback_channel=fallback)
+
+
+def _build_next_actions() -> list[dict[str, Any]]:
+    """Build ranked list of next actions from live contacts and scoring."""
+    contacts = load_contacts()
+
+    actions: list[dict[str, Any]] = []
+    for contact in contacts:
+        if contact.get("status") == "closed":
+            continue
+
+        scoring = score_contact(contact)
+        channel, channel_reasons = _choose_channel(contact)
+
+        action = {
+            "contact_id": contact["id"],
+            "contact_name": contact["name"],
+            "priority": scoring["priority"],
+            "heimdall_score": scoring["score"],
+            "action": f"Follow up via {channel}",
+            "channel": channel,
+            "reason": contact.get("reason"),
+            "script": contact.get("recommended_script"),
+            "why": scoring["why"] + channel_reasons,
+            "heat_score": contact.get("heat_score"),
+            "days_stale": contact.get("days_stale"),
+            "status": contact.get("status"),
+        }
+        actions.append(action)
+
+    actions.sort(key=lambda x: x["heimdall_score"], reverse=True)
+    return actions
 
 
 @router.get("/dashboard")
@@ -94,33 +132,7 @@ async def heimdall_hot_contacts() -> dict[str, Any]:
 @router.get("/next-actions")
 async def heimdall_next_actions() -> dict[str, Any]:
     """Prioritized next actions with scoring explanations and channel learning."""
-    contacts = load_contacts()
-
-    actions: list[dict[str, Any]] = []
-    for contact in contacts:
-        if contact.get("status") == "closed":
-            continue
-
-        scoring = score_contact(contact)
-        channel, channel_reasons = _choose_channel(contact)
-
-        action = {
-            "contact_id": contact["id"],
-            "contact_name": contact["name"],
-            "priority": scoring["priority"],
-            "heimdall_score": scoring["score"],
-            "action": f"Follow up via {channel}",
-            "channel": channel,
-            "reason": contact.get("reason"),
-            "script": contact.get("recommended_script"),
-            "why": scoring["why"] + channel_reasons,
-            "heat_score": contact.get("heat_score"),
-            "days_stale": contact.get("days_stale"),
-            "status": contact.get("status"),
-        }
-        actions.append(action)
-
-    actions.sort(key=lambda x: x["heimdall_score"], reverse=True)
+    actions = _build_next_actions()
 
     return {
         "ok": True,
@@ -269,7 +281,85 @@ async def heimdall_tasks() -> dict[str, Any]:
         "ok": True,
         "agent": "Heimdall",
         "count": len(pending),
-        "items": pending,
+        "tasks": pending,
+    }
+
+
+@router.post("/auto-generate-tasks")
+async def heimdall_auto_generate_tasks(payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Automatically generate tasks from top-ranked next-actions."""
+    payload = payload or {}
+    limit = int(payload.get("limit", 3))
+
+    actions = _build_next_actions()
+    selected = actions[:limit]
+
+    created: list[dict[str, Any]] = []
+    skipped: list[dict[str, Any]] = []
+
+    for item in selected:
+        task, was_created = create_task_if_missing(
+            contact_id=item["contact_id"],
+            action=item["action"],
+            priority=item["priority"],
+        )
+
+        result = {
+            "contact_id": item["contact_id"],
+            "contact_name": item["contact_name"],
+            "action": item["action"],
+            "priority": item["priority"],
+            "task": task,
+        }
+
+        if was_created:
+            created.append(result)
+            log_event(
+                "auto_task_created",
+                {
+                    "agent": "Heimdall",
+                    "contact_id": item["contact_id"],
+                    "task": task,
+                },
+            )
+        else:
+            skipped.append(result)
+
+    return {
+        "ok": True,
+        "agent": "Heimdall",
+        "generated_at": _now_iso(),
+        "requested_limit": limit,
+        "created_count": len(created),
+        "skipped_count": len(skipped),
+        "created": created,
+        "skipped": skipped,
+    }
+
+
+@router.post("/complete-task")
+async def heimdall_complete_task(payload: dict[str, Any]) -> dict[str, Any]:
+    """Mark a task as completed and remove it from the queue."""
+    task_id = payload.get("task_id")
+    if not task_id:
+        raise HTTPException(status_code=400, detail="task_id is required")
+
+    complete_task(int(task_id))
+
+    log_event(
+        "task_completed",
+        {
+            "agent": "Heimdall",
+            "task_id": int(task_id),
+            "timestamp": _now_iso(),
+        },
+    )
+
+    return {
+        "ok": True,
+        "agent": "Heimdall",
+        "message": "Task marked as completed",
+        "task_id": int(task_id),
     }
 
 

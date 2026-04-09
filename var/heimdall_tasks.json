@@ -5,8 +5,26 @@
       "contact_id": 2,
       "action": "Call immediately",
       "priority": "high",
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-08T22:19:15.495342+00:00",
+      "completed_at": "2026-04-09T01:24:32.036441+00:00"
+    },
+    {
+      "id": 2,
+      "contact_id": 1,
+      "action": "Follow up via email",
+      "priority": "medium",
+      "status": "pending",
+      "created_at": "2026-04-09T01:24:14.973738+00:00",
+      "completed_at": null
+    },
+    {
+      "id": 3,
+      "contact_id": 2,
+      "action": "Follow up via email",
+      "priority": "low",
+      "status": "pending",
+      "created_at": "2026-04-09T01:24:14.994227+00:00",
       "completed_at": null
     }
   ]

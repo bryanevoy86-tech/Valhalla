@@ -86,3 +86,27 @@ def get_pending_tasks() -> list[dict[str, Any]]:
     )
     
     return pending
+
+
+def find_pending_task(contact_id: int, action: str) -> dict[str, Any] | None:
+    """Find an existing pending task for a contact with a specific action."""
+    for task in get_pending_tasks():
+        if int(task.get("contact_id", 0)) == int(contact_id) and task.get("action") == action:
+            return task
+    return None
+
+
+def create_task_if_missing(
+    contact_id: int, action: str, priority: str
+) -> tuple[dict[str, Any], bool]:
+    """
+    Create a task only if one doesn't exist for this contact + action combo.
+    Returns (task, was_created).
+    """
+    existing = find_pending_task(contact_id, action)
+    if existing:
+        return existing, False
+
+    task = create_task(contact_id, action, priority)
+    return task, True
+
