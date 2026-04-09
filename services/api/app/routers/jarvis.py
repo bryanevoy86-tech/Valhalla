@@ -20,6 +20,7 @@ from app.services.heimdall_tasks import (
 )
 from app.services.heimdall_outcomes import record_outcome
 from app.services.heimdall_feedback import best_channel_for_contact, record_feedback, get_contact_feedback
+from app.services.system_state import get_system_state
 
 router = APIRouter(prefix="/api/jarvis", tags=["jarvis"])
 
@@ -450,4 +451,16 @@ async def heimdall_feedback(contact_id: int) -> dict[str, Any]:
         "contact_id": contact_id,
         "count": len(items),
         "items": items,
+    }
+
+
+@router.get("/system-status")
+async def heimdall_system_status() -> dict[str, Any]:
+    """Get system state: mode (SAFE/LIVE), blockers, warnings, go-live readiness."""
+    state = get_system_state()
+
+    return {
+        "ok": True,
+        "agent": "Heimdall",
+        "system": state,
     }
