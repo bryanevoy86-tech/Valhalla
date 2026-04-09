@@ -15,6 +15,8 @@ from app.services.heimdall_tasks import (
     get_pending_tasks,
     load_tasks,
     create_task_if_missing,
+    get_completed_tasks_needing_outcome,
+    mark_task_outcome_recorded,
 )
 from app.services.heimdall_outcomes import record_outcome
 from app.services.heimdall_feedback import best_channel_for_contact, record_feedback, get_contact_feedback
@@ -285,6 +287,19 @@ async def heimdall_tasks() -> dict[str, Any]:
     }
 
 
+@router.get("/tasks-needing-outcome")
+async def heimdall_tasks_needing_outcome() -> dict[str, Any]:
+    """View completed tasks that haven't had outcomes recorded yet."""
+    items = get_completed_tasks_needing_outcome()
+
+    return {
+        "ok": True,
+        "agent": "Heimdall",
+        "count": len(items),
+        "items": items,
+    }
+
+
 @router.post("/auto-generate-tasks")
 async def heimdall_auto_generate_tasks(payload: dict[str, Any] | None = None) -> dict[str, Any]:
     """Automatically generate tasks from top-ranked next-actions."""
@@ -339,19 +354,24 @@ async def heimdall_auto_generate_tasks(payload: dict[str, Any] | None = None) ->
 
 @router.post("/complete-task")
 async def heimdall_complete_task(payload: dict[str, Any]) -> dict[str, Any]:
-    """Mark a task as completed and remove it from the queue."""
+    """Mark a task as completed with optional completion notes."""
     task_id = payload.get("task_id")
+    notes = payload.get("notes")
+
     if not task_id:
         raise HTTPException(status_code=400, detail="task_id is required")
 
-    complete_task(int(task_id))
+    updated = complete_task(int(task_id), notes=notes)
+    if not updated:
+        raise HTTPException(status_code=404, detail="Task not found")
 
     log_event(
         "task_completed",
         {
             "agent": "Heimdall",
             "task_id": int(task_id),
-            "timestamp": _now_iso(),
+            "task": updated,
+            "timestamp": updated.get("completed_at"),
         },
     )
 
@@ -359,17 +379,19 @@ async def heimdall_complete_task(payload: dict[str, Any]) -> dict[str, Any]:
         "ok": True,
         "agent": "Heimdall",
         "message": "Task marked as completed",
-        "task_id": int(task_id),
+        "task": updated,
+        "next_step": "Record outcome for this completed task",
     }
 
 
 @router.post("/record-outcome")
 async def heimdall_record_outcome(payload: dict[str, Any]) -> dict[str, Any]:
-    """Record the outcome of an action on a contact with channel feedback."""
+    """Record outcome of a task-driven action with closed-loop tracking."""
     contact_id = payload.get("contact_id")
     result = payload.get("result")
     notes = payload.get("notes")
     channel = payload.get("channel")
+    task_id = payload.get("task_id")
 
     if not contact_id or not result:
         raise HTTPException(status_code=400, detail="Missing required fields")
@@ -379,6 +401,7 @@ async def heimdall_record_outcome(payload: dict[str, Any]) -> dict[str, Any]:
         result=result,
         notes=notes,
         channel=channel,
+        task_id=int(task_id) if task_id else None,
     )
 
     # Record channel feedback for learning
@@ -391,24 +414,29 @@ async def heimdall_record_outcome(payload: dict[str, Any]) -> dict[str, Any]:
             notes=notes,
         )
 
-    event = {
-        "agent": "Heimdall",
-        "event": "outcome_recorded",
-        "contact_id": contact_id,
-        "result": result,
-        "notes": notes,
-        "channel": channel,
-        "feedback_recorded": feedback is not None,
-    }
-    log_event("outcome_recorded", event)
+    # Mark task outcome as recorded
+    updated_task = None
+    if task_id:
+        updated_task = mark_task_outcome_recorded(int(task_id))
+
+    log_event(
+        "record_outcome",
+        {
+            "agent": "Heimdall",
+            "outcome": outcome,
+            "feedback": feedback,
+            "task": updated_task,
+        },
+    )
 
     return {
         "ok": True,
         "agent": "Heimdall",
-        "message": "Outcome recorded with channel feedback",
         "outcome": outcome,
         "feedback": feedback,
+        "task": updated_task,
     }
+
 
 
 @router.get("/feedback/{contact_id}")

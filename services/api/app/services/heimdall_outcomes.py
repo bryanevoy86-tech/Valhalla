@@ -38,9 +38,11 @@ def record_outcome(
     result: str,
     notes: str | None = None,
     channel: str | None = None,
+    task_id: int | None = None,
 ) -> dict[str, Any]:
     """
     Record outcome of an action on a contact.
+    Links to task if provided for closed-loop tracking.
     
     Results: "success", "no_response", "deal", "lost", "other"
     Channel: "sms", "email", "phone", etc.
@@ -48,15 +50,19 @@ def record_outcome(
     outcomes = load_outcomes()
 
     item = {
+        "id": max([o.get("id", 0) for o in outcomes], default=0) + 1,
         "contact_id": contact_id,
         "result": result,
         "notes": notes,
         "channel": channel,
+        "task_id": task_id,
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
 
     outcomes.append(item)
     save_outcomes(outcomes)
+
+    return item
 
     return item
 

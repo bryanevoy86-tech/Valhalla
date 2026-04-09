@@ -1,7 +1,7 @@
 """
 Heimdall Task Engine
 Assigns work to operators based on scoring + priority.
-This is an operating system, not just suggestions.
+Tracks completion and outcome recording.
 """
 from __future__ import annotations
 
@@ -52,6 +52,8 @@ def create_task(
         "status": "pending",
         "created_at": datetime.now(timezone.utc).isoformat(),
         "completed_at": None,
+        "completion_notes": None,
+        "outcome_recorded": False,
     }
 
     tasks.append(task)
@@ -60,32 +62,52 @@ def create_task(
     return task
 
 
-def complete_task(task_id: int) -> bool:
-    """Mark a task as completed."""
+def complete_task(task_id: int, notes: str | None = None) -> dict[str, Any] | None:
+    """Mark a task as completed with optional completion notes."""
     tasks = load_tasks()
+    updated = None
 
     for t in tasks:
         if t["id"] == task_id:
             t["status"] = "completed"
             t["completed_at"] = datetime.now(timezone.utc).isoformat()
+            t["completion_notes"] = notes
+            updated = t
             break
 
     save_tasks(tasks)
-    return True
+    return updated
+
+
+def mark_task_outcome_recorded(task_id: int) -> dict[str, Any] | None:
+    """Mark a task as having its outcome recorded."""
+    tasks = load_tasks()
+    updated = None
+
+    for t in tasks:
+        if t["id"] == task_id:
+            t["outcome_recorded"] = True
+            updated = t
+            break
+
+    save_tasks(tasks)
+    return updated
 
 
 def get_pending_tasks() -> list[dict[str, Any]]:
     """Get all pending tasks sorted by priority."""
-    tasks = load_tasks()
-    pending = [t for t in tasks if t.get("status") == "pending"]
-    
-    # Sort: high first, then creation time
+    tasks = [t for t in load_tasks() if t.get("status") == "pending"]
     priority_order = {"high": 0, "medium": 1, "low": 2}
-    pending.sort(
-        key=lambda x: (priority_order.get(x.get("priority"), 3), x.get("created_at"))
-    )
-    
-    return pending
+    tasks.sort(key=lambda x: priority_order.get(x.get("priority", "low"), 99))
+    return tasks
+
+
+def get_completed_tasks_needing_outcome() -> list[dict[str, Any]]:
+    """Get all completed tasks that haven't had outcomes recorded yet."""
+    return [
+        t for t in load_tasks()
+        if t.get("status") == "completed" and not t.get("outcome_recorded", False)
+    ]
 
 
 def find_pending_task(contact_id: int, action: str) -> dict[str, Any] | None:
@@ -109,4 +131,5 @@ def create_task_if_missing(
 
     task = create_task(contact_id, action, priority)
     return task, True
+
 

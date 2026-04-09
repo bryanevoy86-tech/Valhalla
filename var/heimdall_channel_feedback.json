@@ -20,6 +20,27 @@
       "result": "success",
       "notes": "Email got quick response",
       "created_at": "2026-04-09T00:17:30.036846+00:00"
+    },
+    {
+      "contact_id": 1,
+      "channel": "sms",
+      "result": "success",
+      "notes": "Customer confirmed meeting time for next week.",
+      "created_at": "2026-04-09T01:39:10.462434+00:00"
+    },
+    {
+      "contact_id": 2,
+      "channel": "sms",
+      "result": "success",
+      "notes": "Customer confirmed meeting time for next week.",
+      "created_at": "2026-04-09T02:20:12.550305+00:00"
+    },
+    {
+      "contact_id": 2,
+      "channel": "email",
+      "result": "deal",
+      "notes": "Contract signed and sent to legal.",
+      "created_at": "2026-04-09T02:20:35.318176+00:00"
     }
   ]
 }
