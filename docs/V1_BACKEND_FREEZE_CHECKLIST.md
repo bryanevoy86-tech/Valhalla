@@ -1,218 +1,120 @@
-# V1 Backend Freeze Checklist
+# Valhalla Legacy Inc — V1 Backend Freeze Checklist
 
-**Date:** March 29, 2026  
-**Status:** Backend V1 Stabilization Complete (Partial)  
-**Assessment:** 85% ready for frontend integration
+## Purpose
+This checklist defines the backend surface that is considered frozen for V1 WeWeb integration.
 
----
-
-## A) APP HEALTH — ✅ VERIFIED PASS
-
-| Check | Status | Evidence | Notes |
-|-------|--------|----------|-------|
-| App boots clean | ✅ PASS | Deploy logs show clean startup, all routers mounted | Zero blocking import errors |
-| Health endpoint works | ✅ PASS | `/health` returns 200 OK from Render health check | Confirmed by service logs |
-| Docs/OpenAPI accessible | ✅ PASS | `/docs` available at https://valhalla-api-ha6a.onrender.com/docs | Swagger UI confirmed live |
-| No startup import errors | ✅ PASS | Logs show all core routers successfully registered | Dead code (opportunity_tracker) commented out, no blocking errors |
-| No migration boot errors | ✅ PASS | Alembic ran clean, single head `20260205_final_consolidation` | Zero migration conflicts or failures |
-| No ORM initialization crash | ✅ PASS | Schema verified during lifespan startup (`verify_schema_initialized()`) | DB tables present and correct |
+Once an item here is marked complete, its API contract should not change unless a bug requires it.
 
 ---
 
-## B) CORE V1 ROUTES — ✅ ALL MOUNTED & FUNCTIONAL
+## V1 Backend Freeze Rules
 
-### Leads (Lead Intake)
-
-| Route | Status | Purpose | Auth | Notes |
-|-------|--------|---------|------|-------|
-| `POST /api/leads` | ✅ LIVE | Create new lead | (optional) | Response: 201 Created |
-| `GET /api/leads` | ✅ LIVE | List all leads with pagination | (optional) | Supports `skip`, `limit`, `status` filters |
-| `GET /api/leads/{id}` | ✅ LIVE | Get single lead by ID | (optional) | Returns full LeadOut schema |
-| `PUT /api/leads/{id}/status` | ✅ LIVE | Update lead status | (optional) | Body: `{"status": "qualified" \| "rejected" \| ...}` |
-| `DELETE /api/leads/{id}` | ✅ LIVE | Delete lead | (optional) | Returns 204 No Content |
-
-### Deals (Deal Lifecycle)
-
-| Route | Status | Purpose | Auth | Notes |
-|-------|--------|---------|------|-------|
-| `GET /api/deals` | ✅ LIVE | List all deals | Optional builder key | Supports `status` filter, 500 record limit |
-| `POST /api/deals` | ✅ LIVE | Create new deal brief | Requires builder key | Response: 201 Created |
-| `GET /api/deals/{id}` | ✅ LIVE | Get single deal | (optional) | Full DealBriefOut schema |
-
-### Audit & Traceability
-
-| Route | Status | Purpose | Auth | Notes |
-|-------|--------|---------|------|-------|
-| `GET /api/audit/deals/{deal_id}` | ✅ LIVE | Get deal audit trail | (optional) | All events for specific deal, DESC by date |
-| `GET /api/audit` | ✅ LIVE | Get system audit log | (optional) | Recent events (limit 200), system-wide |
-| `POST /api/audit` | ✅ LIVE | Log event manually | (optional) | For manual audit trail entries |
-
-### Governance & Go-Live (Pre-Launch Checks)
-
-| Route | Status | Purpose | Auth | Notes |
-|-------|--------|---------|------|-------|
-| `GET /api/governance/runbook/status` | ✅ LIVE | System readiness check | (optional) | Returns blockers, warnings, go-live state |
-| `GET /api/governance/go-live/state` | ✅ LIVE | Current go-live mode | (optional) | "enabled", "disabled", "maintenance" |
-| `GET /api/governance/go-live/checklist` | ✅ LIVE | Pre-launch checklist status | (optional) | Item-by-item go-live readiness |
-| `GET /api/governance/risk/ledger/today` | ✅ LIVE | Daily risk reserve status | (optional) | Financial safety reserved today |
-
-### Heimdall (Decision Engine)
-
-| Route | Status | Purpose | Auth | Notes |
-|-------|--------|---------|------|-------|
-| `POST /api/heimdall/deals/{id}/analyze` | ⚠️ PARTIAL | Analyze deal for blockers | (optional) | 503 on external Builder config lookup (known, deferred) |
-| `GET /api/heimdall/sandbox/trial` | ⚠️ PARTIAL | Test analysis in sandbox | (optional) | Same external dependency |
+- No new major backend features until WeWeb Phase 1 is connected.
+- No response shape changes on frozen endpoints unless required to fix a real bug.
+- No renaming routes after freeze without updating the contract sheet.
+- Only bug fixes, stability fixes, and documentation updates are allowed after freeze.
+- New ideas go into backlog, not into the live V1 contract.
 
 ---
 
-## C) GOVERNANCE / GO-LIVE TRUTH — ✅ ENDPOINTS LIVE
+## Freeze Status
 
-### What Backend Can Truthfully Answer (V1 Mode)
+### Core Health
+- [x] `/health` returns 200 OK
+- [x] backend starts clean with no critical errors
+- [x] logs show stable startup
+- [x] JSON persistence working
+- [x] audit logging working
 
-**Question:** Can the system safely enable go-live?
+### Heimdall Core
+- [x] `/api/jarvis/dashboard`
+- [x] `/api/jarvis/hot-contacts`
+- [x] `/api/jarvis/next-actions`
+- [x] `/api/jarvis/recommend-action`
+- [x] `/api/jarvis/run-playbook`
 
-**Answer Path:**
-```
-GET /api/governance/go-live/state
-→ Returns: {"state": "enabled" | "disabled", "mode": "..."}
+### Task Engine
+- [x] `/api/jarvis/create-task`
+- [x] `/api/jarvis/tasks`
+- [x] `/api/jarvis/auto-generate-tasks`
+- [x] `/api/jarvis/complete-task`
 
-GET /api/governance/runbook/status
-→ Returns: {
-    "blockers": [...],
-    "warnings": [...],
-    "ok_to_enable_go_live": true | false,
-    "execution_mode": "sandbox" | "production"
-  }
-```
+### Outcome + Learning Loop
+- [x] `/api/jarvis/record-outcome`
+- [x] `/api/jarvis/tasks-needing-outcome`
+- [x] `/api/jarvis/feedback/{contact_id}`
 
-### Live Governance Routers
+### Data + State
+- [x] contact store persists correctly
+- [x] task store persists correctly
+- [x] outcome store persists correctly
+- [x] interaction history persists correctly
+- [x] channel feedback persists correctly
 
-✅ `governance_runbook` → Status, markdown docs  
-✅ `governance_policy` → Policy definitions  
-✅ `governance_risk` → Risk policy and reservations  
-✅ `go_live` → Go-live state, checklist, kill-switch  
-✅ `market_policy` → Market-wide policy settings  
-✅ `heimdall` → Deal analysis (partial - external dependency)  
-
-### Known Limitations (V1)
-
-- `POST /api/heimdall/deals/{id}/analyze` → Returns 503 if Heimdall Builder key not configured (external service)
-- Auth currently optional for all routes (governance assumes admin context for now)
-- Risk calculations may be simplified pending full policy engine activation
-
----
-
-## D) API CONTRACT FREEZE — ✅ DOCUMENTED
-
-See **V1_API_CONTRACT.md** for complete request/response specs, error codes, and examples.
-
-### Summary of V1 Contract Scope
-
-**Status:** 13 core routes + 50+ optional packs  
-**Schema Versioning:** All responses include timestamps (ISO 8601)  
-**Error Handling:** StandardHTTP status codes + JSON error bodies  
-**Pagination:** `skip`, `limit` parameters on list endpoints  
-**Filters:** `status` parameter on most list endpoints  
-**Media Type:** `application/json` (implicit)
+### Safety / Go-Live
+- [ ] system status route exists
+- [ ] safe/live mode clearly exposed
+- [ ] blockers can be returned to frontend
+- [ ] warnings can be returned to frontend
 
 ---
 
-## E) LAUNCH-CRITICAL HEALTH CHECKS — ✅ ALL PASS
+## V1 Frozen Endpoints
 
-| System | Check | Result | Impact |
-|--------|-------|--------|--------|
-| **Database** | Schema initialized | ✅ PASS | Data can be read/written |
-| **Migrations** | Single head, linear | ✅ PASS | No ambiguity on upgrade path |
-| **Leads Router** | Create, list, detail working | ✅ PASS | Lead intake functional |
-| **Deals Router** | List, detail working | ✅ PASS | Deal visibility functional |
-| **Audit Router** | Logging and retrieval | ✅ PASS | Traceability enabled |
-| **Governance Routes** | Status, checklist live | ✅ PASS | Pre-launch verification possible |
-| **Startup Sequence** | No circular imports, clean boot | ✅ PASS | Production deployment stable |
-| **OpenAPI Docs** | Generates and serves | ✅ PASS | Frontend dev can read spec live |
+These endpoints are part of the frozen contract for WeWeb Phase 1:
 
----
-
-## F) NON-V1 (DEFERRED/OPTIONAL) — ⚠️ NOTED BUT NOT BLOCKING
-
-| System | Status | Reason Deferred | Plan |
-|--------|--------|-----------------|------|
-| Opportunity Tracker | ❌ Disabled | Model removed (migration constraint) | Re-add post-V1 with proper migration |
-| Full Auth/Session | ⚠️ Partial | Not needed for internal backend test | Implement for Phase 2 public API |
-| Heimdall Builder Integration | ⚠️ Partial | Requires external API key config | Configure post-launch or in Phase 2 |
-| Dynamic Policy Loading | ⚠️ Partial | Governance works with defaults | Full customization in Phase 2 |
-| WebSocket Events | ❌ Skipped | Not needed for REST frontend | Consider for Phase 3 if needed |
+- GET `/health`
+- GET `/api/jarvis/dashboard`
+- GET `/api/jarvis/next-actions`
+- GET `/api/jarvis/tasks`
+- GET `/api/jarvis/tasks-needing-outcome`
+- POST `/api/jarvis/create-task`
+- POST `/api/jarvis/complete-task`
+- POST `/api/jarvis/record-outcome`
+- POST `/api/jarvis/auto-generate-tasks`
 
 ---
 
-## G) RISK ASSESSMENT FOR LAUNCH
+## Allowed Changes After Freeze
 
-### Red Flags
+Allowed:
+- bug fixes
+- missing field fixes
+- better error handling
+- audit/logging improvements
+- performance improvements
+- documentation updates
 
-🟢 **NONE** — All launch-critical systems operational.
-
-### Yellow Flags
-
-🟡 **Heimdall 503 on external calls** — Known, documented, non-blocking for basic deal flow  
-🟡 **Optional packs validation** — Some Pydantic issues in non-core modules (gracefully skipped)  
-🟡 **Auth optional** — Governance endpoints assume admin; need auth layer post-launch  
-
-### Green Flags
-
-🟢 **Single migration head** — Clean, linear, reproducible  
-🟢 **Core routers all live** — Leads, deals, audit functional  
-🟢 **Schema initialized** — DB verified on startup  
-🟢 **Zero 500 errors** — Startup and core paths clean  
-🟢 **Health check passing** — Render confirmed live  
+Not allowed:
+- changing route names
+- changing JSON shapes casually
+- adding unrelated new modules
+- changing field names without updating contract sheet
+- moving core V1 logic to a different route structure
 
 ---
 
-## H) V1 FREEZE DECISION
+## WeWeb Phase 1 Dependency
 
-### Verdict: ✅ **READY FOR FRONTEND PHASE 1**
+WeWeb Phase 1 will only depend on:
+- health check
+- next actions
+- tasks
+- complete task
+- record outcome
 
-**Condition:** Only simple deals list UI in Phase 1 (no Heimdall widgets, no auth UI yet)
-
-**Why Safe:**
-1. All core data routes live (leads, deals, audit)
-2. Schema stable and verified
-3. Migrations clean and reproducible
-4. No breaking changes needed before UI connection
-5. Governance routes provide pre-launch truth
-6. OpenAPI docs available for frontend dev
-
-**What This Means:**
-- **DO** build WeWeb Phase 1 connected to `/api/deals` and `/api/leads`
-- **DO** use audit trail for activity log
-- **DO** verify governance state before enabling features
-- **DON'T** wait for Heimdall deep integration (Phase 2+)
-- **DON'T** attempt auth before backend Phase 2
+If these are stable, WeWeb can proceed safely.
 
 ---
 
-## I) FINAL CHECKLIST FOR DEPLOYMENT
+## Final Freeze Decision
 
-Before frontend starts Phase 1 integration:
+Backend V1 Freeze Status:
+- [ ] NOT FROZEN
+- [ ] FROZEN FOR WEWEB PHASE 1
 
-- [ ] Backend running at https://valhalla-api-ha6a.onrender.com
-- [ ] `/docs` accessible (OpenAPI)
-- [ ] `GET /api/deals` returns 200 with data
-- [ ] `GET /api/leads` returns 200 with data
-- [ ] `GET /api/audit/deals/{id}` returns audit trail
-- [ ] `GET /api/governance/runbook/status` shows no critical blockers
-- [ ] Database healthy (schema verified on startup)
-- [ ] Frontend team has V1_API_CONTRACT.md
-- [ ] Frontend ready to consume `/api/deals` list endpoint
+Date Frozen:
+- YYYY-MM-DD
 
----
-
-## NEXT STEPS
-
-1. ✅ Backend V1 checkpoint complete
-2. → Build WeWeb Phase 1 (simple deals list UI)
-3. → Test end-to-end: API ↔ WeWeb
-4. → Document any frontend-discovered issues
-5. → Plan Phase 2 (auth, Dashboard, Heimdall UI)
-
----
-
-**Status:** BACKEND V1 FREEZE APPROVED FOR UI INTEGRATION ✅
+Frozen By:
+- Bryan / Heimdall
