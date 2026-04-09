@@ -34,12 +34,16 @@ def save_outcomes(data: list[dict[str, Any]]) -> None:
 
 
 def record_outcome(
-    contact_id: int, result: str, notes: str | None = None
+    contact_id: int,
+    result: str,
+    notes: str | None = None,
+    channel: str | None = None,
 ) -> dict[str, Any]:
     """
     Record outcome of an action on a contact.
     
     Results: "success", "no_response", "deal", "lost", "other"
+    Channel: "sms", "email", "phone", etc.
     """
     outcomes = load_outcomes()
 
@@ -47,6 +51,7 @@ def record_outcome(
         "contact_id": contact_id,
         "result": result,
         "notes": notes,
+        "channel": channel,
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
 

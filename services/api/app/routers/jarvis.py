@@ -11,6 +11,7 @@ from app.services.jarvis_store import get_contact, load_contacts, mark_actioned
 from app.services.heimdall_scoring import score_contact
 from app.services.heimdall_tasks import create_task, complete_task, get_pending_tasks, load_tasks
 from app.services.heimdall_outcomes import record_outcome
+from app.services.heimdall_feedback import best_channel_for_contact, record_feedback, get_contact_feedback
 
 router = APIRouter(prefix="/api/jarvis", tags=["jarvis"])
 
@@ -19,13 +20,20 @@ def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def _choose_channel(contact: dict[str, Any]) -> str:
-    """Smart channel selection respecting consent preferences."""
+def _base_channel(contact: dict[str, Any]) -> str:
+    """Base channel selection from consent preferences."""
     if contact.get("consent_sms"):
         return "sms"
     if contact.get("consent_email"):
         return "email"
     return "phone"
+
+
+def _choose_channel(contact: dict[str, Any]) -> tuple[str, list[str]]:
+    """Smart channel selection with feedback-driven optimization."""
+    fallback = _base_channel(contact)
+    contact_id = int(contact.get("id", 0))
+    return best_channel_for_contact(contact_id=contact_id, fallback_channel=fallback)
 
 
 @router.get("/dashboard")
@@ -85,7 +93,7 @@ async def heimdall_hot_contacts() -> dict[str, Any]:
 
 @router.get("/next-actions")
 async def heimdall_next_actions() -> dict[str, Any]:
-    """Prioritized next actions with scoring explanations."""
+    """Prioritized next actions with scoring explanations and channel learning."""
     contacts = load_contacts()
 
     actions: list[dict[str, Any]] = []
@@ -94,7 +102,7 @@ async def heimdall_next_actions() -> dict[str, Any]:
             continue
 
         scoring = score_contact(contact)
-        channel = _choose_channel(contact)
+        channel, channel_reasons = _choose_channel(contact)
 
         action = {
             "contact_id": contact["id"],
@@ -105,7 +113,7 @@ async def heimdall_next_actions() -> dict[str, Any]:
             "channel": channel,
             "reason": contact.get("reason"),
             "script": contact.get("recommended_script"),
-            "why": scoring["why"],
+            "why": scoring["why"] + channel_reasons,
             "heat_score": contact.get("heat_score"),
             "days_stale": contact.get("days_stale"),
             "status": contact.get("status"),
@@ -125,7 +133,7 @@ async def heimdall_next_actions() -> dict[str, Any]:
 
 @router.post("/recommend-action")
 async def heimdall_recommend_action(payload: dict[str, Any]) -> dict[str, Any]:
-    """Get action recommendation with scoring explanation."""
+    """Get action recommendation with scoring explanation and channel feedback."""
     contact_id = payload.get("contact_id")
     context = payload.get("context")
 
@@ -137,7 +145,7 @@ async def heimdall_recommend_action(payload: dict[str, Any]) -> dict[str, Any]:
         raise HTTPException(status_code=404, detail="Contact not found")
 
     scoring = score_contact(contact)
-    channel = _choose_channel(contact)
+    channel, channel_reasons = _choose_channel(contact)
 
     recommendation = {
         "agent": "Heimdall",
@@ -148,7 +156,7 @@ async def heimdall_recommend_action(payload: dict[str, Any]) -> dict[str, Any]:
         "heimdall_score": scoring["score"],
         "reason": contact.get("reason"),
         "script": contact.get("recommended_script"),
-        "why": scoring["why"],
+        "why": scoring["why"] + channel_reasons,
         "context": context,
     }
 
@@ -267,15 +275,31 @@ async def heimdall_tasks() -> dict[str, Any]:
 
 @router.post("/record-outcome")
 async def heimdall_record_outcome(payload: dict[str, Any]) -> dict[str, Any]:
-    """Record the outcome of an action on a contact."""
+    """Record the outcome of an action on a contact with channel feedback."""
     contact_id = payload.get("contact_id")
     result = payload.get("result")
     notes = payload.get("notes")
+    channel = payload.get("channel")
 
     if not contact_id or not result:
-        raise HTTPException(status_code=400, detail="Missing contact_id or result")
+        raise HTTPException(status_code=400, detail="Missing required fields")
 
-    outcome = record_outcome(int(contact_id), result, notes)
+    outcome = record_outcome(
+        contact_id=int(contact_id),
+        result=result,
+        notes=notes,
+        channel=channel,
+    )
+
+    # Record channel feedback for learning
+    feedback = None
+    if channel:
+        feedback = record_feedback(
+            contact_id=int(contact_id),
+            channel=channel,
+            result=result,
+            notes=notes,
+        )
 
     event = {
         "agent": "Heimdall",
@@ -283,12 +307,29 @@ async def heimdall_record_outcome(payload: dict[str, Any]) -> dict[str, Any]:
         "contact_id": contact_id,
         "result": result,
         "notes": notes,
+        "channel": channel,
+        "feedback_recorded": feedback is not None,
     }
     log_event("outcome_recorded", event)
 
     return {
         "ok": True,
         "agent": "Heimdall",
-        "message": "Outcome recorded",
+        "message": "Outcome recorded with channel feedback",
         "outcome": outcome,
+        "feedback": feedback,
+    }
+
+
+@router.get("/feedback/{contact_id}")
+async def heimdall_feedback(contact_id: int) -> dict[str, Any]:
+    """View feedback history for a contact showing channel effectiveness."""
+    items = get_contact_feedback(contact_id)
+
+    return {
+        "ok": True,
+        "agent": "Heimdall",
+        "contact_id": contact_id,
+        "count": len(items),
+        "items": items,
     }

@@ -1,0 +1,25 @@
+{
+  "channel_feedback": [
+    {
+      "contact_id": 2,
+      "channel": "sms",
+      "result": "no_response",
+      "notes": "Text sent, no reply",
+      "created_at": "2026-04-09T00:16:23.851354+00:00"
+    },
+    {
+      "contact_id": 2,
+      "channel": "sms",
+      "result": "no_response",
+      "notes": "Text sent, no reply",
+      "created_at": "2026-04-09T00:17:21.726424+00:00"
+    },
+    {
+      "contact_id": 2,
+      "channel": "email",
+      "result": "success",
+      "notes": "Email got quick response",
+      "created_at": "2026-04-09T00:17:30.036846+00:00"
+    }
+  ]
+}
