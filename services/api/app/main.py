@@ -92,8 +92,17 @@ def _autoload_router_modules(app: FastAPI) -> int:
     package_path = Path(package.__file__).resolve().parent
 
     skip_modules = {"system_boot", "__init__"}
+    
+    # DEBUG: Log all discovered modules
+    all_modules = list(pkgutil.iter_modules([str(package_path)]))
+    log.info("DEBUG: Found %d router modules in %s", len(all_modules), package_path)
+    if any(m.name == "execution" for m in all_modules):
+        log.info("DEBUG: ✅ execution.py FOUND in discovery")
+    else:
+        log.info("DEBUG: ⚠️  execution.py NOT FOUND in discovery - discovered: %s", 
+                 [m.name for m in all_modules if m.name.startswith('e')])
 
-    for module_info in pkgutil.iter_modules([str(package_path)]):
+    for module_info in all_modules:
         mod_name = module_info.name
         if mod_name in skip_modules:
             continue
