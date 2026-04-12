@@ -33,8 +33,8 @@ def upgrade() -> None:
             sa.Column("active", sa.Boolean(), server_default=sa.text("false")),
             sa.Column("legal_profile_code", sa.String()),
             sa.Column("notes", sa.Text()),
-            sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()")),
-            sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()")),
+            sa.Column("created_at", sa.DateTime(), server_default=sa.text("CURRENT_TIMESTAMP")),
+            sa.Column("updated_at", sa.DateTime(), server_default=sa.text("CURRENT_TIMESTAMP")),
         )
         op.create_index("ix_brrrr_zones_id", "brrrr_zones", ["id"], unique=False)
         op.create_index("ix_brrrr_zones_code", "brrrr_zones", ["code"], unique=True)
@@ -46,3 +46,5 @@ def downgrade() -> None:
     op.drop_index("ix_brrrr_zones_code", table_name="brrrr_zones")
     op.drop_index("ix_brrrr_zones_id", table_name="brrrr_zones")
     op.drop_table("brrrr_zones")
+
+

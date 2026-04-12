@@ -51,11 +51,28 @@ from app.models.model_provider import ModelProvider
 
 # Governance: Engine State (Core governance layer)
 from app.models.engine_state import EngineStateRow  # noqa: F401
+from app.models.engine_readiness import EngineReadiness
+
+# Approval Workflow
+from app.models.pending_action import PendingAction, PendingActionStatus
+from app.models.sandbox_event import SandboxEvent
+from app.models.sandbox_human_label import HumanLabel
+
+# Legal
+from app.models.legal_profile import LegalProfile
 
 # Lead Acquisition Engine
 from app.models.lead_source import LeadSource
 from app.models.raw_lead import RawLead
 from app.models.normalized_lead import NormalizedLead
+
+# Execution Layer (V1)
+from app.models.execution_case import ExecutionCase
+from app.models.execution_event import ExecutionEvent
+from app.models.execution_policy import ExecutionPolicy
+from app.models.task import Task
+from app.models.lead_intake import LeadIntake
+from app.models.underwriter_assessment import UnderwriterAssessment
 
 __all__ = [
     "Professional",
@@ -97,8 +114,17 @@ __all__ = [
     "HumanLabel",
     # Governance
     "EngineReadiness",
+    # Legal
+    "LegalProfile",
     # Lead Acquisition Engine
     "LeadSource",
     "RawLead",
     "NormalizedLead",
+    # Execution Layer (V1)
+    "ExecutionCase",
+    "ExecutionEvent",
+    "ExecutionPolicy",
+    "Task",
+    "LeadIntake",
+    "UnderwriterAssessment",
 ]

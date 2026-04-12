@@ -31,8 +31,8 @@ def upgrade():
             sa.Column("eviction_strict", sa.Boolean(), server_default=sa.text("false")),
             sa.Column("license_required", sa.Boolean(), server_default=sa.text("false")),
             sa.Column("notes", sa.Text()),
-            sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()")),
-            sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()")),
+            sa.Column("created_at", sa.DateTime(), server_default=sa.text("CURRENT_TIMESTAMP")),
+            sa.Column("updated_at", sa.DateTime(), server_default=sa.text("CURRENT_TIMESTAMP")),
         )
         op.create_index("ix_legal_profiles_id", "legal_profiles", ["id"], unique=False)
         op.create_index("ix_legal_profiles_code", "legal_profiles", ["code"], unique=True)
@@ -44,3 +44,5 @@ def downgrade():
     op.drop_index("ix_legal_profiles_code", table_name="legal_profiles")
     op.drop_index("ix_legal_profiles_id", table_name="legal_profiles")
     op.drop_table("legal_profiles")
+
+

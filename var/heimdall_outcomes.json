@@ -53,6 +53,96 @@
       "channel": "email",
       "task_id": 1,
       "timestamp": "2026-04-09T02:20:35.309352+00:00"
+    },
+    {
+      "id": 4,
+      "contact_id": 101,
+      "result": "deal",
+      "notes": "Buyer committed and wants contract",
+      "channel": "sms",
+      "task_id": 4,
+      "timestamp": "2026-04-09T03:25:22.910450+00:00"
+    },
+    {
+      "id": 5,
+      "contact_id": 102,
+      "result": "success",
+      "notes": "Seller responded, wants follow-up call",
+      "channel": "email",
+      "task_id": 5,
+      "timestamp": "2026-04-09T03:25:23.509745+00:00"
+    },
+    {
+      "id": 6,
+      "contact_id": 103,
+      "result": "no_response",
+      "notes": "No reply after 2 attempts",
+      "channel": "sms",
+      "task_id": 6,
+      "timestamp": "2026-04-09T03:25:24.061081+00:00"
+    },
+    {
+      "id": 7,
+      "contact_id": 104,
+      "result": "lost",
+      "notes": "Went with another deal",
+      "channel": "email",
+      "task_id": 7,
+      "timestamp": "2026-04-09T03:25:24.634139+00:00"
+    },
+    {
+      "id": 8,
+      "contact_id": 105,
+      "result": "deal",
+      "notes": "Agreed to move forward after call",
+      "channel": "phone",
+      "task_id": 8,
+      "timestamp": "2026-04-09T03:25:25.188047+00:00"
+    },
+    {
+      "id": 9,
+      "contact_id": 106,
+      "result": "no_response",
+      "notes": "No engagement",
+      "channel": "sms",
+      "task_id": 9,
+      "timestamp": "2026-04-09T03:25:25.727233+00:00"
+    },
+    {
+      "id": 10,
+      "contact_id": 107,
+      "result": "success",
+      "notes": "Re-engaged successfully",
+      "channel": "email",
+      "task_id": 10,
+      "timestamp": "2026-04-09T03:25:26.276364+00:00"
+    },
+    {
+      "id": 11,
+      "contact_id": 108,
+      "result": "success",
+      "notes": "Answered immediately",
+      "channel": "phone",
+      "task_id": 11,
+      "timestamp": "2026-04-09T03:25:26.890074+00:00"
+    },
+    {
+      "id": 12,
+      "contact_id": 109,
+      "result": "lost",
+      "notes": "No longer interested",
+      "channel": "sms",
+      "task_id": 12,
+      "timestamp": "2026-04-09T03:25:27.486923+00:00"
+    },
+    {
+      "id": 13,
+      "contact_id": 110,
+      "result": "deal",
+      "notes": "Immediate interest and commitment",
+      "channel": "sms",
+      "task_id": 13,
+      "timestamp": "2026-04-09T03:25:28.052848+00:00"
     }
   ]
 }

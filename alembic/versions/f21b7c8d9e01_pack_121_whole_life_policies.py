@@ -30,8 +30,8 @@ def upgrade():
             sa.Column("loan_available", sa.Float(), server_default=sa.text("0.0")),
             sa.Column("status", sa.String(), server_default=sa.text("'active'")),
             sa.Column("notes", sa.Text()),
-            sa.Column("last_updated", sa.DateTime(timezone=True), server_default=sa.text("now()")),
-            sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()")),
+            sa.Column("last_updated", sa.DateTime(), server_default=sa.text("CURRENT_TIMESTAMP")),
+            sa.Column("created_at", sa.DateTime(), server_default=sa.text("CURRENT_TIMESTAMP")),
         )
         op.create_index("ix_whole_life_policies_id", "whole_life_policies", ["id"], unique=False)
         op.create_index("ix_whole_life_policies_policy_number", "whole_life_policies", ["policy_number"], unique=True)
@@ -43,3 +43,5 @@ def downgrade():
     op.drop_index("ix_whole_life_policies_policy_number", table_name="whole_life_policies")
     op.drop_index("ix_whole_life_policies_id", table_name="whole_life_policies")
     op.drop_table("whole_life_policies")
+
+

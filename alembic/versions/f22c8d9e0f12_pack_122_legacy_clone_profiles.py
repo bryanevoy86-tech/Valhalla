@@ -30,8 +30,8 @@ def upgrade():
             sa.Column("clones_per_batch", sa.Integer(), server_default=sa.text("1")),
             sa.Column("max_new_clones_per_year", sa.Integer(), server_default=sa.text("10")),
             sa.Column("notes", sa.Text()),
-            sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()")),
-            sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()")),
+            sa.Column("updated_at", sa.DateTime(), server_default=sa.text("CURRENT_TIMESTAMP")),
+            sa.Column("created_at", sa.DateTime(), server_default=sa.text("CURRENT_TIMESTAMP")),
         )
         op.create_index("ix_legacy_clone_profiles_id", "legacy_clone_profiles", ["id"], unique=False)
         op.create_index("ix_legacy_clone_profiles_name", "legacy_clone_profiles", ["name"], unique=True)

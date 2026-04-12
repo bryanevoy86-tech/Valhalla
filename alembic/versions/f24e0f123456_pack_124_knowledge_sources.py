@@ -28,8 +28,8 @@ def upgrade():
             sa.Column("active", sa.Boolean(), server_default=sa.text("true")),
             sa.Column("priority", sa.Integer(), server_default=sa.text("5")),
             sa.Column("notes", sa.Text()),
-            sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()")),
-            sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()")),
+            sa.Column("created_at", sa.DateTime(), server_default=sa.text("CURRENT_TIMESTAMP")),
+            sa.Column("updated_at", sa.DateTime(), server_default=sa.text("CURRENT_TIMESTAMP")),
         )
         op.create_index("ix_knowledge_sources_id", "knowledge_sources", ["id"], unique=False)
         op.create_index("ix_knowledge_sources_category", "knowledge_sources", ["category"], unique=False)

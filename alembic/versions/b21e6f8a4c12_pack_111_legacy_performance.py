@@ -37,7 +37,7 @@ def upgrade() -> None:
             sa.Column("risk_flag", sa.Boolean(), server_default=sa.text("false")),
             sa.Column("risk_note", sa.Text()),
             sa.Column("status", sa.String(), server_default=sa.text("'normal'")),
-            sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()")),
+            sa.Column("created_at", sa.DateTime(), server_default=sa.text("CURRENT_TIMESTAMP")),
         )
         op.create_index("ix_legacy_performance_id", "legacy_performance", ["id"], unique=False)
         op.create_index("ix_legacy_performance_legacy_code", "legacy_performance", ["legacy_code"], unique=False)

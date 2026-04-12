@@ -22,7 +22,7 @@ def upgrade() -> None:
         op.create_table(
             "system_health_reports",
             sa.Column("id", sa.Integer, primary_key=True),
-            sa.Column("run_at", sa.DateTime(timezone=True), server_default=sa.text("now()")),
+            sa.Column("run_at", sa.DateTime(), server_default=sa.text("CURRENT_TIMESTAMP")),
             sa.Column("period_label", sa.String(), nullable=False),
             sa.Column("errors_count", sa.Integer(), server_default=sa.text("0")),
             sa.Column("critical_errors", sa.Integer(), server_default=sa.text("0")),
@@ -40,3 +40,5 @@ def downgrade() -> None:
     op.drop_index("ix_system_health_reports_period_label", table_name="system_health_reports")
     op.drop_index("ix_system_health_reports_id", table_name="system_health_reports")
     op.drop_table("system_health_reports")
+
+

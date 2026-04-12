@@ -41,6 +41,76 @@
       "result": "deal",
       "notes": "Contract signed and sent to legal.",
       "created_at": "2026-04-09T02:20:35.318176+00:00"
+    },
+    {
+      "contact_id": 101,
+      "channel": "sms",
+      "result": "deal",
+      "notes": "Buyer committed and wants contract",
+      "created_at": "2026-04-09T03:25:22.911155+00:00"
+    },
+    {
+      "contact_id": 102,
+      "channel": "email",
+      "result": "success",
+      "notes": "Seller responded, wants follow-up call",
+      "created_at": "2026-04-09T03:25:23.510600+00:00"
+    },
+    {
+      "contact_id": 103,
+      "channel": "sms",
+      "result": "no_response",
+      "notes": "No reply after 2 attempts",
+      "created_at": "2026-04-09T03:25:24.061786+00:00"
+    },
+    {
+      "contact_id": 104,
+      "channel": "email",
+      "result": "lost",
+      "notes": "Went with another deal",
+      "created_at": "2026-04-09T03:25:24.635297+00:00"
+    },
+    {
+      "contact_id": 105,
+      "channel": "phone",
+      "result": "deal",
+      "notes": "Agreed to move forward after call",
+      "created_at": "2026-04-09T03:25:25.188644+00:00"
+    },
+    {
+      "contact_id": 106,
+      "channel": "sms",
+      "result": "no_response",
+      "notes": "No engagement",
+      "created_at": "2026-04-09T03:25:25.727851+00:00"
+    },
+    {
+      "contact_id": 107,
+      "channel": "email",
+      "result": "success",
+      "notes": "Re-engaged successfully",
+      "created_at": "2026-04-09T03:25:26.277721+00:00"
+    },
+    {
+      "contact_id": 108,
+      "channel": "phone",
+      "result": "success",
+      "notes": "Answered immediately",
+      "created_at": "2026-04-09T03:25:26.890889+00:00"
+    },
+    {
+      "contact_id": 109,
+      "channel": "sms",
+      "result": "lost",
+      "notes": "No longer interested",
+      "created_at": "2026-04-09T03:25:27.487473+00:00"
+    },
+    {
+      "contact_id": 110,
+      "channel": "sms",
+      "result": "deal",
+      "notes": "Immediate interest and commitment",
+      "created_at": "2026-04-09T03:25:28.053389+00:00"
     }
   ]
 }

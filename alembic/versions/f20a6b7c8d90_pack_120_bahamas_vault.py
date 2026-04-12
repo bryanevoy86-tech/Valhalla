@@ -29,8 +29,8 @@ def upgrade():
             sa.Column("residency_ready", sa.Boolean(), server_default=sa.text("false")),
             sa.Column("resort_search_active", sa.Boolean(), server_default=sa.text("false")),
             sa.Column("notes", sa.Text()),
-            sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()")),
-            sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()")),
+            sa.Column("updated_at", sa.DateTime(), server_default=sa.text("CURRENT_TIMESTAMP")),
+            sa.Column("created_at", sa.DateTime(), server_default=sa.text("CURRENT_TIMESTAMP")),
         )
         op.create_index("ix_bahamas_vault_id", "bahamas_vault", ["id"], unique=False)
         op.create_index("ix_bahamas_vault_residency_ready", "bahamas_vault", ["residency_ready"], unique=False)
@@ -40,3 +40,5 @@ def downgrade():
     op.drop_index("ix_bahamas_vault_residency_ready", table_name="bahamas_vault")
     op.drop_index("ix_bahamas_vault_id", table_name="bahamas_vault")
     op.drop_table("bahamas_vault")
+
+

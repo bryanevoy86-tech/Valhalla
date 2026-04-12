@@ -29,8 +29,8 @@ def upgrade():
             sa.Column("travel_percent_cap", sa.Float(), server_default=sa.text("0.15")),
             sa.Column("auto_flag_red", sa.Boolean(), server_default=sa.text("true")),
             sa.Column("notes", sa.Text()),
-            sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()")),
-            sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()")),
+            sa.Column("created_at", sa.DateTime(), server_default=sa.text("CURRENT_TIMESTAMP")),
+            sa.Column("updated_at", sa.DateTime(), server_default=sa.text("CURRENT_TIMESTAMP")),
         )
         op.create_index("ix_tax_risk_profiles_id", "tax_risk_profiles", ["id"], unique=False)
         op.create_index("ix_tax_risk_profiles_name", "tax_risk_profiles", ["name"], unique=True)
@@ -42,3 +42,5 @@ def downgrade():
     op.drop_index("ix_tax_risk_profiles_name", table_name="tax_risk_profiles")
     op.drop_index("ix_tax_risk_profiles_id", table_name="tax_risk_profiles")
     op.drop_table("tax_risk_profiles")
+
+

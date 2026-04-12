@@ -38,8 +38,8 @@ def upgrade():
             sa.Column("current_value", sa.Float(), server_default=sa.text("0.0")),
             sa.Column("status", sa.String(), server_default=sa.text("'acquisition'")),
             sa.Column("notes", sa.Text()),
-            sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()")),
-            sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()")),
+            sa.Column("created_at", sa.DateTime(), server_default=sa.text("CURRENT_TIMESTAMP")),
+            sa.Column("updated_at", sa.DateTime(), server_default=sa.text("CURRENT_TIMESTAMP")),
         )
         op.create_index("ix_rental_properties_id", "rental_properties", ["id"], unique=False)
         op.create_index("ix_rental_properties_legacy_code", "rental_properties", ["legacy_code"], unique=False)
@@ -53,3 +53,5 @@ def downgrade():
     op.drop_index("ix_rental_properties_legacy_code", table_name="rental_properties")
     op.drop_index("ix_rental_properties_id", table_name="rental_properties")
     op.drop_table("rental_properties")
+
+

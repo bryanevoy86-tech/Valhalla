@@ -41,7 +41,7 @@ def upgrade() -> None:
             sa.Column("shield_mode_active", sa.Boolean(), server_default=sa.text("false")),
             sa.Column("black_ice_armed", sa.Boolean(), server_default=sa.text("false")),
             sa.Column("bahamas_ready", sa.Boolean(), server_default=sa.text("false")),
-            sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()")),
+            sa.Column("created_at", sa.DateTime(), server_default=sa.text("CURRENT_TIMESTAMP")),
         )
         op.create_index("ix_empire_snapshots_id", "empire_snapshots", ["id"], unique=False)
         op.create_index("ix_empire_snapshots_period", "empire_snapshots", ["period"], unique=False)

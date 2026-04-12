@@ -28,8 +28,8 @@ def upgrade() -> None:
     op.create_table(
         'leads',
         sa.Column('id', sa.Integer, primary_key=True, index=True),
-        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.func.now()),
-        sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.func.now(), onupdate=sa.func.now()),
+        sa.Column('created_at', sa.DateTime(), server_default=sa.func.now()),
+        sa.Column('updated_at', sa.DateTime(), server_default=sa.func.now(), onupdate=sa.func.now()),
         sa.Column('source', sa.String(255), nullable=True, index=True),
         sa.Column('lead_name', sa.String(255), nullable=True),
         sa.Column('lead_email', sa.String(255), nullable=True),
@@ -47,8 +47,8 @@ def upgrade() -> None:
     op.create_table(
         'deals',
         sa.Column('id', sa.Integer, primary_key=True, index=True),
-        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.func.now()),
-        sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.func.now(), onupdate=sa.func.now()),
+        sa.Column('created_at', sa.DateTime(), server_default=sa.func.now()),
+        sa.Column('updated_at', sa.DateTime(), server_default=sa.func.now(), onupdate=sa.func.now()),
         sa.Column('lead_id', sa.Integer, sa.ForeignKey('leads.id'), nullable=False, index=True),
         sa.Column('title', sa.String(255), nullable=False),
         sa.Column('stage', sa.String(50), nullable=False, default='lead_received', index=True),
@@ -66,8 +66,8 @@ def upgrade() -> None:
     op.create_table(
         'offers',
         sa.Column('id', sa.Integer, primary_key=True, index=True),
-        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.func.now()),
-        sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.func.now(), onupdate=sa.func.now()),
+        sa.Column('created_at', sa.DateTime(), server_default=sa.func.now()),
+        sa.Column('updated_at', sa.DateTime(), server_default=sa.func.now(), onupdate=sa.func.now()),
         sa.Column('deal_id', sa.Integer, sa.ForeignKey('deals.id'), nullable=False, index=True),
         sa.Column('offer_price', sa.Numeric(15, 2), nullable=False),
         sa.Column('emd_amount', sa.Numeric(15, 2), nullable=True),
@@ -81,8 +81,8 @@ def upgrade() -> None:
     op.create_table(
         'buyers',
         sa.Column('id', sa.Integer, primary_key=True, index=True),
-        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.func.now()),
-        sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.func.now(), onupdate=sa.func.now()),
+        sa.Column('created_at', sa.DateTime(), server_default=sa.func.now()),
+        sa.Column('updated_at', sa.DateTime(), server_default=sa.func.now(), onupdate=sa.func.now()),
         sa.Column('full_name', sa.String(255), nullable=False),
         sa.Column('email', sa.String(255), nullable=True, index=True),
         sa.Column('phone', sa.String(20), nullable=True),
@@ -97,8 +97,8 @@ def upgrade() -> None:
     op.create_table(
         'contracts',
         sa.Column('id', sa.Integer, primary_key=True, index=True),
-        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.func.now()),
-        sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.func.now(), onupdate=sa.func.now()),
+        sa.Column('created_at', sa.DateTime(), server_default=sa.func.now()),
+        sa.Column('updated_at', sa.DateTime(), server_default=sa.func.now(), onupdate=sa.func.now()),
         sa.Column('deal_id', sa.Integer, sa.ForeignKey('deals.id'), nullable=True, index=True),
         sa.Column('offer_id', sa.Integer, sa.ForeignKey('offers.id'), nullable=True, index=True),
         sa.Column('status', sa.String(50), nullable=False, default='draft', index=True),
@@ -113,7 +113,7 @@ def upgrade() -> None:
     op.create_table(
         'audit_logs',
         sa.Column('id', sa.Integer, primary_key=True, index=True),
-        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.func.now()),
+        sa.Column('created_at', sa.DateTime(), server_default=sa.func.now()),
         sa.Column('entity_type', sa.String(50), nullable=False, index=True),
         sa.Column('entity_id', sa.Integer, nullable=False, index=True),
         sa.Column('action', sa.String(100), nullable=False, index=True),
@@ -127,7 +127,7 @@ def upgrade() -> None:
     op.create_table(
         'buyer_matches',
         sa.Column('id', sa.Integer, primary_key=True, index=True),
-        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.func.now()),
+        sa.Column('created_at', sa.DateTime(), server_default=sa.func.now()),
         sa.Column('deal_id', sa.Integer, sa.ForeignKey('deals.id'), nullable=False, index=True),
         sa.Column('buyer_id', sa.Integer, sa.ForeignKey('buyers.id'), nullable=False, index=True),
         sa.Column('match_score', sa.Numeric(8, 2), nullable=True),
@@ -139,7 +139,7 @@ def upgrade() -> None:
     op.create_table(
         'deal_stage_history',
         sa.Column('id', sa.Integer, primary_key=True, index=True),
-        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.func.now()),
+        sa.Column('created_at', sa.DateTime(), server_default=sa.func.now()),
         sa.Column('deal_id', sa.Integer, sa.ForeignKey('deals.id'), nullable=False, index=True),
         sa.Column('old_stage', sa.String(50), nullable=True),
         sa.Column('new_stage', sa.String(50), nullable=False),
@@ -158,3 +158,4 @@ def downgrade() -> None:
     op.drop_table('offers')
     op.drop_table('deals')
     op.drop_table('leads')
+

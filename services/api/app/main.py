@@ -11,6 +11,7 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse, PlainTextResponse
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.routers.system_boot import router as system_boot_router
 from app.routers import jarvis
@@ -135,10 +136,31 @@ app.include_router(system_boot_router)
 # Register Heimdall/Jarvis router
 app.include_router(jarvis.router)
 
+# Import all models upfront to register them with Base.metadata ONCE
+# This prevents duplicate table registration when routers import models
+from app import models  # noqa: F401
+
 # Auto-load all other routers from app/routers
 loaded_router_count = _autoload_router_modules(app)
 log.info("Valhalla startup complete. Loaded %s router modules.", loaded_router_count)
 
+# ============================================================================
+# CORS Middleware - Enable browser requests from WeWeb
+# ============================================================================
+from app.core.settings import settings
+
+# Add CORS middleware if origins are configured
+if settings.cors_allowed_origins is not None and len(settings.cors_allowed_origins) > 0:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors_allowed_origins or ["*"],
+        allow_credentials=False,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+    log.info("CORS enabled for origins: %s", settings.cors_allowed_origins)
+else:
+    log.warning("CORS not configured - set CORS_ALLOWED_ORIGINS env var for browser requests")
 
 # ============================================================================
 # Health/Status Endpoints

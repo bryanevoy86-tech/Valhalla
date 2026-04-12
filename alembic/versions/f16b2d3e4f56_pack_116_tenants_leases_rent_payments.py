@@ -26,7 +26,7 @@ def upgrade():
             sa.Column("phone", sa.String()),
             sa.Column("notes", sa.String()),
             sa.Column("active", sa.Boolean(), server_default=sa.text("true")),
-            sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()")),
+            sa.Column("created_at", sa.DateTime(), server_default=sa.text("CURRENT_TIMESTAMP")),
         )
         op.create_index("ix_tenants_id", "tenants", ["id"], unique=False)
         op.create_index("ix_tenants_active", "tenants", ["active"], unique=False)
@@ -43,7 +43,7 @@ def upgrade():
             sa.Column("frequency", sa.String(), server_default=sa.text("'monthly'")),
             sa.Column("deposit_amount", sa.Float(), server_default=sa.text("0.0")),
             sa.Column("status", sa.String(), server_default=sa.text("'active'")),
-            sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()")),
+            sa.Column("created_at", sa.DateTime(), server_default=sa.text("CURRENT_TIMESTAMP")),
         )
         op.create_index("ix_leases_id", "leases", ["id"], unique=False)
         op.create_index("ix_leases_status", "leases", ["status"], unique=False)
@@ -58,8 +58,8 @@ def upgrade():
             sa.Column("paid_date", sa.DateTime()),
             sa.Column("status", sa.String(), server_default=sa.text("'pending'")),
             sa.Column("method", sa.String()),
-            sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()")),
-            sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()")),
+            sa.Column("created_at", sa.DateTime(), server_default=sa.text("CURRENT_TIMESTAMP")),
+            sa.Column("updated_at", sa.DateTime(), server_default=sa.text("CURRENT_TIMESTAMP")),
         )
         op.create_index("ix_rent_payments_id", "rent_payments", ["id"], unique=False)
         op.create_index("ix_rent_payments_status", "rent_payments", ["status"], unique=False)
@@ -75,3 +75,5 @@ def downgrade():
     op.drop_index("ix_tenants_active", table_name="tenants")
     op.drop_index("ix_tenants_id", table_name="tenants")
     op.drop_table("tenants")
+
+

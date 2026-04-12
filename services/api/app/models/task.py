@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, ForeignKey
 from app.db.base_class import Base
 import datetime
 
@@ -10,7 +10,12 @@ class Task(Base):
     title = Column(String, nullable=False)
     description = Column(Text)
 
-    category = Column(String, default="general")  # "legal", "tax", "ops", "family", etc.
+    # Execution layer fields (V1)
+    case_id = Column(Integer, ForeignKey("execution_cases.id"), nullable=True, index=True)
+    sequence = Column(Integer, nullable=True)  # Order in task list (execution tasks)
+    due_days = Column(Integer, nullable=True)  # Days until due (execution tasks)
+
+    category = Column(String, default="general")  # "legal", "tax", "ops", "family", "verification", "contact", "analysis", "decision"
     assignee = Column(String, default="king")     # "king", "queen", "heimdall", "va-team", etc.
 
     status = Column(String, default="pending")    # pending / in-progress / done / blocked

@@ -29,8 +29,8 @@ def upgrade():
             sa.Column("reduce_marketing_spend", sa.Boolean(), server_default=sa.text("true")),
             sa.Column("stop_fun_fund_increase", sa.Boolean(), server_default=sa.text("true")),
             sa.Column("notes", sa.Text()),
-            sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()")),
-            sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()")),
+            sa.Column("created_at", sa.DateTime(), server_default=sa.text("CURRENT_TIMESTAMP")),
+            sa.Column("updated_at", sa.DateTime(), server_default=sa.text("CURRENT_TIMESTAMP")),
         )
         op.create_index("ix_shield_profiles_id", "shield_profiles", ["id"], unique=False)
         op.create_index("ix_shield_profiles_name", "shield_profiles", ["name"], unique=True)
@@ -40,3 +40,5 @@ def downgrade():
     op.drop_index("ix_shield_profiles_name", table_name="shield_profiles")
     op.drop_index("ix_shield_profiles_id", table_name="shield_profiles")
     op.drop_table("shield_profiles")
+
+

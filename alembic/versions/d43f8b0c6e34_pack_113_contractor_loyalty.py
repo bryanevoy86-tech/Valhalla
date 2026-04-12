@@ -40,8 +40,8 @@ def upgrade() -> None:
             sa.Column("vault_balance", sa.Float(), server_default=sa.text("0.0")),
             sa.Column("jv_eligible", sa.Boolean(), server_default=sa.text("false")),
             sa.Column("notes", sa.Text()),
-            sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()")),
-            sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()")),
+            sa.Column("created_at", sa.DateTime(), server_default=sa.text("CURRENT_TIMESTAMP")),
+            sa.Column("updated_at", sa.DateTime(), server_default=sa.text("CURRENT_TIMESTAMP")),
         )
         op.create_index("ix_contractor_loyalty_vaults_id", "contractor_loyalty_vaults", ["id"], unique=False)
 
@@ -51,3 +51,5 @@ def downgrade() -> None:
     op.drop_index("ix_contractor_loyalty_vaults_id", table_name="contractor_loyalty_vaults")
     op.drop_table("contractor_loyalty_vaults")
     op.drop_table("contractor_ranks")
+
+

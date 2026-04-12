@@ -31,7 +31,7 @@ def upgrade():
             sa.Column("quality_score", sa.Float(), server_default=sa.text("0.0")),
             sa.Column("error_message", sa.Text()),
             sa.Column("notes", sa.Text()),
-            sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()")),
+            sa.Column("created_at", sa.DateTime(), server_default=sa.text("CURRENT_TIMESTAMP")),
         )
         op.create_index("ix_ai_training_jobs_id", "ai_training_jobs", ["id"], unique=False)
         op.create_index("ix_ai_training_jobs_engine_name", "ai_training_jobs", ["engine_name"], unique=False)

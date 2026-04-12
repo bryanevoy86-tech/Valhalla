@@ -30,10 +30,10 @@ def upgrade() -> None:
     sa.Column('is_primary', sa.Boolean(), nullable=False),
     sa.Column('health_score', sa.Float(), nullable=False),
     sa.Column('clone_count', sa.Integer(), nullable=False),
-    sa.Column('last_clone_at', sa.DateTime(timezone=True), nullable=True),
+    sa.Column('last_clone_at', sa.DateTime(), nullable=True),
     sa.Column('notes', sa.Text(), nullable=True),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=False),
+    sa.Column('created_at', sa.DateTime(), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=False),
+    sa.Column('updated_at', sa.DateTime(), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=False),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_legacy_systems_code_name'), 'legacy_systems', ['code_name'], unique=False)
@@ -52,3 +52,4 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_legacy_systems_code_name'), table_name='legacy_systems')
     op.drop_table('legacy_systems')
     # ### end Alembic commands ###
+
