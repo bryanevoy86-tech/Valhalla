@@ -37,30 +37,10 @@ def verify_chain(db: Session, sample_last_n: int = 100):
     return {"ok": True, "checked": len(rows)-start}
 
 def record_telemetry(db: Session, category: str, name: str, latency_ms: int | None, ok: bool, dim: str | None):
-    sample = float(os.getenv("TELEMETRY_SAMPLE_RATE","1.0"))
-    if sample < 1.0:
-        import random
-        if random.random() > sample:
-            return {"sampled": False}
-    sla = int(os.getenv("TELEMETRY_SLA_MS","800"))
-    anomaly = bool(latency_ms and latency_ms > sla)
-    row = TelemetryEvent(category=category, name=name, latency_ms=latency_ms, ok=ok, dim=dim, anomaly=anomaly)
-    db.add(row); db.commit(); db.refresh(row)
-    _rollup(db, row)
-    return {"id": row.id, "anomaly": anomaly}
+    """Legacy telemetry function - telemetry system has been replaced with integrity tracking"""
+    return {"status": "skipped", "reason": "telemetry_deprecated"}
 
-def _rollup(db: Session, ev: TelemetryEvent):
-    day = datetime.date.today().strftime("%Y-%m-%d")
-    ctr = db.query(TelemetryCounter).filter_by(yyyymmdd=day, category=ev.category, name=ev.name).first()
-    if not ctr:
-        ctr = TelemetryCounter(yyyymmdd=day, category=ev.category, name=ev.name, count_ok=0, count_err=0, p95_ms=0)
-        db.add(ctr); db.commit(); db.refresh(ctr)
-    if ev.ok: ctr.count_ok += 1
-    else: ctr.count_err += 1
-    q = db.query(TelemetryEvent.latency_ms).filter(TelemetryEvent.name==ev.name, TelemetryEvent.category==ev.category, TelemetryEvent.latency_ms != None).order_by(TelemetryEvent.id.desc()).limit(200).all()
-    samples = [r[0] for r in q if r[0] is not None]
-    if samples:
-        k = sorted(samples)
-        idx = max(0, int(round(0.95*len(k))) - 1)
-        ctr.p95_ms = k[idx]
+def _rollup(db: Session, ev):
+    """Legacy rollup function - no longer used"""
+    pass
     db.commit()
