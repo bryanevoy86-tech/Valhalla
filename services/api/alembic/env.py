@@ -32,7 +32,7 @@ from app.models.contracts import (
     ContractState,
     SignProvider,
 )
-from app.models.intake import LeadIntake
+from app.models.lead_intake import LeadIntake
 from app.models.notify import Outbox
 from app.loki.models import LokiReview, LokiFinding
 from app.god.models import GodReviewCase, GodReviewEvent
