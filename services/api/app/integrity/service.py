@@ -2,7 +2,7 @@
 import os, hmac, hashlib, json, datetime
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from app.integrity.models import IntegrityEvent, TelemetryEvent, TelemetryCounter
+from app.integrity.models import IntegrityEvent
 
 def _get_prev_hash(db: Session):
     row = db.query(IntegrityEvent).order_by(IntegrityEvent.id.desc()).first()

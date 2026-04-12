@@ -6,6 +6,41 @@ from datetime import datetime
 from app.models.contracts import ContractState, ContractPartyRole, ContractDocKind, SignProvider
 
 
+# Template management schemas
+class TemplateIn(BaseModel):
+    name: str
+    version: str = "1.0"
+    notes: Optional[str] = None
+    body_text: str
+
+
+class TemplateOut(BaseModel):
+    id: int
+    name: str
+    version: str
+    notes: Optional[str]
+    body_text: str
+    
+    model_config = ConfigDict(from_attributes=True)
+
+
+# Contract generation schemas
+class GenerateIn(BaseModel):
+    template_id: int
+    filename: str
+    data: Dict[str, Any] = Field(default_factory=dict)
+
+
+class RecordOut(BaseModel):
+    id: int
+    template_id: int
+    filename: str
+    pdf_path: Optional[str] = None
+    created_at: Optional[datetime] = None
+    
+    model_config = ConfigDict(from_attributes=True)
+
+
 class PartyIn(BaseModel):
     role: ContractPartyRole
     name: str

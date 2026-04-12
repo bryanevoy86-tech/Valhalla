@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from typing import List
-from app.freeze.models import FreezeRule, FreezeEvent
+from app.freeze.models import FreezeRule
+from app.models.freeze_events import FreezeEvent
 from app.freeze.schemas import FreezeRuleCreate
 
 

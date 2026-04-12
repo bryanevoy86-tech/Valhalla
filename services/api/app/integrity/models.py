@@ -7,12 +7,9 @@ from app.core.db import Base
 class IntegrityEvent(Base):
     """
     Integrity / telemetry event log entry.
-
-    This is mapped to the existing `telemetry_events` table so we don't
-    duplicate models under a different name.
     """
 
-    __tablename__ = "telemetry_events"
+    __tablename__ = "integrity_events"
 
     id = Column(Integer, primary_key=True, index=True)
 

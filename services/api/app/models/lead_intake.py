@@ -28,7 +28,7 @@ class LeadIntake(Base):
         normalized_at: When execution layer processed it
     """
     
-    __tablename__ = "lead_intake"
+    __tablename__ = "lead_intake_exec"
     
     id = Column(Integer, primary_key=True, index=True)
     raw_text = Column(Text, nullable=False)
