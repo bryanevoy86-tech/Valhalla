@@ -7,7 +7,7 @@ from ..core.db import Base
 
 
 class LeadIntake(Base):
-    __tablename__ = "lead_intake"
+    __tablename__ = "lead_intake_legacy"
     
     id = Column(Integer, primary_key=True)
     source = Column(String(80), nullable=True)            # "webform","phone","import"
