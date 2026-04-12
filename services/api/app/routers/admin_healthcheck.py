@@ -13,7 +13,7 @@ from sqlalchemy.exc import OperationalError, ProgrammingError
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
-from app.freeze.models import FreezeEvent
+from app.models.freeze_events import FreezeEvent
 from app.routers.admin_dependencies import RECOMMENDED_DEPS, _build_dep_status
 from app.routers.admin_heimdall import _get_discord_status, AUTO_PR_STATUS_FILE
 

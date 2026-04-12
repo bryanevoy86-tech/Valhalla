@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from sqlalchemy.orm import Session
-from app.scheduler.models import ScheduledJob
+from app.models.scheduled_job import ScheduledJob
 from app.scheduler.schemas import JobCreate
 
 

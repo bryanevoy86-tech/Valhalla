@@ -3,7 +3,7 @@ PACK SK: Arbitrage / Side-Hustle Opportunity Tracker
 Service functions for opportunity management and performance tracking
 """
 from sqlalchemy.orm import Session
-from app.models.opportunity_tracker import (
+from app.models.opportunity import (
     Opportunity, OpportunityScore, OpportunityPerformance, OpportunitySummary
 )
 from datetime import datetime

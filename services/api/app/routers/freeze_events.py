@@ -9,7 +9,7 @@ from sqlalchemy.exc import OperationalError, ProgrammingError
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
-from app.freeze.models import FreezeEvent
+from app.models.freeze_events import FreezeEvent
 from app.schemas.freeze_events import FreezeEventList, FreezeEventRead
 
 router = APIRouter(

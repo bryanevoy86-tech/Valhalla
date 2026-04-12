@@ -79,3 +79,26 @@ def is_contact_allowed(rules: Dict[str, Any], local_weekday: int, local_hhmm: st
         if start <= now_t <= end:
             return True, "within_window"
     return False, "outside_contact_window"
+
+
+def check_contact_window(db: Session, province: str, market: str, weekday: int, hhmm: str) -> bool:
+    """
+    Wrapper to check if contact is allowed for a given province/market and time.
+    Used by messaging router to determine if outreach is permitted.
+    
+    Args:
+        db: Database session
+        province: Province code (e.g., "ON", "BC")
+        market: Market name (e.g., "Toronto", "ALL")
+        weekday: Day of week (0=Mon, 6=Sun)
+        hhmm: Time as "HH:MM" string
+        
+    Returns:
+        bool: True if contact is allowed, False otherwise
+    """
+    _, rules = get_effective_policy(db, province, market)
+    if not rules:
+        return True  # Default: allow if no policy defined
+    
+    allowed, _reason = is_contact_allowed(rules, weekday, hhmm, "EMAIL")
+    return allowed

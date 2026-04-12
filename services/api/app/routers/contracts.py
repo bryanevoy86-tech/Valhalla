@@ -11,7 +11,8 @@ from sqlalchemy.orm import Session
 from ..core.db import get_db
 from ..core.dependencies import require_builder_key
 from ..core.contract_render import render_text, make_pdf
-from ..models.contracts import ContractTemplate, ContractRecord
+from ..models.contracts import ContractTemplate
+from ..models.contract_record import ContractRecord
 from ..schemas.contracts import TemplateIn, TemplateOut, GenerateIn, RecordOut
 
 router = APIRouter(prefix="/contracts", tags=["contracts"])

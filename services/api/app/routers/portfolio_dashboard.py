@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.core.db import get_db
 from app.models.deal import Deal
-from app.freeze.models import FreezeEvent
+from app.models.freeze_events import FreezeEvent
 from app.models.match import DealBrief
 from app.schemas.portfolio import (
     DealStatusCounts,
