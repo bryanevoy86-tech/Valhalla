@@ -8,6 +8,7 @@ from app.freeze.schemas import (
     FreezeRuleResponse,
     FreezeEventResponse,
 )
+from app.models.freeze_events import FreezeEvent
 from app.freeze.service import (
     create_rule,
     list_rules,

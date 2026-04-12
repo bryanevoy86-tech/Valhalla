@@ -9,13 +9,14 @@ from app.schemas.opportunity_tracker import (
     OpportunitySchema, OpportunityScoreSchema, OpportunityPerformanceSchema,
     OpportunitySummarySchema, OpportunityComparisonResponse
 )
-from app.services.opportunity_tracker import (
-    create_opportunity, get_opportunity, list_opportunities, update_opportunity_status,
-    create_opportunity_score,
-    log_performance, get_performance_logs,
-    create_opportunity_summary, get_opportunity_summary,
-    calculate_opportunity_metrics
-)
+# Opportunity tracker service - commented pending model completion
+# from app.services.opportunity_tracker import (
+#     create_opportunity, get_opportunity, list_opportunities, update_opportunity_status,
+#     create_opportunity_score,
+#     log_performance, get_performance_logs,
+#     create_opportunity_summary, get_opportunity_summary,
+#     calculate_opportunity_metrics
+# )
 
 router = APIRouter(prefix="/opportunities", tags=["opportunities"])
 
