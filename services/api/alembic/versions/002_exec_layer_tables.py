@@ -79,8 +79,8 @@ def upgrade() -> None:
         sa.Column('confidence_score', sa.Float(), nullable=False, server_default='0'),
         sa.Column('risk_score', sa.Float(), nullable=False, server_default='0'),
         sa.Column('confidence_level', sa.String(20), nullable=False, server_default='low'),
-        sa.Column('safe_mode', sa.Boolean(), nullable=False, server_default=False),
-        sa.Column('blocked', sa.Boolean(), nullable=False, server_default=False),
+        sa.Column('safe_mode', sa.Boolean(), nullable=False, server_default=sa.text("false")),
+        sa.Column('blocked', sa.Boolean(), nullable=False, server_default=sa.text("false")),
         sa.Column('reason', sa.Text(), nullable=True),
         sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.func.now()),
     )
