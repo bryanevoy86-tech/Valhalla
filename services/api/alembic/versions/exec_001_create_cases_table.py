@@ -1,7 +1,7 @@
 """Create execution layer tables - final version
 
 Revision ID: exec_001_create_cases_table
-Revises: 20260330_add_updated_ts_to_deals
+Revises: add_deal_pipeline_columns
 Create Date: 2026-04-13 21:00:00.000000
 
 """
@@ -9,7 +9,7 @@ from alembic import op
 import sqlalchemy as sa
 
 revision = 'exec_001_create_cases_table'
-down_revision = '20260330_add_updated_ts_to_deals'
+down_revision = 'add_deal_pipeline_columns'
 branch_labels = None
 depends_on = None
 
