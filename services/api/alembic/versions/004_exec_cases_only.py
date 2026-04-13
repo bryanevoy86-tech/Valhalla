@@ -17,27 +17,32 @@ depends_on = None
 
 def upgrade() -> None:
     """Create just execution_cases table"""
-    op.create_table(
-        'execution_cases',
-        sa.Column('id', sa.Integer(), nullable=False, primary_key=True),
-        sa.Column('intake_id', sa.Integer(), nullable=False),
-        sa.Column('assessment_id', sa.Integer(), nullable=True),
-        sa.Column('case_type', sa.String(50), nullable=False, server_default='unknown'),
-        sa.Column('route_target', sa.String(100), nullable=False, server_default=''),
-        sa.Column('current_stage', sa.String(50), nullable=False, server_default='intake'),
-        sa.Column('current_status', sa.String(50), nullable=False, server_default='pending'),
-        sa.Column('safe_mode', sa.Boolean(), nullable=False, server_default=sa.text("false")),
-        sa.Column('blocked', sa.Boolean(), nullable=False, server_default=sa.text("false")),
-        sa.Column('blocker_reason', sa.Text(), nullable=True),
-        sa.Column('next_action', sa.Text(), nullable=True),
-        sa.Column('created_by', sa.String(50), nullable=False, server_default='system'),
-        sa.Column('updated_by', sa.String(50), nullable=False, server_default='system'),
-        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.func.now()),
-        sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.func.now()),
-    )
-    # Add FK separately to avoid issues
-    op.create_foreign_key('fk_execution_cases_intake', 'execution_cases', 'lead_intake_exec', ['intake_id'], ['id'])
-    op.create_unique_constraint('uq_execution_cases_intake', 'execution_cases', ['intake_id'])
+    # Check if table already exists to prevent duplicate creation
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    
+    if 'execution_cases' not in inspector.get_table_names():
+        op.create_table(
+            'execution_cases',
+            sa.Column('id', sa.Integer(), nullable=False, primary_key=True),
+            sa.Column('intake_id', sa.Integer(), nullable=False),
+            sa.Column('assessment_id', sa.Integer(), nullable=True),
+            sa.Column('case_type', sa.String(50), nullable=False, server_default='unknown'),
+            sa.Column('route_target', sa.String(100), nullable=False, server_default=''),
+            sa.Column('current_stage', sa.String(50), nullable=False, server_default='intake'),
+            sa.Column('current_status', sa.String(50), nullable=False, server_default='pending'),
+            sa.Column('safe_mode', sa.Boolean(), nullable=False, server_default=sa.text("false")),
+            sa.Column('blocked', sa.Boolean(), nullable=False, server_default=sa.text("false")),
+            sa.Column('blocker_reason', sa.Text(), nullable=True),
+            sa.Column('next_action', sa.Text(), nullable=True),
+            sa.Column('created_by', sa.String(50), nullable=False, server_default='system'),
+            sa.Column('updated_by', sa.String(50), nullable=False, server_default='system'),
+            sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.func.now()),
+            sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.func.now()),
+        )
+        # Add FK separately to avoid issues
+        op.create_foreign_key('fk_execution_cases_intake', 'execution_cases', 'lead_intake_exec', ['intake_id'], ['id'])
+        op.create_unique_constraint('uq_execution_cases_intake', 'execution_cases', ['intake_id'])
 
 
 def downgrade() -> None:
