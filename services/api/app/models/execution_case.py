@@ -18,7 +18,7 @@ class ExecutionCase(Base):
     id = Column(Integer, primary_key=True, index=True)
     
     # Foreign keys
-    intake_id = Column(Integer, ForeignKey("lead_intake.id"), nullable=False, unique=True)
+    intake_id = Column(Integer, ForeignKey("lead_intake_exec.id"), nullable=False, unique=True)
     assessment_id = Column(Integer, ForeignKey("underwriter_assessments.id"), nullable=True)
     
     # Classification & routing
