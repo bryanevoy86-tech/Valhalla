@@ -1,7 +1,7 @@
 """create just execution_cases table
 
 Revision ID: 004_exec_cases_only
-Revises: 20260330_add_updated_ts_to_deals
+Revises: add_updated_ts_to_deals
 Create Date: 2026-04-13 18:40:00.000000
 
 """
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = '004_exec_cases_only'
-down_revision = '20260330_add_updated_ts_to_deals'
+down_revision = 'add_updated_ts_to_deals'
 branch_labels = None
 depends_on = None
 

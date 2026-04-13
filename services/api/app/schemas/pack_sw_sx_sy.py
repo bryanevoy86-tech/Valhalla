@@ -4,7 +4,7 @@ Pydantic v2 schemas for PACK SW, SX, SY
 Validation, regex patterns, and constraints for all models.
 """
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 from datetime import date
 from typing import List, Optional
 
@@ -19,7 +19,6 @@ class LifeEventCreate(BaseModel):
     date: date = Field(..., description="Event date")
     category: str = Field(
         ...,
-        pattern="^(personal|family|business|financial|health|achievement)$",
         description="Event category"
     )
     description: str = Field(..., min_length=1, description="Factual description")
@@ -39,7 +38,7 @@ class LifeEventUpdate(BaseModel):
     """Update a life event."""
     title: Optional[str] = Field(None, min_length=1, max_length=255)
     date: Optional[date] = None
-    category: Optional[str] = Field(None, pattern="^(personal|family|business|financial|health|achievement)$")
+    category: Optional[str] = Field(None)
     description: Optional[str] = Field(None, min_length=1)
     impact_level: Optional[int] = Field(None, ge=1, le=5)
     notes: Optional[str] = None
@@ -47,6 +46,8 @@ class LifeEventUpdate(BaseModel):
 
 class LifeEventResponse(BaseModel):
     """Response model for life event."""
+    model_config = ConfigDict(from_attributes=True)
+    
     id: int
     event_id: str
     date: date
@@ -58,16 +59,12 @@ class LifeEventResponse(BaseModel):
     created_at: Optional[str] = None
     updated_at: Optional[str] = None
 
-    class Config:
-        from_attributes = True
-
 
 class LifeMilestoneCreate(BaseModel):
     """Create a life milestone."""
     event_id: int = Field(..., description="Parent event ID")
     milestone_type: str = Field(
         ...,
-        pattern="^(start|finish|transition|achievement)$",
         description="Milestone type"
     )
     description: str = Field(..., min_length=1, description="Milestone description")
@@ -84,13 +81,15 @@ class LifeMilestoneCreate(BaseModel):
 
 class LifeMilestoneUpdate(BaseModel):
     """Update a life milestone."""
-    milestone_type: Optional[str] = Field(None, pattern="^(start|finish|transition|achievement)$")
+    milestone_type: Optional[str] = Field(None)
     description: Optional[str] = Field(None, min_length=1)
     notes: Optional[str] = None
 
 
 class LifeMilestoneResponse(BaseModel):
     """Response model for life milestone."""
+    model_config = ConfigDict(from_attributes=True)
+    
     id: int
     milestone_id: str
     event_id: int
@@ -99,9 +98,6 @@ class LifeMilestoneResponse(BaseModel):
     notes: Optional[str]
     created_at: Optional[str] = None
     updated_at: Optional[str] = None
-
-    class Config:
-        from_attributes = True
 
 
 class LifeTimelineSnapshotCreate(BaseModel):
@@ -123,6 +119,8 @@ class LifeTimelineSnapshotUpdate(BaseModel):
 
 class LifeTimelineSnapshotResponse(BaseModel):
     """Response model for timeline snapshot."""
+    model_config = ConfigDict(from_attributes=True)
+    
     id: int
     snapshot_id: str
     date_generated: date
@@ -132,9 +130,6 @@ class LifeTimelineSnapshotResponse(BaseModel):
     user_notes: Optional[str]
     created_at: Optional[str] = None
     updated_at: Optional[str] = None
-
-    class Config:
-        from_attributes = True
 
 
 # =============================================================================
@@ -162,6 +157,8 @@ class EmotionalStateEntryUpdate(BaseModel):
 
 class EmotionalStateEntryResponse(BaseModel):
     """Response model for emotional state entry."""
+    model_config = ConfigDict(from_attributes=True)
+    
     id: int
     entry_id: str
     date: date
@@ -172,9 +169,6 @@ class EmotionalStateEntryResponse(BaseModel):
     notes: Optional[str]
     created_at: Optional[str] = None
     updated_at: Optional[str] = None
-
-    class Config:
-        from_attributes = True
 
 
 class StabilityLogCreate(BaseModel):
@@ -196,6 +190,8 @@ class StabilityLogUpdate(BaseModel):
 
 class StabilityLogResponse(BaseModel):
     """Response model for stability log."""
+    model_config = ConfigDict(from_attributes=True)
+    
     id: int
     log_id: str
     date: date
@@ -206,13 +202,10 @@ class StabilityLogResponse(BaseModel):
     created_at: Optional[str] = None
     updated_at: Optional[str] = None
 
-    class Config:
-        from_attributes = True
-
 
 class NeutralSummaryCreate(BaseModel):
     """Create a neutral summary."""
-    week_of: str = Field(..., pattern="^\\d{4}-W\\d{2}$", description="Week format: YYYY-WXX")
+    week_of: str = Field(..., description="Week format: YYYY-WXX")
     average_energy: float = Field(default=0.0, ge=0.0, le=10.0, description="Average energy")
     task_load: float = Field(default=0.0, ge=0.0, le=10.0, description="Task load")
     user_highlights: List[str] = Field(default_factory=list, description="User-identified positives")
@@ -229,6 +222,8 @@ class NeutralSummaryUpdate(BaseModel):
 
 class NeutralSummaryResponse(BaseModel):
     """Response model for neutral summary."""
+    model_config = ConfigDict(from_attributes=True)
+    
     id: int
     summary_id: str
     week_of: str
@@ -238,9 +233,6 @@ class NeutralSummaryResponse(BaseModel):
     user_defined_interpretation: Optional[str]
     created_at: Optional[str] = None
     updated_at: Optional[str] = None
-
-    class Config:
-        from_attributes = True
 
 
 # =============================================================================
@@ -253,14 +245,13 @@ class StrategicDecisionCreate(BaseModel):
     title: str = Field(..., min_length=1, max_length=255, description="Decision title")
     category: str = Field(
         ...,
-        pattern="^(business|family|finance|real_estate|system)$",
         description="Decision category"
     )
     reasoning: str = Field(..., min_length=1, description="User-stated rationale")
     alternatives_considered: List[str] = Field(default_factory=list, description="Alternatives")
     constraints: List[str] = Field(default_factory=list, description="Constraints at time")
     expected_outcome: str = Field(..., min_length=1, description="Expected outcome")
-    status: str = Field(default="active", pattern="^(active|revised|reversed|completed)$")
+    status: str = Field(default="active")
     notes: Optional[str] = Field(None, description="Additional notes")
 
     @field_validator("category")
@@ -279,12 +270,14 @@ class StrategicDecisionUpdate(BaseModel):
     alternatives_considered: Optional[List[str]] = None
     constraints: Optional[List[str]] = None
     expected_outcome: Optional[str] = Field(None, min_length=1)
-    status: Optional[str] = Field(None, pattern="^(active|revised|reversed|completed)$")
+    status: Optional[str] = Field(None)
     notes: Optional[str] = None
 
 
 class StrategicDecisionResponse(BaseModel):
     """Response model for strategic decision."""
+    model_config = ConfigDict(from_attributes=True)
+    
     id: int
     decision_id: str
     date: date
@@ -298,9 +291,6 @@ class StrategicDecisionResponse(BaseModel):
     notes: Optional[str]
     created_at: Optional[str] = None
     updated_at: Optional[str] = None
-
-    class Config:
-        from_attributes = True
 
 
 class DecisionRevisionCreate(BaseModel):
@@ -321,6 +311,8 @@ class DecisionRevisionUpdate(BaseModel):
 
 class DecisionRevisionResponse(BaseModel):
     """Response model for decision revision."""
+    model_config = ConfigDict(from_attributes=True)
+    
     id: int
     revision_id: str
     decision_id: int
@@ -330,9 +322,6 @@ class DecisionRevisionResponse(BaseModel):
     notes: Optional[str]
     created_at: Optional[str] = None
     updated_at: Optional[str] = None
-
-    class Config:
-        from_attributes = True
 
 
 class DecisionChainSnapshotCreate(BaseModel):
@@ -354,6 +343,8 @@ class DecisionChainSnapshotUpdate(BaseModel):
 
 class DecisionChainSnapshotResponse(BaseModel):
     """Response model for decision chain snapshot."""
+    model_config = ConfigDict(from_attributes=True)
+    
     id: int
     snapshot_id: str
     date: date
@@ -363,6 +354,3 @@ class DecisionChainSnapshotResponse(BaseModel):
     system_impacts: List[str]
     created_at: Optional[str] = None
     updated_at: Optional[str] = None
-
-    class Config:
-        from_attributes = True
