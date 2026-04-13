@@ -1,6 +1,6 @@
 """create lead_intake_exec table for execution layer
 
-Revision ID: 001_add_execution_columns_to_lead_intake
+Revision ID: 001_exec_lead_intake
 Revises: 
 Create Date: 2026-04-12 12:00:00.000000
 
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 from sqlalchemy import text, inspect
 
 # revision identifiers, used by Alembic.
-revision = '001_add_execution_columns_to_lead_intake'
+revision = '001_exec_lead_intake'
 down_revision = None
 branch_labels = None
 depends_on = None
