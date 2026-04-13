@@ -127,10 +127,17 @@ def process_intake(
         assessor = ExecutionAssessmentService(db)
         
         # Prepare raw estimate from extracted fields
+        asking_price = extracted_fields.get("asking_price") or 0
+        estimated_arv = extracted_fields.get("estimated_arv") or 0
+        
+        # If we have asking price but no ARV, estimate ARV as 120% of asking
+        if asking_price > 0 and estimated_arv == 0:
+            estimated_arv = asking_price * 1.2
+        
         raw_estimate = {
-            "arv_estimate": extracted_fields.get("estimated_arv") or extracted_fields.get("asking_price") * 1.2,
+            "arv_estimate": max(estimated_arv, asking_price * 1.1) if asking_price > 0 else 100000,
             "repair_estimate": extracted_fields.get("estimated_repair_cost") or 0,
-            "purchase_price": extracted_fields.get("asking_price") or 0,
+            "purchase_price": asking_price or 0,
             "operating_cost": extracted_fields.get("operating_cost") or 0,
         }
         
