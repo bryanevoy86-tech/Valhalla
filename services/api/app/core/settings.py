@@ -29,8 +29,9 @@ def _parse_origins(raw: str | None) -> List[str]:
 
 class Settings(BaseSettings):
     # IMPORTANT: do not rely on .env files in Render containers
+    # In local dev, .env is loaded first; in production, OS env vars override
     model_config = SettingsConfigDict(
-        env_file=None,
+        env_file=".env",
         extra="ignore",
     )
 

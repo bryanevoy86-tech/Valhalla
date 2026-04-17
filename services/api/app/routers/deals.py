@@ -90,8 +90,7 @@ def add_deal(
 @router.get("", response_model=List[DealBriefOut])
 def list_deals(
     status: str | None = None, 
-    db: Session = Depends(get_db), 
-    _: bool = Depends(require_builder_key)
+    db: Session = Depends(get_db)
 ):
     """
     List all deals with optional status filtering.
@@ -99,7 +98,6 @@ def list_deals(
     Args:
         status: Optional status filter (e.g., 'active')
         db: Database session
-        _: Builder key authentication
     
     Returns:
         List of deal briefs, limited to 500 most recent

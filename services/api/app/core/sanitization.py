@@ -150,7 +150,7 @@ def validate_deal_fields(deal_data: Dict[str, Any]) -> tuple[bool, Optional[str]
         Tuple of (is_valid: bool, error_message: Optional[str])
     """
     # Example deal field validation
-    required_deal_fields = ["title"]  # Adjust based on your actual requirements
+    required_deal_fields = ["headline"]  # Matches DealBriefIn schema which requires headline, not title
     
     # First, check required fields
     is_valid, error_msg = validate_fields(deal_data, required_deal_fields)
