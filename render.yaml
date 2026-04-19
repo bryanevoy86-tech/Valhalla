@@ -28,11 +28,14 @@ services:
           name: valhalla-prod
           property: internalConnectionString
       - key: CORS_ALLOWED_ORIGINS
-        # comma-separated list; update after your WeWeb site is published
-        value: https://YOUR-WEWEB-DOMAIN
+        # Allow all origins temporarily for WeWeb testing; restrict after frontend domain is live
+        value: "*"
       - key: WEWEB_SHARED_SECRET
         # set the real value in the Render dashboard after first deploy
         value: CHANGE_ME
+      - key: BUILDER_KEY
+        # Authentication key for admin/builder operations and deal creation
+        value: test-builder-key-v0.2-verification
       # Pack 46: Clone & Mirror Policies
       - key: CLONE_MIN_DAYS_BETWEEN
         value: "7"
