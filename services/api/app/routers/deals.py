@@ -203,7 +203,7 @@ def update_deal_action(
 
 
 @router.post("/{deal_id}/analyze", response_model=DealAnalysisResponse)
-def analyze_deal(
+def score_deal(
     deal_id: int,
     db: Session = Depends(get_db)
 ):
