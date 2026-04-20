@@ -36,6 +36,9 @@ class DealBriefOut(DealBriefIn):
     id: int
     model_config = ConfigDict(from_attributes=True)
 
+class DealActionIn(BaseModel):
+    action: str = Field(..., description="Action to perform: analyze, hot, dead, pipeline")
+
 class MatchComputeIn(BaseModel):
     deal_id: Optional[int] = None             # match one deal vs buyers
     buyer_id: Optional[int] = None            # match one buyer vs deals

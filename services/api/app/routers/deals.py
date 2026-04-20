@@ -16,7 +16,7 @@ from ..core.sanitization import (
     log_sanitization_details,
 )
 from ..models.match import DealBrief
-from ..schemas.match import DealBriefIn, DealBriefOut
+from ..schemas.match import DealBriefIn, DealBriefOut, DealActionIn
 
 logger = logging.getLogger(__name__)
 
@@ -120,4 +120,83 @@ def list_deals(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail={"error": "Failed to retrieve deals", "message": str(err)}
+        )
+
+
+@router.post("/{deal_id}/action", response_model=DealBriefOut)
+def update_deal_action(
+    deal_id: int,
+    payload: DealActionIn,
+    db: Session = Depends(get_db)
+):
+    """
+    Update a deal's status based on an action.
+    
+    Maps actions to status values:
+    - analyze -> status = "analyzing"
+    - hot -> status = "hot"
+    - dead -> status = "dead"
+    - pipeline -> status = "pipeline"
+    
+    Args:
+        deal_id: ID of the deal to update
+        payload: Action to perform
+        db: Database session
+    
+    Returns:
+        Updated deal brief
+    
+    Raises:
+        HTTPException: If deal not found or invalid action
+    """
+    # Action to status mapping
+    action_status_map = {
+        "analyze": "analyzing",
+        "hot": "hot",
+        "dead": "dead",
+        "pipeline": "pipeline"
+    }
+    
+    try:
+        # Validate action
+        action = payload.action.lower() if payload.action else None
+        if action not in action_status_map:
+            logger.warning(f"Invalid action: {action}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={
+                    "error": "Invalid action",
+                    "message": f"Action must be one of: {list(action_status_map.keys())}",
+                    "provided": action
+                }
+            )
+        
+        # Find the deal
+        deal = db.query(DealBrief).filter(DealBrief.id == deal_id).first()
+        if not deal:
+            logger.warning(f"Deal not found: {deal_id}")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={"error": "Deal not found", "deal_id": deal_id}
+            )
+        
+        # Update status based on action
+        new_status = action_status_map[action]
+        old_status = deal.status
+        deal.status = new_status
+        
+        db.commit()
+        db.refresh(deal)
+        
+        logger.info(f"Deal {deal_id} updated: {old_status} -> {new_status} (action: {action})")
+        return deal
+        
+    except HTTPException:
+        raise
+    except Exception as err:
+        logger.error(f"Failed to update deal action: {str(err)}", exc_info=True)
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={"error": "Failed to update deal", "message": str(err)}
         )
