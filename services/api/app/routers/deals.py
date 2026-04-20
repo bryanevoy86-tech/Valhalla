@@ -124,6 +124,82 @@ def list_deals(
         )
 
 
+@router.post("/ui-create", response_model=DealBriefOut)
+def create_deal_from_ui(
+    payload: DealBriefIn,
+    db: Session = Depends(get_db)
+):
+    """
+    Create a deal from WeWeb frontend without requiring BUILDER_KEY.
+    
+    Frontend-safe endpoint for creating deals. Uses same validation and 
+    sanitization as authenticated endpoint but without key requirement.
+    
+    Args:
+        payload: Deal data from WeWeb form
+        db: Database session
+    
+    Returns:
+        Created deal brief
+    
+    Raises:
+        HTTPException: If validation fails
+    """
+    try:
+        # Validate headline is present
+        if not payload.headline or not payload.headline.strip():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={"error": "headline is required"}
+            )
+        
+        # Convert to dictionary
+        deal_dict = payload.model_dump()
+        
+        # Default status to "active" if missing or empty
+        if not deal_dict.get("status") or deal_dict.get("status") == "":
+            deal_dict["status"] = "active"
+        
+        logger.info(f"Creating deal from UI: {payload.headline}")
+        
+        # Log original data
+        original_data = deal_dict.copy()
+        
+        # Sanitize all fields
+        sanitized_data = sanitize_deal_data(deal_dict)
+        
+        # Log sanitization changes
+        log_sanitization_details(original_data, sanitized_data)
+        
+        # Validate sanitized data
+        is_valid, error_message = validate_deal_fields(sanitized_data)
+        if not is_valid:
+            logger.warning(f"UI deal validation failed: {error_message}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={"error": "Invalid data", "message": error_message}
+            )
+        
+        # Create deal with sanitized data
+        row = DealBrief(**sanitized_data)
+        db.add(row)
+        db.commit()
+        db.refresh(row)
+        
+        logger.info(f"UI deal created successfully with id: {row.id}")
+        return row
+        
+    except HTTPException:
+        raise
+    except Exception as err:
+        logger.error(f"Failed to create UI deal: {str(err)}", exc_info=True)
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={"error": "Failed to create deal", "message": str(err)}
+        )
+
+
 @router.post("/{deal_id}/action", response_model=DealBriefOut)
 def update_deal_action(
     deal_id: int,
