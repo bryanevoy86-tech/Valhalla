@@ -16,7 +16,7 @@ from ..core.sanitization import (
     log_sanitization_details,
 )
 from ..models.match import DealBrief
-from ..schemas.match import DealBriefIn, DealBriefOut, DealActionIn
+from ..schemas.match import DealBriefIn, DealBriefOut, DealActionIn, DealAnalysis, DealAnalysisResponse
 
 logger = logging.getLogger(__name__)
 
@@ -199,4 +199,118 @@ def update_deal_action(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail={"error": "Failed to update deal", "message": str(err)}
+        )
+
+
+@router.post("/{deal_id}/analyze", response_model=DealAnalysisResponse)
+def analyze_deal(
+    deal_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Perform a first-pass analysis of a deal based on available fields.
+    
+    Analysis includes:
+    - score: 0-100 based on property characteristics
+    - risk: low, medium, high
+    - strategy: flip, brrrr, wholesale, hold, unknown
+    - recommendation: actionable text
+    
+    Args:
+        deal_id: ID of the deal to analyze
+        db: Database session
+    
+    Returns:
+        DealAnalysisResponse with deal info and analysis
+    
+    Raises:
+        HTTPException: If deal not found
+    """
+    try:
+        # Find the deal
+        deal = db.query(DealBrief).filter(DealBrief.id == deal_id).first()
+        if not deal:
+            logger.warning(f"Deal not found for analysis: {deal_id}")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={"error": "Deal not found", "deal_id": deal_id}
+            )
+        
+        # Initialize analysis
+        score = 50
+        risk = "low"
+        strategy = "unknown"
+        recommendation = "Additional analysis needed"
+        
+        # Price-based scoring
+        if deal.price is None:
+            score = 40
+            risk = "high"
+            recommendation = "Need more data - price missing"
+        else:
+            price = float(deal.price)
+            
+            # Risk assessment by price
+            if price >= 1000000:
+                risk = "medium"
+            elif price < 500000:
+                score = min(100, score + 10)
+        
+        # Property type strategy mapping
+        prop_type = (deal.property_type or "").lower()
+        
+        if "multi" in prop_type or "duplex" in prop_type:
+            strategy = "brrrr"
+        elif any(t in prop_type for t in ["condo", "townhouse", "sfh", "semi"]):
+            strategy = "flip"
+        else:
+            strategy = "wholesale"
+        
+        # Notes analysis
+        notes_text = (deal.notes or "").lower()
+        cash_flow_keywords = ["cash flow", "rental", "tenant", "lease", "income"]
+        
+        if any(kw in notes_text for kw in cash_flow_keywords):
+            strategy = "brrrr" if strategy in ["brrrr", "unknown"] else "hold"
+            score = min(100, score + 15)
+        
+        # Beds/baths completeness bonus
+        if deal.beds is not None and deal.baths is not None:
+            score = min(100, score + 5)
+        else:
+            score = max(0, score - 10)
+        
+        # Generate recommendation based on score
+        if score >= 80:
+            recommendation = "Strong candidate, proceed to underwriting"
+        elif score >= 60:
+            recommendation = "Acceptable deal, perform detailed analysis"
+        elif score >= 40:
+            recommendation = "Marginal opportunity, needs careful review"
+        else:
+            recommendation = "High risk profile - caution advised"
+        
+        # Build analysis response
+        analysis = DealAnalysis(
+            score=score,
+            risk=risk,
+            strategy=strategy,
+            recommendation=recommendation
+        )
+        
+        logger.info(f"Analysis complete for deal {deal_id}: score={score}, strategy={strategy}, risk={risk}")
+        
+        return DealAnalysisResponse(
+            deal_id=deal.id,
+            headline=deal.headline,
+            analysis=analysis
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as err:
+        logger.error(f"Failed to analyze deal: {str(err)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={"error": "Failed to analyze deal", "message": str(err)}
         )

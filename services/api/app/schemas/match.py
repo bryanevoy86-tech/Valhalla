@@ -39,6 +39,17 @@ class DealBriefOut(DealBriefIn):
 class DealActionIn(BaseModel):
     action: str = Field(..., description="Action to perform: analyze, hot, dead, pipeline")
 
+class DealAnalysis(BaseModel):
+    score: int = Field(..., ge=0, le=100, description="Analysis score 0-100")
+    risk: str = Field(..., description="Risk level: low, medium, high")
+    strategy: str = Field(..., description="Strategy: flip, brrrr, wholesale, hold, unknown")
+    recommendation: str = Field(..., description="Short recommendation text")
+
+class DealAnalysisResponse(BaseModel):
+    deal_id: int
+    headline: str
+    analysis: DealAnalysis
+
 class MatchComputeIn(BaseModel):
     deal_id: Optional[int] = None             # match one deal vs buyers
     buyer_id: Optional[int] = None            # match one buyer vs deals
