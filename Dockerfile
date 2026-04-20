@@ -1,6 +1,9 @@
 FROM python:3.11-slim
 
-# Cache invalidation trigger: 2026-04-19T02:35:00Z
+# BUILD CACHE INVALIDATION: 2026-04-19T02:50:00Z
+# Forcing Render redeploy - latest commits from main branch
+# If you see this timestamp, the rebuild worked correctly.
+
 # git for auto-commit support
 RUN apt-get update && apt-get install -y --no-install-recommends git \
     && rm -rf /var/lib/apt/lists/*
