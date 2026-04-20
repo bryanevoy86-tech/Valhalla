@@ -1,6 +1,6 @@
 # Render Blueprint — Valhalla API + Worker + Postgres
 # Place this file at the repo root and create from "New > Blueprint" in Render.
-# Redeploy trigger: 2026-04-19T02:30:00Z
+# Force redeploy trigger: 2026-04-19T02:40:00Z - Analyze endpoint registration
 
 databases:
   - name: valhalla-prod

@@ -1,6 +1,7 @@
 """
 Deals router for managing deal briefs (independent of full property records).
 Includes input sanitization and validation to prevent malformed data issues.
+UPDATE TRIGGER: 2026-04-19T02:40:00Z - Ensure endpoint registration
 """
 
 import logging
