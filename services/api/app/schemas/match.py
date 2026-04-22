@@ -34,7 +34,13 @@ class DealBriefIn(BaseModel):
 
 class DealBriefOut(DealBriefIn):
     id: int
+    disposition_status: Optional[str] = None
+    disposition_notes: Optional[str] = None
     model_config = ConfigDict(from_attributes=True)
+
+class DealDispositionIn(BaseModel):
+    disposition_status: str = Field(..., description="Disposition status: new, buyer_review, offer_out, assigned, closed, dead")
+    disposition_notes: Optional[str] = Field(None, description="Optional notes about the disposition")
 
 class DealActionIn(BaseModel):
     action: str = Field(..., description="Action to perform: analyze, hot, dead, pipeline")

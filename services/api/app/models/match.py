@@ -32,4 +32,6 @@ class DealBrief(Base):
     baths = Column(Integer, nullable=True)
     notes = Column(Text, nullable=True)
     status = Column(String(40), nullable=False, default="active")  # active, under_contract, sold, archived
+    disposition_status = Column(String(40), nullable=True)  # new, buyer_review, offer_out, assigned, closed, dead
+    disposition_notes = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)

@@ -17,7 +17,7 @@ from ..core.sanitization import (
     log_sanitization_details,
 )
 from ..models.match import DealBrief
-from ..schemas.match import DealBriefIn, DealBriefOut, DealActionIn, DealAnalysis, DealAnalysisResponse, ApplyRecommendationResponse
+from ..schemas.match import DealBriefIn, DealBriefOut, DealActionIn, DealAnalysis, DealAnalysisResponse, ApplyRecommendationResponse, DealDispositionIn
 
 logger = logging.getLogger(__name__)
 
@@ -519,4 +519,86 @@ def apply_recommendation(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail={"error": "Failed to apply recommendation", "message": str(err)}
+        )
+
+
+@router.patch("/{deal_id}/disposition", response_model=DealBriefOut)
+def update_deal_disposition(
+    deal_id: int,
+    payload: DealDispositionIn,
+    db: Session = Depends(get_db)
+):
+    """
+    Update deal disposition status and notes (lightweight buyer routing layer).
+    
+    Allows pipeline-ready deals to be routed into disposition states with notes.
+    Safe for frontend to call without requiring authentication.
+    
+    Disposition statuses:
+    - new: Initial pipeline entry
+    - buyer_review: Under buyer review
+    - offer_out: Offer sent to buyer
+    - assigned: Assigned to specific buyer/agent
+    - closed: Deal completed
+    - dead: Deal abandoned
+    
+    Args:
+        deal_id: ID of the deal
+        payload: Disposition status and optional notes
+        db: Database session
+    
+    Returns:
+        Updated deal brief with disposition info
+    
+    Raises:
+        HTTPException: If deal not found
+    """
+    try:
+        # Validate disposition_status
+        valid_statuses = ["new", "buyer_review", "offer_out", "assigned", "closed", "dead"]
+        status_to_update = payload.disposition_status.lower() if payload.disposition_status else None
+        
+        if status_to_update not in valid_statuses:
+            logger.warning(f"Invalid disposition status: {status_to_update}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={
+                    "error": "Invalid disposition status",
+                    "message": f"Status must be one of: {valid_statuses}",
+                    "provided": payload.disposition_status
+                }
+            )
+        
+        # Find the deal
+        deal = db.query(DealBrief).filter(DealBrief.id == deal_id).first()
+        if not deal:
+            logger.warning(f"Deal not found for disposition update: {deal_id}")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={"error": "Deal not found", "deal_id": deal_id}
+            )
+        
+        # Update disposition fields
+        old_disposition = deal.disposition_status
+        deal.disposition_status = status_to_update
+        deal.disposition_notes = payload.disposition_notes
+        
+        db.commit()
+        db.refresh(deal)
+        
+        logger.info(
+            f"Deal {deal_id} disposition updated: {old_disposition} -> {status_to_update}. "
+            f"Notes: {payload.disposition_notes[:50] if payload.disposition_notes else 'None'}"
+        )
+        
+        return deal
+        
+    except HTTPException:
+        raise
+    except Exception as err:
+        logger.error(f"Failed to update deal disposition: {str(err)}", exc_info=True)
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={"error": "Failed to update disposition", "message": str(err)}
         )
