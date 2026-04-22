@@ -50,6 +50,13 @@ class DealAnalysisResponse(BaseModel):
     headline: str
     analysis: DealAnalysis
 
+class ApplyRecommendationResponse(BaseModel):
+    deal_id: int
+    headline: str
+    next_step: str = Field(..., description="Next step: pipeline, review, dead, needs_more_data")
+    status_applied: Optional[str] = Field(None, description="Status that was applied (pipeline or dead), or null")
+    message: str = Field(..., description="Short explanation of the recommendation")
+
 class MatchComputeIn(BaseModel):
     deal_id: Optional[int] = None             # match one deal vs buyers
     buyer_id: Optional[int] = None            # match one buyer vs deals

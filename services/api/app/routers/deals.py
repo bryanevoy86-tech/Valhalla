@@ -17,7 +17,7 @@ from ..core.sanitization import (
     log_sanitization_details,
 )
 from ..models.match import DealBrief
-from ..schemas.match import DealBriefIn, DealBriefOut, DealActionIn, DealAnalysis, DealAnalysisResponse
+from ..schemas.match import DealBriefIn, DealBriefOut, DealActionIn, DealAnalysis, DealAnalysisResponse, ApplyRecommendationResponse
 
 logger = logging.getLogger(__name__)
 
@@ -390,4 +390,133 @@ def score_deal(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail={"error": "Failed to analyze deal", "message": str(err)}
+        )
+
+
+@router.post("/{deal_id}/apply-recommendation", response_model=ApplyRecommendationResponse)
+def apply_recommendation(
+    deal_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Apply a recommendation to a deal (automation execution layer).
+    
+    Re-runs first-pass analysis logic server-side and applies status changes
+    for pipeline and dead recommendations. Safe to call repeatedly.
+    
+    Recommendation logic:
+    - if score >= 80 and risk == "low" -> next_step = "pipeline" (UPDATE status)
+    - if score >= 60 and risk == "medium" -> next_step = "review" (NO status change)
+    - if score < 60 or risk == "high" -> next_step = "dead" (UPDATE status)
+    - otherwise -> next_step = "needs_more_data" (NO status change)
+    
+    Args:
+        deal_id: ID of the deal
+        db: Database session
+    
+    Returns:
+        ApplyRecommendationResponse with recommendation and applied status
+    
+    Raises:
+        HTTPException: If deal not found
+    """
+    try:
+        # Find the deal
+        deal = db.query(DealBrief).filter(DealBrief.id == deal_id).first()
+        if not deal:
+            logger.warning(f"Deal not found for recommendation: {deal_id}")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={"error": "Deal not found", "deal_id": deal_id}
+            )
+        
+        # ===== SCORE DEAL (Same logic as /analyze endpoint) =====
+        score = 50
+        risk = "low"
+        strategy = "unknown"
+        
+        # Price-based scoring
+        if deal.price is None:
+            score = 40
+            risk = "high"
+        else:
+            price = float(deal.price)
+            
+            # Risk assessment by price
+            if price >= 1000000:
+                risk = "medium"
+            elif price < 500000:
+                score = min(100, score + 10)
+        
+        # Property type strategy mapping
+        prop_type = (deal.property_type or "").lower()
+        
+        if "multi" in prop_type or "duplex" in prop_type:
+            strategy = "brrrr"
+        elif any(t in prop_type for t in ["condo", "townhouse", "sfh", "semi"]):
+            strategy = "flip"
+        else:
+            strategy = "wholesale"
+        
+        # Notes analysis
+        notes_text = (deal.notes or "").lower()
+        cash_flow_keywords = ["cash flow", "rental", "tenant", "lease", "income"]
+        
+        if any(kw in notes_text for kw in cash_flow_keywords):
+            strategy = "brrrr" if strategy in ["brrrr", "unknown"] else "hold"
+            score = min(100, score + 15)
+        
+        # Beds/baths completeness bonus
+        if deal.beds is not None and deal.baths is not None:
+            score = min(100, score + 5)
+        else:
+            score = max(0, score - 10)
+        
+        # ===== DETERMINE NEXT STEP (Deterministic automation logic) =====
+        next_step = None
+        status_applied = None
+        message = ""
+        
+        if score >= 80 and risk == "low":
+            next_step = "pipeline"
+            status_applied = "pipeline"
+            message = f"Strong candidate: score={score}, risk={risk}. Status updated to pipeline."
+        elif score >= 60 and risk == "medium":
+            next_step = "review"
+            message = f"Acceptable deal: score={score}, risk={risk}. Requires detailed review."
+        elif score < 60 or risk == "high":
+            next_step = "dead"
+            status_applied = "dead"
+            message = f"High risk profile: score={score}, risk={risk}. Status updated to dead."
+        else:
+            next_step = "needs_more_data"
+            message = f"Insufficient data: score={score}, risk={risk}. More information needed."
+        
+        # ===== APPLY STATUS UPDATE IF NEEDED =====
+        if status_applied:
+            old_status = deal.status
+            deal.status = status_applied
+            db.commit()
+            db.refresh(deal)
+            logger.info(f"Deal {deal_id} recommendation applied: {old_status} -> {status_applied} (score={score}, risk={risk})")
+        else:
+            logger.info(f"Deal {deal_id} recommendation computed (no status change): {next_step} (score={score}, risk={risk})")
+        
+        # ===== RETURN RESULT =====
+        return ApplyRecommendationResponse(
+            deal_id=deal.id,
+            headline=deal.headline,
+            next_step=next_step,
+            status_applied=status_applied,
+            message=message
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as err:
+        logger.error(f"Failed to apply recommendation: {str(err)}", exc_info=True)
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={"error": "Failed to apply recommendation", "message": str(err)}
         )
