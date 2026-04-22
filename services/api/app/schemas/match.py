@@ -87,3 +87,12 @@ class MatchComputeOut(BaseModel):
     mode: str
     total: int
     hits: List[MatchHit] | List[DealHit]
+
+class AutomationRuleResponse(BaseModel):
+    deal_id: int
+    headline: str
+    status: str
+    disposition_status: Optional[str] = None
+    action_taken: str = Field(..., description="initialized_disposition | awaiting_buyer_review | no_action_dead_deal | moved_to_pipeline | no_action")
+    message: str
+    model_config = ConfigDict(from_attributes=True)

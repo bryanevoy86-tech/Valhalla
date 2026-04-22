@@ -18,9 +18,10 @@ from ..core.sanitization import (
 )
 from ..models.match import DealBrief
 from ..models.deal_notification import DealNotification
-from ..schemas.match import DealBriefIn, DealBriefOut, DealActionIn, DealAnalysis, DealAnalysisResponse, ApplyRecommendationResponse, DealDispositionIn
+from ..schemas.match import DealBriefIn, DealBriefOut, DealActionIn, DealAnalysis, DealAnalysisResponse, ApplyRecommendationResponse, DealDispositionIn, AutomationRuleResponse
 from ..schemas.deal_notifications import DealNotificationOut, DealNotificationIn
 from ..services.audit_service import log_audit_event
+from ..services.automation_service import run_automation_rules
 
 logger = logging.getLogger(__name__)
 
@@ -775,4 +776,94 @@ def notify_deal_event(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail={"error": "Failed to create notification", "message": str(err)}
+        )
+
+
+@router.post("/{deal_id}/run-automation", response_model=AutomationRuleResponse)
+def run_automation(
+    deal_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Run deterministic pipeline automation rules on a deal.
+    
+    Applies a series of rules based on deal status and disposition to
+    automatically initialize, advance, or hold deals in the pipeline.
+    
+    Rules applied in order:
+    - Rule A: Initialize disposition for pipeline deals (set to "new" if null)
+    - Rule B: Acknowledge buyer review status (deal in buyer_review returns early)
+    - Rule C: No-op for dead deals (no automation)
+    - Rule D: Move to pipeline if recommendation logic suggests it (status active -> pipeline)
+    - Rule E: Default no-action (no applicable rule)
+    
+    Args:
+        deal_id: ID of the deal
+        db: Database session
+    
+    Returns:
+        AutomationRuleResponse with deal info and action taken
+    
+    Raises:
+        HTTPException: If deal not found
+    """
+    try:
+        # Validate deal exists
+        deal = db.query(DealBrief).filter(DealBrief.id == deal_id).first()
+        if not deal:
+            logger.warning(f"Deal not found for automation: {deal_id}")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={"error": "Deal not found", "deal_id": deal_id}
+            )
+        
+        # Run automation rules
+        result = run_automation_rules(db, deal)
+        
+        # Log to audit trail
+        log_audit_event(
+            db=db,
+            deal_id=deal_id,
+            event_type="automation_rules_applied",
+            message=f"Pipeline automation applied: {result['action_taken']}",
+            metadata={
+                "action_taken": result["action_taken"],
+                "new_status": result["status"],
+                "new_disposition": result["disposition_status"]
+            },
+            event_source="system"
+        )
+        
+        # Create notification if action was taken
+        if result["action_taken"] in ["moved_to_pipeline", "initialized_disposition"]:
+            notification = DealNotification(
+                deal_id=deal_id,
+                type=result["action_taken"],
+                title=f"Deal {result['action_taken'].replace('_', ' ').title()}",
+                message=result["message"],
+                is_read=False
+            )
+            db.add(notification)
+            db.commit()
+            
+            logger.info(
+                f"Automation notification created: deal_id={deal_id}, "
+                f"type={result['action_taken']}"
+            )
+        
+        logger.info(
+            f"Deal {deal_id} automation rules applied: {result['action_taken']} "
+            f"(status={result['status']}, disposition={result['disposition_status']})"
+        )
+        
+        return result
+        
+    except HTTPException:
+        raise
+    except Exception as err:
+        logger.error(f"Failed to run automation rules: {str(err)}", exc_info=True)
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={"error": "Failed to run automation", "message": str(err)}
         )
