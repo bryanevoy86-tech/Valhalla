@@ -35,13 +35,13 @@ def log_audit_event(
     """
     try:
         # Serialize metadata to JSON string if provided
-        metadata_str = None
+        event_data_str = None
         if metadata:
             try:
-                metadata_str = json.dumps(metadata)
+                event_data_str = json.dumps(metadata)
             except Exception as e:
                 logger.warning(f"Failed to serialize metadata: {e}")
-                metadata_str = str(metadata)
+                event_data_str = str(metadata)
         
         # Create audit log entry
         audit_entry = AuditLog(
@@ -49,7 +49,7 @@ def log_audit_event(
             event_type=event_type,
             event_source=event_source,
             message=message,
-            metadata=metadata_str
+            event_data=event_data_str
         )
         
         db.add(audit_entry)

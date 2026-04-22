@@ -29,7 +29,7 @@ def upgrade() -> None:
             sa.Column("event_type", sa.String(60), nullable=False),
             sa.Column("event_source", sa.String(20), nullable=False, server_default="system"),
             sa.Column("message", sa.String(500), nullable=False),
-            sa.Column("metadata", sa.Text, nullable=True),
+            sa.Column("event_data", sa.Text, nullable=True),
             sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
         )
         op.create_index("ix_audit_log_deal_id", "audit_log", ["deal_id"])

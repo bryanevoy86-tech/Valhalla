@@ -13,7 +13,7 @@ class AuditLogOut(BaseModel):
     event_type: str
     event_source: str
     message: str
-    metadata: Optional[str] = None
+    event_data: Optional[str] = None
     created_at: datetime
 
     class Config:

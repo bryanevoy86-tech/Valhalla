@@ -13,5 +13,5 @@ class AuditLog(Base):
     event_type = Column(String(60), nullable=False)  # e.g., "deal_created", "deal_analyzed", "disposition_updated"
     event_source = Column(String(20), nullable=False, default="system")  # "system" or "user"
     message = Column(String(500), nullable=False)
-    metadata = Column(Text, nullable=True)  # JSON string for additional data
+    event_data = Column(Text, nullable=True)  # JSON string for additional data
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
