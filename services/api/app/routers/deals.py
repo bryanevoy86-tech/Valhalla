@@ -20,6 +20,7 @@ from ..models.match import DealBrief
 from ..models.deal_notification import DealNotification
 from ..schemas.match import DealBriefIn, DealBriefOut, DealActionIn, DealAnalysis, DealAnalysisResponse, ApplyRecommendationResponse, DealDispositionIn
 from ..schemas.deal_notifications import DealNotificationOut, DealNotificationIn
+from ..services.audit_service import log_audit_event
 
 logger = logging.getLogger(__name__)
 
@@ -75,6 +76,15 @@ def add_deal(
         db.add(row)
         db.commit()
         db.refresh(row)
+        
+        # Log audit event
+        log_audit_event(
+            db=db,
+            deal_id=row.id,
+            event_type="deal_created",
+            message=f"Deal created: {row.headline}",
+            metadata={"headline": row.headline, "status": row.status}
+        )
         
         logger.info(f"Deal created successfully with id: {row.id}")
         return row
@@ -267,6 +277,15 @@ def update_deal_action(
         db.commit()
         db.refresh(deal)
         
+        # Log audit event
+        log_audit_event(
+            db=db,
+            deal_id=deal_id,
+            event_type="deal_action",
+            message=f"Deal action performed: {action}",
+            metadata={"action": action, "old_status": old_status, "new_status": new_status}
+        )
+        
         logger.info(f"Deal {deal_id} updated: {old_status} -> {new_status} (action: {action})")
         return deal
         
@@ -378,6 +397,15 @@ def score_deal(
         )
         
         logger.info(f"Analysis complete for deal {deal_id}: score={score}, strategy={strategy}, risk={risk}")
+        
+        # Log audit event
+        log_audit_event(
+            db=db,
+            deal_id=deal.id,
+            event_type="deal_analyzed",
+            message=f"Deal analyzed: score={score}, risk={risk}",
+            metadata={"score": score, "risk": risk, "strategy": strategy}
+        )
         
         return DealAnalysisResponse(
             deal_id=deal.id,
@@ -500,8 +528,27 @@ def apply_recommendation(
             deal.status = status_applied
             db.commit()
             db.refresh(deal)
+            
+            # Log audit event
+            log_audit_event(
+                db=db,
+                deal_id=deal_id,
+                event_type="recommendation_applied",
+                message=f"Recommendation applied: {next_step}",
+                metadata={"next_step": next_step, "score": score, "risk": risk, "old_status": old_status, "new_status": status_applied}
+            )
+            
             logger.info(f"Deal {deal_id} recommendation applied: {old_status} -> {status_applied} (score={score}, risk={risk})")
         else:
+            # Log audit event (no status change)
+            log_audit_event(
+                db=db,
+                deal_id=deal_id,
+                event_type="recommendation_computed",
+                message=f"Recommendation computed: {next_step} (no status change)",
+                metadata={"next_step": next_step, "score": score, "risk": risk}
+            )
+            
             logger.info(f"Deal {deal_id} recommendation computed (no status change): {next_step} (score={score}, risk={risk})")
         
         # ===== RETURN RESULT =====
@@ -587,6 +634,15 @@ def update_deal_disposition(
         
         db.commit()
         db.refresh(deal)
+        
+        # Log audit event
+        log_audit_event(
+            db=db,
+            deal_id=deal_id,
+            event_type="disposition_updated",
+            message=f"Disposition updated: {status_to_update}",
+            metadata={"disposition_status": status_to_update, "notes": payload.disposition_notes}
+        )
         
         logger.info(
             f"Deal {deal_id} disposition updated: {old_disposition} -> {status_to_update}. "
@@ -694,6 +750,15 @@ def notify_deal_event(
         db.add(notification)
         db.commit()
         db.refresh(notification)
+        
+        # Log audit event
+        log_audit_event(
+            db=db,
+            deal_id=deal_id,
+            event_type="notification_created",
+            message=f"Notification created: {event_type}",
+            metadata={"notification_type": event_type, "message": message, "notification_id": notification.id}
+        )
         
         logger.info(
             f"Deal notification created: deal_id={deal_id}, type={event_type}, "

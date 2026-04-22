@@ -77,6 +77,9 @@ from app.models.underwriter_assessment import UnderwriterAssessment
 # Deal Notifications
 from app.models.deal_notification import DealNotification
 
+# Audit Log
+from app.models.audit_log import AuditLog
+
 __all__ = [
     "Professional",
     "InteractionLog",
@@ -132,4 +135,6 @@ __all__ = [
     "UnderwriterAssessment",
     # Deal Notifications
     "DealNotification",
+    # Audit Log
+    "AuditLog",
 ]
