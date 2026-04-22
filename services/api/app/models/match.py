@@ -43,4 +43,14 @@ class DealBrief(Base):
     projected_profit = Column(Numeric(18,2), nullable=True)  # Calculated: arv - price - rehab - holding - selling
     strategy_tag = Column(String(40), nullable=True)  # e.g., "flip", "brrrr", "wholesale"
     
+    # BRRRR analysis fields (Buy, Rehab, Rent, Refinance, Repeat)
+    monthly_rent_estimate = Column(Numeric(10,2), nullable=True)  # Estimated monthly rent
+    monthly_expense_estimate = Column(Numeric(10,2), nullable=True)  # Estimated monthly expenses (taxes, insurance, maintenance)
+    refinance_ltv = Column(Numeric(5,4), nullable=True)  # Loan-to-value for refinance (0.75 = 75%)
+    refinance_rate = Column(Numeric(6,4), nullable=True)  # Interest rate for refinance
+    refinance_term_years = Column(Integer, nullable=True)  # Loan term for refinance
+    cash_out_estimate = Column(Numeric(18,2), nullable=True)  # Calculated: (arv * refinance_ltv) - price - rehab
+    monthly_cashflow_estimate = Column(Numeric(10,2), nullable=True)  # Calculated: monthly_rent - monthly_expense
+    brrrr_recommendation = Column(String(40), nullable=True)  # Proceed, Marginal, Pass, Incomplete
+    
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)

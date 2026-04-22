@@ -114,3 +114,21 @@ class FlipInputsIn(BaseModel):
     rehab_estimate: Optional[float] = Field(None, description="Estimated rehab cost")
     holding_cost_estimate: Optional[float] = Field(None, description="Estimated holding/carrying costs")
     selling_cost_estimate: Optional[float] = Field(None, description="Realtor commission and closing costs")
+
+class BRRRRAnalysisResponse(BaseModel):
+    deal_id: int
+    headline: str
+    strategy_tag: str
+    monthly_rent_estimate: Optional[float] = None
+    monthly_expense_estimate: Optional[float] = None
+    refinance_ltv: Optional[float] = None
+    cash_out_estimate: Optional[float] = None
+    monthly_cashflow_estimate: Optional[float] = None
+    recommendation: str = Field(..., description="Proceed | Marginal | Pass | Incomplete")
+
+class BRRRRInputsIn(BaseModel):
+    monthly_rent_estimate: Optional[float] = Field(None, description="Estimated monthly rental income")
+    monthly_expense_estimate: Optional[float] = Field(None, description="Estimated monthly expenses (taxes, insurance, maintenance)")
+    refinance_ltv: Optional[float] = Field(None, description="Loan-to-value for refinance (e.g., 0.75 for 75%)")
+    refinance_rate: Optional[float] = Field(None, description="Interest rate for refinance")
+    refinance_term_years: Optional[int] = Field(None, description="Loan term in years")

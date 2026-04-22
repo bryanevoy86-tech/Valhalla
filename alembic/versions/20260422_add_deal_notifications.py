@@ -1,7 +1,7 @@
 """add_deal_notifications
 
 Revision ID: 20260422_002
-Revises: 20260422_001
+Revises: 20260422_001, 5e5bb3b591a4
 Create Date: 2026-04-22
 """
 from typing import Sequence, Union
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 from sqlalchemy import inspect
 
 revision: str = "20260422_002"
-down_revision: Union[str, Sequence[str], None] = "20260422_001"
+down_revision: Union[str, Sequence[str], None] = ("20260422_001", "5e5bb3b591a4")
 branch_labels = None
 depends_on = None
 

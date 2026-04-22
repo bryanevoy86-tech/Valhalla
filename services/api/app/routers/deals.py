@@ -18,11 +18,12 @@ from ..core.sanitization import (
 )
 from ..models.match import DealBrief
 from ..models.deal_notification import DealNotification
-from ..schemas.match import DealBriefIn, DealBriefOut, DealActionIn, DealAnalysis, DealAnalysisResponse, ApplyRecommendationResponse, DealDispositionIn, AutomationRuleResponse, FlipAnalysisResponse, FlipInputsIn
+from ..schemas.match import DealBriefIn, DealBriefOut, DealActionIn, DealAnalysis, DealAnalysisResponse, ApplyRecommendationResponse, DealDispositionIn, AutomationRuleResponse, FlipAnalysisResponse, FlipInputsIn, BRRRRAnalysisResponse, BRRRRInputsIn
 from ..schemas.deal_notifications import DealNotificationOut, DealNotificationIn
 from ..services.audit_service import log_audit_event
 from ..services.automation_service import run_automation_rules
 from ..services.flip_service import analyze_flip, update_flip_inputs
+from ..services.brrrr_service import analyze_brrrr, update_brrrr_inputs
 
 logger = logging.getLogger(__name__)
 
@@ -1027,4 +1028,166 @@ def update_deal_flip_inputs(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail={"error": "Failed to update flip inputs", "message": str(err)}
+        )
+
+
+@router.post("/{deal_id}/analyze-brrrr", response_model=BRRRRAnalysisResponse)
+def analyze_deal_brrrr(
+    deal_id: int,
+    db: Session = Depends(get_db),
+    _: bool = Depends(require_auth)
+):
+    """
+    Analyze a deal as a BRRRR (Buy, Rehab, Rent, Refinance, Repeat) opportunity.
+    
+    Computes cash-out and monthly cashflow using BRRRR metrics:
+    cash_out_estimate = (arv * refinance_ltv) - price - rehab_estimate
+    monthly_cashflow_estimate = monthly_rent_estimate - monthly_expense_estimate
+    
+    Recommendation logic:
+    - cash_out >= 0 and monthly_cashflow >= 200 -> "Proceed"
+    - cash_out < 0 but monthly_cashflow >= 0 -> "Marginal"
+    - monthly_cashflow < 0 -> "Pass"
+    - missing major inputs -> "Incomplete"
+    
+    Requires BRRRR input fields to be populated via PATCH /deals/{id}/brrrr-inputs
+    
+    Args:
+        deal_id: ID of the deal
+        db: Database session
+    
+    Returns:
+        BRRRRAnalysisResponse with cash-out, cashflow, and recommendation
+    
+    Raises:
+        HTTPException: If deal not found or missing required inputs
+    """
+    try:
+        # Validate deal exists
+        deal = db.query(DealBrief).filter(DealBrief.id == deal_id).first()
+        if not deal:
+            logger.warning(f"Deal not found for BRRRR analysis: {deal_id}")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={"error": "Deal not found", "deal_id": deal_id}
+            )
+        
+        # Run BRRRR analysis
+        result = analyze_brrrr(db, deal)
+        
+        # Log to audit trail
+        log_audit_event(
+            db=db,
+            deal_id=deal_id,
+            event_type="brrrr_analysis_completed",
+            message=f"BRRRR analysis completed: {result.get('recommendation', 'Unknown')} (${result.get('cash_out_estimate', 0):,.0f} cash-out, ${result.get('monthly_cashflow_estimate', 0):,.0f} monthly)",
+            metadata={
+                "recommendation": result.get("recommendation"),
+                "cash_out_estimate": result.get("cash_out_estimate"),
+                "monthly_cashflow_estimate": result.get("monthly_cashflow_estimate"),
+                "refinance_ltv": result.get("refinance_ltv")
+            },
+            event_source="system"
+        )
+        
+        logger.info(
+            f"Deal {deal_id} BRRRR analysis completed: "
+            f"{result.get('recommendation')} (cash-out: ${result.get('cash_out_estimate', 0):,.2f}, "
+            f"monthly: ${result.get('monthly_cashflow_estimate', 0):,.2f})"
+        )
+        
+        return result
+        
+    except HTTPException:
+        raise
+    except Exception as err:
+        logger.error(f"Failed to analyze deal BRRRR: {str(err)}", exc_info=True)
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={"error": "Failed to analyze BRRRR", "message": str(err)}
+        )
+
+
+@router.patch("/{deal_id}/brrrr-inputs", response_model=BRRRRAnalysisResponse)
+def update_deal_brrrr_inputs(
+    deal_id: int,
+    payload: BRRRRInputsIn,
+    db: Session = Depends(get_db),
+    _: bool = Depends(require_auth)
+):
+    """
+    Update BRRRR analysis inputs for a deal.
+    
+    Updates monthly rent, monthly expense, refinance LTV/rate/term, then automatically re-calculates cash-out and cashflow.
+    
+    Args:
+        deal_id: ID of the deal
+        payload: BRRRR input data (monthly_rent_estimate, monthly_expense_estimate, refinance_ltv, refinance_rate, refinance_term_years)
+        db: Database session
+    
+    Returns:
+        Updated BRRRRAnalysisResponse with recalculated cash-out and cashflow
+    
+    Raises:
+        HTTPException: If deal not found
+    """
+    try:
+        # Validate deal exists
+        deal = db.query(DealBrief).filter(DealBrief.id == deal_id).first()
+        if not deal:
+            logger.warning(f"Deal not found for BRRRR inputs update: {deal_id}")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={"error": "Deal not found", "deal_id": deal_id}
+            )
+        
+        # Update BRRRR inputs (auto re-analyzes)
+        result = update_brrrr_inputs(
+            db=db,
+            deal=deal,
+            monthly_rent=payload.monthly_rent_estimate,
+            monthly_expense=payload.monthly_expense_estimate,
+            refinance_ltv=payload.refinance_ltv,
+            refinance_rate=payload.refinance_rate,
+            refinance_term_years=payload.refinance_term_years
+        )
+        
+        # Log to audit trail
+        log_audit_event(
+            db=db,
+            deal_id=deal_id,
+            event_type="brrrr_inputs_updated",
+            message=f"BRRRR analysis inputs updated and recalculated",
+            metadata={
+                "monthly_rent_estimate": payload.monthly_rent_estimate,
+                "monthly_expense_estimate": payload.monthly_expense_estimate,
+                "refinance_ltv": payload.refinance_ltv,
+                "refinance_rate": payload.refinance_rate,
+                "refinance_term_years": payload.refinance_term_years,
+                "new_cash_out_estimate": result.get("cash_out_estimate"),
+                "new_monthly_cashflow_estimate": result.get("monthly_cashflow_estimate"),
+                "new_recommendation": result.get("recommendation")
+            },
+            event_source="system"
+        )
+        
+        logger.info(
+            f"Deal {deal_id} BRRRR inputs updated: "
+            f"rent=${payload.monthly_rent_estimate}, expense=${payload.monthly_expense_estimate}, ltv={payload.refinance_ltv}, "
+            f"new cash_out=${result.get('cash_out_estimate', 0):,.2f}, "
+            f"new cashflow=${result.get('monthly_cashflow_estimate', 0):,.2f}, "
+            f"recommendation={result.get('recommendation')}"
+        )
+        
+        return result
+        
+    except HTTPException:
+        raise
+    except Exception as err:
+        logger.error(f"Failed to update deal BRRRR inputs: {str(err)}", exc_info=True)
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={"error": "Failed to update BRRRR inputs", "message": str(err)}
         )

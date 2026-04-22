@@ -1,7 +1,7 @@
 """Add buyer candidates and deal-buyer matches tables
 
 Revision ID: 20260422_add_buyer_matching
-Revises: 20260422_add_audit_log
+Revises: 20260422_003
 Create Date: 2026-04-22 00:00:00.000000
 
 """
@@ -13,7 +13,7 @@ from sqlalchemy import inspect
 
 # revision identifiers, used by Alembic.
 revision = '20260422_add_buyer_matching'
-down_revision = '20260422_add_audit_log'
+down_revision = '20260422_003'
 branch_labels = None
 depends_on = None
 
