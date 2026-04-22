@@ -9,7 +9,7 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from ..core.db import get_db
-from ..core.dependencies import require_builder_key
+from ..core.dependencies import require_builder_key, require_auth
 from ..core.sanitization import (
     sanitize_input,
     sanitize_deal_data,
@@ -140,7 +140,8 @@ def list_deals(
 @router.post("/ui-create", response_model=DealBriefOut)
 def create_deal_from_ui(
     payload: DealBriefIn,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _: bool = Depends(require_auth)
 ):
     """
     Create a deal from WeWeb frontend without requiring BUILDER_KEY.
@@ -217,7 +218,8 @@ def create_deal_from_ui(
 def update_deal_action(
     deal_id: int,
     payload: DealActionIn,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _: bool = Depends(require_auth)
 ):
     """
     Update a deal's status based on an action.
@@ -300,11 +302,11 @@ def update_deal_action(
             detail={"error": "Failed to update deal", "message": str(err)}
         )
 
-
 @router.post("/{deal_id}/analyze", response_model=DealAnalysisResponse)
 def score_deal(
     deal_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _: bool = Depends(require_auth)
 ):
     """
     Perform a first-pass analysis of a deal based on available fields.
@@ -427,7 +429,8 @@ def score_deal(
 @router.post("/{deal_id}/apply-recommendation", response_model=ApplyRecommendationResponse)
 def apply_recommendation(
     deal_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _: bool = Depends(require_auth)
 ):
     """
     Apply a recommendation to a deal (automation execution layer).
@@ -576,7 +579,8 @@ def apply_recommendation(
 def update_deal_disposition(
     deal_id: int,
     payload: DealDispositionIn,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _: bool = Depends(require_auth)
 ):
     """
     Update deal disposition status and notes (lightweight buyer routing layer).
@@ -667,7 +671,8 @@ def update_deal_disposition(
 def notify_deal_event(
     deal_id: int,
     payload: DealNotificationIn,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _: bool = Depends(require_auth)
 ):
     """
     Create a notification for a deal event.
@@ -782,7 +787,8 @@ def notify_deal_event(
 @router.post("/{deal_id}/run-automation", response_model=AutomationRuleResponse)
 def run_automation(
     deal_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _: bool = Depends(require_auth)
 ):
     """
     Run deterministic pipeline automation rules on a deal.

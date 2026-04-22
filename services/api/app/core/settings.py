@@ -97,6 +97,9 @@ class Settings(BaseSettings):
     TWILIO_AUTH_TOKEN: str | None = Field(default=None)
     TWILIO_PHONE_NUMBER: str | None = Field(default=None)
 
+    # Auth - Session Token for write operations
+    SESSION_TOKEN_DEV: str | None = Field(default=None, alias="SESSION_TOKEN_DEV")
+
     @model_validator(mode="after")
     def _smtp_backcompat(self):
         """Fallback: if SMTP_USER/PASS not set, use USERNAME/PASSWORD"""

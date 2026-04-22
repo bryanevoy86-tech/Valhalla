@@ -8,7 +8,7 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from ..core.db import get_db
-from ..core.dependencies import require_builder_key
+from ..core.dependencies import require_builder_key, require_auth
 from ..models.match import Buyer, DealBrief
 from ..models.buyer_candidate import BuyerCandidate
 from ..models.deal_buyer_match import DealBuyerMatch
@@ -189,7 +189,7 @@ def list_buyer_candidates(
 
 
 @router.post("/candidates/seed", response_model=List[BuyerCandidateOut])
-def seed_test_candidates(db: Session = Depends(get_db)):
+def seed_test_candidates(db: Session = Depends(get_db), _: bool = Depends(require_auth)):
     """
     Create 5 test buyer candidates if none exist (no auth required).
     
@@ -310,7 +310,8 @@ def list_deal_matches(
 def create_or_update_deal_match(
     deal_id: int,
     payload: DealBuyerMatchIn,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _: bool = Depends(require_auth)
 ):
     """
     Create or update a buyer match for a deal (no auth required).

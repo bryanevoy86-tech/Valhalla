@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import desc
 
 from ..core.db import get_db
+from ..core.dependencies import require_auth
 from ..models.deal_notification import DealNotification
 from ..models.match import DealBrief
 from ..schemas.deal_notifications import DealNotificationOut, DealNotificationIn
@@ -51,7 +52,8 @@ def list_notifications(
 
 @router.post("/test", response_model=DealNotificationOut)
 def create_test_notification(
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _: bool = Depends(require_auth)
 ):
     """
     Create a sample test notification.
