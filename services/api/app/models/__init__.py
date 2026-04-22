@@ -80,6 +80,10 @@ from app.models.deal_notification import DealNotification
 # Audit Log
 from app.models.audit_log import AuditLog
 
+# Buyer Matching
+from app.models.buyer_candidate import BuyerCandidate
+from app.models.deal_buyer_match import DealBuyerMatch
+
 __all__ = [
     "Professional",
     "InteractionLog",
@@ -137,4 +141,7 @@ __all__ = [
     "DealNotification",
     # Audit Log
     "AuditLog",
+    # Buyer Matching
+    "BuyerCandidate",
+    "DealBuyerMatch",
 ]
