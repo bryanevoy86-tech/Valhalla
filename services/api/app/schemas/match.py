@@ -96,3 +96,21 @@ class AutomationRuleResponse(BaseModel):
     action_taken: str = Field(..., description="initialized_disposition | awaiting_buyer_review | no_action_dead_deal | moved_to_pipeline | no_action")
     message: str
     model_config = ConfigDict(from_attributes=True)
+
+class FlipAnalysisResponse(BaseModel):
+    deal_id: int
+    headline: str
+    strategy_tag: str
+    arv: Optional[float] = None
+    price: Optional[float] = None
+    rehab_estimate: Optional[float] = None
+    holding_cost_estimate: Optional[float] = None
+    selling_cost_estimate: Optional[float] = None
+    projected_profit: Optional[float] = None
+    recommendation: str = Field(..., description="Proceed | Marginal | Pass | Incomplete - Need ARV and Purchase Price")
+
+class FlipInputsIn(BaseModel):
+    arv: Optional[float] = Field(None, description="After Repair Value")
+    rehab_estimate: Optional[float] = Field(None, description="Estimated rehab cost")
+    holding_cost_estimate: Optional[float] = Field(None, description="Estimated holding/carrying costs")
+    selling_cost_estimate: Optional[float] = Field(None, description="Realtor commission and closing costs")

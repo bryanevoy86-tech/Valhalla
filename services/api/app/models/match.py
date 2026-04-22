@@ -34,4 +34,13 @@ class DealBrief(Base):
     status = Column(String(40), nullable=False, default="active")  # active, under_contract, sold, archived
     disposition_status = Column(String(40), nullable=True)  # new, buyer_review, offer_out, assigned, closed, dead
     disposition_notes = Column(Text, nullable=True)
+    
+    # Flip analysis fields
+    arv = Column(Numeric(18,2), nullable=True)  # After Repair Value
+    rehab_estimate = Column(Numeric(18,2), nullable=True)  # Estimated rehab cost
+    holding_cost_estimate = Column(Numeric(18,2), nullable=True)  # Carrying costs during flip
+    selling_cost_estimate = Column(Numeric(18,2), nullable=True)  # Realtor commissions, closing costs
+    projected_profit = Column(Numeric(18,2), nullable=True)  # Calculated: arv - price - rehab - holding - selling
+    strategy_tag = Column(String(40), nullable=True)  # e.g., "flip", "brrrr", "wholesale"
+    
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)

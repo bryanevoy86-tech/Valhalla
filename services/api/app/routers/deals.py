@@ -18,10 +18,11 @@ from ..core.sanitization import (
 )
 from ..models.match import DealBrief
 from ..models.deal_notification import DealNotification
-from ..schemas.match import DealBriefIn, DealBriefOut, DealActionIn, DealAnalysis, DealAnalysisResponse, ApplyRecommendationResponse, DealDispositionIn, AutomationRuleResponse
+from ..schemas.match import DealBriefIn, DealBriefOut, DealActionIn, DealAnalysis, DealAnalysisResponse, ApplyRecommendationResponse, DealDispositionIn, AutomationRuleResponse, FlipAnalysisResponse, FlipInputsIn
 from ..schemas.deal_notifications import DealNotificationOut, DealNotificationIn
 from ..services.audit_service import log_audit_event
 from ..services.automation_service import run_automation_rules
+from ..services.flip_service import analyze_flip, update_flip_inputs
 
 logger = logging.getLogger(__name__)
 
@@ -872,4 +873,158 @@ def run_automation(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail={"error": "Failed to run automation", "message": str(err)}
+        )
+
+
+@router.post("/{deal_id}/analyze-flip", response_model=FlipAnalysisResponse)
+def analyze_deal_flip(
+    deal_id: int,
+    db: Session = Depends(get_db),
+    _: bool = Depends(require_auth)
+):
+    """
+    Analyze a deal as a flip opportunity.
+    
+    Computes projected profit using flip metrics:
+    projected_profit = arv - price - rehab_estimate - holding_cost_estimate - selling_cost_estimate
+    
+    Recommendation logic:
+    - projected_profit >= $30,000 -> "Proceed"
+    - projected_profit $10,000-$29,999 -> "Marginal"
+    - projected_profit < $10,000 -> "Pass"
+    
+    Requires flip input fields to be populated via PATCH /deals/{id}/flip-inputs
+    
+    Args:
+        deal_id: ID of the deal
+        db: Database session
+    
+    Returns:
+        FlipAnalysisResponse with profit calculation and recommendation
+    
+    Raises:
+        HTTPException: If deal not found or missing required inputs
+    """
+    try:
+        # Validate deal exists
+        deal = db.query(DealBrief).filter(DealBrief.id == deal_id).first()
+        if not deal:
+            logger.warning(f"Deal not found for flip analysis: {deal_id}")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={"error": "Deal not found", "deal_id": deal_id}
+            )
+        
+        # Run flip analysis
+        result = analyze_flip(db, deal)
+        
+        # Log to audit trail
+        log_audit_event(
+            db=db,
+            deal_id=deal_id,
+            event_type="flip_analysis_completed",
+            message=f"Flip analysis completed: {result.get('recommendation', 'Unknown')} (${result.get('projected_profit', 0):,.0f} profit)",
+            metadata={
+                "recommendation": result.get("recommendation"),
+                "projected_profit": result.get("projected_profit"),
+                "arv": result.get("arv"),
+                "price": result.get("price")
+            },
+            event_source="system"
+        )
+        
+        logger.info(
+            f"Deal {deal_id} flip analysis completed: "
+            f"{result.get('recommendation')} (profit: ${result.get('projected_profit', 0):,.2f})"
+        )
+        
+        return result
+        
+    except HTTPException:
+        raise
+    except Exception as err:
+        logger.error(f"Failed to analyze deal flip: {str(err)}", exc_info=True)
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={"error": "Failed to analyze flip", "message": str(err)}
+        )
+
+
+@router.patch("/{deal_id}/flip-inputs", response_model=FlipAnalysisResponse)
+def update_deal_flip_inputs(
+    deal_id: int,
+    payload: FlipInputsIn,
+    db: Session = Depends(get_db),
+    _: bool = Depends(require_auth)
+):
+    """
+    Update flip analysis inputs for a deal.
+    
+    Updates ARV and cost estimates, then automatically re-calculates projected profit.
+    
+    Args:
+        deal_id: ID of the deal
+        payload: Flip input data (arv, rehab_estimate, holding_cost_estimate, selling_cost_estimate)
+        db: Database session
+    
+    Returns:
+        Updated FlipAnalysisResponse with recalculated profit
+    
+    Raises:
+        HTTPException: If deal not found
+    """
+    try:
+        # Validate deal exists
+        deal = db.query(DealBrief).filter(DealBrief.id == deal_id).first()
+        if not deal:
+            logger.warning(f"Deal not found for flip inputs update: {deal_id}")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={"error": "Deal not found", "deal_id": deal_id}
+            )
+        
+        # Update flip inputs (auto re-analyzes)
+        result = update_flip_inputs(
+            db=db,
+            deal=deal,
+            arv=payload.arv,
+            rehab=payload.rehab_estimate,
+            holding=payload.holding_cost_estimate,
+            selling=payload.selling_cost_estimate
+        )
+        
+        # Log to audit trail
+        log_audit_event(
+            db=db,
+            deal_id=deal_id,
+            event_type="flip_inputs_updated",
+            message=f"Flip analysis inputs updated and recalculated",
+            metadata={
+                "arv": payload.arv,
+                "rehab_estimate": payload.rehab_estimate,
+                "holding_cost_estimate": payload.holding_cost_estimate,
+                "selling_cost_estimate": payload.selling_cost_estimate,
+                "new_projected_profit": result.get("projected_profit"),
+                "new_recommendation": result.get("recommendation")
+            },
+            event_source="system"
+        )
+        
+        logger.info(
+            f"Deal {deal_id} flip inputs updated: "
+            f"new profit={result.get('projected_profit', 0):,.2f}, "
+            f"recommendation={result.get('recommendation')}"
+        )
+        
+        return result
+        
+    except HTTPException:
+        raise
+    except Exception as err:
+        logger.error(f"Failed to update deal flip inputs: {str(err)}", exc_info=True)
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={"error": "Failed to update flip inputs", "message": str(err)}
         )
