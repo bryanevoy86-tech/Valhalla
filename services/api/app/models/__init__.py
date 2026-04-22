@@ -74,6 +74,9 @@ from app.models.task import Task
 from app.models.lead_intake import LeadIntake
 from app.models.underwriter_assessment import UnderwriterAssessment
 
+# Deal Notifications
+from app.models.deal_notification import DealNotification
+
 __all__ = [
     "Professional",
     "InteractionLog",
@@ -127,4 +130,6 @@ __all__ = [
     "Task",
     "LeadIntake",
     "UnderwriterAssessment",
+    # Deal Notifications
+    "DealNotification",
 ]

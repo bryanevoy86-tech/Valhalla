@@ -17,7 +17,9 @@ from ..core.sanitization import (
     log_sanitization_details,
 )
 from ..models.match import DealBrief
+from ..models.deal_notification import DealNotification
 from ..schemas.match import DealBriefIn, DealBriefOut, DealActionIn, DealAnalysis, DealAnalysisResponse, ApplyRecommendationResponse, DealDispositionIn
+from ..schemas.deal_notifications import DealNotificationOut, DealNotificationIn
 
 logger = logging.getLogger(__name__)
 
@@ -601,4 +603,111 @@ def update_deal_disposition(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail={"error": "Failed to update disposition", "message": str(err)}
+        )
+
+
+@router.post("/{deal_id}/notify-event", response_model=DealNotificationOut)
+def notify_deal_event(
+    deal_id: int,
+    payload: DealNotificationIn,
+    db: Session = Depends(get_db)
+):
+    """
+    Create a notification for a deal event.
+    
+    Records important deal events like analysis completion, status changes, etc.
+    Generates default message if not provided.
+    
+    Valid event types:
+    - analysis_complete: Deal analysis has been completed
+    - moved_to_pipeline: Deal has been moved to pipeline
+    - marked_dead: Deal has been marked as dead
+    - disposition_updated: Deal disposition status has been updated
+    
+    Args:
+        deal_id: ID of the deal
+        payload: Event type and optional custom message
+        db: Database session
+    
+    Returns:
+        Created DealNotificationOut
+    
+    Raises:
+        HTTPException: If deal not found or invalid event type
+    """
+    try:
+        # Validate event type
+        valid_types = ["analysis_complete", "moved_to_pipeline", "marked_dead", "disposition_updated"]
+        event_type = payload.type.lower() if payload.type else None
+        
+        if event_type not in valid_types:
+            logger.warning(f"Invalid event type: {event_type}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={
+                    "error": "Invalid event type",
+                    "message": f"Type must be one of: {valid_types}",
+                    "provided": payload.type
+                }
+            )
+        
+        # Find the deal
+        deal = db.query(DealBrief).filter(DealBrief.id == deal_id).first()
+        if not deal:
+            logger.warning(f"Deal not found for notification: {deal_id}")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={"error": "Deal not found", "deal_id": deal_id}
+            )
+        
+        # Generate title based on event type
+        type_titles = {
+            "analysis_complete": "Analysis Complete",
+            "moved_to_pipeline": "Moved to Pipeline",
+            "marked_dead": "Marked as Dead",
+            "disposition_updated": "Disposition Updated"
+        }
+        
+        title = f"{deal.headline} - {type_titles.get(event_type, event_type)}"
+        
+        # Generate default message if not provided
+        if payload.message:
+            message = payload.message
+        else:
+            default_messages = {
+                "analysis_complete": f"Deal analysis completed with score and risk assessment.",
+                "moved_to_pipeline": f"Deal moved to pipeline and is ready for buyer review.",
+                "marked_dead": f"Deal has been marked as dead and removed from active pipeline.",
+                "disposition_updated": f"Deal disposition status has been updated."
+            }
+            message = default_messages.get(event_type)
+        
+        # Create notification
+        notification = DealNotification(
+            deal_id=deal_id,
+            type=event_type,
+            title=title,
+            message=message,
+            is_read=False
+        )
+        
+        db.add(notification)
+        db.commit()
+        db.refresh(notification)
+        
+        logger.info(
+            f"Deal notification created: deal_id={deal_id}, type={event_type}, "
+            f"notification_id={notification.id}"
+        )
+        
+        return notification
+        
+    except HTTPException:
+        raise
+    except Exception as err:
+        logger.error(f"Failed to create deal notification: {str(err)}", exc_info=True)
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={"error": "Failed to create notification", "message": str(err)}
         )
