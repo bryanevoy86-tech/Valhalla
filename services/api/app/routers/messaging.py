@@ -166,6 +166,91 @@ async def send_sms(payload: SendSmsRequest, db: Session = Depends(get_db)):
     return res
 
 
+# VA Lead Messaging & Packet Drafting
+
+@router.post("/va/draft-seller-message/{lead_id}")
+def draft_seller_message_endpoint(
+    lead_id: int,
+    message_type: str = "initial_contact",
+    db: Session = Depends(get_db)
+):
+    """
+    Draft a message to send to a seller.
+    
+    Message types:
+    - initial_contact: First outreach
+    - follow_up: Second contact
+    - offer: Formal offer message
+    
+    This only DRAFTS messages. Does not send.
+    Requires manual approval before sending.
+    """
+    
+    from app.models import VALead
+    from app.services.messaging_draft import draft_seller_message
+    
+    # Get lead
+    lead = db.query(VALead).filter(VALead.id == lead_id).first()
+    if not lead:
+        raise HTTPException(status_code=404, detail="VA Lead not found")
+    
+    # Build lead data dict
+    lead_data = {
+        "id": lead.id,
+        "address": lead.address,
+        "city": lead.city,
+        "province": lead.province,
+        "seller_name": lead.seller_name,
+        "asking_price": float(lead.asking_price) if lead.asking_price else None,
+    }
+    
+    # Draft message
+    result = draft_seller_message(lead_data, message_type)
+    
+    return result
+
+
+@router.post("/va/create-buyer-packet/{deal_id}")
+def create_buyer_packet_endpoint(
+    deal_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Create a buyer information packet from a deal.
+    
+    This summarizes key deal information for prospective buyers.
+    """
+    
+    from app.models import Deal
+    from app.services.messaging_draft import draft_buyer_packet
+    
+    # Get deal
+    deal = db.query(Deal).filter(Deal.id == deal_id).first()
+    if not deal:
+        raise HTTPException(status_code=404, detail="Deal not found")
+    
+    # Build deal data dict
+    deal_data = {
+        "id": deal.id,
+        "address": getattr(deal, "address", "TBD"),
+        "city": getattr(deal, "city", "TBD"),
+        "province": getattr(deal, "province", "TBD"),
+        "property_type": getattr(deal, "property_type", "Single Family"),
+        "beds": getattr(deal, "beds", "TBD"),
+        "baths": getattr(deal, "baths", "TBD"),
+        "sqft": getattr(deal, "sqft", "TBD"),
+        "asking_price": float(getattr(deal, "asking_price", 0)),
+        "price": float(getattr(deal, "price", 0)) or float(getattr(deal, "asking_price", 0)),
+        "arv": float(getattr(deal, "arv", 0)),
+        "estimated_repairs": float(getattr(deal, "estimated_repairs", 0)),
+    }
+    
+    # Create packet
+    result = draft_buyer_packet(deal_data)
+    
+    return result
+
+
 @router.post("/send-with-template")
 async def send_with_template(payload: SendWithTemplateRequest, db: Session = Depends(get_db)):
     enforce_engine("wholesaling", OUTREACH)
