@@ -20,8 +20,8 @@ GET /api/go-live/status
 
 ## Messaging
 ```
-POST /api/heimdall/draft-seller-message/{lead_id}
-POST /api/heimdall/create-buyer-packet/{deal_id}
+POST /messaging/va/draft-seller-message/{lead_id}
+POST /messaging/va/create-buyer-packet/{deal_id}
 ```
 
 ## Reports
