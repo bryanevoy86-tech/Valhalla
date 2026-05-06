@@ -84,6 +84,11 @@ from app.models.audit_log import AuditLog
 from app.models.buyer_candidate import BuyerCandidate
 from app.models.deal_buyer_match import DealBuyerMatch
 
+# VA Intake System (Phase 2 - Production Ready)
+from app.models.va_lead import VALead
+from app.models.va_approval_queue import VAApprovalQueue
+from app.models.va_audit_log import VAAuditLog
+
 __all__ = [
     "Professional",
     "InteractionLog",
@@ -144,4 +149,8 @@ __all__ = [
     # Buyer Matching
     "BuyerCandidate",
     "DealBuyerMatch",
+    # VA Intake System (Phase 2)
+    "VALead",
+    "VAApprovalQueue",
+    "VAAuditLog",
 ]
