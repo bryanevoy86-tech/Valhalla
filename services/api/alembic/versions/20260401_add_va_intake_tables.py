@@ -4,7 +4,7 @@ from alembic import op
 import sqlalchemy as sa
 
 revision = "va_intake_tables_raw"
-down_revision = None  # Standalone migration
+down_revision = "007_merge_all_heads_final"  # Attach to main migration chain
 branch_labels = None
 depends_on = None
 
