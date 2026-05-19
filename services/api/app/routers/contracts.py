@@ -13,8 +13,8 @@ from ..core.dependencies import require_builder_key
 from ..core.contract_render import render_text, make_pdf
 from ..models.contracts import ContractTemplate
 from ..models.contract_record import ContractRecord
-# Schema imports - commented out pending schema creation
-# from ..schemas.contracts import TemplateIn, TemplateOut, GenerateIn, RecordOut
+# Schema imports
+from ..schemas.contracts import TemplateIn, TemplateOut, GenerateIn, RecordOut
 
 router = APIRouter(prefix="/contracts", tags=["contracts"])
 
