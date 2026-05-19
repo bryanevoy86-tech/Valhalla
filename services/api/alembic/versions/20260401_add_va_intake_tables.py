@@ -17,7 +17,7 @@ def upgrade():
     if not bind.dialect.has_table(bind, "va_leads"):
         op.execute("""
             CREATE TABLE va_leads (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id SERIAL PRIMARY KEY,
                 source_platform VARCHAR(60) NOT NULL,
                 source_type VARCHAR(60) NOT NULL,
                 source_url VARCHAR(500),
@@ -34,7 +34,7 @@ def upgrade():
                 submitted_by VARCHAR(80) NOT NULL DEFAULT 'va',
                 heimdall_score INTEGER NOT NULL DEFAULT 0,
                 risk_level VARCHAR(20) NOT NULL DEFAULT 'high',
-                confidence REAL NOT NULL DEFAULT 0.0,
+                confidence DOUBLE PRECISION NOT NULL DEFAULT 0.0,
                 recommended_action VARCHAR(255),
                 status VARCHAR(60) NOT NULL DEFAULT 'pending',
                 stage VARCHAR(60) NOT NULL DEFAULT 'intake',
@@ -53,7 +53,7 @@ def upgrade():
     if not bind.dialect.has_table(bind, "va_approval_queue"):
         op.execute("""
             CREATE TABLE va_approval_queue (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id SERIAL PRIMARY KEY,
                 entity_type VARCHAR(60) NOT NULL DEFAULT 'lead',
                 entity_id INTEGER NOT NULL,
                 va_lead_id INTEGER NOT NULL,
