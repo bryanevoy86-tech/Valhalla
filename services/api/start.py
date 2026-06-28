@@ -23,14 +23,24 @@ if __name__ == "__main__":
             current_dir = os.path.abspath(".")
             workspace_root = None
             
-            # First check common Docker path
-            if os.path.exists("/app/alembic.ini"):
+            # First check Docker path with alembic folder (not just alembic.ini)
+            if os.path.exists("/app/alembic") and os.path.isdir("/app/alembic"):
+                workspace_root = "/app"
+            # Then check common Docker path with just alembic.ini
+            elif os.path.exists("/app/alembic.ini"):
                 workspace_root = "/app"
             else:
                 # Search up from current directory
                 search_dir = current_dir
                 for _ in range(5):  # Search up to 5 levels
-                    if os.path.exists(os.path.join(search_dir, "alembic.ini")):
+                    alembic_ini = os.path.join(search_dir, "alembic.ini")
+                    alembic_dir = os.path.join(search_dir, "alembic")
+                    # Prefer if we find both alembic.ini AND alembic folder
+                    if os.path.exists(alembic_ini) and os.path.isdir(alembic_dir):
+                        workspace_root = search_dir
+                        break
+                    # Otherwise accept just alembic.ini as fallback
+                    elif os.path.exists(alembic_ini):
                         workspace_root = search_dir
                         break
                     search_dir = os.path.dirname(search_dir)

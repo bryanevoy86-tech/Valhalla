@@ -20,6 +20,10 @@ RUN git config --global --add safe.directory /app
 # Copy entire repository
 COPY . .
 
+# Explicitly ensure alembic folder and config are copied to root for migrations
+COPY alembic /app/alembic
+COPY alembic.ini /app/alembic.ini
+
 # Copy and set executable permissions for entrypoint
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
