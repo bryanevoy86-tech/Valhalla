@@ -20,6 +20,11 @@ RUN git config --global --add safe.directory /app
 # Copy entire repository
 COPY . .
 
+# CRITICAL: Explicitly ensure root Alembic files are in image
+# (even if .dockerignore is updated, this makes it explicit)
+COPY alembic.ini /app/alembic.ini
+COPY alembic /app/alembic
+
 # Copy and set executable permissions for entrypoint
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh

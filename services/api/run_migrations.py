@@ -2,6 +2,7 @@
 """Database migration runner for Valhalla.
 
 Handles Alembic migrations with fallback for multiple heads scenarios.
+Uses absolute paths to root Alembic config for clarity and reliability.
 """
 import subprocess
 import sys
@@ -12,22 +13,72 @@ from pathlib import Path
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 log = logging.getLogger(__name__)
 
-def run_migrations() -> int:
-    """Run Alembic migrations. Returns exit code 0 on success, non-zero on failure."""
+def find_repo_root() -> Path:
+    """Find repo root by looking for alembic.ini from current directory."""
+    current = Path.cwd()
     
-    # This script is in services/api, so just use current directory
-    app_root = Path.cwd()
+    # If we're in services/api, root is parent/parent
+    if current.name == "api" and (current.parent.name == "services"):
+        return current.parent.parent
+    
+    # If we're at repo root already
+    if (current / "alembic.ini").exists():
+        return current
+    
+    # Try parent
+    if (current.parent / "alembic.ini").exists():
+        return current.parent
+    
+    # Try grandparent
+    if (current.parent.parent / "alembic.ini").exists():
+        return current.parent.parent
+    
+    # Fallback to /app (Render environment)
+    if Path("/app/alembic.ini").exists():
+        return Path("/app")
+    
+    raise FileNotFoundError("Could not find repository root with alembic.ini")
+
+def run_migrations() -> int:
+    """Run Alembic migrations using absolute paths. Returns exit code 0 on success, non-zero on failure."""
+    
+    try:
+        repo_root = find_repo_root()
+    except FileNotFoundError as e:
+        log.error(f"❌ {e}")
+        return 1
+    
+    alembic_ini = repo_root / "alembic.ini"
+    alembic_dir = repo_root / "alembic"
+    versions_dir = alembic_dir / "versions"
     
     log.info("================================================================================")
     log.info("RUNNING DATABASE MIGRATIONS")
     log.info("================================================================================")
     log.info(f"DATABASE_URL: {os.getenv('DATABASE_URL', 'NOT SET').replace(':@', ':***@')}")
-    log.info(f"Workspace root: {app_root}")
+    log.info(f"Repository root: {repo_root}")
+    log.info(f"Alembic config: {alembic_ini} (exists: {alembic_ini.exists()})")
+    log.info(f"Alembic scripts: {alembic_dir} (exists: {alembic_dir.exists()})")
+    log.info(f"Versions folder: {versions_dir} (exists: {versions_dir.exists()})")
+    log.info(f"Current working directory: {Path.cwd()}")
     
-    # Attempt 1: Standard upgrade to head
-    log.info("\n[Attempt 1] Running: alembic upgrade head")
+    # Validate prerequisites
+    if not alembic_ini.exists():
+        log.error(f"❌ Alembic config not found: {alembic_ini}")
+        return 1
+    
+    if not alembic_dir.exists():
+        log.error(f"❌ Alembic scripts folder not found: {alembic_dir}")
+        return 1
+    
+    if not versions_dir.exists():
+        log.error(f"❌ Alembic versions folder not found: {versions_dir}")
+        return 1
+    
+    # Attempt 1: Standard upgrade to head with explicit config
+    log.info(f"\n[Attempt 1] Running: python -m alembic -c {alembic_ini} upgrade head")
     result = subprocess.run(
-        ["python", "-m", "alembic", "upgrade", "head"],
+        ["python", "-m", "alembic", "-c", str(alembic_ini), "upgrade", "head"],
         capture_output=False,
         text=True
     )
@@ -37,9 +88,9 @@ def run_migrations() -> int:
         return 0
     
     # Attempt 2: If multiple heads, try upgrading to specific branch
-    log.info("\n[Attempt 2] Multiple heads detected. Checking available heads...")
+    log.info(f"\n[Attempt 2] Multiple heads detected. Checking available heads...")
     heads_result = subprocess.run(
-        ["python", "-m", "alembic", "heads"],
+        ["python", "-m", "alembic", "-c", str(alembic_ini), "heads"],
         capture_output=True,
         text=True
     )
@@ -62,7 +113,7 @@ def run_migrations() -> int:
         if core_head:
             log.info(f"\n[Attempt 2] Upgrading to core_pipeline head: {core_head}")
             result = subprocess.run(
-                ["python", "-m", "alembic", "upgrade", core_head],
+                ["python", "-m", "alembic", "-c", str(alembic_ini), "upgrade", core_head],
                 capture_output=False,
                 text=True
             )
@@ -71,10 +122,10 @@ def run_migrations() -> int:
                 log.info("✅ Migrations completed successfully (via core_pipeline branch)")
                 return 0
     
-    # Attempt 3: As last resort, current
-    log.info("\n[Attempt 3] Attempting downgrade to current state...")
+    # Attempt 3: As last resort, show current state
+    log.info(f"\n[Attempt 3] Checking current migration state...")
     result = subprocess.run(
-        ["python", "-m", "alembic", "current"],
+        ["python", "-m", "alembic", "-c", str(alembic_ini), "current"],
         capture_output=True,
         text=True
     )
@@ -83,9 +134,10 @@ def run_migrations() -> int:
     log.error("\n================================================================================")
     log.error("❌ STARTUP FAILED: Migrations failed with code 255")
     log.error("Core pipeline tables (leads, deals) require successful migration.")
-    log.error(f"Workspace root: {app_root}")
-    log.error("alembic.ini exists: " + str((app_root.parent / "alembic.ini").exists()))
-    log.error("DATABASE_URL set: " + str("DATABASE_URL" in os.environ))
+    log.error(f"Repository root: {repo_root}")
+    log.error(f"Alembic config: {alembic_ini} (exists: {alembic_ini.exists()})")
+    log.error(f"Alembic scripts: {alembic_dir} (exists: {alembic_dir.exists()})")
+    log.error(f"DATABASE_URL set: {os.getenv('DATABASE_URL') is not None}")
     log.error("Please check database connection and alembic configuration.")
     log.error("================================================================================")
     

@@ -53,8 +53,6 @@ Makefile
 heimdall/
 backend/
 /app/
-/alembic/
-/alembic.ini
 /migrations/
 ops/
 scripts/
@@ -62,6 +60,10 @@ tools/
 generated/
 
 valhalla/
+
+# IMPORTANT: Keep alembic for migrations in Docker
+# /alembic/ — REMOVED (needed for Docker)
+# /alembic.ini — REMOVED (needed for Docker)
 
 # Databases
 *.db
