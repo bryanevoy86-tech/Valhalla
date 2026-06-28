@@ -22,6 +22,7 @@ from app.models.audit_event import AuditEvent
 
 # Governance models
 from app.models.governance_decision import GovernanceDecision
+from app.models.go_live_state import GoLiveState
 
 # PACK CI5: Tuning Ruleset Engine (Updated for L0-09)
 from app.models.tuning_rules import TuningRule

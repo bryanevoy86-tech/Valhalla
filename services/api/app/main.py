@@ -164,10 +164,10 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
     allow_credentials=False,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization", "Accept"],  # Explicit for WeWeb compatibility
 )
-log.info("CORS enabled for origins: %s", cors_origins)
+log.info("CORS enabled for origins: %s with headers: [Content-Type, Authorization, Accept]", cors_origins)
 
 # ============================================================================
 # Health/Status Endpoints
