@@ -17,7 +17,7 @@ from sqlalchemy import inspect
 
 # revision identifiers, used by Alembic.
 revision = '20260408_community_schema_fix'
-down_revision = '2e6ee01fce5e'
+down_revision = ('2e6ee01fce5e', '20260122_add_go_live_tables')
 branch_labels = None
 depends_on = None
 
