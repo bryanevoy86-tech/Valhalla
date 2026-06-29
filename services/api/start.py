@@ -62,7 +62,7 @@ if __name__ == "__main__":
             print(f"🔍 DEBUG: About to run migration command:")
             print(f"  cwd: {workspace_root}")
             print(f"  config: {alembic_ini_path}")
-            print(f"  command: python -m alembic -c {alembic_ini_path} upgrade head")
+            print(f"  command: python -m alembic -c {alembic_ini_path} upgrade heads")
             
             result = subprocess.run(
                 ["python", "-m", "alembic", "-c", alembic_ini_path, "upgrade", "heads"],
