@@ -41,7 +41,10 @@ def load_settings() -> AuthSettings:
 
     owner_username = (os.getenv("VALHALLA_OWNER_USERNAME") or "").strip()
     if enabled and not owner_username:
-        raise RuntimeError("VALHALLA_OWNER_USERNAME must be set when auth is enabled")
+        # Provide default value for non-production environments
+        owner_username = "admin" if app_env != "production" else ""
+        if app_env == "production" and not owner_username:
+            raise RuntimeError("VALHALLA_OWNER_USERNAME must be set when auth is enabled")
 
     jwt_secret = (os.getenv("VALHALLA_JWT_SECRET") or "").strip()
     if enabled and app_env == "production" and not jwt_secret:

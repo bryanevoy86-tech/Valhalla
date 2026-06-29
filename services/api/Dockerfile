@@ -1,7 +1,7 @@
 FROM python:3.11-slim
 
-# Cache bust: 2026-06-28 22:58 - Force rebuild with latest start.py and alembic changes
-#ARG CACHE_BUST_TIME
+# Build-time environment to force fresh builds
+ENV FORCE_BUILD_2026_06_28_LATE_EVENING=true
 
 # Copy only necessary files to /app
 WORKDIR /app
