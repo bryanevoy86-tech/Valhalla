@@ -1,8 +1,8 @@
 FROM python:3.11-slim
 
-# BUILD CACHE INVALIDATION: 2026-04-19T02:50:00Z
-# Forcing Render redeploy - latest commits from main branch
-# If you see this timestamp, the rebuild worked correctly.
+# BUILD CACHE INVALIDATION: 2026-06-28T00:35:00Z
+# Forcing clean rebuild - alembic folder copy fix
+# All migration fixes now in place, clearing Docker cache
 
 # git for auto-commit support
 RUN apt-get update && apt-get install -y --no-install-recommends git \
