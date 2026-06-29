@@ -17,7 +17,7 @@ import sqlalchemy as sa
 
 
 revision = 'cleanup_orphaned_alembic_version_records'
-down_revision = 'pack_65_buyer_match'
+down_revision = '20260422_add_brrrr_analysis'
 branch_labels = None
 depends_on = None
 
