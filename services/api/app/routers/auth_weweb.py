@@ -96,7 +96,7 @@ def login(
     
     # Find user by email
     user = db.query(UserProfile).filter(
-        UserProfile.email.ilike(email)
+        UserProfile.email == email
     ).first()
     
     if not user:
@@ -244,7 +244,7 @@ def admin_reset_password(
         
         # Get or create user
         user = db.query(UserProfile).filter(
-            UserProfile.email.ilike(email)
+            UserProfile.email == email
         ).first()
         
         if not user:
