@@ -1,8 +1,9 @@
 FROM python:3.11-slim
 
-# BUILD CACHE INVALIDATION: 2026-06-28T00:38:00Z
-# Forcing clean rebuild - only copy alembic FOLDER from services/api
-# Use /app/alembic.ini from root (copied by COPY . .), not services/api version
+# BUILD CACHE INVALIDATION: 2026-06-28T00:39:00Z
+# Forcing clean rebuild - moving alembic folder from services/api to root
+# COPY . . copies repo structure including services/api/alembic
+# Then move it to /app/alembic for migrations to find it
 
 # git for auto-commit support
 RUN apt-get update && apt-get install -y --no-install-recommends git \
@@ -17,11 +18,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 # allow git operations inside container on mounted repo
 RUN git config --global --add safe.directory /app
 
-# Copy entire repository (includes alembic/ and alembic.ini at root)
+# Copy entire repository (includes services/api/alembic)
 COPY . .
 
-# Copy ONLY alembic folder from services/api (not the alembic.ini, use root version)
-COPY services/api/alembic /app/alembic
+# Move alembic folder from services/api to root (root/alembic is the canonical location)
+RUN if [ -d services/api/alembic ]; then mv services/api/alembic alembic; fi
 
 # Verify alembic files are present for migrations
 RUN test -d /app/alembic && test -f /app/alembic.ini && echo "✓ Alembic files present" || (echo "✗ Alembic files missing" && exit 1)
