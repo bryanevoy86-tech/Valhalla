@@ -1,5 +1,8 @@
 FROM python:3.11-slim
 
+# Cache bust: 2026-06-28 22:58 - Force rebuild with latest start.py and alembic changes
+#ARG CACHE_BUST_TIME
+
 # Copy only necessary files to /app
 WORKDIR /app
 COPY . /app
