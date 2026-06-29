@@ -49,12 +49,20 @@ if __name__ == "__main__":
                 raise RuntimeError(f"Could not find alembic.ini starting from {current_dir}")
             
             print(f"Workspace root: {workspace_root}")
+            print(f"Alembic ini path: {alembic_ini_path}")
+            print(f"Alembic folder exists: {os.path.exists(os.path.join(workspace_root, 'alembic'))}")
+            print(f"Running from directory: {workspace_root}")
             
             # Explicitly pass current environment to subprocess  
             env = os.environ.copy()
             
             # Explicitly specify alembic config file with absolute path
             alembic_ini_path = os.path.join(workspace_root, "alembic.ini")
+            
+            print(f"🔍 DEBUG: About to run migration command:")
+            print(f"  cwd: {workspace_root}")
+            print(f"  config: {alembic_ini_path}")
+            print(f"  command: python -m alembic -c {alembic_ini_path} upgrade head")
             
             result = subprocess.run(
                 ["python", "-m", "alembic", "-c", alembic_ini_path, "upgrade", "head"],
