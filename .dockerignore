@@ -53,9 +53,6 @@ Makefile
 heimdall/
 backend/
 /app/
-/alembic/
-/alembic.ini
-/migrations/
 ops/
 scripts/
 tools/
