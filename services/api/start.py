@@ -53,8 +53,11 @@ if __name__ == "__main__":
             # Explicitly pass current environment to subprocess  
             env = os.environ.copy()
             
+            # Explicitly specify alembic config file with absolute path
+            alembic_ini_path = os.path.join(workspace_root, "alembic.ini")
+            
             result = subprocess.run(
-                ["alembic", "upgrade", "head"],
+                ["python", "-m", "alembic", "-c", alembic_ini_path, "upgrade", "head"],
                 cwd=workspace_root,
                 capture_output=True,
                 text=True,
