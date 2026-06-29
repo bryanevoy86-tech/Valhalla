@@ -115,6 +115,10 @@ def _autoload_router_modules(app: FastAPI) -> int:
                 app.include_router(router)
                 loaded += 1
                 log.info("Autoloaded router: %s", full_name)
+                
+                # Special logging for auth_weweb
+                if mod_name == "auth_weweb":
+                    log.info("✅ auth_weweb router loaded - /api/weweb/* endpoints available")
         except Exception as e:
             log.exception("Failed loading router module %s: %s", full_name, e)
 
