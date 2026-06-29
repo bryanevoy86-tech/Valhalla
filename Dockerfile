@@ -1,8 +1,8 @@
 FROM python:3.11-slim
 
-# BUILD CACHE INVALIDATION: 2026-06-28T00:37:00Z
-# Forcing clean rebuild - explicitly copying from services/api/alembic
-# Using services/api as source since root alembic not appearing in Docker context
+# BUILD CACHE INVALIDATION: 2026-06-28T00:38:00Z
+# Forcing clean rebuild - only copy alembic FOLDER from services/api
+# Use /app/alembic.ini from root (copied by COPY . .), not services/api version
 
 # git for auto-commit support
 RUN apt-get update && apt-get install -y --no-install-recommends git \
@@ -17,12 +17,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 # allow git operations inside container on mounted repo
 RUN git config --global --add safe.directory /app
 
-# Copy entire repository
+# Copy entire repository (includes alembic/ and alembic.ini at root)
 COPY . .
 
-# Copy alembic from services/api to root (authoritative source)
+# Copy ONLY alembic folder from services/api (not the alembic.ini, use root version)
 COPY services/api/alembic /app/alembic
-COPY services/api/alembic.ini /app/alembic.ini
 
 # Verify alembic files are present for migrations
 RUN test -d /app/alembic && test -f /app/alembic.ini && echo "✓ Alembic files present" || (echo "✗ Alembic files missing" && exit 1)
