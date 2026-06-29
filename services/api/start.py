@@ -69,7 +69,7 @@ if __name__ == "__main__":
                 cwd=workspace_root,
                 capture_output=True,
                 text=True,
-                timeout=60,
+                timeout=600,  # 10 minutes - enough for full migration chain including early column fix
                 env=env  # Explicitly pass environment
             )
             print(result.stdout)
@@ -90,7 +90,7 @@ if __name__ == "__main__":
                 print("✅ Migrations completed successfully")
         except subprocess.TimeoutExpired:
             print("="*80)
-            print(f"❌ STARTUP FAILED: Migration timeout (60s exceeded)")
+            print(f"❌ STARTUP FAILED: Migration timeout (600s exceeded)")
             print("="*80)
             sys.exit(1)
         except Exception as e:
