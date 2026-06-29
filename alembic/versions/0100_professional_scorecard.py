@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = "0100_professional_scorecard"
-down_revision = "0067"
+down_revision = "0068"
 branch_labels = None
 depends_on = None
 

@@ -1,7 +1,7 @@
 """create engine_states table
 
 Revision ID: 0068
-Revises: 20260122_add_go_live_tables
+Revises: 0067
 Create Date: 2026-02-01
 """
 
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = "0068"
-down_revision = "20260122_add_go_live_tables"
+down_revision = "0067"
 branch_labels = None
 depends_on = None
 
