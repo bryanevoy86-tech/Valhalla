@@ -62,19 +62,27 @@ if __name__ == "__main__":
             print(f"🔍 DEBUG: About to run migration command:")
             print(f"  cwd: {workspace_root}")
             print(f"  config: {alembic_ini_path}")
-            print(f"  command: python -m alembic -c {alembic_ini_path} upgrade heads")
+            print(f"  command: python -m alembic -c {alembic_ini_path} upgrade head")
+            print(f"  timeout: 1800 seconds (30 minutes)")
             
             result = subprocess.run(
-                ["python", "-m", "alembic", "-c", alembic_ini_path, "upgrade", "heads"],
+                ["python", "-m", "alembic", "-c", alembic_ini_path, "upgrade", "head"],
                 cwd=workspace_root,
                 capture_output=True,
                 text=True,
-                timeout=600,  # 10 minutes - enough for full migration chain including early column fix
+                timeout=1800,  # 30 minutes - increased from 600s to handle long migrations
                 env=env  # Explicitly pass environment
             )
             print(result.stdout)
             if result.stderr:
                 print("STDERR:", result.stderr)
+            
+            # Print more details on error
+            if result.returncode != 0:
+                print(f"\n⚠️ MIGRATION STDERR DETAILS (returncode={result.returncode}):")
+                print(result.stderr[-2000:] if result.stderr else "No stderr")
+                print(f"\n⚠️ MIGRATION STDOUT TAIL:")
+                print(result.stdout[-1000:] if result.stdout else "No stdout")
             
             if result.returncode != 0:
                 print("="*80)
@@ -90,7 +98,7 @@ if __name__ == "__main__":
                 print("✅ Migrations completed successfully")
         except subprocess.TimeoutExpired:
             print("="*80)
-            print(f"❌ STARTUP FAILED: Migration timeout (600s exceeded)")
+            print(f"❌ STARTUP FAILED: Migration timeout (1800s exceeded)")
             print("="*80)
             sys.exit(1)
         except Exception as e:
