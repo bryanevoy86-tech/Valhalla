@@ -1,7 +1,7 @@
 FROM python:3.11-slim
 
-# BUILD CACHE INVALIDATION: 2026-06-28T00:40:00Z
-# Move alembic folder from services/api to root using absolute paths
+# BUILD CACHE INVALIDATION: 2026-06-29T00:42:00Z
+# Single alembic folder at root - removed duplicate from services/api
 
 # git for auto-commit support
 RUN apt-get update && apt-get install -y --no-install-recommends git \
@@ -19,11 +19,8 @@ RUN git config --global --add safe.directory /app
 # Copy entire repository
 COPY . .
 
-# Move alembic from services/api to root (use absolute paths)
-RUN mv /app/services/api/alembic /app/alembic 2>/dev/null || true
-
-# Verify alembic files are present
-RUN test -d /app/alembic && test -f /app/alembic.ini && echo "✓ Alembic files present" || (echo "✗ Alembic files missing" && exit 1)
+# Verify alembic files are present at canonical root location
+RUN test -d /app/alembic && test -f /app/alembic.ini && echo "✓ Alembic files present at /app/alembic" || (echo "✗ Alembic files missing" && exit 1)
 
 # Copy and set executable permissions for entrypoint
 COPY entrypoint.sh /entrypoint.sh
