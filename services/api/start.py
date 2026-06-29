@@ -65,7 +65,7 @@ if __name__ == "__main__":
             print(f"  command: python -m alembic -c {alembic_ini_path} upgrade head")
             
             result = subprocess.run(
-                ["python", "-m", "alembic", "-c", alembic_ini_path, "upgrade", "head"],
+                ["python", "-m", "alembic", "-c", alembic_ini_path, "upgrade", "heads"],
                 cwd=workspace_root,
                 capture_output=True,
                 text=True,
