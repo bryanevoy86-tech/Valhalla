@@ -39,9 +39,9 @@ RENDER_CREDENTIALS.md
 RESEARCH_CORE_SETUP.md
 TESTING.md
 
-# Scripts (except entrypoint, which Docker needs)
+# Scripts
 *.ps1
-!entrypoint.sh
+*.sh
 example_*.py
 test_*.py
 tmp_*.py
