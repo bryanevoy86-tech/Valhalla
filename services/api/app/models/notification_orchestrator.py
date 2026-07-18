@@ -8,7 +8,7 @@ from app.models.base import Base
 
 
 class NotificationChannel(Base):
-    __tablename__ = "notification_channels"
+    __tablename__ = "notification_orchestrator_channels"
 
     id = Column(Integer, primary_key=True, index=True)
     key = Column(String, nullable=False, unique=True)  # email, sms, in_app, push

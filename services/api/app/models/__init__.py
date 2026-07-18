@@ -77,6 +77,12 @@ from app.models.underwriter_assessment import UnderwriterAssessment
 # Deal Notifications
 from app.models.deal_notification import DealNotification
 
+# Match registry models required for FK graph completeness
+from app.models.match import Buyer, DealBrief
+
+# Offers registry model required for contracts.offer_id FK target
+from app.offers.models import Offer
+
 # Audit Log
 from app.models.audit_log import AuditLog
 
@@ -144,6 +150,9 @@ __all__ = [
     "UnderwriterAssessment",
     # Deal Notifications
     "DealNotification",
+    "Buyer",
+    "DealBrief",
+    "Offer",
     # Audit Log
     "AuditLog",
     # Buyer Matching
@@ -154,3 +163,6 @@ __all__ = [
     "VAApprovalQueue",
     "VAAuditLog",
 ]
+
+# Deterministic canonical metadata registration.
+import app.models.registry  # noqa: F401

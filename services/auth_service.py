@@ -15,7 +15,7 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from services.api.app.security.auth import router as ops_router  # /ops/token, /ops/me
+from app.security.auth import router as ops_router  # /ops/token, /ops/me
 
 
 app = FastAPI(

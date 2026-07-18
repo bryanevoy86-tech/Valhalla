@@ -22,11 +22,12 @@ if 'app' not in sys.modules:
     sys.modules['app'] = import_module('services.api.app')
 
 # Import from canonical Base (services/api/app/core/db.py)
-from services.api.app.core.db import Base
+from app.core.db import Base
 
 # Import models so Alembic can detect them via metadata
 # IMPORTANT: These imports register models with Base.metadata
-import services.api.app.models  # noqa: F401
+import app.models  # noqa: F401
+import app.models.registry  # noqa: F401
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
