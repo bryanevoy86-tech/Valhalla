@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from decimal import Decimal
 
 from app.models.deal import Deal
-from app.models.simple_contract import SimpleContract
+from app.models.contracts import Contract, ContractState
 from app.audit.service import log_event
 from app.audit.schemas import AuditEventCreate
 
@@ -128,24 +128,12 @@ def _get_deal_context(deal_id: int, db: Session) -> tuple:
     # Get contract (gracefully handle if table doesn't exist)
     contract = None
     try:
-        # Query the contracts table by deal_id
-        contract_row = db.execute(
-            text("SELECT id, deal_id, offer_id, status, content, signing_status, created_at, updated_at FROM contracts WHERE deal_id = :deal_id LIMIT 1"),
-            {"deal_id": deal_id}
-        ).first()
-        # Convert to simple object for compatibility
-        if contract_row:
-            class ContractData:
-                def __init__(self, row):
-                    self.id = row[0]
-                    self.deal_id = row[1]
-                    self.offer_id = row[2]
-                    self.status = row[3]
-                    self.content = row[4]
-                    self.signing_status = row[5]
-                    self.created_at = row[6]
-                    self.updated_at = row[7]
-            contract = ContractData(contract_row)
+        contract = (
+            db.query(Contract)
+            .filter(Contract.deal_id == str(deal_id))
+            .order_by(Contract.created_at.desc())
+            .first()
+        )
     except Exception:
         # contracts table doesn't exist or model issue - skip
         pass
@@ -196,14 +184,54 @@ def _build_contract_data_dict(contract: Any) -> Optional[Dict[str, Any]]:
     """Extract contract data for analysis."""
     if not contract:
         return None
+
+    state_value = _contract_state_value(contract)
     return {
         "id": contract.id,
         "deal_id": contract.deal_id,
-        "status": contract.status,
-        "content_filled": bool(contract.content),
-        "signing_status": contract.signing_status,
+        "status": state_value,
+        "content_filled": _contract_has_meaningful_content(contract),
+        "signing_status": _derive_signing_status(contract),
         "created_at": str(contract.created_at),
     }
+
+
+def _contract_state_value(contract: Any) -> str:
+    """Return canonical state as API-friendly string."""
+    state = getattr(contract, "state", None)
+    if state is None:
+        return "unknown"
+    if hasattr(state, "value"):
+        return str(state.value)
+    return str(state)
+
+
+def _contract_has_meaningful_content(contract: Any) -> bool:
+    """Treat merge data or attached documents as meaningful contract content."""
+    merge_data = getattr(contract, "merge_data", None)
+    has_merge_data = bool(merge_data)
+
+    documents = getattr(contract, "documents", None) or []
+    has_documents = any(
+        bool(getattr(doc, "storage_key", None) or getattr(doc, "filename", None))
+        for doc in documents
+    )
+
+    return has_merge_data or has_documents
+
+
+def _derive_signing_status(contract: Any) -> str:
+    """Compatibility status derived from canonical Contract.state."""
+    state = getattr(contract, "state", None)
+    if state == ContractState.FULLY_EXECUTED:
+        return "signed"
+    if state in {ContractState.SENT_FOR_SIGNATURE, ContractState.PARTIALLY_SIGNED}:
+        return "in_progress"
+    if state == ContractState.DECLINED:
+        return "declined"
+    if state == ContractState.VOIDED:
+        return "voided"
+    return "not_signed"
 
 
 def _build_buyer_match_dict(buyer_match_row: Any) -> Optional[Dict[str, Any]]:
@@ -242,11 +270,11 @@ def _detect_blockers(
     elif current_stage == "under_contract":
         if not contract:
             blocker_flags.append("no_contract")
-        elif not contract.content:
+        elif not _contract_has_meaningful_content(contract):
             blocker_flags.append("contract_content_empty")
 
     elif current_stage == "closed":
-        if not contract or not contract.signing_status:
+        if not contract or getattr(contract, "state", None) != ContractState.FULLY_EXECUTED:
             blocker_flags.append("contract_not_signed")
 
     # Risk flags (always checked, non-blocking)

@@ -1,0 +1,172 @@
+{
+  "run_date": "2026-07-18",
+  "scope": "repository-hosted alembic baseline acceptance replay",
+  "branch": "codex/canonical-app-imports",
+  "head": "0e43bf9200c615efc137cc34264f9f27f2423742",
+  "baseline": {
+    "file": "alembic/versions/8e43f380be7f_valhalla_clean_baseline.py",
+    "revision": "8e43f380be7f",
+    "down_revision": null,
+    "branch_labels": null,
+    "depends_on": null,
+    "sha256": "29e158d14f70941f74ca41373ae3db6fbceb4e36e999a0eb64a57e121c7998e4",
+    "size_bytes": 357163,
+    "compile_ok": true,
+    "import_ok": true,
+    "operation_counts": {
+      "upgrade": {
+        "create_table": 364,
+        "create_index": 378,
+        "create_foreign_key": 134,
+        "drop_ops": 0,
+        "alter_ops": 0
+      },
+      "downgrade": {
+        "drop_constraint": 134,
+        "drop_index": 378,
+        "drop_table": 364,
+        "explicit_enum_drop": 5
+      }
+    }
+  },
+  "archive": {
+    "legacy_revision_count": 146,
+    "inactive_directory": "alembic/history_broken_pre_baseline",
+    "manifest": "alembic/history_broken_pre_baseline/MANIFEST.json",
+    "historical_revision_count": 146,
+    "base_revision_count": 2,
+    "nominal_head_count": 1,
+    "cyclic_strongly_connected_component_count": 1,
+    "simple_directed_cycle_count": 16,
+    "active_historical_discovery": false,
+    "historical_graph_warning": "The inactive historical graph contains one cyclic strongly connected component comprising 16 distinct simple directed cycles.",
+    "historical_execution_policy": "Historical migrations are preserved as inactive evidence and must not be executed."
+  },
+  "alembic_graph": {
+    "active_versions_python_files": [
+      "8e43f380be7f_valhalla_clean_baseline.py"
+    ],
+    "heads": [
+      "8e43f380be7f"
+    ],
+    "branches": [],
+    "history": [
+      "<base> -> 8e43f380be7f (head)"
+    ],
+    "archive_discovered_by_alembic": false
+  },
+  "canonical_metadata": {
+    "metadata_tables": 364,
+    "mapper_count": 364,
+    "unresolved_foreign_keys": 0,
+    "mapper_configuration": "successful",
+    "duplicate_ownership": "none",
+    "duplicate_index_names": 0,
+    "duplicate_constraint_names": 0
+  },
+  "clean_upgrade": {
+    "database_host_verified": "127.0.0.1",
+    "database_port": 55443,
+    "database_name": "valhalla_repo_baseline_acceptance",
+    "container": "valhalla-repo-baseline-acceptance-pg",
+    "pre_upgrade_public_base_tables": 0,
+    "pre_upgrade_app_tables": 0,
+    "exit_status": 0,
+    "current_revision": "8e43f380be7f",
+    "head_revision": "8e43f380be7f",
+    "table_count_excluding_alembic_version": 364,
+    "foreign_key_count": 134,
+    "index_count": 841,
+    "unique_constraint_count": 98,
+    "check_constraint_count": 1859,
+    "enum_type_count": 5,
+    "domain_type_count": 0,
+    "enum_and_domain_type_count": 5,
+    "views": 0,
+    "materialized_views": 0,
+    "triggers": 0,
+    "user_defined_functions": 0,
+    "enum_inventory": [
+      "contractdockind",
+      "contractpartyrole",
+      "contractstate",
+      "signprovider",
+      "workflowstatusenum"
+    ],
+    "required_tables": {
+      "user_profiles": true,
+      "leads": true,
+      "deals": true,
+      "va_leads": true,
+      "va_approval_queue": true,
+      "contracts": true,
+      "contract_envelopes": true,
+      "audit_logs": true,
+      "audit_events": true,
+      "notification_channels": true,
+      "notification_outbox": true,
+      "notification_orchestrator_channels": true,
+      "notification_templates": true,
+      "notification_logs": true
+    }
+  },
+  "zero_drift": {
+    "temporary_revision_created": true,
+    "temporary_revision_removed": true,
+    "meaningful_counts": {
+      "create_table": 0,
+      "drop_table": 0,
+      "add_column": 0,
+      "drop_column": 0,
+      "alter_column": 0,
+      "create_index": 0,
+      "drop_index": 0,
+      "create_foreign_key": 0,
+      "drop_constraint": 0,
+      "create_unique_constraint": 0,
+      "other_meaningful_operations": 0
+    },
+    "active_versions_after_cleanup": [
+      "8e43f380be7f_valhalla_clean_baseline.py"
+    ]
+  },
+  "downgrade_reupgrade": {
+    "downgrade": {
+      "exit_status": 0,
+      "current_revision": null,
+      "application_tables": 0,
+      "foreign_keys": 0,
+      "application_indexes": 0,
+      "baseline_enum_types": 0,
+      "views": 0,
+      "materialized_views": 0,
+      "triggers": 0,
+      "user_defined_functions": 0
+    },
+    "reupgrade": {
+      "exit_status": 0,
+      "current_revision": "8e43f380be7f",
+      "application_tables": 364,
+      "foreign_keys": 134,
+      "expected_enum_types": 5,
+      "duplicate_enum_error": false
+    }
+  },
+  "fastapi_import": {
+    "import_status": "ok",
+    "router_warnings_count": 3,
+    "known_router_warning_preserved": true,
+    "known_router_module": "app.routers.pack_sw_sx_sy",
+    "known_router_error_type": "PydanticUserError",
+    "pydantic_warnings_count": 265
+  },
+  "constraints": {
+    "existing_database_actions": "none",
+    "render_connections": "none",
+    "commits": "none",
+    "pushes": "none",
+    "deployments": "none",
+    "stamps": "none",
+    "nested_archive_modified": false
+  }
+}

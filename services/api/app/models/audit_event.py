@@ -1,38 +1,22 @@
-# services/api/app/models/audit_event.py
-
 from __future__ import annotations
 
-from sqlalchemy import (
-    Column,
-    Integer,
-    String,
-    DateTime,
-    Text,
-    func,
-)
+from sqlalchemy import Boolean, Column, DateTime, Integer, String, text
 
 from app.core.db import Base
 
 
 class AuditEvent(Base):
-    """
-    Audit log events for tracking system changes.
-    Maps to the actual audit_logs table in the database.
-    """
+	__tablename__ = "audit_events"
 
-    __tablename__ = "audit_logs"
-    __table_args__ = {'extend_existing': True}
+	id = Column(Integer, primary_key=True, index=True)
+	deal_id = Column(Integer, nullable=True, index=True)
+	professional_id = Column(Integer, nullable=True, index=True)
+	code = Column(String(100), nullable=False, index=True)
+	severity = Column(String(50), nullable=True, index=True)
+	message = Column(String(500), nullable=False)
+	is_resolved = Column(Boolean, nullable=True, default=False, index=True)
+	created_at = Column(DateTime(timezone=True), nullable=True, server_default=text("CURRENT_TIMESTAMP"))
+	resolved_at = Column(DateTime(timezone=True), nullable=True)
 
-    id = Column(Integer, primary_key=True, index=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    
-    # entity tracking
-    entity_type = Column(String(50), nullable=True)
-    entity_id = Column(Integer, nullable=True)  # Use for filtering by entity (deal_id, lead_id, etc.)
-    
-    # action tracking
-    action = Column(String(100), nullable=True)
-    previous_value = Column(String(500), nullable=True)
-    new_value = Column(String(500), nullable=True)
-    user_id = Column(String(255), nullable=False, default="system")
-    notes = Column(Text, nullable=True)
+
+__all__ = ["AuditEvent"]
