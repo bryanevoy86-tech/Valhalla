@@ -9,6 +9,7 @@ Endpoints:
 
 import time
 import hmac
+import os
 from typing import Dict, Any, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
@@ -48,6 +49,20 @@ class UserResponse(BaseModel):
 # ============================================================================
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/weweb/login", auto_error=False)
+
+
+def _normalize_email(value: Optional[str]) -> str:
+    """Normalize email for stable security comparisons."""
+    return (value or "").strip().lower()
+
+
+def _is_configured_owner(authenticated_email: Optional[str]) -> bool:
+    """Resolve owner status from trusted server-side configuration only."""
+    configured_owner = _normalize_email(os.getenv("VALHALLA_OWNER_EMAIL"))
+    candidate = _normalize_email(authenticated_email)
+    if not configured_owner or not candidate:
+        return False
+    return hmac.compare_digest(candidate, configured_owner)
 
 
 def get_current_user(
@@ -165,6 +180,8 @@ def get_me(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found",
         )
+
+    is_owner = _is_configured_owner(user.email)
     
     return UserResponse(
         ok=True,
@@ -173,6 +190,7 @@ def get_me(
             "email": user.email,
             "first_name": user.first_name,
             "last_name": user.last_name,
+            "is_owner": is_owner,
         },
     )
 
