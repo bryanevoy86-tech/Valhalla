@@ -5,7 +5,7 @@ Validation, regex patterns, and constraints for all models.
 """
 
 from pydantic import BaseModel, Field, field_validator, ConfigDict
-from datetime import date
+from datetime import date as DateType
 from typing import List, Optional
 
 
@@ -16,7 +16,7 @@ from typing import List, Optional
 class LifeEventCreate(BaseModel):
     """Create a life event."""
     title: str = Field(..., min_length=1, max_length=255, description="Event title")
-    date: date = Field(..., description="Event date")
+    date: DateType = Field(..., description="Event date")
     category: str = Field(
         ...,
         description="Event category"
@@ -37,7 +37,7 @@ class LifeEventCreate(BaseModel):
 class LifeEventUpdate(BaseModel):
     """Update a life event."""
     title: Optional[str] = Field(None, min_length=1, max_length=255)
-    date: Optional[date] = None
+    date: Optional[DateType] = None
     category: Optional[str] = Field(None)
     description: Optional[str] = Field(None, min_length=1)
     impact_level: Optional[int] = Field(None, ge=1, le=5)
@@ -50,7 +50,7 @@ class LifeEventResponse(BaseModel):
     
     id: int
     event_id: str
-    date: date
+    date: DateType
     title: str
     category: str
     description: str
@@ -102,7 +102,7 @@ class LifeMilestoneResponse(BaseModel):
 
 class LifeTimelineSnapshotCreate(BaseModel):
     """Create a timeline snapshot."""
-    date_generated: date = Field(..., description="Date snapshot was generated")
+    date_generated: DateType = Field(..., description="Date snapshot was generated")
     major_events: List[str] = Field(default_factory=list, description="Event IDs")
     recent_changes: List[str] = Field(default_factory=list, description="Recent changes")
     upcoming_milestones: List[str] = Field(default_factory=list, description="Upcoming milestones")
@@ -123,7 +123,7 @@ class LifeTimelineSnapshotResponse(BaseModel):
     
     id: int
     snapshot_id: str
-    date_generated: date
+    date_generated: DateType
     major_events: List[str]
     recent_changes: List[str]
     upcoming_milestones: List[str]
@@ -138,7 +138,7 @@ class LifeTimelineSnapshotResponse(BaseModel):
 
 class EmotionalStateEntryCreate(BaseModel):
     """Create an emotional state entry."""
-    date: date = Field(..., description="Date of entry")
+    date: DateType = Field(..., description="Date of entry")
     self_reported_mood: str = Field(..., min_length=1, max_length=255, description="User's mood (own words)")
     energy_level: int = Field(..., ge=1, le=10, description="Energy level (1-10)")
     cognitive_load: int = Field(..., ge=1, le=10, description="Cognitive load (1-10)")
@@ -161,7 +161,7 @@ class EmotionalStateEntryResponse(BaseModel):
     
     id: int
     entry_id: str
-    date: date
+    date: DateType
     self_reported_mood: str
     energy_level: int
     cognitive_load: int
@@ -173,7 +173,7 @@ class EmotionalStateEntryResponse(BaseModel):
 
 class StabilityLogCreate(BaseModel):
     """Create a stability log entry."""
-    date: date = Field(..., description="Date of entry")
+    date: DateType = Field(..., description="Date of entry")
     events_today: List[str] = Field(default_factory=list, description="Events today")
     stress_factors: List[str] = Field(default_factory=list, description="Stress factors")
     relief_actions: List[str] = Field(default_factory=list, description="Relief actions")
@@ -194,7 +194,7 @@ class StabilityLogResponse(BaseModel):
     
     id: int
     log_id: str
-    date: date
+    date: DateType
     events_today: List[str]
     stress_factors: List[str]
     relief_actions: List[str]
@@ -241,7 +241,7 @@ class NeutralSummaryResponse(BaseModel):
 
 class StrategicDecisionCreate(BaseModel):
     """Create a strategic decision record."""
-    date: date = Field(..., description="Decision date")
+    date: DateType = Field(..., description="Decision date")
     title: str = Field(..., min_length=1, max_length=255, description="Decision title")
     category: str = Field(
         ...,
@@ -280,7 +280,7 @@ class StrategicDecisionResponse(BaseModel):
     
     id: int
     decision_id: str
-    date: date
+    date: DateType
     title: str
     category: str
     reasoning: str
@@ -296,7 +296,7 @@ class StrategicDecisionResponse(BaseModel):
 class DecisionRevisionCreate(BaseModel):
     """Create a decision revision record."""
     decision_id: int = Field(..., description="Parent decision ID")
-    date: date = Field(..., description="Revision date")
+    date: DateType = Field(..., description="Revision date")
     reason_for_revision: str = Field(..., min_length=1, description="Why you changed course")
     what_changed: str = Field(..., min_length=1, description="What specifically changed")
     notes: Optional[str] = Field(None, description="Additional notes")
@@ -316,7 +316,7 @@ class DecisionRevisionResponse(BaseModel):
     id: int
     revision_id: str
     decision_id: int
-    date: date
+    date: DateType
     reason_for_revision: str
     what_changed: str
     notes: Optional[str]
@@ -326,7 +326,7 @@ class DecisionRevisionResponse(BaseModel):
 
 class DecisionChainSnapshotCreate(BaseModel):
     """Create a decision chain snapshot."""
-    date: date = Field(..., description="Snapshot date")
+    date: DateType = Field(..., description="Snapshot date")
     major_decisions: List[str] = Field(default_factory=list, description="Major decisions")
     revisions: List[str] = Field(default_factory=list, description="Evolution record")
     reasons: List[str] = Field(default_factory=list, description="User-stated reasons")
@@ -347,7 +347,7 @@ class DecisionChainSnapshotResponse(BaseModel):
     
     id: int
     snapshot_id: str
-    date: date
+    date: DateType
     major_decisions: List[str]
     revisions: List[str]
     reasons: List[str]
