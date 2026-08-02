@@ -33,7 +33,11 @@ class StrategicDecision(Base):
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
     # Relationships
-    revisions = relationship("DecisionRevision", back_populates="decision", cascade="all, delete-orphan")
+    revisions = relationship(
+        "app.models.pack_sy.DecisionRevision",
+        back_populates="decision",
+        cascade="all, delete-orphan",
+    )
 
     def __repr__(self):
         return f"<StrategicDecision {self.decision_id}: {self.title}>"
@@ -56,7 +60,11 @@ class DecisionRevision(Base):
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
     # Relationships
-    decision = relationship("StrategicDecision", back_populates="revisions")
+    # Use module-qualified paths to avoid collisions with similarly named models.
+    decision = relationship(
+        "app.models.pack_sy.StrategicDecision",
+        back_populates="revisions",
+    )
 
     def __repr__(self):
         return f"<DecisionRevision {self.revision_id}: {self.date}>"
