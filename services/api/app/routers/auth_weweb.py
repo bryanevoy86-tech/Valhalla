@@ -41,6 +41,7 @@ class LoginResponse(BaseModel):
 
 class UserResponse(BaseModel):
     ok: bool
+    is_owner: Optional[bool] = None
     user: Optional[Dict[str, Any]] = None
 
 
@@ -106,10 +107,19 @@ def login(
     
     Returns JWT token on success.
     """
-    email = credentials.email.strip().lower()
+    raw_identifier = credentials.email.strip()
+    email = raw_identifier.lower()
     password = credentials.password
+
+    # Backward-compatible owner login fallback:
+    # if a legacy owner username is provided, resolve it to owner email.
+    configured_owner_username = (os.getenv("VALHALLA_OWNER_USERNAME") or "").strip().lower()
+    configured_owner_email = _normalize_email(os.getenv("VALHALLA_OWNER_EMAIL"))
+    if configured_owner_username and configured_owner_email:
+        if hmac.compare_digest(email, configured_owner_username):
+            email = configured_owner_email
     
-    # Find user by email
+    # Find user by normalized email
     user = db.query(UserProfile).filter(
         UserProfile.email == email
     ).first()
@@ -185,6 +195,7 @@ def get_me(
     
     return UserResponse(
         ok=True,
+        is_owner=is_owner,
         user={
             "id": user.user_id,
             "email": user.email,
