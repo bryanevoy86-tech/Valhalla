@@ -1,8 +1,8 @@
-# Bootstrap Admin User Flow - DELIVERABLES
+﻿# Bootstrap Admin User Flow - DELIVERABLES
 
 ## Summary
 
-✅ **Complete** - One-time bootstrap admin user flow for immediate WeWeb login after backend startup.
+âœ… **Complete** - One-time bootstrap admin user flow for immediate WeWeb login after backend startup.
 
 ---
 
@@ -53,11 +53,11 @@ from app.services.bootstrap_admin import bootstrap_admin_user
 # After community seed, add:
 bootstrap_result = bootstrap_admin_user(db)
 if bootstrap_result["status"] == "created":
-    log.info(f"✓ Bootstrap admin created: {bootstrap_result['email']}")
+    log.info(f"âœ“ Bootstrap admin created: {bootstrap_result['email']}")
 elif bootstrap_result["status"] == "already_exists":
-    log.info(f"✓ Bootstrap admin already exists: {bootstrap_result['email']}")
+    log.info(f"âœ“ Bootstrap admin already exists: {bootstrap_result['email']}")
 else:
-    log.info(f"✓ Bootstrap admin skipped: {bootstrap_result['detail']}")
+    log.info(f"âœ“ Bootstrap admin skipped: {bootstrap_result['detail']}")
 ```
 
 **Location:** `d:\dev\services\api\app\services\post_boot_init.py` (lines 1-50 modified)
@@ -68,8 +68,8 @@ else:
 ```bash
 # Bootstrap Admin User (one-time creation on startup)
 # Set both to enable bootstrap, comment out to skip
-BOOTSTRAP_ADMIN_EMAIL=bryanevoy86@gmail.com
-BOOTSTRAP_ADMIN_PASSWORD=DrDoom!1
+BOOTSTRAP_ADMIN_EMAIL=<OWNER_EMAIL_FROM_ENV>
+BOOTSTRAP_ADMIN_PASSWORD=<OWNER_PASSWORD_FROM_ENV>
 
 # Auth/Ops User (for /ops/token endpoint if needed)
 VALHALLA_OWNER_USERNAME=admin
@@ -213,7 +213,7 @@ from sqlalchemy.orm import Session
 
 from app.core.db import SessionLocal
 from app.seeds.community_seed import seed_community
-from app.services.bootstrap_admin import bootstrap_admin_user  # ← ADD THIS
+from app.services.bootstrap_admin import bootstrap_admin_user  # â† ADD THIS
 
 log = logging.getLogger(__name__)
 ```
@@ -238,21 +238,21 @@ def run_post_boot_init_sync() -> dict:
         if _community_seed_needed(db):
             seed_community(db)
             db.commit()
-            log.info("✓ Community seed completed")
+            log.info("âœ“ Community seed completed")
         else:
-            log.info("✓ Community seed already present, skipping")
+            log.info("âœ“ Community seed already present, skipping")
 
         # Bootstrap admin user if configured
         bootstrap_result = bootstrap_admin_user(db)
         if bootstrap_result["status"] == "created":
-            log.info(f"✓ Bootstrap admin created: {bootstrap_result['email']}")
+            log.info(f"âœ“ Bootstrap admin created: {bootstrap_result['email']}")
         elif bootstrap_result["status"] == "already_exists":
-            log.info(f"✓ Bootstrap admin already exists: {bootstrap_result['email']}")
+            log.info(f"âœ“ Bootstrap admin already exists: {bootstrap_result['email']}")
         else:
-            log.info(f"✓ Bootstrap admin skipped: {bootstrap_result['detail']}")
+            log.info(f"âœ“ Bootstrap admin skipped: {bootstrap_result['detail']}")
 
         if not bootstrap_result["ok"]:
-            log.warning(f"⚠ Bootstrap admin had issues: {bootstrap_result['detail']}")
+            log.warning(f"âš  Bootstrap admin had issues: {bootstrap_result['detail']}")
 
         msg = "Post-boot initialization completed successfully."
         _write_state("completed", msg)
@@ -279,8 +279,8 @@ Add to `d:\dev\.env`:
 ```bash
 # Bootstrap Admin User (one-time creation on startup)
 # Set both to enable bootstrap, comment out to skip
-BOOTSTRAP_ADMIN_EMAIL=bryanevoy86@gmail.com
-BOOTSTRAP_ADMIN_PASSWORD=DrDoom!1
+BOOTSTRAP_ADMIN_EMAIL=<OWNER_EMAIL_FROM_ENV>
+BOOTSTRAP_ADMIN_PASSWORD=<OWNER_PASSWORD_FROM_ENV>
 
 # Auth/Ops User (for /ops/token endpoint if needed)
 VALHALLA_OWNER_USERNAME=admin
@@ -314,15 +314,15 @@ VALHALLA_OWNER_PASSWORD=admin-change-me
 
 7. **Log result:**
    ```
-   INFO: ✓ Bootstrap admin created: bryanevoy86@gmail.com
+   INFO: âœ“ Bootstrap admin created: <OWNER_EMAIL_FROM_ENV>
    ```
    OR
    ```
-   INFO: ✓ Bootstrap admin already exists: bryanevoy86@gmail.com
+   INFO: âœ“ Bootstrap admin already exists: <OWNER_EMAIL_FROM_ENV>
    ```
    OR
    ```
-   INFO: ✓ Bootstrap admin skipped: Bootstrap disabled (set BOOTSTRAP_ADMIN_EMAIL...)
+   INFO: âœ“ Bootstrap admin skipped: Bootstrap disabled (set BOOTSTRAP_ADMIN_EMAIL...)
    ```
 
 8. **App ready:** All health endpoints respond, all 230+ routers loaded
@@ -334,9 +334,9 @@ $ python -m uvicorn app.main:app --reload --port 4000
 ...
 INFO:     Uvicorn running on http://127.0.0.1:4000
 INFO:     Valhalla startup complete. Loaded 230 router modules.
-INFO:     ✓ Community seed completed
-INFO:     ✓ Bootstrap admin created: bryanevoy86@gmail.com (user_id=1)
-INFO:     ✓ Post-boot initialization completed successfully.
+INFO:     âœ“ Community seed completed
+INFO:     âœ“ Bootstrap admin created: <OWNER_EMAIL_FROM_ENV> (user_id=1)
+INFO:     âœ“ Post-boot initialization completed successfully.
 ...
 ```
 
@@ -347,9 +347,9 @@ $ python -m uvicorn app.main:app --reload --port 4000
 ...
 INFO:     Uvicorn running on http://127.0.0.1:4000
 INFO:     Valhalla startup complete. Loaded 230 router modules.
-INFO:     ✓ Community seed already present, skipping
-INFO:     ✓ Bootstrap admin already exists: bryanevoy86@gmail.com
-INFO:     ✓ Post-boot initialization completed successfully.
+INFO:     âœ“ Community seed already present, skipping
+INFO:     âœ“ Bootstrap admin already exists: <OWNER_EMAIL_FROM_ENV>
+INFO:     âœ“ Post-boot initialization completed successfully.
 ...
 ```
 
@@ -367,7 +367,7 @@ INFO:     ✓ Post-boot initialization completed successfully.
 
 **Body:**
 ```
-username=bryanevoy86@gmail.com&password=DrDoom!1
+username=<OWNER_EMAIL_FROM_ENV>&password=<OWNER_PASSWORD_FROM_ENV>
 ```
 
 **Success Response (200):**
@@ -390,7 +390,7 @@ username=bryanevoy86@gmail.com&password=DrDoom!1
 
 - **Minimum:** Any length (system doesn't enforce)
 - **Recommended:** 12+ characters, mixed case, numbers, symbols
-- **Example:** `DrDoom!1` (YOUR provided credentials)
+- **Example:** `<OWNER_PASSWORD_FROM_ENV>` (YOUR provided credentials)
 
 ---
 
@@ -405,7 +405,7 @@ python test_bootstrap_admin.py
 
 **Expected Output:**
 ```
-✓ BOOTSTRAP TEST PASSED - User is ready for login
+âœ“ BOOTSTRAP TEST PASSED - User is ready for login
 ```
 
 ### 2. Start Backend
@@ -418,7 +418,7 @@ python -m uvicorn app.main:app --reload --port 4000
 
 **Watch for logs:**
 ```
-INFO: ✓ Bootstrap admin created: bryanevoy86@gmail.com
+INFO: âœ“ Bootstrap admin created: <OWNER_EMAIL_FROM_ENV>
 ```
 
 ### 3. Test Login (Via Curl)
@@ -452,23 +452,23 @@ curl -X POST http://localhost:4000/ops/token \
 
 | Item | Status | Details |
 |------|--------|---------|
-| **File 1** | ✅ Created | `services/api/app/services/bootstrap_admin.py` (140 lines) |
-| **File 2** | ✅ Modified | `services/api/app/services/post_boot_init.py` (+30 lines) |
-| **File 3** | ✅ Updated | `.env` (+6 lines) |
-| **Env Vars** | ✅ Added | `BOOTSTRAP_ADMIN_EMAIL`, `BOOTSTRAP_ADMIN_PASSWORD` |
-| **Support Vars** | ✅ Added | `VALHALLA_OWNER_USERNAME`, `VALHALLA_OWNER_PASSWORD` |
-| **Password Hashing** | ✅ Using | PBKDF2-SHA256 from `app.security.auth` |
-| **Idempotent** | ✅ Yes | Safe to restart backend ~infinite times |
-| **Non-breaking** | ✅ Yes | Existing auth/users unaffected |
-| **Test Script** | ✅ Created | `test_bootstrap_admin.py` for pre-flight check |
-| **Documentation** | ✅ Created | `BOOTSTRAP_ADMIN_SETUP.md` (comprehensive guide) |
+| **File 1** | âœ… Created | `services/api/app/services/bootstrap_admin.py` (140 lines) |
+| **File 2** | âœ… Modified | `services/api/app/services/post_boot_init.py` (+30 lines) |
+| **File 3** | âœ… Updated | `.env` (+6 lines) |
+| **Env Vars** | âœ… Added | `BOOTSTRAP_ADMIN_EMAIL`, `BOOTSTRAP_ADMIN_PASSWORD` |
+| **Support Vars** | âœ… Added | `VALHALLA_OWNER_USERNAME`, `VALHALLA_OWNER_PASSWORD` |
+| **Password Hashing** | âœ… Using | PBKDF2-SHA256 from `app.security.auth` |
+| **Idempotent** | âœ… Yes | Safe to restart backend ~infinite times |
+| **Non-breaking** | âœ… Yes | Existing auth/users unaffected |
+| **Test Script** | âœ… Created | `test_bootstrap_admin.py` for pre-flight check |
+| **Documentation** | âœ… Created | `BOOTSTRAP_ADMIN_SETUP.md` (comprehensive guide) |
 
 ---
 
 ## Critical Checklist
 
-- [x] Added `BOOTSTRAP_ADMIN_EMAIL=bryanevoy86@gmail.com` to `.env`
-- [x] Added `BOOTSTRAP_ADMIN_PASSWORD=DrDoom!1` to `.env`
+- [x] Added `BOOTSTRAP_ADMIN_EMAIL=<OWNER_EMAIL_FROM_ENV>` to `.env`
+- [x] Added `BOOTSTRAP_ADMIN_PASSWORD=<OWNER_PASSWORD_FROM_ENV>` to `.env`
 - [x] Created `bootstrap_admin.py` with safe env reading
 - [x] Uses `pbkdf2_hash_password()` (secure hashing)
 - [x] Integrated into `post_boot_init.py` startup flow
@@ -476,7 +476,7 @@ curl -X POST http://localhost:4000/ops/token \
 - [x] No hardcoded credentials in source
 - [x] No password exposed in logs
 - [x] Idempotent (no duplicate user creation)
-- [x] Tested with `test_bootstrap_admin.py` ✅ PASSED
+- [x] Tested with `test_bootstrap_admin.py` âœ… PASSED
 - [x] Does not require manual database manipulation
 - [x] Ready for immediate WeWeb login
 
@@ -491,12 +491,12 @@ curl -X POST http://localhost:4000/ops/token \
 
 2. **Verify Bootstrap in Logs**
    ```
-   ✓ Bootstrap admin created: bryanevoy86@gmail.com
+   âœ“ Bootstrap admin created: <OWNER_EMAIL_FROM_ENV>
    ```
 
 3. **Connect WeWeb**
-   - REST API → `http://localhost:4000/ops/token`
-   - Login: `bryanevoy86@gmail.com` / `DrDoom!1`
+   - REST API â†’ `http://localhost:4000/ops/token`
+   - Login: `<OWNER_EMAIL_FROM_ENV>` / `<OWNER_PASSWORD_FROM_ENV>`
 
 4. **Start Building**
    - Deal management pages
@@ -505,4 +505,5 @@ curl -X POST http://localhost:4000/ops/token \
 
 ---
 
-✅ **COMPLETE** - Bootstrap admin flow is production-ready.
+âœ… **COMPLETE** - Bootstrap admin flow is production-ready.
+

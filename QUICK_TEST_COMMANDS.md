@@ -1,4 +1,4 @@
-# Exact Commands to Run - Local Dev Testing
+﻿# Exact Commands to Run - Local Dev Testing
 
 ## Step 1: Stop Current Backend (if running)
 
@@ -112,7 +112,7 @@ Invoke-WebRequest -Uri "http://127.0.0.1:4000/ops/me" `
 ### NOT /ops/token (For Future Use)
 | Purpose | Email | Password |
 |---------|-------|----------|
-| Bootstrap Admin User (database) | `bryanevoy86@gmail.com` | `DrDoom!1` |
+| Bootstrap Admin User (database) | `<OWNER_EMAIL_FROM_ENV>` | `<OWNER_PASSWORD_FROM_ENV>` |
 
 ---
 
@@ -123,7 +123,7 @@ Invoke-WebRequest -Uri "http://127.0.0.1:4000/ops/me" `
 # 1. Check health
 Write-Host "1. Testing health endpoint..."
 $health = Invoke-WebRequest -Uri "http://127.0.0.1:4000/health" -UseBasicParsing | ConvertFrom-Json
-Write-Host "✓ Health: $($health.status)"
+Write-Host "âœ“ Health: $($health.status)"
 
 # 2. Get token
 Write-Host "2. Getting auth token..."
@@ -132,16 +132,16 @@ $auth = Invoke-WebRequest -Uri "http://127.0.0.1:4000/ops/token" `
   -Headers @{"Content-Type"="application/x-www-form-urlencoded"} `
   -Body "username=admin&password=admin-change-me" `
   -UseBasicParsing | ConvertFrom-Json
-Write-Host "✓ Token type: $($auth.token_type)"
+Write-Host "âœ“ Token type: $($auth.token_type)"
 
 # 3. Verify token
 Write-Host "3. Verifying token..."
 $me = Invoke-WebRequest -Uri "http://127.0.0.1:4000/ops/me" `
   -Headers @{"Authorization"="Bearer $($auth.access_token)"} `
   -UseBasicParsing | ConvertFrom-Json
-Write-Host "✓ Logged in as: $($me.user)"
+Write-Host "âœ“ Logged in as: $($me.user)"
 
-Write-Host "`n✓ All tests passed! Ready for WeWeb integration."
+Write-Host "`nâœ“ All tests passed! Ready for WeWeb integration."
 ```
 
 Save as `test_backend.ps1` and run:
@@ -155,11 +155,11 @@ Save as `test_backend.ps1` and run:
 
 | Operation | Duration | Status |
 |-----------|----------|--------|
-| App startup to "Uvicorn running" | <3 seconds | ✓ Fast |
-| GET /health | <100ms | ✓ Instant |
-| POST /ops/token | <500ms | ✓ Quick |
-| GET /ops/me (with token) | <100ms | ✓ Instant |
-| Bootstrap admin completion | ~5 seconds after startup | ✓ Background |
+| App startup to "Uvicorn running" | <3 seconds | âœ“ Fast |
+| GET /health | <100ms | âœ“ Instant |
+| POST /ops/token | <500ms | âœ“ Quick |
+| GET /ops/me (with token) | <100ms | âœ“ Instant |
+| Bootstrap admin completion | ~5 seconds after startup | âœ“ Background |
 
 ---
 
@@ -217,4 +217,5 @@ Once all tests pass:
 
 ---
 
-**✓ Everything is ready. Start the backend and run the tests!**
+**âœ“ Everything is ready. Start the backend and run the tests!**
+

@@ -1,4 +1,4 @@
-# Backend Startup Diagnostic - Root Causes & Fixes
+﻿# Backend Startup Diagnostic - Root Causes & Fixes
 
 ## Summary
 
@@ -18,13 +18,13 @@ Both are now fixed.
 **What was wrong:**
 ```python
 # OLD - This blocked startup!
-from app.security.auth import pbkdf2_hash_password  # ← Executed at IMPORT time!
+from app.security.auth import pbkdf2_hash_password  # â† Executed at IMPORT time!
 ```
 
 When `bootstrap_admin.py` was imported, it immediately ran `app.security.auth` module code:
 ```python
 # In app.security.auth
-SETTINGS = load_settings()  # ← Validates env vars, can fail during import!
+SETTINGS = load_settings()  # â† Validates env vars, can fail during import!
 ```
 
 This created a hard dependency on auth settings BEFORE the app even started.
@@ -66,12 +66,12 @@ The system has TWO separate authentication mechanisms:
 The bootstrap admin user goes into the **database**, but `/ops/token` checks **environment variables**.
 
 **Example:**
-- Bootstrap admin created: `bryanevoy86@gmail.com` (in database)
+- Bootstrap admin created: `<OWNER_EMAIL_FROM_ENV>` (in database)
 - `/ops/token` endpoint: Uses `admin` / `admin-change-me` (from env)
 - These are UNRELATED - different auth systems!
 
 **Why it matters:**
-- Immediate WeWeb login uses `/ops/token` → Uses `admin` / `admin-change-me`
+- Immediate WeWeb login uses `/ops/token` â†’ Uses `admin` / `admin-change-me`
 - Bootstrap admin is for future user profile system (not used by /ops/token)
 - Don't try to login to WeWeb with bootstrap credentials
 
@@ -134,11 +134,11 @@ pbkdf2_hash_password = _get_password_hasher()  # Called here (after startup)
 
 ## Now Fixed
 
-✅ **App starts immediately** - bootstrap_admin doesn't block startup  
-✅ **Auth endpoints respond quickly** - no heavy imports on request path  
-✅ **/health responds fast** - no dependencies on bootstrap completion  
-✅ **/ops/token responds fast** - uses pre-loaded env vars  
-✅ **Bootstrap happens safely** - runs after startup (5-second delay)  
+âœ… **App starts immediately** - bootstrap_admin doesn't block startup  
+âœ… **Auth endpoints respond quickly** - no heavy imports on request path  
+âœ… **/health responds fast** - no dependencies on bootstrap completion  
+âœ… **/ops/token responds fast** - uses pre-loaded env vars  
+âœ… **Bootstrap happens safely** - runs after startup (5-second delay)  
 
 ---
 
@@ -154,18 +154,18 @@ pbkdf2_hash_password = _get_password_hasher()  # Called here (after startup)
 2. **Health endpoint works** - Should respond in <100ms:
    ```
    GET http://127.0.0.1:4000/health
-   → {"ok":true,"status":"ok","heimdall":"online","routers_loaded":230}
+   â†’ {"ok":true,"status":"ok","heimdall":"online","routers_loaded":230}
    ```
 
 3. **Auth endpoint works** - Should respond in <500ms:
    ```
    POST http://127.0.0.1:4000/ops/token
-   → {"access_token":"eyJ...","token_type":"bearer","expires_in":3600}
+   â†’ {"access_token":"eyJ...","token_type":"bearer","expires_in":3600}
    ```
 
 4. **Bootstrap happens after startup** - Check logs at ~5 seconds:
    ```
-   INFO: ✓ Bootstrap admin created: bryanevoy86@gmail.com
+   INFO: âœ“ Bootstrap admin created: <OWNER_EMAIL_FROM_ENV>
    ```
 
 ---
@@ -179,7 +179,7 @@ pbkdf2_hash_password = _get_password_hasher()  # Called here (after startup)
 | **Username** | `admin` | `$env:VALHALLA_OWNER_USERNAME` |
 | **Password** | `admin-change-me` | `$env:VALHALLA_OWNER_PASSWORD` |
 
-**Not** the bootstrap admin (`bryanevoy86@gmail.com`).
+**Not** the bootstrap admin (`<OWNER_EMAIL_FROM_ENV>`).
 
 ### Request Format
 
@@ -220,8 +220,8 @@ VALHALLA_OWNER_PASSWORD=admin-change-me
 CORS_ALLOWED_ORIGINS=http://localhost:4000,http://localhost:3000,https://app.weweb.io,...
 
 # Optional (for bootstrap admin user in database)
-BOOTSTRAP_ADMIN_EMAIL=bryanevoy86@gmail.com
-BOOTSTRAP_ADMIN_PASSWORD=DrDoom!1
+BOOTSTRAP_ADMIN_EMAIL=<OWNER_EMAIL_FROM_ENV>
+BOOTSTRAP_ADMIN_PASSWORD=<OWNER_PASSWORD_FROM_ENV>
 ```
 
 ---
@@ -289,28 +289,28 @@ Invoke-WebRequest -Uri "http://127.0.0.1:4000/ops/me" `
 
 ```
 1. Uvicorn starts
-   ✓ Fast - no blocking imports
+   âœ“ Fast - no blocking imports
 
 2. FastAPI app created
-   ✓ Routers mounted
-   ✓ Models imported
-   ✓ Middleware added
-   ✓ Health endpoints ready
+   âœ“ Routers mounted
+   âœ“ Models imported
+   âœ“ Middleware added
+   âœ“ Health endpoints ready
 
 3. Lifespan context enters
-   ✓ /health responds immediately
-   ✓ /ops/token responds immediately
+   âœ“ /health responds immediately
+   âœ“ /ops/token responds immediately
 
 4. Async task spawned (5-second delay)
-   ✓ Run post-boot init
-   ✓ Seed community data (if needed)
-   ✓ Bootstrap admin user (if env vars set)
-   ✓ Log completion
+   âœ“ Run post-boot init
+   âœ“ Seed community data (if needed)
+   âœ“ Bootstrap admin user (if env vars set)
+   âœ“ Log completion
 
 5. App fully ready
-   ✓ All 230+ routers loaded
-   ✓ Database seeded
-   ✓ Bootstrap admin ready
+   âœ“ All 230+ routers loaded
+   âœ“ Database seeded
+   âœ“ Bootstrap admin ready
 ```
 
 ---
@@ -363,4 +363,5 @@ Invoke-WebRequest -Uri "http://127.0.0.1:4000/ops/me" `
 
 ---
 
-**Status: ✅ FIXED - Backend is now dev-safe and startup-non-blocking**
+**Status: âœ… FIXED - Backend is now dev-safe and startup-non-blocking**
+

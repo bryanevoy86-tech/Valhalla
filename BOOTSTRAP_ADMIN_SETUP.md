@@ -1,4 +1,4 @@
-# Bootstrap Admin User for WeWeb Integration
+﻿# Bootstrap Admin User for WeWeb Integration
 
 > One-time automatic admin user creation on backend startup
 
@@ -7,11 +7,11 @@
 The Valhalla backend now automatically creates a bootstrap admin user during startup if configured via environment variables. This allows immediate login to WeWeb without manual database manipulation.
 
 **Key Features:**
-- ✅ **Idempotent** - Safe to run multiple times (checks before creating)
-- ✅ **Secure** - Uses PBKDF2-SHA256 password hashing
-- ✅ **Non-breaking** - Existing auth and users unaffected
-- ✅ **Dev-safe** - No hardcoded credentials
-- ✅ **Production-aware** - No passwords in logs
+- âœ… **Idempotent** - Safe to run multiple times (checks before creating)
+- âœ… **Secure** - Uses PBKDF2-SHA256 password hashing
+- âœ… **Non-breaking** - Existing auth and users unaffected
+- âœ… **Dev-safe** - No hardcoded credentials
+- âœ… **Production-aware** - No passwords in logs
 
 ---
 
@@ -21,8 +21,8 @@ The Valhalla backend now automatically creates a bootstrap admin user during sta
 
 ```bash
 # In d:\dev\.env
-BOOTSTRAP_ADMIN_EMAIL=bryanevoy86@gmail.com
-BOOTSTRAP_ADMIN_PASSWORD=DrDoom!1
+BOOTSTRAP_ADMIN_EMAIL=<OWNER_EMAIL_FROM_ENV>
+BOOTSTRAP_ADMIN_PASSWORD=<OWNER_PASSWORD_FROM_ENV>
 ```
 
 **Note:** Both env vars must be set to enable bootstrap. Leave commented to skip.
@@ -43,8 +43,8 @@ python -m uvicorn app.main:app --reload --port 4000
 Use these credentials in WeWeb:
 
 ```
-Email:    bryanevoy86@gmail.com
-Password: DrDoom!1
+Email:    <OWNER_EMAIL_FROM_ENV>
+Password: <OWNER_PASSWORD_FROM_ENV>
 ```
 
 ---
@@ -55,28 +55,28 @@ Password: DrDoom!1
 
 ```
 Backend Starts
-    ↓
+    â†“
 lifespan() context manager activates
-    ↓
+    â†“
 5-second delay (let health stabilize)
-    ↓
+    â†“
 run_post_boot_init() async task
-    ↓
+    â†“
 run_post_boot_init_sync() main function
-    ↓
+    â†“
 [1] Seed community data (if needed)
-    ↓
-[2] bootstrap_admin_user(db) ← YOU ARE HERE
-    ↓
+    â†“
+[2] bootstrap_admin_user(db) â† YOU ARE HERE
+    â†“
 Check BOOTSTRAP_ADMIN_EMAIL and BOOTSTRAP_ADMIN_PASSWORD
-    ├─ Both set? → Look up user by email
-    │   ├─ Exists? → Skip (idempotent)
-    │   └─ Not exist? → Create with hashed password
-    ├─ Either missing? → Skip cleanly
-    └─ Error? → Log warning, continue (don't fail startup)
-    ↓
+    â”œâ”€ Both set? â†’ Look up user by email
+    â”‚   â”œâ”€ Exists? â†’ Skip (idempotent)
+    â”‚   â””â”€ Not exist? â†’ Create with hashed password
+    â”œâ”€ Either missing? â†’ Skip cleanly
+    â””â”€ Error? â†’ Log warning, continue (don't fail startup)
+    â†“
 Bootstrap complete
-    ↓
+    â†“
 App ready at http://localhost:4000
 ```
 
@@ -105,21 +105,21 @@ Bootstrap creates entries in two tables:
 
 **`user_profiles` table:**
 ```
-user_id (PK)     → 1 (auto-increment)
-first_name       → "Bootstrap"
-last_name        → "Admin"
-email            → bryanevoy86@gmail.com
-created_at       → 2026-04-17 04:05:41
+user_id (PK)     â†’ 1 (auto-increment)
+first_name       â†’ "Bootstrap"
+last_name        â†’ "Admin"
+email            â†’ <OWNER_EMAIL_FROM_ENV>
+created_at       â†’ 2026-04-17 04:05:41
 ```
 
 **`account_settings` table:**
 ```
-account_id (PK)  → 1 (auto-increment)
-user_id (FK)     → 1
-password_hash    → pbkdf2_sha256$210000$...
-email_verified   → False
-phone_verified   → False
-two_factor_enabled → False
+account_id (PK)  â†’ 1 (auto-increment)
+user_id (FK)     â†’ 1
+password_hash    â†’ pbkdf2_sha256$210000$...
+email_verified   â†’ False
+phone_verified   â†’ False
+two_factor_enabled â†’ False
 ```
 
 ### Password Hashing
@@ -128,14 +128,14 @@ Uses PBKDF2-SHA256 (from `app.security.auth`):
 
 ```python
 # Input
-password = "DrDoom!1"
+password = "<OWNER_PASSWORD_FROM_ENV>"
 
 # Hash process
 pbkdf2_hash_password(password)
-  ├─ Generate 16-byte salt (random)
-  ├─ PBKDF2-SHA256: 210,000 iterations
-  ├─ 32-byte derived key
-  └─ Return: pbkdf2_sha256$210000$[salt]$[hash]
+  â”œâ”€ Generate 16-byte salt (random)
+  â”œâ”€ PBKDF2-SHA256: 210,000 iterations
+  â”œâ”€ 32-byte derived key
+  â””â”€ Return: pbkdf2_sha256$210000$[salt]$[hash]
 
 # Stored in database
 password_hash = "pbkdf2_sha256$210000$..."
@@ -144,10 +144,10 @@ password_hash = "pbkdf2_sha256$210000$..."
 **Verification (on login):**
 ```python
 pbkdf2_verify(user_password, stored_hash)
-  ├─ Parse hash format
-  ├─ Extract salt and iterations
-  ├─ Hash input password with same salt
-  └─ Compare securely (constant-time)
+  â”œâ”€ Parse hash format
+  â”œâ”€ Extract salt and iterations
+  â”œâ”€ Hash input password with same salt
+  â””â”€ Compare securely (constant-time)
 ```
 
 ---
@@ -158,8 +158,8 @@ pbkdf2_verify(user_password, stored_hash)
 
 | Variable | Value | Example |
 |----------|-------|---------|
-| `BOOTSTRAP_ADMIN_EMAIL` | Email address | `bryanevoy86@gmail.com` |
-| `BOOTSTRAP_ADMIN_PASSWORD` | Plain text password | `DrDoom!1` |
+| `BOOTSTRAP_ADMIN_EMAIL` | Email address | `<OWNER_EMAIL_FROM_ENV>` |
+| `BOOTSTRAP_ADMIN_PASSWORD` | Plain text password | `<OWNER_PASSWORD_FROM_ENV>` |
 
 ### Supporting (required for auth system)
 
@@ -177,8 +177,8 @@ DATABASE_URL=sqlite:///./valhalla_local.db
 ENV=dev
 
 # Bootstrap Admin (for WeWeb login)
-BOOTSTRAP_ADMIN_EMAIL=bryanevoy86@gmail.com
-BOOTSTRAP_ADMIN_PASSWORD=DrDoom!1
+BOOTSTRAP_ADMIN_EMAIL=<OWNER_EMAIL_FROM_ENV>
+BOOTSTRAP_ADMIN_PASSWORD=<OWNER_PASSWORD_FROM_ENV>
 
 # Owner user (for /ops/token endpoint)
 VALHALLA_OWNER_USERNAME=admin
@@ -197,18 +197,18 @@ CORS_ALLOWED_ORIGINS=http://localhost:4000,http://localhost:3000,https://valhall
 
 ### What's NOT Done
 
-❌ **No hardcoded credentials** in source code  
-❌ **No passwords in logs** (only status messages)  
-❌ **No public endpoints** to create users  
-❌ **No exposure** of password hashes  
+âŒ **No hardcoded credentials** in source code  
+âŒ **No passwords in logs** (only status messages)  
+âŒ **No public endpoints** to create users  
+âŒ **No exposure** of password hashes  
 
 ### What IS Done
 
-✅ **PBKDF2-SHA256** hashing (210,000 iterations)  
-✅ **Constant-time comparison** to prevent timing attacks  
-✅ **Unique salt** per password (16 bytes)  
-✅ **Idempotent creation** (prevents duplicates)  
-✅ **Defensive checks** on startup  
+âœ… **PBKDF2-SHA256** hashing (210,000 iterations)  
+âœ… **Constant-time comparison** to prevent timing attacks  
+âœ… **Unique salt** per password (16 bytes)  
+âœ… **Idempotent creation** (prevents duplicates)  
+âœ… **Defensive checks** on startup  
 
 ### Production Recommendations
 
@@ -236,7 +236,7 @@ CORS_ALLOWED_ORIGINS=http://localhost:4000,http://localhost:3000,https://valhall
 
 5. **Verify with logs:**
    ```
-   ✓ Bootstrap admin created: bryanevoy86@gmail.com (user_id=1)
+   âœ“ Bootstrap admin created: <OWNER_EMAIL_FROM_ENV> (user_id=1)
    ```
 
 ---
@@ -258,21 +258,21 @@ BOOTSTRAP ADMIN TEST
 ================================================================================
 
 [1/3] Creating database tables...
-✓ Tables created/verified
+âœ“ Tables created/verified
 
 [2/3] Running bootstrap admin creation...
-✓ Bootstrap result: created
-  Email: bryanevoy86@gmail.com
-  Detail: Bootstrap admin user bryanevoy86@gmail.com created successfully
+âœ“ Bootstrap result: created
+  Email: <OWNER_EMAIL_FROM_ENV>
+  Detail: Bootstrap admin user <OWNER_EMAIL_FROM_ENV> created successfully
 
 [3/3] Verifying user creation...
-✓ User found: Bootstrap Admin (bryanevoy86@gmail.com)
+âœ“ User found: Bootstrap Admin (<OWNER_EMAIL_FROM_ENV>)
   User ID: 1
   Has password hash: True
   Created: 2026-04-17 04:05:41
 
 ================================================================================
-✓ BOOTSTRAP TEST PASSED - User is ready for login
+âœ“ BOOTSTRAP TEST PASSED - User is ready for login
 ================================================================================
 ```
 
@@ -287,8 +287,8 @@ $ python -m uvicorn app.main:app --reload --port 4000
 INFO:     Uvicorn running on http://127.0.0.1:4000
 ...
 INFO:     Valhalla startup complete. Loaded 230 router modules.
-INFO:     ✓ Bootstrap admin created: bryanevoy86@gmail.com (user_id=1)
-INFO:     ✓ Post-boot initialization completed successfully.
+INFO:     âœ“ Bootstrap admin created: <OWNER_EMAIL_FROM_ENV> (user_id=1)
+INFO:     âœ“ Post-boot initialization completed successfully.
 ```
 
 ### Login Test
@@ -357,7 +357,7 @@ from app.users.models import UserProfile
 
 db = SessionLocal()
 user = db.query(UserProfile).filter(
-    UserProfile.email == "bryanevoy86@gmail.com"
+    UserProfile.email == "<OWNER_EMAIL_FROM_ENV>"
 ).first()
 print(f"Found: {user}")
 db.close()
@@ -377,7 +377,7 @@ print(f"Has hash: {bool(settings.password_hash)}")
 ```python
 from app.security.auth import pbkdf2_verify
 
-password = "DrDoom!1"
+password = "<OWNER_PASSWORD_FROM_ENV>"
 result = pbkdf2_verify(password, settings.password_hash)
 print(f"Valid password: {result}")
 ```
@@ -500,9 +500,9 @@ from app.services.bootstrap_admin import bootstrap_admin_user
 # Usage in run_post_boot_init_sync()
 bootstrap_result = bootstrap_admin_user(db)
 if bootstrap_result["status"] == "created":
-    log.info(f"✓ Bootstrap admin created: {bootstrap_result['email']}")
+    log.info(f"âœ“ Bootstrap admin created: {bootstrap_result['email']}")
 elif bootstrap_result["status"] == "already_exists":
-    log.info(f"✓ Bootstrap admin already exists: {bootstrap_result['email']}")
+    log.info(f"âœ“ Bootstrap admin already exists: {bootstrap_result['email']}")
 ```
 
 #### 3. **`.env`** (MODIFIED)
@@ -511,8 +511,8 @@ Added two new variables:
 
 ```bash
 # Bootstrap Admin User (one-time creation on startup)
-BOOTSTRAP_ADMIN_EMAIL=bryanevoy86@gmail.com
-BOOTSTRAP_ADMIN_PASSWORD=DrDoom!1
+BOOTSTRAP_ADMIN_EMAIL=<OWNER_EMAIL_FROM_ENV>
+BOOTSTRAP_ADMIN_PASSWORD=<OWNER_PASSWORD_FROM_ENV>
 
 # Auth/Ops User (for /ops/token endpoint if needed)
 VALHALLA_OWNER_USERNAME=admin
@@ -523,21 +523,21 @@ VALHALLA_OWNER_PASSWORD=admin-change-me
 
 ```
 .env (env vars)
-    ↓
+    â†“
 bootstrap_admin_user()
-    ├─ _read_bootstrap_env()
-    │   └─ Return {email, password}
-    ├─ _user_exists(db, email)
-    │   └─ Query UserProfile by email
-    └─ _create_bootstrap_user(db, email, password)
-        ├─ Create UserProfile row
-        ├─ pbkdf2_hash_password(password)
-        │   └─ PBKDF2-SHA256 hash
-        ├─ Create AccountSettings with hash
-        └─ Commit to database
-    ↓
-Return status → Log result
-    ↓
+    â”œâ”€ _read_bootstrap_env()
+    â”‚   â””â”€ Return {email, password}
+    â”œâ”€ _user_exists(db, email)
+    â”‚   â””â”€ Query UserProfile by email
+    â””â”€ _create_bootstrap_user(db, email, password)
+        â”œâ”€ Create UserProfile row
+        â”œâ”€ pbkdf2_hash_password(password)
+        â”‚   â””â”€ PBKDF2-SHA256 hash
+        â”œâ”€ Create AccountSettings with hash
+        â””â”€ Commit to database
+    â†“
+Return status â†’ Log result
+    â†“
 Ready for login
 ```
 
@@ -569,11 +569,11 @@ class AccountSettings(Base):
 
 ## Next Steps
 
-1. ✅ **Backend started** → Bootstrap user created
-2. ✅ **Test login** → Verify credentials work
-3. ⏭️ **Connect WeWeb** → Add REST API connector
-4. ⏭️ **Build UI** → Create WeWeb pages
-5. ⏭️ **Test workflows** → Deal management, etc.
+1. âœ… **Backend started** â†’ Bootstrap user created
+2. âœ… **Test login** â†’ Verify credentials work
+3. â­ï¸ **Connect WeWeb** â†’ Add REST API connector
+4. â­ï¸ **Build UI** â†’ Create WeWeb pages
+5. â­ï¸ **Test workflows** â†’ Deal management, etc.
 
 ---
 
@@ -610,11 +610,11 @@ A: Only one per startup (by design). For multiple, use admin endpoints or databa
 
 **Q: Is this production-safe?**  
 A: Yes, with caveats:
-- ✅ Uses strong hashing
-- ✅ Idempotent (safe to retry)
-- ✅ Graceful error handling
-- ⚠️ Set strong passwords
-- ⚠️ Disable after first startup (optional)
+- âœ… Uses strong hashing
+- âœ… Idempotent (safe to retry)
+- âœ… Graceful error handling
+- âš ï¸ Set strong passwords
+- âš ï¸ Disable after first startup (optional)
 
 **Q: How do I disable bootstrap?**  
 A: Comment/remove env vars:
@@ -642,4 +642,5 @@ grep -i "bootstrap" *.log
 
 ---
 
-**Status:** ✅ **Ready for WeWeb Integration**
+**Status:** âœ… **Ready for WeWeb Integration**
+

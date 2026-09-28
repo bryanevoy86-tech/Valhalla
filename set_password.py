@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+﻿#!/usr/bin/env python
 """Set admin password for testing."""
 import sys
 import os
@@ -11,38 +11,38 @@ try:
     from app.core.db import SessionLocal
     from app.users.models import UserProfile, AccountSettings
     from app.security.auth import pbkdf2_hash_password
-    print("✅ Imports successful")
+    print("âœ… Imports successful")
     
-    email = 'bryanevoy86@gmail.com'
-    password = 'Dr.Doom!1'
+    email = '<OWNER_EMAIL_FROM_ENV>'
+    password = '<OWNER_PASSWORD_FROM_ENV>'
     
     session = SessionLocal()
-    print(f"✅ Database session created")
+    print(f"âœ… Database session created")
     
     # Check if user exists
     user = session.query(UserProfile).filter(UserProfile.email == email).first()
     if user:
-        print(f"✅ User exists: {email}")
+        print(f"âœ… User exists: {email}")
         
         # Hash the password
         hashed_pw = pbkdf2_hash_password(password)
-        print(f"✅ Password hashed")
+        print(f"âœ… Password hashed")
         
         # Update or create account settings
         account = session.query(AccountSettings).filter(AccountSettings.user_id == user.user_id).first()
         if account:
             account.password_hash = hashed_pw
-            print(f"✅ Updated existing account")
+            print(f"âœ… Updated existing account")
         else:
             account = AccountSettings(user_id=user.user_id, password_hash=hashed_pw)
             session.add(account)
-            print(f"✅ Created new account settings")
+            print(f"âœ… Created new account settings")
         
         session.commit()
-        print(f"✅ Changes committed to database")
-        print(f"\n✅ PASSWORD SET: {email} = Dr.Doom!1")
+        print(f"âœ… Changes committed to database")
+        print(f"\nâœ… PASSWORD SET: {email} = <OWNER_PASSWORD_FROM_ENV>")
     else:
-        print(f"❌ User not found: {email}")
+        print(f"âŒ User not found: {email}")
         users = session.query(UserProfile).all()
         if users:
             print(f"Available users:")
@@ -54,7 +54,8 @@ try:
     session.close()
     
 except Exception as e:
-    print(f"❌ ERROR: {e}")
+    print(f"âŒ ERROR: {e}")
     import traceback
     traceback.print_exc()
     sys.exit(1)
+

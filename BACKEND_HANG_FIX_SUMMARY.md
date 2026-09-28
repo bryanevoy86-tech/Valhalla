@@ -1,4 +1,4 @@
-# Backend Hang/Unreachable Issue - Executive Summary
+﻿# Backend Hang/Unreachable Issue - Executive Summary
 
 ## Problem
 
@@ -6,7 +6,7 @@ Backend was hanging or unreachable at `http://127.0.0.1:4000/health` and `/ops/t
 
 ## Root Cause
 
-→ **`bootstrap_admin.py` was importing auth settings at module load time**
+â†’ **`bootstrap_admin.py` was importing auth settings at module load time**
 
 This happened:
 1. Uvicorn tries to load `app.main`
@@ -19,7 +19,7 @@ This happened:
 
 ## Solution
 
-→ **Changed `bootstrap_admin.py` to lazy-load password hashing**
+â†’ **Changed `bootstrap_admin.py` to lazy-load password hashing**
 
 Instead of importing at module level:
 ```python
@@ -59,7 +59,7 @@ The WeWeb login process uses **two different auth systems**:
 | System | Used For | Source | Credentials |
 |--------|----------|--------|-------------|
 | **Ops Auth** | `/ops/token` endpoint | Environment variables | `admin` / `admin-change-me` |
-| **Bootstrap Admin** | Future user profiles (database) | Database table | `bryanevoy86@gmail.com` / `DrDoom!1` |
+| **Bootstrap Admin** | Future user profiles (database) | Database table | `<OWNER_EMAIL_FROM_ENV>` / `<OWNER_PASSWORD_FROM_ENV>` |
 
 **WeWeb should use**: Ops Auth (`admin` / `admin-change-me`)  
 **NOT**: Bootstrap Admin credentials
@@ -179,13 +179,13 @@ def get_settings():
 
 ## What's Ready
 
-✅ Backend starts in <3 seconds  
-✅ `/health` endpoint responds in <100ms  
-✅ `/ops/token` endpoint responds in <500ms  
-✅ Bootstrap admin created after ~5 seconds (in background)  
-✅ All 230+ routers loaded and ready  
-✅ CORS configured for WeWeb  
-✅ Auth tokens work correctly  
+âœ… Backend starts in <3 seconds  
+âœ… `/health` endpoint responds in <100ms  
+âœ… `/ops/token` endpoint responds in <500ms  
+âœ… Bootstrap admin created after ~5 seconds (in background)  
+âœ… All 230+ routers loaded and ready  
+âœ… CORS configured for WeWeb  
+âœ… Auth tokens work correctly  
 
 ---
 
@@ -198,4 +198,5 @@ def get_settings():
 
 ---
 
-**Status:** ✅ **FIXED** - Backend is now responsive and ready for WeWeb integration.
+**Status:** âœ… **FIXED** - Backend is now responsive and ready for WeWeb integration.
+
