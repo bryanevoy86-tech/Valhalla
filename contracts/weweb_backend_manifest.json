@@ -1,0 +1,23 @@
+{
+  "generated_at": "2026-09-28T22:41:45.210936+00:00",
+  "source": "local-canonical-app",
+  "auth_model": {
+    "type": "jwt-bearer",
+    "logout_behavior": "process-local jti revocation list",
+    "refresh_behavior": "rotates token and revokes prior jti"
+  },
+  "weweb_auth_paths": [
+    "/api/weweb/admin/reset-owner-password",
+    "/api/weweb/login",
+    "/api/weweb/logout",
+    "/api/weweb/me",
+    "/api/weweb/refresh",
+    "/api/weweb/smoke"
+  ],
+  "required_paths": {
+    "login": "/api/weweb/login",
+    "me": "/api/weweb/me",
+    "logout": "/api/weweb/logout",
+    "refresh": "/api/weweb/refresh"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "generated_at": "2026-09-28T22:41:45.210936+00:00",
+  "status": "partial",
+  "sync": {
+    "login": true,
+    "me": true,
+    "refresh": false,
+    "logout": false,
+    "smoke": true
+  },
+  "local_weweb_paths": [
+    "/api/weweb/admin/reset-owner-password",
+    "/api/weweb/login",
+    "/api/weweb/logout",
+    "/api/weweb/me",
+    "/api/weweb/refresh",
+    "/api/weweb/smoke"
+  ],
+  "live_weweb_paths": [
+    "/api/weweb/admin/reset-owner-password",
+    "/api/weweb/login",
+    "/api/weweb/me",
+    "/api/weweb/smoke"
+  ],
+  "blocker": "LIVE_OPENAPI_MISSING_/api/weweb/logout",
+  "live_probe_error": null
+}

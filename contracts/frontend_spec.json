@@ -1,0 +1,18 @@
+{
+  "generated_at": "2026-09-28T22:41:45.210936+00:00",
+  "source": "backend-openapi-derived",
+  "auth_flow": [
+    "login",
+    "me",
+    "refresh",
+    "logout"
+  ],
+  "base_variable": "API_BASE_URL",
+  "token_variable": "AUTH_TOKEN",
+  "state_variables": [
+    "CURRENT_USER",
+    "IS_LOGGED_IN",
+    "CURRENT_VIEW",
+    "RAW_API_ERROR"
+  ]
+}

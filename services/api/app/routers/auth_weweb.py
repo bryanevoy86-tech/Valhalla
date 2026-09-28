@@ -10,6 +10,7 @@ Endpoints:
 import time
 import hmac
 import os
+import uuid
 from typing import Dict, Any, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
@@ -18,7 +19,6 @@ from sqlalchemy.orm import Session
 
 from app.core.db import get_db
 from app.users.models import UserProfile, AccountSettings
-from app.security.auth import jwt_encode, jwt_decode, pbkdf2_verify
 
 router = APIRouter(prefix="/api/weweb", tags=["weweb-auth"])
 
@@ -35,7 +35,9 @@ class LoginRequest(BaseModel):
 class LoginResponse(BaseModel):
     ok: bool
     access_token: str
+    token: str
     token_type: str
+    expires_in: int
     user: Optional[Dict[str, Any]] = None
 
 
@@ -50,6 +52,16 @@ class UserResponse(BaseModel):
 # ============================================================================
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/weweb/login", auto_error=False)
+
+# Process-local revocation list for explicit logout/refresh token retirement.
+_REVOKED_JTI: set[str] = set()
+
+
+def _auth_runtime():
+    """Import auth runtime lazily so router registration doesn't fail on env setup."""
+    from app.security import auth as auth_runtime
+
+    return auth_runtime
 
 
 def _normalize_email(value: Optional[str]) -> str:
@@ -78,10 +90,15 @@ def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    # Use auth settings to get JWT secret
-    from app.security.auth import SETTINGS
-    
-    payload = jwt_decode(token, SETTINGS.jwt_secret)
+    try:
+        auth_runtime = _auth_runtime()
+    except RuntimeError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        ) from exc
+
+    payload = auth_runtime.jwt_decode(token, auth_runtime.SETTINGS.jwt_secret)
     user_id = payload.get("user_id")
     
     if not user_id:
@@ -89,8 +106,27 @@ def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token payload",
         )
+
+    jti = payload.get("jti")
+    if jti and jti in _REVOKED_JTI:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token has been revoked",
+        )
     
     return payload
+
+
+def _issue_access_token(auth_runtime, user: UserProfile) -> str:
+    now = int(time.time())
+    payload = {
+        "sub": user.email,
+        "user_id": user.user_id,
+        "iat": now,
+        "exp": now + auth_runtime.SETTINGS.token_ttl_seconds,
+        "jti": str(uuid.uuid4()),
+    }
+    return auth_runtime.jwt_encode(payload, auth_runtime.SETTINGS.jwt_secret)
 
 
 # ============================================================================
@@ -107,6 +143,14 @@ def login(
     
     Returns JWT token on success.
     """
+    try:
+        auth_runtime = _auth_runtime()
+    except RuntimeError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        ) from exc
+
     raw_identifier = credentials.email.strip()
     email = raw_identifier.lower()
     password = credentials.password
@@ -142,28 +186,21 @@ def login(
         )
     
     # Verify password against hash
-    if not pbkdf2_verify(password, account_settings.password_hash):
+    if not auth_runtime.pbkdf2_verify(password, account_settings.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password",
         )
     
     # Issue JWT token
-    from app.security.auth import SETTINGS
-    
-    now = int(time.time())
-    payload = {
-        "sub": user.email,
-        "user_id": user.user_id,
-        "iat": now,
-        "exp": now + SETTINGS.token_ttl_seconds,
-    }
-    token = jwt_encode(payload, SETTINGS.jwt_secret)
+    token = _issue_access_token(auth_runtime, user)
     
     return LoginResponse(
         ok=True,
         access_token=token,
+        token=token,
         token_type="bearer",
+        expires_in=auth_runtime.SETTINGS.token_ttl_seconds,
         user={
             "id": user.user_id,
             "email": user.email,
@@ -171,6 +208,61 @@ def login(
             "last_name": user.last_name,
         },
     )
+
+
+@router.post("/refresh", response_model=LoginResponse)
+def refresh_token(
+    current_user: Dict[str, Any] = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> LoginResponse:
+    """Rotate an access token for an authenticated session."""
+    try:
+        auth_runtime = _auth_runtime()
+    except RuntimeError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        ) from exc
+
+    user_id = current_user.get("user_id")
+    user = db.query(UserProfile).filter(UserProfile.user_id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+
+    # Revoke current token identifier and issue a new token.
+    old_jti = current_user.get("jti")
+    if old_jti:
+        _REVOKED_JTI.add(str(old_jti))
+
+    token = _issue_access_token(auth_runtime, user)
+
+    return LoginResponse(
+        ok=True,
+        access_token=token,
+        token=token,
+        token_type="bearer",
+        expires_in=auth_runtime.SETTINGS.token_ttl_seconds,
+        user={
+            "id": user.user_id,
+            "email": user.email,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+        },
+    )
+
+
+@router.post("/logout")
+def logout(
+    current_user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """Explicitly revoke current token identifier for this process runtime."""
+    jti = current_user.get("jti")
+    if jti:
+        _REVOKED_JTI.add(str(jti))
+    return {"ok": True, "message": "Logged out"}
 
 
 @router.get("/me", response_model=UserResponse)
