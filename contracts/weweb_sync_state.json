@@ -23,5 +23,14 @@
     "/api/weweb/smoke"
   ],
   "blocker": "LIVE_OPENAPI_MISSING_/api/weweb/logout",
-  "live_probe_error": null
+  "live_probe_error": null,
+  "evidence": {
+    "source_main_commit": "a052f11f4c97dc867fce537948fa8e8996f11853",
+    "live_refresh_probe": {
+      "path": "/api/weweb/refresh",
+      "method": "POST",
+      "status": 404,
+      "detail": "Not Found"
+    }
+  }
 }

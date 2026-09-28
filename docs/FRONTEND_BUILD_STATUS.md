@@ -16,6 +16,7 @@ WeWeb owner console integration against Valhalla backend.
 ## Remaining Backend-Dependent Item
 - Production parity for `POST /api/weweb/logout`: EXTERNALLY BLOCKED - SPECIFIC REASON
   - Live OpenAPI currently omits this path.
+  - Latest source containing logout/refresh has already been pushed to `main` (`a052f11`), so the current issue is deployment/runtime drift.
 
 ## Required Next Verification After Deploy
 1. Live `GET /openapi.json` contains `/api/weweb/logout`.

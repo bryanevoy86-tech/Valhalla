@@ -58,6 +58,7 @@ Status language:
 
 ## Current Top Blocker
 - Production deployment parity for `POST /api/weweb/logout`.
+- Source commit with logout/refresh has been pushed to `main` (`a052f11`), but live Render OpenAPI still omits those routes as of latest probe.
 
 ## Immediate Next Dependency-Ordered Actions
 1. Commit and push the backend auth route/test/contracts updates.

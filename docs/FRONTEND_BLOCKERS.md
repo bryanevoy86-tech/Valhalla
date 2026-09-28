@@ -22,6 +22,11 @@ Generated: 2026-09-28
 - Backend logout call returns 404 in production.
 - Frontend still fail-closes safely, but contract parity is incomplete.
 
+## Latest Verification
+- Source with `/api/weweb/logout` and `/api/weweb/refresh` is on `origin/main` at commit `a052f11`.
+- Live runtime probe still returns `404` for `POST /api/weweb/refresh`.
+- This indicates deployment/runtime lag or wrong runtime target, not missing source code.
+
 ## Unblock Condition
 - Deploy backend revision that includes auth_weweb logout/refresh routes.
 - Verify live OpenAPI and runtime chain end-to-end.
