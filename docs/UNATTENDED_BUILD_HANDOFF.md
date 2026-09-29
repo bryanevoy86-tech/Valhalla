@@ -1,6 +1,6 @@
 # UNATTENDED BUILD HANDOFF
 
-Generated: 2026-09-28
+Generated: 2026-09-29
 
 ## OBJECTIVE
 Resolve backend production contract mismatch for WeWeb auth (`/api/weweb/logout`, `/api/weweb/refresh`) and establish trustworthy live deployment identity proof.
@@ -8,7 +8,7 @@ Resolve backend production contract mismatch for WeWeb auth (`/api/weweb/logout`
 ## STATUS
 PARTIAL
 
-Live auth route contract and deployment identity parity are authoritative; full authenticated proof remains blocked on secure credential execution.
+Live auth route contract, deployment identity parity, backend production auth chain, and WeWeb preview authenticated parity are authoritative; sandbox workflow completion and autonomy ladder enforcement are now proven. Remaining work is next-layer PARTIAL modules.
 
 ## EXPECTED VS LIVE PARITY
 - EXPECTED_COMMIT: 9cc0dc4324a4940e3e748e0b31ebc20f8096486e
@@ -18,7 +18,7 @@ Live auth route contract and deployment identity parity are authoritative; full 
 
 ## REQUIRED RUN CLASSIFICATIONS
 - RENDER_PARITY: PASS
-- PRODUCTION_AUTH: PRODUCTION_AUTH_CREDENTIAL_REQUIRED
+- PRODUCTION_AUTH: PASS
 
 ## SECURE OWNER ACTION (CREDENTIAL PATH)
 Use local session environment variables only. Do not place credentials in source, docs, test files, committed env files, or scripts.
@@ -59,6 +59,8 @@ Write-Output ("VALHALLA_TEST_PASSWORD_SET=" + [bool]$env:VALHALLA_TEST_PASSWORD)
    - `POST /api/completion/learning/tasks`
    - `GET /api/completion/learning/tasks`
    - `POST /api/completion/learning/tasks/reverify-stale`
+- Added guard-level restricted-action audit evidence emission (`autonomy_action_blocked`) in runtime engine guard.
+- Added explicit autonomy ladder enforcement regression suite for L0-L3 gate checks and restricted-action blocking behaviors.
 
 ## FILES CHANGED (THIS CHECKPOINT)
 - services/api/app/core/build_info.py
@@ -68,6 +70,8 @@ Write-Output ("VALHALLA_TEST_PASSWORD_SET=" + [bool]$env:VALHALLA_TEST_PASSWORD)
 - services/api/app/models/completion_registry.py
 - services/api/app/routers/completion_registry.py
 - services/api/tests/test_completion_registry.py
+- services/api/app/core/engines/guard_runtime.py
+- services/api/tests/test_autonomy_ladder_enforcement.py
 - contracts/weweb_sync_state.json
 - docs/DECEMBER_FULL_LAUNCH_MATRIX.md
 - docs/FRONTEND_BLOCKERS.md
@@ -82,12 +86,27 @@ Write-Output ("VALHALLA_TEST_PASSWORD_SET=" + [bool]$env:VALHALLA_TEST_PASSWORD)
 - `d:/dev/.venv/Scripts/python.exe -m pytest -q services/api/tests/test_completion_registry.py`
 - `d:/dev/.venv/Scripts/python.exe -m pytest -q services/api/tests/test_completion_registry.py` (rerun after freshness/escalation/PII guard changes)
 - `d:/dev/.venv/Scripts/python.exe -m pytest -q services/api/tests/test_heimdall_decision_card.py services/api/tests/test_system_self_check.py services/api/tests/test_approvals_owner_rehearsal.py services/api/tests/test_approvals_owner_auth.py`
+- `d:/dev/.venv/Scripts/python.exe -m pytest -q services/api/tests/test_va_operator_sandbox_flow.py services/api/tests/test_approvals_owner_auth.py -k "not concurrent and not unique_constraint and not lease_expiry and not retry_policy and not conflicting" services/api/tests/test_flow_governance_gate.py services/api/tests/test_flow_full_pipeline.py services/api/tests/test_underwriting_engine_flow.py services/api/tests/test_matching.py`
+- `d:/dev/.venv/Scripts/python.exe -m pytest -q tests/test_execution_policy_safety.py services/api/tests/test_flow_lead_to_deal.py services/api/tests/test_heimdall_decision_card.py services/api/tests/test_approvals_owner_rehearsal.py services/api/tests/test_completion_registry.py`
+- `d:/dev/.venv/Scripts/python.exe -m pytest -q services/api/tests/test_integrated_sandbox_rehearsal.py --basetemp D:\dev\.tmp_pytest\basetemp` (with TEMP/TMP/TMPDIR on D:)
+- `d:/dev/.venv/Scripts/python.exe -m pytest -q services/api/tests/test_va_operator_full_day_sandbox_simulation.py --basetemp D:\dev\.tmp_pytest\basetemp` (with TEMP/TMP/TMPDIR on D:)
+- `d:/dev/.venv/Scripts/python.exe -m pytest -q services/api/tests/test_approvals_owner_auth.py services/api/tests/test_system_self_check.py services/api/tests/test_va_operator_sandbox_flow.py services/api/tests/test_flow_governance_gate.py services/api/tests/test_flow_full_pipeline.py services/api/tests/test_underwriting_engine_flow.py services/api/tests/test_matching.py services/api/tests/test_flow_lead_to_deal.py services/api/tests/test_heimdall_decision_card.py services/api/tests/test_approvals_owner_rehearsal.py services/api/tests/test_completion_registry.py --basetemp D:\dev\.tmp_pytest\basetemp` (with TEMP/TMP/TMPDIR on D:)
+- `d:/dev/.venv/Scripts/python.exe -m pytest -q services/api/tests/test_autonomy_ladder_enforcement.py tests/test_execution_policy_safety.py --basetemp D:\dev\.tmp_pytest\basetemp` (with TEMP/TMP/TMPDIR on D:)
 
 ## TEST RESULTS
 - PASS: completion registry suite currently 21/21 passing; prior subsystem suites remain passing from previous checkpoint.
 - PASS: completion registry suite currently 22/22 passing; prior subsystem suites remain passing from previous checkpoint.
 - SKIP: 1 test skipped (existing suite behavior).
 - WARNINGS: Existing unrelated warnings in repository (pydantic deprecations, duplicate OpenAPI operation IDs).
+- PASS: WeWeb authenticated preview proof chain completed in shared browser session.
+- PASS: VA/operator sandbox flow regression `services/api/tests/test_va_operator_sandbox_flow.py`.
+- PASS: approvals owner auth (non-concurrency subset), governance gate, full pipeline, underwriting, matching.
+- PASS: execution policy safety + lead-to-deal + decision card + owner rehearsal + completion registry bundles.
+- EXTERNAL_OWNER_ACTION_REQUIRED: local temp volume exhaustion (`OSError: No space left on device` / tmp_path creation failures) blocked selected concurrency/self-check tests in `services/api/tests/test_approvals_owner_auth.py` and `services/api/tests/test_system_self_check.py`.
+- PASS: deterministic integrated rehearsal module `services/api/tests/test_integrated_sandbox_rehearsal.py` -> `2 passed, 0 failed`.
+- PASS: full-day sandbox simulation `services/api/tests/test_va_operator_full_day_sandbox_simulation.py` -> `1 passed, 0 failed`.
+- PASS: priority rerun bundle with D-drive temp redirection passed across approvals/self-check/flow/matching/registry suites.
+- PASS: autonomy ladder and execution safety bundle `services/api/tests/test_autonomy_ladder_enforcement.py` + `tests/test_execution_policy_safety.py` -> `9 passed, 0 failed`.
 
 ## BEHAVIOR PROVEN
 - Local contract includes `/api/weweb/logout` and `/api/weweb/refresh`.
@@ -96,6 +115,19 @@ Write-Output ("VALHALLA_TEST_PASSWORD_SET=" + [bool]$env:VALHALLA_TEST_PASSWORD)
 - Live unauthorized auth behavior is fail-closed:
    - `POST /api/weweb/refresh` without token -> `401 Missing authorization token`
    - `GET /api/weweb/me` without token -> `401 Missing authorization token`
+- Live full authenticated auth chain is proven:
+   - `LOGIN=PASS` (200)
+   - `ME=PASS` (200 before/after refresh with consistent identity)
+   - `REFRESH=PASS` (200)
+   - `LOGOUT=PASS` (200)
+   - `POST_LOGOUT_GUARD=PASS` (`GET /api/weweb/me` after logout -> 401)
+   - `REFRESH_AFTER_LOGOUT=PASS` (`POST /api/weweb/refresh` after logout -> 401)
+- WeWeb preview authenticated parity is proven:
+   - owner runtime shows authenticated surface with `Logged in: true` and owner identity
+   - refresh restores authenticated state while token exists
+   - Sign out returns to login view and clears protected surface
+   - post-logout refresh remains fail-closed on login view
+   - browser-side probes post-logout: `GET /api/weweb/me` -> 401, `POST /api/weweb/refresh` -> 401
 - Revenue flow tests (lead->deal + underwriting + matching) pass locally.
 - Deployment identity parity is live and authoritative:
    - `/deployment-marker` commit = `9cc0dc4324a4940e3e748e0b31ebc20f8096486e`
@@ -106,10 +138,43 @@ Write-Output ("VALHALLA_TEST_PASSWORD_SET=" + [bool]$env:VALHALLA_TEST_PASSWORD)
    - high-impact retrieval requires stronger source tier or escalates to human review
    - sensitive data patterns blocked from retrieval output
 - Approval/command queue and next-action/command-center tests pass.
+- Integrated sandbox rehearsal chain proven stage-by-stage:
+   - LEAD_INTAKE
+   - HEIMDALL_SCORE
+   - EVIDENCE_CHECK
+   - VA_TASK
+   - SELLER_OUTCOME
+   - NEXT_BEST_ACTION
+   - APPROVAL
+   - DEAL_CONVERSION
+   - UNDERWRITING
+   - BUYER_MATCH
+   - DISPOSITION
+   - DOCUMENT_STATE
+   - SIGNATURE_SIMULATION
+   - CLOSING_SIMULATION
+   - ACCOUNTING_RECORD
+   - AUDIT
+   - LEARNING_FEEDBACK
+   - INTEGRITY_CHECK
+- Deterministic no-buyer safe-handling path proven with isolated controlled buyers:
+   - BUYER_MATCH_REQUEST = PASS
+   - BUYER_MATCH_COUNT = 0
+   - NO_BUYER_STATE = PASS
+   - DISPOSITION_BLOCKED_OR_ESCALATED = PASS
+   - AUDIT_EVENT_CREATED = PASS (where supported)
+   - NEXT_ACTION_OR_ESCALATION_CREATED = PASS (where supported)
+   - NO_UNAUTHORIZED_CONTINUATION = PASS
+- Full-day sandbox simulation proven for queue prioritization, assignment/reassignment/failover, escalation, stale-task detection, underwriting + buyer/disposition workload, audit integrity, and learning feedback capture.
+- Autonomy ladder enforcement proven with explicit regression evidence:
+   - L0/L1/L2/L3 sample-threshold gate behavior validated
+   - restricted real-world actions blocked in SANDBOX
+   - kill-switch blocks restricted real-world actions even when engine is ACTIVE
+   - read-only action allowed in SANDBOX
+   - guard block emits auditable `autonomy_action_blocked` event evidence
 
 ## REMAINING DEFECTS
-- Full production auth chain (valid login -> me -> refresh -> logout -> post-logout persistence) remains unproven in this checkpoint due credential gate.
-- WeWeb Preview authenticated runtime parity remains unproven in this checkpoint due same credential gate.
+- No new application defects surfaced in the covered sandbox rehearsal and priority suite reruns.
 
 ## SYSTEMS COMPLETED DURING THIS RUN
 - Connection/Auth route parity in live OpenAPI (`/api/weweb/logout`, `/api/weweb/refresh`): PASS
@@ -124,19 +189,17 @@ Write-Output ("VALHALLA_TEST_PASSWORD_SET=" + [bool]$env:VALHALLA_TEST_PASSWORD)
 
 ## REMAINING PARTIAL
 - D. Learning System
-- G. Human/VA Workflows
+- G. Human/VA Workflows (advanced simulation complete; broader production-adjacent operational hardening remains)
 - J. Sandbox End-to-End Proof
 
 ## REMAINING FAIL
-- Production auth full-chain proof -> FAIL (secure credential path not yet executed)
+- End-to-end sandbox VA/operator transaction rehearsal -> PASS
 
 ## EXTERNAL_OWNER_ACTION_REQUIRED
-- Provide/confirm secure credential execution path for:
-   - backend chain: login -> me -> refresh -> logout -> post-logout guard checks
-   - WeWeb preview authenticated persistence checks
+- None for auth proof. External owner action only if sandbox requires non-repo credentials/systems.
 
 ## EXTERNAL BLOCKERS
-- EXTERNAL_OWNER_ACTION_REQUIRED: provide secure production credential execution path for one full authenticated proof run (backend + WeWeb Preview).
+- TEMP_VOLUME_EXHAUSTED mitigated for test execution by redirecting TEMP/TMP/TMPDIR and pytest basetemp to D-drive workspace temp path.
 
 ## SECURITY NOTES
 - No new secrets introduced.
@@ -145,10 +208,8 @@ Write-Output ("VALHALLA_TEST_PASSWORD_SET=" + [bool]$env:VALHALLA_TEST_PASSWORD)
 - Code-only rollback available by reverting this checkpoint changes.
 
 ## NEXT RECOMMENDED ACTION
-1. Execute full production auth proof chain with valid production owner credentials:
-   - login -> me -> refresh -> logout -> post-logout me -> browser/session refresh.
-2. Execute same auth behavior verification in WeWeb Preview (no frontend workaround masking backend errors).
-3. Continue PARTIAL workstream execution with implement->test->repair loops:
-   - Learning loop completion and promotion gates (task queue, re-verification scheduler, mastery/promotion evidence)
-   - VA/operator workflow simulation
-   - Sandbox end-to-end transaction rehearsal
+1. Continue PARTIAL workstream execution with implement->test->repair loops:
+   - Heimdall Learning module remaining PARTIAL items
+   - Ethics/Evidence remaining PARTIAL items
+   - Continuous Integrity
+2. Continue operational WeWeb surfaces, integration software hooks, Engine Registry/readiness, and fake-live operating day.

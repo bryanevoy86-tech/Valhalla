@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-09-29T00:21:00.000000+00:00",
+  "generated_at": "2026-09-29T04:35:00.000000+00:00",
   "status": "partial",
   "render_parity": "PASS",
-  "production_auth": "PRODUCTION_AUTH_CREDENTIAL_REQUIRED",
+  "production_auth": "PASS",
   "sync": {
     "login": true,
     "me": true,
@@ -26,7 +26,7 @@
     "/api/weweb/refresh",
     "/api/weweb/smoke"
   ],
-  "blocker": "PRODUCTION_AUTH_CREDENTIAL_REQUIRED",
+  "blocker": "LEARNING_ETHICS_INTEGRITY_REMAINING_PARTIAL",
   "live_probe_error": null,
   "evidence": {
     "source_main_commit": "9cc0dc4324a4940e3e748e0b31ebc20f8096486e",
@@ -41,6 +41,45 @@
       "admin_build_git_sha": "9cc0dc4324a4940e3e748e0b31ebc20f8096486e",
       "parity_match": true
     },
+    "production_auth_chain": {
+      "login": "PASS",
+      "me": "PASS",
+      "refresh": "PASS",
+      "logout": "PASS",
+      "post_logout_guard": "PASS",
+      "refresh_after_logout": "PASS",
+      "status_login": 200,
+      "status_me_before": 200,
+      "status_refresh": 200,
+      "status_me_after_refresh": 200,
+      "status_logout": 200,
+      "status_me_post_logout": 401,
+      "status_refresh_post_logout": 401
+    },
+    "weweb_preview_auth_chain": {
+      "weweb_session_restore": "PASS",
+      "weweb_logout": "PASS",
+      "weweb_post_logout_guard": "PASS",
+      "weweb_auth": "PASS",
+      "authenticated_owner_surface_visible": true,
+      "post_refresh_logged_in_true": true,
+      "post_logout_login_view_visible": true,
+      "post_logout_signin_still_visible_after_refresh": true,
+      "post_logout_signed_in_indicator_visible": false,
+      "browser_probe_me_status": 401,
+      "browser_probe_me_detail": "Missing authorization token",
+      "browser_probe_refresh_status": 401,
+      "browser_probe_refresh_detail": "Missing authorization token"
+    },
+    "external_constraints": {
+      "temp_volume_exhausted": false,
+      "mitigation": "TEMP/TMP/TMPDIR and pytest basetemp redirected to D:\\dev\\.tmp_pytest",
+      "affected_suites": [
+        "services/api/tests/test_approvals_owner_auth.py (concurrency/tmp_path subset)",
+        "services/api/tests/test_system_self_check.py"
+      ],
+      "classification": "MITIGATED_WITH_WORKAROUND"
+    },
     "learning_evidence_hardening": {
       "freshness_decay": "PASS",
       "hard_stale_reverification_gate": "PASS",
@@ -51,6 +90,86 @@
       "learning_tasks_endpoint": "PASS",
       "stale_reverification_enqueue": "PASS",
       "idempotent_enqueue": "PASS"
+    },
+    "sandbox_e2e_rehearsal": {
+      "status": "PASS",
+      "test_module": "services/api/tests/test_integrated_sandbox_rehearsal.py",
+      "result": "2 passed, 0 failed",
+      "stage_results": {
+        "LEAD_INTAKE": "PASS",
+        "HEIMDALL_SCORE": "PASS",
+        "EVIDENCE_CHECK": "PASS",
+        "VA_TASK": "PASS",
+        "SELLER_OUTCOME": "PASS",
+        "NEXT_BEST_ACTION": "PASS",
+        "APPROVAL": "PASS",
+        "DEAL_CONVERSION": "PASS",
+        "UNDERWRITING": "PASS",
+        "BUYER_MATCH": "PASS",
+        "DISPOSITION": "PASS",
+        "DOCUMENT_STATE": "PASS",
+        "SIGNATURE_SIMULATION": "PASS",
+        "CLOSING_SIMULATION": "PASS",
+        "ACCOUNTING_RECORD": "PASS",
+        "AUDIT": "PASS",
+        "LEARNING_FEEDBACK": "PASS",
+        "INTEGRITY_CHECK": "PASS"
+      },
+      "failure_path_results": {
+        "invalid_login": "PASS",
+        "expired_auth": "PASS",
+        "forbidden_owner_action_attempt": "PASS",
+        "missing_seller_data": "PASS",
+        "low_or_stale_evidence": "PASS",
+        "duplicate_reverification_request": "PASS",
+        "underwriting_validation_failure": "PASS",
+        "no_buyer_safe_handling": "PASS",
+        "rejected_approval": "PASS",
+        "service_route_failure_404": "PASS"
+      }
+    },
+    "sandbox_full_day_simulation": {
+      "status": "PASS",
+      "test_module": "services/api/tests/test_va_operator_full_day_sandbox_simulation.py",
+      "result": "1 passed, 0 failed",
+      "proven": [
+        "queue_prioritization",
+        "task_assignment",
+        "seller_follow_up_signal",
+        "reassignment_failover",
+        "escalation",
+        "underwriting_workload",
+        "buyer_disposition_workload",
+        "owner_approval_actions",
+        "stale_task_detection",
+        "heimdall_prioritization",
+        "founder_overload_filtering",
+        "audit_events",
+        "learning_feedback_capture",
+        "integrity_monitoring"
+      ]
+    },
+    "autonomy_ladder_enforcement": {
+      "status": "PASS",
+      "test_modules": [
+        "services/api/tests/test_autonomy_ladder_enforcement.py",
+        "tests/test_execution_policy_safety.py"
+      ],
+      "result": "9 passed, 0 failed",
+      "proven": [
+        "l0_l1_l2_l3_sample_threshold_gates",
+        "sandbox_restricted_action_blocking",
+        "kill_switch_restricted_action_blocking",
+        "read_only_allowed_in_sandbox",
+        "autonomy_action_blocked_audit_evidence"
+      ]
+    },
+    "priority_suite_rerun_d_temp": {
+      "status": "PASS",
+      "command_context": "TEMP/TMP/TMPDIR + --basetemp on D-drive",
+      "suite_count": 11,
+      "missing_suite": null,
+      "missing_suite_classification": null
     }
   }
 }

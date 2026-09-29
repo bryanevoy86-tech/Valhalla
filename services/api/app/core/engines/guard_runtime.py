@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -7,6 +9,7 @@ from app.core.db import get_db_session
 from app.core.engines.actions import EngineAction
 from app.core.engines.errors import EngineBlocked
 from app.core.engines.states import EngineState
+from app.models.audit_log import AuditLog
 from app.services.engine_state import get_state
 from app.services.go_live import read_state
 
@@ -28,13 +31,19 @@ def enforce_engine(engine_name: str, action: EngineAction) -> None:
     try:
         go = read_state(db)
         if getattr(go, "kill_switch_engaged", False):
-            _raise_block(engine_name, action, "ACTIVE", "Kill switch engaged")
+            _raise_block(db, engine_name, action, "ACTIVE", "Kill switch engaged")
 
         state = get_state(db, engine_name)
 
         if action.real_world_effect:
             if state in (EngineState.SANDBOX, EngineState.DORMANT, EngineState.DISABLED):
-                _raise_block(engine_name, action, state.value, f"Engine state {state.value} blocks real-world effects")
+                _raise_block(
+                    db,
+                    engine_name,
+                    action,
+                    state.value,
+                    f"Engine state {state.value} blocks real-world effects",
+                )
     finally:
         try:
             db.close()
@@ -42,7 +51,42 @@ def enforce_engine(engine_name: str, action: EngineAction) -> None:
             pass
 
 
-def _raise_block(engine_name: str, action: EngineAction, state: str, reason: str) -> None:
+def _raise_block(db: Session | None, engine_name: str, action: EngineAction, state: str, reason: str) -> None:
+    if db is not None:
+        audit_db: Session | None = None
+        try:
+            audit_db = Session(bind=db.get_bind())
+            audit_entry = AuditLog(
+                deal_id=None,
+                event_type="autonomy_action_blocked",
+                event_source="system",
+                message=reason,
+                event_data=json.dumps(
+                    {
+                        "engine": engine_name,
+                        "action": action.name,
+                        "state": state,
+                        "real_world_effect": action.real_world_effect,
+                    }
+                ),
+            )
+            audit_db.add(audit_entry)
+            audit_db.commit()
+        except Exception:
+            try:
+                if audit_db is not None:
+                    audit_db.rollback()
+            except Exception:
+                pass
+            # Guard behavior must remain fail-closed even if audit persistence fails.
+            pass
+        finally:
+            try:
+                if audit_db is not None:
+                    audit_db.close()
+            except Exception:
+                pass
+
     err = EngineBlocked(engine_name=engine_name, action=action.name, state=state, reason=reason)
     raise HTTPException(
         status_code=status.HTTP_409_CONFLICT,
