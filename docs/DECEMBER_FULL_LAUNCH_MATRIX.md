@@ -1,6 +1,6 @@
 # DECEMBER FULL LAUNCH MATRIX
 
-Generated: 2026-09-29 (updated after deterministic sandbox rehearsal + full-day simulation + autonomy ladder enforcement)
+Generated: 2026-09-29 (updated after autonomy promotion verification + learning registry closure + continuous integrity expansion)
 
 Status language:
 - PROVEN
@@ -46,7 +46,15 @@ Status language:
 - Learning re-verification task queue: PROVEN (tests)
   - `/api/completion/learning/tasks`
   - `/api/completion/learning/tasks/reverify-stale`
-- Broader autonomous learning loops remain: PARTIAL
+- Domain and curriculum registries with executable objectives/playbooks/benchmarks/assessments: PROVEN (tests)
+  - `/api/completion/learning/domains`
+  - `/api/completion/learning/curricula`
+- Mastery scoring + promotion gates with re-verification backlog integration: PROVEN (tests)
+  - `/api/completion/learning/mastery/evaluate`
+- Operational-result feedback capture and learning audit trail: PROVEN (tests)
+  - `/api/completion/learning/feedback`
+  - `/api/completion/learning/audit/events`
+- Broader autonomous learning loops remain: PARTIAL (cross-market replication/fake-live continuity pending)
 
 ## E. Evidence/Ethics System
 - Auth evidence artifacts regenerated under `contracts/`: PROVEN
@@ -66,6 +74,8 @@ Status language:
 
 ## H. Resilience/Integrity
 - Fail-closed logout/client-state clear behavior in WeWeb preview: PROVEN
+- Continuous integrity self-check expansion (queue/backlog/stale/anomaly/fail-safe/audit): PROVEN (tests)
+  - `/api/system/self-check`
 
 ## I. Full Frontend Synchronization
 - WeWeb auth workflow wired and runtime-proven: PROVEN
@@ -80,7 +90,7 @@ Status language:
   - Failure-path battery pass in same module.
 
 ## Current Top Blocker
-- Highest remaining launch work is non-sandbox PARTIAL modules (Learning, Ethics/Evidence, continuous integrity completion, operational frontend surfaces, integration hooks, registry/readiness, fake-live day).
+- Highest remaining launch work is non-sandbox PARTIAL modules (Ethics/Evidence residual closure, operational frontend surfaces, integration hooks, registry/readiness, fake-live day).
 - Local temp exhaustion on C: is mitigated for test execution via D-drive temp redirection in this run.
 
 ## Production Parity Report
@@ -199,9 +209,11 @@ Status language:
   - `services/api/tests/test_approvals_owner_rehearsal.py`
   - `services/api/tests/test_approvals_owner_auth.py`
 - Learning/evidence hardening regression rerun: PASS
-  - `services/api/tests/test_completion_registry.py` (22 passed)
+  - `services/api/tests/test_completion_registry.py` (29 passed)
+- Continuous integrity regression rerun: PASS
+  - `services/api/tests/test_system_self_check.py` (13 passed)
 
 ## Immediate Next Dependency-Ordered Actions
-1. Continue highest-priority PARTIAL work: Heimdall Learning module completion.
-2. Continue Ethics/Evidence PARTIAL closures.
-3. Continue Continuous Integrity, operational WeWeb frontend completion, integration hooks, Engine Registry/readiness, and fake-live operating day.
+1. Continue highest-priority PARTIAL work: Ethics/Evidence residual closure.
+2. Continue operational WeWeb frontend completion using live backend surfaces (Learning/Integrity views), then integration hooks.
+3. Continue Engine Registry/readiness and fake-live operating day.

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-29T04:35:00.000000+00:00",
+  "generated_at": "2026-09-29T06:10:00.000000+00:00",
   "status": "partial",
   "render_parity": "PASS",
   "production_auth": "PASS",
@@ -26,10 +26,10 @@
     "/api/weweb/refresh",
     "/api/weweb/smoke"
   ],
-  "blocker": "LEARNING_ETHICS_INTEGRITY_REMAINING_PARTIAL",
+  "blocker": "ETHICS_WEWEB_SURFACES_REMAINING_PARTIAL",
   "live_probe_error": null,
   "evidence": {
-    "source_main_commit": "9cc0dc4324a4940e3e748e0b31ebc20f8096486e",
+    "source_main_commit": "3aeed4f",
     "live_refresh_probe": {
       "path": "/api/weweb/refresh",
       "method": "POST",
@@ -90,6 +90,26 @@
       "learning_tasks_endpoint": "PASS",
       "stale_reverification_enqueue": "PASS",
       "idempotent_enqueue": "PASS"
+    },
+    "learning_registry_closure": {
+      "status": "PASS",
+      "test_module": "services/api/tests/test_completion_registry.py",
+      "result": "29 passed, 0 failed",
+      "proven": [
+        "domain_registry",
+        "curriculum_registry",
+        "learning_objectives_registry",
+        "playbook_registry",
+        "benchmark_registry",
+        "assessment_registry",
+        "mastery_scoring",
+        "promotion_gates",
+        "operational_result_feedback",
+        "learning_audit_trail",
+        "jurisdiction_aware_queries",
+        "reverification_gate_integration",
+        "human_escalation_path"
+      ]
     },
     "sandbox_e2e_rehearsal": {
       "status": "PASS",
@@ -162,6 +182,46 @@
         "kill_switch_restricted_action_blocking",
         "read_only_allowed_in_sandbox",
         "autonomy_action_blocked_audit_evidence"
+      ]
+    },
+    "continuous_integrity_expansion": {
+      "status": "PASS",
+      "test_module": "services/api/tests/test_system_self_check.py",
+      "result": "13 passed, 0 failed",
+      "proven": [
+        "api_health",
+        "db_health",
+        "worker_health",
+        "queue_health",
+        "approval_backlog",
+        "stale_task_detection",
+        "learning_reverification_backlog",
+        "lead_flow_degradation",
+        "va_operator_degradation",
+        "credential_expiry_warning",
+        "evidence_ethics_alerts",
+        "compliance_alerts",
+        "system_blocker_count",
+        "anomaly_detection",
+        "readiness_state",
+        "shield_pause_kill_controls",
+        "fail_safe_state",
+        "integrity_audit_trail",
+        "liquidity_drift_signal_support",
+        "provider_failure_state"
+      ]
+    },
+    "weweb_learning_integrity_surfaces": {
+      "status": "EXTERNAL_OWNER_ACTION_REQUIRED",
+      "reason": "Authenticated MCP project-edit access required in current runtime session to update real WeWeb project surfaces.",
+      "target_surfaces": [
+        "Learning status",
+        "Re-verification queue",
+        "Evidence/Ethics status",
+        "Autonomy blocked-action evidence",
+        "Integrity health",
+        "Shield Mode",
+        "System blockers"
       ]
     },
     "priority_suite_rerun_d_temp": {

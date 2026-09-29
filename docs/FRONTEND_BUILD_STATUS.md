@@ -34,6 +34,14 @@ WeWeb owner console integration against Valhalla backend.
   - stale evidence confidence decay and hard-stale re-verification gate
   - high-impact escalation to human review when evidence quality is insufficient
   - sensitive-data pattern blocking in retrieval output
+- Learning registry and mastery surfaces are now executable in canonical backend:
+  - `/api/completion/learning/domains`
+  - `/api/completion/learning/curricula`
+  - `/api/completion/learning/feedback`
+  - `/api/completion/learning/mastery/evaluate`
+  - `/api/completion/learning/audit/events`
+- Continuous integrity surfaces are expanded in canonical backend:
+  - `/api/system/self-check` now emits blocker count, anomaly state, fail-safe state, and integrity audit emission evidence.
 
 ## Commit Parity Snapshot
 - EXPECTED_COMMIT: `9cc0dc4324a4940e3e748e0b31ebc20f8096486e`
@@ -46,4 +54,5 @@ WeWeb owner console integration against Valhalla backend.
 2. VA/operator full-day sandbox simulation: PASS (`services/api/tests/test_va_operator_full_day_sandbox_simulation.py`).
 3. Priority rerun bundle with D-temp redirection: PASS (approvals/self-check/flow/matching/registry suites).
 4. Autonomy ladder enforcement + restricted-action guard proof: PASS (`services/api/tests/test_autonomy_ladder_enforcement.py`, `tests/test_execution_policy_safety.py`).
-5. Continue remaining PARTIAL launch items outside auth/parity: learning, ethics/evidence, continuous integrity, operational frontend surfaces.
+5. WeWeb runtime UI wiring for Learning/Integrity surfaces is EXTERNAL_OWNER_ACTION_REQUIRED until authenticated MCP session/project-edit authorization is available in this run.
+6. Continue remaining PARTIAL launch items outside auth/parity: ethics/evidence residuals, operational frontend surfaces, integration hooks, fake-live readiness.

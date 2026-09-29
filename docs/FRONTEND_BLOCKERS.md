@@ -3,9 +3,14 @@
 Generated: 2026-09-29
 
 ## Active Blocker
-- ID: LEARNING_ETHICS_INTEGRITY_REMAINING_PARTIAL
+- ID: ETHICS_WEWEB_SURFACES_REMAINING_PARTIAL
 - Class: PARTIAL
-- Description: Sandbox rehearsal and autonomy ladder enforcement are complete; remaining blockers are Learning/Ethics/Continuous-Integrity completion and broader operational readiness surfaces.
+- Description: Learning registry/mastery and continuous-integrity backend closure are complete; remaining blockers are Ethics/Evidence residual closure and WeWeb launch-surface wiring on live MCP auth.
+
+## External Dependency
+- ID: WEWEB_MCP_EDIT_AUTH_REQUIRED
+- Class: EXTERNAL_OWNER_ACTION_REQUIRED
+- Description: Updating real WeWeb launch-facing screens for Learning/Integrity now requires authenticated MCP project edit access in this runtime session.
 
 ## External Constraint
 - ID: TEMP_VOLUME_EXHAUSTED
@@ -85,15 +90,17 @@ Write-Output ("VALHALLA_TEST_PASSWORD_SET=" + [bool]$env:VALHALLA_TEST_PASSWORD)
 
 ## Unblock Condition
 - Execute and evidence remaining PARTIAL modules after sandbox completion:
-  - Heimdall learning completion
   - Ethics/evidence residual work
-  - continuous integrity and fake-live readiness
+  - WeWeb launch-facing Learning/Integrity surfaces on live backend data
+  - fake-live readiness
 
 ## Latest Sandbox Evidence
 - `services/api/tests/test_integrated_sandbox_rehearsal.py`: PASS (`2 passed, 0 failed`)
 - `services/api/tests/test_va_operator_full_day_sandbox_simulation.py`: PASS (`1 passed, 0 failed`)
 - `services/api/tests/test_autonomy_ladder_enforcement.py`: PASS (`4 passed, 0 failed`)
 - `tests/test_execution_policy_safety.py`: PASS (`5 passed, 0 failed`)
+- `services/api/tests/test_completion_registry.py`: PASS (`29 passed, 0 failed`)
+- `services/api/tests/test_system_self_check.py`: PASS (`13 passed, 0 failed`)
 - Deterministic no-buyer path validated with isolated buyer fixture:
   - BUYER_MATCH_REQUEST = PASS
   - BUYER_MATCH_COUNT = 0

@@ -8,7 +8,7 @@ Resolve backend production contract mismatch for WeWeb auth (`/api/weweb/logout`
 ## STATUS
 PARTIAL
 
-Live auth route contract, deployment identity parity, backend production auth chain, and WeWeb preview authenticated parity are authoritative; sandbox workflow completion and autonomy ladder enforcement are now proven. Remaining work is next-layer PARTIAL modules.
+Live auth route contract, deployment identity parity, backend production auth chain, and WeWeb preview authenticated parity are authoritative; sandbox workflow completion, autonomy ladder enforcement, learning registry closure, and continuous integrity expansion are now proven. Remaining work is next-layer PARTIAL modules.
 
 ## EXPECTED VS LIVE PARITY
 - EXPECTED_COMMIT: 9cc0dc4324a4940e3e748e0b31ebc20f8096486e
@@ -61,6 +61,10 @@ Write-Output ("VALHALLA_TEST_PASSWORD_SET=" + [bool]$env:VALHALLA_TEST_PASSWORD)
    - `POST /api/completion/learning/tasks/reverify-stale`
 - Added guard-level restricted-action audit evidence emission (`autonomy_action_blocked`) in runtime engine guard.
 - Added explicit autonomy ladder enforcement regression suite for L0-L3 gate checks and restricted-action blocking behaviors.
+- Added executable learning domain/curriculum registry surfaces with objectives/playbooks/benchmarks/assessments and promotion-gate definitions.
+- Added mastery evaluation endpoint with re-verification-backlog gating and human-escalation integration.
+- Added learning feedback capture plus learning audit trail endpoints.
+- Expanded `/api/system/self-check` with queue/backlog, stale-task, lead-flow, VA/operator, credential-expiry, evidence/ethics, compliance, anomaly, fail-safe, and integrity-audit signals.
 
 ## FILES CHANGED (THIS CHECKPOINT)
 - services/api/app/core/build_info.py
@@ -72,6 +76,8 @@ Write-Output ("VALHALLA_TEST_PASSWORD_SET=" + [bool]$env:VALHALLA_TEST_PASSWORD)
 - services/api/tests/test_completion_registry.py
 - services/api/app/core/engines/guard_runtime.py
 - services/api/tests/test_autonomy_ladder_enforcement.py
+- services/api/app/services/system_self_check.py
+- services/api/tests/test_system_self_check.py
 - contracts/weweb_sync_state.json
 - docs/DECEMBER_FULL_LAUNCH_MATRIX.md
 - docs/FRONTEND_BLOCKERS.md
@@ -92,6 +98,8 @@ Write-Output ("VALHALLA_TEST_PASSWORD_SET=" + [bool]$env:VALHALLA_TEST_PASSWORD)
 - `d:/dev/.venv/Scripts/python.exe -m pytest -q services/api/tests/test_va_operator_full_day_sandbox_simulation.py --basetemp D:\dev\.tmp_pytest\basetemp` (with TEMP/TMP/TMPDIR on D:)
 - `d:/dev/.venv/Scripts/python.exe -m pytest -q services/api/tests/test_approvals_owner_auth.py services/api/tests/test_system_self_check.py services/api/tests/test_va_operator_sandbox_flow.py services/api/tests/test_flow_governance_gate.py services/api/tests/test_flow_full_pipeline.py services/api/tests/test_underwriting_engine_flow.py services/api/tests/test_matching.py services/api/tests/test_flow_lead_to_deal.py services/api/tests/test_heimdall_decision_card.py services/api/tests/test_approvals_owner_rehearsal.py services/api/tests/test_completion_registry.py --basetemp D:\dev\.tmp_pytest\basetemp` (with TEMP/TMP/TMPDIR on D:)
 - `d:/dev/.venv/Scripts/python.exe -m pytest -q services/api/tests/test_autonomy_ladder_enforcement.py tests/test_execution_policy_safety.py --basetemp D:\dev\.tmp_pytest\basetemp` (with TEMP/TMP/TMPDIR on D:)
+- `d:/dev/.venv/Scripts/python.exe -m pytest -q services/api/tests/test_completion_registry.py --basetemp D:\dev\.tmp_pytest\basetemp` (with TEMP/TMP/TMPDIR on D:)
+- `d:/dev/.venv/Scripts/python.exe -m pytest -q services/api/tests/test_system_self_check.py --basetemp D:\dev\.tmp_pytest\basetemp` (with TEMP/TMP/TMPDIR on D:)
 
 ## TEST RESULTS
 - PASS: completion registry suite currently 21/21 passing; prior subsystem suites remain passing from previous checkpoint.
@@ -107,6 +115,8 @@ Write-Output ("VALHALLA_TEST_PASSWORD_SET=" + [bool]$env:VALHALLA_TEST_PASSWORD)
 - PASS: full-day sandbox simulation `services/api/tests/test_va_operator_full_day_sandbox_simulation.py` -> `1 passed, 0 failed`.
 - PASS: priority rerun bundle with D-drive temp redirection passed across approvals/self-check/flow/matching/registry suites.
 - PASS: autonomy ladder and execution safety bundle `services/api/tests/test_autonomy_ladder_enforcement.py` + `tests/test_execution_policy_safety.py` -> `9 passed, 0 failed`.
+- PASS: completion registry suite with new learning domain/curriculum/mastery/audit coverage -> `29 passed, 0 failed`.
+- PASS: continuous integrity expanded self-check suite -> `13 passed, 0 failed`.
 
 ## BEHAVIOR PROVEN
 - Local contract includes `/api/weweb/logout` and `/api/weweb/refresh`.
@@ -172,6 +182,21 @@ Write-Output ("VALHALLA_TEST_PASSWORD_SET=" + [bool]$env:VALHALLA_TEST_PASSWORD)
    - kill-switch blocks restricted real-world actions even when engine is ACTIVE
    - read-only action allowed in SANDBOX
    - guard block emits auditable `autonomy_action_blocked` event evidence
+- Learning residual closure proven with executable endpoints and regression evidence:
+   - domain registry
+   - curriculum registry
+   - objectives/playbooks/benchmarks/assessments payload registry
+   - mastery scoring + promotion gates with re-verification backlog integration
+   - operational-result feedback capture
+   - learning audit trail endpoint
+- Continuous integrity expansion proven:
+   - queue health / approval backlog / stale-task detection
+   - learning re-verification backlog
+   - lead-flow and VA/operator degradation signals
+   - credential expiry warning state
+   - evidence/ethics and compliance alerts
+   - anomaly detection, blocker counts, readiness/fail-safe state
+   - integrity alert audit emission on blocked/critical components
 
 ## REMAINING DEFECTS
 - No new application defects surfaced in the covered sandbox rehearsal and priority suite reruns.
@@ -188,9 +213,9 @@ Write-Output ("VALHALLA_TEST_PASSWORD_SET=" + [bool]$env:VALHALLA_TEST_PASSWORD)
 - C: Route availability and health/smoke baseline -> PASS
 
 ## REMAINING PARTIAL
-- D. Learning System
+- E. Evidence/Ethics System (residual operational closure)
 - G. Human/VA Workflows (advanced simulation complete; broader production-adjacent operational hardening remains)
-- J. Sandbox End-to-End Proof
+- I. Full Frontend Synchronization (Learning/Integrity launch surfaces)
 
 ## REMAINING FAIL
 - End-to-end sandbox VA/operator transaction rehearsal -> PASS
@@ -209,7 +234,6 @@ Write-Output ("VALHALLA_TEST_PASSWORD_SET=" + [bool]$env:VALHALLA_TEST_PASSWORD)
 
 ## NEXT RECOMMENDED ACTION
 1. Continue PARTIAL workstream execution with implement->test->repair loops:
-   - Heimdall Learning module remaining PARTIAL items
    - Ethics/Evidence remaining PARTIAL items
-   - Continuous Integrity
+   - WeWeb launch-facing Learning/Integrity surfaces (requires MCP project edit auth)
 2. Continue operational WeWeb surfaces, integration software hooks, Engine Registry/readiness, and fake-live operating day.
