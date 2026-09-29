@@ -1,11 +1,13 @@
 {
-  "generated_at": "2026-09-28T22:41:45.210936+00:00",
+  "generated_at": "2026-09-29T00:00:09.569349+00:00",
   "status": "partial",
+  "render_parity": "PASS",
+  "production_auth": "PRODUCTION_AUTH_CREDENTIAL_REQUIRED",
   "sync": {
     "login": true,
     "me": true,
-    "refresh": false,
-    "logout": false,
+    "refresh": true,
+    "logout": true,
     "smoke": true
   },
   "local_weweb_paths": [
@@ -19,18 +21,25 @@
   "live_weweb_paths": [
     "/api/weweb/admin/reset-owner-password",
     "/api/weweb/login",
+    "/api/weweb/logout",
     "/api/weweb/me",
+    "/api/weweb/refresh",
     "/api/weweb/smoke"
   ],
-  "blocker": "LIVE_OPENAPI_MISSING_/api/weweb/logout",
+  "blocker": "PRODUCTION_AUTH_CREDENTIAL_REQUIRED",
   "live_probe_error": null,
   "evidence": {
-    "source_main_commit": "a052f11f4c97dc867fce537948fa8e8996f11853",
+    "source_main_commit": "9cc0dc4324a4940e3e748e0b31ebc20f8096486e",
     "live_refresh_probe": {
       "path": "/api/weweb/refresh",
       "method": "POST",
-      "status": 404,
-      "detail": "Not Found"
+      "status": 401,
+      "detail": "Missing authorization token"
+    },
+    "live_build_identity": {
+      "deployment_marker_commit": "9cc0dc4324a4940e3e748e0b31ebc20f8096486e",
+      "admin_build_git_sha": "9cc0dc4324a4940e3e748e0b31ebc20f8096486e",
+      "parity_match": true
     }
   }
 }

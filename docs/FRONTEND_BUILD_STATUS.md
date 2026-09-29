@@ -12,14 +12,26 @@ WeWeb owner console integration against Valhalla backend.
 - Session restore on refresh: PROVEN
 - Logout interaction wiring: PROVEN
 - Local fail-closed state clear after logout: PROVEN
+- Live backend route parity (`/api/weweb/logout`, `/api/weweb/refresh`): PROVEN
 
 ## Remaining Backend-Dependent Item
-- Production parity for `POST /api/weweb/logout`: EXTERNALLY BLOCKED - SPECIFIC REASON
-  - Live OpenAPI currently omits this path.
-  - Latest source containing logout/refresh has already been pushed to `main` (`a052f11`), so the current issue is deployment/runtime drift.
+- Production commit/build identity parity: PASS
+  - `/deployment-marker` now returns env-derived commit and source.
+  - `/admin/build/info` now returns matching env-derived git SHA.
+  - Live commit matches tested `origin/main` commit.
+
+## Remaining Auth Proof Item
+- PRODUCTION_AUTH_CREDENTIAL_REQUIRED
+  - Full authenticated live chain and WeWeb Preview chain require secure credential execution.
+
+## Commit Parity Snapshot
+- EXPECTED_COMMIT: `9cc0dc4324a4940e3e748e0b31ebc20f8096486e`
+- LIVE_COMMIT_OR_BUILD: `9cc0dc4324a4940e3e748e0b31ebc20f8096486e`
+- MATCH: `YES`
+- CAUSE_IF_KNOWN: N/A
 
 ## Required Next Verification After Deploy
-1. Live `GET /openapi.json` contains `/api/weweb/logout`.
-2. Runtime chain passes with successful backend logout response:
+1. Runtime chain passes with successful backend logout response:
    - login -> me -> refresh -> logout -> refresh
-3. No logout error artifact remains in UI debug messages.
+2. No logout error artifact remains in UI debug messages.
+3. WeWeb Preview flow matches backend behavior end-to-end.
