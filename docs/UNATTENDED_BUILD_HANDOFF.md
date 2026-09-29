@@ -65,6 +65,7 @@ Write-Output ("VALHALLA_TEST_PASSWORD_SET=" + [bool]$env:VALHALLA_TEST_PASSWORD)
 - Added mastery evaluation endpoint with re-verification-backlog gating and human-escalation integration.
 - Added learning feedback capture plus learning audit trail endpoints.
 - Expanded `/api/system/self-check` with queue/backlog, stale-task, lead-flow, VA/operator, credential-expiry, evidence/ethics, compliance, anomaly, fail-safe, and integrity-audit signals.
+- Added explicit poisoned-data pattern defense in knowledge retrieval/ingestion safety gates.
 
 ## FILES CHANGED (THIS CHECKPOINT)
 - services/api/app/core/build_info.py
@@ -116,6 +117,7 @@ Write-Output ("VALHALLA_TEST_PASSWORD_SET=" + [bool]$env:VALHALLA_TEST_PASSWORD)
 - PASS: priority rerun bundle with D-drive temp redirection passed across approvals/self-check/flow/matching/registry suites.
 - PASS: autonomy ladder and execution safety bundle `services/api/tests/test_autonomy_ladder_enforcement.py` + `tests/test_execution_policy_safety.py` -> `9 passed, 0 failed`.
 - PASS: completion registry suite with new learning domain/curriculum/mastery/audit coverage -> `29 passed, 0 failed`.
+- PASS: completion registry suite with poisoned-data defense coverage -> `31 passed, 0 failed`.
 - PASS: continuous integrity expanded self-check suite -> `13 passed, 0 failed`.
 
 ## BEHAVIOR PROVEN
@@ -197,6 +199,8 @@ Write-Output ("VALHALLA_TEST_PASSWORD_SET=" + [bool]$env:VALHALLA_TEST_PASSWORD)
    - evidence/ethics and compliance alerts
    - anomaly detection, blocker counts, readiness/fail-safe state
    - integrity alert audit emission on blocked/critical components
+- Evidence/ethics residual safeguard closure proven:
+   - poisoned-data pattern blocking in retrieval and ingestion
 
 ## REMAINING DEFECTS
 - No new application defects surfaced in the covered sandbox rehearsal and priority suite reruns.
@@ -213,7 +217,6 @@ Write-Output ("VALHALLA_TEST_PASSWORD_SET=" + [bool]$env:VALHALLA_TEST_PASSWORD)
 - C: Route availability and health/smoke baseline -> PASS
 
 ## REMAINING PARTIAL
-- E. Evidence/Ethics System (residual operational closure)
 - G. Human/VA Workflows (advanced simulation complete; broader production-adjacent operational hardening remains)
 - I. Full Frontend Synchronization (Learning/Integrity launch surfaces)
 
@@ -234,6 +237,5 @@ Write-Output ("VALHALLA_TEST_PASSWORD_SET=" + [bool]$env:VALHALLA_TEST_PASSWORD)
 
 ## NEXT RECOMMENDED ACTION
 1. Continue PARTIAL workstream execution with implement->test->repair loops:
-   - Ethics/Evidence remaining PARTIAL items
    - WeWeb launch-facing Learning/Integrity surfaces (requires MCP project edit auth)
 2. Continue operational WeWeb surfaces, integration software hooks, Engine Registry/readiness, and fake-live operating day.

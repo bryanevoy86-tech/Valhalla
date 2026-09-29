@@ -123,6 +123,14 @@ PROMPT_INJECTION_PATTERNS = [
     "call this external url",
 ]
 
+POISONED_DATA_PATTERNS = [
+    "BEGIN_MALICIOUS_PAYLOAD",
+    "TRAINING_POISON",
+    "DATASET_BACKDOOR",
+    "\u003cscript\u003e",
+    "drop table",
+]
+
 SENSITIVE_DATA_PATTERNS = {
     "email": re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b"),
     "ssn_like": re.compile(r"\b\d{3}-\d{2}-\d{4}\b"),
@@ -744,6 +752,14 @@ def _contains_prompt_injection(text: str | None) -> str | None:
     raw = (text or "").strip().lower()
     for pattern in PROMPT_INJECTION_PATTERNS:
         if pattern in raw:
+            return pattern
+    return None
+
+
+def _contains_poisoned_data_pattern(text: str | None) -> str | None:
+    raw = (text or "").strip().lower()
+    for pattern in POISONED_DATA_PATTERNS:
+        if pattern.lower() in raw:
             return pattern
     return None
 
@@ -1706,6 +1722,13 @@ def retrieve_knowledge(payload: KnowledgeRetrieveIn, db: Session = Depends(get_d
             blocked_sources.append({"source_id": row.source, "reason": f"prompt-injection pattern detected: {injection}"})
             continue
 
+        poisoned = _contains_poisoned_data_pattern(row.notes)
+        if poisoned is None:
+            poisoned = _contains_poisoned_data_pattern(row.title)
+        if poisoned:
+            blocked_sources.append({"source_id": row.source, "reason": f"poisoned-data pattern detected: {poisoned}"})
+            continue
+
         sensitive = _contains_sensitive_data(row.notes)
         if sensitive is None:
             sensitive = _contains_sensitive_data(row.title)
@@ -1848,6 +1871,14 @@ def ingest_knowledge(payload: KnowledgeIngestIn, db: Session = Depends(get_db)):
         injection = _contains_prompt_injection(payload.title)
     if injection is not None:
         raise HTTPException(status_code=409, detail=f"prompt-injection pattern detected: {injection}")
+
+    poisoned = _contains_poisoned_data_pattern(payload.content_excerpt)
+    if poisoned is None:
+        poisoned = _contains_poisoned_data_pattern(payload.notes)
+    if poisoned is None:
+        poisoned = _contains_poisoned_data_pattern(payload.title)
+    if poisoned is not None:
+        raise HTTPException(status_code=409, detail=f"poisoned-data pattern detected: {poisoned}")
 
     sensitive = _contains_sensitive_data(payload.content_excerpt)
     if sensitive is None:

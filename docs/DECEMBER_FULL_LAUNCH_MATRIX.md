@@ -60,6 +60,7 @@ Status language:
 - Auth evidence artifacts regenerated under `contracts/`: PROVEN
 - Knowledge retrieval guards (citation required for fact-grade use, contradiction demotion, trust ordering): PROVEN (tests)
 - High-impact human-review escalation lane in retrieval flow: PROVEN (tests)
+- Poisoned-data pattern defense in retrieval and ingestion: PROVEN (tests)
 
 ## F. Autonomy/Governance
 - Dependency-order execution and blocker logging: PROVEN
@@ -209,11 +210,11 @@ Status language:
   - `services/api/tests/test_approvals_owner_rehearsal.py`
   - `services/api/tests/test_approvals_owner_auth.py`
 - Learning/evidence hardening regression rerun: PASS
-  - `services/api/tests/test_completion_registry.py` (29 passed)
+  - `services/api/tests/test_completion_registry.py` (31 passed)
 - Continuous integrity regression rerun: PASS
   - `services/api/tests/test_system_self_check.py` (13 passed)
 
 ## Immediate Next Dependency-Ordered Actions
-1. Continue highest-priority PARTIAL work: Ethics/Evidence residual closure.
-2. Continue operational WeWeb frontend completion using live backend surfaces (Learning/Integrity views), then integration hooks.
-3. Continue Engine Registry/readiness and fake-live operating day.
+1. Continue highest-priority PARTIAL work: operational WeWeb frontend completion using live backend surfaces (Learning/Integrity views), then integration hooks.
+2. Continue Engine Registry/readiness and fake-live operating day.
+3. Keep Ethics/Evidence in regression-monitor mode unless new defects appear.

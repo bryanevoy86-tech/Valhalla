@@ -3,9 +3,9 @@
 Generated: 2026-09-29
 
 ## Active Blocker
-- ID: ETHICS_WEWEB_SURFACES_REMAINING_PARTIAL
+- ID: WEWEB_SURFACES_REMAINING_PARTIAL
 - Class: PARTIAL
-- Description: Learning registry/mastery and continuous-integrity backend closure are complete; remaining blockers are Ethics/Evidence residual closure and WeWeb launch-surface wiring on live MCP auth.
+- Description: Learning registry/mastery, ethics/evidence safeguards, and continuous-integrity backend closure are complete; remaining blocker is WeWeb launch-surface wiring on live MCP auth.
 
 ## External Dependency
 - ID: WEWEB_MCP_EDIT_AUTH_REQUIRED

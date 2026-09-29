@@ -55,4 +55,4 @@ WeWeb owner console integration against Valhalla backend.
 3. Priority rerun bundle with D-temp redirection: PASS (approvals/self-check/flow/matching/registry suites).
 4. Autonomy ladder enforcement + restricted-action guard proof: PASS (`services/api/tests/test_autonomy_ladder_enforcement.py`, `tests/test_execution_policy_safety.py`).
 5. WeWeb runtime UI wiring for Learning/Integrity surfaces is EXTERNAL_OWNER_ACTION_REQUIRED until authenticated MCP session/project-edit authorization is available in this run.
-6. Continue remaining PARTIAL launch items outside auth/parity: ethics/evidence residuals, operational frontend surfaces, integration hooks, fake-live readiness.
+6. Continue remaining PARTIAL launch items outside auth/parity: operational frontend surfaces, integration hooks, fake-live readiness.

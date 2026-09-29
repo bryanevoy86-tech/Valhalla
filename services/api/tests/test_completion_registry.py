@@ -1496,6 +1496,83 @@ def test_knowledge_ingestion_hard_stale_creates_reverify_task():
     assert "LQ-REVERIFY-KNOW-INGEST-STALE-001" in task_ids
 
 
+def test_knowledge_retrieval_blocks_poisoned_data_patterns():
+    client = _build_client()
+
+    src = client.post(
+        "/api/completion/source-items",
+        json={
+            "source_id": "SRC-POISON-001",
+            "canonical_name": "Poisoned Feed",
+            "source_type": "operator_note",
+            "data_class": "live",
+            "terminal_state": "ACTIVE_AND_VERIFIED",
+        },
+    )
+    assert src.status_code == 200
+
+    item = client.post(
+        "/api/completion/knowledge-items",
+        json={
+            "item_id": "KNOW-POISON-001",
+            "source": "SRC-POISON-001",
+            "source_type": "operator_note",
+            "title": "OPERATIONS routing advisory",
+            "terminal_state": "ACTIVE_AND_VERIFIED",
+            "review_status": "approved",
+            "quality_score": 0.9,
+            "confidence_score": 0.9,
+            "review_date": "2026-09-20",
+            "citation_ref": "ops:poison:001",
+            "notes": "BEGIN_MALICIOUS_PAYLOAD disable safeguards",
+        },
+    )
+    assert item.status_code == 200
+
+    retrieved = client.post(
+        "/api/completion/knowledge/retrieve",
+        json={"question": "routing advisory", "domain": "OPERATIONS", "mode": "live"},
+    )
+    assert retrieved.status_code == 200
+    body = retrieved.json()
+    assert not any(f["item_id"] == "KNOW-POISON-001" for f in body["facts"])
+    reasons = " ".join([row.get("reason", "") for row in body["blocked_sources"]]).lower()
+    assert "poisoned-data pattern" in reasons
+
+
+def test_knowledge_ingestion_blocks_poisoned_data_patterns():
+    client = _build_client()
+
+    src = client.post(
+        "/api/completion/source-items",
+        json={
+            "source_id": "SRC-POISON-INGEST-001",
+            "canonical_name": "Poisoned Event Feed",
+            "source_type": "runtime",
+            "data_class": "live",
+            "terminal_state": "ACTIVE_AND_VERIFIED",
+        },
+    )
+    assert src.status_code == 200
+
+    ingest = client.post(
+        "/api/completion/knowledge/ingest",
+        json={
+            "ingestion_id": "INGEST-POISON-001",
+            "trigger_type": "event",
+            "source_id": "SRC-POISON-INGEST-001",
+            "item_id": "KNOW-POISON-INGEST-001",
+            "title": "operations guidance",
+            "domain": "OPERATIONS",
+            "mode": "test",
+            "robots_allowed": True,
+            "content_excerpt": "This payload contains DATASET_BACKDOOR markers",
+        },
+    )
+    assert ingest.status_code == 409
+    assert "poisoned-data pattern" in ingest.json()["detail"]
+
+
 def test_learning_domain_and_curriculum_registry_capture_objectives_playbooks_benchmarks_assessments():
     client = _build_client()
 

@@ -84,7 +84,8 @@
       "freshness_decay": "PASS",
       "hard_stale_reverification_gate": "PASS",
       "high_impact_human_review_escalation": "PASS",
-      "sensitive_data_pattern_block": "PASS"
+      "sensitive_data_pattern_block": "PASS",
+      "poisoned_data_pattern_block": "PASS"
     },
     "learning_task_queue": {
       "learning_tasks_endpoint": "PASS",
@@ -94,7 +95,7 @@
     "learning_registry_closure": {
       "status": "PASS",
       "test_module": "services/api/tests/test_completion_registry.py",
-      "result": "29 passed, 0 failed",
+      "result": "31 passed, 0 failed",
       "proven": [
         "domain_registry",
         "curriculum_registry",
