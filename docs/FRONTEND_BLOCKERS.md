@@ -1,11 +1,16 @@
 # FRONTEND BLOCKERS
 
-Generated: 2026-09-28
+Generated: 2026-09-29
 
 ## Active Blocker
-- ID: PRODUCTION_AUTH_CREDENTIAL_REQUIRED
-- Class: EXTERNAL_OWNER_ACTION_REQUIRED
-- Description: Full live authenticated chain and WeWeb Preview auth verification require secure credential execution.
+- ID: LEARNING_ETHICS_AUTONOMY_REMAINING_PARTIAL
+- Class: PARTIAL
+- Description: Sandbox rehearsal is complete; remaining blockers are Learning/Ethics/Autonomy/Integrity completion and broader operational readiness surfaces.
+
+## External Constraint
+- ID: TEMP_VOLUME_EXHAUSTED
+- Class: MITIGATED_WITH_WORKAROUND
+- Description: Local C-temp pressure exists but test execution is unblocked using D-drive TEMP/TMP/TMPDIR + pytest basetemp redirection.
 
 ## Evidence
 - Live production OpenAPI includes:
@@ -21,15 +26,38 @@ Generated: 2026-09-28
 
 ## Impact
 - Auth route contract and deployment parity are now available in production.
-- Remaining gap is secure execution of full authenticated proof chain.
+- Full backend authenticated chain is proven in live production.
+- Authenticated WeWeb Preview runtime verification is complete.
+- Sandbox rehearsal gap is closed.
+- Remaining gap is broader PARTIAL module completion and launch-surface hardening.
 
 ## Latest Verification
 - Source with `/api/weweb/logout` and `/api/weweb/refresh` is on `origin/main` and deployed with runtime identity parity commit `9cc0dc4`.
 - Live runtime probe confirms both routes are present in `GET /openapi.json`.
 - Live runtime now reports parity commit `9cc0dc4` through both identity endpoints.
 
-## Secure Credential Setup (Owner Action)
-Use local shell environment variables only:
+## Live Auth Proof Results
+
+```
+LOGIN=PASS
+ME=PASS
+REFRESH=PASS
+LOGOUT=PASS
+POST_LOGOUT_GUARD=PASS
+REFRESH_AFTER_LOGOUT=PASS
+```
+
+Status evidence:
+- `STATUS_LOGIN=200`
+- `STATUS_ME_BEFORE=200`
+- `STATUS_REFRESH=200`
+- `STATUS_ME_AFTER_REFRESH=200`
+- `STATUS_LOGOUT=200`
+- `STATUS_ME_POST_LOGOUT=401`
+- `STATUS_REFRESH_POST_LOGOUT=401`
+
+## Secure Credential Setup (Reference)
+Use local shell environment variables only when rerunning auth proofs:
 
 ```
 $env:VALHALLA_TEST_EMAIL = "owner-or-test-account@example.com"
@@ -56,5 +84,18 @@ Write-Output ("VALHALLA_TEST_PASSWORD_SET=" + [bool]$env:VALHALLA_TEST_PASSWORD)
 - CAUSE_IF_KNOWN: N/A
 
 ## Unblock Condition
-- Execute secure production login chain and WeWeb Preview parity checks.
-- Record PASS/FAIL evidence for login -> me -> refresh -> logout -> post-logout persistence.
+- Execute and evidence remaining PARTIAL modules after sandbox completion:
+  - Heimdall learning completion
+  - Ethics/evidence residual work
+  - autonomy ladder enforcement
+  - continuous integrity and fake-live readiness
+
+## Latest Sandbox Evidence
+- `services/api/tests/test_integrated_sandbox_rehearsal.py`: PASS (`2 passed, 0 failed`)
+- `services/api/tests/test_va_operator_full_day_sandbox_simulation.py`: PASS (`1 passed, 0 failed`)
+- Deterministic no-buyer path validated with isolated buyer fixture:
+  - BUYER_MATCH_REQUEST = PASS
+  - BUYER_MATCH_COUNT = 0
+  - NO_BUYER_STATE = PASS
+  - DISPOSITION_BLOCKED_OR_ESCALATED = PASS
+  - NO_UNAUTHORIZED_CONTINUATION = PASS

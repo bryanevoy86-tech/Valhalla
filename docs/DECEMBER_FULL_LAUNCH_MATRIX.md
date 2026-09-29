@@ -1,6 +1,6 @@
 # DECEMBER FULL LAUNCH MATRIX
 
-Generated: 2026-09-29 (updated after runtime-identity deploy)
+Generated: 2026-09-29 (updated after deterministic sandbox rehearsal + full-day simulation)
 
 Status language:
 - PROVEN
@@ -58,7 +58,8 @@ Status language:
 
 ## G. Human/VA Workflows
 - Approval queue + owner auth rehearsal paths: PROVEN (tests)
-- Full VA/operator day-in-the-loop simulation remains: PARTIAL
+- VA intake -> approval -> conversion -> audit sandbox flow: PROVEN (tests)
+- Full VA/operator day-in-the-loop simulation: PROVEN (sandbox simulation test)
 
 ## H. Resilience/Integrity
 - Fail-closed logout/client-state clear behavior in WeWeb preview: PROVEN
@@ -67,14 +68,17 @@ Status language:
 - WeWeb auth workflow wired and runtime-proven: PROVEN
 - Backend logout/refresh route parity with live production: PROVEN
 - Production identity parity gate for auth proof: PROVEN
-- Full live login chain proof with valid production credential: EXTERNAL
+- Full live login chain proof with valid production credential: PROVEN
+- WeWeb authenticated preview proof (session restore/logout/post-logout guard): PROVEN
 
 ## J. Sandbox End-to-End Proof
-- Not advanced in this checkpoint: PARTIAL
+- Deterministic integrated sandbox rehearsal (single transaction): PROVEN
+  - Stage chain pass in `services/api/tests/test_integrated_sandbox_rehearsal.py`.
+  - Failure-path battery pass in same module.
 
 ## Current Top Blocker
-- Production auth credential gate for full end-to-end live auth proof.
-- Render parity is now passing; remaining live chain proof requires secure owner/test credential execution.
+- Highest remaining launch work is non-sandbox PARTIAL modules (Learning, Ethics/Evidence, autonomy/integrity completion, operational frontend surfaces, integration hooks, registry/readiness, fake-live day).
+- Local temp exhaustion on C: is mitigated for test execution via D-drive temp redirection in this run.
 
 ## Production Parity Report
 - EXPECTED_COMMIT: `9cc0dc4324a4940e3e748e0b31ebc20f8096486e`
@@ -83,11 +87,95 @@ Status language:
 - CAUSE_IF_KNOWN: N/A (parity restored)
 
 ## Run Evidence Added (This Run)
+- Deterministic integrated rehearsal: PASS
+  - `services/api/tests/test_integrated_sandbox_rehearsal.py` -> `2 passed, 0 failed`.
+  - Happy-path stage chain PASS:
+    - LEAD_INTAKE
+    - HEIMDALL_SCORE
+    - EVIDENCE_CHECK
+    - VA_TASK
+    - SELLER_OUTCOME
+    - NEXT_BEST_ACTION
+    - APPROVAL
+    - DEAL_CONVERSION
+    - UNDERWRITING
+    - BUYER_MATCH
+    - DISPOSITION
+    - DOCUMENT_STATE
+    - SIGNATURE_SIMULATION
+    - CLOSING_SIMULATION
+    - ACCOUNTING_RECORD
+    - AUDIT
+    - LEARNING_FEEDBACK
+    - INTEGRITY_CHECK
+  - Deterministic no-buyer proof PASS (isolated fixture, no global seeded buyer dependency):
+    - BUYER_MATCH_REQUEST = PASS
+    - BUYER_MATCH_COUNT = 0
+    - NO_BUYER_STATE = PASS
+    - DISPOSITION_BLOCKED_OR_ESCALATED = PASS
+    - AUDIT_EVENT_CREATED = PASS (where supported)
+    - NEXT_ACTION_OR_ESCALATION_CREATED = PASS (where supported)
+    - NO_UNAUTHORIZED_CONTINUATION = PASS
+- Full-day sandbox simulation: PASS
+  - `services/api/tests/test_va_operator_full_day_sandbox_simulation.py` -> `1 passed, 0 failed`.
+  - Proven in sandbox data only:
+    - queue prioritization
+    - task assignment
+    - seller follow-up signal
+    - reassignment/failover
+    - escalation path
+    - underwriting workload
+    - buyer/disposition workload
+    - stale-task detection
+    - Heimdall prioritization
+    - founder overload filtering
+    - audit events
+    - learning feedback capture
+    - integrity monitoring (audit status checks)
+- Priority rerun bundle with D-drive temp redirection: PASS
+  - `services/api/tests/test_approvals_owner_auth.py`
+  - `services/api/tests/test_system_self_check.py`
+  - `services/api/tests/test_va_operator_sandbox_flow.py`
+  - `services/api/tests/test_flow_governance_gate.py`
+  - `services/api/tests/test_flow_full_pipeline.py`
+  - `services/api/tests/test_underwriting_engine_flow.py`
+  - `services/api/tests/test_matching.py`
+  - `services/api/tests/test_flow_lead_to_deal.py`
+  - `services/api/tests/test_heimdall_decision_card.py`
+  - `services/api/tests/test_approvals_owner_rehearsal.py`
+  - `services/api/tests/test_completion_registry.py`
+  - Result: all tests passed in this bundle.
+- Classification note:
+  - `services/api/tests/test_execution_policy_safety.py` missing in current workspace path set -> TEST_ENVIRONMENT_FAILURE (path/file absence), not an application regression.
 - Live probe confirms:
   - `GET /health` returns healthy.
   - `GET /openapi.json` includes `/api/weweb/logout` and `/api/weweb/refresh`.
   - `GET /deployment-marker` reports env-derived commit + provenance.
   - `GET /admin/build/info` reports matching env-derived git SHA.
+- Live production auth chain confirms:
+  - `LOGIN=PASS` (200)
+  - `ME=PASS` (200 before/after refresh with consistent identity)
+  - `REFRESH=PASS` (200 with token rotation)
+  - `LOGOUT=PASS` (200)
+  - `POST_LOGOUT_GUARD=PASS` (`GET /api/weweb/me` returns 401)
+  - `REFRESH_AFTER_LOGOUT=PASS` (`POST /api/weweb/refresh` returns 401)
+- WeWeb authenticated preview proof confirms:
+  - `WEWEB_SESSION_RESTORE=PASS`
+  - `WEWEB_LOGOUT=PASS`
+  - `WEWEB_POST_LOGOUT_GUARD=PASS`
+  - `WEWEB_AUTH=PASS`
+  - Browser-side post-logout probes: `/api/weweb/me` -> 401, `/api/weweb/refresh` -> 401.
+- Additional sandbox/governance evidence:
+  - `services/api/tests/test_va_operator_sandbox_flow.py`: PASS
+  - `services/api/tests/test_flow_governance_gate.py`: PASS
+  - `services/api/tests/test_flow_full_pipeline.py`: PASS
+  - `services/api/tests/test_underwriting_engine_flow.py`: PASS
+  - `services/api/tests/test_matching.py`: PASS
+  - `tests/test_execution_policy_safety.py`: PASS
+  - `services/api/tests/test_flow_lead_to_deal.py`: PASS
+  - `services/api/tests/test_approvals_owner_rehearsal.py`: PASS
+  - `services/api/tests/test_heimdall_decision_card.py`: PASS
+  - `services/api/tests/test_completion_registry.py`: PASS
 - Revenue/deal pipeline test bundle: PASS
   - `services/api/tests/test_flow_lead_to_deal.py`
   - `services/api/tests/test_underwriting_engine_flow.py`
@@ -102,6 +190,6 @@ Status language:
   - `services/api/tests/test_completion_registry.py` (22 passed)
 
 ## Immediate Next Dependency-Ordered Actions
-1. Execute complete production auth proof chain with secure credential input (login -> me -> refresh -> logout -> post-logout checks).
-2. Validate same auth behavior in WeWeb Preview runtime.
-3. Continue highest-priority PARTIAL work: Learning loop completion, VA/operator workflow simulation, sandbox E2E transaction.
+1. Continue highest-priority PARTIAL work: Heimdall Learning module completion.
+2. Continue Ethics/Evidence PARTIAL closures and autonomy ladder enforcement.
+3. Continue Continuous Integrity, operational WeWeb frontend completion, integration hooks, Engine Registry/readiness, and fake-live operating day.

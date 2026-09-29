@@ -1,6 +1,6 @@
 # FRONTEND BUILD STATUS
 
-Generated: 2026-09-28
+Generated: 2026-09-29
 
 ## Scope
 WeWeb owner console integration against Valhalla backend.
@@ -21,8 +21,13 @@ WeWeb owner console integration against Valhalla backend.
   - Live commit matches tested `origin/main` commit.
 
 ## Remaining Auth Proof Item
-- PRODUCTION_AUTH_CREDENTIAL_REQUIRED
-  - Full authenticated live chain and WeWeb Preview chain require secure credential execution.
+- Production backend auth chain: PASS
+  - `LOGIN=PASS`, `ME=PASS`, `REFRESH=PASS`, `LOGOUT=PASS`, `POST_LOGOUT_GUARD=PASS`, `REFRESH_AFTER_LOGOUT=PASS`
+- WeWeb Preview authenticated parity: PASS
+  - `WEWEB_SESSION_RESTORE=PASS`
+  - `WEWEB_LOGOUT=PASS`
+  - `WEWEB_POST_LOGOUT_GUARD=PASS`
+  - Browser post-logout probes: `/api/weweb/me` -> 401, `/api/weweb/refresh` -> 401
 
 ## Safety/Integrity Delta (This Checkpoint)
 - Learning/evidence retrieval now enforces additional launch-safety gates (backend):
@@ -36,8 +41,8 @@ WeWeb owner console integration against Valhalla backend.
 - MATCH: `YES`
 - CAUSE_IF_KNOWN: N/A
 
-## Required Next Verification After Deploy
-1. Runtime chain passes with successful backend logout response:
-   - login -> me -> refresh -> logout -> refresh
-2. No logout error artifact remains in UI debug messages.
-3. WeWeb Preview flow matches backend behavior end-to-end.
+## Required Next Verification
+1. Sandbox transaction rehearsal: PASS (`services/api/tests/test_integrated_sandbox_rehearsal.py`).
+2. VA/operator full-day sandbox simulation: PASS (`services/api/tests/test_va_operator_full_day_sandbox_simulation.py`).
+3. Priority rerun bundle with D-temp redirection: PASS (approvals/self-check/flow/matching/registry suites).
+4. Continue remaining PARTIAL launch items outside auth/parity: learning, ethics/evidence, autonomy/integrity, operational frontend surfaces.
