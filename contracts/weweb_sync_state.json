@@ -1,8 +1,9 @@
-{
-  "generated_at": "2026-09-29T04:35:00.000000+00:00",
+﻿{
+  "generated_at": "2026-09-29T23:30:00.000000+00:00",
   "status": "partial",
   "render_parity": "PASS",
   "production_auth": "PASS",
+  "weweb_auth": "PASS",
   "sync": {
     "login": true,
     "me": true,
@@ -10,166 +11,104 @@
     "logout": true,
     "smoke": true
   },
-  "local_weweb_paths": [
-    "/api/weweb/admin/reset-owner-password",
-    "/api/weweb/login",
-    "/api/weweb/logout",
-    "/api/weweb/me",
-    "/api/weweb/refresh",
-    "/api/weweb/smoke"
-  ],
-  "live_weweb_paths": [
-    "/api/weweb/admin/reset-owner-password",
-    "/api/weweb/login",
-    "/api/weweb/logout",
-    "/api/weweb/me",
-    "/api/weweb/refresh",
-    "/api/weweb/smoke"
-  ],
-  "blocker": "LEARNING_ETHICS_INTEGRITY_REMAINING_PARTIAL",
-  "live_probe_error": null,
+  "blocker": "WEWEB_MCP_EDIT_AUTH_REQUIRED",
   "evidence": {
-    "source_main_commit": "9cc0dc4324a4940e3e748e0b31ebc20f8096486e",
-    "live_refresh_probe": {
-      "path": "/api/weweb/refresh",
-      "method": "POST",
-      "status": 401,
-      "detail": "Missing authorization token"
-    },
-    "live_build_identity": {
-      "deployment_marker_commit": "9cc0dc4324a4940e3e748e0b31ebc20f8096486e",
-      "admin_build_git_sha": "9cc0dc4324a4940e3e748e0b31ebc20f8096486e",
-      "parity_match": true
-    },
-    "production_auth_chain": {
-      "login": "PASS",
-      "me": "PASS",
-      "refresh": "PASS",
-      "logout": "PASS",
-      "post_logout_guard": "PASS",
-      "refresh_after_logout": "PASS",
-      "status_login": 200,
-      "status_me_before": 200,
-      "status_refresh": 200,
-      "status_me_after_refresh": 200,
-      "status_logout": 200,
-      "status_me_post_logout": 401,
-      "status_refresh_post_logout": 401
-    },
-    "weweb_preview_auth_chain": {
-      "weweb_session_restore": "PASS",
-      "weweb_logout": "PASS",
-      "weweb_post_logout_guard": "PASS",
-      "weweb_auth": "PASS",
-      "authenticated_owner_surface_visible": true,
-      "post_refresh_logged_in_true": true,
-      "post_logout_login_view_visible": true,
-      "post_logout_signin_still_visible_after_refresh": true,
-      "post_logout_signed_in_indicator_visible": false,
-      "browser_probe_me_status": 401,
-      "browser_probe_me_detail": "Missing authorization token",
-      "browser_probe_refresh_status": 401,
-      "browser_probe_refresh_detail": "Missing authorization token"
-    },
-    "external_constraints": {
-      "temp_volume_exhausted": false,
-      "mitigation": "TEMP/TMP/TMPDIR and pytest basetemp redirected to D:\\dev\\.tmp_pytest",
-      "affected_suites": [
-        "services/api/tests/test_approvals_owner_auth.py (concurrency/tmp_path subset)",
-        "services/api/tests/test_system_self_check.py"
-      ],
-      "classification": "MITIGATED_WITH_WORKAROUND"
-    },
-    "learning_evidence_hardening": {
-      "freshness_decay": "PASS",
-      "hard_stale_reverification_gate": "PASS",
-      "high_impact_human_review_escalation": "PASS",
-      "sensitive_data_pattern_block": "PASS"
-    },
-    "learning_task_queue": {
-      "learning_tasks_endpoint": "PASS",
-      "stale_reverification_enqueue": "PASS",
-      "idempotent_enqueue": "PASS"
-    },
-    "sandbox_e2e_rehearsal": {
+    "learning_backend_closure": "PASS",
+    "ethics_evidence_backend_closure": "PASS",
+    "continuous_integrity_backend_closure": "PASS",
+    "engine_registry": {
       "status": "PASS",
-      "test_module": "services/api/tests/test_integrated_sandbox_rehearsal.py",
-      "result": "2 passed, 0 failed",
-      "stage_results": {
-        "LEAD_INTAKE": "PASS",
-        "HEIMDALL_SCORE": "PASS",
-        "EVIDENCE_CHECK": "PASS",
-        "VA_TASK": "PASS",
-        "SELLER_OUTCOME": "PASS",
-        "NEXT_BEST_ACTION": "PASS",
-        "APPROVAL": "PASS",
-        "DEAL_CONVERSION": "PASS",
-        "UNDERWRITING": "PASS",
-        "BUYER_MATCH": "PASS",
-        "DISPOSITION": "PASS",
-        "DOCUMENT_STATE": "PASS",
-        "SIGNATURE_SIMULATION": "PASS",
-        "CLOSING_SIMULATION": "PASS",
-        "ACCOUNTING_RECORD": "PASS",
-        "AUDIT": "PASS",
-        "LEARNING_FEEDBACK": "PASS",
-        "INTEGRITY_CHECK": "PASS"
+      "endpoints": [
+        "/api/completion/engine-registry/items",
+        "/api/completion/engine-registry/audit"
+      ],
+      "planned_engines_cataloged": [
+        "wholesaling",
+        "brrrr",
+        "flips",
+        "rentals",
+        "multifamily",
+        "commercial",
+        "business_acquisitions",
+        "ai_microbusinesses",
+        "saas_subscription_products",
+        "arbitrage",
+        "market_intelligence",
+        "ops_automation",
+        "trading_advisory"
+      ],
+      "allowed_states": [
+        "OFF",
+        "SANDBOX",
+        "BLOCKED",
+        "READY",
+        "ACTIVE"
+      ]
+    },
+    "legacy_instance_context": {
+      "status": "PARTIAL",
+      "endpoints": [
+        "/api/completion/legacy-instances"
+      ],
+      "represented": [
+        "instance_identity",
+        "assigned_businesses",
+        "assigned_jurisdictions",
+        "local_knowledge_context",
+        "permissions",
+        "integrations",
+        "engines",
+        "synchronization_status",
+        "isolation_state",
+        "failover_state",
+        "audit_state"
+      ],
+      "gap": "Automated multi-instance orchestration runtime proof is not complete"
+    },
+    "fake_live_day": {
+      "status": "PASS",
+      "test_module": "services/api/tests/test_fake_live_operating_day.py",
+      "metrics": {
+        "LEADS_PROCESSED": 3,
+        "VA_TASKS_CREATED": 3,
+        "FOLLOWUPS_CREATED": 3,
+        "APPROVALS_REQUESTED": 3,
+        "APPROVALS_COMPLETED": 2,
+        "DEALS_CREATED": 2,
+        "UNDERWRITING_COMPLETED": 2,
+        "BUYER_MATCHES": 1,
+        "NO_BUYER_ESCALATIONS": 1,
+        "DISPOSITION_ACTIONS": 2,
+        "DOCUMENT_STATES": 2,
+        "SIMULATED_CLOSINGS": 0,
+        "AUDIT_EVENTS": 14,
+        "LEARNING_FEEDBACK_EVENTS": 1,
+        "REVERIFY_TASKS": 2,
+        "INTEGRITY_ALERTS": 4,
+        "FAILED_ACTIONS_BLOCKED": 1,
+        "FOUNDER_ESCALATIONS": 1,
+        "FAILOVER_EVENTS": 1
       },
-      "failure_path_results": {
-        "invalid_login": "PASS",
-        "expired_auth": "PASS",
-        "forbidden_owner_action_attempt": "PASS",
-        "missing_seller_data": "PASS",
-        "low_or_stale_evidence": "PASS",
-        "duplicate_reverification_request": "PASS",
-        "underwriting_validation_failure": "PASS",
-        "no_buyer_safe_handling": "PASS",
-        "rejected_approval": "PASS",
-        "service_route_failure_404": "PASS"
-      }
+      "control_behavior": "DETECTS_LOGS_ESCALATES_FAILS_SAFE_CONTINUES_NON_BLOCKED"
     },
-    "sandbox_full_day_simulation": {
-      "status": "PASS",
-      "test_module": "services/api/tests/test_va_operator_full_day_sandbox_simulation.py",
-      "result": "1 passed, 0 failed",
-      "proven": [
-        "queue_prioritization",
-        "task_assignment",
-        "seller_follow_up_signal",
-        "reassignment_failover",
-        "escalation",
-        "underwriting_workload",
-        "buyer_disposition_workload",
-        "owner_approval_actions",
-        "stale_task_detection",
-        "heimdall_prioritization",
-        "founder_overload_filtering",
-        "audit_events",
-        "learning_feedback_capture",
-        "integrity_monitoring"
-      ]
-    },
-    "autonomy_ladder_enforcement": {
-      "status": "PASS",
-      "test_modules": [
-        "services/api/tests/test_autonomy_ladder_enforcement.py",
-        "tests/test_execution_policy_safety.py"
+    "weweb_learning_integrity_surfaces": {
+      "status": "EXTERNAL_OWNER_ACTION_REQUIRED",
+      "reason": "Authenticated MCP project-edit access is required to mutate the real WeWeb project in this runtime session.",
+      "target_surfaces": [
+        "Learning status",
+        "Re-verification queue",
+        "Evidence/Ethics status",
+        "Autonomy state",
+        "Integrity health",
+        "System blockers",
+        "Shield/Pause/Kill visibility",
+        "Engine Registry/readiness"
       ],
-      "result": "9 passed, 0 failed",
-      "proven": [
-        "l0_l1_l2_l3_sample_threshold_gates",
-        "sandbox_restricted_action_blocking",
-        "kill_switch_restricted_action_blocking",
-        "read_only_allowed_in_sandbox",
-        "autonomy_action_blocked_audit_evidence"
+      "recovery_instructions": [
+        "Authenticate WeWeb MCP in this runtime session",
+        "Grant project-edit scope to Valhalla WeWeb project",
+        "Re-run UI wiring against live backend endpoints"
       ]
-    },
-    "priority_suite_rerun_d_temp": {
-      "status": "PASS",
-      "command_context": "TEMP/TMP/TMPDIR + --basetemp on D-drive",
-      "suite_count": 11,
-      "missing_suite": null,
-      "missing_suite_classification": null
     }
   }
 }

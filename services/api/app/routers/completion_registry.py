@@ -12,6 +12,12 @@ from sqlalchemy.orm import Session
 from app.core.db import get_db
 from app.models.completion_registry import (
     DatasetRegistryItem,
+    EngineRegistryItem,
+    LegacyInstanceRegistryItem,
+    LearningAuditEvent,
+    LearningCurriculumRegistryItem,
+    LearningDomainRegistryItem,
+    LearningFeedbackRecord,
     KnowledgeRegistryItem,
     LearningTaskQueueItem,
     LearningPromotionRecord,
@@ -47,6 +53,12 @@ def _ensure_registry_tables(db: Session) -> None:
     ScenarioExecutionRecord.__table__.create(bind=bind, checkfirst=True)
     LearningPromotionRecord.__table__.create(bind=bind, checkfirst=True)
     LearningTaskQueueItem.__table__.create(bind=bind, checkfirst=True)
+    LearningDomainRegistryItem.__table__.create(bind=bind, checkfirst=True)
+    LearningCurriculumRegistryItem.__table__.create(bind=bind, checkfirst=True)
+    LearningFeedbackRecord.__table__.create(bind=bind, checkfirst=True)
+    LearningAuditEvent.__table__.create(bind=bind, checkfirst=True)
+    EngineRegistryItem.__table__.create(bind=bind, checkfirst=True)
+    LegacyInstanceRegistryItem.__table__.create(bind=bind, checkfirst=True)
 
 
 def _ensure_terminal_state(state: str) -> str:
@@ -115,6 +127,14 @@ PROMPT_INJECTION_PATTERNS = [
     "call this external url",
 ]
 
+POISONED_DATA_PATTERNS = [
+    "BEGIN_MALICIOUS_PAYLOAD",
+    "TRAINING_POISON",
+    "DATASET_BACKDOOR",
+    "\u003cscript\u003e",
+    "drop table",
+]
+
 SENSITIVE_DATA_PATTERNS = {
     "email": re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b"),
     "ssn_like": re.compile(r"\b\d{3}-\d{2}-\d{4}\b"),
@@ -138,6 +158,24 @@ SOURCE_TRUST_RANKS = {
     "interview": 2,
     "blog": 1,
     "forum": 1,
+}
+
+ENGINE_ALLOWED_STATES = {"OFF", "SANDBOX", "BLOCKED", "READY", "ACTIVE"}
+
+PLANNED_ENGINE_CATALOG: dict[str, dict[str, str]] = {
+    "wholesaling": {"name": "Wholesaling", "category": "real_estate", "business_industry": "residential_real_estate"},
+    "brrrr": {"name": "BRRRR", "category": "real_estate", "business_industry": "residential_real_estate"},
+    "flips": {"name": "Flips", "category": "real_estate", "business_industry": "residential_real_estate"},
+    "rentals": {"name": "Rentals", "category": "real_estate", "business_industry": "residential_real_estate"},
+    "multifamily": {"name": "Multifamily", "category": "real_estate", "business_industry": "multifamily_real_estate"},
+    "commercial": {"name": "Commercial", "category": "real_estate", "business_industry": "commercial_real_estate"},
+    "business_acquisitions": {"name": "Business Acquisitions", "category": "acquisitions", "business_industry": "operating_businesses"},
+    "ai_microbusinesses": {"name": "AI/Passive Microbusinesses", "category": "digital_business", "business_industry": "ai_microbusiness"},
+    "saas_subscription_products": {"name": "SaaS/Subscription Products", "category": "digital_business", "business_industry": "saas"},
+    "arbitrage": {"name": "Arbitrage", "category": "capital", "business_industry": "market_arbitrage"},
+    "market_intelligence": {"name": "Market Intelligence", "category": "intelligence", "business_industry": "cross_market_intelligence"},
+    "ops_automation": {"name": "Ops Automation", "category": "operations", "business_industry": "operations_automation"},
+    "trading_advisory": {"name": "Trading Advisory", "category": "capital", "business_industry": "trading_advisory"},
 }
 
 
@@ -463,6 +501,39 @@ class KnowledgeRetrieveIn(BaseModel):
     risk_level: str = "medium"
 
 
+class KnowledgeIngestIn(BaseModel):
+    ingestion_id: str
+    trigger_type: str
+    source_id: str
+    item_id: str
+    title: str
+    domain: str
+    mode: str = "practice"
+    jurisdiction: str | None = None
+    market: str | None = None
+    retrieved_at: datetime | None = None
+    review_date: date | None = None
+    version: str | None = None
+    citation_ref: str | None = None
+    content_excerpt: str | None = None
+    notes: str | None = None
+    license_status: str | None = None
+    permission_status: str | None = None
+    robots_allowed: bool = True
+    queue_followup_task: bool = True
+
+
+class KnowledgeIngestOut(BaseModel):
+    ingestion_id: str
+    status: str
+    item_id: str
+    trigger_type: str
+    source_id: str
+    followup_task_id: str | None = None
+    reverify_task_id: str | None = None
+    freshness_state: str
+
+
 class KnowledgeRetrieveOut(BaseModel):
     question: str
     facts: list[dict[str, Any]]
@@ -531,6 +602,230 @@ class ReverifyStaleOut(BaseModel):
     examined: int
 
 
+class LearningDomainCreate(BaseModel):
+    domain_id: str
+    canonical_name: str
+    terminal_state: str
+    jurisdiction: str | None = None
+    business_scope: str | None = None
+    owner: str | None = None
+    status: str = "active"
+    notes: str | None = None
+
+
+class LearningDomainOut(BaseModel):
+    model_config = {"from_attributes": True}
+
+    domain_id: str
+    canonical_name: str
+    terminal_state: str
+    jurisdiction: str | None
+    business_scope: str | None
+    owner: str | None
+    status: str
+
+
+class LearningCurriculumCreate(BaseModel):
+    curriculum_id: str
+    domain_id: str
+    title: str
+    version: str
+    terminal_state: str
+    jurisdiction: str | None = None
+    business_scope: str | None = None
+    learning_objectives: list[str] = Field(default_factory=list)
+    playbooks: list[str] = Field(default_factory=list)
+    benchmarks: list[str] = Field(default_factory=list)
+    assessments: list[str] = Field(default_factory=list)
+    promotion_gates: dict[str, float] = Field(default_factory=dict)
+    status: str = "active"
+    notes: str | None = None
+
+
+class LearningCurriculumOut(BaseModel):
+    model_config = {"from_attributes": True}
+
+    curriculum_id: str
+    domain_id: str
+    title: str
+    version: str
+    terminal_state: str
+    jurisdiction: str | None
+    business_scope: str | None
+    learning_objectives: list[str]
+    playbooks: list[str]
+    benchmarks: list[str]
+    assessments: list[str]
+    promotion_gates: dict[str, float]
+    status: str
+
+
+class LearningFeedbackIn(BaseModel):
+    feedback_id: str
+    feedback_type: str
+    domain: str
+    curriculum_id: str | None = None
+    learning_id: str | None = None
+    jurisdiction: str | None = None
+    business_scope: str | None = None
+    benchmark_score: float | None = None
+    assessment_score: float | None = None
+    operational_score: float | None = None
+    outcome_class: str | None = None
+    high_impact: bool = False
+    human_review_required: bool = False
+    notes: str | None = None
+
+
+class LearningFeedbackOut(BaseModel):
+    model_config = {"from_attributes": True}
+
+    feedback_id: str
+    feedback_type: str
+    domain: str
+    curriculum_id: str | None
+    learning_id: str | None
+    jurisdiction: str | None
+    business_scope: str | None
+    benchmark_score: float | None
+    assessment_score: float | None
+    operational_score: float | None
+    outcome_class: str | None
+    high_impact: bool
+    human_review_required: bool
+    notes: str | None
+
+
+class LearningMasteryEvaluateIn(BaseModel):
+    mastery_id: str
+    curriculum_id: str
+    domain: str
+    jurisdiction: str | None = None
+    business_scope: str | None = None
+    benchmark_score: float
+    assessment_score: float
+    operational_score: float
+    high_impact: bool = False
+
+
+class LearningMasteryOut(BaseModel):
+    mastery_id: str
+    curriculum_id: str
+    domain: str
+    mastery_score: float
+    promotion_state: str
+    human_review_required: bool
+    open_reverify_tasks: int
+    reasons: list[str] = Field(default_factory=list)
+
+
+class LearningAuditOut(BaseModel):
+    model_config = {"from_attributes": True}
+
+    event_id: str
+    event_type: str
+    domain: str
+    curriculum_id: str | None
+    learning_id: str | None
+    severity: str
+    message: str
+    payload: dict[str, Any]
+
+
+def _normalize_engine_state(value: str) -> str:
+    normalized = str(value or "").strip().upper()
+    if normalized not in ENGINE_ALLOWED_STATES:
+        raise HTTPException(
+            status_code=422,
+            detail=f"engine state must be one of {sorted(ENGINE_ALLOWED_STATES)}",
+        )
+    return normalized
+
+
+class EngineRegistryIn(BaseModel):
+    engine_id: str
+    name: str
+    category: str
+    business_industry: str
+    jurisdiction_scope: list[str] = Field(default_factory=list)
+    current_state: str
+    dependencies: list[str] = Field(default_factory=list)
+    readiness_requirements: list[str] = Field(default_factory=list)
+    missing_blockers: list[str] = Field(default_factory=list)
+    activation_criteria: list[str] = Field(default_factory=list)
+    risk_requirements: list[str] = Field(default_factory=list)
+    approval_requirements: list[str] = Field(default_factory=list)
+    integration_requirements: list[str] = Field(default_factory=list)
+    capital_requirements: list[str] = Field(default_factory=list)
+    heimdall_recommendation: str | None = None
+    activation_history: list[dict[str, Any]] = Field(default_factory=list)
+    audit_state: str = "NO_RECENT_ACTIVATION"
+    legacy_instance_id: str | None = None
+    notes: str | None = None
+
+
+class EngineRegistryOut(BaseModel):
+    model_config = {"from_attributes": True}
+
+    engine_id: str
+    name: str
+    category: str
+    business_industry: str
+    jurisdiction_scope: list[str]
+    current_state: str
+    dependencies: list[str]
+    readiness_requirements: list[str]
+    missing_blockers: list[str]
+    activation_criteria: list[str]
+    risk_requirements: list[str]
+    approval_requirements: list[str]
+    integration_requirements: list[str]
+    capital_requirements: list[str]
+    heimdall_recommendation: str | None
+    activation_history: list[dict[str, Any]]
+    audit_state: str
+    legacy_instance_id: str | None
+    notes: str | None
+
+
+class LegacyInstanceRegistryIn(BaseModel):
+    legacy_instance_id: str
+    display_name: str
+    parent_instance_id: str | None = None
+    assigned_businesses: list[str] = Field(default_factory=list)
+    assigned_jurisdictions: list[str] = Field(default_factory=list)
+    local_knowledge_context: dict[str, Any] = Field(default_factory=dict)
+    permissions: dict[str, Any] = Field(default_factory=dict)
+    integrations: dict[str, Any] = Field(default_factory=dict)
+    engines: list[str] = Field(default_factory=list)
+    synchronization_status: str = "PENDING"
+    isolation_state: str = "ISOLATED"
+    failover_state: str = "NOT_TRIGGERED"
+    audit_state: str = "BASELINE_ONLY"
+    status: str = "PARTIAL"
+    notes: str | None = None
+
+
+class LegacyInstanceRegistryOut(BaseModel):
+    model_config = {"from_attributes": True}
+
+    legacy_instance_id: str
+    display_name: str
+    parent_instance_id: str | None
+    assigned_businesses: list[str]
+    assigned_jurisdictions: list[str]
+    local_knowledge_context: dict[str, Any]
+    permissions: dict[str, Any]
+    integrations: dict[str, Any]
+    engines: list[str]
+    synchronization_status: str
+    isolation_state: str
+    failover_state: str
+    audit_state: str
+    status: str
+    notes: str | None
+
+
 ALLOWED_TASK_STATUSES = {"queued", "in_progress", "blocked", "completed", "cancelled"}
 ALLOWED_TASK_PRIORITIES = {"low", "normal", "high", "critical"}
 
@@ -573,6 +868,14 @@ def _contains_prompt_injection(text: str | None) -> str | None:
     raw = (text or "").strip().lower()
     for pattern in PROMPT_INJECTION_PATTERNS:
         if pattern in raw:
+            return pattern
+    return None
+
+
+def _contains_poisoned_data_pattern(text: str | None) -> str | None:
+    raw = (text or "").strip().lower()
+    for pattern in POISONED_DATA_PATTERNS:
+        if pattern.lower() in raw:
             return pattern
     return None
 
@@ -640,6 +943,254 @@ def _normalize_task_priority(priority: str) -> str:
     if value not in ALLOWED_TASK_PRIORITIES:
         raise HTTPException(status_code=422, detail=f"unsupported task priority: {priority}")
     return value
+
+
+def _normalize_trigger_type(value: str) -> str:
+    normalized = str(value or "").strip().lower()
+    if normalized not in {"push", "scheduled", "event"}:
+        raise HTTPException(status_code=422, detail="trigger_type must be one of push|scheduled|event")
+    return normalized
+
+
+def _permission_or_license_blocked(permission_status: str | None, license_status: str | None) -> str | None:
+    denied_permission = {"denied", "forbidden", "disallowed", "no_permission", "blocked"}
+    blocked_license = {"forbidden", "restricted", "proprietary_no_derivatives", "no_redistribution"}
+    permission = str(permission_status or "").strip().lower()
+    license_value = str(license_status or "").strip().lower()
+
+    if permission in denied_permission:
+        return "permission_status blocks ingestion"
+    if license_value in blocked_license:
+        return "license_status blocks ingestion"
+    return None
+
+
+def _normalize_feedback_type(value: str) -> str:
+    normalized = str(value or "").strip().lower()
+    if normalized not in {"assessment", "benchmark", "operational_result", "mastery_evaluation"}:
+        raise HTTPException(status_code=422, detail="feedback_type must be one of assessment|benchmark|operational_result|mastery_evaluation")
+    return normalized
+
+
+def _promotion_gates(payload: dict[str, Any] | None) -> dict[str, float]:
+    defaults = {
+        "assessment_min": 0.8,
+        "benchmark_min": 0.8,
+        "operational_min": 0.75,
+        "mastery_min": 0.8,
+        "max_open_reverify_tasks": 0.0,
+    }
+    if not payload:
+        return defaults
+
+    gates = dict(defaults)
+    for key in list(defaults.keys()):
+        if key in payload:
+            try:
+                gates[key] = float(payload[key])
+            except Exception:
+                raise HTTPException(status_code=422, detail=f"promotion gate '{key}' must be numeric")
+    return gates
+
+
+def _create_learning_audit_event(
+    db: Session,
+    *,
+    event_id: str,
+    event_type: str,
+    domain: str,
+    message: str,
+    curriculum_id: str | None = None,
+    learning_id: str | None = None,
+    severity: str = "info",
+    payload: dict[str, Any] | None = None,
+) -> None:
+    row = LearningAuditEvent(
+        event_id=event_id,
+        event_type=event_type,
+        domain=domain,
+        curriculum_id=curriculum_id,
+        learning_id=learning_id,
+        severity=severity,
+        message=message,
+        payload_json=json.dumps(payload or {}),
+    )
+    db.add(row)
+
+
+def _engine_registry_out(row: EngineRegistryItem) -> EngineRegistryOut:
+    return EngineRegistryOut(
+        engine_id=row.engine_id,
+        name=row.name,
+        category=row.category,
+        business_industry=row.business_industry,
+        jurisdiction_scope=_loads(row.jurisdiction_scope_json, []),
+        current_state=row.current_state,
+        dependencies=_loads(row.dependencies_json, []),
+        readiness_requirements=_loads(row.readiness_requirements_json, []),
+        missing_blockers=_loads(row.missing_blockers_json, []),
+        activation_criteria=_loads(row.activation_criteria_json, []),
+        risk_requirements=_loads(row.risk_requirements_json, []),
+        approval_requirements=_loads(row.approval_requirements_json, []),
+        integration_requirements=_loads(row.integration_requirements_json, []),
+        capital_requirements=_loads(row.capital_requirements_json, []),
+        heimdall_recommendation=row.heimdall_recommendation,
+        activation_history=_loads(row.activation_history_json, []),
+        audit_state=row.audit_state,
+        legacy_instance_id=row.legacy_instance_id,
+        notes=row.notes,
+    )
+
+
+def _legacy_instance_out(row: LegacyInstanceRegistryItem) -> LegacyInstanceRegistryOut:
+    return LegacyInstanceRegistryOut(
+        legacy_instance_id=row.legacy_instance_id,
+        display_name=row.display_name,
+        parent_instance_id=row.parent_instance_id,
+        assigned_businesses=_loads(row.assigned_businesses_json, []),
+        assigned_jurisdictions=_loads(row.assigned_jurisdictions_json, []),
+        local_knowledge_context=_loads(row.local_knowledge_context_json, {}),
+        permissions=_loads(row.permissions_json, {}),
+        integrations=_loads(row.integrations_json, {}),
+        engines=_loads(row.engines_json, []),
+        synchronization_status=row.synchronization_status,
+        isolation_state=row.isolation_state,
+        failover_state=row.failover_state,
+        audit_state=row.audit_state,
+        status=row.status,
+        notes=row.notes,
+    )
+
+
+@router.post("/engine-registry/items", response_model=EngineRegistryOut)
+def upsert_engine_registry_item(payload: EngineRegistryIn, db: Session = Depends(get_db)):
+    _ensure_registry_tables(db)
+    state = _normalize_engine_state(payload.current_state)
+
+    row = db.query(EngineRegistryItem).filter(EngineRegistryItem.engine_id == payload.engine_id).first()
+    if row is None:
+        row = EngineRegistryItem(engine_id=payload.engine_id)
+        db.add(row)
+
+    row.name = payload.name
+    row.category = payload.category
+    row.business_industry = payload.business_industry
+    row.jurisdiction_scope_json = json.dumps(payload.jurisdiction_scope)
+    row.current_state = state
+    row.dependencies_json = json.dumps(payload.dependencies)
+    row.readiness_requirements_json = json.dumps(payload.readiness_requirements)
+    row.missing_blockers_json = json.dumps(payload.missing_blockers)
+    row.activation_criteria_json = json.dumps(payload.activation_criteria)
+    row.risk_requirements_json = json.dumps(payload.risk_requirements)
+    row.approval_requirements_json = json.dumps(payload.approval_requirements)
+    row.integration_requirements_json = json.dumps(payload.integration_requirements)
+    row.capital_requirements_json = json.dumps(payload.capital_requirements)
+    row.heimdall_recommendation = payload.heimdall_recommendation
+    row.activation_history_json = json.dumps(payload.activation_history)
+    row.audit_state = payload.audit_state
+    row.legacy_instance_id = payload.legacy_instance_id
+    row.notes = payload.notes
+
+    db.commit()
+    db.refresh(row)
+    return _engine_registry_out(row)
+
+
+@router.get("/engine-registry/items", response_model=list[EngineRegistryOut])
+def list_engine_registry_items(
+    db: Session = Depends(get_db),
+    current_state: str | None = None,
+    legacy_instance_id: str | None = None,
+):
+    _ensure_registry_tables(db)
+    q = db.query(EngineRegistryItem)
+    if current_state:
+        q = q.filter(EngineRegistryItem.current_state == _normalize_engine_state(current_state))
+    if legacy_instance_id:
+        q = q.filter(EngineRegistryItem.legacy_instance_id == legacy_instance_id)
+    rows = q.order_by(EngineRegistryItem.engine_id.asc()).all()
+    return [_engine_registry_out(row) for row in rows]
+
+
+@router.get("/engine-registry/audit")
+def audit_engine_registry(db: Session = Depends(get_db)):
+    _ensure_registry_tables(db)
+    rows = db.query(EngineRegistryItem).all()
+    by_id = {row.engine_id: row for row in rows}
+
+    missing_planned = sorted([engine_id for engine_id in PLANNED_ENGINE_CATALOG if engine_id not in by_id])
+
+    field_issues: list[dict[str, Any]] = []
+    invalid_states: list[dict[str, Any]] = []
+    for row in rows:
+        if row.current_state not in ENGINE_ALLOWED_STATES:
+            invalid_states.append(
+                {
+                    "engine_id": row.engine_id,
+                    "current_state": row.current_state,
+                    "allowed": sorted(ENGINE_ALLOWED_STATES),
+                }
+            )
+        required = {
+            "name": row.name,
+            "category": row.category,
+            "business_industry": row.business_industry,
+            "audit_state": row.audit_state,
+        }
+        missing_fields = [k for k, v in required.items() if not str(v or "").strip()]
+        if missing_fields:
+            field_issues.append({"engine_id": row.engine_id, "missing_fields": missing_fields})
+
+    represented = sorted([row.engine_id for row in rows])
+    return {
+        "planned_engines_expected": sorted(PLANNED_ENGINE_CATALOG.keys()),
+        "planned_engines_represented": sorted([engine_id for engine_id in represented if engine_id in PLANNED_ENGINE_CATALOG]),
+        "missing_planned_engines": missing_planned,
+        "unplanned_registry_engines": sorted([engine_id for engine_id in represented if engine_id not in PLANNED_ENGINE_CATALOG]),
+        "invalid_state_entries": invalid_states,
+        "missing_required_fields": field_issues,
+        "registry_pass": len(missing_planned) == 0 and len(invalid_states) == 0 and len(field_issues) == 0,
+    }
+
+
+@router.post("/legacy-instances", response_model=LegacyInstanceRegistryOut)
+def upsert_legacy_instance(payload: LegacyInstanceRegistryIn, db: Session = Depends(get_db)):
+    _ensure_registry_tables(db)
+    row = db.query(LegacyInstanceRegistryItem).filter(
+        LegacyInstanceRegistryItem.legacy_instance_id == payload.legacy_instance_id
+    ).first()
+    if row is None:
+        row = LegacyInstanceRegistryItem(legacy_instance_id=payload.legacy_instance_id)
+        db.add(row)
+
+    row.display_name = payload.display_name
+    row.parent_instance_id = payload.parent_instance_id
+    row.assigned_businesses_json = json.dumps(payload.assigned_businesses)
+    row.assigned_jurisdictions_json = json.dumps(payload.assigned_jurisdictions)
+    row.local_knowledge_context_json = json.dumps(payload.local_knowledge_context)
+    row.permissions_json = json.dumps(payload.permissions)
+    row.integrations_json = json.dumps(payload.integrations)
+    row.engines_json = json.dumps(payload.engines)
+    row.synchronization_status = payload.synchronization_status
+    row.isolation_state = payload.isolation_state
+    row.failover_state = payload.failover_state
+    row.audit_state = payload.audit_state
+    row.status = payload.status
+    row.notes = payload.notes
+
+    db.commit()
+    db.refresh(row)
+    return _legacy_instance_out(row)
+
+
+@router.get("/legacy-instances", response_model=list[LegacyInstanceRegistryOut])
+def list_legacy_instances(db: Session = Depends(get_db), status: str | None = None):
+    _ensure_registry_tables(db)
+    q = db.query(LegacyInstanceRegistryItem)
+    if status:
+        q = q.filter(LegacyInstanceRegistryItem.status == status)
+    rows = q.order_by(LegacyInstanceRegistryItem.legacy_instance_id.asc()).all()
+    return [_legacy_instance_out(row) for row in rows]
 
 
 @router.post("/knowledge-items", response_model=KnowledgeRegistryOut)
@@ -1462,6 +2013,13 @@ def retrieve_knowledge(payload: KnowledgeRetrieveIn, db: Session = Depends(get_d
             blocked_sources.append({"source_id": row.source, "reason": f"prompt-injection pattern detected: {injection}"})
             continue
 
+        poisoned = _contains_poisoned_data_pattern(row.notes)
+        if poisoned is None:
+            poisoned = _contains_poisoned_data_pattern(row.title)
+        if poisoned:
+            blocked_sources.append({"source_id": row.source, "reason": f"poisoned-data pattern detected: {poisoned}"})
+            continue
+
         sensitive = _contains_sensitive_data(row.notes)
         if sensitive is None:
             sensitive = _contains_sensitive_data(row.title)
@@ -1563,6 +2121,149 @@ def retrieve_knowledge(payload: KnowledgeRetrieveIn, db: Session = Depends(get_d
         blocked_sources=blocked_sources,
         human_review_required=len(escalation_reasons) > 0,
         escalation_reasons=escalation_reasons,
+    )
+
+
+@router.post("/knowledge/ingest", response_model=KnowledgeIngestOut)
+def ingest_knowledge(payload: KnowledgeIngestIn, db: Session = Depends(get_db)):
+    _ensure_registry_tables(db)
+
+    trigger_type = _normalize_trigger_type(payload.trigger_type)
+    mode = _normalize_mode(payload.mode)
+
+    source = db.query(SourceRegistryItem).filter(SourceRegistryItem.source_id == payload.source_id).first()
+    if source is None:
+        raise HTTPException(status_code=404, detail="source_id not found")
+    if not source.active:
+        raise HTTPException(status_code=409, detail="source is inactive")
+
+    allowlist_raw = _loads(source.mode_allowlist_json, [])
+    if allowlist_raw:
+        allowed_modes = {m for m in (_normalize_mode(v) for v in allowlist_raw)}
+    else:
+        allowed_modes = _default_allowlist_for_data_class(source.data_class)
+    if mode not in allowed_modes:
+        raise HTTPException(
+            status_code=409,
+            detail=f"source '{source.source_id}' with data_class '{source.data_class}' is not allowed in mode '{mode}'",
+        )
+
+    if trigger_type in {"scheduled", "event"} and not payload.robots_allowed:
+        raise HTTPException(status_code=409, detail="robots policy blocks non-push ingestion")
+
+    blocked_reason = _permission_or_license_blocked(payload.permission_status, payload.license_status)
+    if blocked_reason is not None:
+        raise HTTPException(status_code=409, detail=blocked_reason)
+
+    injection = _contains_prompt_injection(payload.content_excerpt)
+    if injection is None:
+        injection = _contains_prompt_injection(payload.notes)
+    if injection is None:
+        injection = _contains_prompt_injection(payload.title)
+    if injection is not None:
+        raise HTTPException(status_code=409, detail=f"prompt-injection pattern detected: {injection}")
+
+    poisoned = _contains_poisoned_data_pattern(payload.content_excerpt)
+    if poisoned is None:
+        poisoned = _contains_poisoned_data_pattern(payload.notes)
+    if poisoned is None:
+        poisoned = _contains_poisoned_data_pattern(payload.title)
+    if poisoned is not None:
+        raise HTTPException(status_code=409, detail=f"poisoned-data pattern detected: {poisoned}")
+
+    sensitive = _contains_sensitive_data(payload.content_excerpt)
+    if sensitive is None:
+        sensitive = _contains_sensitive_data(payload.notes)
+    if sensitive is not None:
+        raise HTTPException(status_code=409, detail=f"sensitive data pattern detected: {sensitive}")
+
+    if mode == "live" and not str(payload.citation_ref or "").strip():
+        raise HTTPException(status_code=409, detail="live ingestion requires citation_ref")
+
+    exists = db.query(KnowledgeRegistryItem).filter(KnowledgeRegistryItem.item_id == payload.item_id).first()
+    if exists is not None:
+        raise HTTPException(status_code=409, detail="item_id already exists")
+
+    retrieved_dt = payload.retrieved_at or datetime.now(timezone.utc)
+    retrieved_date = retrieved_dt.date()
+    review_date = payload.review_date or retrieved_date
+
+    domain_title = f"{payload.domain.upper()} {payload.title.strip()}" if payload.domain else payload.title.strip()
+
+    row = KnowledgeRegistryItem(
+        item_id=payload.item_id,
+        source=payload.source_id,
+        source_type=source.source_type,
+        title=domain_title,
+        terminal_state=RegistryStates.ACTIVE_AND_VERIFIED,
+        jurisdiction=payload.jurisdiction,
+        market=payload.market,
+        retrieved_date=retrieved_date,
+        review_date=review_date,
+        license_status=payload.license_status,
+        permission_status=payload.permission_status,
+        quality_score=0.8,
+        confidence_score=0.8,
+        version=payload.version,
+        review_status="approved",
+        citation_ref=payload.citation_ref,
+        notes=(
+            f"ingestion_id={payload.ingestion_id}; trigger={trigger_type}; mode={mode}; "
+            f"source={payload.source_id}; robots_allowed={payload.robots_allowed}; "
+            f"{payload.notes or ''}"
+        ).strip(),
+    )
+    db.add(row)
+
+    followup_task_id = None
+    if payload.queue_followup_task:
+        followup_task_id = f"LQ-INGEST-{payload.ingestion_id}"
+        existing_task = db.query(LearningTaskQueueItem).filter(LearningTaskQueueItem.task_id == followup_task_id).first()
+        if existing_task is None:
+            db.add(
+                LearningTaskQueueItem(
+                    task_id=followup_task_id,
+                    task_type="VERIFY_INGESTION_PROVENANCE",
+                    status="queued",
+                    priority="high" if mode == "live" else "normal",
+                    domain=payload.domain.upper(),
+                    jurisdiction=payload.jurisdiction,
+                    business_scope=payload.market,
+                    knowledge_item_id=payload.item_id,
+                    reason=f"Verify ingestion provenance for {payload.item_id} ({trigger_type} trigger)",
+                )
+            )
+
+    reverify_task_id = None
+    freshness = _freshness_state(review_date)
+    if freshness == "hard_stale":
+        reverify_task_id = f"LQ-REVERIFY-{payload.item_id}"
+        existing_reverify = db.query(LearningTaskQueueItem).filter(LearningTaskQueueItem.task_id == reverify_task_id).first()
+        if existing_reverify is None:
+            db.add(
+                LearningTaskQueueItem(
+                    task_id=reverify_task_id,
+                    task_type="REVERIFY_KNOWLEDGE",
+                    status="queued",
+                    priority="critical",
+                    domain=payload.domain.upper(),
+                    jurisdiction=payload.jurisdiction,
+                    knowledge_item_id=payload.item_id,
+                    reason="Ingested item is hard-stale and requires immediate re-verification.",
+                )
+            )
+
+    db.commit()
+
+    return KnowledgeIngestOut(
+        ingestion_id=payload.ingestion_id,
+        status="ingested",
+        item_id=payload.item_id,
+        trigger_type=trigger_type,
+        source_id=payload.source_id,
+        followup_task_id=followup_task_id,
+        reverify_task_id=reverify_task_id,
+        freshness_state=freshness,
     )
 
 
@@ -1726,12 +2427,377 @@ def enqueue_stale_reverification_tasks(db: Session = Depends(get_db)):
     return ReverifyStaleOut(created=created, existing_open=existing_open, examined=examined)
 
 
+@router.post("/learning/domains", response_model=LearningDomainOut)
+def create_learning_domain(payload: LearningDomainCreate, db: Session = Depends(get_db)):
+    _ensure_registry_tables(db)
+    _ensure_terminal_state(payload.terminal_state)
+
+    existing = db.query(LearningDomainRegistryItem).filter(LearningDomainRegistryItem.domain_id == payload.domain_id).first()
+    if existing is not None:
+        raise HTTPException(status_code=409, detail="domain_id already exists")
+
+    row = LearningDomainRegistryItem(
+        domain_id=payload.domain_id,
+        canonical_name=payload.canonical_name,
+        terminal_state=payload.terminal_state,
+        jurisdiction=payload.jurisdiction,
+        business_scope=payload.business_scope,
+        owner=payload.owner,
+        status=payload.status,
+        notes=payload.notes,
+    )
+    db.add(row)
+    _create_learning_audit_event(
+        db,
+        event_id=f"LAE-DOMAIN-{payload.domain_id}",
+        event_type="DOMAIN_REGISTERED",
+        domain=payload.domain_id,
+        message=f"Learning domain {payload.domain_id} registered",
+        payload={"jurisdiction": payload.jurisdiction, "business_scope": payload.business_scope},
+    )
+    db.commit()
+    db.refresh(row)
+    return LearningDomainOut.model_validate(row)
+
+
+@router.get("/learning/domains", response_model=list[LearningDomainOut])
+def list_learning_domains(db: Session = Depends(get_db), jurisdiction: str | None = None):
+    _ensure_registry_tables(db)
+    q = db.query(LearningDomainRegistryItem)
+    if jurisdiction:
+        q = q.filter(
+            (LearningDomainRegistryItem.jurisdiction == jurisdiction)
+            | (LearningDomainRegistryItem.jurisdiction.is_(None))
+        )
+    rows = q.order_by(LearningDomainRegistryItem.id.desc()).limit(500).all()
+    return [LearningDomainOut.model_validate(row) for row in rows]
+
+
+@router.post("/learning/curricula", response_model=LearningCurriculumOut)
+def create_learning_curriculum(payload: LearningCurriculumCreate, db: Session = Depends(get_db)):
+    _ensure_registry_tables(db)
+    _ensure_terminal_state(payload.terminal_state)
+
+    domain = db.query(LearningDomainRegistryItem).filter(LearningDomainRegistryItem.domain_id == payload.domain_id).first()
+    if domain is None:
+        raise HTTPException(status_code=404, detail="domain_id not found")
+
+    existing = db.query(LearningCurriculumRegistryItem).filter(
+        LearningCurriculumRegistryItem.curriculum_id == payload.curriculum_id
+    ).first()
+    if existing is not None:
+        raise HTTPException(status_code=409, detail="curriculum_id already exists")
+
+    row = LearningCurriculumRegistryItem(
+        curriculum_id=payload.curriculum_id,
+        domain_id=payload.domain_id,
+        title=payload.title,
+        version=payload.version,
+        terminal_state=payload.terminal_state,
+        jurisdiction=payload.jurisdiction,
+        business_scope=payload.business_scope,
+        learning_objectives_json=json.dumps(payload.learning_objectives),
+        playbooks_json=json.dumps(payload.playbooks),
+        benchmarks_json=json.dumps(payload.benchmarks),
+        assessments_json=json.dumps(payload.assessments),
+        promotion_gates_json=json.dumps(_promotion_gates(payload.promotion_gates)),
+        status=payload.status,
+        notes=payload.notes,
+    )
+    db.add(row)
+    _create_learning_audit_event(
+        db,
+        event_id=f"LAE-CURRICULUM-{payload.curriculum_id}",
+        event_type="CURRICULUM_REGISTERED",
+        domain=payload.domain_id,
+        curriculum_id=payload.curriculum_id,
+        message=f"Curriculum {payload.curriculum_id} registered with objectives/playbooks/benchmarks/assessments",
+        payload={
+            "objectives": payload.learning_objectives,
+            "playbooks": payload.playbooks,
+            "benchmarks": payload.benchmarks,
+            "assessments": payload.assessments,
+        },
+    )
+    db.commit()
+    db.refresh(row)
+
+    return LearningCurriculumOut(
+        curriculum_id=row.curriculum_id,
+        domain_id=row.domain_id,
+        title=row.title,
+        version=row.version,
+        terminal_state=row.terminal_state,
+        jurisdiction=row.jurisdiction,
+        business_scope=row.business_scope,
+        learning_objectives=_loads(row.learning_objectives_json, []),
+        playbooks=_loads(row.playbooks_json, []),
+        benchmarks=_loads(row.benchmarks_json, []),
+        assessments=_loads(row.assessments_json, []),
+        promotion_gates=_promotion_gates(_loads(row.promotion_gates_json, {})),
+        status=row.status,
+    )
+
+
+@router.get("/learning/curricula", response_model=list[LearningCurriculumOut])
+def list_learning_curricula(
+    db: Session = Depends(get_db),
+    domain_id: str | None = None,
+    jurisdiction: str | None = None,
+):
+    _ensure_registry_tables(db)
+    q = db.query(LearningCurriculumRegistryItem)
+    if domain_id:
+        q = q.filter(LearningCurriculumRegistryItem.domain_id == domain_id)
+    if jurisdiction:
+        q = q.filter(
+            (LearningCurriculumRegistryItem.jurisdiction == jurisdiction)
+            | (LearningCurriculumRegistryItem.jurisdiction.is_(None))
+        )
+    rows = q.order_by(LearningCurriculumRegistryItem.id.desc()).limit(500).all()
+    return [
+        LearningCurriculumOut(
+            curriculum_id=row.curriculum_id,
+            domain_id=row.domain_id,
+            title=row.title,
+            version=row.version,
+            terminal_state=row.terminal_state,
+            jurisdiction=row.jurisdiction,
+            business_scope=row.business_scope,
+            learning_objectives=_loads(row.learning_objectives_json, []),
+            playbooks=_loads(row.playbooks_json, []),
+            benchmarks=_loads(row.benchmarks_json, []),
+            assessments=_loads(row.assessments_json, []),
+            promotion_gates=_promotion_gates(_loads(row.promotion_gates_json, {})),
+            status=row.status,
+        )
+        for row in rows
+    ]
+
+
+@router.post("/learning/feedback", response_model=LearningFeedbackOut)
+def record_learning_feedback(payload: LearningFeedbackIn, db: Session = Depends(get_db)):
+    _ensure_registry_tables(db)
+    feedback_type = _normalize_feedback_type(payload.feedback_type)
+
+    existing = db.query(LearningFeedbackRecord).filter(LearningFeedbackRecord.feedback_id == payload.feedback_id).first()
+    if existing is not None:
+        raise HTTPException(status_code=409, detail="feedback_id already exists")
+
+    if payload.curriculum_id:
+        curriculum = db.query(LearningCurriculumRegistryItem).filter(
+            LearningCurriculumRegistryItem.curriculum_id == payload.curriculum_id
+        ).first()
+        if curriculum is None:
+            raise HTTPException(status_code=404, detail="curriculum_id not found")
+
+    row = LearningFeedbackRecord(
+        feedback_id=payload.feedback_id,
+        feedback_type=feedback_type,
+        domain=payload.domain,
+        curriculum_id=payload.curriculum_id,
+        learning_id=payload.learning_id,
+        jurisdiction=payload.jurisdiction,
+        business_scope=payload.business_scope,
+        benchmark_score=payload.benchmark_score,
+        assessment_score=payload.assessment_score,
+        operational_score=payload.operational_score,
+        outcome_class=payload.outcome_class,
+        high_impact=payload.high_impact,
+        human_review_required=payload.human_review_required,
+        notes=payload.notes,
+    )
+    db.add(row)
+    _create_learning_audit_event(
+        db,
+        event_id=f"LAE-FEEDBACK-{payload.feedback_id}",
+        event_type="LEARNING_FEEDBACK_CAPTURED",
+        domain=payload.domain,
+        curriculum_id=payload.curriculum_id,
+        learning_id=payload.learning_id,
+        severity="warning" if payload.human_review_required else "info",
+        message=f"Learning feedback {payload.feedback_id} captured",
+        payload={
+            "feedback_type": feedback_type,
+            "high_impact": payload.high_impact,
+            "outcome_class": payload.outcome_class,
+        },
+    )
+    db.commit()
+    db.refresh(row)
+    return LearningFeedbackOut.model_validate(row)
+
+
+@router.get("/learning/feedback", response_model=list[LearningFeedbackOut])
+def list_learning_feedback(
+    db: Session = Depends(get_db),
+    curriculum_id: str | None = None,
+    domain: str | None = None,
+    limit: int = 200,
+):
+    _ensure_registry_tables(db)
+    q = db.query(LearningFeedbackRecord)
+    if curriculum_id:
+        q = q.filter(LearningFeedbackRecord.curriculum_id == curriculum_id)
+    if domain:
+        q = q.filter(LearningFeedbackRecord.domain == domain)
+    rows = q.order_by(LearningFeedbackRecord.id.desc()).limit(max(1, min(limit, 1000))).all()
+    return [LearningFeedbackOut.model_validate(row) for row in rows]
+
+
+@router.post("/learning/mastery/evaluate", response_model=LearningMasteryOut)
+def evaluate_learning_mastery(payload: LearningMasteryEvaluateIn, db: Session = Depends(get_db)):
+    _ensure_registry_tables(db)
+
+    curriculum = db.query(LearningCurriculumRegistryItem).filter(
+        LearningCurriculumRegistryItem.curriculum_id == payload.curriculum_id
+    ).first()
+    if curriculum is None:
+        raise HTTPException(status_code=404, detail="curriculum_id not found")
+    if curriculum.domain_id != payload.domain:
+        raise HTTPException(status_code=409, detail="domain does not match curriculum domain")
+
+    gates = _promotion_gates(_loads(curriculum.promotion_gates_json, {}))
+
+    open_reverify_q = db.query(LearningTaskQueueItem).filter(
+        LearningTaskQueueItem.task_type == "REVERIFY_KNOWLEDGE",
+        LearningTaskQueueItem.status.in_(["queued", "in_progress", "blocked"]),
+        LearningTaskQueueItem.domain == payload.domain,
+    )
+    if payload.jurisdiction:
+        open_reverify_q = open_reverify_q.filter(
+            (LearningTaskQueueItem.jurisdiction == payload.jurisdiction)
+            | (LearningTaskQueueItem.jurisdiction.is_(None))
+        )
+    open_reverify_tasks = open_reverify_q.count()
+
+    mastery_score = round(
+        (payload.assessment_score * 0.4)
+        + (payload.benchmark_score * 0.3)
+        + (payload.operational_score * 0.3),
+        4,
+    )
+
+    reasons: list[str] = []
+    human_review_required = False
+
+    if payload.assessment_score < gates["assessment_min"]:
+        reasons.append("assessment score below gate")
+    if payload.benchmark_score < gates["benchmark_min"]:
+        reasons.append("benchmark score below gate")
+    if payload.operational_score < gates["operational_min"]:
+        reasons.append("operational score below gate")
+    if mastery_score < gates["mastery_min"]:
+        reasons.append("mastery score below gate")
+    if open_reverify_tasks > int(gates["max_open_reverify_tasks"]):
+        reasons.append("open re-verification backlog exceeds gate")
+
+    if payload.high_impact and (mastery_score < 0.9 or len(reasons) > 0):
+        human_review_required = True
+        reasons.append("high-impact promotion requires human review")
+
+    if human_review_required:
+        promotion_state = "HUMAN_REVIEW_REQUIRED"
+    elif reasons:
+        promotion_state = "HOLD"
+    else:
+        promotion_state = "PROMOTE_ACTIVE"
+
+    feedback_id = f"FB-MASTERY-{payload.mastery_id}"
+    existing_feedback = db.query(LearningFeedbackRecord).filter(LearningFeedbackRecord.feedback_id == feedback_id).first()
+    if existing_feedback is None:
+        db.add(
+            LearningFeedbackRecord(
+                feedback_id=feedback_id,
+                feedback_type="mastery_evaluation",
+                domain=payload.domain,
+                curriculum_id=payload.curriculum_id,
+                jurisdiction=payload.jurisdiction,
+                business_scope=payload.business_scope,
+                benchmark_score=payload.benchmark_score,
+                assessment_score=payload.assessment_score,
+                operational_score=payload.operational_score,
+                outcome_class=promotion_state,
+                high_impact=payload.high_impact,
+                human_review_required=human_review_required,
+                notes="; ".join(reasons) if reasons else "All promotion gates satisfied",
+            )
+        )
+
+    _create_learning_audit_event(
+        db,
+        event_id=f"LAE-MASTERY-{payload.mastery_id}",
+        event_type="MASTERY_EVALUATED",
+        domain=payload.domain,
+        curriculum_id=payload.curriculum_id,
+        severity="warning" if human_review_required or reasons else "info",
+        message=f"Mastery evaluated for curriculum {payload.curriculum_id}: {promotion_state}",
+        payload={
+            "mastery_score": mastery_score,
+            "promotion_state": promotion_state,
+            "open_reverify_tasks": open_reverify_tasks,
+            "reasons": reasons,
+        },
+    )
+    db.commit()
+
+    return LearningMasteryOut(
+        mastery_id=payload.mastery_id,
+        curriculum_id=payload.curriculum_id,
+        domain=payload.domain,
+        mastery_score=mastery_score,
+        promotion_state=promotion_state,
+        human_review_required=human_review_required,
+        open_reverify_tasks=open_reverify_tasks,
+        reasons=reasons,
+    )
+
+
+@router.get("/learning/audit/events", response_model=list[LearningAuditOut])
+def list_learning_audit_events(
+    db: Session = Depends(get_db),
+    domain: str | None = None,
+    curriculum_id: str | None = None,
+    limit: int = 200,
+):
+    _ensure_registry_tables(db)
+    q = db.query(LearningAuditEvent)
+    if domain:
+        q = q.filter(LearningAuditEvent.domain == domain)
+    if curriculum_id:
+        q = q.filter(LearningAuditEvent.curriculum_id == curriculum_id)
+
+    rows = q.order_by(LearningAuditEvent.id.desc()).limit(max(1, min(limit, 1000))).all()
+    return [
+        LearningAuditOut(
+            event_id=row.event_id,
+            event_type=row.event_type,
+            domain=row.domain,
+            curriculum_id=row.curriculum_id,
+            learning_id=row.learning_id,
+            severity=row.severity,
+            message=row.message,
+            payload=_loads(row.payload_json, {}),
+        )
+        for row in rows
+    ]
+
+
 @router.get("/summary")
 def get_registry_summary(db: Session = Depends(get_db)):
     _ensure_registry_tables(db)
+
     def _state_counts(model):
         counts: dict[str, int] = {state: 0 for state in ALLOWED_TERMINAL_STATES}
         rows = db.query(model.terminal_state).all()
+        for (state,) in rows:
+            if state in counts:
+                counts[state] += 1
+        return counts
+
+    def _engine_state_counts() -> dict[str, int]:
+        counts: dict[str, int] = {state: 0 for state in sorted(ENGINE_ALLOWED_STATES)}
+        rows = db.query(EngineRegistryItem.current_state).all()
         for (state,) in rows:
             if state in counts:
                 counts[state] += 1
@@ -1744,6 +2810,34 @@ def get_registry_summary(db: Session = Depends(get_db)):
         "sources": _state_counts(SourceRegistryItem),
         "datasets": _state_counts(DatasetRegistryItem),
         "scenarios": _state_counts(ScenarioRegistryItem),
+        "learning_domains": _state_counts(LearningDomainRegistryItem),
+        "learning_curricula": _state_counts(LearningCurriculumRegistryItem),
+        "learning_feedback": {
+            "total": db.query(LearningFeedbackRecord).count(),
+            "human_review_required": db.query(LearningFeedbackRecord)
+            .filter(LearningFeedbackRecord.human_review_required.is_(True))
+            .count(),
+        },
+        "learning_audit_events": db.query(LearningAuditEvent).count(),
+        "engine_registry": {
+            "total": db.query(EngineRegistryItem).count(),
+            "states": _engine_state_counts(),
+            "planned_expected": len(PLANNED_ENGINE_CATALOG),
+            "planned_represented": db.query(EngineRegistryItem)
+            .filter(EngineRegistryItem.engine_id.in_(list(PLANNED_ENGINE_CATALOG.keys())))
+            .count(),
+        },
+        "legacy_instances": {
+            "total": db.query(LegacyInstanceRegistryItem).count(),
+            "by_status": {
+                "PASS": db.query(LegacyInstanceRegistryItem).filter(LegacyInstanceRegistryItem.status == "PASS").count(),
+                "PARTIAL": db.query(LegacyInstanceRegistryItem).filter(LegacyInstanceRegistryItem.status == "PARTIAL").count(),
+                "FAIL": db.query(LegacyInstanceRegistryItem).filter(LegacyInstanceRegistryItem.status == "FAIL").count(),
+                "EXTERNAL_OWNER_ACTION_REQUIRED": db.query(LegacyInstanceRegistryItem)
+                .filter(LegacyInstanceRegistryItem.status == "EXTERNAL_OWNER_ACTION_REQUIRED")
+                .count(),
+            },
+        },
         "learning_tasks": {
             "queued": db.query(LearningTaskQueueItem).filter(LearningTaskQueueItem.status == "queued").count(),
             "in_progress": db.query(LearningTaskQueueItem).filter(LearningTaskQueueItem.status == "in_progress").count(),

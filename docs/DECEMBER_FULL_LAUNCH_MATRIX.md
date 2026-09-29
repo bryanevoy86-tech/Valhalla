@@ -1,207 +1,208 @@
-# DECEMBER FULL LAUNCH MATRIX
+﻿# DECEMBER FULL LAUNCH MATRIX
 
-Generated: 2026-09-29 (updated after deterministic sandbox rehearsal + full-day simulation + autonomy ladder enforcement)
+Generated: 2026-09-29
 
-Status language:
-- PROVEN
-- BUILT - NEEDS CONNECTION
-- BUILT - NEEDS TESTING
+Allowed status values for this matrix:
+- PASS
 - PARTIAL
-- STUB / DESIGN ONLY
-- MISSING
-- EXTERNALLY BLOCKED - SPECIFIC REASON
+- FAIL
+- EXTERNAL_OWNER_ACTION_REQUIRED
 
-## A. Connection/Auth Foundation
-- API base configuration: PROVEN
-- Health endpoint contract: PROVEN
-- Owner login flow: PROVEN
-- Current user endpoint (/api/weweb/me): PROVEN
-- Refresh/session restore: PROVEN (local + WeWeb runtime)
-- Logout route in canonical backend source: PROVEN
-- Logout route in local canonical OpenAPI: PROVEN
-- Logout route in live production OpenAPI: PROVEN
-- Refresh route in live production OpenAPI: PROVEN
-- Deployment identity parity (`/deployment-marker`, `/admin/build/info`): PASS
-  - Live runtime now reports env-derived commit `9cc0dc4324a4940e3e748e0b31ebc20f8096486e`.
-- Protected route behavior after revocation: PROVEN (local tests)
-- Unauthorized behavior: PROVEN (local tests)
-- Invalid/expired token behavior: PROVEN (local tests)
-- CORS baseline: PROVEN (local startup config includes WeWeb origins)
+## 1. Launch Requirement Ledger
 
-## B. Revenue Operating Core
-- Deals/load baseline in owner runtime: PROVEN (automated tests)
-- Create/update lifecycle path in current unattended run: PROVEN (lead->deal flow tests)
-- Underwriting + buyer matching path: PROVEN (automated tests)
+| Requirement | Status | Evidence | Launch Blocking |
+|---|---|---|---|
+| Render parity | PASS | deployment marker + build identity parity already proven in prior checkpoint | NO |
+| Production auth chain | PASS | login/me/refresh/logout/post-logout guard proven | NO |
+| WeWeb auth chain | PASS | authenticated preview restore/logout/guard proven | NO |
+| Integrated sandbox rehearsal | PASS | services/api/tests/test_integrated_sandbox_rehearsal.py | NO |
+| VA/operator full-day simulation | PASS | services/api/tests/test_va_operator_full_day_sandbox_simulation.py | NO |
+| Autonomy ladder enforcement | PASS | services/api/tests/test_autonomy_ladder_enforcement.py + tests/test_execution_policy_safety.py | NO |
+| Learning backend closure | PASS | services/api/tests/test_completion_registry.py | NO |
+| Ethics/Evidence backend closure | PASS | poisoned-data, trust/citation/freshness/reverify tests in completion registry suite | NO |
+| Continuous Integrity backend closure | PASS | services/api/tests/test_system_self_check.py | NO |
+| Canonical Engine Registry coverage audit | PASS | new engine-registry registry + audit endpoint + tests | NO |
+| Legacy instance context representation | PARTIAL | representational registry implemented, orchestration not production-proven | NO |
+| Final controlled fake-live operating day | PASS | services/api/tests/test_fake_live_operating_day.py stage report + failure injections | NO |
+| WeWeb Learning/Integrity launch-facing UI wiring | EXTERNAL_OWNER_ACTION_REQUIRED | authenticated MCP project-edit access unavailable in this runtime | YES |
 
-## C. Heimdall Operational Surfaces
-- Route availability and health/smoke baseline in canonical app: PROVEN (tests)
+## 2. Engine Registry Closure
 
-## D. Learning System
-- Registry-based learning promotion + source trust/citation/contradiction safety: PROVEN (tests)
-- Freshness and evidence hardening: PROVEN (tests)
-  - confidence decay for stale evidence (>1 year)
-  - hard-stale evidence blocked and re-verification required (>2 years)
-  - high-impact retrieval escalation when only weak evidence exists
-  - sensitive-data pattern blocking in retrieval path
-- Learning re-verification task queue: PROVEN (tests)
-  - `/api/completion/learning/tasks`
-  - `/api/completion/learning/tasks/reverify-stale`
-- Broader autonomous learning loops remain: PARTIAL
+Status: PASS
 
-## E. Evidence/Ethics System
-- Auth evidence artifacts regenerated under `contracts/`: PROVEN
-- Knowledge retrieval guards (citation required for fact-grade use, contradiction demotion, trust ordering): PROVEN (tests)
-- High-impact human-review escalation lane in retrieval flow: PROVEN (tests)
+Canonical backend now includes auditable registry surfaces:
+- POST /api/completion/engine-registry/items
+- GET /api/completion/engine-registry/items
+- GET /api/completion/engine-registry/audit
 
-## F. Autonomy/Governance
-- Dependency-order execution and blocker logging: PROVEN
-- L0-L3 autonomy sample-threshold gate behavior: PROVEN (tests)
-- Restricted real-world actions blocked in SANDBOX and kill-switch modes: PROVEN (tests)
-- Guard-level block events emit audit evidence (`autonomy_action_blocked`): PROVEN (tests)
+Required engine fields are represented in registry records:
+- engine_id
+- name
+- category
+- business_industry
+- jurisdiction_scope
+- current_state
+- dependencies
+- readiness_requirements
+- missing_blockers
+- activation_criteria
+- risk_requirements
+- approval_requirements
+- integration_requirements
+- capital_requirements
+- heimdall_recommendation
+- activation_history
+- audit_state
 
-## G. Human/VA Workflows
-- Approval queue + owner auth rehearsal paths: PROVEN (tests)
-- VA intake -> approval -> conversion -> audit sandbox flow: PROVEN (tests)
-- Full VA/operator day-in-the-loop simulation: PROVEN (sandbox simulation test)
+Allowed states enforced at API boundary:
+- OFF
+- SANDBOX
+- BLOCKED
+- READY
+- ACTIVE
 
-## H. Resilience/Integrity
-- Fail-closed logout/client-state clear behavior in WeWeb preview: PROVEN
+Planned engines included in audit catalog and test coverage:
+- wholesaling
+- brrrr
+- flips
+- rentals
+- multifamily
+- commercial
+- business_acquisitions
+- ai_microbusinesses
+- saas_subscription_products
+- arbitrage
+- market_intelligence
+- ops_automation
+- trading_advisory
 
-## I. Full Frontend Synchronization
-- WeWeb auth workflow wired and runtime-proven: PROVEN
-- Backend logout/refresh route parity with live production: PROVEN
-- Production identity parity gate for auth proof: PROVEN
-- Full live login chain proof with valid production credential: PROVEN
-- WeWeb authenticated preview proof (session restore/logout/post-logout guard): PROVEN
+Notes:
+- Registry PASS means truthful representation of current readiness, not forced activation.
+- Future engines remain OFF/SANDBOX/BLOCKED as appropriate; no artificial activation was performed.
 
-## J. Sandbox End-to-End Proof
-- Deterministic integrated sandbox rehearsal (single transaction): PROVEN
-  - Stage chain pass in `services/api/tests/test_integrated_sandbox_rehearsal.py`.
-  - Failure-path battery pass in same module.
+## 3. Legacy Clone/Mirror/Instance Context Audit
 
-## Current Top Blocker
-- Highest remaining launch work is non-sandbox PARTIAL modules (Learning, Ethics/Evidence, continuous integrity completion, operational frontend surfaces, integration hooks, registry/readiness, fake-live day).
-- Local temp exhaustion on C: is mitigated for test execution via D-drive temp redirection in this run.
+Status: PARTIAL
 
-## Production Parity Report
-- EXPECTED_COMMIT: `9cc0dc4324a4940e3e748e0b31ebc20f8096486e`
-- LIVE_COMMIT_OR_BUILD: `9cc0dc4324a4940e3e748e0b31ebc20f8096486e` (deployment-marker + admin/build/info)
-- MATCH: `YES`
-- CAUSE_IF_KNOWN: N/A (parity restored)
+What is now represented:
+- Legacy instance identity and parent linkage
+- assigned businesses
+- assigned jurisdictions
+- local knowledge/context payload
+- permissions payload
+- integrations payload
+- engine assignments
+- synchronization status
+- isolation state
+- failover state
+- audit state
 
-## Run Evidence Added (This Run)
-- Deterministic integrated rehearsal: PASS
-  - `services/api/tests/test_integrated_sandbox_rehearsal.py` -> `2 passed, 0 failed`.
-  - Happy-path stage chain PASS:
-    - LEAD_INTAKE
-    - HEIMDALL_SCORE
-    - EVIDENCE_CHECK
-    - VA_TASK
-    - SELLER_OUTCOME
-    - NEXT_BEST_ACTION
-    - APPROVAL
-    - DEAL_CONVERSION
-    - UNDERWRITING
-    - BUYER_MATCH
-    - DISPOSITION
-    - DOCUMENT_STATE
-    - SIGNATURE_SIMULATION
-    - CLOSING_SIMULATION
-    - ACCOUNTING_RECORD
-    - AUDIT
-    - LEARNING_FEEDBACK
-    - INTEGRITY_CHECK
-  - Deterministic no-buyer proof PASS (isolated fixture, no global seeded buyer dependency):
-    - BUYER_MATCH_REQUEST = PASS
-    - BUYER_MATCH_COUNT = 0
-    - NO_BUYER_STATE = PASS
-    - DISPOSITION_BLOCKED_OR_ESCALATED = PASS
-    - AUDIT_EVENT_CREATED = PASS (where supported)
-    - NEXT_ACTION_OR_ESCALATION_CREATED = PASS (where supported)
-    - NO_UNAUTHORIZED_CONTINUATION = PASS
-- Full-day sandbox simulation: PASS
-  - `services/api/tests/test_va_operator_full_day_sandbox_simulation.py` -> `1 passed, 0 failed`.
-  - Proven in sandbox data only:
-    - queue prioritization
-    - task assignment
-    - seller follow-up signal
-    - reassignment/failover
-    - escalation path
-    - underwriting workload
-    - buyer/disposition workload
-    - stale-task detection
-    - Heimdall prioritization
-    - founder overload filtering
-    - audit events
-    - learning feedback capture
-    - integrity monitoring (audit status checks)
-- Autonomy ladder enforcement and restricted-action guard audit proof: PASS
-  - `services/api/tests/test_autonomy_ladder_enforcement.py` -> `4 passed, 0 failed`.
-  - `tests/test_execution_policy_safety.py` -> `5 passed, 0 failed`.
-  - Proven:
-    - L0/L1/L2/L3 policy sample-threshold gate behavior
-    - restricted side-effect actions blocked in SANDBOX
-    - kill-switch blocks restricted side-effect actions even in ACTIVE
-    - read-only action remains allowed in SANDBOX
-    - audit event persisted on restricted-action block (`autonomy_action_blocked`)
-- Priority rerun bundle with D-drive temp redirection: PASS
-  - `services/api/tests/test_approvals_owner_auth.py`
-  - `services/api/tests/test_system_self_check.py`
-  - `services/api/tests/test_va_operator_sandbox_flow.py`
-  - `services/api/tests/test_flow_governance_gate.py`
-  - `services/api/tests/test_flow_full_pipeline.py`
-  - `services/api/tests/test_underwriting_engine_flow.py`
-  - `services/api/tests/test_matching.py`
-  - `services/api/tests/test_flow_lead_to_deal.py`
-  - `services/api/tests/test_heimdall_decision_card.py`
-  - `services/api/tests/test_approvals_owner_rehearsal.py`
-  - `services/api/tests/test_completion_registry.py`
-  - Result: all tests passed in this bundle.
-- Classification note:
-  - `services/api/tests/test_execution_policy_safety.py` missing in current workspace path set -> TEST_ENVIRONMENT_FAILURE (path/file absence), not an application regression.
-- Live probe confirms:
-  - `GET /health` returns healthy.
-  - `GET /openapi.json` includes `/api/weweb/logout` and `/api/weweb/refresh`.
-  - `GET /deployment-marker` reports env-derived commit + provenance.
-  - `GET /admin/build/info` reports matching env-derived git SHA.
-- Live production auth chain confirms:
-  - `LOGIN=PASS` (200)
-  - `ME=PASS` (200 before/after refresh with consistent identity)
-  - `REFRESH=PASS` (200 with token rotation)
-  - `LOGOUT=PASS` (200)
-  - `POST_LOGOUT_GUARD=PASS` (`GET /api/weweb/me` returns 401)
-  - `REFRESH_AFTER_LOGOUT=PASS` (`POST /api/weweb/refresh` returns 401)
-- WeWeb authenticated preview proof confirms:
-  - `WEWEB_SESSION_RESTORE=PASS`
-  - `WEWEB_LOGOUT=PASS`
-  - `WEWEB_POST_LOGOUT_GUARD=PASS`
-  - `WEWEB_AUTH=PASS`
-  - Browser-side post-logout probes: `/api/weweb/me` -> 401, `/api/weweb/refresh` -> 401.
-- Additional sandbox/governance evidence:
-  - `services/api/tests/test_va_operator_sandbox_flow.py`: PASS
-  - `services/api/tests/test_flow_governance_gate.py`: PASS
-  - `services/api/tests/test_flow_full_pipeline.py`: PASS
-  - `services/api/tests/test_underwriting_engine_flow.py`: PASS
-  - `services/api/tests/test_matching.py`: PASS
-  - `tests/test_execution_policy_safety.py`: PASS
-  - `services/api/tests/test_flow_lead_to_deal.py`: PASS
-  - `services/api/tests/test_approvals_owner_rehearsal.py`: PASS
-  - `services/api/tests/test_heimdall_decision_card.py`: PASS
-  - `services/api/tests/test_completion_registry.py`: PASS
-- Revenue/deal pipeline test bundle: PASS
-  - `services/api/tests/test_flow_lead_to_deal.py`
-  - `services/api/tests/test_underwriting_engine_flow.py`
-  - `services/api/tests/test_matching.py`
-- Priority subsystem proof bundle: PASS
-  - `services/api/tests/test_completion_registry.py`
-  - `services/api/tests/test_heimdall_decision_card.py`
-  - `services/api/tests/test_system_self_check.py`
-  - `services/api/tests/test_approvals_owner_rehearsal.py`
-  - `services/api/tests/test_approvals_owner_auth.py`
-- Learning/evidence hardening regression rerun: PASS
-  - `services/api/tests/test_completion_registry.py` (22 passed)
+Implemented surfaces:
+- POST /api/completion/legacy-instances
+- GET /api/completion/legacy-instances
 
-## Immediate Next Dependency-Ordered Actions
-1. Continue highest-priority PARTIAL work: Heimdall Learning module completion.
-2. Continue Ethics/Evidence PARTIAL closures.
-3. Continue Continuous Integrity, operational WeWeb frontend completion, integration hooks, Engine Registry/readiness, and fake-live operating day.
+Remaining gap (exact):
+- Automatic multi-instance orchestration lifecycle (provisioning, policy propagation, conflict resolution, and failover drills) is not yet production-proven end-to-end.
+
+Responsibility split:
+- Code responsibility: add orchestration workflow + deterministic failover drill tests
+- Owner responsibility: none required for this coding gap
+
+Launch-blocking:
+- NO for December controlled launch baseline
+
+## 4. Final Controlled Fake-Live Day (Sandbox Data)
+
+Status: PASS
+
+Executed test:
+- services/api/tests/test_fake_live_operating_day.py
+
+Required failure injections included:
+- stale evidence
+- low-confidence evidence
+- no matching buyer
+- rejected approval
+- unavailable integration (provider failure flag)
+- failed task (blocked queue task)
+- stale queue item
+- VA/operator reassignment
+- restricted-action attempt
+- kill-switch condition
+- provider failure state
+- integrity alert emission
+- duplicate re-verification condition
+
+Observed stage report:
+- LEADS_PROCESSED: 3
+- VA_TASKS_CREATED: 3
+- FOLLOWUPS_CREATED: 3
+- APPROVALS_REQUESTED: 3
+- APPROVALS_COMPLETED: 2
+- DEALS_CREATED: 2
+- UNDERWRITING_COMPLETED: 2
+- BUYER_MATCHES: 1
+- NO_BUYER_ESCALATIONS: 1
+- DISPOSITION_ACTIONS: 2
+- DOCUMENT_STATES: 2
+- SIMULATED_CLOSINGS: 0
+- AUDIT_EVENTS: 14
+- LEARNING_FEEDBACK_EVENTS: 1
+- REVERIFY_TASKS: 2
+- INTEGRITY_ALERTS: 4
+- FAILED_ACTIONS_BLOCKED: 1
+- FOUNDER_ESCALATIONS: 1
+- FAILOVER_EVENTS: 1
+- FAKE_LIVE_DAY: PASS
+- FAKE_LIVE_DAY_REASONS: all required controls and continuations observed
+
+Control behavior verified:
+- DETECTS -> LOGS -> ESCALATES -> FAILS SAFE -> CONTINUES NON-BLOCKED WORK
+- No silent failure and no unauthorized continuation were observed.
+
+## 5. Non-PASS Requirements (Explicit)
+
+### WeWeb Learning/Integrity Launch UI
+- Status: EXTERNAL_OWNER_ACTION_REQUIRED
+- Missing requirement: authenticated MCP project-edit access to mutate the real WeWeb project in this runtime
+- Why incomplete: backend data is ready; UI mutation channel is unavailable
+- Owner vs code: owner access/authentication responsibility
+- Specific next action: authenticate MCP session, share project-edit scope, then wire screens to live backend endpoints
+- Launch-blocking: YES
+- Dependency: WeWeb MCP authenticated edit authorization
+- Evidence: contracts/weweb_sync_state.json and docs/FRONTEND_BLOCKERS.md
+
+### Legacy Multi-Instance Orchestration Proof
+- Status: PARTIAL
+- Missing requirement: production-proven automated orchestration lifecycle and failover drill execution
+- Why incomplete: registry representation exists, orchestration workflow proof is not yet complete
+- Owner vs code: code responsibility
+- Specific next action: implement orchestration runner + policy propagation tests + failover drill test artifact
+- Launch-blocking: NO
+- Dependency: internal backend implementation/testing
+- Evidence: completion registry legacy-instances endpoints and test coverage
+
+## 6. External Owner Launch Actions (Clean List)
+
+These are external dependencies, not software defects:
+- Incorporation/entity finalization
+- Lawyer review and sign-off
+- Accountant setup and chart/accounting policy sign-off
+- Business bank account readiness
+- Insurance binding
+- Business email/domain administration
+- SMS/voice provider account and verified sender setup
+- E-sign provider account authorization
+- Accounting provider credentials and production authorization
+- Google/business document storage permissions
+- Lead-source provider credentials
+- Buyer data access/import authorization
+- WeWeb MCP authenticated project-edit access for launch-facing Learning/Integrity screens
+
+## 7. Test Evidence Run in This Closure
+
+- services/api/tests/test_completion_registry.py
+- services/api/tests/test_fake_live_operating_day.py
+
+Result:
+- 35 passed, 0 failed (targeted suite in this closure)
