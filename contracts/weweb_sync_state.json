@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-29T00:00:09.569349+00:00",
+  "generated_at": "2026-09-29T00:21:00.000000+00:00",
   "status": "partial",
   "render_parity": "PASS",
   "production_auth": "PRODUCTION_AUTH_CREDENTIAL_REQUIRED",
@@ -40,6 +40,17 @@
       "deployment_marker_commit": "9cc0dc4324a4940e3e748e0b31ebc20f8096486e",
       "admin_build_git_sha": "9cc0dc4324a4940e3e748e0b31ebc20f8096486e",
       "parity_match": true
+    },
+    "learning_evidence_hardening": {
+      "freshness_decay": "PASS",
+      "hard_stale_reverification_gate": "PASS",
+      "high_impact_human_review_escalation": "PASS",
+      "sensitive_data_pattern_block": "PASS"
+    },
+    "learning_task_queue": {
+      "learning_tasks_endpoint": "PASS",
+      "stale_reverification_enqueue": "PASS",
+      "idempotent_enqueue": "PASS"
     }
   }
 }

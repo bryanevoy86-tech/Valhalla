@@ -24,6 +24,12 @@ WeWeb owner console integration against Valhalla backend.
 - PRODUCTION_AUTH_CREDENTIAL_REQUIRED
   - Full authenticated live chain and WeWeb Preview chain require secure credential execution.
 
+## Safety/Integrity Delta (This Checkpoint)
+- Learning/evidence retrieval now enforces additional launch-safety gates (backend):
+  - stale evidence confidence decay and hard-stale re-verification gate
+  - high-impact escalation to human review when evidence quality is insufficient
+  - sensitive-data pattern blocking in retrieval output
+
 ## Commit Parity Snapshot
 - EXPECTED_COMMIT: `9cc0dc4324a4940e3e748e0b31ebc20f8096486e`
 - LIVE_COMMIT_OR_BUILD: `9cc0dc4324a4940e3e748e0b31ebc20f8096486e`

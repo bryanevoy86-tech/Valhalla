@@ -10,6 +10,7 @@ from app.core.db import get_db
 from app.models.completion_registry import (
     DatasetRegistryItem,
     KnowledgeRegistryItem,
+    LearningTaskQueueItem,
     LearningPromotionRecord,
     ScenarioExecutionRecord,
     ScenarioRegistryItem,
@@ -36,6 +37,7 @@ def _build_client() -> TestClient:
     ScenarioRegistryItem.__table__.create(bind=engine, checkfirst=True)
     ScenarioExecutionRecord.__table__.create(bind=engine, checkfirst=True)
     LearningPromotionRecord.__table__.create(bind=engine, checkfirst=True)
+    LearningTaskQueueItem.__table__.create(bind=engine, checkfirst=True)
 
     app = FastAPI()
     app.include_router(router)
@@ -1088,3 +1090,209 @@ def test_learning_promotion_separation_guards_hold():
         },
     )
     assert blocked_gold.status_code == 409
+
+
+def test_knowledge_retrieval_hard_stale_items_blocked_from_facts():
+    client = _build_client()
+
+    src = client.post(
+        "/api/completion/source-items",
+        json={
+            "source_id": "SRC-STALE-001",
+            "canonical_name": "Official Archive",
+            "source_type": "government",
+            "data_class": "live",
+            "terminal_state": "ACTIVE_AND_VERIFIED",
+        },
+    )
+    assert src.status_code == 200
+
+    item = client.post(
+        "/api/completion/knowledge-items",
+        json={
+            "item_id": "KNOW-STALE-001",
+            "source": "SRC-STALE-001",
+            "source_type": "government",
+            "title": "OPERATIONS escrow archival rule",
+            "terminal_state": "ACTIVE_AND_VERIFIED",
+            "review_status": "approved",
+            "quality_score": 0.95,
+            "confidence_score": 0.93,
+            "review_date": "2023-01-01",
+            "citation_ref": "gov:archive:escrow",
+        },
+    )
+    assert item.status_code == 200
+
+    retrieved = client.post(
+        "/api/completion/knowledge/retrieve",
+        json={"question": "escrow rule", "domain": "OPERATIONS", "mode": "live"},
+    )
+    assert retrieved.status_code == 200
+    body = retrieved.json()
+    assert not any(f["item_id"] == "KNOW-STALE-001" for f in body["facts"])
+    assert any(a["item_id"] == "KNOW-STALE-001" for a in body["assumptions"])
+    reasons = " ".join([row.get("reason", "") for row in body["blocked_sources"]]).lower()
+    assert "older than 2 years" in reasons
+
+
+def test_knowledge_retrieval_high_impact_weak_source_requires_human_review():
+    client = _build_client()
+
+    src = client.post(
+        "/api/completion/source-items",
+        json={
+            "source_id": "SRC-WEAK-001",
+            "canonical_name": "Operator Blog",
+            "source_type": "blog",
+            "data_class": "live",
+            "terminal_state": "ACTIVE_AND_VERIFIED",
+        },
+    )
+    assert src.status_code == 200
+
+    item = client.post(
+        "/api/completion/knowledge-items",
+        json={
+            "item_id": "KNOW-WEAK-001",
+            "source": "SRC-WEAK-001",
+            "source_type": "blog",
+            "title": "OPERATIONS reserve policy suggestion",
+            "terminal_state": "ACTIVE_AND_VERIFIED",
+            "review_status": "approved",
+            "quality_score": 0.93,
+            "confidence_score": 0.93,
+            "review_date": "2026-09-20",
+            "citation_ref": "blog:reserve:policy",
+        },
+    )
+    assert item.status_code == 200
+
+    retrieved = client.post(
+        "/api/completion/knowledge/retrieve",
+        json={
+            "question": "reserve policy",
+            "domain": "OPERATIONS",
+            "mode": "live",
+            "risk_level": "high",
+        },
+    )
+    assert retrieved.status_code == 200
+    body = retrieved.json()
+    assert body["human_review_required"] is True
+    escalation_text = " ".join(body["escalation_reasons"]).lower()
+    blocked_text = " ".join([row.get("reason", "") for row in body["blocked_sources"]]).lower()
+    assert "high-impact" in escalation_text or "high-impact" in blocked_text
+    assert not any(f["item_id"] == "KNOW-WEAK-001" for f in body["facts"])
+    assert any(a["item_id"] == "KNOW-WEAK-001" for a in body["assumptions"])
+
+
+def test_knowledge_retrieval_blocks_sensitive_patterns():
+    client = _build_client()
+
+    src = client.post(
+        "/api/completion/source-items",
+        json={
+            "source_id": "SRC-PII-001",
+            "canonical_name": "Runtime Note",
+            "source_type": "operator_note",
+            "data_class": "live",
+            "terminal_state": "ACTIVE_AND_VERIFIED",
+        },
+    )
+    assert src.status_code == 200
+
+    item = client.post(
+        "/api/completion/knowledge-items",
+        json={
+            "item_id": "KNOW-PII-001",
+            "source": "SRC-PII-001",
+            "source_type": "operator_note",
+            "title": "OPERATIONS owner contact owner@example.com",
+            "terminal_state": "ACTIVE_AND_VERIFIED",
+            "review_status": "approved",
+            "quality_score": 0.9,
+            "confidence_score": 0.88,
+            "review_date": "2026-09-20",
+            "citation_ref": "runtime:note",
+        },
+    )
+    assert item.status_code == 200
+
+    retrieved = client.post(
+        "/api/completion/knowledge/retrieve",
+        json={"question": "owner contact", "domain": "OPERATIONS", "mode": "live"},
+    )
+    assert retrieved.status_code == 200
+    body = retrieved.json()
+    assert not any(f["item_id"] == "KNOW-PII-001" for f in body["facts"])
+    reasons = " ".join([row.get("reason", "") for row in body["blocked_sources"]]).lower()
+    assert "sensitive data pattern" in reasons
+
+
+def test_learning_reverification_queue_created_for_hard_stale_items_and_idempotent():
+    client = _build_client()
+
+    src = client.post(
+        "/api/completion/source-items",
+        json={
+            "source_id": "SRC-QUEUE-001",
+            "canonical_name": "Official Rules",
+            "source_type": "government",
+            "data_class": "live",
+            "terminal_state": "ACTIVE_AND_VERIFIED",
+        },
+    )
+    assert src.status_code == 200
+
+    stale = client.post(
+        "/api/completion/knowledge-items",
+        json={
+            "item_id": "KNOW-QUEUE-STALE-001",
+            "source": "SRC-QUEUE-001",
+            "source_type": "government",
+            "title": "OPERATIONS policy stale archive",
+            "terminal_state": "ACTIVE_AND_VERIFIED",
+            "review_status": "approved",
+            "quality_score": 0.95,
+            "confidence_score": 0.92,
+            "review_date": "2023-01-01",
+            "citation_ref": "gov:ops:archive",
+        },
+    )
+    assert stale.status_code == 200
+
+    fresh = client.post(
+        "/api/completion/knowledge-items",
+        json={
+            "item_id": "KNOW-QUEUE-FRESH-001",
+            "source": "SRC-QUEUE-001",
+            "source_type": "government",
+            "title": "OPERATIONS policy current",
+            "terminal_state": "ACTIVE_AND_VERIFIED",
+            "review_status": "approved",
+            "quality_score": 0.95,
+            "confidence_score": 0.92,
+            "review_date": "2026-09-20",
+            "citation_ref": "gov:ops:current",
+        },
+    )
+    assert fresh.status_code == 200
+
+    enqueue = client.post("/api/completion/learning/tasks/reverify-stale")
+    assert enqueue.status_code == 200
+    body = enqueue.json()
+    assert body["created"] == 1
+    assert body["examined"] == 1
+
+    tasks = client.get("/api/completion/learning/tasks", params={"status": "queued"})
+    assert tasks.status_code == 200
+    queued_ids = {row["knowledge_item_id"] for row in tasks.json()}
+    assert "KNOW-QUEUE-STALE-001" in queued_ids
+    assert "KNOW-QUEUE-FRESH-001" not in queued_ids
+
+    enqueue_again = client.post("/api/completion/learning/tasks/reverify-stale")
+    assert enqueue_again.status_code == 200
+    body2 = enqueue_again.json()
+    assert body2["created"] == 0
+    assert body2["existing_open"] >= 1

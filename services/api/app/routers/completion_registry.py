@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
@@ -12,6 +13,7 @@ from app.core.db import get_db
 from app.models.completion_registry import (
     DatasetRegistryItem,
     KnowledgeRegistryItem,
+    LearningTaskQueueItem,
     LearningPromotionRecord,
     RegistryStates,
     ScenarioExecutionRecord,
@@ -44,6 +46,7 @@ def _ensure_registry_tables(db: Session) -> None:
     ScenarioRegistryItem.__table__.create(bind=bind, checkfirst=True)
     ScenarioExecutionRecord.__table__.create(bind=bind, checkfirst=True)
     LearningPromotionRecord.__table__.create(bind=bind, checkfirst=True)
+    LearningTaskQueueItem.__table__.create(bind=bind, checkfirst=True)
 
 
 def _ensure_terminal_state(state: str) -> str:
@@ -111,6 +114,14 @@ PROMPT_INJECTION_PATTERNS = [
     "change the owner's policy",
     "call this external url",
 ]
+
+SENSITIVE_DATA_PATTERNS = {
+    "email": re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b"),
+    "ssn_like": re.compile(r"\b\d{3}-\d{2}-\d{4}\b"),
+}
+
+STALE_SOFT_DAYS = 365
+STALE_HARD_DAYS = 730
 
 SOURCE_TRUST_RANKS = {
     "government": 4,
@@ -449,6 +460,7 @@ class KnowledgeRetrieveIn(BaseModel):
     domain: str
     jurisdiction: str | None = None
     mode: str = "practice"
+    risk_level: str = "medium"
 
 
 class KnowledgeRetrieveOut(BaseModel):
@@ -456,6 +468,8 @@ class KnowledgeRetrieveOut(BaseModel):
     facts: list[dict[str, Any]]
     assumptions: list[dict[str, Any]]
     blocked_sources: list[dict[str, Any]]
+    human_review_required: bool = False
+    escalation_reasons: list[str] = Field(default_factory=list)
 
 
 class LearningPromotionIn(BaseModel):
@@ -478,6 +492,47 @@ class LearningPromotionOut(BaseModel):
     dataset_id: str
     current_state: str
     decision_reason: str
+
+
+class LearningTaskCreate(BaseModel):
+    task_id: str
+    task_type: str
+    domain: str
+    priority: str = "normal"
+    status: str = "queued"
+    jurisdiction: str | None = None
+    business_scope: str | None = None
+    knowledge_item_id: str | None = None
+    learning_id: str | None = None
+    reason: str | None = None
+    assigned_to: str | None = None
+    due_at: datetime | None = None
+
+
+class LearningTaskOut(BaseModel):
+    model_config = {"from_attributes": True}
+
+    task_id: str
+    task_type: str
+    status: str
+    priority: str
+    domain: str
+    jurisdiction: str | None
+    business_scope: str | None
+    knowledge_item_id: str | None
+    learning_id: str | None
+    reason: str | None
+    assigned_to: str | None
+
+
+class ReverifyStaleOut(BaseModel):
+    created: int
+    existing_open: int
+    examined: int
+
+
+ALLOWED_TASK_STATUSES = {"queued", "in_progress", "blocked", "completed", "cancelled"}
+ALLOWED_TASK_PRIORITIES = {"low", "normal", "high", "critical"}
 
 
 def _normalize_mode(mode: str) -> str:
@@ -528,6 +583,34 @@ def _is_stale(review_date: date | None, stale_after_days: int = 30) -> bool:
     return review_date < (datetime.now(timezone.utc).date() - timedelta(days=stale_after_days))
 
 
+def _review_age_days(review_date: date | None) -> int | None:
+    if review_date is None:
+        return None
+    return max(0, (datetime.now(timezone.utc).date() - review_date).days)
+
+
+def _freshness_state(review_date: date | None) -> str:
+    age_days = _review_age_days(review_date)
+    if age_days is None:
+        return "unknown"
+    if age_days > STALE_HARD_DAYS:
+        return "hard_stale"
+    if age_days > STALE_SOFT_DAYS:
+        return "soft_stale"
+    return "fresh"
+
+
+def _effective_confidence(confidence_score: float | None, review_date: date | None) -> float:
+    confidence = float(confidence_score or 0.0)
+    freshness = _freshness_state(review_date)
+    if freshness == "soft_stale":
+        # Confidence decay for stale material older than one year.
+        return max(0.0, confidence - 0.15)
+    if freshness == "hard_stale":
+        return max(0.0, confidence - 0.35)
+    return confidence
+
+
 def _source_trust_rank(source_type: str | None) -> int:
     key = str(source_type or "").strip().lower()
     return SOURCE_TRUST_RANKS.get(key, 0)
@@ -535,6 +618,28 @@ def _source_trust_rank(source_type: str | None) -> int:
 
 def _title_key(value: str) -> str:
     return " ".join(str(value or "").strip().lower().split())
+
+
+def _contains_sensitive_data(text: str | None) -> str | None:
+    raw = str(text or "")
+    for label, pattern in SENSITIVE_DATA_PATTERNS.items():
+        if pattern.search(raw):
+            return label
+    return None
+
+
+def _normalize_task_status(status: str) -> str:
+    value = str(status or "queued").strip().lower()
+    if value not in ALLOWED_TASK_STATUSES:
+        raise HTTPException(status_code=422, detail=f"unsupported task status: {status}")
+    return value
+
+
+def _normalize_task_priority(priority: str) -> str:
+    value = str(priority or "normal").strip().lower()
+    if value not in ALLOWED_TASK_PRIORITIES:
+        raise HTTPException(status_code=422, detail=f"unsupported task priority: {priority}")
+    return value
 
 
 @router.post("/knowledge-items", response_model=KnowledgeRegistryOut)
@@ -1332,8 +1437,10 @@ def retrieve_knowledge(payload: KnowledgeRetrieveIn, db: Session = Depends(get_d
     facts: list[dict[str, Any]] = []
     assumptions: list[dict[str, Any]] = []
     blocked_sources: list[dict[str, Any]] = []
+    escalation_reasons: list[str] = []
     provisional_facts: list[dict[str, Any]] = []
     grouped_titles: dict[str, list[dict[str, Any]]] = {}
+    high_impact = str(payload.risk_level or "").strip().lower() in {"high", "critical"}
 
     for row in rows:
         source = db.query(SourceRegistryItem).filter(SourceRegistryItem.source_id == row.source).first()
@@ -1355,6 +1462,17 @@ def retrieve_knowledge(payload: KnowledgeRetrieveIn, db: Session = Depends(get_d
             blocked_sources.append({"source_id": row.source, "reason": f"prompt-injection pattern detected: {injection}"})
             continue
 
+        sensitive = _contains_sensitive_data(row.notes)
+        if sensitive is None:
+            sensitive = _contains_sensitive_data(row.title)
+        if sensitive:
+            blocked_sources.append({"source_id": row.source, "reason": f"sensitive data pattern detected: {sensitive}"})
+            continue
+
+        freshness = _freshness_state(row.review_date)
+        age_days = _review_age_days(row.review_date)
+        effective_confidence = _effective_confidence(row.confidence_score, row.review_date)
+
         entry = {
             "item_id": row.item_id,
             "source": row.source,
@@ -1363,15 +1481,27 @@ def retrieve_knowledge(payload: KnowledgeRetrieveIn, db: Session = Depends(get_d
             "review_status": row.review_status,
             "jurisdiction": row.jurisdiction,
             "confidence_score": row.confidence_score,
+            "effective_confidence_score": round(effective_confidence, 4),
             "quality_score": row.quality_score,
             "review_date": row.review_date.isoformat() if row.review_date else None,
+            "freshness_state": freshness,
+            "review_age_days": age_days,
             "source_trust_rank": _source_trust_rank(row.source_type),
             "source_type": row.source_type,
         }
-        quality_ok = (row.quality_score or 0) >= 0.7 and (row.confidence_score or 0) >= 0.7
+        quality_ok = (row.quality_score or 0) >= 0.7 and effective_confidence >= 0.7
         reviewed_ok = str(row.review_status or "").lower() in {"approved", "verified"}
         citation_ok = bool((row.citation_ref or "").strip())
-        if quality_ok and reviewed_ok and not _is_stale(row.review_date) and citation_ok:
+        if freshness == "hard_stale":
+            assumptions.append(entry)
+            blocked_sources.append({"source_id": row.source, "reason": "review_date is older than 2 years; re-verification required"})
+            continue
+
+        if quality_ok and reviewed_ok and citation_ok:
+            if high_impact and entry["source_trust_rank"] < 3:
+                assumptions.append(entry)
+                blocked_sources.append({"source_id": row.source, "reason": "high-impact retrieval requires tier-1 or tier-2 sources"})
+                continue
             provisional_facts.append(entry)
             key = _title_key(row.title)
             grouped_titles.setdefault(key, []).append(entry)
@@ -1379,6 +1509,8 @@ def retrieve_knowledge(payload: KnowledgeRetrieveIn, db: Session = Depends(get_d
             assumptions.append(entry)
             if not citation_ok:
                 blocked_sources.append({"source_id": row.source, "reason": "missing citation_ref for fact-grade use"})
+            if freshness == "soft_stale":
+                blocked_sources.append({"source_id": row.source, "reason": "review_date is older than 1 year; confidence decay applied"})
 
     contradicted_ids: set[str] = set()
     for key, entries in grouped_titles.items():
@@ -1404,6 +1536,15 @@ def retrieve_knowledge(payload: KnowledgeRetrieveIn, db: Session = Depends(get_d
             continue
         facts.append(entry)
 
+    if contradicted_ids:
+        escalation_reasons.append("contradictions detected; human review required before high-impact use")
+
+    if high_impact:
+        if not facts:
+            escalation_reasons.append("no high-confidence fact-grade evidence available for high-impact request")
+        if any(f.get("freshness_state") == "soft_stale" for f in facts):
+            escalation_reasons.append("high-impact request uses stale evidence older than 1 year")
+
     facts.sort(
         key=lambda e: (
             1 if payload.jurisdiction and e.get("jurisdiction") == payload.jurisdiction else 0,
@@ -1420,6 +1561,8 @@ def retrieve_knowledge(payload: KnowledgeRetrieveIn, db: Session = Depends(get_d
         facts=facts,
         assumptions=assumptions,
         blocked_sources=blocked_sources,
+        human_review_required=len(escalation_reasons) > 0,
+        escalation_reasons=escalation_reasons,
     )
 
 
@@ -1491,6 +1634,98 @@ def evaluate_learning_promotion(payload: LearningPromotionIn, db: Session = Depe
     )
 
 
+@router.post("/learning/tasks", response_model=LearningTaskOut)
+def create_learning_task(payload: LearningTaskCreate, db: Session = Depends(get_db)):
+    _ensure_registry_tables(db)
+    existing = db.query(LearningTaskQueueItem).filter(LearningTaskQueueItem.task_id == payload.task_id).first()
+    if existing is not None:
+        raise HTTPException(status_code=409, detail="task_id already exists")
+
+    row = LearningTaskQueueItem(
+        task_id=payload.task_id,
+        task_type=payload.task_type,
+        status=_normalize_task_status(payload.status),
+        priority=_normalize_task_priority(payload.priority),
+        domain=payload.domain,
+        jurisdiction=payload.jurisdiction,
+        business_scope=payload.business_scope,
+        knowledge_item_id=payload.knowledge_item_id,
+        learning_id=payload.learning_id,
+        reason=payload.reason,
+        assigned_to=payload.assigned_to,
+        due_at=payload.due_at,
+    )
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+    return LearningTaskOut.model_validate(row)
+
+
+@router.get("/learning/tasks", response_model=list[LearningTaskOut])
+def list_learning_tasks(
+    db: Session = Depends(get_db),
+    status: str | None = None,
+    domain: str | None = None,
+    limit: int = 200,
+):
+    _ensure_registry_tables(db)
+    q = db.query(LearningTaskQueueItem)
+    if status:
+        q = q.filter(LearningTaskQueueItem.status == _normalize_task_status(status))
+    if domain:
+        q = q.filter(LearningTaskQueueItem.domain == domain)
+    rows = q.order_by(LearningTaskQueueItem.id.desc()).limit(max(1, min(limit, 1000))).all()
+    return [LearningTaskOut.model_validate(row) for row in rows]
+
+
+@router.post("/learning/tasks/reverify-stale", response_model=ReverifyStaleOut)
+def enqueue_stale_reverification_tasks(db: Session = Depends(get_db)):
+    _ensure_registry_tables(db)
+    examined = 0
+    created = 0
+    existing_open = 0
+
+    rows = db.query(KnowledgeRegistryItem).filter(KnowledgeRegistryItem.excluded.is_(False)).all()
+    for row in rows:
+        freshness = _freshness_state(row.review_date)
+        if freshness != "hard_stale":
+            continue
+
+        examined += 1
+        open_task = db.query(LearningTaskQueueItem).filter(
+            LearningTaskQueueItem.knowledge_item_id == row.item_id,
+            LearningTaskQueueItem.task_type == "REVERIFY_KNOWLEDGE",
+            LearningTaskQueueItem.status.in_(["queued", "in_progress", "blocked"]),
+        ).first()
+        if open_task is not None:
+            existing_open += 1
+            continue
+
+        task_id = f"LQ-REVERIFY-{row.item_id}"
+        already = db.query(LearningTaskQueueItem).filter(LearningTaskQueueItem.task_id == task_id).first()
+        if already is not None:
+            existing_open += 1
+            continue
+
+        age_days = _review_age_days(row.review_date)
+        task = LearningTaskQueueItem(
+            task_id=task_id,
+            task_type="REVERIFY_KNOWLEDGE",
+            status="queued",
+            priority="high",
+            domain=(row.title.split(" ")[0].upper() if row.title else "OPERATIONS"),
+            jurisdiction=row.jurisdiction,
+            knowledge_item_id=row.item_id,
+            reason=f"Knowledge item is hard-stale ({age_days} days since review). Re-verification required before fact-grade reuse.",
+            due_at=datetime.now(timezone.utc).replace(tzinfo=None),
+        )
+        db.add(task)
+        created += 1
+
+    db.commit()
+    return ReverifyStaleOut(created=created, existing_open=existing_open, examined=examined)
+
+
 @router.get("/summary")
 def get_registry_summary(db: Session = Depends(get_db)):
     _ensure_registry_tables(db)
@@ -1509,4 +1744,11 @@ def get_registry_summary(db: Session = Depends(get_db)):
         "sources": _state_counts(SourceRegistryItem),
         "datasets": _state_counts(DatasetRegistryItem),
         "scenarios": _state_counts(ScenarioRegistryItem),
+        "learning_tasks": {
+            "queued": db.query(LearningTaskQueueItem).filter(LearningTaskQueueItem.status == "queued").count(),
+            "in_progress": db.query(LearningTaskQueueItem).filter(LearningTaskQueueItem.status == "in_progress").count(),
+            "blocked": db.query(LearningTaskQueueItem).filter(LearningTaskQueueItem.status == "blocked").count(),
+            "completed": db.query(LearningTaskQueueItem).filter(LearningTaskQueueItem.status == "completed").count(),
+            "cancelled": db.query(LearningTaskQueueItem).filter(LearningTaskQueueItem.status == "cancelled").count(),
+        },
     }

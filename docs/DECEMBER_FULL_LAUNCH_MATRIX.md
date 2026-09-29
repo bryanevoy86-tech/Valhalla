@@ -38,11 +38,20 @@ Status language:
 
 ## D. Learning System
 - Registry-based learning promotion + source trust/citation/contradiction safety: PROVEN (tests)
+- Freshness and evidence hardening: PROVEN (tests)
+  - confidence decay for stale evidence (>1 year)
+  - hard-stale evidence blocked and re-verification required (>2 years)
+  - high-impact retrieval escalation when only weak evidence exists
+  - sensitive-data pattern blocking in retrieval path
+- Learning re-verification task queue: PROVEN (tests)
+  - `/api/completion/learning/tasks`
+  - `/api/completion/learning/tasks/reverify-stale`
 - Broader autonomous learning loops remain: PARTIAL
 
 ## E. Evidence/Ethics System
 - Auth evidence artifacts regenerated under `contracts/`: PROVEN
 - Knowledge retrieval guards (citation required for fact-grade use, contradiction demotion, trust ordering): PROVEN (tests)
+- High-impact human-review escalation lane in retrieval flow: PROVEN (tests)
 
 ## F. Autonomy/Governance
 - Dependency-order execution and blocker logging: PROVEN
@@ -89,6 +98,8 @@ Status language:
   - `services/api/tests/test_system_self_check.py`
   - `services/api/tests/test_approvals_owner_rehearsal.py`
   - `services/api/tests/test_approvals_owner_auth.py`
+- Learning/evidence hardening regression rerun: PASS
+  - `services/api/tests/test_completion_registry.py` (22 passed)
 
 ## Immediate Next Dependency-Ordered Actions
 1. Execute complete production auth proof chain with secure credential input (login -> me -> refresh -> logout -> post-logout checks).
