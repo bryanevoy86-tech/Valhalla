@@ -12,6 +12,8 @@ from sqlalchemy.orm import Session
 from app.core.db import get_db
 from app.models.completion_registry import (
     DatasetRegistryItem,
+    EngineRegistryItem,
+    LegacyInstanceRegistryItem,
     LearningAuditEvent,
     LearningCurriculumRegistryItem,
     LearningDomainRegistryItem,
@@ -55,6 +57,8 @@ def _ensure_registry_tables(db: Session) -> None:
     LearningCurriculumRegistryItem.__table__.create(bind=bind, checkfirst=True)
     LearningFeedbackRecord.__table__.create(bind=bind, checkfirst=True)
     LearningAuditEvent.__table__.create(bind=bind, checkfirst=True)
+    EngineRegistryItem.__table__.create(bind=bind, checkfirst=True)
+    LegacyInstanceRegistryItem.__table__.create(bind=bind, checkfirst=True)
 
 
 def _ensure_terminal_state(state: str) -> str:
@@ -154,6 +158,24 @@ SOURCE_TRUST_RANKS = {
     "interview": 2,
     "blog": 1,
     "forum": 1,
+}
+
+ENGINE_ALLOWED_STATES = {"OFF", "SANDBOX", "BLOCKED", "READY", "ACTIVE"}
+
+PLANNED_ENGINE_CATALOG: dict[str, dict[str, str]] = {
+    "wholesaling": {"name": "Wholesaling", "category": "real_estate", "business_industry": "residential_real_estate"},
+    "brrrr": {"name": "BRRRR", "category": "real_estate", "business_industry": "residential_real_estate"},
+    "flips": {"name": "Flips", "category": "real_estate", "business_industry": "residential_real_estate"},
+    "rentals": {"name": "Rentals", "category": "real_estate", "business_industry": "residential_real_estate"},
+    "multifamily": {"name": "Multifamily", "category": "real_estate", "business_industry": "multifamily_real_estate"},
+    "commercial": {"name": "Commercial", "category": "real_estate", "business_industry": "commercial_real_estate"},
+    "business_acquisitions": {"name": "Business Acquisitions", "category": "acquisitions", "business_industry": "operating_businesses"},
+    "ai_microbusinesses": {"name": "AI/Passive Microbusinesses", "category": "digital_business", "business_industry": "ai_microbusiness"},
+    "saas_subscription_products": {"name": "SaaS/Subscription Products", "category": "digital_business", "business_industry": "saas"},
+    "arbitrage": {"name": "Arbitrage", "category": "capital", "business_industry": "market_arbitrage"},
+    "market_intelligence": {"name": "Market Intelligence", "category": "intelligence", "business_industry": "cross_market_intelligence"},
+    "ops_automation": {"name": "Ops Automation", "category": "operations", "business_industry": "operations_automation"},
+    "trading_advisory": {"name": "Trading Advisory", "category": "capital", "business_industry": "trading_advisory"},
 }
 
 
@@ -710,6 +732,100 @@ class LearningAuditOut(BaseModel):
     payload: dict[str, Any]
 
 
+def _normalize_engine_state(value: str) -> str:
+    normalized = str(value or "").strip().upper()
+    if normalized not in ENGINE_ALLOWED_STATES:
+        raise HTTPException(
+            status_code=422,
+            detail=f"engine state must be one of {sorted(ENGINE_ALLOWED_STATES)}",
+        )
+    return normalized
+
+
+class EngineRegistryIn(BaseModel):
+    engine_id: str
+    name: str
+    category: str
+    business_industry: str
+    jurisdiction_scope: list[str] = Field(default_factory=list)
+    current_state: str
+    dependencies: list[str] = Field(default_factory=list)
+    readiness_requirements: list[str] = Field(default_factory=list)
+    missing_blockers: list[str] = Field(default_factory=list)
+    activation_criteria: list[str] = Field(default_factory=list)
+    risk_requirements: list[str] = Field(default_factory=list)
+    approval_requirements: list[str] = Field(default_factory=list)
+    integration_requirements: list[str] = Field(default_factory=list)
+    capital_requirements: list[str] = Field(default_factory=list)
+    heimdall_recommendation: str | None = None
+    activation_history: list[dict[str, Any]] = Field(default_factory=list)
+    audit_state: str = "NO_RECENT_ACTIVATION"
+    legacy_instance_id: str | None = None
+    notes: str | None = None
+
+
+class EngineRegistryOut(BaseModel):
+    model_config = {"from_attributes": True}
+
+    engine_id: str
+    name: str
+    category: str
+    business_industry: str
+    jurisdiction_scope: list[str]
+    current_state: str
+    dependencies: list[str]
+    readiness_requirements: list[str]
+    missing_blockers: list[str]
+    activation_criteria: list[str]
+    risk_requirements: list[str]
+    approval_requirements: list[str]
+    integration_requirements: list[str]
+    capital_requirements: list[str]
+    heimdall_recommendation: str | None
+    activation_history: list[dict[str, Any]]
+    audit_state: str
+    legacy_instance_id: str | None
+    notes: str | None
+
+
+class LegacyInstanceRegistryIn(BaseModel):
+    legacy_instance_id: str
+    display_name: str
+    parent_instance_id: str | None = None
+    assigned_businesses: list[str] = Field(default_factory=list)
+    assigned_jurisdictions: list[str] = Field(default_factory=list)
+    local_knowledge_context: dict[str, Any] = Field(default_factory=dict)
+    permissions: dict[str, Any] = Field(default_factory=dict)
+    integrations: dict[str, Any] = Field(default_factory=dict)
+    engines: list[str] = Field(default_factory=list)
+    synchronization_status: str = "PENDING"
+    isolation_state: str = "ISOLATED"
+    failover_state: str = "NOT_TRIGGERED"
+    audit_state: str = "BASELINE_ONLY"
+    status: str = "PARTIAL"
+    notes: str | None = None
+
+
+class LegacyInstanceRegistryOut(BaseModel):
+    model_config = {"from_attributes": True}
+
+    legacy_instance_id: str
+    display_name: str
+    parent_instance_id: str | None
+    assigned_businesses: list[str]
+    assigned_jurisdictions: list[str]
+    local_knowledge_context: dict[str, Any]
+    permissions: dict[str, Any]
+    integrations: dict[str, Any]
+    engines: list[str]
+    synchronization_status: str
+    isolation_state: str
+    failover_state: str
+    audit_state: str
+    status: str
+    notes: str | None
+
+
 ALLOWED_TASK_STATUSES = {"queued", "in_progress", "blocked", "completed", "cancelled"}
 ALLOWED_TASK_PRIORITIES = {"low", "normal", "high", "critical"}
 
@@ -900,6 +1016,181 @@ def _create_learning_audit_event(
         payload_json=json.dumps(payload or {}),
     )
     db.add(row)
+
+
+def _engine_registry_out(row: EngineRegistryItem) -> EngineRegistryOut:
+    return EngineRegistryOut(
+        engine_id=row.engine_id,
+        name=row.name,
+        category=row.category,
+        business_industry=row.business_industry,
+        jurisdiction_scope=_loads(row.jurisdiction_scope_json, []),
+        current_state=row.current_state,
+        dependencies=_loads(row.dependencies_json, []),
+        readiness_requirements=_loads(row.readiness_requirements_json, []),
+        missing_blockers=_loads(row.missing_blockers_json, []),
+        activation_criteria=_loads(row.activation_criteria_json, []),
+        risk_requirements=_loads(row.risk_requirements_json, []),
+        approval_requirements=_loads(row.approval_requirements_json, []),
+        integration_requirements=_loads(row.integration_requirements_json, []),
+        capital_requirements=_loads(row.capital_requirements_json, []),
+        heimdall_recommendation=row.heimdall_recommendation,
+        activation_history=_loads(row.activation_history_json, []),
+        audit_state=row.audit_state,
+        legacy_instance_id=row.legacy_instance_id,
+        notes=row.notes,
+    )
+
+
+def _legacy_instance_out(row: LegacyInstanceRegistryItem) -> LegacyInstanceRegistryOut:
+    return LegacyInstanceRegistryOut(
+        legacy_instance_id=row.legacy_instance_id,
+        display_name=row.display_name,
+        parent_instance_id=row.parent_instance_id,
+        assigned_businesses=_loads(row.assigned_businesses_json, []),
+        assigned_jurisdictions=_loads(row.assigned_jurisdictions_json, []),
+        local_knowledge_context=_loads(row.local_knowledge_context_json, {}),
+        permissions=_loads(row.permissions_json, {}),
+        integrations=_loads(row.integrations_json, {}),
+        engines=_loads(row.engines_json, []),
+        synchronization_status=row.synchronization_status,
+        isolation_state=row.isolation_state,
+        failover_state=row.failover_state,
+        audit_state=row.audit_state,
+        status=row.status,
+        notes=row.notes,
+    )
+
+
+@router.post("/engine-registry/items", response_model=EngineRegistryOut)
+def upsert_engine_registry_item(payload: EngineRegistryIn, db: Session = Depends(get_db)):
+    _ensure_registry_tables(db)
+    state = _normalize_engine_state(payload.current_state)
+
+    row = db.query(EngineRegistryItem).filter(EngineRegistryItem.engine_id == payload.engine_id).first()
+    if row is None:
+        row = EngineRegistryItem(engine_id=payload.engine_id)
+        db.add(row)
+
+    row.name = payload.name
+    row.category = payload.category
+    row.business_industry = payload.business_industry
+    row.jurisdiction_scope_json = json.dumps(payload.jurisdiction_scope)
+    row.current_state = state
+    row.dependencies_json = json.dumps(payload.dependencies)
+    row.readiness_requirements_json = json.dumps(payload.readiness_requirements)
+    row.missing_blockers_json = json.dumps(payload.missing_blockers)
+    row.activation_criteria_json = json.dumps(payload.activation_criteria)
+    row.risk_requirements_json = json.dumps(payload.risk_requirements)
+    row.approval_requirements_json = json.dumps(payload.approval_requirements)
+    row.integration_requirements_json = json.dumps(payload.integration_requirements)
+    row.capital_requirements_json = json.dumps(payload.capital_requirements)
+    row.heimdall_recommendation = payload.heimdall_recommendation
+    row.activation_history_json = json.dumps(payload.activation_history)
+    row.audit_state = payload.audit_state
+    row.legacy_instance_id = payload.legacy_instance_id
+    row.notes = payload.notes
+
+    db.commit()
+    db.refresh(row)
+    return _engine_registry_out(row)
+
+
+@router.get("/engine-registry/items", response_model=list[EngineRegistryOut])
+def list_engine_registry_items(
+    db: Session = Depends(get_db),
+    current_state: str | None = None,
+    legacy_instance_id: str | None = None,
+):
+    _ensure_registry_tables(db)
+    q = db.query(EngineRegistryItem)
+    if current_state:
+        q = q.filter(EngineRegistryItem.current_state == _normalize_engine_state(current_state))
+    if legacy_instance_id:
+        q = q.filter(EngineRegistryItem.legacy_instance_id == legacy_instance_id)
+    rows = q.order_by(EngineRegistryItem.engine_id.asc()).all()
+    return [_engine_registry_out(row) for row in rows]
+
+
+@router.get("/engine-registry/audit")
+def audit_engine_registry(db: Session = Depends(get_db)):
+    _ensure_registry_tables(db)
+    rows = db.query(EngineRegistryItem).all()
+    by_id = {row.engine_id: row for row in rows}
+
+    missing_planned = sorted([engine_id for engine_id in PLANNED_ENGINE_CATALOG if engine_id not in by_id])
+
+    field_issues: list[dict[str, Any]] = []
+    invalid_states: list[dict[str, Any]] = []
+    for row in rows:
+        if row.current_state not in ENGINE_ALLOWED_STATES:
+            invalid_states.append(
+                {
+                    "engine_id": row.engine_id,
+                    "current_state": row.current_state,
+                    "allowed": sorted(ENGINE_ALLOWED_STATES),
+                }
+            )
+        required = {
+            "name": row.name,
+            "category": row.category,
+            "business_industry": row.business_industry,
+            "audit_state": row.audit_state,
+        }
+        missing_fields = [k for k, v in required.items() if not str(v or "").strip()]
+        if missing_fields:
+            field_issues.append({"engine_id": row.engine_id, "missing_fields": missing_fields})
+
+    represented = sorted([row.engine_id for row in rows])
+    return {
+        "planned_engines_expected": sorted(PLANNED_ENGINE_CATALOG.keys()),
+        "planned_engines_represented": sorted([engine_id for engine_id in represented if engine_id in PLANNED_ENGINE_CATALOG]),
+        "missing_planned_engines": missing_planned,
+        "unplanned_registry_engines": sorted([engine_id for engine_id in represented if engine_id not in PLANNED_ENGINE_CATALOG]),
+        "invalid_state_entries": invalid_states,
+        "missing_required_fields": field_issues,
+        "registry_pass": len(missing_planned) == 0 and len(invalid_states) == 0 and len(field_issues) == 0,
+    }
+
+
+@router.post("/legacy-instances", response_model=LegacyInstanceRegistryOut)
+def upsert_legacy_instance(payload: LegacyInstanceRegistryIn, db: Session = Depends(get_db)):
+    _ensure_registry_tables(db)
+    row = db.query(LegacyInstanceRegistryItem).filter(
+        LegacyInstanceRegistryItem.legacy_instance_id == payload.legacy_instance_id
+    ).first()
+    if row is None:
+        row = LegacyInstanceRegistryItem(legacy_instance_id=payload.legacy_instance_id)
+        db.add(row)
+
+    row.display_name = payload.display_name
+    row.parent_instance_id = payload.parent_instance_id
+    row.assigned_businesses_json = json.dumps(payload.assigned_businesses)
+    row.assigned_jurisdictions_json = json.dumps(payload.assigned_jurisdictions)
+    row.local_knowledge_context_json = json.dumps(payload.local_knowledge_context)
+    row.permissions_json = json.dumps(payload.permissions)
+    row.integrations_json = json.dumps(payload.integrations)
+    row.engines_json = json.dumps(payload.engines)
+    row.synchronization_status = payload.synchronization_status
+    row.isolation_state = payload.isolation_state
+    row.failover_state = payload.failover_state
+    row.audit_state = payload.audit_state
+    row.status = payload.status
+    row.notes = payload.notes
+
+    db.commit()
+    db.refresh(row)
+    return _legacy_instance_out(row)
+
+
+@router.get("/legacy-instances", response_model=list[LegacyInstanceRegistryOut])
+def list_legacy_instances(db: Session = Depends(get_db), status: str | None = None):
+    _ensure_registry_tables(db)
+    q = db.query(LegacyInstanceRegistryItem)
+    if status:
+        q = q.filter(LegacyInstanceRegistryItem.status == status)
+    rows = q.order_by(LegacyInstanceRegistryItem.legacy_instance_id.asc()).all()
+    return [_legacy_instance_out(row) for row in rows]
 
 
 @router.post("/knowledge-items", response_model=KnowledgeRegistryOut)
@@ -2495,9 +2786,18 @@ def list_learning_audit_events(
 @router.get("/summary")
 def get_registry_summary(db: Session = Depends(get_db)):
     _ensure_registry_tables(db)
+
     def _state_counts(model):
         counts: dict[str, int] = {state: 0 for state in ALLOWED_TERMINAL_STATES}
         rows = db.query(model.terminal_state).all()
+        for (state,) in rows:
+            if state in counts:
+                counts[state] += 1
+        return counts
+
+    def _engine_state_counts() -> dict[str, int]:
+        counts: dict[str, int] = {state: 0 for state in sorted(ENGINE_ALLOWED_STATES)}
+        rows = db.query(EngineRegistryItem.current_state).all()
         for (state,) in rows:
             if state in counts:
                 counts[state] += 1
@@ -2519,6 +2819,25 @@ def get_registry_summary(db: Session = Depends(get_db)):
             .count(),
         },
         "learning_audit_events": db.query(LearningAuditEvent).count(),
+        "engine_registry": {
+            "total": db.query(EngineRegistryItem).count(),
+            "states": _engine_state_counts(),
+            "planned_expected": len(PLANNED_ENGINE_CATALOG),
+            "planned_represented": db.query(EngineRegistryItem)
+            .filter(EngineRegistryItem.engine_id.in_(list(PLANNED_ENGINE_CATALOG.keys())))
+            .count(),
+        },
+        "legacy_instances": {
+            "total": db.query(LegacyInstanceRegistryItem).count(),
+            "by_status": {
+                "PASS": db.query(LegacyInstanceRegistryItem).filter(LegacyInstanceRegistryItem.status == "PASS").count(),
+                "PARTIAL": db.query(LegacyInstanceRegistryItem).filter(LegacyInstanceRegistryItem.status == "PARTIAL").count(),
+                "FAIL": db.query(LegacyInstanceRegistryItem).filter(LegacyInstanceRegistryItem.status == "FAIL").count(),
+                "EXTERNAL_OWNER_ACTION_REQUIRED": db.query(LegacyInstanceRegistryItem)
+                .filter(LegacyInstanceRegistryItem.status == "EXTERNAL_OWNER_ACTION_REQUIRED")
+                .count(),
+            },
+        },
         "learning_tasks": {
             "queued": db.query(LearningTaskQueueItem).filter(LearningTaskQueueItem.status == "queued").count(),
             "in_progress": db.query(LearningTaskQueueItem).filter(LearningTaskQueueItem.status == "in_progress").count(),

@@ -9,6 +9,8 @@ from sqlalchemy.pool import StaticPool
 from app.core.db import get_db
 from app.models.completion_registry import (
     DatasetRegistryItem,
+    EngineRegistryItem,
+    LegacyInstanceRegistryItem,
     LearningAuditEvent,
     LearningCurriculumRegistryItem,
     LearningDomainRegistryItem,
@@ -46,6 +48,8 @@ def _build_client() -> TestClient:
     LearningCurriculumRegistryItem.__table__.create(bind=engine, checkfirst=True)
     LearningFeedbackRecord.__table__.create(bind=engine, checkfirst=True)
     LearningAuditEvent.__table__.create(bind=engine, checkfirst=True)
+    EngineRegistryItem.__table__.create(bind=engine, checkfirst=True)
+    LegacyInstanceRegistryItem.__table__.create(bind=engine, checkfirst=True)
 
     app = FastAPI()
     app.include_router(router)
@@ -1764,3 +1768,138 @@ def test_learning_feedback_capture_and_summary_metrics():
     assert "learning_domains" in body
     assert "learning_curricula" in body
     assert body["learning_audit_events"] >= 1
+
+
+def test_engine_registry_covers_planned_engines_and_allowed_states():
+    client = _build_client()
+
+    engines = [
+        ("wholesaling", "Wholesaling", "real_estate", "residential_real_estate", "READY"),
+        ("brrrr", "BRRRR", "real_estate", "residential_real_estate", "SANDBOX"),
+        ("flips", "Flips", "real_estate", "residential_real_estate", "OFF"),
+        ("rentals", "Rentals", "real_estate", "residential_real_estate", "BLOCKED"),
+        ("multifamily", "Multifamily", "real_estate", "multifamily_real_estate", "SANDBOX"),
+        ("commercial", "Commercial", "real_estate", "commercial_real_estate", "OFF"),
+        ("business_acquisitions", "Business Acquisitions", "acquisitions", "operating_businesses", "OFF"),
+        ("ai_microbusinesses", "AI/Passive Microbusinesses", "digital_business", "ai_microbusiness", "SANDBOX"),
+        ("saas_subscription_products", "SaaS/Subscription Products", "digital_business", "saas", "OFF"),
+        ("arbitrage", "Arbitrage", "capital", "market_arbitrage", "SANDBOX"),
+        ("market_intelligence", "Market Intelligence", "intelligence", "cross_market_intelligence", "READY"),
+        ("ops_automation", "Ops Automation", "operations", "operations_automation", "BLOCKED"),
+        ("trading_advisory", "Trading Advisory", "capital", "trading_advisory", "OFF"),
+    ]
+
+    for engine_id, name, category, industry, state in engines:
+        created = client.post(
+            "/api/completion/engine-registry/items",
+            json={
+                "engine_id": engine_id,
+                "name": name,
+                "category": category,
+                "business_industry": industry,
+                "jurisdiction_scope": ["CA-MB"],
+                "current_state": state,
+                "dependencies": ["approval_runtime"],
+                "readiness_requirements": ["sandbox_proof", "integrity_green"],
+                "missing_blockers": ["none"],
+                "activation_criteria": ["owner_approval", "compliance_check"],
+                "risk_requirements": ["fail_safe_controls"],
+                "approval_requirements": ["owner_command"],
+                "integration_requirements": ["crm", "documents"],
+                "capital_requirements": ["capital_reserve >= 3 months"],
+                "heimdall_recommendation": "Do not auto-activate until blockers are clear.",
+                "activation_history": [{"event": "registered", "state": state}],
+                "audit_state": "REGISTERED",
+                "legacy_instance_id": "legacy-prime-001",
+            },
+        )
+        assert created.status_code == 200, created.text
+        assert created.json()["current_state"] == state
+
+    audit = client.get("/api/completion/engine-registry/audit")
+    assert audit.status_code == 200
+    body = audit.json()
+    assert body["registry_pass"] is True
+    assert body["missing_planned_engines"] == []
+
+    summary = client.get("/api/completion/summary")
+    assert summary.status_code == 200
+    summary_body = summary.json()
+    assert summary_body["engine_registry"]["total"] >= len(engines)
+    assert summary_body["engine_registry"]["planned_represented"] == summary_body["engine_registry"]["planned_expected"]
+
+
+def test_engine_registry_rejects_invalid_state():
+    client = _build_client()
+
+    created = client.post(
+        "/api/completion/engine-registry/items",
+        json={
+            "engine_id": "bad-state-engine",
+            "name": "Bad State Engine",
+            "category": "real_estate",
+            "business_industry": "residential_real_estate",
+            "jurisdiction_scope": ["CA-MB"],
+            "current_state": "LIVE",
+        },
+    )
+    assert created.status_code == 422
+    assert "engine state must be one of" in created.json()["detail"]
+
+
+def test_legacy_instance_registry_supports_multi_business_multi_jurisdiction_and_engine_assignment():
+    client = _build_client()
+
+    prime = client.post(
+        "/api/completion/legacy-instances",
+        json={
+            "legacy_instance_id": "legacy-prime-001",
+            "display_name": "Heimdall Prime",
+            "assigned_businesses": ["valhalla_hq", "valhalla_rei"],
+            "assigned_jurisdictions": ["CA-MB", "US-TX"],
+            "local_knowledge_context": {"playbook_version": "v2026.09", "locale": "north_america"},
+            "permissions": {"owner": ["approve", "override"], "operator": ["execute"]},
+            "integrations": {"docusign": "configured", "quickbooks": "pending"},
+            "engines": ["wholesaling", "brrrr", "market_intelligence"],
+            "synchronization_status": "SYNCED",
+            "isolation_state": "ISOLATED",
+            "failover_state": "HOT_STANDBY_READY",
+            "audit_state": "BASELINE_VERIFIED",
+            "status": "PARTIAL",
+        },
+    )
+    assert prime.status_code == 200, prime.text
+
+    mirror = client.post(
+        "/api/completion/legacy-instances",
+        json={
+            "legacy_instance_id": "legacy-country-ca-001",
+            "display_name": "Heimdall Canada Mirror",
+            "parent_instance_id": "legacy-prime-001",
+            "assigned_businesses": ["valhalla_rei_ca"],
+            "assigned_jurisdictions": ["CA-MB", "CA-ON"],
+            "local_knowledge_context": {"compliance_pack": "canada-v1"},
+            "permissions": {"country_operator": ["execute", "escalate"]},
+            "integrations": {"sms": "external_owner_action_required"},
+            "engines": ["wholesaling", "rentals"],
+            "synchronization_status": "DEGRADED",
+            "isolation_state": "ISOLATED",
+            "failover_state": "NOT_TRIGGERED",
+            "audit_state": "PENDING_FAILOVER_TEST",
+            "status": "PARTIAL",
+        },
+    )
+    assert mirror.status_code == 200, mirror.text
+
+    rows = client.get("/api/completion/legacy-instances")
+    assert rows.status_code == 200
+    listed = {row["legacy_instance_id"]: row for row in rows.json()}
+    assert "legacy-prime-001" in listed
+    assert "legacy-country-ca-001" in listed
+    assert len(listed["legacy-prime-001"]["assigned_businesses"]) >= 2
+    assert len(listed["legacy-prime-001"]["assigned_jurisdictions"]) >= 2
+    assert "wholesaling" in listed["legacy-country-ca-001"]["engines"]
+
+    summary = client.get("/api/completion/summary")
+    assert summary.status_code == 200
+    assert summary.json()["legacy_instances"]["total"] >= 2

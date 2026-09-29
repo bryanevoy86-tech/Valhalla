@@ -333,3 +333,53 @@ class LearningAuditEvent(Base):
     message = Column(Text, nullable=False)
     payload_json = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class EngineRegistryItem(Base):
+    __tablename__ = "engine_registry_items"
+
+    id = Column(Integer, primary_key=True, index=True)
+    engine_id = Column(String(80), unique=True, nullable=False, index=True)
+    name = Column(String(180), nullable=False)
+    category = Column(String(120), nullable=False)
+    business_industry = Column(String(180), nullable=False)
+    jurisdiction_scope_json = Column(Text, nullable=True)
+    current_state = Column(String(40), nullable=False)
+    dependencies_json = Column(Text, nullable=True)
+    readiness_requirements_json = Column(Text, nullable=True)
+    missing_blockers_json = Column(Text, nullable=True)
+    activation_criteria_json = Column(Text, nullable=True)
+    risk_requirements_json = Column(Text, nullable=True)
+    approval_requirements_json = Column(Text, nullable=True)
+    integration_requirements_json = Column(Text, nullable=True)
+    capital_requirements_json = Column(Text, nullable=True)
+    heimdall_recommendation = Column(Text, nullable=True)
+    activation_history_json = Column(Text, nullable=True)
+    audit_state = Column(String(120), nullable=False, default="NO_RECENT_ACTIVATION")
+    legacy_instance_id = Column(String(80), nullable=True, index=True)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+
+class LegacyInstanceRegistryItem(Base):
+    __tablename__ = "legacy_instance_registry_items"
+
+    id = Column(Integer, primary_key=True, index=True)
+    legacy_instance_id = Column(String(80), unique=True, nullable=False, index=True)
+    display_name = Column(String(180), nullable=False)
+    parent_instance_id = Column(String(80), nullable=True)
+    assigned_businesses_json = Column(Text, nullable=True)
+    assigned_jurisdictions_json = Column(Text, nullable=True)
+    local_knowledge_context_json = Column(Text, nullable=True)
+    permissions_json = Column(Text, nullable=True)
+    integrations_json = Column(Text, nullable=True)
+    engines_json = Column(Text, nullable=True)
+    synchronization_status = Column(String(120), nullable=False, default="PENDING")
+    isolation_state = Column(String(80), nullable=False, default="ISOLATED")
+    failover_state = Column(String(80), nullable=False, default="NOT_TRIGGERED")
+    audit_state = Column(String(120), nullable=False, default="BASELINE_ONLY")
+    status = Column(String(80), nullable=False, default="PARTIAL")
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
