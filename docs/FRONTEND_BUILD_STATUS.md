@@ -45,4 +45,5 @@ WeWeb owner console integration against Valhalla backend.
 1. Sandbox transaction rehearsal: PASS (`services/api/tests/test_integrated_sandbox_rehearsal.py`).
 2. VA/operator full-day sandbox simulation: PASS (`services/api/tests/test_va_operator_full_day_sandbox_simulation.py`).
 3. Priority rerun bundle with D-temp redirection: PASS (approvals/self-check/flow/matching/registry suites).
-4. Continue remaining PARTIAL launch items outside auth/parity: learning, ethics/evidence, autonomy/integrity, operational frontend surfaces.
+4. Autonomy ladder enforcement + restricted-action guard proof: PASS (`services/api/tests/test_autonomy_ladder_enforcement.py`, `tests/test_execution_policy_safety.py`).
+5. Continue remaining PARTIAL launch items outside auth/parity: learning, ethics/evidence, continuous integrity, operational frontend surfaces.

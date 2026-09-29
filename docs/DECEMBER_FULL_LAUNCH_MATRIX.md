@@ -1,6 +1,6 @@
 # DECEMBER FULL LAUNCH MATRIX
 
-Generated: 2026-09-29 (updated after deterministic sandbox rehearsal + full-day simulation)
+Generated: 2026-09-29 (updated after deterministic sandbox rehearsal + full-day simulation + autonomy ladder enforcement)
 
 Status language:
 - PROVEN
@@ -55,6 +55,9 @@ Status language:
 
 ## F. Autonomy/Governance
 - Dependency-order execution and blocker logging: PROVEN
+- L0-L3 autonomy sample-threshold gate behavior: PROVEN (tests)
+- Restricted real-world actions blocked in SANDBOX and kill-switch modes: PROVEN (tests)
+- Guard-level block events emit audit evidence (`autonomy_action_blocked`): PROVEN (tests)
 
 ## G. Human/VA Workflows
 - Approval queue + owner auth rehearsal paths: PROVEN (tests)
@@ -77,7 +80,7 @@ Status language:
   - Failure-path battery pass in same module.
 
 ## Current Top Blocker
-- Highest remaining launch work is non-sandbox PARTIAL modules (Learning, Ethics/Evidence, autonomy/integrity completion, operational frontend surfaces, integration hooks, registry/readiness, fake-live day).
+- Highest remaining launch work is non-sandbox PARTIAL modules (Learning, Ethics/Evidence, continuous integrity completion, operational frontend surfaces, integration hooks, registry/readiness, fake-live day).
 - Local temp exhaustion on C: is mitigated for test execution via D-drive temp redirection in this run.
 
 ## Production Parity Report
@@ -132,6 +135,15 @@ Status language:
     - audit events
     - learning feedback capture
     - integrity monitoring (audit status checks)
+- Autonomy ladder enforcement and restricted-action guard audit proof: PASS
+  - `services/api/tests/test_autonomy_ladder_enforcement.py` -> `4 passed, 0 failed`.
+  - `tests/test_execution_policy_safety.py` -> `5 passed, 0 failed`.
+  - Proven:
+    - L0/L1/L2/L3 policy sample-threshold gate behavior
+    - restricted side-effect actions blocked in SANDBOX
+    - kill-switch blocks restricted side-effect actions even in ACTIVE
+    - read-only action remains allowed in SANDBOX
+    - audit event persisted on restricted-action block (`autonomy_action_blocked`)
 - Priority rerun bundle with D-drive temp redirection: PASS
   - `services/api/tests/test_approvals_owner_auth.py`
   - `services/api/tests/test_system_self_check.py`
@@ -191,5 +203,5 @@ Status language:
 
 ## Immediate Next Dependency-Ordered Actions
 1. Continue highest-priority PARTIAL work: Heimdall Learning module completion.
-2. Continue Ethics/Evidence PARTIAL closures and autonomy ladder enforcement.
+2. Continue Ethics/Evidence PARTIAL closures.
 3. Continue Continuous Integrity, operational WeWeb frontend completion, integration hooks, Engine Registry/readiness, and fake-live operating day.

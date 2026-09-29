@@ -3,9 +3,9 @@
 Generated: 2026-09-29
 
 ## Active Blocker
-- ID: LEARNING_ETHICS_AUTONOMY_REMAINING_PARTIAL
+- ID: LEARNING_ETHICS_INTEGRITY_REMAINING_PARTIAL
 - Class: PARTIAL
-- Description: Sandbox rehearsal is complete; remaining blockers are Learning/Ethics/Autonomy/Integrity completion and broader operational readiness surfaces.
+- Description: Sandbox rehearsal and autonomy ladder enforcement are complete; remaining blockers are Learning/Ethics/Continuous-Integrity completion and broader operational readiness surfaces.
 
 ## External Constraint
 - ID: TEMP_VOLUME_EXHAUSTED
@@ -87,12 +87,13 @@ Write-Output ("VALHALLA_TEST_PASSWORD_SET=" + [bool]$env:VALHALLA_TEST_PASSWORD)
 - Execute and evidence remaining PARTIAL modules after sandbox completion:
   - Heimdall learning completion
   - Ethics/evidence residual work
-  - autonomy ladder enforcement
   - continuous integrity and fake-live readiness
 
 ## Latest Sandbox Evidence
 - `services/api/tests/test_integrated_sandbox_rehearsal.py`: PASS (`2 passed, 0 failed`)
 - `services/api/tests/test_va_operator_full_day_sandbox_simulation.py`: PASS (`1 passed, 0 failed`)
+- `services/api/tests/test_autonomy_ladder_enforcement.py`: PASS (`4 passed, 0 failed`)
+- `tests/test_execution_policy_safety.py`: PASS (`5 passed, 0 failed`)
 - Deterministic no-buyer path validated with isolated buyer fixture:
   - BUYER_MATCH_REQUEST = PASS
   - BUYER_MATCH_COUNT = 0

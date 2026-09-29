@@ -8,7 +8,7 @@ Resolve backend production contract mismatch for WeWeb auth (`/api/weweb/logout`
 ## STATUS
 PARTIAL
 
-Live auth route contract, deployment identity parity, backend production auth chain, and WeWeb preview authenticated parity are authoritative; sandbox workflow completion is now proven. Remaining work is next-layer PARTIAL modules.
+Live auth route contract, deployment identity parity, backend production auth chain, and WeWeb preview authenticated parity are authoritative; sandbox workflow completion and autonomy ladder enforcement are now proven. Remaining work is next-layer PARTIAL modules.
 
 ## EXPECTED VS LIVE PARITY
 - EXPECTED_COMMIT: 9cc0dc4324a4940e3e748e0b31ebc20f8096486e
@@ -59,6 +59,8 @@ Write-Output ("VALHALLA_TEST_PASSWORD_SET=" + [bool]$env:VALHALLA_TEST_PASSWORD)
    - `POST /api/completion/learning/tasks`
    - `GET /api/completion/learning/tasks`
    - `POST /api/completion/learning/tasks/reverify-stale`
+- Added guard-level restricted-action audit evidence emission (`autonomy_action_blocked`) in runtime engine guard.
+- Added explicit autonomy ladder enforcement regression suite for L0-L3 gate checks and restricted-action blocking behaviors.
 
 ## FILES CHANGED (THIS CHECKPOINT)
 - services/api/app/core/build_info.py
@@ -68,6 +70,8 @@ Write-Output ("VALHALLA_TEST_PASSWORD_SET=" + [bool]$env:VALHALLA_TEST_PASSWORD)
 - services/api/app/models/completion_registry.py
 - services/api/app/routers/completion_registry.py
 - services/api/tests/test_completion_registry.py
+- services/api/app/core/engines/guard_runtime.py
+- services/api/tests/test_autonomy_ladder_enforcement.py
 - contracts/weweb_sync_state.json
 - docs/DECEMBER_FULL_LAUNCH_MATRIX.md
 - docs/FRONTEND_BLOCKERS.md
@@ -87,6 +91,7 @@ Write-Output ("VALHALLA_TEST_PASSWORD_SET=" + [bool]$env:VALHALLA_TEST_PASSWORD)
 - `d:/dev/.venv/Scripts/python.exe -m pytest -q services/api/tests/test_integrated_sandbox_rehearsal.py --basetemp D:\dev\.tmp_pytest\basetemp` (with TEMP/TMP/TMPDIR on D:)
 - `d:/dev/.venv/Scripts/python.exe -m pytest -q services/api/tests/test_va_operator_full_day_sandbox_simulation.py --basetemp D:\dev\.tmp_pytest\basetemp` (with TEMP/TMP/TMPDIR on D:)
 - `d:/dev/.venv/Scripts/python.exe -m pytest -q services/api/tests/test_approvals_owner_auth.py services/api/tests/test_system_self_check.py services/api/tests/test_va_operator_sandbox_flow.py services/api/tests/test_flow_governance_gate.py services/api/tests/test_flow_full_pipeline.py services/api/tests/test_underwriting_engine_flow.py services/api/tests/test_matching.py services/api/tests/test_flow_lead_to_deal.py services/api/tests/test_heimdall_decision_card.py services/api/tests/test_approvals_owner_rehearsal.py services/api/tests/test_completion_registry.py --basetemp D:\dev\.tmp_pytest\basetemp` (with TEMP/TMP/TMPDIR on D:)
+- `d:/dev/.venv/Scripts/python.exe -m pytest -q services/api/tests/test_autonomy_ladder_enforcement.py tests/test_execution_policy_safety.py --basetemp D:\dev\.tmp_pytest\basetemp` (with TEMP/TMP/TMPDIR on D:)
 
 ## TEST RESULTS
 - PASS: completion registry suite currently 21/21 passing; prior subsystem suites remain passing from previous checkpoint.
@@ -101,7 +106,7 @@ Write-Output ("VALHALLA_TEST_PASSWORD_SET=" + [bool]$env:VALHALLA_TEST_PASSWORD)
 - PASS: deterministic integrated rehearsal module `services/api/tests/test_integrated_sandbox_rehearsal.py` -> `2 passed, 0 failed`.
 - PASS: full-day sandbox simulation `services/api/tests/test_va_operator_full_day_sandbox_simulation.py` -> `1 passed, 0 failed`.
 - PASS: priority rerun bundle with D-drive temp redirection passed across approvals/self-check/flow/matching/registry suites.
-- TEST_ENVIRONMENT_FAILURE: `services/api/tests/test_execution_policy_safety.py` path not present in current workspace path set.
+- PASS: autonomy ladder and execution safety bundle `services/api/tests/test_autonomy_ladder_enforcement.py` + `tests/test_execution_policy_safety.py` -> `9 passed, 0 failed`.
 
 ## BEHAVIOR PROVEN
 - Local contract includes `/api/weweb/logout` and `/api/weweb/refresh`.
@@ -161,6 +166,12 @@ Write-Output ("VALHALLA_TEST_PASSWORD_SET=" + [bool]$env:VALHALLA_TEST_PASSWORD)
    - NEXT_ACTION_OR_ESCALATION_CREATED = PASS (where supported)
    - NO_UNAUTHORIZED_CONTINUATION = PASS
 - Full-day sandbox simulation proven for queue prioritization, assignment/reassignment/failover, escalation, stale-task detection, underwriting + buyer/disposition workload, audit integrity, and learning feedback capture.
+- Autonomy ladder enforcement proven with explicit regression evidence:
+   - L0/L1/L2/L3 sample-threshold gate behavior validated
+   - restricted real-world actions blocked in SANDBOX
+   - kill-switch blocks restricted real-world actions even when engine is ACTIVE
+   - read-only action allowed in SANDBOX
+   - guard block emits auditable `autonomy_action_blocked` event evidence
 
 ## REMAINING DEFECTS
 - No new application defects surfaced in the covered sandbox rehearsal and priority suite reruns.
@@ -200,5 +211,5 @@ Write-Output ("VALHALLA_TEST_PASSWORD_SET=" + [bool]$env:VALHALLA_TEST_PASSWORD)
 1. Continue PARTIAL workstream execution with implement->test->repair loops:
    - Heimdall Learning module remaining PARTIAL items
    - Ethics/Evidence remaining PARTIAL items
-   - Autonomy ladder enforcement and Continuous Integrity
+   - Continuous Integrity
 2. Continue operational WeWeb surfaces, integration software hooks, Engine Registry/readiness, and fake-live operating day.

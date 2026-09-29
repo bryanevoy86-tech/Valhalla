@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-29T03:45:00.000000+00:00",
+  "generated_at": "2026-09-29T04:35:00.000000+00:00",
   "status": "partial",
   "render_parity": "PASS",
   "production_auth": "PASS",
@@ -26,7 +26,7 @@
     "/api/weweb/refresh",
     "/api/weweb/smoke"
   ],
-  "blocker": "LEARNING_ETHICS_AUTONOMY_REMAINING_PARTIAL",
+  "blocker": "LEARNING_ETHICS_INTEGRITY_REMAINING_PARTIAL",
   "live_probe_error": null,
   "evidence": {
     "source_main_commit": "9cc0dc4324a4940e3e748e0b31ebc20f8096486e",
@@ -149,12 +149,27 @@
         "integrity_monitoring"
       ]
     },
+    "autonomy_ladder_enforcement": {
+      "status": "PASS",
+      "test_modules": [
+        "services/api/tests/test_autonomy_ladder_enforcement.py",
+        "tests/test_execution_policy_safety.py"
+      ],
+      "result": "9 passed, 0 failed",
+      "proven": [
+        "l0_l1_l2_l3_sample_threshold_gates",
+        "sandbox_restricted_action_blocking",
+        "kill_switch_restricted_action_blocking",
+        "read_only_allowed_in_sandbox",
+        "autonomy_action_blocked_audit_evidence"
+      ]
+    },
     "priority_suite_rerun_d_temp": {
       "status": "PASS",
       "command_context": "TEMP/TMP/TMPDIR + --basetemp on D-drive",
       "suite_count": 11,
-      "missing_suite": "services/api/tests/test_execution_policy_safety.py",
-      "missing_suite_classification": "TEST_ENVIRONMENT_FAILURE"
+      "missing_suite": null,
+      "missing_suite_classification": null
     }
   }
 }
