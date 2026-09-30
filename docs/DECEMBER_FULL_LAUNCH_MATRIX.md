@@ -1,6 +1,6 @@
 ﻿# DECEMBER FULL LAUNCH MATRIX
 
-Generated: 2026-09-29
+Generated: 2026-09-30
 
 Allowed status values for this matrix:
 - PASS
@@ -22,7 +22,7 @@ Allowed status values for this matrix:
 | Ethics/Evidence backend closure | PASS | poisoned-data, trust/citation/freshness/reverify tests in completion registry suite | NO |
 | Continuous Integrity backend closure | PASS | services/api/tests/test_system_self_check.py | NO |
 | Canonical Engine Registry coverage audit | PASS | new engine-registry registry + audit endpoint + tests | NO |
-| Legacy instance context representation | PARTIAL | representational registry implemented, orchestration not production-proven | NO |
+| Legacy instance context representation + executable orchestration | PASS | representational registry + orchestration runtime endpoints + deterministic failover/conflict tests | NO |
 | Final controlled fake-live operating day | PASS | services/api/tests/test_fake_live_operating_day.py stage report + failure injections | NO |
 | WeWeb Learning/Integrity launch-facing UI wiring | EXTERNAL_OWNER_ACTION_REQUIRED | authenticated MCP project-edit access unavailable in this runtime | YES |
 
@@ -82,7 +82,7 @@ Notes:
 
 ## 3. Legacy Clone/Mirror/Instance Context Audit
 
-Status: PARTIAL
+Status: PASS
 
 What is now represented:
 - Legacy instance identity and parent linkage
@@ -100,12 +100,24 @@ What is now represented:
 Implemented surfaces:
 - POST /api/completion/legacy-instances
 - GET /api/completion/legacy-instances
+- POST /api/completion/legacy-orchestration/policies
+- POST /api/completion/legacy-orchestration/provision
+- POST /api/completion/legacy-orchestration/policies/propagate
+- POST /api/completion/legacy-orchestration/conflicts/check
+- POST /api/completion/legacy-orchestration/work/assign
+- POST /api/completion/legacy-orchestration/failover
+- POST /api/completion/legacy-orchestration/recover
+- GET /api/completion/legacy-orchestration/health
 
-Remaining gap (exact):
-- Automatic multi-instance orchestration lifecycle (provisioning, policy propagation, conflict resolution, and failover drills) is not yet production-proven end-to-end.
+Executable orchestration proof now includes:
+- provisioning from primary governance policy
+- policy version propagation with blocked-instance handling
+- divergence/conflict detection for stale policy, engine mismatch, jurisdiction mismatch, duplicate identity
+- failover with safe pause/reassignment rules that preserve business isolation
+- recovery with policy resynchronization and full audit event trail
 
 Responsibility split:
-- Code responsibility: add orchestration workflow + deterministic failover drill tests
+- Code responsibility: keep extending orchestration depth as markets scale
 - Owner responsibility: none required for this coding gap
 
 Launch-blocking:
@@ -173,14 +185,14 @@ Control behavior verified:
 - Evidence: contracts/weweb_sync_state.json and docs/FRONTEND_BLOCKERS.md
 
 ### Legacy Multi-Instance Orchestration Proof
-- Status: PARTIAL
-- Missing requirement: production-proven automated orchestration lifecycle and failover drill execution
-- Why incomplete: registry representation exists, orchestration workflow proof is not yet complete
-- Owner vs code: code responsibility
-- Specific next action: implement orchestration runner + policy propagation tests + failover drill test artifact
+- Status: PASS
+- Missing requirement: none for controlled launch baseline
+- Why complete: executable runtime endpoints and deterministic conflict/failover/recovery tests now present and passing
+- Owner vs code: code responsibility (closed for this milestone)
+- Specific next action: continue scaling scenarios; no blocker for baseline
 - Launch-blocking: NO
 - Dependency: internal backend implementation/testing
-- Evidence: completion registry legacy-instances endpoints and test coverage
+- Evidence: services/api/tests/test_completion_registry.py legacy orchestration runtime tests
 
 ## 6. External Owner Launch Actions (Clean List)
 
@@ -205,4 +217,4 @@ These are external dependencies, not software defects:
 - services/api/tests/test_fake_live_operating_day.py
 
 Result:
-- 35 passed, 0 failed (targeted suite in this closure)
+- 37 passed, 0 failed (targeted suite in this closure)

@@ -383,3 +383,70 @@ class LegacyInstanceRegistryItem(Base):
     notes = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+
+class LegacyGovernancePolicy(Base):
+    __tablename__ = "legacy_governance_policies"
+
+    id = Column(Integer, primary_key=True, index=True)
+    policy_id = Column(String(80), unique=True, nullable=False, index=True)
+    policy_scope = Column(String(80), nullable=False, default="GLOBAL")
+    policy_version = Column(String(40), nullable=False)
+    autonomy_policy_json = Column(Text, nullable=False)
+    ethics_evidence_policy_json = Column(Text, nullable=False)
+    kill_shield_policy_json = Column(Text, nullable=False)
+    engine_activation_policy_json = Column(Text, nullable=False)
+    jurisdiction_restrictions_json = Column(Text, nullable=False)
+    approval_requirements_json = Column(Text, nullable=False)
+    audit_requirements_json = Column(Text, nullable=False)
+    active = Column(Boolean, nullable=False, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+
+class LegacyInstancePolicyState(Base):
+    __tablename__ = "legacy_instance_policy_states"
+
+    id = Column(Integer, primary_key=True, index=True)
+    legacy_instance_id = Column(String(80), nullable=False, index=True)
+    policy_id = Column(String(80), nullable=False, index=True)
+    policy_version = Column(String(40), nullable=False)
+    sync_status = Column(String(40), nullable=False, default="SYNCED")
+    divergence_reason = Column(Text, nullable=True)
+    propagated_at = Column(DateTime, nullable=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+
+class LegacyOrchestrationEvent(Base):
+    __tablename__ = "legacy_orchestration_events"
+
+    id = Column(Integer, primary_key=True, index=True)
+    event_id = Column(String(80), unique=True, nullable=False, index=True)
+    legacy_instance_id = Column(String(80), nullable=True, index=True)
+    event_type = Column(String(80), nullable=False, index=True)
+    severity = Column(String(40), nullable=False, default="info")
+    message = Column(Text, nullable=False)
+    payload_json = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class LegacyInstanceWorkItem(Base):
+    __tablename__ = "legacy_instance_work_items"
+
+    id = Column(Integer, primary_key=True, index=True)
+    action_id = Column(String(80), unique=True, nullable=False, index=True)
+    idempotency_key = Column(String(120), unique=True, nullable=False, index=True)
+    legacy_instance_id = Column(String(80), nullable=False, index=True)
+    business_id = Column(String(120), nullable=False, index=True)
+    industry = Column(String(120), nullable=False)
+    jurisdiction = Column(String(80), nullable=False)
+    engine_id = Column(String(80), nullable=False)
+    objective = Column(String(255), nullable=False)
+    status = Column(String(40), nullable=False, default="queued")
+    reassigned_from_instance_id = Column(String(80), nullable=True)
+    risk_profile = Column(String(80), nullable=True)
+    integration_profile = Column(String(120), nullable=True)
+    namespace = Column(String(180), nullable=False)
+    payload_json = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)

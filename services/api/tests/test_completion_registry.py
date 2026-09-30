@@ -10,7 +10,11 @@ from app.core.db import get_db
 from app.models.completion_registry import (
     DatasetRegistryItem,
     EngineRegistryItem,
+    LegacyGovernancePolicy,
+    LegacyInstancePolicyState,
+    LegacyInstanceWorkItem,
     LegacyInstanceRegistryItem,
+    LegacyOrchestrationEvent,
     LearningAuditEvent,
     LearningCurriculumRegistryItem,
     LearningDomainRegistryItem,
@@ -50,6 +54,10 @@ def _build_client() -> TestClient:
     LearningAuditEvent.__table__.create(bind=engine, checkfirst=True)
     EngineRegistryItem.__table__.create(bind=engine, checkfirst=True)
     LegacyInstanceRegistryItem.__table__.create(bind=engine, checkfirst=True)
+    LegacyGovernancePolicy.__table__.create(bind=engine, checkfirst=True)
+    LegacyInstancePolicyState.__table__.create(bind=engine, checkfirst=True)
+    LegacyOrchestrationEvent.__table__.create(bind=engine, checkfirst=True)
+    LegacyInstanceWorkItem.__table__.create(bind=engine, checkfirst=True)
 
     app = FastAPI()
     app.include_router(router)
@@ -1903,3 +1911,221 @@ def test_legacy_instance_registry_supports_multi_business_multi_jurisdiction_and
     summary = client.get("/api/completion/summary")
     assert summary.status_code == 200
     assert summary.json()["legacy_instances"]["total"] >= 2
+
+
+def test_legacy_orchestration_runtime_multi_instance_policy_failover_and_isolation():
+    client = _build_client()
+
+    policy_v1 = client.post(
+        "/api/completion/legacy-orchestration/policies",
+        json={
+            "policy_id": "policy-primary-global",
+            "policy_scope": "GLOBAL",
+            "policy_version": "v1",
+            "autonomy_policy": {"manual_override_requires_owner": True},
+            "ethics_evidence_policy": {"evidence_required": True},
+            "kill_shield_policy": {"enabled": True},
+            "engine_activation_policy": {"require_integrity_green": True},
+            "jurisdiction_restrictions": {"blocked": ["US-NY"]},
+            "approval_requirements": {"deal_commitment": "owner_signoff"},
+            "audit_requirements": {"event_logging": "mandatory"},
+        },
+    )
+    assert policy_v1.status_code == 200, policy_v1.text
+
+    legacy_a = client.post(
+        "/api/completion/legacy-orchestration/provision",
+        json={
+            "legacy_instance_id": "LEGACY_A",
+            "display_name": "Legacy A - Canada REI",
+            "parent_instance_id": "PRIMARY_HEIMDALL",
+            "business_id": "business_a",
+            "industry": "residential_real_estate",
+            "jurisdiction": "CA-MB",
+            "allowed_engines": ["wholesaling", "market_intelligence"],
+            "operating_objectives": ["seller outreach", "cash conversion"],
+            "data_namespace": "legacy_a_ns",
+            "integration_profile": {"crm": "enabled"},
+            "risk_profile": {"tier": "standard"},
+            "permissions": {"operator": ["execute", "escalate"]},
+            "local_knowledge_refs": ["playbook-ca-mb-v1"],
+            "policy_id": "policy-primary-global",
+        },
+    )
+    assert legacy_a.status_code == 200, legacy_a.text
+
+    legacy_b = client.post(
+        "/api/completion/legacy-orchestration/provision",
+        json={
+            "legacy_instance_id": "LEGACY_B",
+            "display_name": "Legacy B - Texas Acquisitions",
+            "parent_instance_id": "PRIMARY_HEIMDALL",
+            "business_id": "business_b",
+            "industry": "operating_businesses",
+            "jurisdiction": "US-TX",
+            "allowed_engines": ["business_acquisitions", "market_intelligence"],
+            "operating_objectives": ["acquisition pipeline"],
+            "data_namespace": "legacy_b_ns",
+            "integration_profile": {"policy_propagation_blocked": True},
+            "risk_profile": {"tier": "heightened"},
+            "permissions": {"operator": ["execute"], "owner": ["approve"]},
+            "local_knowledge_refs": ["playbook-us-tx-v1"],
+            "policy_id": "policy-primary-global",
+        },
+    )
+    assert legacy_b.status_code == 200, legacy_b.text
+
+    policy_v2 = client.post(
+        "/api/completion/legacy-orchestration/policies",
+        json={
+            "policy_id": "policy-primary-global",
+            "policy_scope": "GLOBAL",
+            "policy_version": "v2",
+            "autonomy_policy": {"manual_override_requires_owner": True},
+            "ethics_evidence_policy": {"evidence_required": True},
+            "kill_shield_policy": {"enabled": True},
+            "engine_activation_policy": {"require_integrity_green": True},
+            "jurisdiction_restrictions": {"blocked": ["US-NY"]},
+            "approval_requirements": {"deal_commitment": "owner_signoff"},
+            "audit_requirements": {"event_logging": "mandatory"},
+        },
+    )
+    assert policy_v2.status_code == 200, policy_v2.text
+
+    propagated = client.post(
+        "/api/completion/legacy-orchestration/policies/propagate",
+        json={"policy_id": "policy-primary-global"},
+    )
+    assert propagated.status_code == 200, propagated.text
+    prop_body = propagated.json()
+    assert prop_body["propagated"] == 1
+    assert "LEGACY_B" in prop_body["blocked_instances"]
+
+    conflict = client.post(
+        "/api/completion/legacy-orchestration/conflicts/check",
+        json={
+            "legacy_instance_id": "LEGACY_B",
+            "expected_policy_version": "v2",
+            "expected_engine_states": {"wholesaling": "READY"},
+            "required_jurisdiction_context": "US-TX",
+            "task_idempotency_key": "idem-dup-1",
+        },
+    )
+    assert conflict.status_code == 200, conflict.text
+    conflict_body = conflict.json()
+    assert conflict_body["has_conflict"] is True
+    conflict_types = {c["type"] for c in conflict_body["conflicts"]}
+    assert "STALE_POLICY_VERSION" in conflict_types
+    assert "CONFLICTING_ENGINE_STATE" in conflict_types
+
+    work_a = client.post(
+        "/api/completion/legacy-orchestration/work/assign",
+        json={
+            "action_id": "ACT-1",
+            "idempotency_key": "idem-dup-1",
+            "legacy_instance_id": "LEGACY_A",
+            "business_id": "business_a",
+            "industry": "residential_real_estate",
+            "jurisdiction": "CA-MB",
+            "engine_id": "wholesaling",
+            "objective": "Call seller list",
+            "data_namespace": "legacy_a_ns",
+            "risk_profile": "standard",
+            "integration_profile": "crm",
+            "payload": {"batch": "A1"},
+        },
+    )
+    assert work_a.status_code == 200, work_a.text
+    assert work_a.json()["duplicate"] is False
+
+    duplicate_cross_instance = client.post(
+        "/api/completion/legacy-orchestration/work/assign",
+        json={
+            "action_id": "ACT-2",
+            "idempotency_key": "idem-dup-1",
+            "legacy_instance_id": "LEGACY_B",
+            "business_id": "business_b",
+            "industry": "operating_businesses",
+            "jurisdiction": "US-TX",
+            "engine_id": "business_acquisitions",
+            "objective": "Source broker opportunities",
+            "data_namespace": "legacy_b_ns",
+            "risk_profile": "heightened",
+            "integration_profile": "broker",
+            "payload": {"batch": "B1"},
+        },
+    )
+    assert duplicate_cross_instance.status_code == 409
+    assert "duplicate action identity" in duplicate_cross_instance.json()["detail"]
+
+    work_b = client.post(
+        "/api/completion/legacy-orchestration/work/assign",
+        json={
+            "action_id": "ACT-3",
+            "idempotency_key": "idem-b-2",
+            "legacy_instance_id": "LEGACY_B",
+            "business_id": "business_b",
+            "industry": "operating_businesses",
+            "jurisdiction": "US-TX",
+            "engine_id": "business_acquisitions",
+            "objective": "Prepare acquisition memo",
+            "data_namespace": "legacy_b_ns",
+            "risk_profile": "heightened",
+            "integration_profile": "broker",
+            "payload": {"batch": "B2"},
+        },
+    )
+    assert work_b.status_code == 200, work_b.text
+
+    failover = client.post(
+        "/api/completion/legacy-orchestration/failover",
+        json={"failed_instance_id": "LEGACY_B", "recovery_instance_id": "LEGACY_A"},
+    )
+    assert failover.status_code == 200, failover.text
+    failover_body = failover.json()
+    assert failover_body["reassigned"] == 0
+    assert failover_body["paused"] >= 1
+
+    health_after_failover = client.get("/api/completion/legacy-orchestration/health")
+    assert health_after_failover.status_code == 200
+    health_body = health_after_failover.json()
+    by_instance = {row["legacy_instance_id"]: row for row in health_body["instances"]}
+    assert by_instance["LEGACY_B"]["synchronization_status"] in {"BLOCKED", "DIVERGED"}
+    assert by_instance["LEGACY_B"]["pending_work"] >= 1
+
+    recover = client.post(
+        "/api/completion/legacy-orchestration/recover",
+        json={"legacy_instance_id": "LEGACY_B", "synchronize_policy": True},
+    )
+    assert recover.status_code == 200, recover.text
+    assert recover.json()["status"] == "RECOVERED"
+
+    summary = client.get("/api/completion/summary")
+    assert summary.status_code == 200
+    summary_body = summary.json()
+    assert summary_body["legacy_instances"]["total"] >= 2
+    assert summary_body["legacy_instances"]["orchestration_events"] >= 1
+    assert summary_body["legacy_instances"]["work_items"]["total"] >= 2
+    assert summary_body["legacy_instances"]["policy_sync"]["SYNCED"] >= 1
+
+
+def test_legacy_orchestration_blocks_governance_bypass_payloads():
+    client = _build_client()
+
+    blocked = client.post(
+        "/api/completion/legacy-orchestration/policies",
+        json={
+            "policy_id": "policy-bad",
+            "policy_scope": "GLOBAL",
+            "policy_version": "v1",
+            "autonomy_policy": {"disable_approval": True},
+            "ethics_evidence_policy": {"evidence_required": True},
+            "kill_shield_policy": {"enabled": True},
+            "engine_activation_policy": {"require_integrity_green": True},
+            "jurisdiction_restrictions": {},
+            "approval_requirements": {},
+            "audit_requirements": {},
+        },
+    )
+    assert blocked.status_code == 409
+    assert "cannot bypass core governance" in blocked.json()["detail"]
