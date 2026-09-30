@@ -179,6 +179,11 @@ Control behavior verified:
 - Missing requirement: authenticated MCP project-edit access to mutate the real WeWeb project in this runtime
 - Why incomplete: backend data is ready; UI mutation channel is unavailable
 - Owner vs code: owner access/authentication responsibility
+- Required launch-facing screens once access is restored:
+	- Learning Status, Curriculum/Mastery visibility, Re-verification Queue
+	- Evidence/Ethics status, Autonomy State, Continuous Integrity, System Blockers
+	- Shield/Pause/Kill visibility, Engine Registry/Readiness
+	- Legacy Instance Status, Legacy Health, Legacy Sync State, Legacy Failover State, Legacy Policy Version/Divergence alerts
 - Specific next action: authenticate MCP session, share project-edit scope, then wire screens to live backend endpoints
 - Launch-blocking: YES
 - Dependency: WeWeb MCP authenticated edit authorization

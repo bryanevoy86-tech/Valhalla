@@ -112,13 +112,19 @@
       "reason": "Authenticated MCP project-edit access is required to mutate the real WeWeb project in this runtime session.",
       "target_surfaces": [
         "Learning status",
+        "Curriculum and mastery visibility",
         "Re-verification queue",
         "Evidence/Ethics status",
         "Autonomy state",
-        "Integrity health",
+        "Continuous Integrity",
         "System blockers",
         "Shield/Pause/Kill visibility",
-        "Engine Registry/readiness"
+        "Engine Registry/readiness",
+        "Legacy instance status",
+        "Legacy health",
+        "Legacy sync state",
+        "Legacy failover state",
+        "Legacy policy version and divergence alerts"
       ],
       "recovery_instructions": [
         "Authenticate WeWeb MCP in this runtime session",

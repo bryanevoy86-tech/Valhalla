@@ -128,6 +128,7 @@ Behavior proof:
 
 ### EXTERNAL_OWNER_ACTION_REQUIRED
 - WeWeb MCP authenticated project-edit access for launch-facing Learning/Integrity/Engine Registry screens.
+- Owner-facing external checklist: docs/OWNER_EXTERNAL_LAUNCH_CHECKLIST.md
 
 ### PASS
 - Legacy multi-instance orchestration runtime proof (automation/policy propagation/conflict checks/failover/recovery with deterministic tests).

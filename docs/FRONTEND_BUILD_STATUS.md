@@ -25,6 +25,15 @@ WeWeb owner console integration against the canonical Valhalla backend.
 ## External Constraint (UI Mutation)
 Authenticated MCP project-edit access for the real WeWeb project is not available in this run.
 
+Blocked launch-facing UI scope while access is unavailable:
+- Learning Status and Curriculum/Mastery visibility
+- Re-verification Queue
+- Evidence/Ethics and Autonomy state
+- Continuous Integrity and System Blockers
+- Shield/Pause/Kill visibility
+- Engine Registry/Readiness
+- Legacy Instance/Health/Sync/Failover/Policy Divergence visibility
+
 Required owner action to unblock:
 1. Re-authenticate WeWeb MCP in this runtime session.
 2. Confirm project-edit permission on the Valhalla WeWeb project.

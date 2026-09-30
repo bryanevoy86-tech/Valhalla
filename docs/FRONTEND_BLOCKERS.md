@@ -14,6 +14,22 @@ Generated: 2026-09-30
 - Dependency: WeWeb MCP account/session authorization
 - Evidence: contracts/weweb_sync_state.json
 
+Required launch-facing real-project screens once access is restored:
+- Learning Status
+- Curriculum / Mastery visibility
+- Re-verification Queue
+- Evidence / Ethics status
+- Autonomy State
+- Continuous Integrity
+- System Blockers
+- Shield / Pause / Kill visibility
+- Engine Registry / Readiness
+- Legacy Instance Status
+- Legacy Health
+- Legacy Sync State
+- Legacy Failover State
+- Legacy Policy Version / Divergence alerts
+
 ### LEGACY_ORCHESTRATION_RUNTIME_PROOF
 - Status: PASS
 - Missing requirement: none for controlled launch baseline
