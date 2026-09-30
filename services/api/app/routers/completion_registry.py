@@ -13,7 +13,11 @@ from app.core.db import get_db
 from app.models.completion_registry import (
     DatasetRegistryItem,
     EngineRegistryItem,
+    LegacyGovernancePolicy,
+    LegacyInstancePolicyState,
+    LegacyInstanceWorkItem,
     LegacyInstanceRegistryItem,
+    LegacyOrchestrationEvent,
     LearningAuditEvent,
     LearningCurriculumRegistryItem,
     LearningDomainRegistryItem,
@@ -59,6 +63,10 @@ def _ensure_registry_tables(db: Session) -> None:
     LearningAuditEvent.__table__.create(bind=bind, checkfirst=True)
     EngineRegistryItem.__table__.create(bind=bind, checkfirst=True)
     LegacyInstanceRegistryItem.__table__.create(bind=bind, checkfirst=True)
+    LegacyGovernancePolicy.__table__.create(bind=bind, checkfirst=True)
+    LegacyInstancePolicyState.__table__.create(bind=bind, checkfirst=True)
+    LegacyOrchestrationEvent.__table__.create(bind=bind, checkfirst=True)
+    LegacyInstanceWorkItem.__table__.create(bind=bind, checkfirst=True)
 
 
 def _ensure_terminal_state(state: str) -> str:
@@ -826,6 +834,102 @@ class LegacyInstanceRegistryOut(BaseModel):
     notes: str | None
 
 
+class LegacyGovernancePolicyIn(BaseModel):
+    policy_id: str
+    policy_scope: str = "GLOBAL"
+    policy_version: str
+    autonomy_policy: dict[str, Any]
+    ethics_evidence_policy: dict[str, Any]
+    kill_shield_policy: dict[str, Any]
+    engine_activation_policy: dict[str, Any]
+    jurisdiction_restrictions: dict[str, Any]
+    approval_requirements: dict[str, Any]
+    audit_requirements: dict[str, Any]
+
+
+class LegacyProvisionRequest(BaseModel):
+    legacy_instance_id: str
+    display_name: str
+    parent_instance_id: str = "PRIMARY_HEIMDALL"
+    business_id: str
+    industry: str
+    jurisdiction: str
+    allowed_engines: list[str] = Field(default_factory=list)
+    operating_objectives: list[str] = Field(default_factory=list)
+    data_namespace: str
+    integration_profile: dict[str, Any] = Field(default_factory=dict)
+    risk_profile: dict[str, Any] = Field(default_factory=dict)
+    permissions: dict[str, Any] = Field(default_factory=dict)
+    local_knowledge_refs: list[str] = Field(default_factory=list)
+    policy_id: str
+
+
+class LegacyPolicyPropagationRequest(BaseModel):
+    policy_id: str
+    target_instances: list[str] | None = None
+
+
+class LegacyConflictCheckRequest(BaseModel):
+    legacy_instance_id: str
+    expected_policy_version: str
+    expected_engine_states: dict[str, str] = Field(default_factory=dict)
+    required_jurisdiction_context: str
+    task_idempotency_key: str | None = None
+
+
+class LegacyWorkAssignRequest(BaseModel):
+    action_id: str
+    idempotency_key: str
+    legacy_instance_id: str
+    business_id: str
+    industry: str
+    jurisdiction: str
+    engine_id: str
+    objective: str
+    data_namespace: str
+    risk_profile: str = "standard"
+    integration_profile: str = "default"
+    payload: dict[str, Any] = Field(default_factory=dict)
+
+
+class LegacyFailoverRequest(BaseModel):
+    failed_instance_id: str
+    recovery_instance_id: str | None = None
+
+
+class LegacyRecoveryRequest(BaseModel):
+    legacy_instance_id: str
+    synchronize_policy: bool = True
+
+
+ALLOWED_LEGACY_STATUSES = {"PASS", "PARTIAL", "FAIL", "EXTERNAL_OWNER_ACTION_REQUIRED"}
+
+
+def _contains_governance_bypass(payload: Any) -> bool:
+    if isinstance(payload, dict):
+        for k, v in payload.items():
+            key = str(k).strip().lower()
+            if key in {
+                "bypass_governance",
+                "disable_approval",
+                "disable_audit",
+                "disable_ethics",
+                "disable_kill_shield",
+            } and bool(v):
+                return True
+            if _contains_governance_bypass(v):
+                return True
+        return False
+    if isinstance(payload, list):
+        return any(_contains_governance_bypass(v) for v in payload)
+    return False
+
+
+def _require_no_governance_bypass(*payloads: Any) -> None:
+    if any(_contains_governance_bypass(p) for p in payloads):
+        raise HTTPException(status_code=409, detail="local customization cannot bypass core governance")
+
+
 ALLOWED_TASK_STATUSES = {"queued", "in_progress", "blocked", "completed", "cancelled"}
 ALLOWED_TASK_PRIORITIES = {"low", "normal", "high", "critical"}
 
@@ -1156,6 +1260,10 @@ def audit_engine_registry(db: Session = Depends(get_db)):
 @router.post("/legacy-instances", response_model=LegacyInstanceRegistryOut)
 def upsert_legacy_instance(payload: LegacyInstanceRegistryIn, db: Session = Depends(get_db)):
     _ensure_registry_tables(db)
+    if payload.status not in ALLOWED_LEGACY_STATUSES:
+        raise HTTPException(status_code=422, detail=f"status must be one of {sorted(ALLOWED_LEGACY_STATUSES)}")
+    _require_no_governance_bypass(payload.local_knowledge_context, payload.permissions, payload.integrations)
+
     row = db.query(LegacyInstanceRegistryItem).filter(
         LegacyInstanceRegistryItem.legacy_instance_id == payload.legacy_instance_id
     ).first()
@@ -1191,6 +1299,513 @@ def list_legacy_instances(db: Session = Depends(get_db), status: str | None = No
         q = q.filter(LegacyInstanceRegistryItem.status == status)
     rows = q.order_by(LegacyInstanceRegistryItem.legacy_instance_id.asc()).all()
     return [_legacy_instance_out(row) for row in rows]
+
+
+def _orchestration_event(
+    db: Session,
+    *,
+    legacy_instance_id: str | None,
+    event_type: str,
+    message: str,
+    severity: str = "info",
+    payload: dict[str, Any] | None = None,
+) -> None:
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S%f")
+    event_id = f"LEGACY-EVT-{event_type}-{stamp}"
+    db.add(
+        LegacyOrchestrationEvent(
+            event_id=event_id,
+            legacy_instance_id=legacy_instance_id,
+            event_type=event_type,
+            severity=severity,
+            message=message,
+            payload_json=json.dumps(payload or {}),
+        )
+    )
+
+
+def _get_active_policy_or_404(db: Session, policy_id: str) -> LegacyGovernancePolicy:
+    row = db.query(LegacyGovernancePolicy).filter(
+        LegacyGovernancePolicy.policy_id == policy_id,
+        LegacyGovernancePolicy.active.is_(True),
+    ).first()
+    if row is None:
+        raise HTTPException(status_code=404, detail="active governance policy not found")
+    return row
+
+
+@router.post("/legacy-orchestration/policies")
+def upsert_legacy_governance_policy(payload: LegacyGovernancePolicyIn, db: Session = Depends(get_db)):
+    _ensure_registry_tables(db)
+    _require_no_governance_bypass(
+        payload.autonomy_policy,
+        payload.ethics_evidence_policy,
+        payload.kill_shield_policy,
+        payload.engine_activation_policy,
+        payload.jurisdiction_restrictions,
+        payload.approval_requirements,
+        payload.audit_requirements,
+    )
+
+    row = db.query(LegacyGovernancePolicy).filter(LegacyGovernancePolicy.policy_id == payload.policy_id).first()
+    if row is None:
+        row = LegacyGovernancePolicy(policy_id=payload.policy_id)
+        db.add(row)
+
+    row.policy_scope = payload.policy_scope
+    row.policy_version = payload.policy_version
+    row.autonomy_policy_json = json.dumps(payload.autonomy_policy)
+    row.ethics_evidence_policy_json = json.dumps(payload.ethics_evidence_policy)
+    row.kill_shield_policy_json = json.dumps(payload.kill_shield_policy)
+    row.engine_activation_policy_json = json.dumps(payload.engine_activation_policy)
+    row.jurisdiction_restrictions_json = json.dumps(payload.jurisdiction_restrictions)
+    row.approval_requirements_json = json.dumps(payload.approval_requirements)
+    row.audit_requirements_json = json.dumps(payload.audit_requirements)
+    row.active = True
+
+    _orchestration_event(
+        db,
+        legacy_instance_id=None,
+        event_type="POLICY_UPSERTED",
+        message=f"Primary Heimdall set policy {payload.policy_id} version {payload.policy_version}",
+        payload={"policy_id": payload.policy_id, "policy_version": payload.policy_version},
+    )
+
+    db.commit()
+    return {"policy_id": row.policy_id, "policy_version": row.policy_version, "active": row.active}
+
+
+@router.post("/legacy-orchestration/provision")
+def provision_legacy_instance(payload: LegacyProvisionRequest, db: Session = Depends(get_db)):
+    _ensure_registry_tables(db)
+    _require_no_governance_bypass(payload.permissions, payload.integration_profile, payload.risk_profile)
+    policy = _get_active_policy_or_404(db, payload.policy_id)
+
+    row = db.query(LegacyInstanceRegistryItem).filter(
+        LegacyInstanceRegistryItem.legacy_instance_id == payload.legacy_instance_id
+    ).first()
+    if row is None:
+        row = LegacyInstanceRegistryItem(legacy_instance_id=payload.legacy_instance_id)
+        db.add(row)
+
+    row.display_name = payload.display_name
+    row.parent_instance_id = payload.parent_instance_id
+    row.assigned_businesses_json = json.dumps([payload.business_id])
+    row.assigned_jurisdictions_json = json.dumps([payload.jurisdiction])
+    row.permissions_json = json.dumps(payload.permissions)
+    row.integrations_json = json.dumps(payload.integration_profile)
+    row.engines_json = json.dumps(payload.allowed_engines)
+    row.synchronization_status = "SYNCED"
+    row.isolation_state = "ISOLATED"
+    row.failover_state = "NOT_TRIGGERED"
+    row.audit_state = "PROVISIONED_UNDER_PRIMARY_GOVERNANCE"
+    row.status = "PARTIAL"
+    row.local_knowledge_context_json = json.dumps(
+        {
+            "business_id": payload.business_id,
+            "industry": payload.industry,
+            "jurisdiction": payload.jurisdiction,
+            "data_namespace": payload.data_namespace,
+            "operating_objectives": payload.operating_objectives,
+            "local_knowledge_refs": payload.local_knowledge_refs,
+            "risk_profile": payload.risk_profile,
+            "governance": {
+                "policy_id": policy.policy_id,
+                "policy_version": policy.policy_version,
+            },
+        }
+    )
+
+    policy_state = db.query(LegacyInstancePolicyState).filter(
+        LegacyInstancePolicyState.legacy_instance_id == payload.legacy_instance_id
+    ).first()
+    if policy_state is None:
+        policy_state = LegacyInstancePolicyState(legacy_instance_id=payload.legacy_instance_id, policy_id=policy.policy_id)
+        db.add(policy_state)
+    policy_state.policy_id = policy.policy_id
+    policy_state.policy_version = policy.policy_version
+    policy_state.sync_status = "SYNCED"
+    policy_state.divergence_reason = None
+    policy_state.propagated_at = datetime.utcnow()
+
+    _orchestration_event(
+        db,
+        legacy_instance_id=payload.legacy_instance_id,
+        event_type="INSTANCE_PROVISIONED",
+        message=f"Provisioned {payload.legacy_instance_id} for business {payload.business_id} in {payload.jurisdiction}",
+        payload={
+            "business_id": payload.business_id,
+            "industry": payload.industry,
+            "jurisdiction": payload.jurisdiction,
+            "engines": payload.allowed_engines,
+        },
+    )
+
+    db.commit()
+    return {
+        "legacy_instance_id": payload.legacy_instance_id,
+        "status": "PROVISIONED",
+        "policy_version": policy.policy_version,
+    }
+
+
+@router.post("/legacy-orchestration/policies/propagate")
+def propagate_legacy_policy(payload: LegacyPolicyPropagationRequest, db: Session = Depends(get_db)):
+    _ensure_registry_tables(db)
+    policy = _get_active_policy_or_404(db, payload.policy_id)
+    q = db.query(LegacyInstanceRegistryItem)
+    if payload.target_instances:
+        q = q.filter(LegacyInstanceRegistryItem.legacy_instance_id.in_(payload.target_instances))
+    rows = q.all()
+
+    propagated = 0
+    blocked: list[str] = []
+    for row in rows:
+        integrations = _loads(row.integrations_json, {})
+        if bool(integrations.get("policy_propagation_blocked", False)):
+            row.synchronization_status = "BLOCKED"
+            blocked.append(row.legacy_instance_id)
+            state = db.query(LegacyInstancePolicyState).filter(
+                LegacyInstancePolicyState.legacy_instance_id == row.legacy_instance_id
+            ).first()
+            if state is not None:
+                state.sync_status = "DIVERGED"
+                state.divergence_reason = "propagation blocked by integration profile"
+            _orchestration_event(
+                db,
+                legacy_instance_id=row.legacy_instance_id,
+                event_type="POLICY_PROPAGATION_BLOCKED",
+                severity="warning",
+                message="Policy propagation blocked for legacy instance",
+                payload={"policy_id": policy.policy_id, "policy_version": policy.policy_version},
+            )
+            continue
+
+        state = db.query(LegacyInstancePolicyState).filter(
+            LegacyInstancePolicyState.legacy_instance_id == row.legacy_instance_id
+        ).first()
+        if state is None:
+            state = LegacyInstancePolicyState(legacy_instance_id=row.legacy_instance_id, policy_id=policy.policy_id)
+            db.add(state)
+        state.policy_id = policy.policy_id
+        state.policy_version = policy.policy_version
+        state.sync_status = "SYNCED"
+        state.divergence_reason = None
+        state.propagated_at = datetime.utcnow()
+        row.synchronization_status = "SYNCED"
+        propagated += 1
+
+        local = _loads(row.local_knowledge_context_json, {})
+        local["governance"] = {"policy_id": policy.policy_id, "policy_version": policy.policy_version}
+        row.local_knowledge_context_json = json.dumps(local)
+
+        _orchestration_event(
+            db,
+            legacy_instance_id=row.legacy_instance_id,
+            event_type="POLICY_PROPAGATED",
+            message=f"Policy {policy.policy_version} propagated",
+            payload={"policy_id": policy.policy_id, "policy_version": policy.policy_version},
+        )
+
+    db.commit()
+    return {
+        "policy_id": policy.policy_id,
+        "policy_version": policy.policy_version,
+        "propagated": propagated,
+        "blocked_instances": blocked,
+    }
+
+
+@router.post("/legacy-orchestration/conflicts/check")
+def check_legacy_conflicts(payload: LegacyConflictCheckRequest, db: Session = Depends(get_db)):
+    _ensure_registry_tables(db)
+    row = db.query(LegacyInstanceRegistryItem).filter(
+        LegacyInstanceRegistryItem.legacy_instance_id == payload.legacy_instance_id
+    ).first()
+    if row is None:
+        raise HTTPException(status_code=404, detail="legacy instance not found")
+
+    local = _loads(row.local_knowledge_context_json, {})
+    policy_state = db.query(LegacyInstancePolicyState).filter(
+        LegacyInstancePolicyState.legacy_instance_id == payload.legacy_instance_id
+    ).first()
+    engines = set(_loads(row.engines_json, []))
+    assigned_jurisdictions = set(_loads(row.assigned_jurisdictions_json, []))
+
+    conflicts: list[dict[str, Any]] = []
+    if policy_state is None or policy_state.policy_version != payload.expected_policy_version:
+        conflicts.append(
+            {
+                "type": "STALE_POLICY_VERSION",
+                "actual": None if policy_state is None else policy_state.policy_version,
+                "expected": payload.expected_policy_version,
+                "resolution": "PRIMARY_AUTHORITY_PROPAGATE_OR_APPROVE_EXCEPTION",
+            }
+        )
+
+    if payload.required_jurisdiction_context not in assigned_jurisdictions:
+        conflicts.append(
+            {
+                "type": "OUTDATED_JURISDICTION_CONTEXT",
+                "actual": sorted(assigned_jurisdictions),
+                "expected": payload.required_jurisdiction_context,
+                "resolution": "REVERIFY_AND_ESCALATE",
+            }
+        )
+
+    for engine_id, expected_state in payload.expected_engine_states.items():
+        if engine_id not in engines:
+            conflicts.append(
+                {
+                    "type": "CONFLICTING_ENGINE_STATE",
+                    "engine_id": engine_id,
+                    "actual": "NOT_ASSIGNED",
+                    "expected": expected_state,
+                    "resolution": "PRIMARY_AUTHORITY_REASSIGN_OR_APPROVE",
+                }
+            )
+
+    if payload.task_idempotency_key:
+        dup = db.query(LegacyInstanceWorkItem).filter(
+            LegacyInstanceWorkItem.idempotency_key == payload.task_idempotency_key,
+            LegacyInstanceWorkItem.legacy_instance_id != payload.legacy_instance_id,
+        ).first()
+        if dup is not None:
+            conflicts.append(
+                {
+                    "type": "DUPLICATE_TASK_IDENTITY",
+                    "actual": dup.legacy_instance_id,
+                    "expected": payload.legacy_instance_id,
+                    "resolution": "BLOCK_DUPLICATE_AND_ESCALATE",
+                }
+            )
+
+    if conflicts:
+        row.synchronization_status = "DIVERGED"
+        _orchestration_event(
+            db,
+            legacy_instance_id=payload.legacy_instance_id,
+            event_type="CONFLICT_DETECTED",
+            severity="warning",
+            message="Legacy divergence/conflict detected",
+            payload={"conflicts": conflicts, "namespace": local.get("data_namespace")},
+        )
+        if policy_state is not None:
+            policy_state.sync_status = "DIVERGED"
+            policy_state.divergence_reason = "; ".join(c["type"] for c in conflicts)
+    else:
+        row.synchronization_status = "SYNCED"
+
+    db.commit()
+    return {"legacy_instance_id": payload.legacy_instance_id, "conflicts": conflicts, "has_conflict": len(conflicts) > 0}
+
+
+@router.post("/legacy-orchestration/work/assign")
+def assign_legacy_work(payload: LegacyWorkAssignRequest, db: Session = Depends(get_db)):
+    _ensure_registry_tables(db)
+    row = db.query(LegacyInstanceRegistryItem).filter(
+        LegacyInstanceRegistryItem.legacy_instance_id == payload.legacy_instance_id
+    ).first()
+    if row is None:
+        raise HTTPException(status_code=404, detail="legacy instance not found")
+
+    existing = db.query(LegacyInstanceWorkItem).filter(
+        LegacyInstanceWorkItem.idempotency_key == payload.idempotency_key
+    ).first()
+    if existing is not None:
+        if existing.legacy_instance_id != payload.legacy_instance_id:
+            _orchestration_event(
+                db,
+                legacy_instance_id=payload.legacy_instance_id,
+                event_type="DUPLICATE_WORK_BLOCKED",
+                severity="warning",
+                message="Duplicate action identity blocked across legacy instances",
+                payload={"idempotency_key": payload.idempotency_key, "existing_instance": existing.legacy_instance_id},
+            )
+            db.commit()
+            raise HTTPException(status_code=409, detail="duplicate action identity detected across legacy instances")
+        return {
+            "action_id": existing.action_id,
+            "legacy_instance_id": existing.legacy_instance_id,
+            "status": existing.status,
+            "duplicate": True,
+        }
+
+    local = _loads(row.local_knowledge_context_json, {})
+    if local.get("jurisdiction") != payload.jurisdiction:
+        raise HTTPException(status_code=409, detail="requested jurisdiction does not match legacy context; re-verification required")
+
+    if payload.engine_id not in set(_loads(row.engines_json, [])):
+        raise HTTPException(status_code=409, detail="requested engine is not assigned to this legacy instance")
+
+    item = LegacyInstanceWorkItem(
+        action_id=payload.action_id,
+        idempotency_key=payload.idempotency_key,
+        legacy_instance_id=payload.legacy_instance_id,
+        business_id=payload.business_id,
+        industry=payload.industry,
+        jurisdiction=payload.jurisdiction,
+        engine_id=payload.engine_id,
+        objective=payload.objective,
+        status="queued",
+        risk_profile=payload.risk_profile,
+        integration_profile=payload.integration_profile,
+        namespace=payload.data_namespace,
+        payload_json=json.dumps(payload.payload),
+    )
+    db.add(item)
+    _orchestration_event(
+        db,
+        legacy_instance_id=payload.legacy_instance_id,
+        event_type="WORK_ASSIGNED",
+        message=f"Assigned work {payload.action_id}",
+        payload={"business_id": payload.business_id, "jurisdiction": payload.jurisdiction},
+    )
+    db.commit()
+    return {"action_id": item.action_id, "legacy_instance_id": item.legacy_instance_id, "status": item.status, "duplicate": False}
+
+
+@router.post("/legacy-orchestration/failover")
+def failover_legacy_instance(payload: LegacyFailoverRequest, db: Session = Depends(get_db)):
+    _ensure_registry_tables(db)
+    failed = db.query(LegacyInstanceRegistryItem).filter(
+        LegacyInstanceRegistryItem.legacy_instance_id == payload.failed_instance_id
+    ).first()
+    if failed is None:
+        raise HTTPException(status_code=404, detail="failed instance not found")
+
+    failed.failover_state = "FAILED"
+    failed.synchronization_status = "BLOCKED"
+    failed.status = "PARTIAL"
+
+    reassigned = 0
+    paused = 0
+    if payload.recovery_instance_id:
+        recovery = db.query(LegacyInstanceRegistryItem).filter(
+            LegacyInstanceRegistryItem.legacy_instance_id == payload.recovery_instance_id
+        ).first()
+        if recovery is None:
+            raise HTTPException(status_code=404, detail="recovery instance not found")
+
+        failed_businesses = set(_loads(failed.assigned_businesses_json, []))
+        recovery_businesses = set(_loads(recovery.assigned_businesses_json, []))
+
+        q = db.query(LegacyInstanceWorkItem).filter(
+            LegacyInstanceWorkItem.legacy_instance_id == payload.failed_instance_id,
+            LegacyInstanceWorkItem.status.in_(["queued", "in_progress"]),
+        )
+        for item in q.all():
+            if item.business_id in recovery_businesses and item.business_id in failed_businesses:
+                item.reassigned_from_instance_id = payload.failed_instance_id
+                item.legacy_instance_id = payload.recovery_instance_id
+                item.status = "queued"
+                reassigned += 1
+            else:
+                item.status = "paused"
+                paused += 1
+    else:
+        q = db.query(LegacyInstanceWorkItem).filter(
+            LegacyInstanceWorkItem.legacy_instance_id == payload.failed_instance_id,
+            LegacyInstanceWorkItem.status.in_(["queued", "in_progress"]),
+        )
+        for item in q.all():
+            item.status = "paused"
+            paused += 1
+
+    _orchestration_event(
+        db,
+        legacy_instance_id=payload.failed_instance_id,
+        event_type="FAILOVER_TRIGGERED",
+        severity="warning",
+        message="Legacy instance failover triggered",
+        payload={
+            "failed_instance": payload.failed_instance_id,
+            "recovery_instance": payload.recovery_instance_id,
+            "reassigned": reassigned,
+            "paused": paused,
+        },
+    )
+
+    db.commit()
+    return {
+        "failed_instance_id": payload.failed_instance_id,
+        "recovery_instance_id": payload.recovery_instance_id,
+        "reassigned": reassigned,
+        "paused": paused,
+    }
+
+
+@router.post("/legacy-orchestration/recover")
+def recover_legacy_instance(payload: LegacyRecoveryRequest, db: Session = Depends(get_db)):
+    _ensure_registry_tables(db)
+    row = db.query(LegacyInstanceRegistryItem).filter(
+        LegacyInstanceRegistryItem.legacy_instance_id == payload.legacy_instance_id
+    ).first()
+    if row is None:
+        raise HTTPException(status_code=404, detail="legacy instance not found")
+
+    row.failover_state = "RECOVERED"
+    row.synchronization_status = "SYNCED"
+    if payload.synchronize_policy:
+        policy_state = db.query(LegacyInstancePolicyState).filter(
+            LegacyInstancePolicyState.legacy_instance_id == payload.legacy_instance_id
+        ).first()
+        if policy_state is not None:
+            policy_state.sync_status = "SYNCED"
+            policy_state.divergence_reason = None
+            policy_state.propagated_at = datetime.utcnow()
+
+    _orchestration_event(
+        db,
+        legacy_instance_id=payload.legacy_instance_id,
+        event_type="FAILOVER_RECOVERED",
+        message="Legacy instance recovered and synchronized",
+    )
+    db.commit()
+    return {"legacy_instance_id": payload.legacy_instance_id, "status": "RECOVERED"}
+
+
+@router.get("/legacy-orchestration/health")
+def legacy_orchestration_health(db: Session = Depends(get_db)):
+    _ensure_registry_tables(db)
+    rows = db.query(LegacyInstanceRegistryItem).order_by(LegacyInstanceRegistryItem.legacy_instance_id.asc()).all()
+
+    instances: list[dict[str, Any]] = []
+    blocked = 0
+    for row in rows:
+        policy_state = db.query(LegacyInstancePolicyState).filter(
+            LegacyInstancePolicyState.legacy_instance_id == row.legacy_instance_id
+        ).first()
+        pending_work = db.query(LegacyInstanceWorkItem).filter(
+            LegacyInstanceWorkItem.legacy_instance_id == row.legacy_instance_id,
+            LegacyInstanceWorkItem.status.in_(["queued", "in_progress", "paused"]),
+        ).count()
+
+        sync_status = row.synchronization_status
+        if sync_status in {"BLOCKED", "DIVERGED"}:
+            blocked += 1
+
+        instances.append(
+            {
+                "legacy_instance_id": row.legacy_instance_id,
+                "businesses": _loads(row.assigned_businesses_json, []),
+                "jurisdictions": _loads(row.assigned_jurisdictions_json, []),
+                "engines": _loads(row.engines_json, []),
+                "policy_version": None if policy_state is None else policy_state.policy_version,
+                "policy_sync_status": None if policy_state is None else policy_state.sync_status,
+                "synchronization_status": sync_status,
+                "failover_state": row.failover_state,
+                "isolation_state": row.isolation_state,
+                "pending_work": pending_work,
+            }
+        )
+
+    event_count = db.query(LegacyOrchestrationEvent).count()
+    return {
+        "instances": instances,
+        "blocked_or_diverged_instances": blocked,
+        "events_recorded": event_count,
+    }
 
 
 @router.post("/knowledge-items", response_model=KnowledgeRegistryOut)
@@ -2837,6 +3452,52 @@ def get_registry_summary(db: Session = Depends(get_db)):
                 .filter(LegacyInstanceRegistryItem.status == "EXTERNAL_OWNER_ACTION_REQUIRED")
                 .count(),
             },
+            "synchronization": {
+                "SYNCED": db.query(LegacyInstanceRegistryItem)
+                .filter(LegacyInstanceRegistryItem.synchronization_status == "SYNCED")
+                .count(),
+                "DIVERGED": db.query(LegacyInstanceRegistryItem)
+                .filter(LegacyInstanceRegistryItem.synchronization_status == "DIVERGED")
+                .count(),
+                "BLOCKED": db.query(LegacyInstanceRegistryItem)
+                .filter(LegacyInstanceRegistryItem.synchronization_status == "BLOCKED")
+                .count(),
+                "PENDING": db.query(LegacyInstanceRegistryItem)
+                .filter(LegacyInstanceRegistryItem.synchronization_status == "PENDING")
+                .count(),
+            },
+            "failover": {
+                "NOT_TRIGGERED": db.query(LegacyInstanceRegistryItem)
+                .filter(LegacyInstanceRegistryItem.failover_state == "NOT_TRIGGERED")
+                .count(),
+                "FAILED": db.query(LegacyInstanceRegistryItem)
+                .filter(LegacyInstanceRegistryItem.failover_state == "FAILED")
+                .count(),
+                "RECOVERED": db.query(LegacyInstanceRegistryItem)
+                .filter(LegacyInstanceRegistryItem.failover_state == "RECOVERED")
+                .count(),
+            },
+            "policy_sync": {
+                "SYNCED": db.query(LegacyInstancePolicyState)
+                .filter(LegacyInstancePolicyState.sync_status == "SYNCED")
+                .count(),
+                "DIVERGED": db.query(LegacyInstancePolicyState)
+                .filter(LegacyInstancePolicyState.sync_status == "DIVERGED")
+                .count(),
+                "BLOCKED": db.query(LegacyInstancePolicyState)
+                .filter(LegacyInstancePolicyState.sync_status == "BLOCKED")
+                .count(),
+            },
+            "work_items": {
+                "total": db.query(LegacyInstanceWorkItem).count(),
+                "queued": db.query(LegacyInstanceWorkItem).filter(LegacyInstanceWorkItem.status == "queued").count(),
+                "in_progress": db.query(LegacyInstanceWorkItem)
+                .filter(LegacyInstanceWorkItem.status == "in_progress")
+                .count(),
+                "paused": db.query(LegacyInstanceWorkItem).filter(LegacyInstanceWorkItem.status == "paused").count(),
+                "completed": db.query(LegacyInstanceWorkItem).filter(LegacyInstanceWorkItem.status == "completed").count(),
+            },
+            "orchestration_events": db.query(LegacyOrchestrationEvent).count(),
         },
         "learning_tasks": {
             "queued": db.query(LearningTaskQueueItem).filter(LearningTaskQueueItem.status == "queued").count(),

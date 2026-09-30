@@ -1,6 +1,6 @@
 ﻿# FRONTEND BUILD STATUS
 
-Generated: 2026-09-29
+Generated: 2026-09-30
 
 ## Scope
 WeWeb owner console integration against the canonical Valhalla backend.
@@ -9,6 +9,7 @@ WeWeb owner console integration against the canonical Valhalla backend.
 - Auth contract and runtime behavior: PASS
 - Learning/Integrity backend data surfaces: PASS
 - Engine registry backend surfaces: PASS
+- Legacy orchestration backend runtime proof: PASS
 - WeWeb launch-facing Learning/Integrity/Engine Registry UI mutation: EXTERNAL_OWNER_ACTION_REQUIRED
 
 ## Backend Surfaces Ready for WeWeb Wiring

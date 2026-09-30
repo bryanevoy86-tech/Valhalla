@@ -1,6 +1,6 @@
 ﻿{
-  "generated_at": "2026-09-29T23:30:00.000000+00:00",
-  "status": "partial",
+  "generated_at": "2026-09-30T00:00:00.000000+00:00",
+  "status": "EXTERNAL_OWNER_ACTION_REQUIRED",
   "render_parity": "PASS",
   "production_auth": "PASS",
   "weweb_auth": "PASS",
@@ -46,9 +46,17 @@
       ]
     },
     "legacy_instance_context": {
-      "status": "PARTIAL",
+      "status": "PASS",
       "endpoints": [
-        "/api/completion/legacy-instances"
+        "/api/completion/legacy-instances",
+        "/api/completion/legacy-orchestration/policies",
+        "/api/completion/legacy-orchestration/provision",
+        "/api/completion/legacy-orchestration/policies/propagate",
+        "/api/completion/legacy-orchestration/conflicts/check",
+        "/api/completion/legacy-orchestration/work/assign",
+        "/api/completion/legacy-orchestration/failover",
+        "/api/completion/legacy-orchestration/recover",
+        "/api/completion/legacy-orchestration/health"
       ],
       "represented": [
         "instance_identity",
@@ -63,7 +71,15 @@
         "failover_state",
         "audit_state"
       ],
-      "gap": "Automated multi-instance orchestration runtime proof is not complete"
+      "runtime_proof": [
+        "policy inheritance and version propagation",
+        "divergence and conflict detection",
+        "duplicate action identity blocking",
+        "safe failover pause/reassignment behavior",
+        "recovery and policy resynchronization",
+        "orchestration audit event trail"
+      ],
+      "test_evidence": "services/api/tests/test_completion_registry.py::test_legacy_orchestration_runtime_multi_instance_policy_failover_and_isolation"
     },
     "fake_live_day": {
       "status": "PASS",
