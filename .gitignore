@@ -9,6 +9,13 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.tmp_pytest/
+.coverage
+.coverage.*
+htmlcov/
 .venv/
 venv/
 pip-wheel-metadata/
