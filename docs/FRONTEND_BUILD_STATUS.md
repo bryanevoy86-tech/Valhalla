@@ -1,6 +1,6 @@
 ﻿# FRONTEND BUILD STATUS
 
-Generated: 2026-09-30
+Generated: 2026-10-04
 
 ## Scope
 WeWeb owner console integration against the canonical Valhalla backend.
@@ -10,7 +10,7 @@ WeWeb owner console integration against the canonical Valhalla backend.
 - Learning/Integrity backend data surfaces: PASS
 - Engine registry backend surfaces: PASS
 - Legacy orchestration backend runtime proof: PASS
-- WeWeb launch-facing Learning/Integrity/Engine Registry UI mutation: EXTERNAL_OWNER_ACTION_REQUIRED
+- WeWeb launch-facing Heimdall cockpit UI completion: PARTIAL
 
 ## Backend Surfaces Ready for WeWeb Wiring
 - /api/completion/learning/domains
@@ -22,10 +22,10 @@ WeWeb owner console integration against the canonical Valhalla backend.
 - /api/completion/engine-registry/audit
 - /api/system/self-check
 
-## External Constraint (UI Mutation)
-Authenticated MCP project-edit access for the real WeWeb project is not available in this run.
+## Current Frontend Constraint
+Live project edit access is now available, but launch-facing cockpit wiring remains incomplete.
 
-Blocked launch-facing UI scope while access is unavailable:
+Blocked/partial launch-facing scope:
 - Learning Status and Curriculum/Mastery visibility
 - Re-verification Queue
 - Evidence/Ethics and Autonomy state
@@ -34,11 +34,17 @@ Blocked launch-facing UI scope while access is unavailable:
 - Engine Registry/Readiness
 - Legacy Instance/Health/Sync/Failover/Policy Divergence visibility
 
-Required owner action to unblock:
-1. Re-authenticate WeWeb MCP in this runtime session.
-2. Confirm project-edit permission on the Valhalla WeWeb project.
-3. Re-run UI wiring pass against live backend data.
+## Confirmed Live Editor Findings
+- Real project editor access is active for Valhalla Legacy INC.
+- `No auth system selected` is present while custom auth workflows are implemented.
+- `handleLogin` and `handleLogout` functions call canonical backend auth endpoints.
+- Auth/session state variables are present and fail-closed transitions are implemented.
+
+Required engineering actions to unblock:
+1. Complete Heimdall home/command cockpit with real API-backed cards.
+2. Wire Learning/Evidence/Reverification/Integrity/Autonomy/Engine/Legacy surfaces to live endpoints.
+3. Re-run preview proof chain and classify each required surface with evidence.
 
 ## Current Launch Classification
 - Backend completion and integrity state: PASS
-- Frontend launch-facing operational surfaces: EXTERNAL_OWNER_ACTION_REQUIRED
+- Frontend launch-facing operational surfaces: PARTIAL

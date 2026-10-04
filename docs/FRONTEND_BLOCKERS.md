@@ -1,20 +1,20 @@
 ﻿# FRONTEND BLOCKERS
 
-Generated: 2026-09-30
+Generated: 2026-10-04
 
 ## Active Blockers
 
-### WEWEB_MCP_EDIT_AUTH_REQUIRED
-- Status: EXTERNAL_OWNER_ACTION_REQUIRED
-- Missing requirement: authenticated WeWeb MCP project-edit access for the Valhalla project
-- Why incomplete: backend endpoints are ready, but real project mutation is blocked without live edit authorization
-- Owner vs code responsibility: owner/auth responsibility
-- Specific next action: sign into WeWeb MCP in this runtime and grant project edit scope
+### WEWEB_LAUNCH_SURFACES_INCOMPLETE
+- Status: PARTIAL
+- Missing requirement: complete and verify launch-facing Heimdall cockpit surfaces in the real project
+- Why incomplete: access is now available and custom auth is implemented, but required learning/evidence/integrity/autonomy/engine/legacy owner views are not fully wired and proven
+- Owner vs code responsibility: code/frontend wiring responsibility
+- Specific next action: finish live API bindings and preview proof for each required launch-facing surface
 - Launch-blocking: YES
-- Dependency: WeWeb MCP account/session authorization
+- Dependency: live WeWeb build execution and verification
 - Evidence: contracts/weweb_sync_state.json
 
-Required launch-facing real-project screens once access is restored:
+Required launch-facing real-project screens to complete now:
 - Learning Status
 - Curriculum / Mastery visibility
 - Re-verification Queue
@@ -29,6 +29,11 @@ Required launch-facing real-project screens once access is restored:
 - Legacy Sync State
 - Legacy Failover State
 - Legacy Policy Version / Divergence alerts
+
+Live evidence already confirmed:
+- Real editor/project access is available.
+- Custom auth workflow is present (`handleLogin`/`handleLogout`).
+- Native WeWeb auth is intentionally not selected (`No auth system selected`).
 
 ### LEGACY_ORCHESTRATION_RUNTIME_PROOF
 - Status: PASS
@@ -54,4 +59,3 @@ These are external actions, separate from software defects:
 - Google/business document storage authorization
 - Lead-source credentials
 - Buyer data access/authorization
-- WeWeb MCP authenticated project-edit access

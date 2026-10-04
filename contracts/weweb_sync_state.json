@@ -1,6 +1,6 @@
 ﻿{
-  "generated_at": "2026-09-30T00:00:00.000000+00:00",
-  "status": "EXTERNAL_OWNER_ACTION_REQUIRED",
+  "generated_at": "2026-10-04T00:00:00.000000+00:00",
+  "status": "PARTIAL",
   "render_parity": "PASS",
   "production_auth": "PASS",
   "weweb_auth": "PASS",
@@ -11,7 +11,7 @@
     "logout": true,
     "smoke": true
   },
-  "blocker": "WEWEB_MCP_EDIT_AUTH_REQUIRED",
+  "blocker": "WEWEB_LAUNCH_SURFACES_INCOMPLETE",
   "evidence": {
     "learning_backend_closure": "PASS",
     "ethics_evidence_backend_closure": "PASS",
@@ -107,9 +107,26 @@
       },
       "control_behavior": "DETECTS_LOGS_ESCALATES_FAILS_SAFE_CONTINUES_NON_BLOCKED"
     },
+    "weweb_live_editor_access": {
+      "status": "PASS",
+      "reason": "Authenticated live project editor access is confirmed in session for Valhalla Legacy INC.",
+      "project": "Valhalla Legacy INC",
+      "editor_url": "https://286b2f26-c8e6-4561-ac4b-ca6537e7f8fe-editor.weweb.io/"
+    },
+    "weweb_custom_auth_audit": {
+      "status": "PASS",
+      "reason": "Custom API auth workflows are implemented and use canonical backend endpoints instead of WeWeb native auth.",
+      "proof": [
+        "Functions include handleLogin and handleLogout",
+        "handleLogin calls /api/weweb/login then /api/weweb/me and enforces owner validation",
+        "handleLogout calls /api/weweb/logout and always fail-closes by clearing AUTH_TOKEN/CURRENT_USER/IS_LOGGED_IN",
+        "App trigger includes auth bootstrap guard",
+        "Editor shows 'No auth system selected' while custom auth variables/workflows are present"
+      ]
+    },
     "weweb_learning_integrity_surfaces": {
-      "status": "EXTERNAL_OWNER_ACTION_REQUIRED",
-      "reason": "Authenticated MCP project-edit access is required to mutate the real WeWeb project in this runtime session.",
+      "status": "PARTIAL",
+      "reason": "Editor access is now available, but required Heimdall launch cockpit surfaces are not fully wired and verified yet.",
       "target_surfaces": [
         "Learning status",
         "Curriculum and mastery visibility",
@@ -127,9 +144,9 @@
         "Legacy policy version and divergence alerts"
       ],
       "recovery_instructions": [
-        "Authenticate WeWeb MCP in this runtime session",
-        "Grant project-edit scope to Valhalla WeWeb project",
-        "Re-run UI wiring against live backend endpoints"
+        "Complete and verify launch-facing Heimdall cockpit pages with live backend bindings",
+        "Prove preview scenarios for login/session/refresh/logout/protected-route behavior in this session",
+        "Record evidence and reclassify each surface to PASS/PARTIAL/FAIL"
       ]
     }
   }

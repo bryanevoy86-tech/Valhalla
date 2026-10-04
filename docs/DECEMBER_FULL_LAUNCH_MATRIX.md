@@ -1,6 +1,6 @@
 ﻿# DECEMBER FULL LAUNCH MATRIX
 
-Generated: 2026-09-30
+Generated: 2026-10-04
 
 Allowed status values for this matrix:
 - PASS
@@ -24,7 +24,7 @@ Allowed status values for this matrix:
 | Canonical Engine Registry coverage audit | PASS | new engine-registry registry + audit endpoint + tests | NO |
 | Legacy instance context representation + executable orchestration | PASS | representational registry + orchestration runtime endpoints + deterministic failover/conflict tests | NO |
 | Final controlled fake-live operating day | PASS | services/api/tests/test_fake_live_operating_day.py stage report + failure injections | NO |
-| WeWeb Learning/Integrity launch-facing UI wiring | EXTERNAL_OWNER_ACTION_REQUIRED | authenticated MCP project-edit access unavailable in this runtime | YES |
+| WeWeb Learning/Integrity launch-facing UI wiring | PARTIAL | live editor access confirmed; required cockpit surfaces still incomplete and not fully re-proven in this session | YES |
 
 ## 2. Engine Registry Closure
 
@@ -175,18 +175,18 @@ Control behavior verified:
 ## 5. Non-PASS Requirements (Explicit)
 
 ### WeWeb Learning/Integrity Launch UI
-- Status: EXTERNAL_OWNER_ACTION_REQUIRED
-- Missing requirement: authenticated MCP project-edit access to mutate the real WeWeb project in this runtime
-- Why incomplete: backend data is ready; UI mutation channel is unavailable
-- Owner vs code: owner access/authentication responsibility
-- Required launch-facing screens once access is restored:
+- Status: PARTIAL
+- Missing requirement: complete launch-facing cockpit surfaces and run full preview proof for each
+- Why incomplete: access is available and custom auth is present, but required launch-facing surfaces are not fully wired to live backend data
+- Owner vs code: code/frontend wiring responsibility
+- Required launch-facing screens to complete:
 	- Learning Status, Curriculum/Mastery visibility, Re-verification Queue
 	- Evidence/Ethics status, Autonomy State, Continuous Integrity, System Blockers
 	- Shield/Pause/Kill visibility, Engine Registry/Readiness
 	- Legacy Instance Status, Legacy Health, Legacy Sync State, Legacy Failover State, Legacy Policy Version/Divergence alerts
-- Specific next action: authenticate MCP session, share project-edit scope, then wire screens to live backend endpoints
+- Specific next action: finish live page/workflow bindings and verify login/session/refresh/logout/protected-route behavior in preview evidence
 - Launch-blocking: YES
-- Dependency: WeWeb MCP authenticated edit authorization
+- Dependency: frontend implementation completion and verification
 - Evidence: contracts/weweb_sync_state.json and docs/FRONTEND_BLOCKERS.md
 
 ### Legacy Multi-Instance Orchestration Proof
@@ -214,7 +214,18 @@ These are external dependencies, not software defects:
 - Google/business document storage permissions
 - Lead-source provider credentials
 - Buyer data access/import authorization
-- WeWeb MCP authenticated project-edit access for launch-facing Learning/Integrity screens
+
+## 8. 2026-10-04 WeWeb Live Audit Delta
+
+Confirmed in live project editor:
+- Real WeWeb project edit access is available for Valhalla Legacy INC.
+- `No auth system selected` is present while custom auth workflows are wired.
+- `handleLogin` calls `/api/weweb/login` then `/api/weweb/me` and enforces owner validation.
+- `handleLogout` attempts `/api/weweb/logout` and always fail-closes by clearing session/auth state.
+
+Resulting classification change:
+- Former blocker `WEWEB_MCP_EDIT_AUTH_REQUIRED` is closed.
+- Active blocker is now implementation completeness (`PARTIAL`) for launch-facing Heimdall cockpit surfaces.
 
 ## 7. Test Evidence Run in This Closure
 

@@ -1,6 +1,6 @@
 # OWNER EXTERNAL LAUNCH CHECKLIST
 
-Generated: 2026-09-30
+Generated: 2026-10-04
 
 Purpose:
 - This checklist contains only non-software launch actions owned by external parties (owner/professionals/providers).
@@ -20,8 +20,12 @@ Purpose:
 10. Business document storage permissions (Google/workspace)
 11. Lead-source provider credentials/authorization
 12. Buyer data access/import authorization
-13. WeWeb MCP authenticated project-edit access for launch-facing UI wiring
+
+## Completed External Action
+
+- WeWeb authenticated project-edit access: COMPLETED (2026-10-04)
+- Launch UI is now in implementation/verification phase (code responsibility), not access-blocked.
 
 ## Scope Note
 
-- Until item 13 is complete, launch-facing WeWeb Learning/Integrity/Engine/Legacy screens remain EXTERNAL_OWNER_ACTION_REQUIRED.
+- Remaining launch-facing WeWeb gaps are no longer blocked by access authorization; they are tracked as PARTIAL frontend implementation work.

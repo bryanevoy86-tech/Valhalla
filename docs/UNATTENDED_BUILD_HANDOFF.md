@@ -1,16 +1,28 @@
 ﻿# UNATTENDED BUILD HANDOFF
 
-Generated: 2026-09-30
+Generated: 2026-10-04
 
 ## OBJECTIVE
 Continue from verified PASS baseline without restarting completed subsystems; maintain engine-registry truth mapping, fake-live proof, and executable legacy orchestration closure.
 
 ## STATUS
-PASS
+PARTIAL
 
 Reason:
-- Core launch systems are PASS.
-- Remaining non-pass item is explicit and external: WeWeb UI mutation access (owner authentication and project-edit scope).
+- Core backend launch systems are PASS.
+- Live WeWeb project access is restored.
+- Remaining non-pass item is frontend implementation completeness for launch-facing Heimdall cockpit surfaces.
+
+## 2026-10-04 LIVE ACCESS DELTA
+
+Confirmed in-session:
+- Authenticated access to the real WeWeb project editor is available.
+- Custom auth implementation is present and aligned to canonical backend endpoints (`/api/weweb/login`, `/api/weweb/me`, `/api/weweb/logout`).
+- `No auth system selected` is expected in this architecture and does not imply auth regression.
+
+New classification:
+- Closed blocker: `WEWEB_MCP_EDIT_AUTH_REQUIRED`.
+- Active blocker: `WEWEB_LAUNCH_SURFACES_INCOMPLETE` (PARTIAL).
 
 ## THIS CHECKPOINT (NEW)
 
@@ -126,14 +138,15 @@ Behavior proof:
 
 ## REMAINING NON-PASS ITEMS
 
-### EXTERNAL_OWNER_ACTION_REQUIRED
-- WeWeb MCP authenticated project-edit access for launch-facing Learning/Integrity/Engine Registry screens.
-- Owner-facing external checklist: docs/OWNER_EXTERNAL_LAUNCH_CHECKLIST.md
+### PARTIAL
+- Complete launch-facing Heimdall cockpit pages/workflows with live backend bindings.
+- Re-prove preview chain in-session: login, session restore, refresh guard, logout, post-logout protection.
+- Complete and verify Learning/Evidence/Reverification/Integrity/Autonomy/Engine/Legacy owner surfaces.
 
 ### PASS
 - Legacy multi-instance orchestration runtime proof (automation/policy propagation/conflict checks/failover/recovery with deterministic tests).
 
 ## NEXT RECOMMENDED ACTION
-1. If WeWeb MCP edit access is available: complete real-project launch-facing screens using live backend data.
+1. Complete real-project launch-facing screens using live backend data.
 2. Keep extending orchestration scenarios as hardening work, without reopening closed baseline milestones.
-3. Reclassify any newly discovered gaps to PASS/FAIL/EXTERNAL_OWNER_ACTION_REQUIRED with evidence.
+3. Reclassify each remaining frontend gap to PASS/PARTIAL/FAIL with evidence.
