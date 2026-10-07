@@ -14,6 +14,7 @@ from fastapi.responses import JSONResponse, PlainTextResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.routers.system_boot import router as system_boot_router
+from app.routers.test_email import router as test_email_router
 from app.routers import jarvis
 from app.services.post_boot_init import run_post_boot_init
 
@@ -91,7 +92,7 @@ def _autoload_router_modules(app: FastAPI) -> int:
     package = importlib.import_module(routers_pkg)
     package_path = Path(package.__file__).resolve().parent
 
-    skip_modules = {"system_boot", "__init__"}
+    skip_modules = {"system_boot", "test_email", "__init__"}
     
     # DEBUG: Log all discovered modules
     all_modules = list(pkgutil.iter_modules([str(package_path)]))
@@ -145,6 +146,10 @@ app = FastAPI(
 
 # Register system boot router first (admin endpoints)
 app.include_router(system_boot_router)
+
+# Register required notify/daily-ops email routes explicitly.
+app.include_router(test_email_router)
+app.include_router(test_email_router, prefix="/api")
 
 # Register Heimdall/Jarvis router
 app.include_router(jarvis.router)
