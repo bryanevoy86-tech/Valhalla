@@ -2380,3 +2380,497 @@ def test_shadow_winnipeg_rehearsal_enforces_review_required_bounded_cap(monkeypa
     assert body["inserted"] == 100
     assert body["duplicates"] == 0
     assert body["review_required_cap_blocked"] == 30
+
+
+def test_shadow_winnipeg_signal_enrichment_derives_differentiated_scores(monkeypatch):
+    client = _build_client()
+
+    assessment_rows = []
+    for i in range(1, 31):
+        assessment_rows.append(
+            {
+                "roll_number": f"ROLL-{i:04d}",
+                "full_address": f"{100+i} MAIN ST",
+                "property_use_code": "RESSD",
+                "total_assessed_value": str(200000 + (i * 5000)),
+                "assessed_land_area": str(2500 + (i * 10)),
+                "assessed_value_1": str(150000 + (i * 3500)),
+                "year_built": str(1950 + (i % 50)),
+                "total_living_area": str(800 + (i * 12)),
+                "zoning": "R1",
+                "status_1": "TAXABLE",
+                "neighbourhood_area": "WEST END" if i % 2 == 0 else "ST. BONIFACE",
+            }
+        )
+
+    vacant_rows = [{"address": f"{100+i} MAIN ST", "order_number": f"ORD-{i}", "order_type": "Schedule A Order"} for i in range(1, 16)]
+    dev_permit_rows = [
+        {
+            "street_number": str(100 + i),
+            "street_name": "MAIN",
+            "street_type": "ST",
+            "issue_date": "2026-08-01T00:00:00.000",
+            "work_type": "Demolition" if i % 5 == 0 else "Construct New",
+            "sub_type": "Residential",
+            "permit_number": f"DP-{i}",
+        }
+        for i in range(1, 21)
+    ]
+    snow_rows = [{"address": f"{100+i} MAIN ST", "address_id": str(i)} for i in range(10, 26)]
+
+    def fake_fetch(view_id: str, _limit: int):
+        if view_id == "d4mq-wa44":
+            return {"rows": assessment_rows, "parse_failures": 0, "source_failures": 0}
+        if view_id == "qe3f-4r3j":
+            return {"rows": vacant_rows, "parse_failures": 0, "source_failures": 0}
+        if view_id == "w842-cdeb":
+            return {"rows": dev_permit_rows, "parse_failures": 0, "source_failures": 0}
+        if view_id == "hcmj-ev5x":
+            return {"rows": dev_permit_rows, "parse_failures": 0, "source_failures": 0}
+        if view_id == "g3p4-h83y":
+            return {"rows": snow_rows, "parse_failures": 0, "source_failures": 0}
+        return {"rows": [], "parse_failures": 0, "source_failures": 0}
+
+    monkeypatch.setattr("app.routers.completion_registry._fetch_wpg_dataset_rows", fake_fetch)
+
+    resp = client.post(
+        "/api/completion/shadow/rehearsal/winnipeg/signal-enrichment",
+        json={"batch_id": "BATCH-SIGNAL-001", "sample_size": 20, "mode": "practice"},
+    )
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+
+    assert body["records_enriched"] == 20
+    assert body["join_success"] > 0
+    assert body["buyer_readiness"]["LOW"] == 20
+    assert body["contact_readiness"]["LOW"] == 20
+    assert len(body["top_ten"]) == 10
+
+    unique_scores = {float(r["opportunity_score"]) for r in body["top_ten"] + body["low_sample"]}
+    assert len(unique_scores) > 1
+
+    non_zero_opportunity_buckets = [
+        k
+        for k, v in body["score_distributions"]["opportunity_score"].items()
+        if isinstance(v, int) and v > 0
+    ]
+    assert len(non_zero_opportunity_buckets) >= 1
+
+
+def test_shadow_winnipeg_signal_enrichment_keeps_review_required_bounded(monkeypatch):
+    client = _build_client()
+
+    assessment_rows = [
+        {
+            "roll_number": f"ROLL-{i:04d}",
+            "full_address": f"{200+i} ELM ST",
+            "property_use_code": "RESSD",
+            "total_assessed_value": "300000",
+            "assessed_land_area": "3000",
+            "assessed_value_1": "200000",
+            "year_built": "1980",
+            "total_living_area": "1200",
+            "zoning": "R1",
+            "status_1": "TAXABLE",
+            "neighbourhood_area": "NORTH END",
+        }
+        for i in range(1, 25)
+    ]
+
+    monkeypatch.setattr(
+        "app.routers.completion_registry._fetch_wpg_dataset_rows",
+        lambda _view_id, _limit: {"rows": assessment_rows, "parse_failures": 0, "source_failures": 0},
+    )
+
+    resp = client.post(
+        "/api/completion/shadow/rehearsal/winnipeg/signal-enrichment",
+        json={"batch_id": "BATCH-SIGNAL-002", "sample_size": 20, "mode": "practice"},
+    )
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    for source_id, status in body["source_rights_status"].items():
+        assert status["governance_status"] == "review_required", source_id
+        assert status["effective_usage_status"] == "BOUNDED_RESEARCH_ONLY", source_id
+
+
+def test_shadow_winnipeg_property_identity_emits_join_methods_and_provenance(monkeypatch):
+    client = _build_client()
+
+    assessment_rows = []
+    for i in range(20):
+        address = ["101 Main St", "202 Oak Road", "303 Pine Avenue"][i % 3]
+        assessment_rows.append(
+            {
+                "roll_number": f"ROLL-100{i:02d}",
+                "full_address": address,
+                "property_use_code": "RESSD",
+                "total_assessed_value": str(350000 + (i * 5000)),
+                "assessed_land_area": str(3000 + (i * 10)),
+                "assessed_value_1": str(250000 + (i * 4500)),
+                "year_built": "1990",
+                "total_living_area": str(1100 + (i * 5)),
+                "zoning": "R1",
+                "status_1": "TAXABLE",
+                "neighbourhood_area": "CENTRAL" if i % 2 == 0 else "WEST",
+            }
+        )
+
+    vacant_rows = [{"address": "101 MAIN STREET", "order_number": "ORD-1", "order_type": "Schedule A"}]
+    dev_permit_rows = [
+        {
+            "street_number": "202",
+            "street_name": "OAK",
+            "street_type": "RD",
+            "permit_number": "DP-1",
+            "issue_date": "2026-09-01T00:00:00.000",
+            "work_type": "Construct New",
+            "sub_type": "Residential",
+        }
+    ]
+    snow_rows = [{"address": "303 PINE AVE", "address_id": "SN-1"}]
+
+    def fake_fetch(view_id: str, _limit: int):
+        if view_id == "d4mq-wa44":
+            return {"rows": assessment_rows, "parse_failures": 0, "source_failures": 0}
+        if view_id == "qe3f-4r3j":
+            return {"rows": vacant_rows, "parse_failures": 0, "source_failures": 0}
+        if view_id == "w842-cdeb":
+            return {"rows": dev_permit_rows, "parse_failures": 0, "source_failures": 0}
+        if view_id == "hcmj-ev5x":
+            return {"rows": [], "parse_failures": 0, "source_failures": 0}
+        if view_id == "g3p4-h83y":
+            return {"rows": snow_rows, "parse_failures": 0, "source_failures": 0}
+        return {"rows": [], "parse_failures": 0, "source_failures": 0}
+
+    monkeypatch.setattr("app.routers.completion_registry._fetch_wpg_dataset_rows", fake_fetch)
+
+    resp = client.post(
+        "/api/completion/shadow/rehearsal/winnipeg/signal-enrichment",
+        json={"batch_id": "BATCH-IDENTITY-001", "sample_size": 20, "mode": "practice"},
+    )
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+
+    assert body["records_enriched"] == 20
+    assert body["join_method_counts"]["EXACT_NORMALIZED_ADDRESS"] >= 1
+    assert body["field_provenance_checks"]["field_provenance_pass"] is True
+    assert body["field_provenance_checks"]["provenance_records_total"] > 0
+    assert len(body["source_key_compatibility_matrix"]) >= 5
+    assert len(body["join_key_hierarchy"]) >= 5
+    assert len(body["normalization_rules"]) >= 5
+
+    top = body["top_ten"][0]
+    assert "property_identity" in top
+    assert top["property_identity"]["property_identity_id"]
+    assert "field_provenance" in top
+    assert len(top["field_provenance"]) > 0
+
+
+def test_shadow_winnipeg_property_identity_blocks_unit_collision(monkeypatch):
+    client = _build_client()
+
+    assessment_rows = [
+        {
+            "roll_number": f"ROLL-200{i:02d}",
+            "full_address": f"{450 + i} MAIN ST UNIT 2",
+            "property_use_code": "RESSD",
+            "total_assessed_value": "300000",
+            "assessed_land_area": "2500",
+            "assessed_value_1": "200000",
+            "year_built": "1995",
+            "total_living_area": "1000",
+            "zoning": "R1",
+            "status_1": "TAXABLE",
+            "neighbourhood_area": "DOWNTOWN",
+        }
+        for i in range(20)
+    ]
+    vacant_rows = [
+        {"address": f"{450 + i} MAIN ST", "order_number": f"ORD-U2-{i}", "order_type": "Schedule A"}
+        for i in range(20)
+    ]
+
+    def fake_fetch(view_id: str, _limit: int):
+        if view_id == "d4mq-wa44":
+            return {"rows": assessment_rows, "parse_failures": 0, "source_failures": 0}
+        if view_id == "qe3f-4r3j":
+            return {"rows": vacant_rows, "parse_failures": 0, "source_failures": 0}
+        return {"rows": [], "parse_failures": 0, "source_failures": 0}
+
+    monkeypatch.setattr("app.routers.completion_registry._fetch_wpg_dataset_rows", fake_fetch)
+
+    resp = client.post(
+        "/api/completion/shadow/rehearsal/winnipeg/signal-enrichment",
+        json={"batch_id": "BATCH-IDENTITY-UNIT-001", "sample_size": 20, "mode": "practice"},
+    )
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+
+    rec = body["top_ten"][0]
+    assert rec["join_method"] in {"UNCERTAIN", "CONFLICT", "NO_MATCH"}
+    assert "PROPERTY_JOIN_UNCERTAIN" in rec["insufficiency_statuses"]
+    assert body["negative_collision_tests"]["unit_vs_whole_building_prevented"] is True
+
+
+def test_shadow_winnipeg_property_identity_certification_fails_on_zero_join_success(monkeypatch):
+    client = _build_client()
+
+    assessment_rows = [
+        {
+            "roll_number": f"ROLL-ZERO-{i}",
+            "full_address": f"{900+i} ISOLATED CRT",
+            "property_use_code": "RESSD",
+            "total_assessed_value": "280000",
+            "assessed_land_area": "2100",
+            "assessed_value_1": "160000",
+            "year_built": "1975",
+            "total_living_area": "900",
+            "zoning": "R1",
+            "status_1": "TAXABLE",
+            "neighbourhood_area": "REMOTE",
+        }
+        for i in range(1, 21)
+    ]
+
+    def fake_fetch(view_id: str, _limit: int):
+        if view_id == "d4mq-wa44":
+            return {"rows": assessment_rows, "parse_failures": 0, "source_failures": 0}
+        return {"rows": [], "parse_failures": 0, "source_failures": 0}
+
+    monkeypatch.setattr("app.routers.completion_registry._fetch_wpg_dataset_rows", fake_fetch)
+
+    resp = client.post(
+        "/api/completion/shadow/rehearsal/winnipeg/signal-enrichment",
+        json={"batch_id": "BATCH-IDENTITY-FAIL-001", "sample_size": 20, "mode": "practice"},
+    )
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+
+    assert body["join_success"] == 0
+    assert body["certification"]["pipeline_execution_pass"] is True
+    assert body["certification"]["decision_quality_pass"] is False
+    assert any("join_success_zero" in reason for reason in body["certification"]["decision_quality_reasons"])
+
+
+def test_property_centric_no_record_found_is_not_identity_failure(monkeypatch):
+    client = _build_client()
+
+    assessment_rows = [
+        {
+            "roll_number": f"ROLL-PC-{i:03d}",
+            "full_address": f"{500+i} QUIET ST",
+            "property_use_code": "RESSD",
+            "total_assessed_value": "300000",
+            "assessed_land_area": "2500",
+            "assessed_value_1": "180000",
+            "year_built": "1980",
+            "total_living_area": "1000",
+            "zoning": "R1",
+            "status_1": "TAXABLE",
+            "neighbourhood_area": "SOUTH",
+        }
+        for i in range(20)
+    ]
+
+    def fake_fetch(view_id: str, _limit: int):
+        if view_id == "d4mq-wa44":
+            return {"rows": assessment_rows, "parse_failures": 0, "source_failures": 0}
+        return {"rows": [], "parse_failures": 0, "source_failures": 0}
+
+    monkeypatch.setattr("app.routers.completion_registry._fetch_wpg_dataset_rows", fake_fetch)
+
+    resp = client.post(
+        "/api/completion/shadow/rehearsal/winnipeg/signal-enrichment",
+        json={"batch_id": "BATCH-PC-NORECORD-001", "sample_size": 20, "mode": "practice"},
+    )
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+
+    assert body["source_query_metrics"]["total_properties"] == 20
+    for source_id, metrics in body["source_query_metrics"]["sources"].items():
+        assert metrics["record_found"] == 0, source_id
+        assert metrics["no_record_found"] == metrics["queries_successful"], source_id
+
+    assert body["certification"]["property_identity_certification"]["pass"] is True
+
+
+def test_property_centric_source_unavailable_is_not_no_record_found(monkeypatch):
+    client = _build_client()
+
+    assessment_rows = [
+        {
+            "roll_number": f"ROLL-ERR-{i:03d}",
+            "full_address": f"{700+i} ERROR AVE",
+            "property_use_code": "RESSD",
+            "total_assessed_value": "280000",
+            "assessed_land_area": "2400",
+            "assessed_value_1": "170000",
+            "year_built": "1978",
+            "total_living_area": "950",
+            "zoning": "R1",
+            "status_1": "TAXABLE",
+            "neighbourhood_area": "WEST",
+        }
+        for i in range(20)
+    ]
+
+    def fake_fetch(view_id: str, _limit: int):
+        if view_id == "d4mq-wa44":
+            return {"rows": assessment_rows, "parse_failures": 0, "source_failures": 0}
+        if view_id == "w842-cdeb":
+            return {"rows": [], "parse_failures": 0, "source_failures": 1}
+        return {"rows": [], "parse_failures": 0, "source_failures": 0}
+
+    monkeypatch.setattr("app.routers.completion_registry._fetch_wpg_dataset_rows", fake_fetch)
+
+    resp = client.post(
+        "/api/completion/shadow/rehearsal/winnipeg/signal-enrichment",
+        json={"batch_id": "BATCH-PC-SOURCEERR-001", "sample_size": 20, "mode": "practice"},
+    )
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+
+    metrics = body["source_query_metrics"]["sources"]["SRC-WPG-DEVELOPMENT-PERMITS"]
+    assert metrics["source_unavailable"] > 0
+    assert metrics["no_record_found"] == 0
+
+
+def test_property_centric_source_adapter_normalization_and_multi_source_query(monkeypatch):
+    client = _build_client()
+
+    assessment_rows = [
+        {
+            "roll_number": f"ROLL-ADP-{i:03d}",
+            "full_address": f"{800+i} MAIN STREET",
+            "property_use_code": "RESSD",
+            "total_assessed_value": "310000",
+            "assessed_land_area": "2600",
+            "assessed_value_1": "190000",
+            "year_built": "1988",
+            "total_living_area": "980",
+            "zoning": "R1",
+            "status_1": "TAXABLE",
+            "neighbourhood_area": "CENTRAL",
+        }
+        for i in range(20)
+    ]
+    vacant_rows = [{"address": f"{800+i} MAIN ST", "order_number": f"ORD-{i}", "order_type": "Schedule A"} for i in range(20)]
+    dev_rows = [
+        {
+            "street_number": str(800 + i),
+            "street_name": "MAIN",
+            "street_type": "ST",
+            "permit_number": f"DP-{i}",
+            "issue_date": "2026-09-01T00:00:00.000",
+            "work_type": "Construct New",
+            "sub_type": "Residential",
+        }
+        for i in range(20)
+    ]
+
+    def fake_fetch(view_id: str, _limit: int):
+        if view_id == "d4mq-wa44":
+            return {"rows": assessment_rows, "parse_failures": 0, "source_failures": 0}
+        if view_id == "qe3f-4r3j":
+            return {"rows": vacant_rows, "parse_failures": 0, "source_failures": 0}
+        if view_id in {"w842-cdeb", "hcmj-ev5x"}:
+            return {"rows": dev_rows, "parse_failures": 0, "source_failures": 0}
+        return {"rows": [], "parse_failures": 0, "source_failures": 0}
+
+    monkeypatch.setattr("app.routers.completion_registry._fetch_wpg_dataset_rows", fake_fetch)
+
+    resp = client.post(
+        "/api/completion/shadow/rehearsal/winnipeg/signal-enrichment",
+        json={"batch_id": "BATCH-PC-ADAPTER-001", "sample_size": 20, "mode": "practice"},
+    )
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+
+    assert body["source_query_metrics"]["total_sources"] == 4
+    assert body["join_method_counts"]["EXACT_NORMALIZED_ADDRESS"] >= 1
+    top = body["top_ten"][0]
+    assert len(top["source_evidence"]) == 4
+    assert body["certification"]["source_query_certification"]["pass"] is True
+
+
+def test_property_centric_negative_evidence_provenance_present(monkeypatch):
+    client = _build_client()
+
+    assessment_rows = [
+        {
+            "roll_number": f"ROLL-NEG-{i:03d}",
+            "full_address": f"{900+i} NEGATIVE RD",
+            "property_use_code": "RESSD",
+            "total_assessed_value": "305000",
+            "assessed_land_area": "2550",
+            "assessed_value_1": "185000",
+            "year_built": "1984",
+            "total_living_area": "1020",
+            "zoning": "R1",
+            "status_1": "TAXABLE",
+            "neighbourhood_area": "NORTH",
+        }
+        for i in range(20)
+    ]
+
+    def fake_fetch(view_id: str, _limit: int):
+        if view_id == "d4mq-wa44":
+            return {"rows": assessment_rows, "parse_failures": 0, "source_failures": 0}
+        return {"rows": [], "parse_failures": 0, "source_failures": 0}
+
+    monkeypatch.setattr("app.routers.completion_registry._fetch_wpg_dataset_rows", fake_fetch)
+
+    resp = client.post(
+        "/api/completion/shadow/rehearsal/winnipeg/signal-enrichment",
+        json={"batch_id": "BATCH-PC-NEGPROV-001", "sample_size": 20, "mode": "practice"},
+    )
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+
+    first = body["top_ten"][0]
+    negative_entries = [p for p in first["field_provenance"] if p.get("field_name") == "negative_evidence"]
+    assert len(negative_entries) >= 1
+    assert body["field_provenance_checks"]["field_provenance_pass"] is True
+
+
+def test_sparse_event_coverage_does_not_fail_identity_certification(monkeypatch):
+    client = _build_client()
+
+    assessment_rows = [
+        {
+            "roll_number": f"ROLL-SPARSE-{i:03d}",
+            "full_address": f"{1000+i} SPARSE BLVD",
+            "property_use_code": "RESSD",
+            "total_assessed_value": "315000",
+            "assessed_land_area": "2650",
+            "assessed_value_1": "195000",
+            "year_built": "1992",
+            "total_living_area": "1050",
+            "zoning": "R1",
+            "status_1": "TAXABLE",
+            "neighbourhood_area": "EAST",
+        }
+        for i in range(20)
+    ]
+    vacant_rows = [{"address": "1000 SPARSE BLVD", "order_number": "ORD-SPARSE", "order_type": "Schedule A"}]
+
+    def fake_fetch(view_id: str, _limit: int):
+        if view_id == "d4mq-wa44":
+            return {"rows": assessment_rows, "parse_failures": 0, "source_failures": 0}
+        if view_id == "qe3f-4r3j":
+            return {"rows": vacant_rows, "parse_failures": 0, "source_failures": 0}
+        return {"rows": [], "parse_failures": 0, "source_failures": 0}
+
+    monkeypatch.setattr("app.routers.completion_registry._fetch_wpg_dataset_rows", fake_fetch)
+
+    resp = client.post(
+        "/api/completion/shadow/rehearsal/winnipeg/signal-enrichment",
+        json={"batch_id": "BATCH-PC-SPARSE-001", "sample_size": 20, "mode": "practice"},
+    )
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+
+    assert body["certification"]["property_identity_certification"]["pass"] is True
+    assert body["certification"]["source_query_certification"]["pass"] is True
+    coverage = body["evidence_coverage_status"]["source_coverage"]["SRC-WPG-VACANT-ORDERS"]
+    assert coverage["record_coverage_rate"] < 0.2

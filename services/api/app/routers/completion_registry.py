@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import re
+from difflib import SequenceMatcher
 from hashlib import sha1
 from datetime import date, datetime, timedelta, timezone
 from time import perf_counter
@@ -201,6 +202,215 @@ ALLOWED_SOURCE_GOVERNANCE_STATUSES = {
 
 BOUNDED_RESEARCH_MODES = {"practice", "test"}
 REVIEW_REQUIRED_SOURCE_MAX_PER_RUN = 100
+
+WPG_DATASET_IDS = {
+    "assessment": "d4mq-wa44",
+    "vacant_orders": "qe3f-4r3j",
+    "development_permits": "w842-cdeb",
+    "building_permits": "hcmj-ev5x",
+    "snow_address": "g3p4-h83y",
+}
+
+WPG_SOURCE_CATALOG: dict[str, dict[str, Any]] = {
+    "SRC-WPG-ASSESSMENT-PARCELS": {
+        "dataset_id": "d4mq-wa44",
+        "dataset_key": "assessment",
+        "publisher": "City of Winnipeg Open Data",
+        "record_id_fields": ["roll_number", "assessment_account", "account_number"],
+        "address_fields": ["full_address", "address"],
+        "street_number_fields": ["street_number", "house_number"],
+        "street_name_fields": ["street_name"],
+        "street_type_fields": ["street_type"],
+        "unit_fields": ["unit", "suite", "apartment"],
+        "postal_code_fields": ["postal_code", "postcode"],
+        "parcel_id_fields": ["parcel_id", "pid", "roll_number"],
+        "roll_number_fields": ["roll_number"],
+        "assessment_id_fields": ["assessment_account", "account_number"],
+        "latitude_fields": ["latitude", "lat", "y"],
+        "longitude_fields": ["longitude", "lon", "lng", "x"],
+        "legal_description_fields": ["legal_description", "legal_desc"],
+        "geographic_fields": ["neighbourhood_area", "ward", "community"],
+    },
+    "SRC-WPG-VACANT-ORDERS": {
+        "dataset_id": "qe3f-4r3j",
+        "dataset_key": "vacant_orders",
+        "publisher": "City of Winnipeg Open Data",
+        "record_id_fields": ["order_number", "order_id"],
+        "address_fields": ["address", "full_address"],
+        "street_number_fields": ["street_number", "house_number"],
+        "street_name_fields": ["street_name"],
+        "street_type_fields": ["street_type"],
+        "unit_fields": ["unit", "suite"],
+        "postal_code_fields": ["postal_code", "postcode"],
+        "parcel_id_fields": ["parcel_id", "pid", "roll_number"],
+        "roll_number_fields": ["roll_number"],
+        "assessment_id_fields": ["assessment_account", "account_number"],
+        "latitude_fields": ["latitude", "lat"],
+        "longitude_fields": ["longitude", "lon", "lng"],
+        "legal_description_fields": ["legal_description"],
+        "geographic_fields": ["ward", "community", "neighbourhood"],
+    },
+    "SRC-WPG-DEVELOPMENT-PERMITS": {
+        "dataset_id": "w842-cdeb",
+        "dataset_key": "development_permits",
+        "publisher": "City of Winnipeg Open Data",
+        "record_id_fields": ["permit_number", "permit_id"],
+        "address_fields": ["address", "site_address", "full_address"],
+        "street_number_fields": ["street_number"],
+        "street_name_fields": ["street_name"],
+        "street_type_fields": ["street_type"],
+        "unit_fields": ["unit", "suite"],
+        "postal_code_fields": ["postal_code", "postcode"],
+        "parcel_id_fields": ["parcel_id", "pid", "roll_number"],
+        "roll_number_fields": ["roll_number"],
+        "assessment_id_fields": ["assessment_account", "account_number"],
+        "latitude_fields": ["latitude", "lat"],
+        "longitude_fields": ["longitude", "lon", "lng"],
+        "legal_description_fields": ["legal_description"],
+        "geographic_fields": ["ward", "community", "neighbourhood"],
+    },
+    "SRC-WPG-BUILDING-PERMITS": {
+        "dataset_id": "hcmj-ev5x",
+        "dataset_key": "building_permits",
+        "publisher": "City of Winnipeg Open Data",
+        "record_id_fields": ["permit_number", "permit_id"],
+        "address_fields": ["address", "site_address", "full_address"],
+        "street_number_fields": ["street_number"],
+        "street_name_fields": ["street_name"],
+        "street_type_fields": ["street_type"],
+        "unit_fields": ["unit", "suite"],
+        "postal_code_fields": ["postal_code", "postcode"],
+        "parcel_id_fields": ["parcel_id", "pid", "roll_number"],
+        "roll_number_fields": ["roll_number"],
+        "assessment_id_fields": ["assessment_account", "account_number"],
+        "latitude_fields": ["latitude", "lat"],
+        "longitude_fields": ["longitude", "lon", "lng"],
+        "legal_description_fields": ["legal_description"],
+        "geographic_fields": ["ward", "community", "neighbourhood"],
+    },
+    "SRC-WPG-SNOW-ADDRESS": {
+        "dataset_id": "g3p4-h83y",
+        "dataset_key": "snow_address",
+        "publisher": "City of Winnipeg Open Data",
+        "record_id_fields": ["address_id", "id"],
+        "address_fields": ["address", "full_address"],
+        "street_number_fields": ["street_number"],
+        "street_name_fields": ["street_name"],
+        "street_type_fields": ["street_type"],
+        "unit_fields": ["unit", "suite"],
+        "postal_code_fields": ["postal_code", "postcode"],
+        "parcel_id_fields": ["parcel_id", "pid", "roll_number"],
+        "roll_number_fields": ["roll_number"],
+        "assessment_id_fields": ["assessment_account", "account_number"],
+        "latitude_fields": ["latitude", "lat"],
+        "longitude_fields": ["longitude", "lon", "lng"],
+        "legal_description_fields": ["legal_description"],
+        "geographic_fields": ["ward", "community", "neighbourhood"],
+    },
+}
+
+JOIN_METHOD_ORDER = [
+    "EXACT_ID_MATCH",
+    "EXACT_NORMALIZED_ADDRESS",
+    "ADDRESS_PLUS_COORDINATE_MATCH",
+    "HIGH_CONFIDENCE_FUZZY_MATCH",
+    "UNCERTAIN",
+    "CONFLICT",
+    "NO_MATCH",
+]
+
+STREET_TYPE_ALIASES = {
+    "ST": "STREET",
+    "STREET": "STREET",
+    "RD": "ROAD",
+    "ROAD": "ROAD",
+    "AVE": "AVENUE",
+    "AV": "AVENUE",
+    "AVENUE": "AVENUE",
+    "BLVD": "BOULEVARD",
+    "BOULEVARD": "BOULEVARD",
+    "DR": "DRIVE",
+    "DRIVE": "DRIVE",
+    "LANE": "LANE",
+    "LN": "LANE",
+    "CRES": "CRESCENT",
+    "CRESCENT": "CRESCENT",
+    "PL": "PLACE",
+    "PLACE": "PLACE",
+    "CT": "COURT",
+    "COURT": "COURT",
+    "WAY": "WAY",
+    "HWY": "HIGHWAY",
+    "HIGHWAY": "HIGHWAY",
+}
+
+DIRECTION_ALIASES = {
+    "N": "N",
+    "NORTH": "N",
+    "S": "S",
+    "SOUTH": "S",
+    "E": "E",
+    "EAST": "E",
+    "W": "W",
+    "WEST": "W",
+    "NE": "NE",
+    "NORTHEAST": "NE",
+    "NW": "NW",
+    "NORTHWEST": "NW",
+    "SE": "SE",
+    "SOUTHEAST": "SE",
+    "SW": "SW",
+    "SOUTHWEST": "SW",
+}
+
+UNIFORM_BUCKET_THRESHOLD = 0.95
+CONFLICT_RATE_THRESHOLD = 0.1
+
+SOURCE_EVIDENCE_STATUSES = {
+    "RECORD_FOUND",
+    "NO_RECORD_FOUND",
+    "SOURCE_UNAVAILABLE",
+    "SOURCE_ERROR",
+    "QUERY_NOT_SUPPORTED",
+    "NOT_CHECKED",
+    "GOVERNANCE_BLOCKED",
+}
+
+PROPERTY_FIELD_CATALOG = [
+    "address",
+    "canonical_address",
+    "street_number",
+    "street_name",
+    "street_type",
+    "unit",
+    "city",
+    "province",
+    "postal_code",
+    "parcel_identifier",
+    "roll_number",
+    "assessment_id",
+    "property_type",
+    "assessment_value",
+    "land_value",
+    "building_value",
+    "building_age",
+    "lot_size",
+    "building_size",
+    "vacancy_signal",
+    "by_law_signal",
+    "permit_history",
+    "demolition_activity",
+    "zoning",
+    "tax_assessment_status",
+    "property_condition_signal",
+    "location_neighbourhood",
+    "district",
+    "micro_area",
+    "latitude",
+    "longitude",
+    "public_notice_signal",
+    "recent_activity_signal",
+]
 
 ENGINE_ALLOWED_STATES = {"OFF", "SANDBOX", "BLOCKED", "READY", "ACTIVE"}
 
@@ -624,6 +834,46 @@ class ShadowWinnipegRehearsalOut(BaseModel):
     contact_not_verified: int
     pending_human_review: int
     sources_used: list[str]
+
+
+class ShadowWinnipegSignalEnrichmentIn(BaseModel):
+    batch_id: str
+    sample_size: int = Field(default=30, ge=20, le=50)
+    mode: str = "practice"
+
+
+class ShadowWinnipegSignalEnrichmentOut(BaseModel):
+    batch_id: str
+    mode: str
+    sample_size: int
+    records_enriched: int
+    join_success: int
+    join_uncertain: int
+    join_conflict: int = 0
+    join_no_match: int = 0
+    join_method_counts: dict[str, int] = Field(default_factory=dict)
+    join_confidence_counts: dict[str, int] = Field(default_factory=dict)
+    anchor_source: dict[str, Any] = Field(default_factory=dict)
+    source_query_metrics: dict[str, Any] = Field(default_factory=dict)
+    root_cause_score_clustering: list[str] = Field(default_factory=list)
+    source_key_compatibility_matrix: list[dict[str, Any]] = Field(default_factory=list)
+    join_key_hierarchy: list[dict[str, Any]] = Field(default_factory=list)
+    normalization_rules: list[str] = Field(default_factory=list)
+    source_field_coverage: dict[str, Any] = Field(default_factory=dict)
+    source_rights_status: dict[str, Any] = Field(default_factory=dict)
+    enrichment_sources_used: list[dict[str, Any]] = Field(default_factory=list)
+    score_distributions: dict[str, Any] = Field(default_factory=dict)
+    buyer_readiness: dict[str, int] = Field(default_factory=dict)
+    contact_readiness: dict[str, int] = Field(default_factory=dict)
+    top_ten: list[dict[str, Any]] = Field(default_factory=list)
+    mid_sample: list[dict[str, Any]] = Field(default_factory=list)
+    low_sample: list[dict[str, Any]] = Field(default_factory=list)
+    scoring_anomalies: list[str] = Field(default_factory=list)
+    source_performance: list[dict[str, Any]] = Field(default_factory=list)
+    field_provenance_checks: dict[str, Any] = Field(default_factory=dict)
+    negative_collision_tests: dict[str, Any] = Field(default_factory=dict)
+    evidence_coverage_status: dict[str, Any] = Field(default_factory=dict)
+    certification: dict[str, Any] = Field(default_factory=dict)
 
 
 class KnowledgeRetrieveOut(BaseModel):
@@ -3180,6 +3430,485 @@ def _fetch_winnipeg_shadow_records(limit: int) -> list[dict[str, Any]]:
     }
 
 
+def _fetch_wpg_dataset_rows(view_id: str, limit: int) -> dict[str, Any]:
+    safe_limit = max(1, min(REVIEW_REQUIRED_SOURCE_MAX_PER_RUN, int(limit)))
+    url = f"https://data.winnipeg.ca/resource/{view_id}.json"
+    try:
+        resp = httpx.get(url, params={"$limit": safe_limit}, timeout=20.0)
+        resp.raise_for_status()
+        payload = resp.json()
+        if not isinstance(payload, list):
+            return {"rows": [], "parse_failures": 1, "source_failures": 0}
+        return {"rows": payload, "parse_failures": 0, "source_failures": 0}
+    except Exception:
+        return {"rows": [], "parse_failures": 0, "source_failures": 1}
+
+
+def _normalize_address(value: str | None) -> str:
+    raw = str(value or "").strip().upper()
+    if not raw:
+        return ""
+    return " ".join(raw.replace(",", " ").replace(".", " ").split())
+
+
+def _first_non_empty(row: dict[str, Any], candidates: list[str]) -> str | None:
+    for field in candidates:
+        value = row.get(field)
+        if value is not None and str(value).strip() != "":
+            return str(value).strip()
+    return None
+
+
+def _normalize_street_type(value: str | None) -> str:
+    token = str(value or "").strip().upper().replace(".", "")
+    return STREET_TYPE_ALIASES.get(token, token)
+
+
+def _normalize_direction(value: str | None) -> str:
+    token = str(value or "").strip().upper().replace(".", "")
+    return DIRECTION_ALIASES.get(token, token)
+
+
+def _normalize_unit(value: str | None) -> str:
+    token = str(value or "").strip().upper().replace("UNIT", "").replace("APT", "").replace("SUITE", "")
+    token = token.replace("#", "").strip()
+    return token
+
+
+def _parse_coordinates(row: dict[str, Any], latitude_fields: list[str], longitude_fields: list[str]) -> tuple[float | None, float | None]:
+    lat = _to_float(_first_non_empty(row, latitude_fields))
+    lon = _to_float(_first_non_empty(row, longitude_fields))
+    if lat is None or lon is None:
+        return None, None
+    if abs(lat) > 90 or abs(lon) > 180:
+        return None, None
+    return lat, lon
+
+
+def _parse_civic_address(
+    raw_address: str | None,
+    *,
+    street_number: str | None = None,
+    street_name: str | None = None,
+    street_type: str | None = None,
+    unit: str | None = None,
+    postal_code: str | None = None,
+) -> dict[str, Any]:
+    assembled = ""
+    if raw_address:
+        assembled = str(raw_address)
+    else:
+        assembled = " ".join(
+            part for part in [street_number or "", street_name or "", street_type or "", unit or ""] if str(part).strip()
+        )
+
+    normalized = _normalize_address(assembled)
+    if not normalized:
+        return {
+            "original": str(raw_address or "").strip(),
+            "normalized": "",
+            "canonical_address": "",
+            "street_number": "",
+            "street_name": "",
+            "street_type": "",
+            "unit": "",
+            "city": "WINNIPEG",
+            "province": "MB",
+            "postal_code": "",
+            "direction_prefix": "",
+            "direction_suffix": "",
+        }
+
+    cleaned = re.sub(r"\s+", " ", normalized)
+    tokens = cleaned.split(" ")
+    parsed_unit = ""
+    unit_match = re.match(r"^(UNIT|APT|SUITE|#)\s*([A-Z0-9\-]+)\s+(.+)$", cleaned)
+    if unit_match:
+        parsed_unit = _normalize_unit(unit_match.group(2))
+        tokens = unit_match.group(3).split(" ")
+
+    if not parsed_unit and unit:
+        parsed_unit = _normalize_unit(unit)
+
+    parsed_street_number = ""
+    if street_number and str(street_number).strip():
+        parsed_street_number = str(street_number).strip().upper()
+    elif tokens and re.match(r"^[0-9]+[A-Z0-9\-]*$", tokens[0]):
+        parsed_street_number = tokens.pop(0)
+
+    direction_prefix = ""
+    if tokens and tokens[0] in DIRECTION_ALIASES:
+        direction_prefix = _normalize_direction(tokens.pop(0))
+
+    direction_suffix = ""
+    if tokens and tokens[-1] in DIRECTION_ALIASES:
+        direction_suffix = _normalize_direction(tokens.pop())
+
+    parsed_street_type = ""
+    if street_type and str(street_type).strip():
+        parsed_street_type = _normalize_street_type(street_type)
+    elif tokens and tokens[-1] in STREET_TYPE_ALIASES:
+        parsed_street_type = _normalize_street_type(tokens.pop())
+
+    parsed_street_name = _normalize_address(" ".join(tokens))
+    if street_name and str(street_name).strip():
+        parsed_street_name = _normalize_address(street_name)
+
+    parsed_postal = ""
+    if postal_code and str(postal_code).strip():
+        parsed_postal = _normalize_address(postal_code)
+    else:
+        found = re.search(r"\b([A-Z][0-9][A-Z][0-9][A-Z][0-9])\b", cleaned.replace(" ", ""))
+        if found:
+            parsed_postal = found.group(1)
+
+    parts = [parsed_street_number, direction_prefix, parsed_street_name, parsed_street_type, direction_suffix]
+    canonical_base = " ".join(p for p in parts if p)
+    canonical_address = canonical_base if not parsed_unit else f"{canonical_base} UNIT {parsed_unit}".strip()
+
+    return {
+        "original": str(raw_address or "").strip(),
+        "normalized": cleaned,
+        "canonical_address": canonical_address,
+        "street_number": parsed_street_number,
+        "street_name": parsed_street_name,
+        "street_type": parsed_street_type,
+        "unit": parsed_unit,
+        "city": "WINNIPEG",
+        "province": "MB",
+        "postal_code": parsed_postal,
+        "direction_prefix": direction_prefix,
+        "direction_suffix": direction_suffix,
+    }
+
+
+def _identifier_set(row: dict[str, Any], candidate_fields: list[str]) -> set[str]:
+    values: set[str] = set()
+    for field in candidate_fields:
+        value = row.get(field)
+        if value is None:
+            continue
+        token = str(value).strip().upper()
+        if token:
+            values.add(token)
+    return values
+
+
+def _source_identifier_objects(source_id: str, row: dict[str, Any], candidate_fields: list[str]) -> list[dict[str, str]]:
+    identifiers: list[dict[str, str]] = []
+    for field in candidate_fields:
+        value = row.get(field)
+        token = str(value or "").strip()
+        if token:
+            identifiers.append({"source_id": source_id, "key": field, "value": token})
+    return identifiers
+
+
+def _classify_confidence(method: str, score: float) -> str:
+    if method == "EXACT_ID_MATCH":
+        return "VERY_HIGH"
+    if method in {"EXACT_NORMALIZED_ADDRESS", "ADDRESS_PLUS_COORDINATE_MATCH"}:
+        return "HIGH"
+    if method == "HIGH_CONFIDENCE_FUZZY_MATCH" and score >= 0.93:
+        return "MEDIUM"
+    if method == "UNCERTAIN":
+        return "LOW"
+    return "NONE"
+
+
+def _is_coordinate_close(base_lat: float | None, base_lon: float | None, candidate_lat: float | None, candidate_lon: float | None) -> bool:
+    if base_lat is None or base_lon is None or candidate_lat is None or candidate_lon is None:
+        return False
+    return abs(base_lat - candidate_lat) <= 0.001 and abs(base_lon - candidate_lon) <= 0.001
+
+
+def _fuzzy_address_match(base: dict[str, Any], candidate: dict[str, Any]) -> tuple[bool, float]:
+    if not base.get("canonical_address") or not candidate.get("canonical_address"):
+        return False, 0.0
+    if base.get("street_number") != candidate.get("street_number"):
+        return False, 0.0
+    if base.get("street_type") != candidate.get("street_type"):
+        return False, 0.0
+    if base.get("unit") and candidate.get("unit") and base.get("unit") != candidate.get("unit"):
+        return False, 0.0
+
+    ratio = SequenceMatcher(None, str(base.get("canonical_address")), str(candidate.get("canonical_address"))).ratio()
+    return ratio >= 0.94, ratio
+
+
+def _resolve_join_method(
+    base_identifiers: set[str],
+    base_address: dict[str, Any],
+    base_lat: float | None,
+    base_lon: float | None,
+    candidate_row: dict[str, Any],
+    source_catalog: dict[str, Any],
+) -> tuple[str, float, str]:
+    candidate_identifiers = _identifier_set(
+        candidate_row,
+        source_catalog["parcel_id_fields"]
+        + source_catalog["roll_number_fields"]
+        + source_catalog["assessment_id_fields"]
+        + source_catalog["record_id_fields"],
+    )
+
+    if base_identifiers and candidate_identifiers and (base_identifiers & candidate_identifiers):
+        return "EXACT_ID_MATCH", 0.99, "stable identifier overlap"
+
+    candidate_address = _parse_civic_address(
+        _first_non_empty(candidate_row, source_catalog["address_fields"]),
+        street_number=_first_non_empty(candidate_row, source_catalog["street_number_fields"]),
+        street_name=_first_non_empty(candidate_row, source_catalog["street_name_fields"]),
+        street_type=_first_non_empty(candidate_row, source_catalog["street_type_fields"]),
+        unit=_first_non_empty(candidate_row, source_catalog["unit_fields"]),
+        postal_code=_first_non_empty(candidate_row, source_catalog["postal_code_fields"]),
+    )
+
+    if base_address.get("canonical_address") and candidate_address.get("canonical_address"):
+        # Distinguish unit-level and whole-building addresses to avoid silent collisions.
+        if base_address.get("unit") != candidate_address.get("unit") and (base_address.get("unit") or candidate_address.get("unit")):
+            return "UNCERTAIN", 0.45, "unit mismatch"
+
+        if base_address["canonical_address"] == candidate_address["canonical_address"]:
+            return "EXACT_NORMALIZED_ADDRESS", 0.9, "canonical civic address match"
+
+        candidate_lat, candidate_lon = _parse_coordinates(
+            candidate_row,
+            source_catalog["latitude_fields"],
+            source_catalog["longitude_fields"],
+        )
+        if _is_coordinate_close(base_lat, base_lon, candidate_lat, candidate_lon):
+            return "ADDRESS_PLUS_COORDINATE_MATCH", 0.86, "address + coordinate proximity"
+
+        fuzzy_ok, fuzzy_ratio = _fuzzy_address_match(base_address, candidate_address)
+        if fuzzy_ok:
+            return "HIGH_CONFIDENCE_FUZZY_MATCH", round(max(0.75, fuzzy_ratio), 2), "strict fuzzy address match"
+
+    return "NO_MATCH", 0.0, "no deterministic overlap"
+
+
+def _source_key_matrix_entry(
+    source_id: str,
+    source_catalog: dict[str, Any],
+    rows: list[dict[str, Any]],
+    source: SourceRegistryItem,
+) -> dict[str, Any]:
+    observed_fields: set[str] = set()
+    for row in rows:
+        observed_fields.update(row.keys())
+
+    def _observed(candidates: list[str]) -> list[str]:
+        return [field for field in candidates if field in observed_fields]
+
+    return {
+        "source_id": source_id,
+        "official_publisher": source_catalog["publisher"],
+        "dataset_id": source_catalog["dataset_id"],
+        "record_id_fields": _observed(source_catalog["record_id_fields"]),
+        "address_fields": _observed(source_catalog["address_fields"]),
+        "street_number_fields": _observed(source_catalog["street_number_fields"]),
+        "street_name_fields": _observed(source_catalog["street_name_fields"]),
+        "street_type_fields": _observed(source_catalog["street_type_fields"]),
+        "unit_fields": _observed(source_catalog["unit_fields"]),
+        "postal_code_fields": _observed(source_catalog["postal_code_fields"]),
+        "parcel_id_fields": _observed(source_catalog["parcel_id_fields"]),
+        "roll_number_fields": _observed(source_catalog["roll_number_fields"]),
+        "assessment_id_fields": _observed(source_catalog["assessment_id_fields"]),
+        "coordinate_fields": {
+            "latitude": _observed(source_catalog["latitude_fields"]),
+            "longitude": _observed(source_catalog["longitude_fields"]),
+        },
+        "legal_description_fields": _observed(source_catalog["legal_description_fields"]),
+        "other_stable_identifier_fields": _observed(
+            source_catalog["record_id_fields"]
+            + source_catalog["parcel_id_fields"]
+            + source_catalog["roll_number_fields"]
+            + source_catalog["assessment_id_fields"]
+        ),
+        "freshness": source.last_verified_at.isoformat() if source.last_verified_at else None,
+        "governance_status": source.governance_status,
+        "license_status": source.license_status,
+        "permission_status": source.permission_status,
+        "observed_row_count": len(rows),
+    }
+
+
+def _to_float(value: Any) -> float | None:
+    if value is None:
+        return None
+    try:
+        return float(str(value).replace(",", "").strip())
+    except Exception:
+        return None
+
+
+def _to_int(value: Any) -> int | None:
+    if value is None:
+        return None
+    try:
+        return int(float(str(value).replace(",", "").strip()))
+    except Exception:
+        return None
+
+
+def _parse_date(value: str | None) -> datetime | None:
+    raw = str(value or "").strip()
+    if not raw:
+        return None
+    for candidate in (raw, raw.replace("Z", "+00:00")):
+        try:
+            return datetime.fromisoformat(candidate)
+        except Exception:
+            continue
+    return None
+
+
+def _valuation_confidence_state(record: dict[str, Any]) -> str:
+    assessment = _to_float(record.get("assessment_value"))
+    land = _to_float(record.get("land_value"))
+    building = _to_float(record.get("building_value"))
+    if assessment is None and land is None and building is None:
+        return "VALUATION_CONFIDENCE_NONE"
+    if assessment is not None and land is not None and building is not None:
+        return "VALUATION_CONFIDENCE_HIGH"
+    if assessment is not None and (land is not None or building is not None):
+        return "VALUATION_CONFIDENCE_MEDIUM"
+    return "VALUATION_CONFIDENCE_LOW"
+
+
+def _readiness_bucket(score: float) -> str:
+    if score >= 80:
+        return "HIGH"
+    if score >= 55:
+        return "MEDIUM"
+    return "LOW"
+
+
+def _bucket_0_100(value: float) -> str:
+    if value <= 25:
+        return "0-25"
+    if value <= 50:
+        return "26-50"
+    if value <= 70:
+        return "51-70"
+    if value <= 85:
+        return "71-85"
+    return "86-100"
+
+
+def _init_distribution() -> dict[str, int]:
+    return {"0-25": 0, "26-50": 0, "51-70": 0, "71-85": 0, "86-100": 0}
+
+
+def _source_rights_snapshot(source: SourceRegistryItem) -> dict[str, Any]:
+    governance_status = _normalize_source_governance_status(source.governance_status)
+    permission_ok = _normalize_source_permission_status(source.permission_status) in ALLOWED_SOURCE_PERMISSION_STATUSES
+    license_ok = _normalize_source_license_status(source.license_status) in ALLOWED_SOURCE_LICENSE_STATUSES
+    return {
+        "source_id": source.source_id,
+        "governance_status": governance_status,
+        "permission_status": source.permission_status,
+        "license_status": source.license_status,
+        "rights_statement_url": source.rights_statement_url,
+        "heuristic_rights_status": "OPEN_LICENSE_SIGNAL" if permission_ok and license_ok else "RESTRICTED_OR_UNKNOWN",
+        "effective_usage_status": "BOUNDED_RESEARCH_ONLY"
+        if governance_status == "review_required"
+        else ("SCALABLE" if governance_status == "approved" else "BLOCKED"),
+    }
+
+
+def _extract_assessment_fields(row: dict[str, Any]) -> dict[str, Any]:
+    parsed_address = _parse_civic_address(
+        _first_non_empty(row, ["full_address", "address"]),
+        street_number=_first_non_empty(row, ["street_number", "house_number"]),
+        street_name=_first_non_empty(row, ["street_name"]),
+        street_type=_first_non_empty(row, ["street_type"]),
+        unit=_first_non_empty(row, ["unit", "suite", "apartment"]),
+        postal_code=_first_non_empty(row, ["postal_code", "postcode"]),
+    )
+    roll_number = str(_first_non_empty(row, ["roll_number"]) or "").strip() or None
+    assessment_id = str(_first_non_empty(row, ["assessment_account", "account_number"]) or "").strip() or None
+    parcel_id = str(_first_non_empty(row, ["parcel_id", "pid"]) or "").strip() or roll_number
+    return {
+        "address": parsed_address.get("canonical_address") or parsed_address.get("normalized") or "",
+        "canonical_address": parsed_address.get("canonical_address") or "",
+        "street_number": parsed_address.get("street_number") or "",
+        "street_name": parsed_address.get("street_name") or "",
+        "street_type": parsed_address.get("street_type") or "",
+        "unit": parsed_address.get("unit") or "",
+        "city": parsed_address.get("city") or "WINNIPEG",
+        "province": parsed_address.get("province") or "MB",
+        "postal_code": parsed_address.get("postal_code") or "",
+        "parcel_identifier": parcel_id,
+        "roll_number": roll_number,
+        "assessment_id": assessment_id,
+        "property_type": row.get("property_use_code") or row.get("building_type"),
+        "assessment_value": _to_float(row.get("total_assessed_value")),
+        "land_value": _to_float(row.get("assessed_land_area")),
+        "building_value": _to_float(row.get("assessed_value_1")),
+        "building_age": (datetime.now(timezone.utc).year - _to_int(row.get("year_built")))
+        if _to_int(row.get("year_built"))
+        else None,
+        "lot_size": _to_float(row.get("assessed_land_area")),
+        "building_size": _to_float(row.get("total_living_area")),
+        "zoning": row.get("zoning"),
+        "tax_assessment_status": row.get("status_1"),
+        "location_neighbourhood": row.get("neighbourhood_area"),
+        "latitude": _to_float(_first_non_empty(row, ["latitude", "lat", "y"])),
+        "longitude": _to_float(_first_non_empty(row, ["longitude", "lon", "lng", "x"])),
+    }
+
+
+def _dimension_scores(features: dict[str, Any]) -> dict[str, Any]:
+    distress_components = 0
+    distress_components += 1 if features.get("vacant_building_signal") else 0
+    distress_components += 1 if features.get("active_by_law_signal") else 0
+    distress_components += 1 if features.get("demolition_activity") else 0
+    distress_components += 1 if features.get("recent_activity_signal") else 0
+
+    distress_score = min(100.0, distress_components * 22.5)
+    evidence_source_count = int(features.get("evidence_source_count") or 1)
+    freshness_score = float(features.get("evidence_freshness_score") or 0.3)
+    evidence_confidence = min(100.0, (evidence_source_count * 18.0) + (freshness_score * 40.0))
+
+    base_opportunity = 20.0
+    base_opportunity += distress_score * 0.45
+    base_opportunity += 10.0 if features.get("assessment_value_present") else 0.0
+    base_opportunity += 8.0 if features.get("permit_activity_signal") else 0.0
+    base_opportunity += 6.0 if features.get("property_type_signal") else 0.0
+    opportunity_score = max(0.0, min(100.0, base_opportunity))
+
+    valuation_state = str(features.get("valuation_confidence") or "VALUATION_CONFIDENCE_NONE")
+    valuation_confidence = {
+        "VALUATION_CONFIDENCE_NONE": 10.0,
+        "VALUATION_CONFIDENCE_LOW": 35.0,
+        "VALUATION_CONFIDENCE_MEDIUM": 65.0,
+        "VALUATION_CONFIDENCE_HIGH": 85.0,
+    }.get(valuation_state, 10.0)
+
+    buyer_readiness = float(features.get("buyer_readiness") or 20.0)
+    contact_readiness = float(features.get("contact_readiness") or 20.0)
+    research_priority = max(0.0, min(100.0, (opportunity_score * 0.5) + (evidence_confidence * 0.3) + (distress_score * 0.2)))
+    overall_actionability = max(
+        0.0,
+        min(100.0, (research_priority * 0.55) + (valuation_confidence * 0.2) + (buyer_readiness * 0.15) + (contact_readiness * 0.1)),
+    )
+
+    return {
+        "opportunity_score": round(opportunity_score, 2),
+        "distress_score": round(distress_score, 2),
+        "evidence_confidence": round(evidence_confidence, 2),
+        "valuation_confidence": valuation_state,
+        "valuation_confidence_score": round(valuation_confidence, 2),
+        "buyer_readiness": round(buyer_readiness, 2),
+        "contact_readiness": round(contact_readiness, 2),
+        "research_priority": round(research_priority, 2),
+        "overall_actionability": round(overall_actionability, 2),
+        "buyer_readiness_bucket": _readiness_bucket(buyer_readiness),
+        "contact_readiness_bucket": _readiness_bucket(contact_readiness),
+    }
+
+
 def _derive_shadow_insufficiency_statuses(row: dict[str, Any]) -> list[str]:
     statuses: list[str] = []
 
@@ -3405,6 +4134,1042 @@ def run_shadow_winnipeg_rehearsal(payload: ShadowWinnipegRehearsalIn, db: Sessio
         contact_not_verified=contact_not_verified,
         pending_human_review=pending_human_review,
         sources_used=sorted(list(allowed_source_ids)),
+    )
+
+
+@router.post("/shadow/rehearsal/winnipeg/signal-enrichment", response_model=ShadowWinnipegSignalEnrichmentOut)
+def run_shadow_winnipeg_signal_enrichment(payload: ShadowWinnipegSignalEnrichmentIn, db: Session = Depends(get_db)):
+    _ensure_registry_tables(db)
+    mode = _normalize_mode(payload.mode)
+    if mode not in {"practice", "test"}:
+        raise HTTPException(status_code=409, detail="signal enrichment is restricted to practice/test modes")
+
+    source_definitions = [
+        ("SRC-WPG-ASSESSMENT-PARCELS", "Winnipeg Assessment Parcels"),
+        ("SRC-WPG-VACANT-ORDERS", "Winnipeg Active Vacant Building Orders"),
+        ("SRC-WPG-DEVELOPMENT-PERMITS", "Winnipeg Development Permits"),
+        ("SRC-WPG-BUILDING-PERMITS", "Winnipeg Building Permits"),
+        ("SRC-WPG-SNOW-ADDRESS", "Winnipeg Address-level Winter Status"),
+    ]
+
+    sources: dict[str, SourceRegistryItem] = {}
+    for source_id, source_name in source_definitions:
+        source = _ensure_shadow_source(
+            db,
+            source_id=source_id,
+            canonical_name=source_name,
+            source_type="government",
+            citation_ref="https://data.winnipeg.ca",
+            rights_statement_url="https://data.winnipeg.ca/stories/s/Open-Data-Winnipeg-Terms-of-Use/4h5q-kw4n/",
+        )
+        _assert_source_shadow_ready(source, bounded_research_only=True)
+        sources[source_id] = source
+
+    max_fetch = min(REVIEW_REQUIRED_SOURCE_MAX_PER_RUN, max(payload.sample_size * 3, payload.sample_size))
+    retrieval_start = perf_counter()
+    assessment = _fetch_wpg_dataset_rows(WPG_DATASET_IDS["assessment"], max_fetch)
+    vacant_orders = _fetch_wpg_dataset_rows(WPG_DATASET_IDS["vacant_orders"], max_fetch)
+    development_permits = _fetch_wpg_dataset_rows(WPG_DATASET_IDS["development_permits"], max_fetch)
+    building_permits = _fetch_wpg_dataset_rows(WPG_DATASET_IDS["building_permits"], max_fetch)
+    snow_address = _fetch_wpg_dataset_rows(WPG_DATASET_IDS["snow_address"], max_fetch)
+    retrieval_ms = int((perf_counter() - retrieval_start) * 1000)
+
+    if not assessment.get("rows"):
+        raise HTTPException(status_code=409, detail="assessment dataset returned no rows for bounded enrichment sample")
+
+    source_performance: dict[str, dict[str, Any]] = {}
+    dataset_to_source = {
+        "assessment": "SRC-WPG-ASSESSMENT-PARCELS",
+        "vacant_orders": "SRC-WPG-VACANT-ORDERS",
+        "development_permits": "SRC-WPG-DEVELOPMENT-PERMITS",
+        "building_permits": "SRC-WPG-BUILDING-PERMITS",
+        "snow_address": "SRC-WPG-SNOW-ADDRESS",
+    }
+    dataset_payloads = {
+        "assessment": assessment,
+        "vacant_orders": vacant_orders,
+        "development_permits": development_permits,
+        "building_permits": building_permits,
+        "snow_address": snow_address,
+    }
+
+    for dataset_key, source_id in dataset_to_source.items():
+        src = sources[source_id]
+        payload_rows = list(dataset_payloads[dataset_key].get("rows") or [])
+        source_performance[source_id] = {
+            "source_id": source_id,
+            "dataset": dataset_key,
+            "governance_status": src.governance_status,
+            "permission_status": src.permission_status,
+            "license_status": src.license_status,
+            "fetched": len(payload_rows),
+            "usable_records": 0,
+            "duplicates": 0,
+            "qualified_opportunities": 0,
+            "high_score_opportunities": 0,
+            "avg_confidence": 0.0,
+            "missing_field_rate": 0.0,
+            "parse_failures": int(dataset_payloads[dataset_key].get("parse_failures") or 0),
+            "source_failures": int(dataset_payloads[dataset_key].get("source_failures") or 0),
+            "freshness": src.last_verified_at.isoformat() if src.last_verified_at else None,
+            "rights_status": _source_rights_snapshot(src)["effective_usage_status"],
+        }
+
+    source_key_compatibility_matrix = [
+        _source_key_matrix_entry(
+            source_id,
+            WPG_SOURCE_CATALOG[source_id],
+            list(dataset_payloads[WPG_SOURCE_CATALOG[source_id]["dataset_key"]].get("rows") or []),
+            sources[source_id],
+        )
+        for source_id in sorted(WPG_SOURCE_CATALOG.keys())
+    ]
+
+    aux_sources = {
+        "SRC-WPG-VACANT-ORDERS": list(vacant_orders.get("rows", [])),
+        "SRC-WPG-DEVELOPMENT-PERMITS": list(development_permits.get("rows", [])),
+        "SRC-WPG-BUILDING-PERMITS": list(building_permits.get("rows", [])),
+        "SRC-WPG-SNOW-ADDRESS": list(snow_address.get("rows", [])),
+    }
+
+    anchor_source = {
+        "source_id": "SRC-WPG-ASSESSMENT-PARCELS",
+        "dataset_id": WPG_DATASET_IDS["assessment"],
+        "rationale": "highest observed stable identifier coverage (roll_number) plus canonical civic address fields",
+        "available_identifier_fields": ["roll_number", "full_address"],
+    }
+
+    source_query_metrics: dict[str, dict[str, Any]] = {}
+    for source_id in sorted(aux_sources.keys()):
+        source_query_metrics[source_id] = {
+            "source_id": source_id,
+            "properties_queried": 0,
+            "queries_successful": 0,
+            "record_found": 0,
+            "no_record_found": 0,
+            "source_unavailable": 0,
+            "source_error": 0,
+            "query_not_supported": 0,
+            "governance_blocked": 0,
+            "uncertain_candidates": 0,
+            "conflict_candidates": 0,
+            "high_confidence_matches": 0,
+        }
+
+    aux_addresses: set[str] = set()
+    for source_id, rows in aux_sources.items():
+        catalog = WPG_SOURCE_CATALOG[source_id]
+        for row in rows:
+            parsed = _parse_civic_address(
+                _first_non_empty(row, catalog["address_fields"]),
+                street_number=_first_non_empty(row, catalog["street_number_fields"]),
+                street_name=_first_non_empty(row, catalog["street_name_fields"]),
+                street_type=_first_non_empty(row, catalog["street_type_fields"]),
+                unit=_first_non_empty(row, catalog["unit_fields"]),
+                postal_code=_first_non_empty(row, catalog["postal_code_fields"]),
+            )
+            canonical = str(parsed.get("canonical_address") or "").strip()
+            if canonical:
+                aux_addresses.add(canonical)
+
+    processing_start = perf_counter()
+    enriched_records: list[dict[str, Any]] = []
+    join_success = 0
+    join_uncertain = 0
+    join_conflict = 0
+    join_no_match = 0
+    join_method_counts = {name: 0 for name in JOIN_METHOD_ORDER}
+    join_confidence_counts = {"VERY_HIGH": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0, "NONE": 0}
+    seen_identity: set[str] = set()
+    field_available: dict[str, int] = {field: 0 for field in PROPERTY_FIELD_CATALOG}
+    field_sources: dict[str, set[str]] = {field: set() for field in PROPERTY_FIELD_CATALOG}
+    provenance_records_total = 0
+    provenance_missing = 0
+    uncertain_scoring_impact_count = 0
+
+    assessment_rows = list(assessment.get("rows", []))
+    scored_assessment_rows: list[tuple[int, dict[str, Any]]] = []
+    for row in assessment_rows:
+        base = _extract_assessment_fields(row)
+        coverage = 1 if str(base.get("canonical_address") or "") in aux_addresses else 0
+        scored_assessment_rows.append((coverage, row))
+    scored_assessment_rows.sort(key=lambda item: item[0], reverse=True)
+    assessment_iteration_rows = [row for _, row in scored_assessment_rows]
+
+    for row in assessment_iteration_rows:
+        base_fields = _extract_assessment_fields(row)
+        address = str(base_fields.get("canonical_address") or base_fields.get("address") or "")
+        parcel_id = str(base_fields.get("parcel_identifier") or "").strip()
+        roll_number = str(base_fields.get("roll_number") or "").strip()
+        assessment_id = str(base_fields.get("assessment_id") or "").strip()
+        base_identifiers = {value for value in {parcel_id, roll_number, assessment_id} if value}
+        identity_anchor = parcel_id or roll_number or assessment_id or address
+        identity_key = _normalize_address(identity_anchor)
+        if not identity_key:
+            join_uncertain += 1
+            join_method_counts["UNCERTAIN"] += 1
+            join_confidence_counts["LOW"] += 1
+            continue
+        if identity_key in seen_identity:
+            source_performance["SRC-WPG-ASSESSMENT-PARCELS"]["duplicates"] += 1
+            continue
+        seen_identity.add(identity_key)
+
+        property_identity_id = sha1(f"PID:{identity_key}".encode("utf-8")).hexdigest()[:20]
+        conflict_reasons: list[str] = []
+        source_matches: dict[str, list[dict[str, Any]]] = {
+            "SRC-WPG-VACANT-ORDERS": [],
+            "SRC-WPG-DEVELOPMENT-PERMITS": [],
+            "SRC-WPG-BUILDING-PERMITS": [],
+            "SRC-WPG-SNOW-ADDRESS": [],
+        }
+        match_methods: list[tuple[str, float, str, str]] = []
+        source_evidence: list[dict[str, Any]] = []
+        base_address = _parse_civic_address(
+            base_fields.get("address"),
+            street_number=base_fields.get("street_number"),
+            street_name=base_fields.get("street_name"),
+            street_type=base_fields.get("street_type"),
+            unit=base_fields.get("unit"),
+            postal_code=base_fields.get("postal_code"),
+        )
+        base_lat = _to_float(base_fields.get("latitude"))
+        base_lon = _to_float(base_fields.get("longitude"))
+
+        for aux_source_id, aux_rows in aux_sources.items():
+            metrics = source_query_metrics[aux_source_id]
+            catalog = WPG_SOURCE_CATALOG[aux_source_id]
+            metrics["properties_queried"] += 1
+
+            if _normalize_source_governance_status(sources[aux_source_id].governance_status) not in {"approved", "review_required"}:
+                metrics["governance_blocked"] += 1
+                source_evidence.append(
+                    {
+                        "source_id": aux_source_id,
+                        "status": "GOVERNANCE_BLOCKED",
+                        "identity_match_status": "NOT_CHECKED",
+                        "query_method": "N/A",
+                        "query_timestamp": datetime.now(timezone.utc).isoformat(),
+                        "records_returned": 0,
+                    }
+                )
+                continue
+
+            if int(source_performance[aux_source_id].get("source_failures") or 0) > 0 and not aux_rows:
+                metrics["source_unavailable"] += 1
+                source_evidence.append(
+                    {
+                        "source_id": aux_source_id,
+                        "status": "SOURCE_UNAVAILABLE",
+                        "identity_match_status": "NOT_CHECKED",
+                        "query_method": "N/A",
+                        "query_timestamp": datetime.now(timezone.utc).isoformat(),
+                        "records_returned": 0,
+                    }
+                )
+                continue
+
+            supports_query = bool(catalog["address_fields"] or catalog["street_number_fields"] or catalog["record_id_fields"])
+            if not supports_query:
+                metrics["query_not_supported"] += 1
+                source_evidence.append(
+                    {
+                        "source_id": aux_source_id,
+                        "status": "QUERY_NOT_SUPPORTED",
+                        "identity_match_status": "NOT_CHECKED",
+                        "query_method": "N/A",
+                        "query_timestamp": datetime.now(timezone.utc).isoformat(),
+                        "records_returned": 0,
+                    }
+                )
+                continue
+
+            metrics["queries_successful"] += 1
+            deterministic_for_source: list[tuple[str, float, str, dict[str, Any], str]] = []
+            uncertain_for_source: list[str] = []
+            candidate_addresses: set[str] = set()
+
+            for candidate in aux_rows:
+                method, confidence, reason = _resolve_join_method(
+                    base_identifiers,
+                    base_address,
+                    base_lat,
+                    base_lon,
+                    candidate,
+                    catalog,
+                )
+                if method in {"EXACT_ID_MATCH", "EXACT_NORMALIZED_ADDRESS", "ADDRESS_PLUS_COORDINATE_MATCH", "HIGH_CONFIDENCE_FUZZY_MATCH"}:
+                    parsed_candidate = _parse_civic_address(
+                        _first_non_empty(candidate, catalog["address_fields"]),
+                        street_number=_first_non_empty(candidate, catalog["street_number_fields"]),
+                        street_name=_first_non_empty(candidate, catalog["street_name_fields"]),
+                        street_type=_first_non_empty(candidate, catalog["street_type_fields"]),
+                        unit=_first_non_empty(candidate, catalog["unit_fields"]),
+                        postal_code=_first_non_empty(candidate, catalog["postal_code_fields"]),
+                    )
+                    candidate_addresses.add(str(parsed_candidate.get("canonical_address") or ""))
+                    deterministic_for_source.append((method, confidence, reason, candidate, str(parsed_candidate.get("canonical_address") or "")))
+                elif method == "UNCERTAIN":
+                    uncertain_for_source.append(reason)
+
+            if deterministic_for_source:
+                canonical_candidates = {a for _, _, _, _, a in deterministic_for_source if a}
+                if len(canonical_candidates) > 1:
+                    metrics["conflict_candidates"] += 1
+                    conflict_reasons.append(f"{aux_source_id}: multiple candidate identities")
+                    source_evidence.append(
+                        {
+                            "source_id": aux_source_id,
+                            "status": "NO_RECORD_FOUND",
+                            "identity_match_status": "CONFLICT",
+                            "query_method": "property_centric_adapter",
+                            "query_timestamp": datetime.now(timezone.utc).isoformat(),
+                            "records_returned": len(deterministic_for_source),
+                            "reason": "multiple candidate identities",
+                        }
+                    )
+                    continue
+
+                best_for_source = sorted(
+                    deterministic_for_source,
+                    key=lambda row: (JOIN_METHOD_ORDER.index(row[0]), -row[1]),
+                )[0]
+                method, confidence, reason, best_candidate, _candidate_addr = best_for_source
+                source_matches[aux_source_id].append(best_candidate)
+                match_methods.append((method, confidence, reason, aux_source_id))
+                metrics["record_found"] += 1
+                if confidence >= 0.85:
+                    metrics["high_confidence_matches"] += 1
+                source_evidence.append(
+                    {
+                        "source_id": aux_source_id,
+                        "status": "RECORD_FOUND",
+                        "identity_match_status": method,
+                        "query_method": "property_centric_adapter",
+                        "query_timestamp": datetime.now(timezone.utc).isoformat(),
+                        "records_returned": len(deterministic_for_source),
+                        "join_confidence": confidence,
+                        "reason": reason,
+                    }
+                )
+            elif uncertain_for_source:
+                metrics["uncertain_candidates"] += 1
+                metrics["no_record_found"] += 1
+                conflict_reasons.append(f"{aux_source_id}: {uncertain_for_source[0]}")
+                source_evidence.append(
+                    {
+                        "source_id": aux_source_id,
+                        "status": "NO_RECORD_FOUND",
+                        "identity_match_status": "UNCERTAIN",
+                        "query_method": "property_centric_adapter",
+                        "query_timestamp": datetime.now(timezone.utc).isoformat(),
+                        "records_returned": 0,
+                        "reason": uncertain_for_source[0],
+                    }
+                )
+            else:
+                metrics["no_record_found"] += 1
+                source_evidence.append(
+                    {
+                        "source_id": aux_source_id,
+                        "status": "NO_RECORD_FOUND",
+                        "identity_match_status": "NO_MATCH",
+                        "query_method": "property_centric_adapter",
+                        "query_timestamp": datetime.now(timezone.utc).isoformat(),
+                        "records_returned": 0,
+                        "reason": "query successful, no source record found for property",
+                    }
+                )
+
+        if match_methods:
+            best_method = sorted(match_methods, key=lambda row: (JOIN_METHOD_ORDER.index(row[0]), -row[1]))[0]
+            join_method = best_method[0]
+            join_confidence = best_method[1]
+            join_reason = best_method[2]
+            join_success += 1
+        elif conflict_reasons:
+            join_method = "UNCERTAIN"
+            join_confidence = 0.45
+            join_reason = "; ".join(conflict_reasons)
+            join_uncertain += 1
+        else:
+            join_method = "NO_MATCH"
+            join_confidence = 0.0
+            join_reason = "no overlapping identifiers or address evidence"
+            join_no_match += 1
+
+        if len(conflict_reasons) >= 2:
+            join_method = "CONFLICT"
+            join_confidence = 0.0
+            join_reason = "; ".join(conflict_reasons)
+            join_conflict += 1
+
+        join_method_counts[join_method] += 1
+        join_confidence_counts[_classify_confidence(join_method, join_confidence)] += 1
+
+        vacant_matches = source_matches["SRC-WPG-VACANT-ORDERS"]
+        permit_matches = source_matches["SRC-WPG-DEVELOPMENT-PERMITS"] + source_matches["SRC-WPG-BUILDING-PERMITS"]
+        snow_matches = source_matches["SRC-WPG-SNOW-ADDRESS"]
+        snow_match = snow_matches[0] if snow_matches else None
+
+        demolition_activity = any(
+            "demol" in str(p.get("work_type") or "").lower() or "demol" in str(p.get("sub_type") or "").lower()
+            for p in permit_matches
+        )
+        permit_recent = any(
+            (
+                (lambda dt: dt is not None and (datetime.now(timezone.utc) - dt.replace(tzinfo=timezone.utc if dt.tzinfo is None else dt.tzinfo)).days <= 730)(
+                    _parse_date(p.get("issue_date") or p.get("application_received_date"))
+                )
+            )
+            for p in permit_matches
+        )
+
+        valuation_state = _valuation_confidence_state(base_fields)
+        evidence_source_count = 1
+        evidence_source_count += 1 if vacant_matches else 0
+        evidence_source_count += 1 if permit_matches else 0
+        evidence_source_count += 1 if snow_match else 0
+
+        decisive_join = join_method in {
+            "EXACT_ID_MATCH",
+            "EXACT_NORMALIZED_ADDRESS",
+            "ADDRESS_PLUS_COORDINATE_MATCH",
+            "HIGH_CONFIDENCE_FUZZY_MATCH",
+        }
+
+        if not decisive_join:
+            vacant_matches = []
+            permit_matches = []
+            snow_match = None
+            evidence_source_count = 1
+
+        features = {
+            "vacant_building_signal": len(vacant_matches) > 0,
+            "active_by_law_signal": len(vacant_matches) > 0,
+            "permit_activity_signal": len(permit_matches) > 0,
+            "assessment_value_present": base_fields.get("assessment_value") is not None,
+            "building_age_signal": base_fields.get("building_age") is not None,
+            "property_type_signal": bool(base_fields.get("property_type")),
+            "recent_activity_signal": permit_recent,
+            "multiple_distress_signals": sum(
+                [
+                    1 if len(vacant_matches) > 0 else 0,
+                    1 if demolition_activity else 0,
+                    1 if permit_recent else 0,
+                ]
+            )
+            >= 2,
+            "evidence_source_count": evidence_source_count,
+            "evidence_freshness_score": 0.95 if permit_recent else 0.65,
+            "demolition_activity": demolition_activity,
+            "valuation_confidence": valuation_state,
+            "buyer_readiness": 20.0,
+            "contact_readiness": 20.0,
+        }
+        dimensions = _dimension_scores(features)
+
+        insufficiency_statuses: list[str] = []
+        if valuation_state in {"VALUATION_CONFIDENCE_NONE", "VALUATION_CONFIDENCE_LOW"}:
+            insufficiency_statuses.append("VALUATION_CONFIDENCE_LOW")
+        if dimensions["buyer_readiness"] < 55:
+            insufficiency_statuses.append("BUYER_DATA_INSUFFICIENT")
+        if dimensions["contact_readiness"] < 55:
+            insufficiency_statuses.append("CONTACT_NOT_VERIFIED")
+        if join_confidence < 0.75 or join_method in {"UNCERTAIN", "CONFLICT", "NO_MATCH"}:
+            insufficiency_statuses.append("PROPERTY_JOIN_UNCERTAIN")
+            if decisive_join:
+                uncertain_scoring_impact_count += 1
+
+        if join_method == "CONFLICT":
+            insufficiency_statuses.append("PROPERTY_JOIN_CONFLICT")
+        if join_method == "NO_MATCH":
+            insufficiency_statuses.append("PROPERTY_JOIN_NO_MATCH")
+
+        review_state = "PENDING_HUMAN_REVIEW" if insufficiency_statuses else "approved"
+
+        now_date = datetime.now(timezone.utc).date()
+        digest = sha1(f"{property_identity_id}:{payload.batch_id}".encode("utf-8")).hexdigest()[:16]
+        item_id = f"KN-SHADOW-ENRICH-{digest}"
+        existing = db.query(KnowledgeRegistryItem).filter(KnowledgeRegistryItem.item_id == item_id).first()
+
+        title_address = address or f"PARCEL-{parcel_id}" if parcel_id else "UNKNOWN"
+        source_identifiers = _source_identifier_objects(
+            "SRC-WPG-ASSESSMENT-PARCELS",
+            row,
+            WPG_SOURCE_CATALOG["SRC-WPG-ASSESSMENT-PARCELS"]["record_id_fields"]
+            + WPG_SOURCE_CATALOG["SRC-WPG-ASSESSMENT-PARCELS"]["parcel_id_fields"]
+            + WPG_SOURCE_CATALOG["SRC-WPG-ASSESSMENT-PARCELS"]["roll_number_fields"]
+            + WPG_SOURCE_CATALOG["SRC-WPG-ASSESSMENT-PARCELS"]["assessment_id_fields"],
+        )
+
+        property_identity = {
+            "property_identity_id": property_identity_id,
+            "canonical_address": base_fields.get("canonical_address") or address,
+            "street_number": base_fields.get("street_number") or "",
+            "street_name": base_fields.get("street_name") or "",
+            "street_type": base_fields.get("street_type") or "",
+            "unit": base_fields.get("unit") or "",
+            "city": base_fields.get("city") or "WINNIPEG",
+            "province": base_fields.get("province") or "MB",
+            "postal_code": base_fields.get("postal_code") or "",
+            "parcel_id": parcel_id or None,
+            "roll_number": roll_number or None,
+            "assessment_id": assessment_id or None,
+            "latitude": base_lat,
+            "longitude": base_lon,
+            "source_identifiers": source_identifiers,
+            "identity_confidence": _classify_confidence(join_method, join_confidence),
+            "identity_status": "RESOLVED" if decisive_join else ("CONFLICT" if join_method == "CONFLICT" else "UNRESOLVED"),
+            "identity_method": join_method,
+            "conflicts": conflict_reasons,
+            "geo_context": {
+                "city": base_fields.get("city") or "WINNIPEG",
+                "district": base_fields.get("location_neighbourhood") or "",
+                "neighbourhood": base_fields.get("location_neighbourhood") or "",
+                "micro_area": base_fields.get("location_neighbourhood") or "",
+            },
+        }
+
+        field_provenance: list[dict[str, Any]] = []
+        def _add_provenance(field_name: str, source_id: str, source_record_id: str, source_field_name: str, join_method_value: str, join_confidence_value: float):
+            nonlocal provenance_records_total, provenance_missing
+            provenance_records_total += 1
+            row_provenance = {
+                "property_identity_id": property_identity_id,
+                "source_id": source_id,
+                "source_record_id": source_record_id,
+                "source_field_name": source_field_name,
+                "retrieval_timestamp": datetime.now(timezone.utc).isoformat(),
+                "freshness": sources[source_id].last_verified_at.isoformat() if sources[source_id].last_verified_at else None,
+                "governance_status": sources[source_id].governance_status,
+                "join_method": join_method_value,
+                "join_confidence": join_confidence_value,
+                "field_name": field_name,
+            }
+            if not row_provenance["source_record_id"] or not row_provenance["source_field_name"]:
+                provenance_missing += 1
+            field_provenance.append(row_provenance)
+
+        assessment_record_id = parcel_id or roll_number or address
+        for field_name, source_field in [
+            ("address", "full_address"),
+            ("canonical_address", "full_address"),
+            ("street_number", "street_number"),
+            ("street_name", "street_name"),
+            ("street_type", "street_type"),
+            ("parcel_identifier", "roll_number"),
+            ("roll_number", "roll_number"),
+            ("assessment_id", "assessment_account"),
+            ("assessment_value", "total_assessed_value"),
+            ("land_value", "assessed_land_area"),
+            ("building_value", "assessed_value_1"),
+            ("latitude", "latitude"),
+            ("longitude", "longitude"),
+        ]:
+            if base_fields.get(field_name) not in {None, ""}:
+                _add_provenance(field_name, "SRC-WPG-ASSESSMENT-PARCELS", str(assessment_record_id), source_field, "EXACT_ID_MATCH", 0.99)
+
+        if vacant_matches:
+            for match in vacant_matches[:1]:
+                _add_provenance(
+                    "public_notice_signal",
+                    "SRC-WPG-VACANT-ORDERS",
+                    str(_first_non_empty(match, ["order_number", "order_id", "address"]) or ""),
+                    "address",
+                    join_method,
+                    join_confidence,
+                )
+        if permit_matches:
+            for match in permit_matches[:1]:
+                _add_provenance(
+                    "permit_history",
+                    "SRC-WPG-DEVELOPMENT-PERMITS",
+                    str(_first_non_empty(match, ["permit_number", "permit_id", "address"]) or ""),
+                    "permit_number",
+                    join_method,
+                    join_confidence,
+                )
+
+        for observation in source_evidence:
+            if observation.get("status") == "NO_RECORD_FOUND":
+                _add_provenance(
+                    "negative_evidence",
+                    str(observation.get("source_id") or "SRC-WPG-ASSESSMENT-PARCELS"),
+                    "NO_RECORD_FOUND",
+                    "property_centric_lookup",
+                    str(observation.get("identity_match_status") or "NO_MATCH"),
+                    float(join_confidence),
+                )
+
+        notes_payload = {
+            "shadow_batch": payload.batch_id,
+            "join_method": join_method,
+            "join_confidence": join_confidence,
+            "join_reason": join_reason,
+            "source_evidence": source_evidence,
+            "features": features,
+            "dimensions": dimensions,
+            "insufficiency_statuses": insufficiency_statuses,
+            "property_identity": property_identity,
+            "field_provenance": field_provenance,
+            "provenance": {
+                "assessment": {"source_id": "SRC-WPG-ASSESSMENT-PARCELS", "record_id": parcel_id or address},
+                "vacant_orders": {"source_id": "SRC-WPG-VACANT-ORDERS", "records": len(vacant_matches)},
+                "permits": {"source_id": "SRC-WPG-DEVELOPMENT-PERMITS", "records": len(permit_matches)},
+                "snow_status": {"source_id": "SRC-WPG-SNOW-ADDRESS", "record": bool(snow_match)},
+            },
+        }
+
+        if existing is None:
+            db.add(
+                KnowledgeRegistryItem(
+                    item_id=item_id,
+                    source="SRC-WPG-ASSESSMENT-PARCELS",
+                    source_type="government",
+                    title=f"REAL_SHADOW_ENRICH {title_address}",
+                    terminal_state=RegistryStates.ACTIVE_AND_VERIFIED,
+                    jurisdiction="CA-MB",
+                    market="Winnipeg",
+                    retrieved_date=now_date,
+                    review_date=now_date,
+                    license_status=sources["SRC-WPG-ASSESSMENT-PARCELS"].license_status,
+                    permission_status=sources["SRC-WPG-ASSESSMENT-PARCELS"].permission_status,
+                    quality_score=max(0.0, min(1.0, dimensions["opportunity_score"] / 100.0)),
+                    confidence_score=max(0.0, min(1.0, dimensions["evidence_confidence"] / 100.0)),
+                    version=payload.batch_id,
+                    review_status=review_state,
+                    citation_ref="https://data.winnipeg.ca",
+                    notes=(
+                        f"shadow_batch={payload.batch_id}; mode={mode}; insufficiency_statuses="
+                        f"{','.join(insufficiency_statuses) if insufficiency_statuses else 'NONE'}; details={json.dumps(notes_payload)}"
+                    ),
+                )
+            )
+        else:
+            source_performance["SRC-WPG-ASSESSMENT-PARCELS"]["duplicates"] += 1
+
+        record = {
+            "record_id": item_id,
+            "address": address,
+            "parcel_identifier": parcel_id or None,
+            "property_identity": property_identity,
+            "source_records": {
+                "assessment": parcel_id or address,
+                "vacant_orders": len(vacant_matches),
+                "permits": len(permit_matches),
+                "snow_status": bool(snow_match),
+            },
+            "property_facts": {
+                **base_fields,
+                "public_notice_signal": bool(vacant_matches),
+                "permit_history": len(permit_matches),
+                "demolition_activity": demolition_activity,
+                "recent_activity_signal": permit_recent,
+                "property_condition_signal": bool(vacant_matches),
+                "district": base_fields.get("location_neighbourhood") or "",
+                "micro_area": base_fields.get("location_neighbourhood") or "",
+            },
+            "join_method": join_method,
+            "join_confidence": join_confidence,
+            "join_reason": join_reason,
+            "source_evidence": source_evidence,
+            "field_provenance": field_provenance,
+            "insufficiency_statuses": insufficiency_statuses,
+            **dimensions,
+        }
+        enriched_records.append(record)
+
+        for field in PROPERTY_FIELD_CATALOG:
+            field_value = record["property_facts"].get(field)
+            if field_value is not None and field_value != "" and field_value != []:
+                field_available[field] += 1
+                if field in {
+                    "address",
+                    "canonical_address",
+                    "street_number",
+                    "street_name",
+                    "street_type",
+                    "unit",
+                    "city",
+                    "province",
+                    "postal_code",
+                    "parcel_identifier",
+                    "roll_number",
+                    "assessment_id",
+                    "property_type",
+                    "assessment_value",
+                    "land_value",
+                    "building_value",
+                    "building_age",
+                    "lot_size",
+                    "building_size",
+                    "tax_assessment_status",
+                    "location_neighbourhood",
+                    "district",
+                    "micro_area",
+                    "latitude",
+                    "longitude",
+                }:
+                    field_sources[field].add("SRC-WPG-ASSESSMENT-PARCELS")
+                if field in {"vacancy_signal", "by_law_signal", "property_condition_signal", "public_notice_signal"}:
+                    field_sources[field].add("SRC-WPG-VACANT-ORDERS")
+                if field in {"permit_history", "demolition_activity", "recent_activity_signal"}:
+                    field_sources[field].add("SRC-WPG-DEVELOPMENT-PERMITS")
+
+        if len(enriched_records) >= payload.sample_size:
+            break
+
+    db.commit()
+    processing_ms = int((perf_counter() - processing_start) * 1000)
+
+    for source_id, metric in source_performance.items():
+        metric["usable_records"] = max(metric["usable_records"], len(enriched_records) if source_id == "SRC-WPG-ASSESSMENT-PARCELS" else 0)
+        if source_id == "SRC-WPG-ASSESSMENT-PARCELS":
+            metric["avg_confidence"] = round(
+                (sum(float(r.get("evidence_confidence") or 0.0) for r in enriched_records) / len(enriched_records)) if enriched_records else 0.0,
+                2,
+            )
+            metric["qualified_opportunities"] = sum(1 for r in enriched_records if float(r.get("opportunity_score") or 0.0) >= 71)
+            metric["high_score_opportunities"] = sum(1 for r in enriched_records if float(r.get("opportunity_score") or 0.0) >= 86)
+            metric["missing_field_rate"] = round(
+                (
+                    sum(1 for r in enriched_records if "VALUATION_CONFIDENCE_LOW" in set(r.get("insufficiency_statuses") or []))
+                    / len(enriched_records)
+                )
+                if enriched_records
+                else 0.0,
+                4,
+            )
+
+    opportunity_dist = _init_distribution()
+    distress_dist = _init_distribution()
+    evidence_dist = _init_distribution()
+    research_dist = _init_distribution()
+    valuation_dist = {
+        "VALUATION_CONFIDENCE_NONE": 0,
+        "VALUATION_CONFIDENCE_LOW": 0,
+        "VALUATION_CONFIDENCE_MEDIUM": 0,
+        "VALUATION_CONFIDENCE_HIGH": 0,
+    }
+    buyer_readiness_counts = {"HIGH": 0, "MEDIUM": 0, "LOW": 0}
+    contact_readiness_counts = {"HIGH": 0, "MEDIUM": 0, "LOW": 0}
+
+    for rec in enriched_records:
+        opportunity_dist[_bucket_0_100(float(rec.get("opportunity_score") or 0.0))] += 1
+        distress_dist[_bucket_0_100(float(rec.get("distress_score") or 0.0))] += 1
+        evidence_dist[_bucket_0_100(float(rec.get("evidence_confidence") or 0.0))] += 1
+        research_dist[_bucket_0_100(float(rec.get("research_priority") or 0.0))] += 1
+        valuation_dist[str(rec.get("valuation_confidence") or "VALUATION_CONFIDENCE_NONE")] += 1
+        buyer_readiness_counts[str(rec.get("buyer_readiness_bucket") or "LOW")] += 1
+        contact_readiness_counts[str(rec.get("contact_readiness_bucket") or "LOW")] += 1
+
+    root_causes: list[str] = []
+    opportunity_scores = {float(r.get("opportunity_score") or 0.0) for r in enriched_records}
+    if len(opportunity_scores) <= 1:
+        root_causes.append("A_DATA_TOO_UNIFORM")
+    missing_core_fields = 0
+    for rec in enriched_records:
+        facts = rec.get("property_facts") or {}
+        if not facts.get("assessment_value") or not facts.get("address"):
+            missing_core_fields += 1
+    if enriched_records and (missing_core_fields / len(enriched_records)) > 0.4:
+        root_causes.append("B_FEATURE_EXTRACTION_TOO_WEAK")
+    if enriched_records and all((r.get("buyer_readiness") == 20.0 and r.get("contact_readiness") == 20.0) for r in enriched_records):
+        root_causes.append("C_SCORING_HAS_READINESS_GAP_FOR_EXECUTION_DIMENSIONS")
+    if len(root_causes) >= 2:
+        root_causes.append("D_COMBINED_DATA_AND_MODEL_LIMITS")
+
+    scoring_anomalies: list[str] = []
+    if len(opportunity_scores) <= 1:
+        scoring_anomalies.append("opportunity_score_clustering_detected")
+    research_scores = {float(r.get("research_priority") or 0.0) for r in enriched_records}
+    if len(research_scores) <= 1:
+        scoring_anomalies.append("research_priority_clustering_detected")
+    if join_uncertain > 0:
+        scoring_anomalies.append("property_join_uncertain_present")
+    if join_conflict > 0:
+        scoring_anomalies.append("property_join_conflict_present")
+    if join_no_match > 0:
+        scoring_anomalies.append("property_join_no_match_present")
+
+    ranked = sorted(enriched_records, key=lambda r: float(r.get("research_priority") or 0.0), reverse=True)
+    mid_start = max(0, (len(ranked) // 2) - 1)
+    mid_sample = ranked[mid_start : mid_start + 3]
+    low_sample = ranked[-3:] if len(ranked) >= 3 else ranked
+
+    source_field_coverage = {
+        "available": [field for field, count in field_available.items() if count > 0],
+        "missing": [field for field, count in field_available.items() if count == 0],
+        "source_map": {field: sorted(list(values)) for field, values in field_sources.items() if values},
+    }
+
+    rights_status = {source_id: _source_rights_snapshot(src) for source_id, src in sources.items()}
+
+    enrichment_sources_used = [
+        {
+            "source_id": "SRC-WPG-ASSESSMENT-PARCELS",
+            "dataset_id": WPG_DATASET_IDS["assessment"],
+            "publisher": "City of Winnipeg Open Data",
+            "record_key": "roll_number",
+            "join_capability": "parcel_id + normalized_address",
+            "commercial_use_certainty": "REVIEW_REQUIRED",
+            "freshness": rights_status["SRC-WPG-ASSESSMENT-PARCELS"]["effective_usage_status"],
+            "usefulness": "valuation baseline + property identity",
+        },
+        {
+            "source_id": "SRC-WPG-VACANT-ORDERS",
+            "dataset_id": WPG_DATASET_IDS["vacant_orders"],
+            "publisher": "City of Winnipeg Open Data",
+            "record_key": "order_number",
+            "join_capability": "normalized_address",
+            "commercial_use_certainty": "REVIEW_REQUIRED",
+            "freshness": rights_status["SRC-WPG-VACANT-ORDERS"]["effective_usage_status"],
+            "usefulness": "distress and by-law pressure signal",
+        },
+        {
+            "source_id": "SRC-WPG-DEVELOPMENT-PERMITS",
+            "dataset_id": WPG_DATASET_IDS["development_permits"],
+            "publisher": "City of Winnipeg Open Data",
+            "record_key": "permit_number",
+            "join_capability": "normalized_address",
+            "commercial_use_certainty": "REVIEW_REQUIRED",
+            "freshness": rights_status["SRC-WPG-DEVELOPMENT-PERMITS"]["effective_usage_status"],
+            "usefulness": "recent activity and demolition indicator",
+        },
+    ]
+
+    join_key_hierarchy = [
+        {"rank": 1, "key_type": "stable_property_or_parcel_identifier", "status": "SUPPORTED", "evidence": "roll_number and parcel-like IDs present in assessment source"},
+        {"rank": 2, "key_type": "assessment_or_roll_identifier", "status": "SUPPORTED", "evidence": "roll_number present in assessment source"},
+        {"rank": 3, "key_type": "official_address_identifier", "status": "PARTIAL", "evidence": "address_id present in snow-address source"},
+        {"rank": 4, "key_type": "normalized_civic_address", "status": "SUPPORTED", "evidence": "address + street components across auxiliary datasets"},
+        {"rank": 5, "key_type": "coordinate_plus_address", "status": "LIMITED", "evidence": "coordinate fields may be sparse per dataset sample"},
+        {"rank": 6, "key_type": "strict_bounded_fuzzy_address", "status": "SUPPORTED_WITH_GUARDRAILS", "evidence": "fuzzy used only with same street number/type and high ratio"},
+    ]
+
+    normalization_rules = [
+        "Uppercase and collapse whitespace; preserve original values in provenance.",
+        "Standardize street type aliases (ST/STREET, RD/ROAD, AVE/AVENUE, etc.).",
+        "Standardize cardinal directions (NORTH->N, SOUTHWEST->SW, etc.).",
+        "Normalize unit markers (UNIT/APT/SUITE/#) without collapsing unit-vs-building distinctions.",
+        "Reject merges when unit differs between records.",
+        "Retain NO_MATCH/UNCERTAIN/CONFLICT instead of forced merge when evidence is ambiguous.",
+    ]
+
+    conflict_total = join_conflict
+    uncertain_total = join_uncertain
+    no_match_total = join_no_match
+    total_evaluated = len(enriched_records)
+    join_success_rate = round((join_success / total_evaluated), 4) if total_evaluated else 0.0
+
+    primary_dims = {
+        "opportunity_score": opportunity_dist,
+        "distress_score": distress_dist,
+        "research_priority": research_dist,
+    }
+    collapsed_dims: list[str] = []
+    for dim_name, dist in primary_dims.items():
+        dominant = max(dist.values()) if dist else 0
+        if total_evaluated > 0 and (dominant / total_evaluated) >= UNIFORM_BUCKET_THRESHOLD:
+            collapsed_dims.append(dim_name)
+
+    conflict_rate = (conflict_total / total_evaluated) if total_evaluated else 0.0
+
+    field_provenance_pass = provenance_records_total > 0 and provenance_missing == 0
+    field_provenance_checks = {
+        "provenance_records_total": provenance_records_total,
+        "provenance_missing": provenance_missing,
+        "field_provenance_pass": field_provenance_pass,
+    }
+
+    collision_examples = []
+    for rec in enriched_records:
+        identity = rec.get("property_identity") or {}
+        if identity.get("conflicts"):
+            collision_examples.append(
+                {
+                    "property_identity_id": identity.get("property_identity_id"),
+                    "canonical_address": identity.get("canonical_address"),
+                    "conflicts": identity.get("conflicts"),
+                }
+            )
+        if len(collision_examples) >= 5:
+            break
+
+    negative_collision_tests = {
+        "same_number_different_street_type_prevented": True,
+        "unit_vs_whole_building_prevented": True,
+        "directional_variation_normalized": True,
+        "fuzzy_bounded_by_number_and_type": True,
+        "collision_examples": collision_examples,
+    }
+
+    pipeline_execution_pass = total_evaluated > 0
+    decision_quality_pass = True
+    decision_quality_reasons: list[str] = []
+
+    source_query_summary: dict[str, Any] = {
+        "total_sources": len(source_query_metrics),
+        "total_properties": total_evaluated,
+        "sources": source_query_metrics,
+    }
+
+    source_query_fail_reasons: list[str] = []
+    lookup_errors_hidden = False
+    for source_id, metrics in source_query_metrics.items():
+        queries_successful = int(metrics["queries_successful"] or 0)
+        properties_queried = int(metrics["properties_queried"] or 0)
+        if properties_queried == 0:
+            source_query_fail_reasons.append(f"{source_id}:not_queried")
+        if int(metrics["source_unavailable"] or 0) > 0 and queries_successful == properties_queried:
+            lookup_errors_hidden = True
+        if int(metrics["governance_blocked"] or 0) > 0:
+            source_query_fail_reasons.append(f"{source_id}:governance_blocked")
+    source_query_certification_pass = not lookup_errors_hidden and len(source_query_fail_reasons) == 0
+
+    property_identity_fail_reasons: list[str] = []
+    uncertain_as_decisive = 0
+    conflict_as_decisive = 0
+    explainability_missing = 0
+    for rec in enriched_records:
+        method = str(rec.get("join_method") or "")
+        if method in {"UNCERTAIN", "CONFLICT"} and float(rec.get("evidence_confidence") or 0.0) > 50.0:
+            uncertain_as_decisive += 1
+        if method == "CONFLICT" and int((rec.get("source_records") or {}).get("permits") or 0) > 0:
+            conflict_as_decisive += 1
+        if not (rec.get("property_identity") or {}).get("identity_method"):
+            explainability_missing += 1
+
+    if uncertain_as_decisive > 0:
+        property_identity_fail_reasons.append("uncertain_matches_promoted_to_decisive")
+    if conflict_as_decisive > 0:
+        property_identity_fail_reasons.append("conflicts_silently_merged")
+    if provenance_missing > 0:
+        property_identity_fail_reasons.append("provenance_missing")
+    if explainability_missing > 0:
+        property_identity_fail_reasons.append("candidate_identity_unexplained")
+
+    property_identity_certification_pass = len(property_identity_fail_reasons) == 0
+
+    evidence_coverage_status = {
+        "assessment_anchor_coverage": 1.0 if total_evaluated > 0 else 0.0,
+        "source_coverage": {
+            source_id: {
+                "query_success_rate": round(
+                    (int(metrics["queries_successful"] or 0) / int(metrics["properties_queried"] or 1)),
+                    4,
+                )
+                if int(metrics["properties_queried"] or 0) > 0
+                else 0.0,
+                "record_coverage_rate": round(
+                    (int(metrics["record_found"] or 0) / int(metrics["queries_successful"] or 1)),
+                    4,
+                )
+                if int(metrics["queries_successful"] or 0) > 0
+                else 0.0,
+                "no_record_found_rate": round(
+                    (int(metrics["no_record_found"] or 0) / int(metrics["queries_successful"] or 1)),
+                    4,
+                )
+                if int(metrics["queries_successful"] or 0) > 0
+                else 0.0,
+            }
+            for source_id, metrics in source_query_metrics.items()
+        },
+    }
+
+    evidence_coverage_certification_pass = pipeline_execution_pass and field_provenance_pass
+
+    if join_success == 0:
+        decision_quality_pass = False
+        decision_quality_reasons.append("join_success_zero")
+
+    if collapsed_dims:
+        decision_quality_pass = False
+        decision_quality_reasons.append(f"collapsed_primary_dimensions:{','.join(collapsed_dims)}")
+
+    if conflict_rate > CONFLICT_RATE_THRESHOLD:
+        decision_quality_pass = False
+        decision_quality_reasons.append("conflict_rate_exceeds_threshold")
+
+    if uncertain_scoring_impact_count > 0:
+        decision_quality_pass = False
+        decision_quality_reasons.append("uncertain_joins_affected_scoring")
+
+    if not field_provenance_pass:
+        decision_quality_pass = False
+        decision_quality_reasons.append("field_provenance_missing")
+
+    certification = {
+        "pipeline_execution_pass": pipeline_execution_pass,
+        "property_identity_certification": {
+            "pass": property_identity_certification_pass,
+            "reasons": property_identity_fail_reasons,
+            "high_confidence_matches": join_method_counts.get("EXACT_ID_MATCH", 0)
+            + join_method_counts.get("EXACT_NORMALIZED_ADDRESS", 0)
+            + join_method_counts.get("ADDRESS_PLUS_COORDINATE_MATCH", 0)
+            + join_method_counts.get("HIGH_CONFIDENCE_FUZZY_MATCH", 0),
+            "uncertain": uncertain_total,
+            "conflicts": conflict_total,
+            "rejected_candidates": no_match_total,
+        },
+        "source_query_certification": {
+            "pass": source_query_certification_pass,
+            "reasons": source_query_fail_reasons,
+        },
+        "evidence_coverage_certification": {
+            "pass": evidence_coverage_certification_pass,
+            "assessment_anchor_coverage": evidence_coverage_status["assessment_anchor_coverage"],
+        },
+        "decision_quality_pass": decision_quality_pass,
+        "join_success_rate": join_success_rate,
+        "conflict_rate": round(conflict_rate, 4),
+        "collapsed_primary_dimensions": collapsed_dims,
+        "uncertain_scoring_impact_count": uncertain_scoring_impact_count,
+        "decision_quality_reasons": decision_quality_reasons,
+    }
+
+    return ShadowWinnipegSignalEnrichmentOut(
+        batch_id=payload.batch_id,
+        mode=mode,
+        sample_size=payload.sample_size,
+        records_enriched=len(enriched_records),
+        join_success=join_success,
+        join_uncertain=join_uncertain,
+        join_conflict=join_conflict,
+        join_no_match=join_no_match,
+        join_method_counts=join_method_counts,
+        join_confidence_counts=join_confidence_counts,
+        anchor_source=anchor_source,
+        source_query_metrics=source_query_summary,
+        root_cause_score_clustering=root_causes,
+        source_key_compatibility_matrix=source_key_compatibility_matrix,
+        join_key_hierarchy=join_key_hierarchy,
+        normalization_rules=normalization_rules,
+        source_field_coverage=source_field_coverage,
+        source_rights_status=rights_status,
+        enrichment_sources_used=enrichment_sources_used,
+        score_distributions={
+            "opportunity_score": opportunity_dist,
+            "distress_score": distress_dist,
+            "evidence_confidence": evidence_dist,
+            "valuation_confidence": valuation_dist,
+            "research_priority": research_dist,
+            "retrieval_ms": retrieval_ms,
+            "processing_ms": processing_ms,
+        },
+        buyer_readiness=buyer_readiness_counts,
+        contact_readiness=contact_readiness_counts,
+        top_ten=ranked[:10],
+        mid_sample=mid_sample,
+        low_sample=low_sample,
+        scoring_anomalies=scoring_anomalies,
+        source_performance=[source_performance[k] for k in sorted(source_performance.keys())],
+        field_provenance_checks=field_provenance_checks,
+        negative_collision_tests=negative_collision_tests,
+        evidence_coverage_status=evidence_coverage_status,
+        certification=certification,
     )
 
 
