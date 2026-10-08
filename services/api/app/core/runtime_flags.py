@@ -33,6 +33,11 @@ def is_sandbox():
     return RUNTIME_MODE == RuntimeMode.SANDBOX
 
 
+def is_shadow():
+    """Canonical helper: shadow mode means not live and all external effects must fail closed."""
+    return not is_live()
+
+
 def set_runtime_mode(mode: RuntimeMode):
     """Set the runtime mode. Compatibility function."""
     global RUNTIME_MODE

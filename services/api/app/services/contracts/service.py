@@ -19,6 +19,7 @@ from app.models.contracts import (
     ContractState,
     SignProvider,
 )
+from app.core.engines.dispatch_guard import guard_contract_send
 from app.schemas.contracts import PartyIn
 from app.services.contracts.provider_base import ProviderRecipient, SignatureProvider
 from app.services.contracts.provider_sandbox import SandboxSignatureProvider
@@ -197,6 +198,7 @@ class ContractPipeline:
         message: str,
         actor: Optional[str],
     ) -> ContractEnvelope:
+        guard_contract_send("wholesaling")
         c = self.db.query(Contract).filter(Contract.id == contract_id).one()
         if c.state != ContractState.APPROVED_FOR_SIGNATURE:
             raise ValueError(f"Contract must be APPROVED_FOR_SIGNATURE to send. Current={c.state}")

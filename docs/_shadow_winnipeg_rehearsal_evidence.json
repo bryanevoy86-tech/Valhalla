@@ -1,0 +1,502 @@
+{
+  "generated_at": "2026-10-08T00:17:30.117653+00:00",
+  "rehearsal": {
+    "run1": {
+      "batch_id": "BATCH-SHADOW-REAL-001",
+      "mode": "practice",
+      "requested_limit": 20,
+      "fetched": 20,
+      "inserted": 20,
+      "duplicates": 0,
+      "blocked": 0,
+      "rejected": 0,
+      "parse_failures": 0,
+      "source_failures": 0,
+      "valuation_confidence_low": 20,
+      "buyer_data_insufficient": 20,
+      "contact_not_verified": 20,
+      "pending_human_review": 20,
+      "sources_used": [
+        "SRC-CANADA-OPEN-DATA",
+        "SRC-WPG-OPEN-DATA"
+      ]
+    },
+    "run2": {
+      "batch_id": "BATCH-SHADOW-REAL-001",
+      "mode": "practice",
+      "requested_limit": 20,
+      "fetched": 20,
+      "inserted": 0,
+      "duplicates": 20,
+      "blocked": 0,
+      "rejected": 0,
+      "parse_failures": 0,
+      "source_failures": 0,
+      "valuation_confidence_low": 0,
+      "buyer_data_insufficient": 0,
+      "contact_not_verified": 0,
+      "pending_human_review": 0,
+      "sources_used": [
+        "SRC-CANADA-OPEN-DATA",
+        "SRC-WPG-OPEN-DATA"
+      ]
+    },
+    "live_mode_attempt": {
+      "status_code": 409,
+      "body": {
+        "detail": "shadow rehearsal is restricted to practice/test modes"
+      }
+    }
+  },
+  "status_counters": {
+    "valuation_confidence_low": 20,
+    "buyer_data_insufficient": 20,
+    "contact_not_verified": 20,
+    "pending_human_review": 20,
+    "rejected": 0,
+    "parse_failures": 0,
+    "source_failures": 0
+  },
+  "knowledge_inventory": {
+    "total_items": 20,
+    "by_source": {
+      "SRC-WPG-OPEN-DATA": 10,
+      "SRC-CANADA-OPEN-DATA": 10
+    },
+    "sample": [
+      {
+        "item_id": "KN-SHADOW-29a66b8c10397830",
+        "source": "SRC-WPG-OPEN-DATA",
+        "title": "REAL_SHADOW WWD Rivers, Creeks, and Streams Water Quality Monitoring",
+        "citation_ref": "https://data.winnipeg.ca/d/8vpu-fybf",
+        "review_date": "2026-10-08"
+      },
+      {
+        "item_id": "KN-SHADOW-a56150512830f694",
+        "source": "SRC-WPG-OPEN-DATA",
+        "title": "REAL_SHADOW Map of Downtown Boundary",
+        "citation_ref": "https://data.winnipeg.ca/d/2df6-k8j2",
+        "review_date": "2026-10-08"
+      },
+      {
+        "item_id": "KN-SHADOW-5e6bc0051ed70812",
+        "source": "SRC-WPG-OPEN-DATA",
+        "title": "REAL_SHADOW Downtown Boundary",
+        "citation_ref": "https://data.winnipeg.ca/d/c26m-yeye",
+        "review_date": "2026-10-08"
+      },
+      {
+        "item_id": "KN-SHADOW-5afcdbeaba691d4e",
+        "source": "SRC-WPG-OPEN-DATA",
+        "title": "REAL_SHADOW Licensed Sewer and Water Contractors",
+        "citation_ref": "https://data.winnipeg.ca/d/m2az-qa9q",
+        "review_date": "2026-10-08"
+      },
+      {
+        "item_id": "KN-SHADOW-1e3cbd85e61956f4",
+        "source": "SRC-WPG-OPEN-DATA",
+        "title": "REAL_SHADOW Map of 2026 Orthographic Photography Mosaic",
+        "citation_ref": "https://data.winnipeg.ca/d/e29y-me8j",
+        "review_date": "2026-10-08"
+      },
+      {
+        "item_id": "KN-SHADOW-f26ae1cf5868362f",
+        "source": "SRC-WPG-OPEN-DATA",
+        "title": "REAL_SHADOW CentrePlan Exchange District BIZ Assessed Retail Value Timeline Chart",
+        "citation_ref": "https://data.winnipeg.ca/d/qxiv-ie8m",
+        "review_date": "2026-10-08"
+      },
+      {
+        "item_id": "KN-SHADOW-bcc39327985568f8",
+        "source": "SRC-WPG-OPEN-DATA",
+        "title": "REAL_SHADOW CentrePlan Downtown BIZ Assessed Retail Value Timeline Chart",
+        "citation_ref": "https://data.winnipeg.ca/d/kadk-bz2t",
+        "review_date": "2026-10-08"
+      },
+      {
+        "item_id": "KN-SHADOW-27ba65d01576d563",
+        "source": "SRC-WPG-OPEN-DATA",
+        "title": "REAL_SHADOW CentrePlan Downtown Street Level Vacancy Timeline Chart",
+        "citation_ref": "https://data.winnipeg.ca/d/xk47-mh4h",
+        "review_date": "2026-10-08"
+      }
+    ]
+  },
+  "source_registry": [
+    {
+      "source_id": "SRC-CANADA-OPEN-DATA",
+      "canonical_name": "Government of Canada Open Data",
+      "data_class": "live",
+      "permission_status": "public",
+      "license_status": "government_open_data",
+      "rights_statement_url": "https://open.canada.ca/en/open-government-licence-canada",
+      "trust_tier": "tier2",
+      "provenance_method": "official_api",
+      "governance_status": "approved",
+      "shadow_approved": true,
+      "mode_allowlist": [
+        "practice",
+        "test"
+      ]
+    },
+    {
+      "source_id": "SRC-WPG-OPEN-DATA",
+      "canonical_name": "City of Winnipeg Open Data",
+      "data_class": "live",
+      "permission_status": "public",
+      "license_status": "government_open_data",
+      "rights_statement_url": "https://data.winnipeg.ca/stories/s/Open-Data-Winnipeg-Terms-of-Use/4h5q-kw4n/",
+      "trust_tier": "tier2",
+      "provenance_method": "official_api",
+      "governance_status": "approved",
+      "shadow_approved": true,
+      "mode_allowlist": [
+        "practice",
+        "test"
+      ]
+    }
+  ],
+  "retrieve_high_risk": {
+    "question": "What current Winnipeg real-estate datasets are available?",
+    "facts": [],
+    "assumptions": [
+      {
+        "item_id": "KN-SHADOW-03bfb3bf63ae871b",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "title": "REAL_SHADOW Public Services and Procurement Canada federal real estate available for sale to the general public",
+        "citation_ref": "https://open.canada.ca/data/en/dataset/e7a3accb-d419-4d8a-b612-0a601ba4540c",
+        "review_status": "PENDING_HUMAN_REVIEW",
+        "jurisdiction": "CA-MB",
+        "confidence_score": 0.7,
+        "effective_confidence_score": 0.7,
+        "quality_score": 0.75,
+        "review_date": "2026-10-08",
+        "freshness_state": "fresh",
+        "review_age_days": 0,
+        "source_trust_rank": 4,
+        "source_type": "government"
+      },
+      {
+        "item_id": "KN-SHADOW-e05a4901933b0b14",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "title": "REAL_SHADOW Real estate issues businesses or organizations are currently facing, second quarter of 2024",
+        "citation_ref": "https://open.canada.ca/data/en/dataset/15fe58a5-ba61-4733-bca8-e6d9795cd6da",
+        "review_status": "PENDING_HUMAN_REVIEW",
+        "jurisdiction": "CA-MB",
+        "confidence_score": 0.7,
+        "effective_confidence_score": 0.7,
+        "quality_score": 0.75,
+        "review_date": "2026-10-08",
+        "freshness_state": "fresh",
+        "review_age_days": 0,
+        "source_trust_rank": 4,
+        "source_type": "government"
+      },
+      {
+        "item_id": "KN-SHADOW-277c54084a7ab884",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "title": "REAL_SHADOW Mortgage accounts of trust companies, mortgage companies, and real estate investment trusts",
+        "citation_ref": "https://open.canada.ca/data/en/dataset/9c7673c0-7231-4908-9148-be1e123252e7",
+        "review_status": "PENDING_HUMAN_REVIEW",
+        "jurisdiction": "CA-MB",
+        "confidence_score": 0.7,
+        "effective_confidence_score": 0.7,
+        "quality_score": 0.75,
+        "review_date": "2026-10-08",
+        "freshness_state": "fresh",
+        "review_age_days": 0,
+        "source_trust_rank": 4,
+        "source_type": "government"
+      },
+      {
+        "item_id": "KN-SHADOW-a1aee3e0f2e177f1",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "title": "REAL_SHADOW Real estate rental and leasing and property management, summary statistics, inactive",
+        "citation_ref": "https://open.canada.ca/data/en/dataset/061d53cf-0def-4948-a631-5146399cac77",
+        "review_status": "PENDING_HUMAN_REVIEW",
+        "jurisdiction": "CA-MB",
+        "confidence_score": 0.7,
+        "effective_confidence_score": 0.7,
+        "quality_score": 0.75,
+        "review_date": "2026-10-08",
+        "freshness_state": "fresh",
+        "review_age_days": 0,
+        "source_trust_rank": 4,
+        "source_type": "government"
+      },
+      {
+        "item_id": "KN-SHADOW-a21ec991c870ff58",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "title": "REAL_SHADOW Real estate rental and leasing and property management, summary statistics",
+        "citation_ref": "https://open.canada.ca/data/en/dataset/13425ff1-aa23-495f-a80d-7178af53bc84",
+        "review_status": "PENDING_HUMAN_REVIEW",
+        "jurisdiction": "CA-MB",
+        "confidence_score": 0.7,
+        "effective_confidence_score": 0.7,
+        "quality_score": 0.75,
+        "review_date": "2026-10-08",
+        "freshness_state": "fresh",
+        "review_age_days": 0,
+        "source_trust_rank": 4,
+        "source_type": "government"
+      },
+      {
+        "item_id": "KN-SHADOW-9be9b112bcbe40d2",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "title": "REAL_SHADOW Capital and repair expenditures, real estate and rental and leasing",
+        "citation_ref": "https://open.canada.ca/data/en/dataset/16a5a7b5-644e-424f-94f0-aeff59d077f4",
+        "review_status": "PENDING_HUMAN_REVIEW",
+        "jurisdiction": "CA-MB",
+        "confidence_score": 0.7,
+        "effective_confidence_score": 0.7,
+        "quality_score": 0.75,
+        "review_date": "2026-10-08",
+        "freshness_state": "fresh",
+        "review_age_days": 0,
+        "source_trust_rank": 4,
+        "source_type": "government"
+      },
+      {
+        "item_id": "KN-SHADOW-9f480ee390abc540",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "title": "REAL_SHADOW Real estate agents, brokers and appraisers and other real estate activities, summary statistics, by North American Industry Classification System (NAICS), inactive",
+        "citation_ref": "https://open.canada.ca/data/en/dataset/bd0a2a1c-178b-4219-8f57-c729b2c60e36",
+        "review_status": "PENDING_HUMAN_REVIEW",
+        "jurisdiction": "CA-MB",
+        "confidence_score": 0.7,
+        "effective_confidence_score": 0.7,
+        "quality_score": 0.75,
+        "review_date": "2026-10-08",
+        "freshness_state": "fresh",
+        "review_age_days": 0,
+        "source_trust_rank": 4,
+        "source_type": "government"
+      },
+      {
+        "item_id": "KN-SHADOW-96d5cc15c7b0ab9d",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "title": "REAL_SHADOW Real estate agents, brokers and appraisers, summary statistics",
+        "citation_ref": "https://open.canada.ca/data/en/dataset/d2090097-2984-4b75-967c-e0f1eaa3f31b",
+        "review_status": "PENDING_HUMAN_REVIEW",
+        "jurisdiction": "CA-MB",
+        "confidence_score": 0.7,
+        "effective_confidence_score": 0.7,
+        "quality_score": 0.75,
+        "review_date": "2026-10-08",
+        "freshness_state": "fresh",
+        "review_age_days": 0,
+        "source_trust_rank": 4,
+        "source_type": "government"
+      },
+      {
+        "item_id": "KN-SHADOW-48a9efa2f2e98a14",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "title": "REAL_SHADOW Real estate agents and brokers, industry expenditures",
+        "citation_ref": "https://open.canada.ca/data/en/dataset/3ac161cf-1517-4183-b22f-8079c80c88a3",
+        "review_status": "PENDING_HUMAN_REVIEW",
+        "jurisdiction": "CA-MB",
+        "confidence_score": 0.7,
+        "effective_confidence_score": 0.7,
+        "quality_score": 0.75,
+        "review_date": "2026-10-08",
+        "freshness_state": "fresh",
+        "review_age_days": 0,
+        "source_trust_rank": 4,
+        "source_type": "government"
+      },
+      {
+        "item_id": "KN-SHADOW-b4318a3c29c689d6",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "title": "REAL_SHADOW Radon in real estate",
+        "citation_ref": "https://open.canada.ca/data/en/dataset/e9693de5-5726-4263-9bed-de460db96591",
+        "review_status": "PENDING_HUMAN_REVIEW",
+        "jurisdiction": "CA-MB",
+        "confidence_score": 0.7,
+        "effective_confidence_score": 0.7,
+        "quality_score": 0.75,
+        "review_date": "2026-10-08",
+        "freshness_state": "fresh",
+        "review_age_days": 0,
+        "source_trust_rank": 4,
+        "source_type": "government"
+      }
+    ],
+    "blocked_sources": [],
+    "human_review_required": true,
+    "escalation_reasons": [
+      "no high-confidence fact-grade evidence available for high-impact request"
+    ]
+  },
+  "human_review_path": {
+    "mastery_id": "MST-WPG-001",
+    "curriculum_id": "CURR-WPG-SHADOW-001",
+    "domain": "REAL_ESTATE_WINNIPEG",
+    "mastery_score": 0.555,
+    "promotion_state": "HUMAN_REVIEW_REQUIRED",
+    "human_review_required": true,
+    "open_reverify_tasks": 0,
+    "reasons": [
+      "assessment score below gate",
+      "benchmark score below gate",
+      "operational score below gate",
+      "mastery score below gate",
+      "high-impact promotion requires human review"
+    ]
+  },
+  "summary": {
+    "knowledge": {
+      "ACTIVE_AND_VERIFIED": 20,
+      "PROFESSIONALLY_GATED": 0,
+      "SUPERSEDED_REJECTED_NOT_APPLICABLE": 0,
+      "EXTERNALLY_BLOCKED": 0,
+      "BUILT_TESTED_FEATURE_GATED": 0
+    },
+    "templates": {
+      "ACTIVE_AND_VERIFIED": 0,
+      "PROFESSIONALLY_GATED": 0,
+      "SUPERSEDED_REJECTED_NOT_APPLICABLE": 0,
+      "EXTERNALLY_BLOCKED": 0,
+      "BUILT_TESTED_FEATURE_GATED": 0
+    },
+    "scoring": {
+      "ACTIVE_AND_VERIFIED": 0,
+      "PROFESSIONALLY_GATED": 0,
+      "SUPERSEDED_REJECTED_NOT_APPLICABLE": 0,
+      "EXTERNALLY_BLOCKED": 0,
+      "BUILT_TESTED_FEATURE_GATED": 0
+    },
+    "sources": {
+      "ACTIVE_AND_VERIFIED": 2,
+      "PROFESSIONALLY_GATED": 0,
+      "SUPERSEDED_REJECTED_NOT_APPLICABLE": 0,
+      "EXTERNALLY_BLOCKED": 0,
+      "BUILT_TESTED_FEATURE_GATED": 0
+    },
+    "datasets": {
+      "ACTIVE_AND_VERIFIED": 0,
+      "PROFESSIONALLY_GATED": 0,
+      "SUPERSEDED_REJECTED_NOT_APPLICABLE": 0,
+      "EXTERNALLY_BLOCKED": 0,
+      "BUILT_TESTED_FEATURE_GATED": 0
+    },
+    "scenarios": {
+      "ACTIVE_AND_VERIFIED": 0,
+      "PROFESSIONALLY_GATED": 0,
+      "SUPERSEDED_REJECTED_NOT_APPLICABLE": 0,
+      "EXTERNALLY_BLOCKED": 0,
+      "BUILT_TESTED_FEATURE_GATED": 0
+    },
+    "learning_domains": {
+      "ACTIVE_AND_VERIFIED": 1,
+      "PROFESSIONALLY_GATED": 0,
+      "SUPERSEDED_REJECTED_NOT_APPLICABLE": 0,
+      "EXTERNALLY_BLOCKED": 0,
+      "BUILT_TESTED_FEATURE_GATED": 0
+    },
+    "learning_curricula": {
+      "ACTIVE_AND_VERIFIED": 1,
+      "PROFESSIONALLY_GATED": 0,
+      "SUPERSEDED_REJECTED_NOT_APPLICABLE": 0,
+      "EXTERNALLY_BLOCKED": 0,
+      "BUILT_TESTED_FEATURE_GATED": 0
+    },
+    "learning_feedback": {
+      "total": 1,
+      "human_review_required": 1
+    },
+    "learning_audit_events": 3,
+    "engine_registry": {
+      "total": 0,
+      "states": {
+        "ACTIVE": 0,
+        "BLOCKED": 0,
+        "OFF": 0,
+        "READY": 0,
+        "SANDBOX": 0
+      },
+      "planned_expected": 13,
+      "planned_represented": 0
+    },
+    "legacy_instances": {
+      "total": 0,
+      "by_status": {
+        "PASS": 0,
+        "PARTIAL": 0,
+        "FAIL": 0,
+        "EXTERNAL_OWNER_ACTION_REQUIRED": 0
+      },
+      "synchronization": {
+        "SYNCED": 0,
+        "DIVERGED": 0,
+        "BLOCKED": 0,
+        "PENDING": 0
+      },
+      "failover": {
+        "NOT_TRIGGERED": 0,
+        "FAILED": 0,
+        "RECOVERED": 0
+      },
+      "policy_sync": {
+        "SYNCED": 0,
+        "DIVERGED": 0,
+        "BLOCKED": 0
+      },
+      "work_items": {
+        "total": 0,
+        "queued": 0,
+        "in_progress": 0,
+        "paused": 0,
+        "completed": 0
+      },
+      "orchestration_events": 0
+    },
+    "learning_tasks": {
+      "queued": 0,
+      "in_progress": 0,
+      "blocked": 0,
+      "completed": 0,
+      "cancelled": 0
+    }
+  },
+  "source_probe": {
+    "winnipeg_api": {
+      "url": "https://data.winnipeg.ca/api/views.json?$limit=3",
+      "status_code": 200,
+      "final_url": "https://data.winnipeg.ca/api/views.json?$limit=3",
+      "ok": true,
+      "records_visible": 522,
+      "sample_title": "WWD Rivers, Creeks, and Streams Water Quality Monitoring"
+    },
+    "open_canada_api": {
+      "url": "https://open.canada.ca/data/en/api/3/action/package_search?q=winnipeg+real+estate&rows=3",
+      "status_code": 200,
+      "final_url": "https://open.canada.ca/data/en/api/3/action/package_search?q=winnipeg+real+estate&rows=3",
+      "ok": true,
+      "success": true,
+      "records_visible": 3,
+      "sample_title": "Radon in real estate"
+    },
+    "winnipeg_license": {
+      "url": "https://data.winnipeg.ca/stories/s/Open-Data-Licence/rwzh-4ijx/",
+      "status_code": 200,
+      "final_url": "https://data.winnipeg.ca/stories/s/Open-Data-Licence/rwzh-4ijx/",
+      "ok": true,
+      "contains_open_license_text": true,
+      "contains_commercial_or_use_terms": true,
+      "automated_access_status": "ALLOW",
+      "commercial_use_status": "REVIEW_REQUIRED",
+      "registry_classification": "REVIEW_REQUIRED"
+    },
+    "open_canada_license": {
+      "url": "https://open.canada.ca/en/open-government-licence-canada",
+      "status_code": 200,
+      "final_url": "https://open.canada.ca/en/open-government-licence-canada",
+      "ok": true,
+      "contains_open_license_text": true,
+      "contains_commercial_or_use_terms": true,
+      "automated_access_status": "ALLOW",
+      "commercial_use_status": "ALLOW_WITH_ATTRIBUTION",
+      "registry_classification": "APPROVED"
+    }
+  }
+}

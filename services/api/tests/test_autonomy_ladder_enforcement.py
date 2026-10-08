@@ -122,11 +122,16 @@ def test_restricted_real_world_actions_blocked_in_sandbox_with_audit(monkeypatch
 
     db = SessionLocal()
     try:
+        shadow_rows = db.query(AuditLog).filter(AuditLog.event_type == "shadow_action_blocked").all()
         audit_rows = db.query(AuditLog).filter(AuditLog.event_type == "autonomy_action_blocked").all()
         logged_actions = {row.event_data for row in audit_rows}
+        shadow_actions = {row.event_data for row in shadow_rows}
+        assert len(shadow_rows) >= len(blocked)
         assert len(audit_rows) >= len(blocked)
         for action in blocked:
             assert any(action in (item or "") for item in logged_actions)
+            assert any(action in (item or "") for item in shadow_actions)
+        assert any("\"canonical_runtime_mode\": \"SHADOW\"" in (item or "") for item in shadow_actions)
     finally:
         db.close()
 

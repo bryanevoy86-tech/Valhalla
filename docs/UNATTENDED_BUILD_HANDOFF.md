@@ -98,6 +98,39 @@ Stage report from run:
 - LEARNING_FEEDBACK_EVENTS=1
 - REVERIFY_TASKS=2
 - INTEGRITY_ALERTS=4
+
+### 4) Shadow Runtime Hardening (2026-10-07)
+Implemented:
+- Added canonical block audit event `shadow_action_blocked` while preserving legacy block event compatibility.
+- Enforced guards in direct side-effect execution paths:
+	- `app.jobs.notification_jobs` email/webhook dispatch
+	- `app.services.contracts.service` send-for-signature
+	- `app.integrations.docusign.client` send
+	- `app.integrations.stripe.payouts` payout
+	- `app.integrations.quickbooks.client` journal post
+- Expanded completion source registry fields for rights/trust/provenance/freshness governance.
+- Added shadow rehearsal endpoint for Winnipeg real public-data ingestion:
+	- `POST /api/completion/shadow/rehearsal/winnipeg`
+
+Current classification:
+- PARTIAL for overall launch because broad unrelated failures remain, but Shadow gate itself is now proven.
+
+Proven Shadow evidence (2026-10-08):
+- Certification matrix: passed=29, failed=0.
+- Blocked action attempts: 23.
+- Rehearsal run1: fetched=20, inserted=20, duplicates=0, blocked=0, rejected=0, parse_failures=0, source_failures=0.
+- Rehearsal run2: fetched=20, inserted=0, duplicates=20.
+- Live-mode rehearsal attempt: blocked with HTTP 409.
+- Insufficiency status counters (run1):
+	- VALUATION_CONFIDENCE_LOW=20
+	- BUYER_DATA_INSUFFICIENT=20
+	- CONTACT_NOT_VERIFIED=20
+	- PENDING_HUMAN_REVIEW=20
+
+Truth labels:
+- REAL DATA SHADOW PROVEN
+- EXTERNAL ACTIONS BLOCKED
+- LIVE OUTREACH NOT AUTHORIZED
 - FAILED_ACTIONS_BLOCKED=1
 - FOUNDER_ESCALATIONS=1
 - FAILOVER_EVENTS=1
@@ -132,6 +165,9 @@ Behavior proof:
 
 ### PASS
 - Legacy multi-instance orchestration runtime proof (automation/policy propagation/conflict checks/failover/recovery with deterministic tests).
+
+### PARTIAL
+- Broad backend regression remains noisy and is triaged as non-shadow regressions in `docs/_broad_regression_classification.json`.
 
 ## NEXT RECOMMENDED ACTION
 1. If WeWeb MCP edit access is available: complete real-project launch-facing screens using live backend data.

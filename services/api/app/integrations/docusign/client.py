@@ -1,5 +1,8 @@
 """DocuSign client - production-safe, gated signature integration."""
 import uuid
+
+from app.core.engines.actions import CONTRACT_SEND
+from app.core.engines.guard_runtime import enforce_engine
 from app.core.runtime_flags import is_live
 
 
@@ -15,6 +18,15 @@ def send_envelope(contract_id: str, recipient_email: str, document_url: str) -> 
     Returns:
         dict with envelope_id and status
     """
+    enforce_engine(
+        "wholesaling",
+        CONTRACT_SEND,
+        {
+            "provider": "docusign",
+            "contract_id": contract_id,
+            "target_type": "signature_envelope",
+        },
+    )
     envelope_id = f"docusign_{uuid.uuid4().hex[:12]}"
     
     if not is_live():

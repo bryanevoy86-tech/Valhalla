@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import json
 import re
+from hashlib import sha1
 from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
+import httpx
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
@@ -130,9 +132,14 @@ PROMPT_INJECTION_PATTERNS = [
     "ignore all previous rules",
     "reveal the api key",
     "send money",
+    "transfer money",
     "approve this automatically",
     "change the owner's policy",
     "call this external url",
+    "disable shadow mode",
+    "send an email to this seller",
+    "call this phone number",
+    "publish this listing",
 ]
 
 POISONED_DATA_PATTERNS = [
@@ -166,6 +173,29 @@ SOURCE_TRUST_RANKS = {
     "interview": 2,
     "blog": 1,
     "forum": 1,
+}
+
+ALLOWED_SOURCE_PERMISSION_STATUSES = {
+    "allowed",
+    "granted",
+    "public",
+    "public_data",
+}
+
+ALLOWED_SOURCE_LICENSE_STATUSES = {
+    "open",
+    "public_domain",
+    "government_open_data",
+    "cc_by",
+    "cc0",
+}
+
+ALLOWED_SOURCE_TRUST_TIERS = {"tier1", "tier2", "tier3", "tier4"}
+ALLOWED_SOURCE_GOVERNANCE_STATUSES = {
+    "approved",
+    "review_required",
+    "blocked",
+    "external_blocked",
 }
 
 ENGINE_ALLOWED_STATES = {"OFF", "SANDBOX", "BLOCKED", "READY", "ACTIVE"}
@@ -321,6 +351,16 @@ class SourceRegistryCreate(BaseModel):
     jurisdiction: str | None = None
     market: str | None = None
     citation_ref: str | None = None
+    permission_status: str | None = "public"
+    license_status: str | None = "government_open_data"
+    rights_statement_url: str | None = None
+    robots_policy: str | None = "allowed"
+    trust_tier: str | None = "tier2"
+    provenance_method: str | None = "api"
+    freshness_sla_hours: int | None = None
+    last_verified_at: datetime | None = None
+    governance_status: str | None = "approved"
+    shadow_approved: bool = True
     mode_allowlist: list[str] = Field(default_factory=list)
     active: bool = True
     notes: str | None = None
@@ -335,6 +375,16 @@ class SourceRegistryOut(BaseModel):
     source_type: str
     data_class: str
     terminal_state: str
+    permission_status: str | None
+    license_status: str | None
+    rights_statement_url: str | None
+    robots_policy: str | None
+    trust_tier: str | None
+    provenance_method: str | None
+    freshness_sla_hours: int | None
+    last_verified_at: datetime | None
+    governance_status: str | None
+    shadow_approved: bool
     mode_allowlist: list[str]
     active: bool
 
@@ -540,6 +590,31 @@ class KnowledgeIngestOut(BaseModel):
     followup_task_id: str | None = None
     reverify_task_id: str | None = None
     freshness_state: str
+
+
+class ShadowWinnipegRehearsalIn(BaseModel):
+    batch_id: str
+    limit: int = Field(default=20, ge=20, le=50)
+    mode: str = "practice"
+    source_ids: list[str] = Field(default_factory=lambda: ["SRC-WPG-OPEN-DATA", "SRC-CANADA-OPEN-DATA"])
+
+
+class ShadowWinnipegRehearsalOut(BaseModel):
+    batch_id: str
+    mode: str
+    requested_limit: int
+    fetched: int
+    inserted: int
+    duplicates: int
+    blocked: int
+    rejected: int
+    parse_failures: int
+    source_failures: int
+    valuation_confidence_low: int
+    buyer_data_insufficient: int
+    contact_not_verified: int
+    pending_human_review: int
+    sources_used: list[str]
 
 
 class KnowledgeRetrieveOut(BaseModel):
@@ -936,11 +1011,55 @@ ALLOWED_TASK_PRIORITIES = {"low", "normal", "high", "critical"}
 
 def _normalize_mode(mode: str) -> str:
     normalized = (mode or "").strip().lower()
-    if normalized == "sandbox":
+    if normalized in {"sandbox", "shadow"}:
         return "practice"
     if normalized not in {"practice", "test", "live"}:
         raise HTTPException(status_code=422, detail="mode must be one of practice|test|live")
     return normalized
+
+
+def _normalize_source_permission_status(value: str | None) -> str:
+    return str(value or "public").strip().lower()
+
+
+def _normalize_source_license_status(value: str | None) -> str:
+    return str(value or "government_open_data").strip().lower()
+
+
+def _normalize_source_trust_tier(value: str | None) -> str:
+    tier = str(value or "tier2").strip().lower()
+    if tier not in ALLOWED_SOURCE_TRUST_TIERS:
+        raise HTTPException(status_code=422, detail=f"trust_tier must be one of {sorted(ALLOWED_SOURCE_TRUST_TIERS)}")
+    return tier
+
+
+def _normalize_source_governance_status(value: str | None) -> str:
+    status = str(value or "approved").strip().lower()
+    if status not in ALLOWED_SOURCE_GOVERNANCE_STATUSES:
+        raise HTTPException(
+            status_code=422,
+            detail=f"governance_status must be one of {sorted(ALLOWED_SOURCE_GOVERNANCE_STATUSES)}",
+        )
+    return status
+
+
+def _assert_source_shadow_ready(row: SourceRegistryItem) -> None:
+    permission = _normalize_source_permission_status(row.permission_status)
+    license_status = _normalize_source_license_status(row.license_status)
+    trust_tier = _normalize_source_trust_tier(row.trust_tier)
+    governance_status = _normalize_source_governance_status(row.governance_status)
+    robots_policy = str(row.robots_policy or "allowed").strip().lower()
+
+    if permission not in ALLOWED_SOURCE_PERMISSION_STATUSES:
+        raise HTTPException(status_code=409, detail="source permission_status is not approved for shadow use")
+    if license_status not in ALLOWED_SOURCE_LICENSE_STATUSES:
+        raise HTTPException(status_code=409, detail="source license_status is not approved for shadow use")
+    if robots_policy not in {"allowed", "explicit_allow", "api"}:
+        raise HTTPException(status_code=409, detail="source robots_policy blocks shadow ingestion")
+    if trust_tier not in {"tier1", "tier2"}:
+        raise HTTPException(status_code=409, detail="source trust_tier must be tier1 or tier2 for shadow mode")
+    if governance_status != "approved" or not bool(row.shadow_approved):
+        raise HTTPException(status_code=409, detail="source governance status is not approved for shadow mode")
 
 
 def _default_allowlist_for_data_class(data_class: str) -> set[str]:
@@ -2076,6 +2195,10 @@ def create_source_item(payload: SourceRegistryCreate, db: Session = Depends(get_
     _default_allowlist_for_data_class(payload.data_class)
 
     normalized_allowlist = [_normalize_mode(mode) for mode in payload.mode_allowlist]
+    permission_status = _normalize_source_permission_status(payload.permission_status)
+    license_status = _normalize_source_license_status(payload.license_status)
+    trust_tier = _normalize_source_trust_tier(payload.trust_tier)
+    governance_status = _normalize_source_governance_status(payload.governance_status)
 
     item = SourceRegistryItem(
         source_id=payload.source_id,
@@ -2086,6 +2209,16 @@ def create_source_item(payload: SourceRegistryCreate, db: Session = Depends(get_
         jurisdiction=payload.jurisdiction,
         market=payload.market,
         citation_ref=payload.citation_ref,
+        permission_status=permission_status,
+        license_status=license_status,
+        rights_statement_url=payload.rights_statement_url,
+        robots_policy=str(payload.robots_policy or "allowed").strip().lower(),
+        trust_tier=trust_tier,
+        provenance_method=payload.provenance_method,
+        freshness_sla_hours=payload.freshness_sla_hours,
+        last_verified_at=payload.last_verified_at,
+        governance_status=governance_status,
+        shadow_approved=payload.shadow_approved,
         mode_allowlist_json=json.dumps(normalized_allowlist),
         active=payload.active,
         terminal_state=payload.terminal_state,
@@ -2102,6 +2235,16 @@ def create_source_item(payload: SourceRegistryCreate, db: Session = Depends(get_
         source_type=item.source_type,
         data_class=item.data_class,
         terminal_state=item.terminal_state,
+        permission_status=item.permission_status,
+        license_status=item.license_status,
+        rights_statement_url=item.rights_statement_url,
+        robots_policy=item.robots_policy,
+        trust_tier=item.trust_tier,
+        provenance_method=item.provenance_method,
+        freshness_sla_hours=item.freshness_sla_hours,
+        last_verified_at=item.last_verified_at,
+        governance_status=item.governance_status,
+        shadow_approved=item.shadow_approved,
         mode_allowlist=_loads(item.mode_allowlist_json, []),
         active=item.active,
     )
@@ -2123,6 +2266,16 @@ def list_source_items(db: Session = Depends(get_db), terminal_state: str | None 
             source_type=row.source_type,
             data_class=row.data_class,
             terminal_state=row.terminal_state,
+            permission_status=row.permission_status,
+            license_status=row.license_status,
+            rights_statement_url=row.rights_statement_url,
+            robots_policy=row.robots_policy,
+            trust_tier=row.trust_tier,
+            provenance_method=row.provenance_method,
+            freshness_sla_hours=row.freshness_sla_hours,
+            last_verified_at=row.last_verified_at,
+            governance_status=row.governance_status,
+            shadow_approved=row.shadow_approved,
             mode_allowlist=_loads(row.mode_allowlist_json, []),
             active=row.active,
         )
@@ -2153,6 +2306,9 @@ def validate_source_usage(payload: SourceUsageCheckIn, db: Session = Depends(get
             status_code=409,
             detail=f"source '{row.source_id}' with data_class '{row.data_class}' is not allowed in mode '{mode}'",
         )
+
+    if mode in {"practice", "test"} and row.data_class == "live":
+        _assert_source_shadow_ready(row)
 
     return SourceUsageCheckOut(
         source_id=row.source_id,
@@ -2277,6 +2433,8 @@ def validate_dataset_usage(payload: DatasetUseValidationIn, db: Session = Depend
                 status_code=409,
                 detail=f"source '{source.source_id}' with data_class '{source.data_class}' is not allowed in mode '{mode}'",
             )
+        if mode in {"practice", "test"} and source.data_class == "live":
+            _assert_source_shadow_ready(source)
 
     source_class = source.data_class if source_id else None
     result = evaluate_dataset_safety(
@@ -2763,6 +2921,9 @@ def ingest_knowledge(payload: KnowledgeIngestIn, db: Session = Depends(get_db)):
             detail=f"source '{source.source_id}' with data_class '{source.data_class}' is not allowed in mode '{mode}'",
         )
 
+    if mode in {"practice", "test"} and source.data_class == "live":
+        _assert_source_shadow_ready(source)
+
     if trigger_type in {"scheduled", "event"} and not payload.robots_allowed:
         raise HTTPException(status_code=409, detail="robots policy blocks non-push ingestion")
 
@@ -2879,6 +3040,273 @@ def ingest_knowledge(payload: KnowledgeIngestIn, db: Session = Depends(get_db)):
         followup_task_id=followup_task_id,
         reverify_task_id=reverify_task_id,
         freshness_state=freshness,
+    )
+
+
+def _ensure_shadow_source(
+    db: Session,
+    *,
+    source_id: str,
+    canonical_name: str,
+    source_type: str,
+    citation_ref: str,
+    rights_statement_url: str,
+) -> SourceRegistryItem:
+    row = db.query(SourceRegistryItem).filter(SourceRegistryItem.source_id == source_id).first()
+    if row is not None:
+        return row
+
+    row = SourceRegistryItem(
+        source_id=source_id,
+        canonical_name=canonical_name,
+        source_type=source_type,
+        data_class="live",
+        citation_ref=citation_ref,
+        permission_status="public",
+        license_status="government_open_data",
+        rights_statement_url=rights_statement_url,
+        robots_policy="api",
+        trust_tier="tier2",
+        provenance_method="official_api",
+        freshness_sla_hours=168,
+        last_verified_at=datetime.now(timezone.utc),
+        governance_status="approved",
+        shadow_approved=True,
+        mode_allowlist_json=json.dumps(["practice", "test"]),
+        active=True,
+        terminal_state=RegistryStates.ACTIVE_AND_VERIFIED,
+    )
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+    return row
+
+
+def _fetch_winnipeg_shadow_records(limit: int) -> list[dict[str, Any]]:
+    records: list[dict[str, Any]] = []
+    parse_failures = 0
+    source_failures = 0
+    timeout = httpx.Timeout(20.0)
+    per_source = max(10, min(25, limit // 2))
+
+    with httpx.Client(timeout=timeout) as client:
+        try:
+            wpg_resp = client.get(f"https://data.winnipeg.ca/api/views.json?$limit={per_source}")
+            wpg_resp.raise_for_status()
+            wpg_data = wpg_resp.json()
+            if not isinstance(wpg_data, list):
+                raise ValueError("unexpected response shape")
+            for row in wpg_data[:per_source]:
+                try:
+                    view_id = str(row.get("id") or "")
+                    name = str(row.get("name") or "Untitled dataset")
+                    desc = str(row.get("description") or "")
+                    records.append(
+                        {
+                            "source_id": "SRC-WPG-OPEN-DATA",
+                            "external_id": view_id,
+                            "title": name,
+                            "domain": "real_estate",
+                            "citation_ref": f"https://data.winnipeg.ca/d/{view_id}",
+                            "notes": f"real_shadow_source=winnipeg_open_data; category={row.get('category')}",
+                            "content_excerpt": desc[:500],
+                        }
+                    )
+                except Exception:
+                    parse_failures += 1
+        except Exception:
+            source_failures += 1
+
+        try:
+            ca_resp = client.get(
+                "https://open.canada.ca/data/en/api/3/action/package_search",
+                params={"q": "winnipeg real estate", "rows": per_source},
+            )
+            ca_resp.raise_for_status()
+            ca_payload = ca_resp.json() or {}
+            results = ((ca_payload.get("result") or {}).get("results") or []) if isinstance(ca_payload, dict) else []
+            for row in results[:per_source]:
+                try:
+                    pkg_id = str(row.get("id") or "")
+                    title = str(row.get("title") or row.get("name") or "Government dataset")
+                    notes = f"real_shadow_source=open_canada; organization={((row.get('organization') or {}).get('title') if isinstance(row.get('organization'), dict) else '')}"
+                    excerpt = str(row.get("notes") or "")
+                    records.append(
+                        {
+                            "source_id": "SRC-CANADA-OPEN-DATA",
+                            "external_id": pkg_id,
+                            "title": title,
+                            "domain": "real_estate",
+                            "citation_ref": f"https://open.canada.ca/data/en/dataset/{pkg_id}",
+                            "notes": notes,
+                            "content_excerpt": excerpt[:500],
+                        }
+                    )
+                except Exception:
+                    parse_failures += 1
+        except Exception:
+            source_failures += 1
+
+    return {
+        "records": records[:limit],
+        "parse_failures": parse_failures,
+        "source_failures": source_failures,
+    }
+
+
+def _derive_shadow_insufficiency_statuses(row: dict[str, Any]) -> list[str]:
+    statuses: list[str] = []
+
+    valuation_confidence = row.get("valuation_confidence")
+    has_comp_strength = row.get("comps_strength")
+    if valuation_confidence is None or has_comp_strength in {None, "weak", "stale", "absent"}:
+        statuses.append("VALUATION_CONFIDENCE_LOW")
+
+    if not bool(row.get("buyer_pool_verified", False)):
+        statuses.append("BUYER_DATA_INSUFFICIENT")
+
+    if not bool(row.get("contact_verified", False)):
+        statuses.append("CONTACT_NOT_VERIFIED")
+
+    return statuses
+
+
+@router.post("/shadow/rehearsal/winnipeg", response_model=ShadowWinnipegRehearsalOut)
+def run_shadow_winnipeg_rehearsal(payload: ShadowWinnipegRehearsalIn, db: Session = Depends(get_db)):
+    _ensure_registry_tables(db)
+    mode = _normalize_mode(payload.mode)
+    if mode not in {"practice", "test"}:
+        raise HTTPException(status_code=409, detail="shadow rehearsal is restricted to practice/test modes")
+
+    source_map = {
+        "SRC-WPG-OPEN-DATA": _ensure_shadow_source(
+            db,
+            source_id="SRC-WPG-OPEN-DATA",
+            canonical_name="City of Winnipeg Open Data",
+            source_type="government",
+            citation_ref="https://data.winnipeg.ca",
+            rights_statement_url="https://data.winnipeg.ca/stories/s/Open-Data-Winnipeg-Terms-of-Use/4h5q-kw4n/",
+        ),
+        "SRC-CANADA-OPEN-DATA": _ensure_shadow_source(
+            db,
+            source_id="SRC-CANADA-OPEN-DATA",
+            canonical_name="Government of Canada Open Data",
+            source_type="government",
+            citation_ref="https://open.canada.ca/data/en",
+            rights_statement_url="https://open.canada.ca/en/open-government-licence-canada",
+        ),
+    }
+
+    allowed_source_ids = set(payload.source_ids or [])
+    if not allowed_source_ids:
+        allowed_source_ids = set(source_map.keys())
+
+    blocked = 0
+    for source_id, source in source_map.items():
+        if source_id in allowed_source_ids:
+            _assert_source_shadow_ready(source)
+
+    fetched_payload = _fetch_winnipeg_shadow_records(payload.limit)
+    if isinstance(fetched_payload, dict):
+        fetched_rows = list(fetched_payload.get("records") or [])
+        parse_failures = int(fetched_payload.get("parse_failures") or 0)
+        source_failures = int(fetched_payload.get("source_failures") or 0)
+    else:
+        fetched_rows = list(fetched_payload or [])
+        parse_failures = 0
+        source_failures = 0
+
+    inserted = 0
+    duplicates = 0
+    rejected = 0
+    valuation_confidence_low = 0
+    buyer_data_insufficient = 0
+    contact_not_verified = 0
+    pending_human_review = 0
+
+    for row in fetched_rows:
+        source_id = str(row.get("source_id") or "")
+        if not source_id:
+            parse_failures += 1
+            continue
+        if source_id not in allowed_source_ids:
+            blocked += 1
+            continue
+
+        external_id = str(row.get("external_id") or row.get("title") or "")
+        if not external_id:
+            parse_failures += 1
+            continue
+        digest = sha1(f"{source_id}:{external_id}".encode("utf-8")).hexdigest()[:16]
+        item_id = f"KN-SHADOW-{digest}"
+
+        exists = db.query(KnowledgeRegistryItem).filter(KnowledgeRegistryItem.item_id == item_id).first()
+        if exists is not None:
+            duplicates += 1
+            continue
+
+        source = source_map[source_id]
+        now_date = datetime.now(timezone.utc).date()
+        insufficiency_statuses = _derive_shadow_insufficiency_statuses(row)
+        needs_human_review = len(insufficiency_statuses) > 0
+        if "VALUATION_CONFIDENCE_LOW" in insufficiency_statuses:
+            valuation_confidence_low += 1
+        if "BUYER_DATA_INSUFFICIENT" in insufficiency_statuses:
+            buyer_data_insufficient += 1
+        if "CONTACT_NOT_VERIFIED" in insufficiency_statuses:
+            contact_not_verified += 1
+        if needs_human_review:
+            pending_human_review += 1
+
+        if not str(row.get("citation_ref") or "").strip():
+            rejected += 1
+            continue
+
+        db.add(
+            KnowledgeRegistryItem(
+                item_id=item_id,
+                source=source_id,
+                source_type=source.source_type,
+                title=f"REAL_SHADOW {row['title']}",
+                terminal_state=RegistryStates.ACTIVE_AND_VERIFIED,
+                jurisdiction="CA-MB",
+                market="Winnipeg",
+                retrieved_date=now_date,
+                review_date=now_date,
+                license_status=source.license_status,
+                permission_status=source.permission_status,
+                quality_score=0.75,
+                confidence_score=0.7,
+                version=payload.batch_id,
+                review_status="PENDING_HUMAN_REVIEW" if needs_human_review else "approved",
+                citation_ref=row["citation_ref"],
+                notes=(
+                    f"shadow_batch={payload.batch_id}; mode={mode}; source={source_id}; "
+                    f"provenance={source.provenance_method}; insufficiency_statuses={','.join(insufficiency_statuses) if insufficiency_statuses else 'NONE'}; "
+                    f"{row.get('notes') or ''}"
+                ).strip(),
+            )
+        )
+        inserted += 1
+
+    db.commit()
+
+    return ShadowWinnipegRehearsalOut(
+        batch_id=payload.batch_id,
+        mode=mode,
+        requested_limit=payload.limit,
+        fetched=len(fetched_rows),
+        inserted=inserted,
+        duplicates=duplicates,
+        blocked=blocked,
+        rejected=rejected,
+        parse_failures=parse_failures,
+        source_failures=source_failures,
+        valuation_confidence_low=valuation_confidence_low,
+        buyer_data_insufficient=buyer_data_insufficient,
+        contact_not_verified=contact_not_verified,
+        pending_human_review=pending_human_review,
+        sources_used=sorted(list(allowed_source_ids)),
     )
 
 

@@ -1,0 +1,313 @@
+{
+  "generated_at": "2026-10-08T00:17:44.743673+00:00",
+  "cases": [
+    {
+      "action": "seller email attempt",
+      "expected": "BLOCK",
+      "actual": "BLOCK",
+      "audit_event": "shadow_action_blocked",
+      "passed": true
+    },
+    {
+      "action": "buyer email attempt",
+      "expected": "BLOCK",
+      "actual": "BLOCK",
+      "audit_event": "shadow_action_blocked",
+      "passed": true
+    },
+    {
+      "action": "sms attempt",
+      "expected": "BLOCK",
+      "actual": "BLOCK",
+      "audit_event": "shadow_action_blocked",
+      "passed": true
+    },
+    {
+      "action": "phone call attempt",
+      "expected": "BLOCK",
+      "actual": "BLOCK",
+      "audit_event": "shadow_action_blocked",
+      "passed": true
+    },
+    {
+      "action": "voicemail attempt",
+      "expected": "BLOCK",
+      "actual": "BLOCK",
+      "audit_event": "shadow_action_blocked",
+      "passed": true
+    },
+    {
+      "action": "contract send attempt",
+      "expected": "BLOCK",
+      "actual": "BLOCK",
+      "audit_event": "shadow_action_blocked",
+      "passed": true
+    },
+    {
+      "action": "docusign attempt",
+      "expected": "BLOCK",
+      "actual": "BLOCK",
+      "audit_event": "shadow_action_blocked",
+      "passed": true
+    },
+    {
+      "action": "stripe payout attempt",
+      "expected": "BLOCK",
+      "actual": "BLOCK",
+      "audit_event": "shadow_action_blocked",
+      "passed": true
+    },
+    {
+      "action": "quickbooks posting attempt",
+      "expected": "BLOCK",
+      "actual": "BLOCK",
+      "audit_event": "shadow_action_blocked",
+      "passed": true
+    },
+    {
+      "action": "generic provider write attempt",
+      "expected": "BLOCK",
+      "actual": "BLOCK",
+      "audit_event": "shadow_action_blocked",
+      "passed": true
+    },
+    {
+      "action": "external publication attempt",
+      "expected": "BLOCK",
+      "actual": "BLOCK",
+      "audit_event": "shadow_action_blocked",
+      "passed": true
+    },
+    {
+      "action": "advertisement post creation attempt",
+      "expected": "BLOCK",
+      "actual": "BLOCK",
+      "audit_event": "shadow_action_blocked",
+      "passed": true
+    },
+    {
+      "action": "internal research",
+      "expected": "ALLOW",
+      "actual": "ALLOW",
+      "audit_event": "N/A",
+      "passed": true
+    },
+    {
+      "action": "internal scoring",
+      "expected": "ALLOW",
+      "actual": "ALLOW",
+      "audit_event": "N/A",
+      "passed": true
+    },
+    {
+      "action": "internal underwriting",
+      "expected": "ALLOW",
+      "actual": "ALLOW",
+      "audit_event": "N/A",
+      "passed": true
+    },
+    {
+      "action": "internal buyer matching",
+      "expected": "ALLOW",
+      "actual": "ALLOW",
+      "audit_event": "N/A",
+      "passed": true
+    },
+    {
+      "action": "internal report creation",
+      "expected": "ALLOW",
+      "actual": "ALLOW",
+      "audit_event": "N/A",
+      "passed": true
+    },
+    {
+      "action": "internal database/task creation",
+      "expected": "ALLOW",
+      "actual": "ALLOW",
+      "audit_event": "N/A",
+      "passed": true
+    },
+    {
+      "action": "legacy-level bypass attempt",
+      "expected": "BLOCK",
+      "actual": "BLOCK",
+      "audit_event": "shadow_action_blocked",
+      "passed": true
+    },
+    {
+      "action": "engine-level bypass attempt",
+      "expected": "BLOCK",
+      "actual": "BLOCK",
+      "audit_event": "shadow_action_blocked",
+      "passed": true
+    },
+    {
+      "action": "retry bypass attempt",
+      "expected": "BLOCK",
+      "actual": "BLOCK",
+      "audit_event": "shadow_action_blocked",
+      "passed": true
+    },
+    {
+      "action": "retry bypass attempt second try",
+      "expected": "BLOCK",
+      "actual": "BLOCK",
+      "audit_event": "shadow_action_blocked",
+      "passed": true
+    },
+    {
+      "action": "direct adapter bypass via queued webhook",
+      "expected": "BLOCK",
+      "actual": "BLOCK",
+      "audit_event": "shadow_action_blocked",
+      "passed": true
+    },
+    {
+      "action": "kill-switch supersedes active engine",
+      "expected": "BLOCK",
+      "actual": "BLOCK",
+      "audit_event": "shadow_action_blocked",
+      "passed": true
+    },
+    {
+      "action": "malformed mode value",
+      "expected": "BLOCK",
+      "actual": "BLOCK",
+      "audit_event": "N/A",
+      "passed": true
+    },
+    {
+      "action": "missing mode value",
+      "expected": "BLOCK",
+      "actual": "BLOCK",
+      "audit_event": "N/A",
+      "passed": true
+    },
+    {
+      "action": "conflicting legacy/core modes",
+      "expected": "BLOCK",
+      "actual": "BLOCK",
+      "audit_event": "N/A",
+      "passed": true
+    },
+    {
+      "action": "prompt override test",
+      "expected": "BLOCK",
+      "actual": "BLOCK",
+      "audit_event": "N/A",
+      "passed": true
+    },
+    {
+      "action": "source-data prompt injection test",
+      "expected": "BLOCK",
+      "actual": "BLOCK",
+      "audit_event": "N/A",
+      "passed": true
+    }
+  ],
+  "totals": {
+    "passed": 29,
+    "failed": 0,
+    "blocked_action_count": 23
+  },
+  "audit": {
+    "shadow_action_blocked_count": 18,
+    "metadata_keys_present": true,
+    "sample": [
+      {
+        "timestamp": "2026-10-08T00:17:44.213021Z",
+        "actor": "system",
+        "legacy": "core",
+        "blocked_action": "OUTREACH",
+        "engine": "wholesaling",
+        "state": "SHADOW",
+        "real_world_effect": true,
+        "reason": "Engine state SANDBOX blocks real-world effects",
+        "canonical_runtime_mode": "SHADOW",
+        "policy_mode": "SHADOW",
+        "provider": null,
+        "correlation_id": null,
+        "work_item_id": null,
+        "channel": "email",
+        "outbox_id": 1001,
+        "target_type": "email"
+      },
+      {
+        "timestamp": "2026-10-08T00:17:44.214918Z",
+        "actor": "system",
+        "legacy": "core",
+        "blocked_action": "OUTREACH",
+        "engine": "wholesaling",
+        "state": "SHADOW",
+        "real_world_effect": true,
+        "reason": "Engine state SANDBOX blocks real-world effects",
+        "canonical_runtime_mode": "SHADOW",
+        "policy_mode": "SHADOW",
+        "provider": null,
+        "correlation_id": null,
+        "work_item_id": null,
+        "channel": "email",
+        "outbox_id": 1002,
+        "target_type": "email"
+      },
+      {
+        "timestamp": "2026-10-08T00:17:44.215964Z",
+        "actor": "system",
+        "legacy": "core",
+        "blocked_action": "OUTREACH",
+        "engine": "wholesaling",
+        "state": "SHADOW",
+        "real_world_effect": true,
+        "reason": "Engine state SANDBOX blocks real-world effects",
+        "canonical_runtime_mode": "SHADOW",
+        "policy_mode": "SHADOW",
+        "provider": null,
+        "correlation_id": null,
+        "work_item_id": null
+      },
+      {
+        "timestamp": "2026-10-08T00:17:44.216947Z",
+        "actor": "system",
+        "legacy": "core",
+        "blocked_action": "OUTREACH",
+        "engine": "wholesaling",
+        "state": "SHADOW",
+        "real_world_effect": true,
+        "reason": "Engine state SANDBOX blocks real-world effects",
+        "canonical_runtime_mode": "SHADOW",
+        "policy_mode": "SHADOW",
+        "provider": "telephony",
+        "correlation_id": "case-04",
+        "work_item_id": null,
+        "action_type": "call"
+      },
+      {
+        "timestamp": "2026-10-08T00:17:44.217977Z",
+        "actor": "system",
+        "legacy": "core",
+        "blocked_action": "OUTREACH",
+        "engine": "wholesaling",
+        "state": "SHADOW",
+        "real_world_effect": true,
+        "reason": "Engine state SANDBOX blocks real-world effects",
+        "canonical_runtime_mode": "SHADOW",
+        "policy_mode": "SHADOW",
+        "provider": "telephony",
+        "correlation_id": "case-05",
+        "work_item_id": null,
+        "action_type": "voicemail"
+      }
+    ]
+  },
+  "zero_external_effects": {
+    "external_seller_emails_sent": 0,
+    "external_buyer_emails_sent": 0,
+    "external_sms_sent": 0,
+    "external_calls_placed": 0,
+    "contracts_sent": 0,
+    "esign_requests": 0,
+    "money_moved": 0,
+    "external_accounting_writes": 0,
+    "external_posts": 0
+  }
+}

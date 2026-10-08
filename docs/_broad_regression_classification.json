@@ -1,0 +1,957 @@
+{
+  "totals": {
+    "name": "pytest",
+    "errors": "45",
+    "failures": "111",
+    "skipped": "1",
+    "tests": "182",
+    "time": "99.412",
+    "timestamp": "2026-10-07T19:21:26.494953-05:00",
+    "hostname": "DESKTOP-E6ETHU2"
+  },
+  "category_counts": {
+    "A": 0,
+    "B": 84,
+    "C": 13,
+    "D": 59,
+    "E": 0
+  },
+  "cases": [
+    {
+      "name": "services.api.tests.test_fake_live_operating_day",
+      "classname": "",
+      "kind": "error",
+      "category": "B"
+    },
+    {
+      "name": "services.api.tests.test_flow_lead_to_deal",
+      "classname": "",
+      "kind": "error",
+      "category": "B"
+    },
+    {
+      "name": "services.api.tests.test_pack_sz_ta_tb",
+      "classname": "",
+      "kind": "error",
+      "category": "B"
+    },
+    {
+      "name": "services.api.tests.test_system_integrity",
+      "classname": "",
+      "kind": "error",
+      "category": "B"
+    },
+    {
+      "name": "services.api.tests.test_underwriting_engine_flow",
+      "classname": "",
+      "kind": "error",
+      "category": "B"
+    },
+    {
+      "name": "test_contract_gen_pdf_live",
+      "classname": "services.api.tests.integration.test_contracts_live",
+      "kind": "failure",
+      "category": "C"
+    },
+    {
+      "name": "test_restricted_real_world_actions_blocked_in_sandbox_with_audit",
+      "classname": "services.api.tests.test_autonomy_ladder_enforcement",
+      "kind": "failure",
+      "category": "D"
+    },
+    {
+      "name": "test_restricted_actions_blocked_by_kill_switch_even_when_active",
+      "classname": "services.api.tests.test_autonomy_ladder_enforcement",
+      "kind": "failure",
+      "category": "D"
+    },
+    {
+      "name": "test_read_only_action_allowed_in_sandbox",
+      "classname": "services.api.tests.test_autonomy_ladder_enforcement",
+      "kind": "failure",
+      "category": "D"
+    },
+    {
+      "name": "test_buyer_upsert_and_match",
+      "classname": "services.api.tests.test_buyer_match",
+      "kind": "failure",
+      "category": "B"
+    },
+    {
+      "name": "test_buyer_claim_assign",
+      "classname": "services.api.tests.test_buyer_match",
+      "kind": "failure",
+      "category": "B"
+    },
+    {
+      "name": "test_closer_start_and_next_blocks_and_feedback",
+      "classname": "services.api.tests.test_closer_engine_flow",
+      "kind": "failure",
+      "category": "B"
+    },
+    {
+      "name": "test_create_and_list_registry_items",
+      "classname": "services.api.tests.test_completion_registry",
+      "kind": "failure",
+      "category": "D"
+    },
+    {
+      "name": "test_scoring_canonical_name_only_one_active_version",
+      "classname": "services.api.tests.test_completion_registry",
+      "kind": "failure",
+      "category": "D"
+    },
+    {
+      "name": "test_template_canonical_lineage_auto_supersedes_previous_version",
+      "classname": "services.api.tests.test_completion_registry",
+      "kind": "failure",
+      "category": "D"
+    },
+    {
+      "name": "test_source_registry_blocks_synthetic_source_in_live_mode",
+      "classname": "services.api.tests.test_completion_registry",
+      "kind": "failure",
+      "category": "D"
+    },
+    {
+      "name": "test_source_registry_allows_live_source_in_live_mode_by_default_policy",
+      "classname": "services.api.tests.test_completion_registry",
+      "kind": "failure",
+      "category": "D"
+    },
+    {
+      "name": "test_dataset_isolation_blocks_required_live_violations",
+      "classname": "services.api.tests.test_completion_registry",
+      "kind": "failure",
+      "category": "D"
+    },
+    {
+      "name": "test_dataset_policy_blocks_practice_contact_gold_kpi_and_load_accounting",
+      "classname": "services.api.tests.test_completion_registry",
+      "kind": "failure",
+      "category": "D"
+    },
+    {
+      "name": "test_scenario_lifecycle_register_validate_replay_record_compare",
+      "classname": "services.api.tests.test_completion_registry",
+      "kind": "failure",
+      "category": "D"
+    },
+    {
+      "name": "test_knowledge_retrieval_blocks_prompt_injection_and_unsafe_source_in_live_mode",
+      "classname": "services.api.tests.test_completion_registry",
+      "kind": "failure",
+      "category": "D"
+    },
+    {
+      "name": "test_knowledge_retrieval_prefers_official_sources_for_facts",
+      "classname": "services.api.tests.test_completion_registry",
+      "kind": "failure",
+      "category": "D"
+    },
+    {
+      "name": "test_knowledge_retrieval_missing_citation_demoted_and_blocked",
+      "classname": "services.api.tests.test_completion_registry",
+      "kind": "failure",
+      "category": "D"
+    },
+    {
+      "name": "test_knowledge_retrieval_contradiction_demotes_conflicting_facts",
+      "classname": "services.api.tests.test_completion_registry",
+      "kind": "failure",
+      "category": "D"
+    },
+    {
+      "name": "test_scenario_safety_blocks_verified_real_outcome_for_normal_category",
+      "classname": "services.api.tests.test_completion_registry",
+      "kind": "failure",
+      "category": "D"
+    },
+    {
+      "name": "test_scenario_safety_blocks_cross_business_without_business_engine",
+      "classname": "services.api.tests.test_completion_registry",
+      "kind": "failure",
+      "category": "D"
+    },
+    {
+      "name": "test_scenario_safety_blocks_cross_jurisdiction_without_jurisdiction",
+      "classname": "services.api.tests.test_completion_registry",
+      "kind": "failure",
+      "category": "D"
+    },
+    {
+      "name": "test_scenario_safety_blocks_emergency_stop_if_side_effects_enabled",
+      "classname": "services.api.tests.test_completion_registry",
+      "kind": "failure",
+      "category": "D"
+    },
+    {
+      "name": "test_learning_promotion_separation_guards_hold",
+      "classname": "services.api.tests.test_completion_registry",
+      "kind": "failure",
+      "category": "D"
+    },
+    {
+      "name": "test_knowledge_retrieval_hard_stale_items_blocked_from_facts",
+      "classname": "services.api.tests.test_completion_registry",
+      "kind": "failure",
+      "category": "D"
+    },
+    {
+      "name": "test_knowledge_retrieval_high_impact_weak_source_requires_human_review",
+      "classname": "services.api.tests.test_completion_registry",
+      "kind": "failure",
+      "category": "D"
+    },
+    {
+      "name": "test_knowledge_retrieval_blocks_sensitive_patterns",
+      "classname": "services.api.tests.test_completion_registry",
+      "kind": "failure",
+      "category": "D"
+    },
+    {
+      "name": "test_learning_reverification_queue_created_for_hard_stale_items_and_idempotent",
+      "classname": "services.api.tests.test_completion_registry",
+      "kind": "failure",
+      "category": "D"
+    },
+    {
+      "name": "test_knowledge_ingestion_push_creates_registry_item_and_followup_task",
+      "classname": "services.api.tests.test_completion_registry",
+      "kind": "failure",
+      "category": "D"
+    },
+    {
+      "name": "test_knowledge_ingestion_scheduled_blocks_robots_and_requires_live_citation",
+      "classname": "services.api.tests.test_completion_registry",
+      "kind": "failure",
+      "category": "D"
+    },
+    {
+      "name": "test_knowledge_ingestion_event_blocks_permission_and_prompt_injection",
+      "classname": "services.api.tests.test_completion_registry",
+      "kind": "failure",
+      "category": "D"
+    },
+    {
+      "name": "test_knowledge_ingestion_hard_stale_creates_reverify_task",
+      "classname": "services.api.tests.test_completion_registry",
+      "kind": "failure",
+      "category": "D"
+    },
+    {
+      "name": "test_knowledge_retrieval_blocks_poisoned_data_patterns",
+      "classname": "services.api.tests.test_completion_registry",
+      "kind": "failure",
+      "category": "D"
+    },
+    {
+      "name": "test_knowledge_ingestion_blocks_poisoned_data_patterns",
+      "classname": "services.api.tests.test_completion_registry",
+      "kind": "failure",
+      "category": "D"
+    },
+    {
+      "name": "test_learning_domain_and_curriculum_registry_capture_objectives_playbooks_benchmarks_assessments",
+      "classname": "services.api.tests.test_completion_registry",
+      "kind": "failure",
+      "category": "D"
+    },
+    {
+      "name": "test_learning_mastery_promotion_gate_blocks_when_reverify_backlog_open_and_audits",
+      "classname": "services.api.tests.test_completion_registry",
+      "kind": "failure",
+      "category": "D"
+    },
+    {
+      "name": "test_learning_feedback_capture_and_summary_metrics",
+      "classname": "services.api.tests.test_completion_registry",
+      "kind": "failure",
+      "category": "D"
+    },
+    {
+      "name": "test_engine_registry_covers_planned_engines_and_allowed_states",
+      "classname": "services.api.tests.test_completion_registry",
+      "kind": "failure",
+      "category": "D"
+    },
+    {
+      "name": "test_legacy_instance_registry_supports_multi_business_multi_jurisdiction_and_engine_assignment",
+      "classname": "services.api.tests.test_completion_registry",
+      "kind": "failure",
+      "category": "D"
+    },
+    {
+      "name": "test_legacy_orchestration_runtime_multi_instance_policy_failover_and_isolation",
+      "classname": "services.api.tests.test_completion_registry",
+      "kind": "failure",
+      "category": "D"
+    },
+    {
+      "name": "test_source_usage_requires_shadow_governance_approval",
+      "classname": "services.api.tests.test_completion_registry",
+      "kind": "failure",
+      "category": "D"
+    },
+    {
+      "name": "test_shadow_winnipeg_rehearsal_ingests_and_dedupes",
+      "classname": "services.api.tests.test_completion_registry",
+      "kind": "failure",
+      "category": "D"
+    },
+    {
+      "name": "test_shadow_winnipeg_rehearsal_preserves_success_when_evidence_sufficient",
+      "classname": "services.api.tests.test_completion_registry",
+      "kind": "failure",
+      "category": "D"
+    },
+    {
+      "name": "test_shadow_winnipeg_rehearsal_rejects_missing_citation",
+      "classname": "services.api.tests.test_completion_registry",
+      "kind": "failure",
+      "category": "D"
+    },
+    {
+      "name": "test_contract_flow",
+      "classname": "services.api.tests.test_contract_engine",
+      "kind": "failure",
+      "category": "B"
+    },
+    {
+      "name": "test_contract_webhook",
+      "classname": "services.api.tests.test_contract_engine",
+      "kind": "failure",
+      "category": "B"
+    },
+    {
+      "name": "test_lifecycle_status_new_deal",
+      "classname": "services.api.tests.test_deal_lifecycle",
+      "kind": "failure",
+      "category": "D"
+    },
+    {
+      "name": "test_lifecycle_run_invalid_action",
+      "classname": "services.api.tests.test_deal_lifecycle",
+      "kind": "failure",
+      "category": "D"
+    },
+    {
+      "name": "test_lifecycle_available_actions_at_stage",
+      "classname": "services.api.tests.test_deal_lifecycle",
+      "kind": "failure",
+      "category": "D"
+    },
+    {
+      "name": "test_lifecycle_action_orchestrates_flows",
+      "classname": "services.api.tests.test_deal_lifecycle",
+      "kind": "failure",
+      "category": "D"
+    },
+    {
+      "name": "test_deal_workflow_status_endpoint",
+      "classname": "services.api.tests.test_deal_workflow_and_closing_playbook",
+      "kind": "failure",
+      "category": "B"
+    },
+    {
+      "name": "test_closing_playbook_endpoint",
+      "classname": "services.api.tests.test_deal_workflow_and_closing_playbook",
+      "kind": "failure",
+      "category": "B"
+    },
+    {
+      "name": "test_full_deal_pipeline_happy_path",
+      "classname": "services.api.tests.test_flow_full_pipeline",
+      "kind": "failure",
+      "category": "B"
+    },
+    {
+      "name": "test_full_deal_pipeline_bad_underwriting_triggers_freeze",
+      "classname": "services.api.tests.test_flow_full_pipeline",
+      "kind": "failure",
+      "category": "B"
+    },
+    {
+      "name": "test_funfunds_basic_allocation",
+      "classname": "services.api.tests.test_flow_funfunds_planner",
+      "kind": "failure",
+      "category": "B"
+    },
+    {
+      "name": "test_funfunds_zero_net_after_bills_triggers_flag",
+      "classname": "services.api.tests.test_flow_funfunds_planner",
+      "kind": "failure",
+      "category": "B"
+    },
+    {
+      "name": "test_funfunds_scaling_when_dials_too_high",
+      "classname": "services.api.tests.test_flow_funfunds_planner",
+      "kind": "failure",
+      "category": "B"
+    },
+    {
+      "name": "test_lean_preset_applies_correct_percentages",
+      "classname": "services.api.tests.test_flow_funfunds_presets",
+      "kind": "failure",
+      "category": "B"
+    },
+    {
+      "name": "test_growth_preset_applies_correct_percentages",
+      "classname": "services.api.tests.test_flow_funfunds_presets",
+      "kind": "failure",
+      "category": "B"
+    },
+    {
+      "name": "test_presets_still_handle_over_allocation",
+      "classname": "services.api.tests.test_flow_funfunds_presets",
+      "kind": "failure",
+      "category": "B"
+    },
+    {
+      "name": "test_full_deal_with_governance_allows_clean_deal",
+      "classname": "services.api.tests.test_flow_governance_gate",
+      "kind": "failure",
+      "category": "B"
+    },
+    {
+      "name": "test_full_deal_with_governance_blocked_by_tyr",
+      "classname": "services.api.tests.test_flow_governance_gate",
+      "kind": "failure",
+      "category": "B"
+    },
+    {
+      "name": "test_full_deal_with_governance_blocked_by_queen_burnout",
+      "classname": "services.api.tests.test_flow_governance_gate",
+      "kind": "failure",
+      "category": "B"
+    },
+    {
+      "name": "test_full_deal_with_governance_blocked_by_loki_extreme_downside",
+      "classname": "services.api.tests.test_flow_governance_gate",
+      "kind": "failure",
+      "category": "B"
+    },
+    {
+      "name": "test_full_deal_with_governance_governance_snapshot_attached",
+      "classname": "services.api.tests.test_flow_governance_gate",
+      "kind": "failure",
+      "category": "B"
+    },
+    {
+      "name": "test_notify_deal_parties_seller_and_buyers",
+      "classname": "services.api.tests.test_flow_notifications",
+      "kind": "failure",
+      "category": "D"
+    },
+    {
+      "name": "test_closing_context_basic",
+      "classname": "services.api.tests.test_flow_prepare_closing",
+      "kind": "failure",
+      "category": "B"
+    },
+    {
+      "name": "test_profit_allocation_happy_path",
+      "classname": "services.api.tests.test_flow_profit_allocation",
+      "kind": "failure",
+      "category": "B"
+    },
+    {
+      "name": "test_profit_allocation_policy_breach_triggers_freeze_flag",
+      "classname": "services.api.tests.test_flow_profit_allocation",
+      "kind": "failure",
+      "category": "B"
+    },
+    {
+      "name": "test_tax_snapshot_happy_path",
+      "classname": "services.api.tests.test_flow_tax_snapshot",
+      "kind": "failure",
+      "category": "B"
+    },
+    {
+      "name": "test_tax_snapshot_below_min_tax_rate_flags_policy",
+      "classname": "services.api.tests.test_flow_tax_snapshot",
+      "kind": "failure",
+      "category": "B"
+    },
+    {
+      "name": "test_king_allows_safe_deal",
+      "classname": "services.api.tests.test_governance_king",
+      "kind": "failure",
+      "category": "B"
+    },
+    {
+      "name": "test_king_denies_predatory_deal",
+      "classname": "services.api.tests.test_governance_king",
+      "kind": "failure",
+      "category": "B"
+    },
+    {
+      "name": "test_king_warns_low_roi",
+      "classname": "services.api.tests.test_governance_king",
+      "kind": "failure",
+      "category": "B"
+    },
+    {
+      "name": "test_loki_allows_modest_downside",
+      "classname": "services.api.tests.test_governance_loki",
+      "kind": "failure",
+      "category": "B"
+    },
+    {
+      "name": "test_loki_warns_but_allows_borderline_risk",
+      "classname": "services.api.tests.test_governance_loki",
+      "kind": "failure",
+      "category": "B"
+    },
+    {
+      "name": "test_loki_denies_extreme_downside_or_ruin",
+      "classname": "services.api.tests.test_governance_loki",
+      "kind": "failure",
+      "category": "B"
+    },
+    {
+      "name": "test_odin_allows_strong_vertical",
+      "classname": "services.api.tests.test_governance_odin",
+      "kind": "failure",
+      "category": "B"
+    },
+    {
+      "name": "test_odin_warns_marginal_project",
+      "classname": "services.api.tests.test_governance_odin",
+      "kind": "failure",
+      "category": "B"
+    },
+    {
+      "name": "test_odin_denies_distraction_or_overload",
+      "classname": "services.api.tests.test_governance_odin",
+      "kind": "failure",
+      "category": "B"
+    },
+    {
+      "name": "test_governance_evaluate_all_allows_clean_plan",
+      "classname": "services.api.tests.test_governance_orchestrator",
+      "kind": "failure",
+      "category": "B"
+    },
+    {
+      "name": "test_governance_evaluate_all_denies_when_tyr_blocks",
+      "classname": "services.api.tests.test_governance_orchestrator",
+      "kind": "failure",
+      "category": "B"
+    },
+    {
+      "name": "test_governance_evaluate_all_subset_of_gods",
+      "classname": "services.api.tests.test_governance_orchestrator",
+      "kind": "failure",
+      "category": "B"
+    },
+    {
+      "name": "test_get_all_policies",
+      "classname": "services.api.tests.test_governance_policy",
+      "kind": "failure",
+      "category": "B"
+    },
+    {
+      "name": "test_get_single_policy",
+      "classname": "services.api.tests.test_governance_policy",
+      "kind": "failure",
+      "category": "B"
+    },
+    {
+      "name": "test_patch_policy_for_king",
+      "classname": "services.api.tests.test_governance_policy",
+      "kind": "failure",
+      "category": "B"
+    },
+    {
+      "name": "test_patch_rejects_invalid_data",
+      "classname": "services.api.tests.test_governance_policy",
+      "kind": "failure",
+      "category": "B"
+    },
+    {
+      "name": "test_queen_allows_sane_workload",
+      "classname": "services.api.tests.test_governance_queen",
+      "kind": "failure",
+      "category": "B"
+    },
+    {
+      "name": "test_queen_warns_when_hours_are_high_but_not_insane",
+      "classname": "services.api.tests.test_governance_queen",
+      "kind": "failure",
+      "category": "B"
+    },
+    {
+      "name": "test_queen_denies_hard_overload",
+      "classname": "services.api.tests.test_governance_queen",
+      "kind": "failure",
+      "category": "B"
+    },
+    {
+      "name": "test_tyr_allows_clean_action",
+      "classname": "services.api.tests.test_governance_tyr",
+      "kind": "failure",
+      "category": "B"
+    },
+    {
+      "name": "test_tyr_denies_unlicensed_and_tax_evasion",
+      "classname": "services.api.tests.test_governance_tyr",
+      "kind": "failure",
+      "category": "B"
+    },
+    {
+      "name": "test_tyr_denies_exploitative_and_misleading_behavior",
+      "classname": "services.api.tests.test_governance_tyr",
+      "kind": "failure",
+      "category": "B"
+    },
+    {
+      "name": "test_grants_roundtrip",
+      "classname": "services.api.tests.test_grants",
+      "kind": "failure",
+      "category": "C"
+    },
+    {
+      "name": "test_import_app",
+      "classname": "services.api.tests.test_health",
+      "kind": "failure",
+      "category": "B"
+    },
+    {
+      "name": "test_health",
+      "classname": "services.api.tests.test_health",
+      "kind": "failure",
+      "category": "C"
+    },
+    {
+      "name": "test_heimdall_build_request_approved",
+      "classname": "services.api.tests.test_heimdall_build_gate",
+      "kind": "failure",
+      "category": "B"
+    },
+    {
+      "name": "test_heimdall_build_request_blocked_by_tyr",
+      "classname": "services.api.tests.test_heimdall_build_gate",
+      "kind": "failure",
+      "category": "B"
+    },
+    {
+      "name": "test_get_ultra_config_creates_singleton",
+      "classname": "services.api.tests.test_heimdall_ultra.TestHeimdallUltraService",
+      "kind": "error",
+      "category": "B"
+    },
+    {
+      "name": "test_get_ultra_config_returns_existing",
+      "classname": "services.api.tests.test_heimdall_ultra.TestHeimdallUltraService",
+      "kind": "error",
+      "category": "B"
+    },
+    {
+      "name": "test_toggle_ultra_mode_enable",
+      "classname": "services.api.tests.test_heimdall_ultra.TestHeimdallUltraService",
+      "kind": "error",
+      "category": "B"
+    },
+    {
+      "name": "test_toggle_ultra_mode_disable",
+      "classname": "services.api.tests.test_heimdall_ultra.TestHeimdallUltraService",
+      "kind": "error",
+      "category": "B"
+    },
+    {
+      "name": "test_set_initiative_level_maximum",
+      "classname": "services.api.tests.test_heimdall_ultra.TestHeimdallUltraService",
+      "kind": "error",
+      "category": "B"
+    },
+    {
+      "name": "test_set_initiative_level_normal",
+      "classname": "services.api.tests.test_heimdall_ultra.TestHeimdallUltraService",
+      "kind": "error",
+      "category": "B"
+    },
+    {
+      "name": "test_set_initiative_level_minimal",
+      "classname": "services.api.tests.test_heimdall_ultra.TestHeimdallUltraService",
+      "kind": "error",
+      "category": "B"
+    },
+    {
+      "name": "test_set_initiative_level_invalid",
+      "classname": "services.api.tests.test_heimdall_ultra.TestHeimdallUltraService",
+      "kind": "error",
+      "category": "B"
+    },
+    {
+      "name": "test_set_escalation_chain",
+      "classname": "services.api.tests.test_heimdall_ultra.TestHeimdallUltraService",
+      "kind": "error",
+      "category": "B"
+    },
+    {
+      "name": "test_set_priority_matrix",
+      "classname": "services.api.tests.test_heimdall_ultra.TestHeimdallUltraService",
+      "kind": "error",
+      "category": "B"
+    },
+    {
+      "name": "test_update_ultra_config_partial",
+      "classname": "services.api.tests.test_heimdall_ultra.TestHeimdallUltraService",
+      "kind": "error",
+      "category": "B"
+    },
+    {
+      "name": "test_update_ultra_config_full",
+      "classname": "services.api.tests.test_heimdall_ultra.TestHeimdallUltraService",
+      "kind": "error",
+      "category": "B"
+    },
+    {
+      "name": "test_default_escalation_chain_structure",
+      "classname": "services.api.tests.test_heimdall_ultra.TestHeimdallUltraService",
+      "kind": "error",
+      "category": "B"
+    },
+    {
+      "name": "test_default_priority_matrix_order",
+      "classname": "services.api.tests.test_heimdall_ultra.TestHeimdallUltraService",
+      "kind": "error",
+      "category": "B"
+    },
+    {
+      "name": "test_scan_configuration",
+      "classname": "services.api.tests.test_heimdall_ultra.TestHeimdallUltraService",
+      "kind": "error",
+      "category": "B"
+    },
+    {
+      "name": "test_auto_task_orchestration_defaults",
+      "classname": "services.api.tests.test_heimdall_ultra.TestHeimdallUltraService",
+      "kind": "error",
+      "category": "B"
+    },
+    {
+      "name": "test_track_all_inputs_default",
+      "classname": "services.api.tests.test_heimdall_ultra.TestHeimdallUltraService",
+      "kind": "error",
+      "category": "B"
+    },
+    {
+      "name": "test_read_ultra_config",
+      "classname": "services.api.tests.test_heimdall_ultra.TestHeimdallUltraRouter",
+      "kind": "error",
+      "category": "B"
+    },
+    {
+      "name": "test_enable_ultra_mode",
+      "classname": "services.api.tests.test_heimdall_ultra.TestHeimdallUltraRouter",
+      "kind": "error",
+      "category": "B"
+    },
+    {
+      "name": "test_disable_ultra_mode",
+      "classname": "services.api.tests.test_heimdall_ultra.TestHeimdallUltraRouter",
+      "kind": "error",
+      "category": "B"
+    },
+    {
+      "name": "test_update_config",
+      "classname": "services.api.tests.test_heimdall_ultra.TestHeimdallUltraRouter",
+      "kind": "error",
+      "category": "B"
+    },
+    {
+      "name": "test_set_initiative_level",
+      "classname": "services.api.tests.test_heimdall_ultra.TestHeimdallUltraRouter",
+      "kind": "error",
+      "category": "B"
+    },
+    {
+      "name": "test_set_initiative_level_invalid",
+      "classname": "services.api.tests.test_heimdall_ultra.TestHeimdallUltraRouter",
+      "kind": "error",
+      "category": "B"
+    },
+    {
+      "name": "test_update_escalation",
+      "classname": "services.api.tests.test_heimdall_ultra.TestHeimdallUltraRouter",
+      "kind": "error",
+      "category": "B"
+    },
+    {
+      "name": "test_update_priorities",
+      "classname": "services.api.tests.test_heimdall_ultra.TestHeimdallUltraRouter",
+      "kind": "error",
+      "category": "B"
+    },
+    {
+      "name": "test_config_persistence",
+      "classname": "services.api.tests.test_heimdall_ultra.TestHeimdallUltraRouter",
+      "kind": "error",
+      "category": "B"
+    },
+    {
+      "name": "test_response_schema_completeness",
+      "classname": "services.api.tests.test_heimdall_ultra.TestHeimdallUltraRouter",
+      "kind": "error",
+      "category": "B"
+    },
+    {
+      "name": "test_intake_normalize_to_deal",
+      "classname": "services.api.tests.test_intake_notify",
+      "kind": "failure",
+      "category": "C"
+    },
+    {
+      "name": "test_notify_queue_only",
+      "classname": "services.api.tests.test_intake_notify",
+      "kind": "failure",
+      "category": "C"
+    },
+    {
+      "name": "test_match_flow",
+      "classname": "services.api.tests.test_matching",
+      "kind": "failure",
+      "category": "C"
+    },
+    {
+      "name": "test_metrics_ok",
+      "classname": "services.api.tests.test_metrics_capital",
+      "kind": "failure",
+      "category": "C"
+    },
+    {
+      "name": "test_capital_roundtrip",
+      "classname": "services.api.tests.test_metrics_capital",
+      "kind": "failure",
+      "category": "C"
+    },
+    {
+      "name": "test_telemetry_create",
+      "classname": "services.api.tests.test_metrics_capital",
+      "kind": "failure",
+      "category": "C"
+    },
+    {
+      "name": "test_portfolio_summary_endpoint",
+      "classname": "services.api.tests.test_portfolio_dashboard",
+      "kind": "failure",
+      "category": "B"
+    },
+    {
+      "name": "test_portfolio_deals_endpoint",
+      "classname": "services.api.tests.test_portfolio_dashboard",
+      "kind": "failure",
+      "category": "B"
+    },
+    {
+      "name": "test_reports_summary",
+      "classname": "services.api.tests.test_reports",
+      "kind": "failure",
+      "category": "C"
+    },
+    {
+      "name": "test_notification_email_send_guard_blocks_before_side_effect",
+      "classname": "services.api.tests.test_shadow_side_effect_guards",
+      "kind": "failure",
+      "category": "D"
+    },
+    {
+      "name": "test_healthz",
+      "classname": "services.api.tests.test_smoke",
+      "kind": "failure",
+      "category": "C"
+    },
+    {
+      "name": "test_builder_list_tasks",
+      "classname": "services.api.tests.test_smoke",
+      "kind": "failure",
+      "category": "C"
+    },
+    {
+      "name": "test_research_playbooks_list_public",
+      "classname": "services.api.tests.test_smoke",
+      "kind": "failure",
+      "category": "C"
+    },
+    {
+      "name": "test_openapi_includes_logout_route",
+      "classname": "services.api.tests.test_weweb_logout_contract",
+      "kind": "error",
+      "category": "D"
+    },
+    {
+      "name": "test_logout_authenticated_revokes_token_and_denies_me",
+      "classname": "services.api.tests.test_weweb_logout_contract",
+      "kind": "error",
+      "category": "D"
+    },
+    {
+      "name": "test_logout_unauthenticated_is_denied",
+      "classname": "services.api.tests.test_weweb_logout_contract",
+      "kind": "error",
+      "category": "D"
+    },
+    {
+      "name": "test_logout_invalid_token_is_denied",
+      "classname": "services.api.tests.test_weweb_logout_contract",
+      "kind": "error",
+      "category": "D"
+    },
+    {
+      "name": "test_logout_expired_token_is_denied",
+      "classname": "services.api.tests.test_weweb_logout_contract",
+      "kind": "error",
+      "category": "D"
+    },
+    {
+      "name": "test_owner_true_for_configured_owner",
+      "classname": "services.api.tests.test_weweb_owner_recognition",
+      "kind": "error",
+      "category": "D"
+    },
+    {
+      "name": "test_owner_false_for_different_user",
+      "classname": "services.api.tests.test_weweb_owner_recognition",
+      "kind": "error",
+      "category": "D"
+    },
+    {
+      "name": "test_owner_comparison_is_case_insensitive",
+      "classname": "services.api.tests.test_weweb_owner_recognition",
+      "kind": "error",
+      "category": "D"
+    },
+    {
+      "name": "test_missing_owner_configuration_fails_safe_false",
+      "classname": "services.api.tests.test_weweb_owner_recognition",
+      "kind": "error",
+      "category": "D"
+    },
+    {
+      "name": "test_unauthenticated_request_fails",
+      "classname": "services.api.tests.test_weweb_owner_recognition",
+      "kind": "error",
+      "category": "D"
+    },
+    {
+      "name": "test_invalid_jwt_fails",
+      "classname": "services.api.tests.test_weweb_owner_recognition",
+      "kind": "error",
+      "category": "D"
+    },
+    {
+      "name": "test_expired_jwt_fails",
+      "classname": "services.api.tests.test_weweb_owner_recognition",
+      "kind": "error",
+      "category": "D"
+    },
+    {
+      "name": "test_request_data_cannot_grant_owner",
+      "classname": "services.api.tests.test_weweb_owner_recognition",
+      "kind": "error",
+      "category": "D"
+    }
+  ]
+}

@@ -9,6 +9,8 @@ import datetime as dt
 import httpx
 from sqlalchemy.orm import Session
 
+from app.core.engines.actions import OUTREACH
+from app.core.engines.guard_runtime import enforce_engine
 from app.core.db import SessionLocal
 from app.core.settings import settings
 from app.models.notify import Outbox
@@ -16,6 +18,15 @@ from app.models.notify import Outbox
 
 def _send_email(row: Outbox) -> None:
     """Send email using SMTP settings."""
+    enforce_engine(
+        "wholesaling",
+        OUTREACH,
+        {
+            "channel": "email",
+            "outbox_id": row.id,
+            "target_type": "email",
+        },
+    )
     if not (settings.SMTP_HOST and settings.SMTP_USER and settings.SMTP_PASS and settings.SMTP_FROM):
         raise RuntimeError("SMTP not configured")
     
@@ -48,6 +59,15 @@ def dispatch_pending(limit: int = 20) -> dict:
             for r in rows:
                 try:
                     if r.kind == "webhook":
+                        enforce_engine(
+                            "wholesaling",
+                            OUTREACH,
+                            {
+                                "channel": "webhook",
+                                "outbox_id": r.id,
+                                "target_type": "url",
+                            },
+                        )
                         resp = client.post(
                             r.target,
                             json=json.loads(r.payload_json or "{}")

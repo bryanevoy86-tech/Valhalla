@@ -2129,3 +2129,181 @@ def test_legacy_orchestration_blocks_governance_bypass_payloads():
     )
     assert blocked.status_code == 409
     assert "cannot bypass core governance" in blocked.json()["detail"]
+
+
+def test_source_usage_requires_shadow_governance_approval():
+    client = _build_client()
+
+    created = client.post(
+        "/api/completion/source-items",
+        json={
+            "source_id": "SRC-BLOCKED-001",
+            "canonical_name": "Blocked Test Source",
+            "source_type": "government",
+            "data_class": "live",
+            "terminal_state": "ACTIVE_AND_VERIFIED",
+            "permission_status": "denied",
+            "license_status": "restricted",
+            "robots_policy": "blocked",
+            "trust_tier": "tier3",
+            "governance_status": "blocked",
+            "shadow_approved": False,
+            "mode_allowlist": ["practice"],
+        },
+    )
+    assert created.status_code == 200
+
+    checked = client.post(
+        "/api/completion/source-items/validate-use",
+        json={"source_id": "SRC-BLOCKED-001", "mode": "practice"},
+    )
+    assert checked.status_code == 409
+    assert "shadow" in checked.json()["detail"] or "approved" in checked.json()["detail"]
+
+
+def test_shadow_winnipeg_rehearsal_ingests_and_dedupes(monkeypatch):
+    client = _build_client()
+
+    sample_rows = [
+        {
+            "source_id": "SRC-WPG-OPEN-DATA",
+            "external_id": "wpg-1",
+            "title": "Vacant buildings list",
+            "citation_ref": "https://data.winnipeg.ca/d/wpg-1",
+            "notes": "source=winnipeg",
+            "content_excerpt": "public record",
+            "comps_strength": "absent",
+            "buyer_pool_verified": False,
+            "contact_verified": False,
+        },
+        {
+            "source_id": "SRC-CANADA-OPEN-DATA",
+            "external_id": "ca-1",
+            "title": "Housing indicators",
+            "citation_ref": "https://open.canada.ca/data/en/dataset/ca-1",
+            "notes": "source=canada",
+            "content_excerpt": "public record",
+            "comps_strength": "weak",
+            "buyer_pool_verified": False,
+            "contact_verified": False,
+        },
+    ] * 10
+
+    monkeypatch.setattr(
+        "app.routers.completion_registry._fetch_winnipeg_shadow_records",
+        lambda _limit: {"records": sample_rows[:20], "parse_failures": 1, "source_failures": 0},
+    )
+
+    first = client.post(
+        "/api/completion/shadow/rehearsal/winnipeg",
+        json={"batch_id": "BATCH-REAL-001", "limit": 20, "mode": "shadow"},
+    )
+    assert first.status_code == 200, first.text
+    first_body = first.json()
+    assert first_body["inserted"] == 2
+    assert first_body["duplicates"] == 18
+    assert first_body["blocked"] == 0
+    assert first_body["rejected"] == 0
+    assert first_body["parse_failures"] == 1
+    assert first_body["source_failures"] == 0
+    assert first_body["valuation_confidence_low"] == 2
+    assert first_body["buyer_data_insufficient"] == 2
+    assert first_body["contact_not_verified"] == 2
+    assert first_body["pending_human_review"] == 2
+
+    second = client.post(
+        "/api/completion/shadow/rehearsal/winnipeg",
+        json={"batch_id": "BATCH-REAL-001", "limit": 20, "mode": "practice"},
+    )
+    assert second.status_code == 200, second.text
+    second_body = second.json()
+    assert second_body["inserted"] == 0
+    assert second_body["duplicates"] == 20
+    assert second_body["valuation_confidence_low"] == 0
+    assert second_body["buyer_data_insufficient"] == 0
+    assert second_body["contact_not_verified"] == 0
+    assert second_body["pending_human_review"] == 0
+
+
+def test_shadow_winnipeg_rehearsal_preserves_success_when_evidence_sufficient(monkeypatch):
+    client = _build_client()
+
+    sample_rows = [
+        {
+            "source_id": "SRC-WPG-OPEN-DATA",
+            "external_id": "wpg-strong-1",
+            "title": "Assessed value rollup",
+            "citation_ref": "https://data.winnipeg.ca/d/wpg-strong-1",
+            "notes": "strong evidence",
+            "content_excerpt": "public record",
+            "valuation_confidence": 0.89,
+            "comps_strength": "strong",
+            "buyer_pool_verified": True,
+            "contact_verified": True,
+        },
+        {
+            "source_id": "SRC-CANADA-OPEN-DATA",
+            "external_id": "ca-strong-1",
+            "title": "Market volume indicators",
+            "citation_ref": "https://open.canada.ca/data/en/dataset/ca-strong-1",
+            "notes": "strong evidence",
+            "content_excerpt": "public record",
+            "valuation_confidence": 0.91,
+            "comps_strength": "strong",
+            "buyer_pool_verified": True,
+            "contact_verified": True,
+        },
+    ]
+
+    monkeypatch.setattr(
+        "app.routers.completion_registry._fetch_winnipeg_shadow_records",
+        lambda _limit: {"records": sample_rows, "parse_failures": 0, "source_failures": 0},
+    )
+
+    run = client.post(
+        "/api/completion/shadow/rehearsal/winnipeg",
+        json={"batch_id": "BATCH-REAL-STRONG-001", "limit": 20, "mode": "practice"},
+    )
+    assert run.status_code == 200, run.text
+    body = run.json()
+    assert body["inserted"] == 2
+    assert body["valuation_confidence_low"] == 0
+    assert body["buyer_data_insufficient"] == 0
+    assert body["contact_not_verified"] == 0
+    assert body["pending_human_review"] == 0
+
+
+def test_shadow_winnipeg_rehearsal_rejects_missing_citation(monkeypatch):
+    client = _build_client()
+
+    sample_rows = [
+        {
+            "source_id": "SRC-WPG-OPEN-DATA",
+            "external_id": "wpg-no-cite-1",
+            "title": "No citation row",
+            "citation_ref": "",
+            "notes": "missing citation",
+            "content_excerpt": "public record",
+            "comps_strength": "weak",
+            "buyer_pool_verified": False,
+            "contact_verified": False,
+        }
+    ]
+
+    monkeypatch.setattr(
+        "app.routers.completion_registry._fetch_winnipeg_shadow_records",
+        lambda _limit: {"records": sample_rows, "parse_failures": 0, "source_failures": 0},
+    )
+
+    run = client.post(
+        "/api/completion/shadow/rehearsal/winnipeg",
+        json={"batch_id": "BATCH-REAL-NOCITE-001", "limit": 20, "mode": "practice"},
+    )
+    assert run.status_code == 200, run.text
+    body = run.json()
+    assert body["inserted"] == 0
+    assert body["rejected"] == 1
+    assert body["valuation_confidence_low"] == 1
+    assert body["buyer_data_insufficient"] == 1
+    assert body["contact_not_verified"] == 1
+    assert body["pending_human_review"] == 1

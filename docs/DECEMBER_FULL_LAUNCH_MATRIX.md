@@ -24,6 +24,7 @@ Allowed status values for this matrix:
 | Canonical Engine Registry coverage audit | PASS | new engine-registry registry + audit endpoint + tests | NO |
 | Legacy instance context representation + executable orchestration | PASS | representational registry + orchestration runtime endpoints + deterministic failover/conflict tests | NO |
 | Final controlled fake-live operating day | PASS | services/api/tests/test_fake_live_operating_day.py stage report + failure injections | NO |
+| Canonical Shadow side-effect fail-closed runtime + source governance extension | PASS | certification matrix 29/0 + rehearsal evidence (20 real records, dedupe proof, live-mode 409 block, explicit insufficiency counters, zero external effects) | NO |
 | WeWeb Learning/Integrity launch-facing UI wiring | EXTERNAL_OWNER_ACTION_REQUIRED | authenticated MCP project-edit access unavailable in this runtime | YES |
 
 ## 2. Engine Registry Closure
@@ -223,3 +224,22 @@ These are external dependencies, not software defects:
 
 Result:
 - 37 passed, 0 failed (targeted suite in this closure)
+
+## 8. Shadow Certification Addendum (2026-10-08)
+
+Classification:
+- REAL DATA SHADOW PROVEN
+- EXTERNAL ACTIONS BLOCKED
+- LIVE OUTREACH NOT AUTHORIZED
+
+Evidence artifacts:
+- `docs/_shadow_certification_evidence.json`
+- `docs/_shadow_winnipeg_rehearsal_evidence.json`
+- `docs/_broad_regression_classification.json`
+
+Current broad regression triage status:
+- INTRODUCED_BY_SHADOW_WORK: 0
+- PRE_EXISTING_UNRELATED: 84
+- ENVIRONMENT_DEPENDENCY: 13
+- TEST_HARNESS_DEFECT: 59
+- UNKNOWN: 0
