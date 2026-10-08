@@ -1,0 +1,2791 @@
+{
+  "generated_at": "2026-10-08T02:46:54.919646+00:00",
+  "mode": "shadow_practice",
+  "safety_constraints": {
+    "emails": 0,
+    "sms": 0,
+    "calls": 0,
+    "contracts": 0,
+    "e_sign": 0,
+    "money_usd": 0,
+    "accounting_writes": 0,
+    "external_posts": 0
+  },
+  "stage50": {
+    "pass": true,
+    "requested": 50,
+    "fetched": 50,
+    "accepted": 50,
+    "duplicates": 0,
+    "rejected": 0,
+    "parse_failures": 0,
+    "source_failures": 0,
+    "review_required_cap_blocked": 0,
+    "retrieval_ms": 10141,
+    "processing_ms": 23,
+    "evidence_complete": 50,
+    "qualified_opportunities": 0,
+    "low_confidence_count": 50,
+    "VALUATION_CONFIDENCE_LOW": 50,
+    "BUYER_DATA_INSUFFICIENT": 50,
+    "CONTACT_NOT_VERIFIED": 50,
+    "PENDING_HUMAN_REVIEW": 50,
+    "records_with_useful_scoring_evidence": 0,
+    "records_rejected_as_poor_signal": 50,
+    "records_requiring_more_evidence": 50,
+    "score_distribution": {
+      "highest": 31.0,
+      "lowest": 31.0,
+      "median": 31.0,
+      "average": 31.0,
+      "buckets": {
+        "0-25": 0,
+        "26-50": 50,
+        "51-70": 0,
+        "71-85": 0,
+        "86-100": 0
+      }
+    },
+    "record_summaries": [
+      {
+        "item_id": "KN-SHADOW-29a66b8c10397830",
+        "source": "SRC-WPG-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "29a66b8c10397830",
+        "retrieval_timestamp": "2026-10-08T02:46:43.927111",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-29a66b8c10397830",
+        "evidence_reference": "https://data.winnipeg.ca/d/8vpu-fybf",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW WWD Rivers, Creeks, and Streams Water Quality Monitoring"
+      },
+      {
+        "item_id": "KN-SHADOW-a56150512830f694",
+        "source": "SRC-WPG-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "a56150512830f694",
+        "retrieval_timestamp": "2026-10-08T02:46:43.927117",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-a56150512830f694",
+        "evidence_reference": "https://data.winnipeg.ca/d/2df6-k8j2",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Map of Downtown Boundary"
+      },
+      {
+        "item_id": "KN-SHADOW-5e6bc0051ed70812",
+        "source": "SRC-WPG-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "5e6bc0051ed70812",
+        "retrieval_timestamp": "2026-10-08T02:46:43.927120",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-5e6bc0051ed70812",
+        "evidence_reference": "https://data.winnipeg.ca/d/c26m-yeye",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Downtown Boundary"
+      },
+      {
+        "item_id": "KN-SHADOW-5afcdbeaba691d4e",
+        "source": "SRC-WPG-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "5afcdbeaba691d4e",
+        "retrieval_timestamp": "2026-10-08T02:46:43.927123",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-5afcdbeaba691d4e",
+        "evidence_reference": "https://data.winnipeg.ca/d/m2az-qa9q",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Licensed Sewer and Water Contractors"
+      },
+      {
+        "item_id": "KN-SHADOW-1e3cbd85e61956f4",
+        "source": "SRC-WPG-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "1e3cbd85e61956f4",
+        "retrieval_timestamp": "2026-10-08T02:46:43.927126",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-1e3cbd85e61956f4",
+        "evidence_reference": "https://data.winnipeg.ca/d/e29y-me8j",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Map of 2026 Orthographic Photography Mosaic"
+      },
+      {
+        "item_id": "KN-SHADOW-f26ae1cf5868362f",
+        "source": "SRC-WPG-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "f26ae1cf5868362f",
+        "retrieval_timestamp": "2026-10-08T02:46:43.927129",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-f26ae1cf5868362f",
+        "evidence_reference": "https://data.winnipeg.ca/d/qxiv-ie8m",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW CentrePlan Exchange District BIZ Assessed Retail Value Timeline Chart"
+      },
+      {
+        "item_id": "KN-SHADOW-bcc39327985568f8",
+        "source": "SRC-WPG-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "bcc39327985568f8",
+        "retrieval_timestamp": "2026-10-08T02:46:43.927132",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-bcc39327985568f8",
+        "evidence_reference": "https://data.winnipeg.ca/d/kadk-bz2t",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW CentrePlan Downtown BIZ Assessed Retail Value Timeline Chart"
+      },
+      {
+        "item_id": "KN-SHADOW-27ba65d01576d563",
+        "source": "SRC-WPG-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "27ba65d01576d563",
+        "retrieval_timestamp": "2026-10-08T02:46:43.927135",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-27ba65d01576d563",
+        "evidence_reference": "https://data.winnipeg.ca/d/xk47-mh4h",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW CentrePlan Downtown Street Level Vacancy Timeline Chart"
+      },
+      {
+        "item_id": "KN-SHADOW-7ffe68d32981ef43",
+        "source": "SRC-WPG-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "7ffe68d32981ef43",
+        "retrieval_timestamp": "2026-10-08T02:46:43.927138",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-7ffe68d32981ef43",
+        "evidence_reference": "https://data.winnipeg.ca/d/9pyh-i7a4",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW CSO Discharge Monitoring for CSO Program"
+      },
+      {
+        "item_id": "KN-SHADOW-2204a1e81f5a1ba6",
+        "source": "SRC-WPG-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "2204a1e81f5a1ba6",
+        "retrieval_timestamp": "2026-10-08T02:46:43.927141",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-2204a1e81f5a1ba6",
+        "evidence_reference": "https://data.winnipeg.ca/d/pyys-5aq5",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW River and Stream Water Quality for CSO Program"
+      },
+      {
+        "item_id": "KN-SHADOW-1dba85169dd17e3e",
+        "source": "SRC-WPG-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "1dba85169dd17e3e",
+        "retrieval_timestamp": "2026-10-08T02:46:43.927144",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-1dba85169dd17e3e",
+        "evidence_reference": "https://data.winnipeg.ca/d/qxfi-xr2s",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW CentrePlan Downtown BIZ Assessed Retail Value"
+      },
+      {
+        "item_id": "KN-SHADOW-63485cc45a45c138",
+        "source": "SRC-WPG-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "63485cc45a45c138",
+        "retrieval_timestamp": "2026-10-08T02:46:43.927147",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-63485cc45a45c138",
+        "evidence_reference": "https://data.winnipeg.ca/d/ng8w-yxut",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Combined Sewer Overflow Annual Results"
+      },
+      {
+        "item_id": "KN-SHADOW-4b3cae80f40c9ddd",
+        "source": "SRC-WPG-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "4b3cae80f40c9ddd",
+        "retrieval_timestamp": "2026-10-08T02:46:43.927151",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-4b3cae80f40c9ddd",
+        "evidence_reference": "https://data.winnipeg.ca/d/bh78-7qpb",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Real-Time Midblock Traffic Data"
+      },
+      {
+        "item_id": "KN-SHADOW-4d95af9d13ca5495",
+        "source": "SRC-WPG-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "4d95af9d13ca5495",
+        "retrieval_timestamp": "2026-10-08T02:46:43.927154",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-4d95af9d13ca5495",
+        "evidence_reference": "https://data.winnipeg.ca/d/itt4-nx6c",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW CentrePlan Housing the Unhoused Timeline Chart"
+      },
+      {
+        "item_id": "KN-SHADOW-e13beacbef08ee9b",
+        "source": "SRC-WPG-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "e13beacbef08ee9b",
+        "retrieval_timestamp": "2026-10-08T02:46:43.927157",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-e13beacbef08ee9b",
+        "evidence_reference": "https://data.winnipeg.ca/d/sitk-xxmf",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW CentrePlan Housing the Unhoused"
+      },
+      {
+        "item_id": "KN-SHADOW-e6d638a4f00e297c",
+        "source": "SRC-WPG-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "e6d638a4f00e297c",
+        "retrieval_timestamp": "2026-10-08T02:46:43.927160",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-e6d638a4f00e297c",
+        "evidence_reference": "https://data.winnipeg.ca/d/6vws-wqgw",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW CentrePlan Dwelling Unit Count Timeline Chart"
+      },
+      {
+        "item_id": "KN-SHADOW-31e557449208530e",
+        "source": "SRC-WPG-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "31e557449208530e",
+        "retrieval_timestamp": "2026-10-08T02:46:43.927163",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-31e557449208530e",
+        "evidence_reference": "https://data.winnipeg.ca/d/cs53-w3rt",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW CentrePlan Dwelling Unit Count"
+      },
+      {
+        "item_id": "KN-SHADOW-06c0a116979a179c",
+        "source": "SRC-WPG-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "06c0a116979a179c",
+        "retrieval_timestamp": "2026-10-08T02:46:43.927166",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-06c0a116979a179c",
+        "evidence_reference": "https://data.winnipeg.ca/d/48v2-pi55",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW CentrePlan Downtown Street Level Vacancy"
+      },
+      {
+        "item_id": "KN-SHADOW-77a6b5a779ef3ced",
+        "source": "SRC-WPG-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "77a6b5a779ef3ced",
+        "retrieval_timestamp": "2026-10-08T02:46:43.927169",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-77a6b5a779ef3ced",
+        "evidence_reference": "https://data.winnipeg.ca/d/ug2x-dgzi",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW CentrePlan Downtown Sidewalks Upgraded Timeline Chart"
+      },
+      {
+        "item_id": "KN-SHADOW-f14a93e1658fcc75",
+        "source": "SRC-WPG-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "f14a93e1658fcc75",
+        "retrieval_timestamp": "2026-10-08T02:46:43.927172",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-f14a93e1658fcc75",
+        "evidence_reference": "https://data.winnipeg.ca/d/xf85-3m57",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW CentrePlan Downtown Sidewalks Upgraded"
+      },
+      {
+        "item_id": "KN-SHADOW-cbe398f4b9ec0955",
+        "source": "SRC-WPG-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "cbe398f4b9ec0955",
+        "retrieval_timestamp": "2026-10-08T02:46:43.927175",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-cbe398f4b9ec0955",
+        "evidence_reference": "https://data.winnipeg.ca/d/idn2-bq2r",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW CentrePlan Downtown Residential Vacancy Rate Timeline Chart"
+      },
+      {
+        "item_id": "KN-SHADOW-d0ed0531301fa54b",
+        "source": "SRC-WPG-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "d0ed0531301fa54b",
+        "retrieval_timestamp": "2026-10-08T02:46:43.927178",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-d0ed0531301fa54b",
+        "evidence_reference": "https://data.winnipeg.ca/d/swum-ertc",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW CentrePlan Downtown Residential Vacancy Rate"
+      },
+      {
+        "item_id": "KN-SHADOW-67366d66c61e9e3a",
+        "source": "SRC-WPG-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "67366d66c61e9e3a",
+        "retrieval_timestamp": "2026-10-08T02:46:43.927181",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-67366d66c61e9e3a",
+        "evidence_reference": "https://data.winnipeg.ca/d/8dpv-brvb",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW CentrePlan Downtown Office Vacancy Timeline Chart"
+      },
+      {
+        "item_id": "KN-SHADOW-f843df1337b2fa8e",
+        "source": "SRC-WPG-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "f843df1337b2fa8e",
+        "retrieval_timestamp": "2026-10-08T02:46:43.927184",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-f843df1337b2fa8e",
+        "evidence_reference": "https://data.winnipeg.ca/d/gthj-6548",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW CentrePlan Downtown Office Vacancy"
+      },
+      {
+        "item_id": "KN-SHADOW-ce83ca9626fa484a",
+        "source": "SRC-WPG-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "ce83ca9626fa484a",
+        "retrieval_timestamp": "2026-10-08T02:46:43.927187",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-ce83ca9626fa484a",
+        "evidence_reference": "https://data.winnipeg.ca/d/wuag-irzu",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW CentrePlan Downtown Affordable Housing Timeline Chart"
+      },
+      {
+        "item_id": "KN-SHADOW-b4318a3c29c689d6",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "b4318a3c29c689d6",
+        "retrieval_timestamp": "2026-10-08T02:46:43.927190",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-b4318a3c29c689d6",
+        "evidence_reference": "https://open.canada.ca/data/en/dataset/e9693de5-5726-4263-9bed-de460db96591",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Radon in real estate"
+      },
+      {
+        "item_id": "KN-SHADOW-48a9efa2f2e98a14",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "48a9efa2f2e98a14",
+        "retrieval_timestamp": "2026-10-08T02:46:43.927193",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-48a9efa2f2e98a14",
+        "evidence_reference": "https://open.canada.ca/data/en/dataset/3ac161cf-1517-4183-b22f-8079c80c88a3",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Real estate agents and brokers, industry expenditures"
+      },
+      {
+        "item_id": "KN-SHADOW-96d5cc15c7b0ab9d",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "96d5cc15c7b0ab9d",
+        "retrieval_timestamp": "2026-10-08T02:46:43.927196",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-96d5cc15c7b0ab9d",
+        "evidence_reference": "https://open.canada.ca/data/en/dataset/d2090097-2984-4b75-967c-e0f1eaa3f31b",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Real estate agents, brokers and appraisers, summary statistics"
+      },
+      {
+        "item_id": "KN-SHADOW-9f480ee390abc540",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "9f480ee390abc540",
+        "retrieval_timestamp": "2026-10-08T02:46:43.927199",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-9f480ee390abc540",
+        "evidence_reference": "https://open.canada.ca/data/en/dataset/bd0a2a1c-178b-4219-8f57-c729b2c60e36",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Real estate agents, brokers and appraisers and other real estate activities, summary statistics, by North American Industry Classification System (NAICS), inactive"
+      },
+      {
+        "item_id": "KN-SHADOW-9be9b112bcbe40d2",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "9be9b112bcbe40d2",
+        "retrieval_timestamp": "2026-10-08T02:46:43.927202",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-9be9b112bcbe40d2",
+        "evidence_reference": "https://open.canada.ca/data/en/dataset/16a5a7b5-644e-424f-94f0-aeff59d077f4",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Capital and repair expenditures, real estate and rental and leasing"
+      },
+      {
+        "item_id": "KN-SHADOW-a21ec991c870ff58",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "a21ec991c870ff58",
+        "retrieval_timestamp": "2026-10-08T02:46:43.927205",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-a21ec991c870ff58",
+        "evidence_reference": "https://open.canada.ca/data/en/dataset/13425ff1-aa23-495f-a80d-7178af53bc84",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Real estate rental and leasing and property management, summary statistics"
+      },
+      {
+        "item_id": "KN-SHADOW-a1aee3e0f2e177f1",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "a1aee3e0f2e177f1",
+        "retrieval_timestamp": "2026-10-08T02:46:43.927208",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-a1aee3e0f2e177f1",
+        "evidence_reference": "https://open.canada.ca/data/en/dataset/061d53cf-0def-4948-a631-5146399cac77",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Real estate rental and leasing and property management, summary statistics, inactive"
+      },
+      {
+        "item_id": "KN-SHADOW-277c54084a7ab884",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "277c54084a7ab884",
+        "retrieval_timestamp": "2026-10-08T02:46:43.927212",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-277c54084a7ab884",
+        "evidence_reference": "https://open.canada.ca/data/en/dataset/9c7673c0-7231-4908-9148-be1e123252e7",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Mortgage accounts of trust companies, mortgage companies, and real estate investment trusts"
+      },
+      {
+        "item_id": "KN-SHADOW-e05a4901933b0b14",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "e05a4901933b0b14",
+        "retrieval_timestamp": "2026-10-08T02:46:43.927215",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-e05a4901933b0b14",
+        "evidence_reference": "https://open.canada.ca/data/en/dataset/15fe58a5-ba61-4733-bca8-e6d9795cd6da",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Real estate issues businesses or organizations are currently facing, second quarter of 2024"
+      },
+      {
+        "item_id": "KN-SHADOW-03bfb3bf63ae871b",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "03bfb3bf63ae871b",
+        "retrieval_timestamp": "2026-10-08T02:46:43.927218",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-03bfb3bf63ae871b",
+        "evidence_reference": "https://open.canada.ca/data/en/dataset/e7a3accb-d419-4d8a-b612-0a601ba4540c",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Public Services and Procurement Canada federal real estate available for sale to the general public"
+      },
+      {
+        "item_id": "KN-SHADOW-b1cbf214aa973caa",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "b1cbf214aa973caa",
+        "retrieval_timestamp": "2026-10-08T02:46:43.927221",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-b1cbf214aa973caa",
+        "evidence_reference": "https://open.canada.ca/data/en/dataset/1ed12480-f905-49f7-9981-ce32a10585ce",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Real estate agents, brokers and appraisers, operating expenses, by North American Industry Classification System (NAICS), inactive"
+      },
+      {
+        "item_id": "KN-SHADOW-9ae1bc65555a5ce8",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "9ae1bc65555a5ce8",
+        "retrieval_timestamp": "2026-10-08T02:46:43.927224",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-9ae1bc65555a5ce8",
+        "evidence_reference": "https://open.canada.ca/data/en/dataset/db0172bf-d480-40b4-9218-8f2de2b06454",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Real estate rental and leasing and property management, summary statistics, by North American Industry Classification System (NAICS), inactive"
+      },
+      {
+        "item_id": "KN-SHADOW-a8bd4b92500b1c83",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "a8bd4b92500b1c83",
+        "retrieval_timestamp": "2026-10-08T02:46:43.927237",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-a8bd4b92500b1c83",
+        "evidence_reference": "https://open.canada.ca/data/en/dataset/ebeabac5-ff25-4541-999d-dfe8ee517309",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Operating revenues and selected expenses for the real estate rental and leasing and property management service industry, inactive"
+      },
+      {
+        "item_id": "KN-SHADOW-d894a36689b16cff",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "d894a36689b16cff",
+        "retrieval_timestamp": "2026-10-08T02:46:43.927240",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-d894a36689b16cff",
+        "evidence_reference": "https://open.canada.ca/data/en/dataset/b59c3136-d55a-48ad-a689-e109f211a7a2",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Business' or organization's real estate situation and type of lease for its own business or organizational operations, second quarter of 2024"
+      },
+      {
+        "item_id": "KN-SHADOW-694e3e14284e099f",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "694e3e14284e099f",
+        "retrieval_timestamp": "2026-10-08T02:46:43.927243",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-694e3e14284e099f",
+        "evidence_reference": "https://open.canada.ca/data/en/dataset/0b95d26c-2fad-4758-92eb-3e42990de0f2",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Manitoba \u2013 City of Winnipeg, Rainfall Program"
+      },
+      {
+        "item_id": "KN-SHADOW-50b469b683e7a91e",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "50b469b683e7a91e",
+        "retrieval_timestamp": "2026-10-08T02:46:43.927246",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-50b469b683e7a91e",
+        "evidence_reference": "https://open.canada.ca/data/en/dataset/988aa4c6-20b7-463f-9bb9-5b2b1d379c51",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Alberta Agricultural Real Estate Average Value by CLI"
+      },
+      {
+        "item_id": "KN-SHADOW-8207ebac64259503",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "8207ebac64259503",
+        "retrieval_timestamp": "2026-10-08T02:46:43.927249",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-8207ebac64259503",
+        "evidence_reference": "https://open.canada.ca/data/en/dataset/93ce9cb5-0811-48e5-885e-98dce192d293",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Statistics from the Quebec Land Registry on the real estate market"
+      },
+      {
+        "item_id": "KN-SHADOW-1da3eb502a29b482",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "1da3eb502a29b482",
+        "retrieval_timestamp": "2026-10-08T02:46:43.927252",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-1da3eb502a29b482",
+        "evidence_reference": "https://open.canada.ca/data/en/dataset/eb7d19f7-3b63-4928-90b6-5925f151a4a9",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Real estate directions"
+      },
+      {
+        "item_id": "KN-SHADOW-7660134f26de8693",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "7660134f26de8693",
+        "retrieval_timestamp": "2026-10-08T02:46:43.927255",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-7660134f26de8693",
+        "evidence_reference": "https://open.canada.ca/data/en/dataset/5972f56f-0c72-4436-bfd1-da04f4436d3f",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW BC Finance - 2013 Financial and Economic Review - BC GDP at Basic Prices - by Industry - 2007 to 2012 with annual percentage changes - Table A1.3"
+      },
+      {
+        "item_id": "KN-SHADOW-b600133d68862796",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "b600133d68862796",
+        "retrieval_timestamp": "2026-10-08T02:46:43.927258",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-b600133d68862796",
+        "evidence_reference": "https://open.canada.ca/data/en/dataset/964f43c4-d342-57b9-abfd-1978e774c6d9",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Finance, Defense and Public Administration"
+      },
+      {
+        "item_id": "KN-SHADOW-3cf72e3f008e47e7",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "3cf72e3f008e47e7",
+        "retrieval_timestamp": "2026-10-08T02:46:43.927261",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-3cf72e3f008e47e7",
+        "evidence_reference": "https://open.canada.ca/data/en/dataset/d70cf7d7-0f8f-4c24-a3fa-b8569de5bffe",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Personalized order for the 2021 census from the Real Estate and Housing Strategy Department"
+      },
+      {
+        "item_id": "KN-SHADOW-cf06d86f7eb68c6a",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "cf06d86f7eb68c6a",
+        "retrieval_timestamp": "2026-10-08T02:46:43.927264",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-cf06d86f7eb68c6a",
+        "evidence_reference": "https://open.canada.ca/data/en/dataset/f10eaa7f-5b61-4d49-9a73-b334aa7cc718",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Radon action guide for provinces and territories: Overview"
+      },
+      {
+        "item_id": "KN-SHADOW-d93ad4ff4eb11e23",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "d93ad4ff4eb11e23",
+        "retrieval_timestamp": "2026-10-08T02:46:43.927267",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-d93ad4ff4eb11e23",
+        "evidence_reference": "https://open.canada.ca/data/en/dataset/5c627001-5945-4769-bd8a-41a1cb6065df",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Convicted offenders - health, maintenance and housing security"
+      },
+      {
+        "item_id": "KN-SHADOW-f26657648c2a45ea",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "f26657648c2a45ea",
+        "retrieval_timestamp": "2026-10-08T02:46:43.927269",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-f26657648c2a45ea",
+        "evidence_reference": "https://open.canada.ca/data/en/dataset/e166ecc3-f139-4c77-9855-0e0d43865397",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Health inspections from the Real Estate and Housing Strategy Department"
+      },
+      {
+        "item_id": "KN-SHADOW-4b7e3454e8679e23",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "4b7e3454e8679e23",
+        "retrieval_timestamp": "2026-10-08T02:46:43.927273",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-4b7e3454e8679e23",
+        "evidence_reference": "https://open.canada.ca/data/en/dataset/8e35e633-cec1-44c2-9a88-8aca9f41e3fd",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Household and Dwelling Profiles 2021"
+      }
+    ],
+    "raw_response": {
+      "batch_id": "PHASE2-STAGE50-20261007",
+      "mode": "practice",
+      "requested_limit": 50,
+      "fetched": 50,
+      "inserted": 50,
+      "duplicates": 0,
+      "blocked": 0,
+      "rejected": 0,
+      "parse_failures": 0,
+      "source_failures": 0,
+      "review_required_cap_blocked": 0,
+      "evidence_complete": 50,
+      "retrieval_ms": 10141,
+      "processing_ms": 23,
+      "source_metrics": [
+        {
+          "source_id": "SRC-CANADA-OPEN-DATA",
+          "governance_status": "review_required",
+          "permission_status": "public",
+          "license_status": "government_open_data",
+          "trust_tier": "tier2",
+          "freshness_sla_hours": 168,
+          "last_verified_at": "2026-10-08T02:46:33.675729",
+          "fetched": 25,
+          "accepted": 25,
+          "duplicates": 0,
+          "rejected": 0,
+          "blocked": 0,
+          "review_required_cap_blocked": 0,
+          "avg_confidence": 0.7,
+          "missing_field_rate": 0.0,
+          "rights_status": "approved"
+        },
+        {
+          "source_id": "SRC-WPG-OPEN-DATA",
+          "governance_status": "review_required",
+          "permission_status": "public",
+          "license_status": "government_open_data",
+          "trust_tier": "tier2",
+          "freshness_sla_hours": 168,
+          "last_verified_at": "2026-10-08T02:46:33.583926",
+          "fetched": 25,
+          "accepted": 25,
+          "duplicates": 0,
+          "rejected": 0,
+          "blocked": 0,
+          "review_required_cap_blocked": 0,
+          "avg_confidence": 0.7,
+          "missing_field_rate": 0.0,
+          "rights_status": "approved"
+        }
+      ],
+      "valuation_confidence_low": 50,
+      "buyer_data_insufficient": 50,
+      "contact_not_verified": 50,
+      "pending_human_review": 50,
+      "sources_used": [
+        "SRC-CANADA-OPEN-DATA",
+        "SRC-WPG-OPEN-DATA"
+      ]
+    }
+  },
+  "stage100": {
+    "run": true,
+    "pass": true,
+    "requested": 100,
+    "fetched": 100,
+    "accepted": 50,
+    "duplicates": 50,
+    "rejected": 0,
+    "parse_failures": 0,
+    "source_failures": 0,
+    "review_required_cap_blocked": 0,
+    "retrieval_ms": 10716,
+    "processing_ms": 38,
+    "evidence_complete": 50,
+    "qualified_opportunities": 0,
+    "low_confidence_count": 50,
+    "VALUATION_CONFIDENCE_LOW": 50,
+    "BUYER_DATA_INSUFFICIENT": 50,
+    "CONTACT_NOT_VERIFIED": 50,
+    "PENDING_HUMAN_REVIEW": 50,
+    "records_with_useful_scoring_evidence": 0,
+    "records_rejected_as_poor_signal": 50,
+    "records_requiring_more_evidence": 50,
+    "score_distribution": {
+      "highest": 31.0,
+      "lowest": 31.0,
+      "median": 31.0,
+      "average": 31.0,
+      "buckets": {
+        "0-25": 0,
+        "26-50": 50,
+        "51-70": 0,
+        "71-85": 0,
+        "86-100": 0
+      }
+    },
+    "record_summaries": [
+      {
+        "item_id": "KN-SHADOW-44bd0d3b3a215537",
+        "source": "SRC-WPG-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "44bd0d3b3a215537",
+        "retrieval_timestamp": "2026-10-08T02:46:54.778067",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-44bd0d3b3a215537",
+        "evidence_reference": "https://data.winnipeg.ca/d/dyzz-wnmd",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW CentrePlan Downtown Affordable Housing"
+      },
+      {
+        "item_id": "KN-SHADOW-bdbed6a70cf17fd8",
+        "source": "SRC-WPG-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "bdbed6a70cf17fd8",
+        "retrieval_timestamp": "2026-10-08T02:46:54.778075",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-bdbed6a70cf17fd8",
+        "evidence_reference": "https://data.winnipeg.ca/d/5gmg-wha5",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW CentrePlan Downtown Bike Lanes Timeline Chart"
+      },
+      {
+        "item_id": "KN-SHADOW-ee441100438f5b77",
+        "source": "SRC-WPG-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "ee441100438f5b77",
+        "retrieval_timestamp": "2026-10-08T02:46:54.778078",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-ee441100438f5b77",
+        "evidence_reference": "https://data.winnipeg.ca/d/fnuh-asgm",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW CentrePlan Exchange District BIZ Assessed Retail Value"
+      },
+      {
+        "item_id": "KN-SHADOW-d19df0bcf1b628fc",
+        "source": "SRC-WPG-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "d19df0bcf1b628fc",
+        "retrieval_timestamp": "2026-10-08T02:46:54.778082",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-d19df0bcf1b628fc",
+        "evidence_reference": "https://data.winnipeg.ca/d/h9p8-eqvj",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW CentrePlan Downtown Bike Lanes"
+      },
+      {
+        "item_id": "KN-SHADOW-a69525f302343cf7",
+        "source": "SRC-WPG-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "a69525f302343cf7",
+        "retrieval_timestamp": "2026-10-08T02:46:54.778085",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-a69525f302343cf7",
+        "evidence_reference": "https://data.winnipeg.ca/d/kr78-38ye",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Map of 2026 Polling Subdivision Units"
+      },
+      {
+        "item_id": "KN-SHADOW-8e868e87edfb2c0a",
+        "source": "SRC-WPG-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "8e868e87edfb2c0a",
+        "retrieval_timestamp": "2026-10-08T02:46:54.778089",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-8e868e87edfb2c0a",
+        "evidence_reference": "https://data.winnipeg.ca/d/vu7d-6w6w",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Cemetery Fees & Charges"
+      },
+      {
+        "item_id": "KN-SHADOW-f9ff81e83e0e60b6",
+        "source": "SRC-WPG-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "f9ff81e83e0e60b6",
+        "retrieval_timestamp": "2026-10-08T02:46:54.778092",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-f9ff81e83e0e60b6",
+        "evidence_reference": "https://data.winnipeg.ca/d/wbyv-ks6y",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Development permits application counts"
+      },
+      {
+        "item_id": "KN-SHADOW-2f29c5952fd342e6",
+        "source": "SRC-WPG-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "2f29c5952fd342e6",
+        "retrieval_timestamp": "2026-10-08T02:46:54.778095",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-2f29c5952fd342e6",
+        "evidence_reference": "https://data.winnipeg.ca/d/8fcd-5ipf",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Map of Zoning By-law Parcels and Zoning Information"
+      },
+      {
+        "item_id": "KN-SHADOW-d59dbece91c6e676",
+        "source": "SRC-WPG-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "d59dbece91c6e676",
+        "retrieval_timestamp": "2026-10-08T02:46:54.778099",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-d59dbece91c6e676",
+        "evidence_reference": "https://data.winnipeg.ca/d/dxrp-w6re",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW City of Winnipeg Zoning By-law Parcels and Zoning Information"
+      },
+      {
+        "item_id": "KN-SHADOW-371f4753acd7a6d5",
+        "source": "SRC-WPG-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "371f4753acd7a6d5",
+        "retrieval_timestamp": "2026-10-08T02:46:54.778102",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-371f4753acd7a6d5",
+        "evidence_reference": "https://data.winnipeg.ca/d/g3p4-h83y",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Snow Clearing Status and Winter Parking Bans (Address-Level)"
+      },
+      {
+        "item_id": "KN-SHADOW-653e7d7dc53ad31f",
+        "source": "SRC-WPG-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "653e7d7dc53ad31f",
+        "retrieval_timestamp": "2026-10-08T02:46:54.778105",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-653e7d7dc53ad31f",
+        "evidence_reference": "https://data.winnipeg.ca/d/npxf-ny5j",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Map of Alley Network"
+      },
+      {
+        "item_id": "KN-SHADOW-17b98d3217660703",
+        "source": "SRC-WPG-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "17b98d3217660703",
+        "retrieval_timestamp": "2026-10-08T02:46:54.778108",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-17b98d3217660703",
+        "evidence_reference": "https://data.winnipeg.ca/d/d89m-vrkw",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Alley Network"
+      },
+      {
+        "item_id": "KN-SHADOW-cbc67e4d6d23ba66",
+        "source": "SRC-WPG-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "cbc67e4d6d23ba66",
+        "retrieval_timestamp": "2026-10-08T02:46:54.778112",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-cbc67e4d6d23ba66",
+        "evidence_reference": "https://data.winnipeg.ca/d/juep-8zch",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Housing Inspection Availability"
+      },
+      {
+        "item_id": "KN-SHADOW-91418c7f7ff0b878",
+        "source": "SRC-WPG-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "91418c7f7ff0b878",
+        "retrieval_timestamp": "2026-10-08T02:46:54.778115",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-91418c7f7ff0b878",
+        "evidence_reference": "https://data.winnipeg.ca/d/bhpc-g38t",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Application Counts"
+      },
+      {
+        "item_id": "KN-SHADOW-fd9f254b791b9dca",
+        "source": "SRC-WPG-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "fd9f254b791b9dca",
+        "retrieval_timestamp": "2026-10-08T02:46:54.778118",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-fd9f254b791b9dca",
+        "evidence_reference": "https://data.winnipeg.ca/d/cu5u-b3vu",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW City of Winnipeg energy use and greenhouse gas emissions"
+      },
+      {
+        "item_id": "KN-SHADOW-8f252e0c23b71675",
+        "source": "SRC-WPG-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "8f252e0c23b71675",
+        "retrieval_timestamp": "2026-10-08T02:46:54.778122",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-8f252e0c23b71675",
+        "evidence_reference": "https://data.winnipeg.ca/d/52rg-ur5h",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Public Opinion Research on Winnipeg Climate Action"
+      },
+      {
+        "item_id": "KN-SHADOW-91d055a5af4a5c34",
+        "source": "SRC-WPG-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "91d055a5af4a5c34",
+        "retrieval_timestamp": "2026-10-08T02:46:54.778127",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-91d055a5af4a5c34",
+        "evidence_reference": "https://data.winnipeg.ca/d/8dj2-axxk",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Planning, Development & Building Fees and Charges"
+      },
+      {
+        "item_id": "KN-SHADOW-511735f681e3397e",
+        "source": "SRC-WPG-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "511735f681e3397e",
+        "retrieval_timestamp": "2026-10-08T02:46:54.778132",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-511735f681e3397e",
+        "evidence_reference": "https://data.winnipeg.ca/d/jman-p4ya",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Development permit review \u2013 applications approved/not approved"
+      },
+      {
+        "item_id": "KN-SHADOW-3aa99cb432b7aa34",
+        "source": "SRC-WPG-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "3aa99cb432b7aa34",
+        "retrieval_timestamp": "2026-10-08T02:46:54.778135",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-3aa99cb432b7aa34",
+        "evidence_reference": "https://data.winnipeg.ca/d/ca23-ipvd",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Building occupancy permit application processing times - intake"
+      },
+      {
+        "item_id": "KN-SHADOW-b30237c3c545d22c",
+        "source": "SRC-WPG-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "b30237c3c545d22c",
+        "retrieval_timestamp": "2026-10-08T02:46:54.778138",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-b30237c3c545d22c",
+        "evidence_reference": "https://data.winnipeg.ca/d/bvcf-rthz",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Building occupancy permit application processing times - review"
+      },
+      {
+        "item_id": "KN-SHADOW-31dfb97ca50edecc",
+        "source": "SRC-WPG-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "31dfb97ca50edecc",
+        "retrieval_timestamp": "2026-10-08T02:46:54.778141",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-31dfb97ca50edecc",
+        "evidence_reference": "https://data.winnipeg.ca/d/349u-zf72",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Development permit application processing times - intake"
+      },
+      {
+        "item_id": "KN-SHADOW-b2e35bbded8a8a5f",
+        "source": "SRC-WPG-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "b2e35bbded8a8a5f",
+        "retrieval_timestamp": "2026-10-08T02:46:54.778144",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-b2e35bbded8a8a5f",
+        "evidence_reference": "https://data.winnipeg.ca/d/3ij3-3hnj",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Development permit application processing times - review"
+      },
+      {
+        "item_id": "KN-SHADOW-e938e97a03471920",
+        "source": "SRC-WPG-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "e938e97a03471920",
+        "retrieval_timestamp": "2026-10-08T02:46:54.778147",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-e938e97a03471920",
+        "evidence_reference": "https://data.winnipeg.ca/d/6rke-iavv",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Development permit intake - applications approved/not approved"
+      },
+      {
+        "item_id": "KN-SHADOW-6fecfd74a0ca7c60",
+        "source": "SRC-WPG-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "6fecfd74a0ca7c60",
+        "retrieval_timestamp": "2026-10-08T02:46:54.778150",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-6fecfd74a0ca7c60",
+        "evidence_reference": "https://data.winnipeg.ca/d/t4kh-5gtd",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW OurWPG Urban Mixed Use Corridor"
+      },
+      {
+        "item_id": "KN-SHADOW-9c33ea5e7a4b2d34",
+        "source": "SRC-WPG-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "9c33ea5e7a4b2d34",
+        "retrieval_timestamp": "2026-10-08T02:46:54.778153",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-9c33ea5e7a4b2d34",
+        "evidence_reference": "https://data.winnipeg.ca/d/2h9x-q656",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW OurWPG Rural Agricultural"
+      },
+      {
+        "item_id": "KN-SHADOW-70e27b584b1615a1",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "70e27b584b1615a1",
+        "retrieval_timestamp": "2026-10-08T02:46:54.778156",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-70e27b584b1615a1",
+        "evidence_reference": "https://open.canada.ca/data/en/dataset/8dbc4be2-18c9-fbcd-abbc-f27f0c88ea1f",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Invest Nova Scotia Incubation Resident Companies"
+      },
+      {
+        "item_id": "KN-SHADOW-0b6d5835f3ca896d",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "0b6d5835f3ca896d",
+        "retrieval_timestamp": "2026-10-08T02:46:54.778159",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-0b6d5835f3ca896d",
+        "evidence_reference": "https://open.canada.ca/data/en/dataset/a01aba94-4ab6-4814-bd01-c446742d5c5d",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Retirement abroad: seeing the sunsets"
+      },
+      {
+        "item_id": "KN-SHADOW-e0f9b02782a8c2ed",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "e0f9b02782a8c2ed",
+        "retrieval_timestamp": "2026-10-08T02:46:54.778163",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-e0f9b02782a8c2ed",
+        "evidence_reference": "https://open.canada.ca/data/en/dataset/b7984047-e900-4c0c-8139-0e84b3cd165a",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Quarterly industry revenue indices for selected service industries, inactive"
+      },
+      {
+        "item_id": "KN-SHADOW-c360d949957a9a33",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "c360d949957a9a33",
+        "retrieval_timestamp": "2026-10-08T02:46:54.778166",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-c360d949957a9a33",
+        "evidence_reference": "https://open.canada.ca/data/en/dataset/031a7f48-a9dd-43f9-8f46-19db58445457",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Preventive health inspections from the Real Estate and Housing Strategy Department"
+      },
+      {
+        "item_id": "KN-SHADOW-c1544a7faebf548b",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "c1544a7faebf548b",
+        "retrieval_timestamp": "2026-10-08T02:46:54.778169",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-c1544a7faebf548b",
+        "evidence_reference": "https://open.canada.ca/data/en/dataset/d218118a-2a81-43f7-9533-bb4576608133",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Automotive equipment rental and leasing, industry expenditures"
+      },
+      {
+        "item_id": "KN-SHADOW-25994cbc9eb3146b",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "25994cbc9eb3146b",
+        "retrieval_timestamp": "2026-10-08T02:46:54.778172",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-25994cbc9eb3146b",
+        "evidence_reference": "https://open.canada.ca/data/en/dataset/3c3b2393-9214-4177-83d8-205002c632e1",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Consumer goods rental, industry expenditures"
+      },
+      {
+        "item_id": "KN-SHADOW-ffb50c304df1c963",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "ffb50c304df1c963",
+        "retrieval_timestamp": "2026-10-08T02:46:54.778175",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-ffb50c304df1c963",
+        "evidence_reference": "https://open.canada.ca/data/en/dataset/7ea36887-ae0d-4287-b319-5f93e116189d",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Balance sheet and income statement of federal government business enterprises, by North American Industry Classification System (NAICS), end of fiscal year closest to December 31"
+      },
+      {
+        "item_id": "KN-SHADOW-16b2a8dc642a1ba1",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "16b2a8dc642a1ba1",
+        "retrieval_timestamp": "2026-10-08T02:46:54.778178",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-16b2a8dc642a1ba1",
+        "evidence_reference": "https://open.canada.ca/data/en/dataset/0e93181f-79d4-4dfa-ba15-53c1807c7191",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW 2018 inspection priority indicator"
+      },
+      {
+        "item_id": "KN-SHADOW-3d0b2e8c5ee862a3",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "3d0b2e8c5ee862a3",
+        "retrieval_timestamp": "2026-10-08T02:46:54.778183",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-3d0b2e8c5ee862a3",
+        "evidence_reference": "https://open.canada.ca/data/en/dataset/5a3e9b5f-d400-4434-a59b-5715a0941a0f",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Automotive equipment rental and leasing, sales by type of client"
+      },
+      {
+        "item_id": "KN-SHADOW-3a46cadaf7a7699c",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "3a46cadaf7a7699c",
+        "retrieval_timestamp": "2026-10-08T02:46:54.778186",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-3a46cadaf7a7699c",
+        "evidence_reference": "https://open.canada.ca/data/en/dataset/4710ad60-9804-4342-a989-6cae6621fc5c",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Commercial and industrial machinery and equipment rental and leasing, industry expenditures"
+      },
+      {
+        "item_id": "KN-SHADOW-669b195531f77264",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "669b195531f77264",
+        "retrieval_timestamp": "2026-10-08T02:46:54.778189",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-669b195531f77264",
+        "evidence_reference": "https://open.canada.ca/data/en/dataset/913c3bff-ac40-410e-bd00-e9e87a48ca4d",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Consumer goods rental, sales by type of client"
+      },
+      {
+        "item_id": "KN-SHADOW-9ba875a44f67e345",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "9ba875a44f67e345",
+        "retrieval_timestamp": "2026-10-08T02:46:54.778204",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-9ba875a44f67e345",
+        "evidence_reference": "https://open.canada.ca/data/en/dataset/34ca1a49-a020-4f60-986b-69fb4cfa852a",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Heritage sites cited by municipalities and indigenous communities"
+      },
+      {
+        "item_id": "KN-SHADOW-bde97f3c168e1f8b",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "bde97f3c168e1f8b",
+        "retrieval_timestamp": "2026-10-08T02:46:54.778207",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-bde97f3c168e1f8b",
+        "evidence_reference": "https://open.canada.ca/data/en/dataset/c3d54554-6f25-4117-a573-cf21dcdc9644",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Heritage buildings cited by municipalities and indigenous communities"
+      },
+      {
+        "item_id": "KN-SHADOW-6961cb181afdfa01",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "6961cb181afdfa01",
+        "retrieval_timestamp": "2026-10-08T02:46:54.778211",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-6961cb181afdfa01",
+        "evidence_reference": "https://open.canada.ca/data/en/dataset/05ae679d-3fd5-4e00-ad11-19697e1e80ac",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Municipal buildings"
+      },
+      {
+        "item_id": "KN-SHADOW-cc430c765af7c8cb",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "cc430c765af7c8cb",
+        "retrieval_timestamp": "2026-10-08T02:46:54.778214",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-cc430c765af7c8cb",
+        "evidence_reference": "https://open.canada.ca/data/en/dataset/3c5d5ba3-5406-4bfe-a970-d799ecde4aea",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW List of real estate transactions"
+      },
+      {
+        "item_id": "KN-SHADOW-d8318311d9c7e2a8",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "d8318311d9c7e2a8",
+        "retrieval_timestamp": "2026-10-08T02:46:54.778217",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-d8318311d9c7e2a8",
+        "evidence_reference": "https://open.canada.ca/data/en/dataset/b3859c0b-1fcb-49bb-a20a-2b6f94e1af60",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Automotive equipment rental and leasing, e-commerce sales"
+      },
+      {
+        "item_id": "KN-SHADOW-526f8ca27ac488f7",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "526f8ca27ac488f7",
+        "retrieval_timestamp": "2026-10-08T02:46:54.778221",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-526f8ca27ac488f7",
+        "evidence_reference": "https://open.canada.ca/data/en/dataset/af52d45b-06d1-4954-b816-9ef54cab4c17",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Commercial and industrial machinery and equipment rental and leasing, sales by type of client"
+      },
+      {
+        "item_id": "KN-SHADOW-52a3269a7d722718",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "52a3269a7d722718",
+        "retrieval_timestamp": "2026-10-08T02:46:54.778224",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-52a3269a7d722718",
+        "evidence_reference": "https://open.canada.ca/data/en/dataset/55e8333f-f679-48e2-abfe-944fc9022ae7",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW National heritage site declared by the Cultural Heritage Act by the Government of Quebec"
+      },
+      {
+        "item_id": "KN-SHADOW-d11bc5a42b06862c",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "d11bc5a42b06862c",
+        "retrieval_timestamp": "2026-10-08T02:46:54.778228",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-d11bc5a42b06862c",
+        "evidence_reference": "https://open.canada.ca/data/en/dataset/e1d88b5f-4447-472d-9589-91798756256a",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Automotive equipment rental and leasing, summary statistics"
+      },
+      {
+        "item_id": "KN-SHADOW-18abe2ddc8ac8101",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "18abe2ddc8ac8101",
+        "retrieval_timestamp": "2026-10-08T02:46:54.778231",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-18abe2ddc8ac8101",
+        "evidence_reference": "https://open.canada.ca/data/en/dataset/a2bbb4b3-1150-4278-bd00-af30990971f7",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Consumer goods rental, methods used by businesses locations that reported e-commerce sales"
+      },
+      {
+        "item_id": "KN-SHADOW-7ef9361ae4761e37",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "7ef9361ae4761e37",
+        "retrieval_timestamp": "2026-10-08T02:46:54.778234",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-7ef9361ae4761e37",
+        "evidence_reference": "https://open.canada.ca/data/en/dataset/19fd4894-eac8-46d5-8a80-d059cdba2a1c",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Consumer goods rental, e-commerce sales"
+      },
+      {
+        "item_id": "KN-SHADOW-67f7e4f892118617",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "67f7e4f892118617",
+        "retrieval_timestamp": "2026-10-08T02:46:54.778237",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-67f7e4f892118617",
+        "evidence_reference": "https://open.canada.ca/data/en/dataset/da67eeeb-6a3b-455f-9a6f-7e98810343d8",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Automotive equipment rental and leasing, methods used by businesses locations that reported e-commerce sales"
+      },
+      {
+        "item_id": "KN-SHADOW-5f1e6b6eb707a576",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "5f1e6b6eb707a576",
+        "retrieval_timestamp": "2026-10-08T02:46:54.778241",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-5f1e6b6eb707a576",
+        "evidence_reference": "https://open.canada.ca/data/en/dataset/570f23a7-2c58-4fa9-bfc9-8685d2b62428",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW 2025\u2014Report 3 of the Auditor General of Canada\u2014Current and Future Use of Federal Office Space"
+      },
+      {
+        "item_id": "KN-SHADOW-2331d59c1cb759d6",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "2331d59c1cb759d6",
+        "retrieval_timestamp": "2026-10-08T02:46:54.778244",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-2331d59c1cb759d6",
+        "evidence_reference": "https://open.canada.ca/data/en/dataset/b35078ae-f1a6-4f9a-a9d2-b00244ae1e84",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Heritage sites declared by the Government of Quebec"
+      },
+      {
+        "item_id": "KN-SHADOW-e47918d12a8ec184",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "e47918d12a8ec184",
+        "retrieval_timestamp": "2026-10-08T02:46:54.778247",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-e47918d12a8ec184",
+        "evidence_reference": "https://open.canada.ca/data/en/dataset/88e041fc-6c33-44c7-8de9-24781c3528c1",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Consumer goods rental, summary statistics"
+      }
+    ],
+    "raw_response": {
+      "batch_id": "PHASE2-STAGE100-20261007",
+      "mode": "practice",
+      "requested_limit": 100,
+      "fetched": 100,
+      "inserted": 50,
+      "duplicates": 50,
+      "blocked": 0,
+      "rejected": 0,
+      "parse_failures": 0,
+      "source_failures": 0,
+      "review_required_cap_blocked": 0,
+      "evidence_complete": 50,
+      "retrieval_ms": 10716,
+      "processing_ms": 38,
+      "source_metrics": [
+        {
+          "source_id": "SRC-CANADA-OPEN-DATA",
+          "governance_status": "review_required",
+          "permission_status": "public",
+          "license_status": "government_open_data",
+          "trust_tier": "tier2",
+          "freshness_sla_hours": 168,
+          "last_verified_at": "2026-10-08T02:46:33.675729",
+          "fetched": 50,
+          "accepted": 25,
+          "duplicates": 25,
+          "rejected": 0,
+          "blocked": 0,
+          "review_required_cap_blocked": 0,
+          "avg_confidence": 0.7,
+          "missing_field_rate": 0.0,
+          "rights_status": "approved"
+        },
+        {
+          "source_id": "SRC-WPG-OPEN-DATA",
+          "governance_status": "review_required",
+          "permission_status": "public",
+          "license_status": "government_open_data",
+          "trust_tier": "tier2",
+          "freshness_sla_hours": 168,
+          "last_verified_at": "2026-10-08T02:46:33.583926",
+          "fetched": 50,
+          "accepted": 25,
+          "duplicates": 25,
+          "rejected": 0,
+          "blocked": 0,
+          "review_required_cap_blocked": 0,
+          "avg_confidence": 0.7,
+          "missing_field_rate": 0.0,
+          "rights_status": "approved"
+        }
+      ],
+      "valuation_confidence_low": 50,
+      "buyer_data_insufficient": 50,
+      "contact_not_verified": 50,
+      "pending_human_review": 50,
+      "sources_used": [
+        "SRC-CANADA-OPEN-DATA",
+        "SRC-WPG-OPEN-DATA"
+      ]
+    }
+  },
+  "source_performance": [
+    {
+      "source_id": "SRC-WPG-OPEN-DATA",
+      "governance_status": "review_required",
+      "permission_status": "public",
+      "license_status": "government_open_data",
+      "trust_tier": "tier2",
+      "freshness": "2026-10-08T02:46:33.583926",
+      "fetched": 75,
+      "usable_records": 50,
+      "duplicates": 25,
+      "qualified_opportunities": 0,
+      "high_score_opportunities": 0,
+      "average_confidence": 0.7,
+      "missing_field_rate": 1.0,
+      "parse_failure_rate": 0.0,
+      "rights_status": "OK"
+    },
+    {
+      "source_id": "SRC-CANADA-OPEN-DATA",
+      "governance_status": "review_required",
+      "permission_status": "public",
+      "license_status": "government_open_data",
+      "trust_tier": "tier2",
+      "freshness": "2026-10-08T02:46:33.675729",
+      "fetched": 75,
+      "usable_records": 50,
+      "duplicates": 25,
+      "qualified_opportunities": 0,
+      "high_score_opportunities": 0,
+      "average_confidence": 0.7,
+      "missing_field_rate": 1.0,
+      "parse_failure_rate": 0.0,
+      "rights_status": "OK"
+    }
+  ],
+  "top_ten_opportunities_stage50": [
+    {
+      "record_id": "KN-SHADOW-29a66b8c10397830",
+      "source": "SRC-WPG-OPEN-DATA",
+      "heimdall_score": 31.0,
+      "rank_reason": "ranked by baseline score but constrained by insufficiency flags",
+      "distress_or_opportunity_signals": [
+        "public dataset signal",
+        "market listing indicator"
+      ],
+      "evidence_supporting_score": [
+        "citation_ref_present"
+      ],
+      "missing_evidence": [
+        "BUYER_DATA_INSUFFICIENT",
+        "VALUATION_CONFIDENCE_LOW",
+        "CONTACT_NOT_VERIFIED"
+      ],
+      "valuation_confidence": "LOW",
+      "buyer_data_status": "INSUFFICIENT",
+      "contact_status": "NOT_VERIFIED",
+      "recommended_next_internal_research_step": "cross-reference with additional approved valuation comps",
+      "estimated_additional_verification_cost": "unknown"
+    },
+    {
+      "record_id": "KN-SHADOW-a56150512830f694",
+      "source": "SRC-WPG-OPEN-DATA",
+      "heimdall_score": 31.0,
+      "rank_reason": "ranked by baseline score but constrained by insufficiency flags",
+      "distress_or_opportunity_signals": [
+        "public dataset signal",
+        "market listing indicator"
+      ],
+      "evidence_supporting_score": [
+        "citation_ref_present"
+      ],
+      "missing_evidence": [
+        "BUYER_DATA_INSUFFICIENT",
+        "VALUATION_CONFIDENCE_LOW",
+        "CONTACT_NOT_VERIFIED"
+      ],
+      "valuation_confidence": "LOW",
+      "buyer_data_status": "INSUFFICIENT",
+      "contact_status": "NOT_VERIFIED",
+      "recommended_next_internal_research_step": "cross-reference with additional approved valuation comps",
+      "estimated_additional_verification_cost": "unknown"
+    },
+    {
+      "record_id": "KN-SHADOW-5e6bc0051ed70812",
+      "source": "SRC-WPG-OPEN-DATA",
+      "heimdall_score": 31.0,
+      "rank_reason": "ranked by baseline score but constrained by insufficiency flags",
+      "distress_or_opportunity_signals": [
+        "public dataset signal",
+        "market listing indicator"
+      ],
+      "evidence_supporting_score": [
+        "citation_ref_present"
+      ],
+      "missing_evidence": [
+        "BUYER_DATA_INSUFFICIENT",
+        "VALUATION_CONFIDENCE_LOW",
+        "CONTACT_NOT_VERIFIED"
+      ],
+      "valuation_confidence": "LOW",
+      "buyer_data_status": "INSUFFICIENT",
+      "contact_status": "NOT_VERIFIED",
+      "recommended_next_internal_research_step": "cross-reference with additional approved valuation comps",
+      "estimated_additional_verification_cost": "unknown"
+    },
+    {
+      "record_id": "KN-SHADOW-5afcdbeaba691d4e",
+      "source": "SRC-WPG-OPEN-DATA",
+      "heimdall_score": 31.0,
+      "rank_reason": "ranked by baseline score but constrained by insufficiency flags",
+      "distress_or_opportunity_signals": [
+        "public dataset signal",
+        "market listing indicator"
+      ],
+      "evidence_supporting_score": [
+        "citation_ref_present"
+      ],
+      "missing_evidence": [
+        "BUYER_DATA_INSUFFICIENT",
+        "VALUATION_CONFIDENCE_LOW",
+        "CONTACT_NOT_VERIFIED"
+      ],
+      "valuation_confidence": "LOW",
+      "buyer_data_status": "INSUFFICIENT",
+      "contact_status": "NOT_VERIFIED",
+      "recommended_next_internal_research_step": "cross-reference with additional approved valuation comps",
+      "estimated_additional_verification_cost": "unknown"
+    },
+    {
+      "record_id": "KN-SHADOW-1e3cbd85e61956f4",
+      "source": "SRC-WPG-OPEN-DATA",
+      "heimdall_score": 31.0,
+      "rank_reason": "ranked by baseline score but constrained by insufficiency flags",
+      "distress_or_opportunity_signals": [
+        "public dataset signal",
+        "market listing indicator"
+      ],
+      "evidence_supporting_score": [
+        "citation_ref_present"
+      ],
+      "missing_evidence": [
+        "BUYER_DATA_INSUFFICIENT",
+        "VALUATION_CONFIDENCE_LOW",
+        "CONTACT_NOT_VERIFIED"
+      ],
+      "valuation_confidence": "LOW",
+      "buyer_data_status": "INSUFFICIENT",
+      "contact_status": "NOT_VERIFIED",
+      "recommended_next_internal_research_step": "cross-reference with additional approved valuation comps",
+      "estimated_additional_verification_cost": "unknown"
+    },
+    {
+      "record_id": "KN-SHADOW-f26ae1cf5868362f",
+      "source": "SRC-WPG-OPEN-DATA",
+      "heimdall_score": 31.0,
+      "rank_reason": "ranked by baseline score but constrained by insufficiency flags",
+      "distress_or_opportunity_signals": [
+        "public dataset signal",
+        "market listing indicator"
+      ],
+      "evidence_supporting_score": [
+        "citation_ref_present"
+      ],
+      "missing_evidence": [
+        "BUYER_DATA_INSUFFICIENT",
+        "VALUATION_CONFIDENCE_LOW",
+        "CONTACT_NOT_VERIFIED"
+      ],
+      "valuation_confidence": "LOW",
+      "buyer_data_status": "INSUFFICIENT",
+      "contact_status": "NOT_VERIFIED",
+      "recommended_next_internal_research_step": "cross-reference with additional approved valuation comps",
+      "estimated_additional_verification_cost": "unknown"
+    },
+    {
+      "record_id": "KN-SHADOW-bcc39327985568f8",
+      "source": "SRC-WPG-OPEN-DATA",
+      "heimdall_score": 31.0,
+      "rank_reason": "ranked by baseline score but constrained by insufficiency flags",
+      "distress_or_opportunity_signals": [
+        "public dataset signal",
+        "market listing indicator"
+      ],
+      "evidence_supporting_score": [
+        "citation_ref_present"
+      ],
+      "missing_evidence": [
+        "BUYER_DATA_INSUFFICIENT",
+        "VALUATION_CONFIDENCE_LOW",
+        "CONTACT_NOT_VERIFIED"
+      ],
+      "valuation_confidence": "LOW",
+      "buyer_data_status": "INSUFFICIENT",
+      "contact_status": "NOT_VERIFIED",
+      "recommended_next_internal_research_step": "cross-reference with additional approved valuation comps",
+      "estimated_additional_verification_cost": "unknown"
+    },
+    {
+      "record_id": "KN-SHADOW-27ba65d01576d563",
+      "source": "SRC-WPG-OPEN-DATA",
+      "heimdall_score": 31.0,
+      "rank_reason": "ranked by baseline score but constrained by insufficiency flags",
+      "distress_or_opportunity_signals": [
+        "public dataset signal",
+        "market listing indicator"
+      ],
+      "evidence_supporting_score": [
+        "citation_ref_present"
+      ],
+      "missing_evidence": [
+        "BUYER_DATA_INSUFFICIENT",
+        "VALUATION_CONFIDENCE_LOW",
+        "CONTACT_NOT_VERIFIED"
+      ],
+      "valuation_confidence": "LOW",
+      "buyer_data_status": "INSUFFICIENT",
+      "contact_status": "NOT_VERIFIED",
+      "recommended_next_internal_research_step": "cross-reference with additional approved valuation comps",
+      "estimated_additional_verification_cost": "unknown"
+    },
+    {
+      "record_id": "KN-SHADOW-7ffe68d32981ef43",
+      "source": "SRC-WPG-OPEN-DATA",
+      "heimdall_score": 31.0,
+      "rank_reason": "ranked by baseline score but constrained by insufficiency flags",
+      "distress_or_opportunity_signals": [
+        "public dataset signal",
+        "market listing indicator"
+      ],
+      "evidence_supporting_score": [
+        "citation_ref_present"
+      ],
+      "missing_evidence": [
+        "BUYER_DATA_INSUFFICIENT",
+        "VALUATION_CONFIDENCE_LOW",
+        "CONTACT_NOT_VERIFIED"
+      ],
+      "valuation_confidence": "LOW",
+      "buyer_data_status": "INSUFFICIENT",
+      "contact_status": "NOT_VERIFIED",
+      "recommended_next_internal_research_step": "cross-reference with additional approved valuation comps",
+      "estimated_additional_verification_cost": "unknown"
+    },
+    {
+      "record_id": "KN-SHADOW-2204a1e81f5a1ba6",
+      "source": "SRC-WPG-OPEN-DATA",
+      "heimdall_score": 31.0,
+      "rank_reason": "ranked by baseline score but constrained by insufficiency flags",
+      "distress_or_opportunity_signals": [
+        "public dataset signal",
+        "market listing indicator"
+      ],
+      "evidence_supporting_score": [
+        "citation_ref_present"
+      ],
+      "missing_evidence": [
+        "BUYER_DATA_INSUFFICIENT",
+        "VALUATION_CONFIDENCE_LOW",
+        "CONTACT_NOT_VERIFIED"
+      ],
+      "valuation_confidence": "LOW",
+      "buyer_data_status": "INSUFFICIENT",
+      "contact_status": "NOT_VERIFIED",
+      "recommended_next_internal_research_step": "cross-reference with additional approved valuation comps",
+      "estimated_additional_verification_cost": "unknown"
+    }
+  ],
+  "scoring_anomalies": [
+    "score_clustering_detected",
+    "insufficient_evidence_for_strong_scoring"
+  ],
+  "false_positive_review_samples": {
+    "top_scored": [
+      {
+        "item_id": "KN-SHADOW-29a66b8c10397830",
+        "source": "SRC-WPG-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "29a66b8c10397830",
+        "retrieval_timestamp": "2026-10-08T02:46:43.927111",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-29a66b8c10397830",
+        "evidence_reference": "https://data.winnipeg.ca/d/8vpu-fybf",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW WWD Rivers, Creeks, and Streams Water Quality Monitoring"
+      },
+      {
+        "item_id": "KN-SHADOW-a56150512830f694",
+        "source": "SRC-WPG-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "a56150512830f694",
+        "retrieval_timestamp": "2026-10-08T02:46:43.927117",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-a56150512830f694",
+        "evidence_reference": "https://data.winnipeg.ca/d/2df6-k8j2",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Map of Downtown Boundary"
+      },
+      {
+        "item_id": "KN-SHADOW-5e6bc0051ed70812",
+        "source": "SRC-WPG-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "5e6bc0051ed70812",
+        "retrieval_timestamp": "2026-10-08T02:46:43.927120",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-5e6bc0051ed70812",
+        "evidence_reference": "https://data.winnipeg.ca/d/c26m-yeye",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Downtown Boundary"
+      }
+    ],
+    "mid_scored": [
+      {
+        "item_id": "KN-SHADOW-b4318a3c29c689d6",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "b4318a3c29c689d6",
+        "retrieval_timestamp": "2026-10-08T02:46:43.927190",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-b4318a3c29c689d6",
+        "evidence_reference": "https://open.canada.ca/data/en/dataset/e9693de5-5726-4263-9bed-de460db96591",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Radon in real estate"
+      },
+      {
+        "item_id": "KN-SHADOW-48a9efa2f2e98a14",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "48a9efa2f2e98a14",
+        "retrieval_timestamp": "2026-10-08T02:46:43.927193",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-48a9efa2f2e98a14",
+        "evidence_reference": "https://open.canada.ca/data/en/dataset/3ac161cf-1517-4183-b22f-8079c80c88a3",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Real estate agents and brokers, industry expenditures"
+      },
+      {
+        "item_id": "KN-SHADOW-96d5cc15c7b0ab9d",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "96d5cc15c7b0ab9d",
+        "retrieval_timestamp": "2026-10-08T02:46:43.927196",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-96d5cc15c7b0ab9d",
+        "evidence_reference": "https://open.canada.ca/data/en/dataset/d2090097-2984-4b75-967c-e0f1eaa3f31b",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Real estate agents, brokers and appraisers, summary statistics"
+      }
+    ],
+    "low_scored": [
+      {
+        "item_id": "KN-SHADOW-d93ad4ff4eb11e23",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "d93ad4ff4eb11e23",
+        "retrieval_timestamp": "2026-10-08T02:46:43.927267",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-d93ad4ff4eb11e23",
+        "evidence_reference": "https://open.canada.ca/data/en/dataset/5c627001-5945-4769-bd8a-41a1cb6065df",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Convicted offenders - health, maintenance and housing security"
+      },
+      {
+        "item_id": "KN-SHADOW-f26657648c2a45ea",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "f26657648c2a45ea",
+        "retrieval_timestamp": "2026-10-08T02:46:43.927269",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-f26657648c2a45ea",
+        "evidence_reference": "https://open.canada.ca/data/en/dataset/e166ecc3-f139-4c77-9855-0e0d43865397",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Health inspections from the Real Estate and Housing Strategy Department"
+      },
+      {
+        "item_id": "KN-SHADOW-4b7e3454e8679e23",
+        "source": "SRC-CANADA-OPEN-DATA",
+        "source_status": "review_required",
+        "source_record_id": "4b7e3454e8679e23",
+        "retrieval_timestamp": "2026-10-08T02:46:43.927273",
+        "jurisdiction": "CA-MB",
+        "trust_tier": "tier2",
+        "confidence": 0.7,
+        "freshness": "fresh",
+        "dedupe_id": "KN-SHADOW-4b7e3454e8679e23",
+        "evidence_reference": "https://open.canada.ca/data/en/dataset/8e35e633-cec1-44c2-9a88-8aca9f41e3fd",
+        "human_review_state": "PENDING_HUMAN_REVIEW",
+        "insufficiency_statuses": [
+          "VALUATION_CONFIDENCE_LOW",
+          "BUYER_DATA_INSUFFICIENT",
+          "CONTACT_NOT_VERIFIED"
+        ],
+        "score": 31.0,
+        "title": "REAL_SHADOW Household and Dwelling Profiles 2021"
+      }
+    ]
+  },
+  "comparison_50_vs_100": {
+    "stage100_run": true,
+    "accepted_delta": 0,
+    "duplicates_delta": 50,
+    "qualified_delta": 0,
+    "avg_score_delta": 0.0
+  }
+}

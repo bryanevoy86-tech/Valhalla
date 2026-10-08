@@ -2161,6 +2161,43 @@ def test_source_usage_requires_shadow_governance_approval():
     assert "shadow" in checked.json()["detail"] or "approved" in checked.json()["detail"]
 
 
+def test_source_usage_review_required_is_bounded_to_practice_and_test():
+    client = _build_client()
+
+    created = client.post(
+        "/api/completion/source-items",
+        json={
+            "source_id": "SRC-REVIEW-ONLY-001",
+            "canonical_name": "Review Required Source",
+            "source_type": "government",
+            "data_class": "live",
+            "terminal_state": "ACTIVE_AND_VERIFIED",
+            "permission_status": "public",
+            "license_status": "government_open_data",
+            "robots_policy": "api",
+            "trust_tier": "tier2",
+            "governance_status": "review_required",
+            "shadow_approved": True,
+            "mode_allowlist": ["practice", "test", "live"],
+        },
+    )
+    assert created.status_code == 200
+
+    practice_ok = client.post(
+        "/api/completion/source-items/validate-use",
+        json={"source_id": "SRC-REVIEW-ONLY-001", "mode": "practice"},
+    )
+    assert practice_ok.status_code == 200
+    assert practice_ok.json()["allowed"] is True
+
+    live_blocked = client.post(
+        "/api/completion/source-items/validate-use",
+        json={"source_id": "SRC-REVIEW-ONLY-001", "mode": "live"},
+    )
+    assert live_blocked.status_code == 409
+    assert "review_required" in live_blocked.json()["detail"].lower()
+
+
 def test_shadow_winnipeg_rehearsal_ingests_and_dedupes(monkeypatch):
     client = _build_client()
 
@@ -2307,3 +2344,39 @@ def test_shadow_winnipeg_rehearsal_rejects_missing_citation(monkeypatch):
     assert body["buyer_data_insufficient"] == 1
     assert body["contact_not_verified"] == 1
     assert body["pending_human_review"] == 1
+
+
+def test_shadow_winnipeg_rehearsal_enforces_review_required_bounded_cap(monkeypatch):
+    client = _build_client()
+
+    sample_rows = [
+        {
+            "source_id": "SRC-WPG-OPEN-DATA",
+            "external_id": f"wpg-cap-{i}",
+            "title": f"Cap row {i}",
+            "citation_ref": f"https://data.winnipeg.ca/d/wpg-cap-{i}",
+            "notes": "cap test",
+            "content_excerpt": "public record",
+            "valuation_confidence": 0.9,
+            "comps_strength": "strong",
+            "buyer_pool_verified": True,
+            "contact_verified": True,
+        }
+        for i in range(130)
+    ]
+
+    monkeypatch.setattr(
+        "app.routers.completion_registry._fetch_winnipeg_shadow_records",
+        lambda _limit: {"records": sample_rows, "parse_failures": 0, "source_failures": 0},
+    )
+
+    run = client.post(
+        "/api/completion/shadow/rehearsal/winnipeg",
+        json={"batch_id": "BATCH-REAL-CAP-001", "limit": 100, "mode": "practice", "source_ids": ["SRC-WPG-OPEN-DATA"]},
+    )
+    assert run.status_code == 200, run.text
+    body = run.json()
+    assert body["requested_limit"] == 100
+    assert body["inserted"] == 100
+    assert body["duplicates"] == 0
+    assert body["review_required_cap_blocked"] == 30

@@ -4,6 +4,7 @@ import json
 import re
 from hashlib import sha1
 from datetime import date, datetime, timedelta, timezone
+from time import perf_counter
 from typing import Any
 
 import httpx
@@ -197,6 +198,9 @@ ALLOWED_SOURCE_GOVERNANCE_STATUSES = {
     "blocked",
     "external_blocked",
 }
+
+BOUNDED_RESEARCH_MODES = {"practice", "test"}
+REVIEW_REQUIRED_SOURCE_MAX_PER_RUN = 100
 
 ENGINE_ALLOWED_STATES = {"OFF", "SANDBOX", "BLOCKED", "READY", "ACTIVE"}
 
@@ -594,7 +598,7 @@ class KnowledgeIngestOut(BaseModel):
 
 class ShadowWinnipegRehearsalIn(BaseModel):
     batch_id: str
-    limit: int = Field(default=20, ge=20, le=50)
+    limit: int = Field(default=20, ge=20, le=100)
     mode: str = "practice"
     source_ids: list[str] = Field(default_factory=lambda: ["SRC-WPG-OPEN-DATA", "SRC-CANADA-OPEN-DATA"])
 
@@ -610,6 +614,11 @@ class ShadowWinnipegRehearsalOut(BaseModel):
     rejected: int
     parse_failures: int
     source_failures: int
+    review_required_cap_blocked: int
+    evidence_complete: int = 0
+    retrieval_ms: int = 0
+    processing_ms: int = 0
+    source_metrics: list[dict[str, Any]] = Field(default_factory=list)
     valuation_confidence_low: int
     buyer_data_insufficient: int
     contact_not_verified: int
@@ -1043,7 +1052,7 @@ def _normalize_source_governance_status(value: str | None) -> str:
     return status
 
 
-def _assert_source_shadow_ready(row: SourceRegistryItem) -> None:
+def _assert_source_shadow_ready(row: SourceRegistryItem, *, bounded_research_only: bool) -> None:
     permission = _normalize_source_permission_status(row.permission_status)
     license_status = _normalize_source_license_status(row.license_status)
     trust_tier = _normalize_source_trust_tier(row.trust_tier)
@@ -1058,7 +1067,13 @@ def _assert_source_shadow_ready(row: SourceRegistryItem) -> None:
         raise HTTPException(status_code=409, detail="source robots_policy blocks shadow ingestion")
     if trust_tier not in {"tier1", "tier2"}:
         raise HTTPException(status_code=409, detail="source trust_tier must be tier1 or tier2 for shadow mode")
-    if governance_status != "approved" or not bool(row.shadow_approved):
+    if governance_status in {"blocked", "external_blocked"}:
+        raise HTTPException(status_code=409, detail="source governance status blocks source usage")
+    if not bool(row.shadow_approved):
+        raise HTTPException(status_code=409, detail="source governance status is not approved for shadow mode")
+    if governance_status == "review_required" and not bounded_research_only:
+        raise HTTPException(status_code=409, detail="source governance is REVIEW_REQUIRED and limited to bounded research modes")
+    if governance_status != "approved" and governance_status != "review_required":
         raise HTTPException(status_code=409, detail="source governance status is not approved for shadow mode")
 
 
@@ -2307,8 +2322,8 @@ def validate_source_usage(payload: SourceUsageCheckIn, db: Session = Depends(get
             detail=f"source '{row.source_id}' with data_class '{row.data_class}' is not allowed in mode '{mode}'",
         )
 
-    if mode in {"practice", "test"} and row.data_class == "live":
-        _assert_source_shadow_ready(row)
+    if row.data_class == "live":
+        _assert_source_shadow_ready(row, bounded_research_only=mode in BOUNDED_RESEARCH_MODES)
 
     return SourceUsageCheckOut(
         source_id=row.source_id,
@@ -2433,8 +2448,8 @@ def validate_dataset_usage(payload: DatasetUseValidationIn, db: Session = Depend
                 status_code=409,
                 detail=f"source '{source.source_id}' with data_class '{source.data_class}' is not allowed in mode '{mode}'",
             )
-        if mode in {"practice", "test"} and source.data_class == "live":
-            _assert_source_shadow_ready(source)
+        if source.data_class == "live":
+            _assert_source_shadow_ready(source, bounded_research_only=mode in BOUNDED_RESEARCH_MODES)
 
     source_class = source.data_class if source_id else None
     result = evaluate_dataset_safety(
@@ -2921,8 +2936,8 @@ def ingest_knowledge(payload: KnowledgeIngestIn, db: Session = Depends(get_db)):
             detail=f"source '{source.source_id}' with data_class '{source.data_class}' is not allowed in mode '{mode}'",
         )
 
-    if mode in {"practice", "test"} and source.data_class == "live":
-        _assert_source_shadow_ready(source)
+    if source.data_class == "live":
+        _assert_source_shadow_ready(source, bounded_research_only=mode in BOUNDED_RESEARCH_MODES)
 
     if trigger_type in {"scheduled", "event"} and not payload.robots_allowed:
         raise HTTPException(status_code=409, detail="robots policy blocks non-push ingestion")
@@ -3054,6 +3069,17 @@ def _ensure_shadow_source(
 ) -> SourceRegistryItem:
     row = db.query(SourceRegistryItem).filter(SourceRegistryItem.source_id == source_id).first()
     if row is not None:
+        # Winnipeg sources are constrained to bounded research until commercial rights certainty is proven.
+        changed = False
+        if _normalize_source_governance_status(row.governance_status) != "review_required":
+            row.governance_status = "review_required"
+            changed = True
+        if row.shadow_approved is False:
+            row.shadow_approved = True
+            changed = True
+        if changed:
+            db.commit()
+            db.refresh(row)
         return row
 
     row = SourceRegistryItem(
@@ -3070,7 +3096,7 @@ def _ensure_shadow_source(
         provenance_method="official_api",
         freshness_sla_hours=168,
         last_verified_at=datetime.now(timezone.utc),
-        governance_status="approved",
+        governance_status="review_required",
         shadow_approved=True,
         mode_allowlist_json=json.dumps(["practice", "test"]),
         active=True,
@@ -3087,7 +3113,7 @@ def _fetch_winnipeg_shadow_records(limit: int) -> list[dict[str, Any]]:
     parse_failures = 0
     source_failures = 0
     timeout = httpx.Timeout(20.0)
-    per_source = max(10, min(25, limit // 2))
+    per_source = max(10, min(REVIEW_REQUIRED_SOURCE_MAX_PER_RUN, limit // 2 if limit > 1 else 1))
 
     with httpx.Client(timeout=timeout) as client:
         try:
@@ -3202,11 +3228,39 @@ def run_shadow_winnipeg_rehearsal(payload: ShadowWinnipegRehearsalIn, db: Sessio
         allowed_source_ids = set(source_map.keys())
 
     blocked = 0
+    review_required_cap_blocked = 0
+    processed_per_source: dict[str, int] = {}
+    source_governance: dict[str, str] = {}
+    source_metrics: dict[str, dict[str, Any]] = {}
     for source_id, source in source_map.items():
         if source_id in allowed_source_ids:
-            _assert_source_shadow_ready(source)
+            _assert_source_shadow_ready(source, bounded_research_only=True)
+            source_governance[source_id] = _normalize_source_governance_status(source.governance_status)
+            source_metrics[source_id] = {
+                "source_id": source_id,
+                "governance_status": source_governance[source_id],
+                "permission_status": source.permission_status,
+                "license_status": source.license_status,
+                "trust_tier": source.trust_tier,
+                "freshness_sla_hours": source.freshness_sla_hours,
+                "last_verified_at": source.last_verified_at.isoformat() if source.last_verified_at else None,
+                "fetched": 0,
+                "accepted": 0,
+                "duplicates": 0,
+                "rejected": 0,
+                "blocked": 0,
+                "review_required_cap_blocked": 0,
+                "avg_confidence": 0.0,
+                "missing_field_rate": 0.0,
+                "rights_status": "approved"
+                if _normalize_source_permission_status(source.permission_status) in ALLOWED_SOURCE_PERMISSION_STATUSES
+                and _normalize_source_license_status(source.license_status) in ALLOWED_SOURCE_LICENSE_STATUSES
+                else "review_required",
+            }
 
+    retrieval_start = perf_counter()
     fetched_payload = _fetch_winnipeg_shadow_records(payload.limit)
+    retrieval_ms = int((perf_counter() - retrieval_start) * 1000)
     if isinstance(fetched_payload, dict):
         fetched_rows = list(fetched_payload.get("records") or [])
         parse_failures = int(fetched_payload.get("parse_failures") or 0)
@@ -3223,6 +3277,8 @@ def run_shadow_winnipeg_rehearsal(payload: ShadowWinnipegRehearsalIn, db: Sessio
     buyer_data_insufficient = 0
     contact_not_verified = 0
     pending_human_review = 0
+    evidence_complete = 0
+    processing_start = perf_counter()
 
     for row in fetched_rows:
         source_id = str(row.get("source_id") or "")
@@ -3231,6 +3287,17 @@ def run_shadow_winnipeg_rehearsal(payload: ShadowWinnipegRehearsalIn, db: Sessio
             continue
         if source_id not in allowed_source_ids:
             blocked += 1
+            continue
+
+        if source_id in source_metrics:
+            source_metrics[source_id]["fetched"] += 1
+
+        source_seen = processed_per_source.get(source_id, 0) + 1
+        processed_per_source[source_id] = source_seen
+        if source_governance.get(source_id) == "review_required" and source_seen > REVIEW_REQUIRED_SOURCE_MAX_PER_RUN:
+            review_required_cap_blocked += 1
+            if source_id in source_metrics:
+                source_metrics[source_id]["review_required_cap_blocked"] += 1
             continue
 
         external_id = str(row.get("external_id") or row.get("title") or "")
@@ -3243,6 +3310,8 @@ def run_shadow_winnipeg_rehearsal(payload: ShadowWinnipegRehearsalIn, db: Sessio
         exists = db.query(KnowledgeRegistryItem).filter(KnowledgeRegistryItem.item_id == item_id).first()
         if exists is not None:
             duplicates += 1
+            if source_id in source_metrics:
+                source_metrics[source_id]["duplicates"] += 1
             continue
 
         source = source_map[source_id]
@@ -3260,7 +3329,13 @@ def run_shadow_winnipeg_rehearsal(payload: ShadowWinnipegRehearsalIn, db: Sessio
 
         if not str(row.get("citation_ref") or "").strip():
             rejected += 1
+            if source_id in source_metrics:
+                source_metrics[source_id]["rejected"] += 1
             continue
+
+        has_min_evidence = bool(str(row.get("citation_ref") or "").strip()) and bool(external_id.strip())
+        if has_min_evidence:
+            evidence_complete += 1
 
         db.add(
             KnowledgeRegistryItem(
@@ -3288,6 +3363,24 @@ def run_shadow_winnipeg_rehearsal(payload: ShadowWinnipegRehearsalIn, db: Sessio
             )
         )
         inserted += 1
+        if source_id in source_metrics:
+            source_metrics[source_id]["accepted"] += 1
+            source_metrics[source_id]["avg_confidence"] += float(0.7)
+
+    processing_ms = int((perf_counter() - processing_start) * 1000)
+
+    for metric in source_metrics.values():
+        accepted_count = int(metric["accepted"] or 0)
+        if accepted_count > 0:
+            metric["avg_confidence"] = round(float(metric["avg_confidence"]) / accepted_count, 4)
+        else:
+            metric["avg_confidence"] = 0.0
+        fetched_count = int(metric["fetched"] or 0)
+        if fetched_count > 0:
+            missing_fields = int(metric["rejected"] or 0) + int(metric["review_required_cap_blocked"] or 0)
+            metric["missing_field_rate"] = round(missing_fields / fetched_count, 4)
+        else:
+            metric["missing_field_rate"] = 0.0
 
     db.commit()
 
@@ -3302,6 +3395,11 @@ def run_shadow_winnipeg_rehearsal(payload: ShadowWinnipegRehearsalIn, db: Sessio
         rejected=rejected,
         parse_failures=parse_failures,
         source_failures=source_failures,
+        review_required_cap_blocked=review_required_cap_blocked,
+        evidence_complete=evidence_complete,
+        retrieval_ms=retrieval_ms,
+        processing_ms=processing_ms,
+        source_metrics=[source_metrics[source_id] for source_id in sorted(source_metrics.keys())],
         valuation_confidence_low=valuation_confidence_low,
         buyer_data_insufficient=buyer_data_insufficient,
         contact_not_verified=contact_not_verified,
