@@ -2,8 +2,12 @@ from __future__ import annotations
 
 import json
 import re
+import csv
+import hashlib
+import uuid
+from pathlib import Path
 from datetime import date, datetime, timedelta, timezone
-from typing import Any
+from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
@@ -34,6 +38,9 @@ from app.models.completion_registry import (
 )
 from app.services.data_safety import DatasetSafetyInput, evaluate_dataset_safety
 from app.services.scenario_safety import ScenarioSafetyInput, evaluate_scenario_safety
+from app.god.models import GodCaseOutcome, GodCaseStatus, GodReviewCase, GodReviewEvent
+from app.models.god_verdicts import GodVerdict
+from app.models.governance_decision import GovernanceDecision
 
 router = APIRouter(prefix="/api/completion", tags=["completion-registry"])
 
@@ -1047,6 +1054,1118 @@ def _normalize_task_priority(priority: str) -> str:
     if value not in ALLOWED_TASK_PRIORITIES:
         raise HTTPException(status_code=422, detail=f"unsupported task priority: {priority}")
     return value
+
+
+class RealEstateCompIn(BaseModel):
+    sold_price: float
+    sold_date: str | None = None
+    sqft: int | None = None
+    distance_km: float | None = None
+
+
+class RealEstateSourceEvidenceIn(BaseModel):
+    source_id: str
+    source_type: str
+    confidence_score: float = Field(default=0.5, ge=0.0, le=1.0)
+    freshness_days: int = Field(default=365, ge=0)
+    citation_ref: str | None = None
+    supports: list[str] = Field(default_factory=list)
+
+
+class RealEstateBuyerBoxIn(BaseModel):
+    min_arv: float | None = None
+    max_arv: float | None = None
+    max_repair_budget: float | None = None
+    min_spread: float | None = None
+    target_strategies: list[str] = Field(default_factory=list)
+    target_markets: list[str] = Field(default_factory=list)
+
+
+class RealEstateIntelligenceIn(BaseModel):
+    request_id: str
+    property_address: str
+    city: str
+    region: str
+    postal_code: str | None = None
+    country: str = "US"
+    strategy: Literal["wholesale", "flip", "brrrr", "rental"]
+    asking_price: float = Field(gt=0)
+    arv_estimate: float | None = None
+    rehab_estimate: float | None = None
+    rent_estimate_monthly: float | None = None
+    holding_months: int = Field(default=6, ge=1, le=36)
+    inventory_months: float = Field(default=4.0, ge=0.0)
+    dom_median_days: int = Field(default=35, ge=1)
+    yoy_price_change_pct: float = Field(default=0.03, ge=-1.0, le=2.0)
+    crime_risk_score: float = Field(default=0.3, ge=0.0, le=1.0)
+    school_score: float = Field(default=6.0, ge=0.0, le=10.0)
+    expected_deals_per_year: int = Field(default=8, ge=1, le=60)
+    mission_critical: bool = True
+    active_verticals: int = Field(default=3, ge=0)
+    new_verticals: int = Field(default=0, ge=0)
+    correlation_with_portfolio: float = Field(default=0.65, ge=0.0, le=1.0)
+    legal_flags: dict[str, bool] = Field(default_factory=dict)
+    engine: str = "Legacy"
+    jurisdiction: str | None = None
+    business_scope: str = "real_estate"
+    persist_decision: bool = True
+    human_approval_required: bool = True
+    buyer_box: RealEstateBuyerBoxIn | None = None
+    comps: list[RealEstateCompIn] = Field(default_factory=list)
+    source_evidence: list[RealEstateSourceEvidenceIn] = Field(default_factory=list)
+
+
+class WinnipegCertificationIn(BaseModel):
+    sample_size: int = Field(default=12, ge=10, le=20)
+    persist_decision: bool = True
+
+
+def _bounded(value: float, lo: float, hi: float) -> float:
+    return max(lo, min(hi, value))
+
+
+def _normalized_location_key(payload: RealEstateIntelligenceIn) -> str:
+    raw = "|".join(
+        [
+            payload.property_address.strip().lower(),
+            payload.city.strip().lower(),
+            payload.region.strip().lower(),
+            (payload.postal_code or "").strip().lower(),
+            payload.country.strip().upper(),
+        ]
+    )
+    return re.sub(r"\s+", " ", raw)
+
+
+def _micro_market_regime(payload: RealEstateIntelligenceIn) -> str:
+    if payload.inventory_months < 3 and payload.yoy_price_change_pct > 0.05:
+        return "seller_advantaged_growth"
+    if payload.inventory_months > 6 and payload.yoy_price_change_pct < 0:
+        return "buyer_advantaged_correction"
+    return "balanced_transitional"
+
+
+def _market_confidence(payload: RealEstateIntelligenceIn) -> float:
+    score = 0.6
+    if payload.comps:
+        score += 0.2
+    if payload.dom_median_days <= 45:
+        score += 0.08
+    if payload.school_score >= 7:
+        score += 0.06
+    if payload.crime_risk_score >= 0.6:
+        score -= 0.12
+    return round(_bounded(score, 0.05, 0.99), 4)
+
+
+def _source_evidence_summary(payload: RealEstateIntelligenceIn) -> dict[str, Any]:
+    evaluated: list[dict[str, Any]] = []
+    weighted_sum = 0.0
+    weight_total = 0.0
+    blocked = 0
+
+    for src in payload.source_evidence:
+        freshness = 1.0
+        if src.freshness_days > 730:
+            freshness = 0.5
+        elif src.freshness_days > 365:
+            freshness = 0.75
+
+        trust_rank = _source_trust_rank(src.source_type)
+        trust_weight = max(1.0, trust_rank)
+        effective = _bounded(src.confidence_score * freshness, 0.0, 1.0)
+
+        if not src.citation_ref:
+            status = "MISSING_CITATION"
+            blocked += 1
+        elif src.freshness_days > 730:
+            status = "HARD_STALE"
+            blocked += 1
+        elif effective < 0.45:
+            status = "LOW_CONFIDENCE"
+            blocked += 1
+        else:
+            status = "VERIFIED"
+
+        weighted_sum += effective * trust_weight
+        weight_total += trust_weight
+
+        evaluated.append(
+            {
+                "source_id": src.source_id,
+                "source_type": src.source_type,
+                "status": status,
+                "effective_confidence": round(effective, 4),
+                "freshness_days": src.freshness_days,
+                "supports": src.supports,
+            }
+        )
+
+    no_record_found = len(payload.source_evidence) == 0
+    confidence = round((weighted_sum / weight_total), 4) if weight_total > 0 else 0.0
+    return {
+        "no_record_found": no_record_found,
+        "effective_confidence": confidence,
+        "blocked_count": blocked,
+        "usable_count": len(payload.source_evidence) - blocked,
+        "items": evaluated,
+    }
+
+
+def _valuation_ranges(payload: RealEstateIntelligenceIn, market_regime: str) -> dict[str, Any]:
+    comp_prices = [float(c.sold_price) for c in payload.comps if c.sold_price > 0]
+    comp_avg = (sum(comp_prices) / len(comp_prices)) if comp_prices else None
+
+    base_arv = float(payload.arv_estimate or 0.0)
+    if base_arv <= 0 and comp_avg is not None:
+        base_arv = comp_avg
+    if base_arv <= 0:
+        base_arv = payload.asking_price * 1.35
+
+    base_repairs = float(payload.rehab_estimate or max(payload.asking_price * 0.12, 8000.0))
+    base_rent = float(payload.rent_estimate_monthly or max(payload.asking_price * 0.009, 900.0))
+
+    regime_volatility = 0.08 if market_regime == "balanced_transitional" else 0.12
+    if market_regime == "buyer_advantaged_correction":
+        arv_low = base_arv * (1.0 - regime_volatility - 0.03)
+        arv_high = base_arv * (1.0 + 0.04)
+    elif market_regime == "seller_advantaged_growth":
+        arv_low = base_arv * (1.0 - 0.06)
+        arv_high = base_arv * (1.0 + regime_volatility + 0.04)
+    else:
+        arv_low = base_arv * (1.0 - regime_volatility)
+        arv_high = base_arv * (1.0 + regime_volatility)
+
+    repairs_low = base_repairs * 0.85
+    repairs_high = base_repairs * 1.25
+    rent_low = base_rent * 0.92
+    rent_high = base_rent * 1.08
+
+    return {
+        "comps_used": len(comp_prices),
+        "arv": {"low": round(arv_low, 2), "base": round(base_arv, 2), "high": round(arv_high, 2)},
+        "repairs": {"low": round(repairs_low, 2), "base": round(base_repairs, 2), "high": round(repairs_high, 2)},
+        "rent_monthly": {"low": round(rent_low, 2), "base": round(base_rent, 2), "high": round(rent_high, 2)},
+    }
+
+
+def _strategy_underwrite(payload: RealEstateIntelligenceIn, ranges: dict[str, Any]) -> dict[str, Any]:
+    arv = float(ranges["arv"]["base"])
+    repairs = float(ranges["repairs"]["base"])
+    ask = float(payload.asking_price)
+    rent = float(ranges["rent_monthly"]["base"])
+
+    if payload.strategy == "wholesale":
+        assignment_fee = max(8000.0, ask * 0.03)
+        mao = (arv * 0.70) - repairs - assignment_fee
+        spread = arv - ask - repairs
+        return {
+            "strategy": payload.strategy,
+            "mao": round(mao, 2),
+            "spread": round(spread, 2),
+            "profit_projection": {
+                "low": round(max(0.0, spread * 0.45), 2),
+                "base": round(max(0.0, spread * 0.6), 2),
+                "high": round(max(0.0, spread * 0.8), 2),
+            },
+            "viable": spread > 15000 and ask <= mao,
+        }
+
+    if payload.strategy == "flip":
+        selling_cost = arv * 0.08
+        carrying = payload.holding_months * (ask * 0.009)
+        gross_profit = arv - ask - repairs - selling_cost - carrying
+        roi = gross_profit / max(1.0, ask + repairs)
+        return {
+            "strategy": payload.strategy,
+            "expected_profit": round(gross_profit, 2),
+            "roi": round(roi, 4),
+            "profit_projection": {
+                "low": round(gross_profit * 0.7, 2),
+                "base": round(gross_profit, 2),
+                "high": round(gross_profit * 1.2, 2),
+            },
+            "viable": roi >= 0.18 and gross_profit > 20000,
+        }
+
+    if payload.strategy == "brrrr":
+        max_all_in = arv * 0.75
+        max_offer = max_all_in - repairs - (ask * 0.03)
+        cashflow = rent - (rent * 0.45)
+        dscr_like = cashflow / max(1.0, ask * 0.0065)
+        return {
+            "strategy": payload.strategy,
+            "max_all_in": round(max_all_in, 2),
+            "max_offer": round(max_offer, 2),
+            "cashflow_monthly": round(cashflow, 2),
+            "dscr_like": round(dscr_like, 3),
+            "profit_projection": {
+                "low": round(cashflow * 10, 2),
+                "base": round(cashflow * 12, 2),
+                "high": round(cashflow * 14, 2),
+            },
+            "viable": max_offer >= ask and dscr_like >= 1.15,
+        }
+
+    expenses = rent * 0.5
+    noi = (rent - expenses) * 12
+    cap_rate = noi / max(1.0, ask)
+    return {
+        "strategy": payload.strategy,
+        "noi_annual": round(noi, 2),
+        "cap_rate": round(cap_rate, 4),
+        "profit_projection": {
+            "low": round(noi * 0.9, 2),
+            "base": round(noi, 2),
+            "high": round(noi * 1.08, 2),
+        },
+        "viable": cap_rate >= 0.06,
+    }
+
+
+def _buyer_fit(payload: RealEstateIntelligenceIn, ranges: dict[str, Any], underwriting: dict[str, Any]) -> dict[str, Any]:
+    deal_fit_score = 58.0
+    if underwriting.get("viable"):
+        deal_fit_score += 20.0
+    if payload.inventory_months <= 5.5:
+        deal_fit_score += 8.0
+    if payload.crime_risk_score > 0.6:
+        deal_fit_score -= 10.0
+    if ranges["comps_used"] == 0:
+        deal_fit_score -= 8.0
+    deal_fit_score = round(_bounded(deal_fit_score, 0.0, 100.0), 2)
+
+    buyer_box = payload.buyer_box
+    if buyer_box is None:
+        return {
+            "deal_fit_score": deal_fit_score,
+            "buyer_box_fit_score": None,
+            "meets_buyer_box": None,
+            "buyer_box_gaps": ["buyer_box_not_provided"],
+        }
+
+    gaps: list[str] = []
+    arv_base = float(ranges["arv"]["base"])
+    repairs_base = float(ranges["repairs"]["base"])
+    spread = float(underwriting.get("spread") or underwriting.get("expected_profit") or 0.0)
+
+    if buyer_box.min_arv is not None and arv_base < float(buyer_box.min_arv):
+        gaps.append("arv_below_min")
+    if buyer_box.max_arv is not None and arv_base > float(buyer_box.max_arv):
+        gaps.append("arv_above_max")
+    if buyer_box.max_repair_budget is not None and repairs_base > float(buyer_box.max_repair_budget):
+        gaps.append("repairs_above_buyer_limit")
+    if buyer_box.min_spread is not None and spread < float(buyer_box.min_spread):
+        gaps.append("spread_below_buyer_min")
+    if buyer_box.target_strategies and payload.strategy not in {s.strip().lower() for s in buyer_box.target_strategies}:
+        gaps.append("strategy_not_in_buyer_box")
+    if buyer_box.target_markets:
+        mk = f"{payload.city.strip().lower()}|{payload.region.strip().lower()}"
+        targets = {m.strip().lower() for m in buyer_box.target_markets}
+        if mk not in targets:
+            gaps.append("market_not_in_buyer_box")
+
+    buyer_fit = round(_bounded(100.0 - (len(gaps) * 18.0), 0.0, 100.0), 2)
+    return {
+        "deal_fit_score": deal_fit_score,
+        "buyer_box_fit_score": buyer_fit,
+        "meets_buyer_box": len(gaps) == 0,
+        "buyer_box_gaps": gaps,
+    }
+
+
+def _pantheon_decision(payload: RealEstateIntelligenceIn, underwriting: dict[str, Any], ranges: dict[str, Any], evidence: dict[str, Any]) -> dict[str, Any]:
+    from app.routers.governance_loki import evaluate_loki
+    from app.routers.governance_odin import evaluate_odin
+    from app.routers.governance_tyr import evaluate_tyr
+    from app.schemas.governance import KingEvaluationContext
+
+    base_profit = float(underwriting.get("profit_projection", {}).get("base", 0.0))
+    annual_profit = max(0.0, base_profit * float(payload.expected_deals_per_year))
+    missing_count = evidence["blocked_count"] + (1 if evidence["no_record_found"] else 0)
+    complexity = int(_bounded(3 + missing_count + (1 if payload.inventory_months > 6 else 0), 1, 10))
+
+    odin_payload = KingEvaluationContext(
+        context_type="deal",
+        data={
+            "active_verticals": str(payload.active_verticals),
+            "new_verticals": str(payload.new_verticals),
+            "estimated_annual_profit": str(round(annual_profit, 2)),
+            "complexity_score": str(complexity),
+            "time_to_break_even_months": str(payload.holding_months),
+            "mission_critical": str(payload.mission_critical).lower(),
+            "distraction_score": str(2 if payload.mission_critical else 8),
+        },
+    )
+
+    arv_low = float(ranges["arv"]["low"])
+    ask = float(payload.asking_price)
+    repairs = float(ranges["repairs"]["base"])
+    capital_at_risk = ask + repairs
+    worst_case_loss = max(0.0, capital_at_risk - (arv_low * 0.92))
+    volatility = abs(payload.yoy_price_change_pct)
+    probability_of_ruin = _bounded(0.01 + (missing_count * 0.006) + (volatility * 0.12), 0.0, 0.95)
+
+    loki_payload = KingEvaluationContext(
+        context_type="deal",
+        data={
+            "capital_at_risk": str(round(capital_at_risk, 2)),
+            "worst_case_loss": str(round(worst_case_loss, 2)),
+            "probability_of_ruin": str(round(probability_of_ruin, 4)),
+            "correlation_with_portfolio": str(round(payload.correlation_with_portfolio, 4)),
+            "hidden_complexity_score": str(complexity),
+        },
+    )
+
+    tyr_inputs = {
+        "requires_license_without_having_it": bool(payload.legal_flags.get("requires_license_without_having_it", False)),
+        "tax_evasion": bool(payload.legal_flags.get("tax_evasion", False)),
+        "fraudulent_misrepresentation": bool(payload.legal_flags.get("fraudulent_misrepresentation", False)),
+        "recording_without_consent": bool(payload.legal_flags.get("recording_without_consent", False)),
+        "exploits_vulnerable": bool(payload.legal_flags.get("exploits_vulnerable", False)),
+        "misleading_marketing": bool(payload.legal_flags.get("misleading_marketing", False)),
+        "missing_disclosures": bool(payload.legal_flags.get("missing_disclosures", False)) or missing_count > 0,
+    }
+    tyr_payload = KingEvaluationContext(context_type="deal", data={k: str(v).lower() for k, v in tyr_inputs.items()})
+
+    odin_decision = evaluate_odin(odin_payload)
+    loki_decision = evaluate_loki(loki_payload)
+    tyr_decision = evaluate_tyr(tyr_payload)
+
+    checks = {
+        "odin": odin_decision.model_dump(),
+        "loki": loki_decision.model_dump(),
+        "tyr": tyr_decision.model_dump(),
+    }
+    blocked_by = [name for name, result in checks.items() if not bool(result.get("allowed")) and str(result.get("severity")) == "critical"]
+    worst = "info"
+    for result in checks.values():
+        severity = str(result.get("severity") or "info")
+        if severity == "critical":
+            worst = "critical"
+            break
+        if severity == "warn" and worst == "info":
+            worst = "warn"
+
+    return {
+        "overall_allowed": len(blocked_by) == 0,
+        "worst_severity": worst,
+        "blocked_by": blocked_by,
+        "checks": checks,
+    }
+
+
+def _role_mimir(payload: RealEstateIntelligenceIn, evidence: dict[str, Any], ranges: dict[str, Any]) -> dict[str, Any]:
+    precedent_strength = _bounded((evidence["effective_confidence"] * 0.65) + (0.2 if ranges["comps_used"] > 0 else 0.0), 0.0, 1.0)
+    return {
+        "role": "mimir",
+        "allowed": precedent_strength >= 0.45,
+        "confidence": round(precedent_strength, 4),
+        "reasons": [] if precedent_strength >= 0.45 else ["historical precedence is weak"],
+        "supporting_evidence": {
+            "effective_confidence": evidence["effective_confidence"],
+            "comps_used": ranges["comps_used"],
+        },
+    }
+
+
+def _role_raven(payload: RealEstateIntelligenceIn, evidence: dict[str, Any]) -> dict[str, Any]:
+    freshness_ratio = 0.0
+    if payload.source_evidence:
+        fresh = len([s for s in payload.source_evidence if s.freshness_days <= 90 and bool(s.citation_ref)])
+        freshness_ratio = fresh / len(payload.source_evidence)
+    return {
+        "role": "raven",
+        "allowed": freshness_ratio >= 0.5,
+        "confidence": round(_bounded(freshness_ratio + (0.2 if evidence["usable_count"] > 0 else 0.0), 0.0, 1.0), 4),
+        "reasons": [] if freshness_ratio >= 0.5 else ["insufficient fresh intelligence signals"],
+        "supporting_evidence": {
+            "fresh_signal_ratio": round(freshness_ratio, 4),
+            "usable_signal_count": evidence["usable_count"],
+        },
+    }
+
+
+def _role_skadi(payload: RealEstateIntelligenceIn, ranges: dict[str, Any], underwriting: dict[str, Any]) -> dict[str, Any]:
+    downside_gap = max(0.0, float(payload.asking_price) - float(ranges["arv"]["low"]))
+    strategy_viable = bool(underwriting.get("viable"))
+    confidence = _bounded((0.7 if strategy_viable else 0.32) - (0.18 if downside_gap > 0 else 0.0), 0.0, 1.0)
+    return {
+        "role": "skadi",
+        "allowed": strategy_viable and downside_gap <= 0,
+        "confidence": round(confidence, 4),
+        "reasons": [] if strategy_viable and downside_gap <= 0 else ["market downside exceeds acceptable specialist threshold"],
+        "supporting_evidence": {
+            "worst_case_arv": ranges["arv"]["low"],
+            "asking_price": payload.asking_price,
+            "downside_gap": round(downside_gap, 2),
+        },
+    }
+
+
+def _role_forseti(payload: RealEstateIntelligenceIn, buyer_fit: dict[str, Any], evidence: dict[str, Any]) -> dict[str, Any]:
+    legal_flags = [k for k, v in payload.legal_flags.items() if bool(v)]
+    contradiction = evidence["blocked_count"] > 0 and bool(legal_flags)
+    reasons: list[str] = []
+    if legal_flags:
+        reasons.append("legal/compliance flags present")
+    if contradiction:
+        reasons.append("evidence contradiction requires legal clarification")
+    if buyer_fit.get("buyer_box_gaps") and buyer_fit.get("buyer_box_gaps") != ["buyer_box_not_provided"]:
+        reasons.append("buyer execution envelope contains unresolved conditions")
+    return {
+        "role": "forseti",
+        "allowed": len(legal_flags) == 0 and not contradiction,
+        "confidence": round(_bounded(0.78 - (0.25 * len(legal_flags)) - (0.1 if contradiction else 0.0), 0.0, 1.0), 4),
+        "reasons": reasons,
+        "supporting_evidence": {
+            "legal_flags": legal_flags,
+            "blocked_sources": evidence["blocked_count"],
+        },
+    }
+
+
+def _role_vidar(payload: RealEstateIntelligenceIn, evidence: dict[str, Any], pantheon: dict[str, Any]) -> dict[str, Any]:
+    blocked = int(evidence["blocked_count"])
+    critical = 1 if pantheon["worst_severity"] == "critical" else 0
+    resilience = _bounded(0.84 - (0.16 * blocked) - (0.25 * critical), 0.0, 1.0)
+    reasons: list[str] = []
+    if blocked:
+        reasons.append("source refresh required before resilient execution")
+    if critical:
+        reasons.append("critical governance objection present")
+    return {
+        "role": "vidar",
+        "allowed": resilience >= 0.45,
+        "confidence": round(resilience, 4),
+        "reasons": reasons,
+        "supporting_evidence": {
+            "blocked_sources": blocked,
+            "critical_flags": critical,
+        },
+    }
+
+
+def _role_norns(payload: RealEstateIntelligenceIn, underwriting: dict[str, Any], evidence: dict[str, Any]) -> dict[str, Any]:
+    profit_base = float(underwriting.get("profit_projection", {}).get("base", 0.0))
+    estimate = _bounded(0.35 + (0.25 if underwriting.get("viable") else -0.12) + min(0.18, profit_base / 250000.0), 0.01, 0.99)
+    confidence = _bounded(0.42 + (0.28 * evidence["effective_confidence"]) - (0.08 * evidence["blocked_count"]), 0.05, 0.95)
+    reasons: list[str] = []
+    if evidence["blocked_count"]:
+        reasons.append("probability quality reduced by unresolved evidence")
+    if evidence["no_record_found"]:
+        reasons.append("probability estimate uses sparse history")
+    return {
+        "role": "norns",
+        "allowed": estimate >= 0.5,
+        "estimate": round(estimate, 4),
+        "confidence": round(confidence, 4),
+        "calibration_state": "NOT_YET_CALIBRATED",
+        "model_state": "MODEL_ESTIMATE",
+        "timing_months": payload.holding_months,
+        "reasons": reasons,
+    }
+
+
+def _role_jotunn(payload: RealEstateIntelligenceIn, ranges: dict[str, Any], underwriting: dict[str, Any]) -> dict[str, Any]:
+    dispersion = abs(float(ranges["arv"]["high"]) - float(ranges["arv"]["low"])) / max(1.0, float(ranges["arv"]["base"]))
+    return {
+        "role": "jotunn",
+        "allowed": dispersion <= 0.35,
+        "confidence": round(_bounded(0.82 - dispersion, 0.0, 1.0), 4),
+        "reasons": [] if dispersion <= 0.35 else ["valuation dispersion too wide for quant confidence"],
+        "supporting_evidence": {
+            "valuation_dispersion": round(dispersion, 4),
+            "profit_projection": underwriting.get("profit_projection", {}),
+        },
+    }
+
+
+def _loki_objections(payload: RealEstateIntelligenceIn, ranges: dict[str, Any], evidence: dict[str, Any], pantheon: dict[str, Any]) -> list[dict[str, Any]]:
+    objections: list[dict[str, Any]] = []
+
+    if ranges["comps_used"] == 0:
+        objections.append(
+            {
+                "objection_id": f"LOKI-OBJ-{payload.request_id}-001",
+                "claim_challenged": "valuation confidence supports immediate proceed",
+                "objection_evidence": "No comps provided for property-level valuation corroboration",
+                "severity": "warn",
+                "materiality": "material",
+                "resolved": False,
+                "resolution_evidence": None,
+                "impact_on_recommendation": "PROCEED->RESEARCH_MORE",
+            }
+        )
+
+    if evidence["blocked_count"] >= 2:
+        objections.append(
+            {
+                "objection_id": f"LOKI-OBJ-{payload.request_id}-002",
+                "claim_challenged": "evidence integrity is sufficient",
+                "objection_evidence": f"{evidence['blocked_count']} evidence sources blocked",
+                "severity": "critical",
+                "materiality": "high",
+                "resolved": False,
+                "resolution_evidence": None,
+                "impact_on_recommendation": "PROCEED->REJECT",
+            }
+        )
+
+    if pantheon["checks"]["loki"]["severity"] == "critical":
+        objections.append(
+            {
+                "objection_id": f"LOKI-OBJ-{payload.request_id}-003",
+                "claim_challenged": "downside exposure is acceptable",
+                "objection_evidence": "; ".join(pantheon["checks"]["loki"]["reasons"]),
+                "severity": "critical",
+                "materiality": "high",
+                "resolved": False,
+                "resolution_evidence": None,
+                "impact_on_recommendation": "PROCEED->REJECT",
+            }
+        )
+
+    return objections
+
+
+def _owner_approval_envelope(payload: RealEstateIntelligenceIn, underwriting: dict[str, Any], final_decision: str) -> dict[str, Any]:
+    max_commitment = round(float(payload.asking_price) + float(underwriting.get("profit_projection", {}).get("base", 0.0)) * 0.35, 2)
+    return {
+        "recommended_action": final_decision.upper(),
+        "maximum_spend": round(float(payload.asking_price), 2),
+        "maximum_commitment": max_commitment,
+        "duration_days": max(14, payload.holding_months * 30),
+        "stop_loss": round(float(payload.asking_price) * 0.09, 2),
+        "permitted_external_actions": [],
+        "required_reapproval_conditions": [
+            "valuation_range_widens_above_20pct",
+            "new_critical_loki_objection",
+            "legal_state_changes_to_fail",
+        ],
+        "legal_review_required": len([k for k, v in payload.legal_flags.items() if bool(v)]) > 0,
+        "owner_approval_required": payload.human_approval_required,
+        "approval_state": "PENDING_OWNER" if payload.human_approval_required else "NOT_REQUIRED",
+        "shadow_mode_external_execution_blocked": True,
+    }
+
+
+def _decision_rank_value(final_decision: str, underwriting: dict[str, Any], buyer_fit: dict[str, Any], norns: dict[str, Any]) -> float:
+    base_map = {
+        "proceed": 100.0,
+        "research_more": 72.0,
+        "hold_review": 55.0,
+        "reject": 20.0,
+    }
+    base = base_map.get(final_decision, 40.0)
+    profit = float(underwriting.get("profit_projection", {}).get("base", 0.0))
+    deal_fit = float(buyer_fit.get("deal_fit_score") or 0.0)
+    prob = float(norns.get("estimate") or 0.0)
+    return round(base + min(25.0, profit / 10000.0) + (deal_fit * 0.15) + (prob * 10.0), 4)
+
+
+def _ensure_pantheon_tables(db: Session) -> None:
+    bind = db.get_bind()
+    GodReviewCase.__table__.create(bind=bind, checkfirst=True)
+    GodReviewEvent.__table__.create(bind=bind, checkfirst=True)
+    GodVerdict.__table__.create(bind=bind, checkfirst=True)
+    GovernanceDecision.__table__.create(bind=bind, checkfirst=True)
+
+
+def _persist_pantheon_snapshot(
+    db: Session,
+    *,
+    payload: RealEstateIntelligenceIn,
+    result: dict[str, Any],
+    loki_objections: list[dict[str, Any]],
+    owner_envelope: dict[str, Any],
+) -> dict[str, Any]:
+    _ensure_pantheon_tables(db)
+
+    subject_ref = hashlib.sha1(result["property_identity"]["location_key"].encode("utf-8")).hexdigest()[:20]
+    case = GodReviewCase(
+        subject_type="real_estate_opportunity",
+        subject_reference=subject_ref,
+        title=f"Real-estate evaluation {payload.request_id}",
+        description=f"Strategy {payload.strategy} for {payload.city}, {payload.region}",
+        status=GodCaseStatus.AWAITING_HUMAN if owner_envelope["owner_approval_required"] else GodCaseStatus.OPEN,
+        heimdall_summary=f"Heimdall recommendation: {result['final_decision']}",
+        heimdall_payload={
+            "request_id": payload.request_id,
+            "final_decision": result["final_decision"],
+            "underwriting": result["underwriting"],
+            "approval_envelope": owner_envelope,
+        },
+        loki_summary=f"{len(loki_objections)} objections ({len([o for o in loki_objections if o['resolved'] is False])} unresolved)",
+        loki_payload={"objections": loki_objections},
+        final_outcome=GodCaseOutcome.UNKNOWN,
+    )
+    db.add(case)
+    db.flush()
+
+    role_blocks: dict[str, dict[str, Any]] = {
+        "odin": result["pantheon"]["checks"]["odin"],
+        "loki": result["pantheon"]["checks"]["loki"],
+        "tyr": result["pantheon"]["checks"]["tyr"],
+        "mimir": result["decision_cone"]["mimir"],
+        "norns": result["decision_cone"]["norns"],
+        "skadi": result["decision_cone"]["skadi"],
+        "raven": result["decision_cone"]["raven"],
+        "forseti": result["decision_cone"]["forseti"],
+        "vidar": result["decision_cone"]["vidar"],
+        "jotunn": result["decision_cone"].get("jotunn", {"role": "jotunn", "allowed": True, "confidence": 0.5, "reasons": []}),
+    }
+
+    for role_name, role_payload in role_blocks.items():
+        db.add(
+            GodReviewEvent(
+                case_id=case.id,
+                actor="system" if role_name != "loki" else "loki",
+                event_type=f"role_{role_name}",
+                message=f"{role_name.upper()} evaluated request {payload.request_id}",
+                payload=role_payload,
+            )
+        )
+
+    consensus = "approve" if result["pantheon"]["overall_allowed"] else "deny"
+    verdict = GodVerdict(
+        case_id=case.id,
+        trigger="phase2_real_estate_evaluate",
+        heimdall_summary=f"{result['final_decision']} with strategy {payload.strategy}",
+        heimdall_recommendation={
+            "decision": result["final_decision"],
+            "approval_envelope": owner_envelope,
+            "disagreements": result["pantheon"]["blocked_by"],
+        },
+        heimdall_confidence="medium",
+        loki_summary=f"{len(loki_objections)} objections",
+        loki_recommendation={"objections": loki_objections},
+        loki_confidence="medium",
+        consensus=consensus,
+        risk_level=result["pantheon"]["worst_severity"],
+        notes="Persisted Phase Two real-estate pantheon snapshot",
+        metadata_json={
+            "request_id": payload.request_id,
+            "property_identity": result["property_identity"],
+            "role_outputs": role_blocks,
+            "owner_approval_envelope": owner_envelope,
+            "shadow_mode": True,
+        },
+    )
+    db.add(verdict)
+
+    subject_int = int(hashlib.sha1(payload.request_id.encode("utf-8")).hexdigest()[:8], 16)
+    role_to_action = {
+        "odin": "approve" if role_blocks["odin"].get("allowed") else "flag",
+        "loki": "deny" if role_blocks["loki"].get("severity") == "critical" else "flag",
+        "tyr": "deny" if role_blocks["tyr"].get("severity") == "critical" else "approve",
+        "skadi": "approve" if role_blocks["skadi"].get("allowed") else "flag",
+        "mimir": "approve" if role_blocks["mimir"].get("allowed") else "flag",
+        "raven": "approve" if role_blocks["raven"].get("allowed") else "flag",
+        "norns": "approve" if role_blocks["norns"].get("allowed") else "flag",
+        "forseti": "approve" if role_blocks["forseti"].get("allowed") else "deny",
+        "vidar": "approve" if role_blocks["vidar"].get("allowed") else "flag",
+        "jotunn": "approve" if role_blocks["jotunn"].get("allowed") else "flag",
+        "heimdall": "approve" if result["final_decision"] == "proceed" else ("deny" if result["final_decision"] == "reject" else "flag"),
+    }
+
+    for role_name, action in role_to_action.items():
+        db.add(
+            GovernanceDecision(
+                subject_type="real_estate_opportunity",
+                subject_id=subject_int,
+                role=role_name.capitalize(),
+                action=action,
+                reason=(
+                    "Persisted phase two role output"
+                    if role_name != "heimdall"
+                    else f"Heimdall final recommendation: {result['final_decision']}"
+                ),
+                is_final=role_name == "heimdall",
+            )
+        )
+
+    db.commit()
+    db.refresh(case)
+    db.refresh(verdict)
+    return {
+        "god_review_case_id": str(case.id),
+        "god_verdict_id": str(verdict.id),
+        "governance_subject_id": subject_int,
+        "owner_approval_required": owner_envelope["owner_approval_required"],
+        "approval_state": owner_envelope["approval_state"],
+    }
+
+
+def _compose_real_estate_intelligence_result(payload: RealEstateIntelligenceIn) -> tuple[dict[str, Any], list[dict[str, Any]], dict[str, Any]]:
+    market_regime = _micro_market_regime(payload)
+    market_confidence = _market_confidence(payload)
+    evidence = _source_evidence_summary(payload)
+    ranges = _valuation_ranges(payload, market_regime)
+    underwriting = _strategy_underwrite(payload, ranges)
+    buyer_fit = _buyer_fit(payload, ranges, underwriting)
+    pantheon = _pantheon_decision(payload, underwriting, ranges, evidence)
+
+    mimir_role = _role_mimir(payload, evidence, ranges)
+    norns_role = _role_norns(payload, underwriting, evidence)
+    skadi_role = _role_skadi(payload, ranges, underwriting)
+    raven_role = _role_raven(payload, evidence)
+    forseti_role = _role_forseti(payload, buyer_fit, evidence)
+    vidar_role = _role_vidar(payload, evidence, pantheon)
+    jotunn_role = _role_jotunn(payload, ranges, underwriting)
+
+    loki_objections = _loki_objections(payload, ranges, evidence, pantheon)
+    unresolved_critical = any((o["severity"] == "critical" and not o["resolved"]) for o in loki_objections)
+    unresolved_material = any((o["materiality"] == "material" and not o["resolved"]) for o in loki_objections)
+
+    pre_loki_recommendation = "proceed" if underwriting.get("viable") and pantheon["overall_allowed"] else "hold_review"
+    if not pantheon["overall_allowed"] or not forseti_role["allowed"]:
+        final_decision = "reject"
+    elif unresolved_critical:
+        final_decision = "reject"
+    elif pre_loki_recommendation == "proceed" and unresolved_material:
+        final_decision = "research_more"
+    elif pre_loki_recommendation == "proceed" and norns_role["estimate"] >= 0.6:
+        final_decision = "proceed"
+    else:
+        final_decision = "hold_review"
+
+    owner_envelope = _owner_approval_envelope(payload, underwriting, final_decision)
+    disagreements = [
+        role["role"]
+        for role in [mimir_role, norns_role, skadi_role, raven_role, forseti_role, vidar_role, jotunn_role]
+        if not bool(role.get("allowed", True))
+    ]
+
+    result = {
+        "request_id": payload.request_id,
+        "engine": payload.engine,
+        "jurisdiction": payload.jurisdiction,
+        "strategy": payload.strategy,
+        "property_identity": {
+            "location_key": _normalized_location_key(payload),
+            "city": payload.city,
+            "region": payload.region,
+            "country": payload.country,
+            "micro_area": "UNKNOWN",
+            "postal_geography": payload.postal_code or "UNKNOWN",
+            "coordinates": None,
+        },
+        "micro_market": {
+            "regime": market_regime,
+            "market_confidence": market_confidence,
+            "inventory_months": payload.inventory_months,
+            "dom_median_days": payload.dom_median_days,
+            "yoy_price_change_pct": payload.yoy_price_change_pct,
+        },
+        "source_evidence": evidence,
+        "valuation_ranges": ranges,
+        "underwriting": underwriting,
+        "buyer_market_fit": buyer_fit,
+        "pantheon": {
+            **pantheon,
+            "roles_invoked": ["odin", "loki", "tyr", "mimir", "norns", "skadi", "raven", "forseti", "vidar", "jotunn", "heimdall"],
+            "disagreements": disagreements,
+        },
+        "decision_cone": {
+            "mimir": mimir_role,
+            "norns": norns_role,
+            "skadi": skadi_role,
+            "raven": raven_role,
+            "forseti": forseti_role,
+            "vidar": vidar_role,
+            "jotunn": jotunn_role,
+        },
+        "loki_objections": {
+            "objection_count": len(loki_objections),
+            "unresolved_count": len([o for o in loki_objections if not o["resolved"]]),
+            "items": loki_objections,
+            "pre_loki_recommendation": pre_loki_recommendation,
+        },
+        "owner_approval_envelope": owner_envelope,
+        "final_decision": final_decision,
+        "explainability": {
+            "top_reasons": (
+                pantheon["checks"]["tyr"]["reasons"]
+                + pantheon["checks"]["loki"]["reasons"]
+                + [o["objection_evidence"] for o in loki_objections]
+                + ([] if underwriting.get("viable") else ["strategy underwriting failed viability thresholds"])
+            )[:10],
+            "assumptions": [
+                "scenario ranges are deterministic stress bands, not forecasts",
+                "norns probability is MODEL_ESTIMATE and NOT_YET_CALIBRATED",
+                "external execution remains blocked in shadow mode",
+            ],
+            "uncertainty_flags": [
+                "VALUATION_CONFIDENCE_LOW" if ranges["comps_used"] == 0 else None,
+                "MARKET_DATA_INSUFFICIENT" if evidence["no_record_found"] else None,
+                "BUYER_DATA_INSUFFICIENT" if buyer_fit["buyer_box_fit_score"] is None else None,
+                "CONTACT_NOT_VERIFIED",
+                "REPAIR_CONFIDENCE_LOW" if float(ranges["repairs"]["high"]) > float(ranges["repairs"]["base"]) * 1.2 else None,
+            ],
+        },
+    }
+    result["explainability"]["uncertainty_flags"] = [v for v in result["explainability"]["uncertainty_flags"] if v is not None]
+    result["decision_rank_value"] = _decision_rank_value(final_decision, underwriting, buyer_fit, norns_role)
+    return result, loki_objections, owner_envelope
+
+
+@router.post("/phase2/real-estate-intelligence/evaluate")
+def evaluate_real_estate_intelligence(payload: RealEstateIntelligenceIn, db: Session = Depends(get_db)):
+    result, loki_objections, owner_envelope = _compose_real_estate_intelligence_result(payload)
+    persistence = None
+    if payload.persist_decision:
+        persistence = _persist_pantheon_snapshot(
+            db,
+            payload=payload,
+            result=result,
+            loki_objections=loki_objections,
+            owner_envelope=owner_envelope,
+        )
+    result["persistence"] = persistence
+    return result
+
+
+def _load_winnipeg_anchors(sample_size: int) -> list[dict[str, Any]]:
+    anchors: list[dict[str, Any]] = []
+    root = Path.cwd()
+    csv_paths = [
+        root / "data" / "inbox" / "real_leads" / "sample_leads_01.csv",
+        root / "data" / "inbox" / "real_leads" / "batch_01_leads.csv",
+        root / "data" / "inbox" / "real_leads" / "batch_02_leads.csv",
+        root / "data" / "inbox" / "real_leads" / "batch_03_leads.csv",
+    ]
+
+    for path in csv_paths:
+        if not path.exists():
+            continue
+        try:
+            with path.open("r", encoding="utf-8", newline="") as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    city = str(row.get("city") or row.get("City") or "").strip().lower()
+                    region = str(row.get("province_state") or row.get("state") or row.get("region") or "").strip()
+                    if city != "winnipeg":
+                        continue
+                    raw_price = str(row.get("price") or row.get("asking_price") or row.get("estimated_value") or "0")
+                    clean = re.sub(r"[^0-9.]+", "", raw_price)
+                    asking = float(clean or 0.0)
+                    if asking <= 0:
+                        continue
+                    prop_type = str(row.get("property_type") or row.get("property") or "single_family").strip().lower()
+                    addr = str(row.get("property_address") or row.get("address") or "UNKNOWN").strip()
+                    anchors.append(
+                        {
+                            "anchor_id": hashlib.sha1(f"{path.name}:{addr}:{asking}".encode("utf-8")).hexdigest()[:16],
+                            "address": addr,
+                            "city": "Winnipeg",
+                            "region": region or "MB",
+                            "postal": str(row.get("property_zip") or row.get("postal_code") or row.get("zip") or "").strip() or None,
+                            "property_type": prop_type,
+                            "asking_price": asking,
+                            "source": str(path.relative_to(root)).replace("\\", "/"),
+                        }
+                    )
+                    if len(anchors) >= sample_size:
+                        return anchors
+        except Exception:
+            continue
+
+    # Best-effort fallback from local DB if not enough file anchors.
+    db_path = root / "valhalla_local.db"
+    if db_path.exists() and len(anchors) < sample_size:
+        try:
+            import sqlite3
+
+            con = sqlite3.connect(str(db_path))
+            cur = con.cursor()
+            rows = cur.execute(
+                """
+                SELECT id, title, COALESCE(arv, 0), COALESCE(estimated_repair_cost, 0)
+                FROM deals
+                WHERE lower(COALESCE(title, '')) LIKE '%winnipeg%'
+                LIMIT 40
+                """
+            ).fetchall()
+            con.close()
+            for row in rows:
+                if len(anchors) >= sample_size:
+                    break
+                deal_id, title, arv, repairs = row
+                title_text = str(title or "")
+                anchors.append(
+                    {
+                        "anchor_id": f"dbdeal-{deal_id}",
+                        "address": title_text,
+                        "city": "Winnipeg",
+                        "region": "MB",
+                        "postal": None,
+                        "property_type": "single_family",
+                        "asking_price": max(50000.0, float(arv or 0.0) - float(repairs or 0.0) - 12000.0),
+                        "source": "valhalla_local.db:deals",
+                    }
+                )
+        except Exception:
+            pass
+    return anchors[:sample_size]
+
+
+def _strategies_for_property_type(property_type: str) -> list[str]:
+    t = (property_type or "").lower()
+    if "land" in t:
+        return ["wholesale", "flip"]
+    if "commercial" in t or "mixed" in t or "multi" in t or "apartment" in t:
+        return ["rental", "brrrr", "wholesale"]
+    return ["wholesale", "flip", "rental", "brrrr"]
+
+
+@router.post("/phase2/real-estate-intelligence/certify-winnipeg")
+def certify_winnipeg_real_estate(payload: WinnipegCertificationIn, db: Session = Depends(get_db)):
+    anchors = _load_winnipeg_anchors(payload.sample_size)
+    if len(anchors) < 10:
+        raise HTTPException(status_code=409, detail="insufficient Winnipeg anchors available in canonical local sources")
+
+    evaluations: list[dict[str, Any]] = []
+    persisted_case_ids: list[str] = []
+    for idx, anchor in enumerate(anchors):
+        strategy_results: list[dict[str, Any]] = []
+        for strategy in _strategies_for_property_type(anchor["property_type"]):
+            base_arv = round(anchor["asking_price"] * (1.18 if strategy == "rental" else 1.3), 2)
+            payload_eval = RealEstateIntelligenceIn(
+                request_id=f"WPG-{anchor['anchor_id']}-{strategy}",
+                property_address=anchor["address"],
+                city="Winnipeg",
+                region="MB",
+                postal_code=anchor["postal"],
+                country="CA",
+                strategy=strategy,  # type: ignore[arg-type]
+                asking_price=anchor["asking_price"],
+                arv_estimate=base_arv,
+                rehab_estimate=max(9000.0, anchor["asking_price"] * 0.13),
+                rent_estimate_monthly=max(850.0, anchor["asking_price"] * 0.0075),
+                holding_months=6,
+                inventory_months=4.6,
+                dom_median_days=31,
+                yoy_price_change_pct=0.028,
+                crime_risk_score=0.37,
+                school_score=6.8,
+                expected_deals_per_year=8,
+                engine="Legacy",
+                jurisdiction="CA-MB",
+                source_evidence=[
+                    RealEstateSourceEvidenceIn(
+                        source_id="SRC-WPG-LOCAL-FILE",
+                        source_type="operator_note",
+                        confidence_score=0.72,
+                        freshness_days=75,
+                        citation_ref=anchor["source"],
+                        supports=["city", "asking_price", "property_type"],
+                    )
+                ],
+                persist_decision=payload.persist_decision,
+            )
+            result, loki_objections, owner_envelope = _compose_real_estate_intelligence_result(payload_eval)
+            if payload.persist_decision:
+                persisted = _persist_pantheon_snapshot(
+                    db,
+                    payload=payload_eval,
+                    result=result,
+                    loki_objections=loki_objections,
+                    owner_envelope=owner_envelope,
+                )
+                result["persistence"] = persisted
+                persisted_case_ids.append(persisted["god_review_case_id"])
+            strategy_results.append(result)
+
+        strategy_results.sort(key=lambda r: r.get("decision_rank_value", 0.0), reverse=True)
+        evaluations.append(
+            {
+                "anchor_id": anchor["anchor_id"],
+                "geography": {
+                    "city": "Winnipeg",
+                    "district": "UNKNOWN",
+                    "neighbourhood": "UNKNOWN",
+                    "micro_area": "UNKNOWN",
+                    "postal_geography": anchor["postal"] or "UNKNOWN",
+                    "coordinates": None,
+                },
+                "source": anchor["source"],
+                "best_strategy": strategy_results[0]["strategy"],
+                "best_decision": strategy_results[0]["final_decision"],
+                "strategies": strategy_results,
+            }
+        )
+
+    ranked = sorted(
+        evaluations,
+        key=lambda e: max([float(s.get("decision_rank_value") or 0.0) for s in e["strategies"]]),
+        reverse=True,
+    )
+    top = ranked[:3]
+    bottom = ranked[-3:]
+    mid_start = max(0, (len(ranked) // 2) - 1)
+    middle = ranked[mid_start:mid_start + 3]
+
+    best = ranked[0] if ranked else None
+    second = ranked[1] if len(ranked) > 1 else None
+    best_rank = max([float(s.get("decision_rank_value") or 0.0) for s in (best or {}).get("strategies", [])], default=0.0)
+    second_rank = max([float(s.get("decision_rank_value") or 0.0) for s in (second or {}).get("strategies", [])], default=0.0)
+
+    return {
+        "sample_city": "Winnipeg",
+        "sample_size": len(ranked),
+        "anchors": [
+            {
+                "anchor_id": e["anchor_id"],
+                "best_strategy": e["best_strategy"],
+                "best_decision": e["best_decision"],
+            }
+            for e in ranked
+        ],
+        "cross_opportunity_ranking": {
+            "best_current_property_opportunity": None if best is None else best["anchor_id"],
+            "why_it_ranks_above_2": (
+                "insufficient evidence to distinguish"
+                if best is None or second is None or abs(best_rank - second_rank) < 5
+                else f"higher decision_rank_value ({best_rank:.2f} vs {second_rank:.2f})"
+            ),
+            "what_would_change_ranking": [
+                "fresh comparable sales evidence",
+                "verified repair scope reduction",
+                "resolved Loki material objections",
+            ],
+        },
+        "human_review_set": {
+            "top_3": [r["anchor_id"] for r in top],
+            "middle_3": [r["anchor_id"] for r in middle],
+            "bottom_3": [r["anchor_id"] for r in bottom],
+        },
+        "disagreement_summary": [
+            {
+                "anchor_id": e["anchor_id"],
+                "role_disagreements": sorted(
+                    {
+                        role
+                        for s in e["strategies"]
+                        for role in s["pantheon"]["disagreements"]
+                    }
+                ),
+            }
+            for e in ranked
+        ],
+        "persisted_case_ids": persisted_case_ids,
+        "shadow_safety_counters": {
+            "email": 0,
+            "sms": 0,
+            "calls": 0,
+            "contracts": 0,
+            "e_sign": 0,
+            "money": 0,
+            "accounting_writes": 0,
+            "external_posts": 0,
+        },
+        "evaluations": ranked,
+    }
 
 
 def _normalize_trigger_type(value: str) -> str:

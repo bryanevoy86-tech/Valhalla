@@ -2129,3 +2129,334 @@ def test_legacy_orchestration_blocks_governance_bypass_payloads():
     )
     assert blocked.status_code == 409
     assert "cannot bypass core governance" in blocked.json()["detail"]
+
+
+def test_phase2_real_estate_intelligence_returns_micro_market_underwriting_and_pantheon():
+    client = _build_client()
+
+    resp = client.post(
+        "/api/completion/phase2/real-estate-intelligence/evaluate",
+        json={
+            "request_id": "RE-INTEL-001",
+            "property_address": "123 Main St",
+            "city": "Memphis",
+            "region": "TN",
+            "postal_code": "38103",
+            "country": "US",
+            "strategy": "wholesale",
+            "asking_price": 120000,
+            "arv_estimate": 215000,
+            "rehab_estimate": 32000,
+            "rent_estimate_monthly": 1800,
+            "holding_months": 4,
+            "inventory_months": 3.2,
+            "dom_median_days": 28,
+            "yoy_price_change_pct": 0.08,
+            "crime_risk_score": 0.35,
+            "school_score": 7.2,
+            "expected_deals_per_year": 10,
+            "source_evidence": [
+                {
+                    "source_id": "SRC-GOV-001",
+                    "source_type": "government",
+                    "confidence_score": 0.93,
+                    "freshness_days": 45,
+                    "citation_ref": "gov:memphis:2026:q3",
+                    "supports": ["valuation", "market"],
+                },
+                {
+                    "source_id": "SRC-OPS-001",
+                    "source_type": "operator_note",
+                    "confidence_score": 0.78,
+                    "freshness_days": 70,
+                    "citation_ref": "ops:crew:memphis",
+                    "supports": ["repairs", "demand"],
+                },
+            ],
+        },
+    )
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+
+    assert body["request_id"] == "RE-INTEL-001"
+    assert body["micro_market"]["regime"] in {
+        "seller_advantaged_growth",
+        "balanced_transitional",
+        "buyer_advantaged_correction",
+    }
+    assert "valuation_ranges" in body
+    assert "underwriting" in body
+    assert "pantheon" in body
+    assert "decision_cone" in body
+    assert body["source_evidence"]["usable_count"] >= 1
+
+
+def test_phase2_real_estate_intelligence_separates_deal_fit_from_buyer_fit():
+    client = _build_client()
+
+    resp = client.post(
+        "/api/completion/phase2/real-estate-intelligence/evaluate",
+        json={
+            "request_id": "RE-INTEL-002",
+            "property_address": "88 Oak Ave",
+            "city": "Birmingham",
+            "region": "AL",
+            "country": "US",
+            "strategy": "flip",
+            "asking_price": 155000,
+            "arv_estimate": 255000,
+            "rehab_estimate": 36000,
+            "holding_months": 5,
+            "inventory_months": 4.1,
+            "dom_median_days": 32,
+            "yoy_price_change_pct": 0.04,
+            "expected_deals_per_year": 8,
+            "source_evidence": [
+                {
+                    "source_id": "SRC-REG-002",
+                    "source_type": "regulator",
+                    "confidence_score": 0.9,
+                    "freshness_days": 55,
+                    "citation_ref": "reg:al:market",
+                    "supports": ["valuation"],
+                }
+            ],
+            "buyer_box": {
+                "min_arv": 120000,
+                "max_arv": 220000,
+                "max_repair_budget": 25000,
+                "min_spread": 50000,
+                "target_strategies": ["wholesale"],
+                "target_markets": ["nashville|tn"],
+            },
+        },
+    )
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    fit = body["buyer_market_fit"]
+
+    assert fit["deal_fit_score"] is not None
+    assert fit["buyer_box_fit_score"] is not None
+    assert fit["deal_fit_score"] > fit["buyer_box_fit_score"]
+    assert fit["meets_buyer_box"] is False
+    assert len(fit["buyer_box_gaps"]) >= 1
+
+
+def test_phase2_real_estate_intelligence_tyr_redline_blocks_final_decision():
+    client = _build_client()
+
+    resp = client.post(
+        "/api/completion/phase2/real-estate-intelligence/evaluate",
+        json={
+            "request_id": "RE-INTEL-003",
+            "property_address": "9 Pine Rd",
+            "city": "Jackson",
+            "region": "MS",
+            "country": "US",
+            "strategy": "rental",
+            "asking_price": 98000,
+            "arv_estimate": 150000,
+            "rehab_estimate": 22000,
+            "rent_estimate_monthly": 1450,
+            "inventory_months": 5.0,
+            "dom_median_days": 40,
+            "yoy_price_change_pct": 0.01,
+            "source_evidence": [
+                {
+                    "source_id": "SRC-ETH-001",
+                    "source_type": "operator_note",
+                    "confidence_score": 0.75,
+                    "freshness_days": 20,
+                    "citation_ref": "ops:note:ethics",
+                    "supports": ["compliance"],
+                }
+            ],
+            "legal_flags": {
+                "fraudulent_misrepresentation": True,
+            },
+        },
+    )
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+
+    assert body["pantheon"]["overall_allowed"] is False
+    assert "tyr" in body["pantheon"]["blocked_by"]
+    assert body["pantheon"]["checks"]["tyr"]["severity"] == "critical"
+    assert body["final_decision"] == "reject"
+
+
+def test_phase2_real_estate_intelligence_persists_case_verdict_and_governance_snapshot():
+    client = _build_client()
+
+    resp = client.post(
+        "/api/completion/phase2/real-estate-intelligence/evaluate",
+        json={
+            "request_id": "RE-INTEL-PERSIST-001",
+            "property_address": "14 Portage Ave",
+            "city": "Winnipeg",
+            "region": "MB",
+            "country": "CA",
+            "strategy": "wholesale",
+            "asking_price": 180000,
+            "arv_estimate": 255000,
+            "rehab_estimate": 28000,
+            "source_evidence": [
+                {
+                    "source_id": "SRC-WPG-PERSIST-001",
+                    "source_type": "government",
+                    "confidence_score": 0.91,
+                    "freshness_days": 35,
+                    "citation_ref": "gov:wpg:q3",
+                    "supports": ["valuation"],
+                },
+                {
+                    "source_id": "SRC-WPG-PERSIST-002",
+                    "source_type": "operator_note",
+                    "confidence_score": 0.76,
+                    "freshness_days": 64,
+                    "citation_ref": "ops:wpg:field",
+                    "supports": ["demand"],
+                },
+            ],
+            "persist_decision": True,
+        },
+    )
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body["persistence"] is not None
+    assert body["persistence"]["god_review_case_id"]
+    assert body["persistence"]["god_verdict_id"]
+    assert body["persistence"]["governance_subject_id"] > 0
+
+
+def test_phase2_real_estate_intelligence_loki_can_shift_proceed_to_research_more_and_reject():
+    client = _build_client()
+
+    research_more = client.post(
+        "/api/completion/phase2/real-estate-intelligence/evaluate",
+        json={
+            "request_id": "RE-INTEL-LOKI-RESEARCH-001",
+            "property_address": "99 Academy Rd",
+            "city": "Winnipeg",
+            "region": "MB",
+            "country": "CA",
+            "strategy": "wholesale",
+            "asking_price": 110000,
+            "arv_estimate": 255000,
+            "rehab_estimate": 15000,
+            "inventory_months": 3.9,
+            "dom_median_days": 22,
+            "yoy_price_change_pct": 0.031,
+            "source_evidence": [
+                {
+                    "source_id": "SRC-WPG-LOKI-001",
+                    "source_type": "operator_note",
+                    "confidence_score": 0.8,
+                    "freshness_days": 45,
+                    "citation_ref": "ops:wpg:loki",
+                    "supports": ["valuation"],
+                }
+            ],
+            "persist_decision": False,
+        },
+    )
+    assert research_more.status_code == 200, research_more.text
+    r_body = research_more.json()
+    assert r_body["loki_objections"]["pre_loki_recommendation"] == "proceed"
+    assert r_body["final_decision"] == "research_more"
+    assert r_body["loki_objections"]["objection_count"] >= 1
+
+    reject = client.post(
+        "/api/completion/phase2/real-estate-intelligence/evaluate",
+        json={
+            "request_id": "RE-INTEL-LOKI-REJECT-001",
+            "property_address": "401 Risk St",
+            "city": "Winnipeg",
+            "region": "MB",
+            "country": "CA",
+            "strategy": "flip",
+            "asking_price": 210000,
+            "arv_estimate": 230000,
+            "rehab_estimate": 90000,
+            "correlation_with_portfolio": 0.97,
+            "inventory_months": 7.5,
+            "yoy_price_change_pct": -0.22,
+            "source_evidence": [
+                {
+                    "source_id": "SRC-WPG-LOKI-002",
+                    "source_type": "operator_note",
+                    "confidence_score": 0.41,
+                    "freshness_days": 910,
+                    "citation_ref": "ops:wpg:stale",
+                    "supports": ["valuation"],
+                },
+                {
+                    "source_id": "SRC-WPG-LOKI-003",
+                    "source_type": "blog",
+                    "confidence_score": 0.2,
+                    "freshness_days": 1020,
+                    "supports": ["demand"],
+                },
+            ],
+            "persist_decision": False,
+        },
+    )
+    assert reject.status_code == 200, reject.text
+    x_body = reject.json()
+    assert x_body["loki_objections"]["pre_loki_recommendation"] in {"proceed", "hold_review"}
+    assert x_body["final_decision"] == "reject"
+
+
+def test_phase2_real_estate_intelligence_norns_state_marked_not_calibrated():
+    client = _build_client()
+
+    resp = client.post(
+        "/api/completion/phase2/real-estate-intelligence/evaluate",
+        json={
+            "request_id": "RE-INTEL-NORNS-001",
+            "property_address": "85 River Rd",
+            "city": "Winnipeg",
+            "region": "MB",
+            "country": "CA",
+            "strategy": "rental",
+            "asking_price": 149000,
+            "arv_estimate": 206000,
+            "rehab_estimate": 18000,
+            "source_evidence": [
+                {
+                    "source_id": "SRC-WPG-NORNS-001",
+                    "source_type": "government",
+                    "confidence_score": 0.87,
+                    "freshness_days": 33,
+                    "citation_ref": "gov:wpg:norns",
+                    "supports": ["valuation"],
+                }
+            ],
+            "persist_decision": False,
+        },
+    )
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    norns = body["decision_cone"]["norns"]
+    assert norns["model_state"] == "MODEL_ESTIMATE"
+    assert norns["calibration_state"] == "NOT_YET_CALIBRATED"
+
+
+def test_phase2_winnipeg_certification_route_returns_rankings_and_shadow_safety():
+    client = _build_client()
+
+    resp = client.post(
+        "/api/completion/phase2/real-estate-intelligence/certify-winnipeg",
+        json={"sample_size": 10, "persist_decision": True},
+    )
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+
+    assert body["sample_city"] == "Winnipeg"
+    assert body["sample_size"] >= 10
+    assert len(body["human_review_set"]["top_3"]) == 3
+    assert len(body["human_review_set"]["middle_3"]) == 3
+    assert len(body["human_review_set"]["bottom_3"]) == 3
+    assert body["cross_opportunity_ranking"]["best_current_property_opportunity"] is not None
+    assert all(v == 0 for v in body["shadow_safety_counters"].values())
+    assert len(body["persisted_case_ids"]) >= 10
