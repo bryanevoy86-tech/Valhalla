@@ -77,7 +77,7 @@ Evidence: owner approval envelope and recommendation fields emitted.
 Evidence: no live external side effects introduced by Phase Three evaluate/certification paths.
 
 - REGRESSION PARITY: PASS
-Evidence: focused suite green; broad collection error profile matches baseline (no introduced collection regressions).
+Evidence: focused suite result `50 tests, 0 failures, 0 errors, 0 skipped`; broad full-collection parity `phase3=0 collection errors`, `baseline=0 collection errors` (no introduced collection regressions).
 
 ## Promotion Summary
 - Ready for canonical review: YES
