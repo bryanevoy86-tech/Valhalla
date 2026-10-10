@@ -39,5 +39,14 @@ Strict repair of promotion blockers without feature expansion.
 - Inventory: 18 files (12 DOCX, 6 MD), 0 unreadable
 - Completeness: PARTIAL (known missing June, August, recovery logs, architecture exports, chat exports)
 
-## Remaining Gate
-- Main-candidate certification execution remains required before canonical promotion decision.
+## Clean Main Candidate Certification
+- Candidate branch: `promote/phase3-blocker-repair-candidate`
+- Base hash: `origin/main@05a467a0b07d863f440df2ac6810cc2674707975`
+- Applied commits: `8c979979`, `5c92d8c5`, `b4378aaf`
+- Focused suite: PASS (`58/0/0/0`)
+- Phase Two regression slice: PASS
+- Broad backend collect-only: PASS (`0` collection errors)
+
+## Promotion Readiness
+- READY_FOR_CANONICAL_PROMOTION: YES
+- Note: origin/main remains unchanged in this repair task.
