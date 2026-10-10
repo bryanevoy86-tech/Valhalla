@@ -30,7 +30,12 @@ class RelationshipProfile(Base):
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
     # Relationships
-    trust_events = relationship("TrustEventLog", back_populates="profile", cascade="all, delete-orphan")
+    # Use fully-qualified targets so coexisting legacy models do not collide by short class name.
+    trust_events = relationship(
+        "app.models.pack_ta.TrustEventLog",
+        back_populates="profile",
+        cascade="all, delete-orphan",
+    )
 
     def __repr__(self):
         return f"<RelationshipProfile {self.profile_id}: {self.name}>"
@@ -54,7 +59,7 @@ class TrustEventLog(Base):
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
     # Relationships
-    profile = relationship("RelationshipProfile", back_populates="trust_events")
+    profile = relationship("app.models.pack_ta.RelationshipProfile", back_populates="trust_events")
 
     def __repr__(self):
         return f"<TrustEventLog {self.event_id}: {self.date}>"

@@ -21,8 +21,9 @@ class RelationshipProfile(Base):
     boundaries = Column(Text, nullable=True)    # newline-separated
     notes = Column(Text, nullable=True)
 
+    # Use module-qualified names to avoid ambiguity with app.models.pack_ta.TrustEventLog.
     events = relationship(
-        "TrustEventLog",
+        "app.models.relationships.TrustEventLog",
         back_populates="profile",
         cascade="all, delete-orphan",
     )
@@ -39,4 +40,4 @@ class TrustEventLog(Base):
     notes = Column(Text, nullable=True)
     visible = Column(Boolean, default=True)
 
-    profile = relationship("RelationshipProfile", back_populates="events")
+    profile = relationship("app.models.relationships.RelationshipProfile", back_populates="events")
