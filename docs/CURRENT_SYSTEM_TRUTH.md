@@ -1,6 +1,6 @@
 # CURRENT SYSTEM TRUTH
 
-Generated: 2026-09-28
+Generated: 2026-10-10
 
 ## Canonical Backend
 - Canonical app entrypoint: `app.main:app` (wrapper) -> `services/api/app/main.py`.
@@ -72,3 +72,14 @@ Generated: 2026-09-28
   - Environment dependency: 13
   - Test harness defects: 59
   - Unknown: 0
+
+## Winnipeg Certification Reproducibility Truth (2026-10-10)
+- Prior clean-state failure cause was dependency on developer-local `valhalla_local.db` fallback rows when canonical CSV anchors were fewer than route minimum.
+- Test harness now seeds deterministic Winnipeg fixture anchors in test setup for `test_phase2_winnipeg_certification_route_returns_rankings_and_shadow_safety`.
+- Reproducibility evidence artifacts:
+  - `docs/WINNIPEG_TEST_FIXTURE_CERTIFICATION.md`
+  - `docs/_winnipeg_test_fixture_certification.json`
+- Production thresholds and runtime Winnipeg logic were not lowered or relaxed.
+- Certification boundary is explicit:
+  - `TEST_FIXTURE_CERTIFICATION` proves deterministic route/path behavior.
+  - `REAL_DATA_CERTIFICATION` proves behavior against current real Winnipeg source data.
