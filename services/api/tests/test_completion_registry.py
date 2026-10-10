@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import csv
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -71,6 +74,39 @@ def _build_client() -> TestClient:
 
     app.dependency_overrides[get_db] = override_get_db
     return TestClient(app)
+
+
+def _seed_winnipeg_anchor_fixture(root: Path, rows: int = 12) -> dict[str, int]:
+    fixture_dir = root / "data" / "inbox" / "real_leads"
+    fixture_file = fixture_dir / "sample_leads_01.csv"
+    fixture_dir.mkdir(parents=True, exist_ok=True)
+
+    with fixture_file.open("w", encoding="utf-8", newline="") as f:
+        writer = csv.DictWriter(
+            f,
+            fieldnames=[
+                "property_address",
+                "city",
+                "province_state",
+                "property_zip",
+                "property_type",
+                "price",
+            ],
+        )
+        writer.writeheader()
+        for idx in range(rows):
+            writer.writerow(
+                {
+                    "property_address": f"{100 + idx} Test Ave",
+                    "city": "Winnipeg",
+                    "province_state": "MB",
+                    "property_zip": f"R2C{idx:02d}",
+                    "property_type": "single_family",
+                    "price": str(140000 + (idx * 4500)),
+                }
+            )
+
+    return {"seeded_rows": rows}
 
 
 def test_create_and_list_registry_items():
@@ -2454,7 +2490,22 @@ def test_phase2_real_estate_intelligence_norns_state_marked_not_calibrated():
     assert norns["calibration_state"] == "NOT_YET_CALIBRATED"
 
 
-def test_phase2_winnipeg_certification_route_returns_rankings_and_shadow_safety():
+def test_phase2_winnipeg_certification_route_returns_rankings_and_shadow_safety(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    fixture_dir = tmp_path / "data" / "inbox" / "real_leads"
+    fixture_file = fixture_dir / "sample_leads_01.csv"
+    assert fixture_file.exists() is False
+
+    seed_meta = _seed_winnipeg_anchor_fixture(tmp_path, rows=12)
+    assert seed_meta["seeded_rows"] == 12
+    assert fixture_file.exists() is True
+
+    with fixture_file.open("r", encoding="utf-8", newline="") as f:
+        seeded_count = sum(1 for _ in csv.DictReader(f))
+    assert seeded_count == 12
+
+    assert (tmp_path / "valhalla_local.db").exists() is False
+
     client = _build_client()
 
     resp = client.post(
@@ -2472,6 +2523,8 @@ def test_phase2_winnipeg_certification_route_returns_rankings_and_shadow_safety(
     assert body["cross_opportunity_ranking"]["best_current_property_opportunity"] is not None
     assert all(v == 0 for v in body["shadow_safety_counters"].values())
     assert len(body["persisted_case_ids"]) >= 10
+    assert all((e.get("source") or "").startswith("data/inbox/real_leads/") for e in body["evaluations"])
+    assert all("valhalla_local.db" not in (e.get("source") or "") for e in body["evaluations"])
 
 
 def test_phase3_engine_audit_reports_required_status_classes():
