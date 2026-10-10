@@ -1,0 +1,44 @@
+{
+  "generated_at": "2026-10-10T00:00:00Z",
+  "scope": "Phase 3 integrated implementation",
+  "status": "BUILT_NEEDS_TESTING",
+  "capabilities": {
+    "shared_universal_evaluator": "PROVEN_IN_FOCUSED_SUITE",
+    "immutable_prediction_snapshot": "PROVEN_IN_FOCUSED_SUITE",
+    "universal_outcome_contract": "PROVEN_IN_FOCUSED_SUITE",
+    "holdout_contamination_guard": "PROVEN_IN_FOCUSED_SUITE",
+    "champion_challenger_shadow_gate": "PROVEN_IN_FOCUSED_SUITE",
+    "recovery_exit_contract_fields": "BUILT_NEEDS_EXPANDED_TESTING",
+    "baseline_regret_scaffold": "BUILT_NEEDS_OUTCOME_BACKFILL"
+  },
+  "tests": {
+    "focused_completion_registry": {
+      "command": "pytest -q services/api/tests/test_completion_registry.py",
+      "result": "PASS",
+      "passed_count": 50,
+      "failed_count": 0,
+      "error_count": 0
+    },
+    "backend_collection_phase3": {
+      "command": "pytest -q services/api/tests --junitxml=.tmp_full_backend_phase3_after_integration.xml",
+      "result": "ERROR_PROFILE_MATCHES_BASELINE",
+      "tests": 5,
+      "failures": 0,
+      "errors": 5
+    },
+    "backend_collection_baseline": {
+      "command": "pytest -q services/api/tests --junitxml=.tmp_full_backend_baseline_after_integration.xml",
+      "result": "ERROR_PROFILE_MATCHES_PHASE3",
+      "tests": 5,
+      "failures": 0,
+      "errors": 5
+    }
+  },
+  "introduced_regressions": {
+    "full_backend_collection": 0,
+    "focused_completion_registry": 0
+  },
+  "blockers": [
+    "Pre-existing import/collection failures in non-phase3 test modules"
+  ]
+}
