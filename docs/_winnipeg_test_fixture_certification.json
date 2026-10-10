@@ -1,0 +1,83 @@
+{
+  "generated_at": "2026-10-10T00:00:00Z",
+  "scope": "winnipeg certification reproducibility",
+  "origin_main": "05a467a0b07d863f440df2ac6810cc2674707975",
+  "candidate_before_fix": "06436a91926fa8cf29ab5ea2646fe350da52e45c",
+  "failure_before_fix": {
+    "test": "phase2_winnipeg_certification_route_returns_rankings_and_shadow_safety",
+    "status": "FAIL",
+    "http_status": 409,
+    "detail": "insufficient Winnipeg anchors available in canonical local sources"
+  },
+  "root_cause": {
+    "csv_anchor_counts": {
+      "data/inbox/real_leads/sample_leads_01.csv": 3,
+      "data/inbox/real_leads/batch_01_leads.csv": 0,
+      "data/inbox/real_leads/batch_02_leads.csv": 0,
+      "data/inbox/real_leads/batch_03_leads.csv": 0
+    },
+    "required_minimum_anchors": 10,
+    "fallback_table": "deals",
+    "fallback_rows_matching_winnipeg": 365,
+    "fallback_fields_used": [
+      "id",
+      "title",
+      "arv",
+      "estimated_repair_cost"
+    ],
+    "classification": {
+      "csv_anchor_records": "TEST_FIXTURE_REQUIRED",
+      "local_db_deals_rows": "PRODUCTION_DATA_ACCIDENTALLY_DEPENDED_ON",
+      "developer_local_db_dependency": "UNNECESSARY_DEPENDENCY"
+    }
+  },
+  "fix": {
+    "commit": "b353b605",
+    "test_file": "services/api/tests/test_completion_registry.py",
+    "fixture_strategy": "programmatic_test_seed",
+    "seeded_path": "data/inbox/real_leads/sample_leads_01.csv",
+    "seeded_rows": 12,
+    "runtime_thresholds_changed": false,
+    "production_path_changed": false,
+    "assertions": {
+      "fixture_absent_before_seed": true,
+      "fixture_seeded_row_count": 12,
+      "local_db_absent_in_test_cwd": true,
+      "response_source_is_csv": true,
+      "response_source_not_local_db": true
+    }
+  },
+  "certification": {
+    "fresh_db_run_1": "PASS",
+    "fresh_db_run_2": "PASS",
+    "focused_suite": {
+      "result": "PASS",
+      "tests": 58,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "clean_checkout_run_1": {
+      "result": "PASS",
+      "tests": 58,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "local_db_present": false
+    },
+    "clean_checkout_run_2": {
+      "result": "PASS",
+      "tests": 58,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "local_db_present": false
+    },
+    "phase2_regression_slice": "PASS",
+    "bad_deal_exit_replay_holdout_challenger_slice": "PASS",
+    "broad_collect_feature_errors": 0,
+    "broad_collect_baseline_errors": 0,
+    "introduced_regressions": 0
+  },
+  "note": "TEST_FIXTURE_CERTIFICATION is not REAL_DATA_CERTIFICATION"
+}
