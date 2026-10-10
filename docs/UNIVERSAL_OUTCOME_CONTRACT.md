@@ -10,6 +10,7 @@ Standardize what is recorded at decision time so every opportunity can be reconc
 - Decision: `heimdall_decision`
 - Expecteds: `expected_economics`, `expected_timing`, `expected_risk`, `expected_exit_path`
 - Observability: `outcome_observability_state`
+- Feedback linkage: `feedback_linkage`
 
 ## Outcome-Time Fields (initially null at decision time)
 - `actual_outcome`
@@ -24,7 +25,16 @@ Standardize what is recorded at decision time so every opportunity can be reconc
 ## Contract States
 - `SHADOW_OUTCOME`: no live side effects expected
 - `HISTORICAL_OUTCOME`: replayed historical path
-- `LIVE_OUTCOME`: reserved for future controlled launch gate
+- `VALHALLA_OUTCOME`: real result produced by live Valhalla execution
+
+## Feedback Linkage
+`feedback_linkage` binds post-outcome evidence back to:
+- `decision_id`
+- `opportunity_id`
+- `prediction_snapshot_id`
+- `pantheon_snapshot_id`
+- `mimir_history_ref`
+- `feedback_endpoint` (`/api/completion/learning/feedback`)
 
 ## Current Status
 - Emitted for generic and real-estate paths in Phase 3 evaluate flow.

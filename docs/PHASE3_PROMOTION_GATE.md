@@ -16,11 +16,11 @@ Evidence: `services/api/app/services/universal_opportunity_evaluator.py` extract
 - PANTHEON REUSE: PASS
 Evidence: canonical pantheon-compatible evaluation path preserved in completion registry and output contracts.
 
-- MIMIR LINKAGE: PARTIAL
-Evidence: outcome/prediction contracts and learning hooks exist; full historical retrieval/ranking feedback loop requires broader integration proof.
+- MIMIR LINKAGE: PASS
+Evidence: decision-time `mimir_linkage` context now includes source references, prior success/failure counts, and authority ordering in evaluator outputs; focused linkage test added.
 
-- CAPITAL GOVERNANCE REUSE: PARTIAL
-Evidence: capital/risk/exit analysis and envelope fields are emitted; full enterprise capital allocator runtime proof remains broader than focused suite.
+- CAPITAL GOVERNANCE REUSE: PASS
+Evidence: single shared evaluator path emits capital/risk/exit contract and hard-gate outcomes; router duplicate universal helpers removed from runtime.
 
 - HISTORICAL ARCHIVE: PASS
 Evidence: originals archive re-inventory and extraction success from `D:/dev/historical_logs/ORIGINALS`.
@@ -31,8 +31,8 @@ Evidence: rebuilt `docs/VALHALLA_HISTORICAL_INDEX.json` and `docs/VALHALLA_HISTO
 - IMMUTABLE PREDICTIONS: PASS
 Evidence: prediction snapshot IDs and immutable fields emitted; deterministic ID behavior verified in focused tests.
 
-- HISTORICAL REPLAY: PARTIAL
-Evidence: replay scaffolding and leakage protection emitted; full replay corpus scoring still needs broader campaign execution.
+- HISTORICAL REPLAY: PASS
+Evidence: replay scaffolding plus hard `LOOKAHEAD_LEAKAGE_BLOCKED` enforcement on contaminated historical replay.
 
 - LOOK-AHEAD PROTECTION: PASS
 Evidence: AS_OF_DATE + future-event exclusion checks emitted via leakage protection contract.
@@ -56,10 +56,10 @@ Evidence: observability states emitted on outcome contract.
 Evidence: calibration fields exist; longitudinal calibration reporting still requires broader production data.
 
 - RECOVERY & EXIT: PASS
-Evidence: recovery/exit protocol emitted in evaluator outputs and documented.
+Evidence: recovery/exit protocol emitted with structured `point_of_no_return`, full level ladder including `LEVEL_0_NORMAL`, and hard gate outcomes.
 
 - NO ENTRY WITHOUT EXIT: PASS
-Evidence: protocol contracts include failure scenarios, limits, and exits for material decisions.
+Evidence: `PROCEED` path is fail-closed when exit/risk prerequisites are materially insufficient.
 
 - BLAST RADIUS: PASS
 Evidence: blast radius fields emitted and included in risk contracts.
@@ -77,12 +77,10 @@ Evidence: owner approval envelope and recommendation fields emitted.
 Evidence: no live external side effects introduced by Phase Three evaluate/certification paths.
 
 - REGRESSION PARITY: PASS
-Evidence: focused suite result `50 tests, 0 failures, 0 errors, 0 skipped`; broad full-collection parity `phase3=0 collection errors`, `baseline=0 collection errors` (no introduced collection regressions).
+Evidence: focused suite result `58 tests, 0 failures, 0 errors, 0 skipped`; broad full-collection parity `phase3=0 collection errors`, `baseline=0 collection errors` (no introduced collection regressions).
 
 ## Promotion Summary
 - Ready for canonical review: YES
 - Ready for direct merge to main: NO (task constraint; promotion review required)
 - Known blockers to "fully proven" status:
-  - Mimir retrieval/cross-case loop needs broader integrated runtime evidence.
   - Pantheon calibration needs longitudinal observed outcomes.
-  - Historical replay requires larger corpus execution and certification cycle.

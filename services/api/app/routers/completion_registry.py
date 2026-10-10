@@ -40,7 +40,9 @@ from app.models.completion_registry import (
 from app.services.data_safety import DatasetSafetyInput, evaluate_dataset_safety
 from app.services.scenario_safety import ScenarioSafetyInput, evaluate_scenario_safety
 from app.services.universal_opportunity_evaluator import (
+    LookaheadLeakageBlocked,
     best_option_or_abstain as svc_best_option_or_abstain,
+    engine_routing_key as svc_engine_routing_key,
     evaluate_generic_opportunity,
 )
 from app.god.models import GodCaseOutcome, GodCaseStatus, GodReviewCase, GodReviewEvent
@@ -1222,11 +1224,12 @@ class UniversalOpportunityIn(BaseModel):
     exit_options: list[str] = Field(default_factory=list)
     expected_salvage_value: float | None = None
     blast_radius: Literal["ISOLATED", "LOW", "MEDIUM", "HIGH", "SYSTEMIC"] | None = None
-    point_of_no_return: str | None = None
+    point_of_no_return: str | dict[str, Any] | None = None
     required_reserve_to_survive_failure: float | None = None
     reapproval_conditions: list[str] = Field(default_factory=list)
     entry_capital: float | None = None
     survival_capital: float | None = None
+    available_safe_capital: float | None = None
     liquidity_impact: str | None = None
     reserve_impact: str | None = None
     previous_prediction_snapshot_id: str | None = None
@@ -1245,6 +1248,7 @@ class UniversalOpportunityBatchIn(BaseModel):
     reveal_historical_outcomes: bool = False
     decision_model: Literal["CHAMPION", "CHALLENGER"] = "CHAMPION"
     tuning_mode: bool = False
+    outcome_class: Literal["HISTORICAL_OUTCOME", "SHADOW_OUTCOME", "VALHALLA_OUTCOME"] | None = None
 
 
 class UniversalShadowCertificationIn(BaseModel):
@@ -2182,267 +2186,10 @@ def _phase3_engine_status(row: EngineRegistryItem | None) -> str:
     return "IDEA_ONLY"
 
 
-def _engine_routing_key(engine_id: str) -> str:
-    e = str(engine_id or "").strip().lower()
-    if e in {"wholesaling", "brrrr", "flips", "rentals", "multifamily", "commercial", "real_estate"}:
-        return "real_estate"
-    if e in {"ai_automation_services", "ai_microbusinesses"}:
-        return "ai_automation"
-    if e in {"micro_saas", "saas_subscription_products"}:
-        return "micro_saas"
-    if e in {"lead_generation"}:
-        return "lead_generation"
-    if e in {"business_acquisitions"}:
-        return "business_acquisition"
-    if e in {"funding_grants"}:
-        return "funding_grants"
-    if e in {"market_intelligence", "market_intelligence_data_products"}:
-        return "market_intelligence"
-    if e in {"ops_automation", "operations_automation"}:
-        return "ops_automation"
-    return "generic"
-
-
 def _validate_phase3_opportunity(payload: UniversalOpportunityIn) -> None:
     status = str(payload.status or "").upper()
     if status not in PHASE3_OPPORTUNITY_STATUSES:
         raise HTTPException(status_code=422, detail=f"opportunity status must be one of {sorted(PHASE3_OPPORTUNITY_STATUSES)}")
-
-
-def _specialist_analysis(payload: UniversalOpportunityIn) -> dict[str, Any]:
-    routing = _engine_routing_key(payload.engine_id)
-    si = payload.specialist_inputs
-
-    def _score(key: str, default: float = 0.5) -> float:
-        return float(_bounded(float(si.get(key, default)), 0.0, 1.0))
-
-    if routing == "ai_automation":
-        score = (
-            _score("customer_pain")
-            + _score("willingness_to_pay")
-            + _score("recurring_potential")
-            + _score("retention_potential")
-            + (1.0 - _score("implementation_effort"))
-            + (1.0 - _score("delivery_cost"))
-            + (1.0 - _score("customer_acquisition_difficulty"))
-            + (1.0 - _score("competition"))
-            + _score("automation_percentage")
-        ) / 9.0
-        return {"engine_specialist": routing, "fit_score": round(score, 4), "criteria": si}
-
-    if routing == "micro_saas":
-        score = (
-            _score("problem_severity")
-            + _score("addressable_niche")
-            + _score("pricing_power")
-            + _score("retention")
-            + (1.0 - _score("churn_risk"))
-            + (1.0 - _score("technical_build_effort"))
-            + (1.0 - _score("hosting_api_cost"))
-            + (1.0 - _score("support_burden"))
-            + _score("defensibility")
-            + _score("global_reach")
-        ) / 10.0
-        return {"engine_specialist": routing, "fit_score": round(score, 4), "criteria": si}
-
-    if routing == "lead_generation":
-        score = (
-            _score("buyer_demand")
-            + _score("lead_value")
-            + _score("source_legality")
-            + (1.0 - _score("acquisition_cost"))
-            + _score("qualification_rate")
-            + _score("conversion_potential")
-            + _score("repeat_customer_potential")
-        ) / 7.0
-        return {"engine_specialist": routing, "fit_score": round(score, 4), "criteria": si}
-
-    if routing == "business_acquisition":
-        score = (
-            _score("revenue_strength")
-            + _score("cash_flow_quality")
-            + (1.0 - _score("owner_dependence"))
-            + (1.0 - _score("customer_concentration"))
-            + _score("durability")
-            + (1.0 - _score("purchase_price_risk"))
-            + _score("financing_feasibility")
-            + _score("automation_opportunity")
-            + (1.0 - _score("integration_risk"))
-            + (1.0 - _score("management_burden"))
-        ) / 10.0
-        return {"engine_specialist": routing, "fit_score": round(score, 4), "criteria": si}
-
-    if routing == "funding_grants":
-        score = (
-            _score("eligibility")
-            + _score("amount_quality")
-            + (1.0 - _score("matching_burden"))
-            + _score("deadline_readiness")
-            + _score("preapproval_readiness")
-            + (1.0 - _score("reimbursement_risk"))
-            + _score("probability")
-            + (1.0 - _score("reporting_burden"))
-            + _score("strategic_usefulness")
-        ) / 9.0
-        return {"engine_specialist": routing, "fit_score": round(score, 4), "criteria": si}
-
-    if routing == "market_intelligence":
-        score = (
-            _score("data_uniqueness")
-            + _score("customer_value")
-            + _score("subscription_potential")
-            + (1.0 - _score("source_cost"))
-            + _score("source_rights")
-            + _score("update_frequency")
-            + (1.0 - _score("competition"))
-            + _score("automation_potential")
-        ) / 8.0
-        return {"engine_specialist": routing, "fit_score": round(score, 4), "criteria": si}
-
-    score = (
-        _bounded(float(payload.strategic_value or 0.5), 0.0, 1.0)
-        + _bounded(float(payload.evidence_confidence or 0.5), 0.0, 1.0)
-        + (1.0 - _bounded(float(payload.downside_exposure or 0.4), 0.0, 1.0))
-    ) / 3.0
-    return {"engine_specialist": routing, "fit_score": round(score, 4), "criteria": si}
-
-
-def _universal_loki_objections(payload: UniversalOpportunityIn, specialist: dict[str, Any]) -> list[dict[str, Any]]:
-    objections: list[dict[str, Any]] = []
-    fit = float(specialist.get("fit_score") or 0.0)
-    if fit < 0.5:
-        objections.append(
-            {
-                "objection_id": f"LOKI-U-{payload.opportunity_id}-001",
-                "claim_challenged": "opportunity has sufficient validation evidence",
-                "objection_evidence": "specialist fit score below threshold",
-                "severity": "warn",
-                "materiality": "material",
-                "resolved": False,
-                "impact_on_recommendation": "PROCEED->RESEARCH_MORE",
-            }
-        )
-
-    downside = float(payload.downside_exposure or 0.0)
-    if downside >= 0.72:
-        objections.append(
-            {
-                "objection_id": f"LOKI-U-{payload.opportunity_id}-002",
-                "claim_challenged": "downside exposure is acceptable",
-                "objection_evidence": f"downside exposure {downside:.2f} exceeds critical threshold",
-                "severity": "critical",
-                "materiality": "high",
-                "resolved": False,
-                "impact_on_recommendation": "PROCEED->REJECT",
-            }
-        )
-
-    route = _engine_routing_key(payload.engine_id)
-    route_challenges = {
-        "ai_automation": "Can customers solve this cheaply without Valhalla?",
-        "micro_saas": "Why would anyone pay instead of existing tools?",
-        "lead_generation": "Are leads truly monetizable and compliant?",
-        "business_acquisition": "How much revenue disappears if the owner exits?",
-        "funding_grants": "Is this actually non-dilutive grant value?",
-        "real_estate": "Can this still survive a stressed downside scenario?",
-    }
-    if route in route_challenges:
-        objections.append(
-            {
-                "objection_id": f"LOKI-U-{payload.opportunity_id}-Q",
-                "claim_challenged": "specialist recommendation",
-                "objection_evidence": route_challenges[route],
-                "severity": "warn",
-                "materiality": "material",
-                "resolved": False,
-                "impact_on_recommendation": "PROCEED->RESEARCH_MORE",
-            }
-        )
-    return objections
-
-
-def _universal_norns(payload: UniversalOpportunityIn, specialist: dict[str, Any], objections: list[dict[str, Any]]) -> dict[str, Any]:
-    fit = float(specialist.get("fit_score") or 0.0)
-    evidence = float(payload.evidence_confidence or 0.45)
-    critical = 1.0 if any(o.get("severity") == "critical" for o in objections) else 0.0
-    worthwhile = _bounded((fit * 0.45) + (evidence * 0.4) + (0.2 * (1.0 - critical)), 0.01, 0.99)
-    first_revenue = _bounded(worthwhile - 0.08 - (0.05 if (payload.estimated_time_to_first_revenue_days or 90) > 120 else 0.0), 0.01, 0.99)
-    break_even = _bounded(first_revenue - 0.06, 0.01, 0.99)
-    repeatable = _bounded(break_even - 0.04 + float(payload.scalability or 0.5) * 0.1, 0.01, 0.99)
-    timing = int(payload.estimated_time_to_validation_days or 45)
-    return {
-        "model_state": "MODEL_ESTIMATE",
-        "calibration_state": "NOT_YET_CALIBRATED",
-        "probability_of_worthwhile_validation": round(worthwhile, 4),
-        "probability_of_first_revenue": round(first_revenue, 4),
-        "probability_of_break_even": round(break_even, 4),
-        "probability_of_repeatable_profitability": round(repeatable, 4),
-        "timing_estimate_days": timing,
-    }
-
-
-def _universal_owner_envelope(payload: UniversalOpportunityIn, final_decision: str) -> dict[str, Any]:
-    spend = float(payload.estimated_test_cost or payload.required_capital or 0.0)
-    commitment = float(payload.required_capital or spend)
-    return {
-        "recommended_action": final_decision.upper(),
-        "maximum_spend": round(spend, 2),
-        "maximum_commitment": round(max(commitment, spend), 2),
-        "duration_days": int(payload.estimated_time_to_validation_days or 45),
-        "stop_loss": round(max(spend * 0.35, 0.0), 2),
-        "permitted_external_actions": [],
-        "required_reapproval_conditions": [
-            "new_critical_loki_objection",
-            "cost_increase_above_20pct",
-            "compliance_state_changes_to_fail",
-        ],
-        "legal_review_required": False,
-        "owner_approval_required": payload.human_approval_required,
-        "approval_state": "PENDING_OWNER" if payload.human_approval_required else "NOT_REQUIRED",
-        "shadow_mode_external_execution_blocked": True,
-    }
-
-
-def _universal_dimensions(payload: UniversalOpportunityIn, specialist: dict[str, Any], norns: dict[str, Any]) -> dict[str, float]:
-    required_capital = float(payload.required_capital or payload.estimated_test_cost or 0.0)
-    test_cost = float(payload.estimated_test_cost or required_capital or 0.0)
-    margin_mid = None
-    if payload.expected_margin_low is not None and payload.expected_margin_high is not None:
-        margin_mid = (float(payload.expected_margin_low) + float(payload.expected_margin_high)) / 2.0
-    elif payload.expected_margin_high is not None:
-        margin_mid = float(payload.expected_margin_high)
-    elif payload.expected_margin_low is not None:
-        margin_mid = float(payload.expected_margin_low)
-
-    return {
-        "PROBABILITY": float(norns["probability_of_worthwhile_validation"]),
-        "CAPITAL_EFFICIENCY": round(_bounded(1.0 - (test_cost / max(1.0, required_capital + test_cost + 1.0)), 0.0, 1.0), 4),
-        "TIME_TO_CASH": round(_bounded(1.0 - (float(payload.estimated_time_to_first_revenue_days or 120) / 365.0), 0.0, 1.0), 4),
-        "DOWNSIDE": round(_bounded(1.0 - float(payload.downside_exposure or 0.5), 0.0, 1.0), 4),
-        "RECURRING_REVENUE": 1.0 if payload.revenue_type in {"RECURRING", "SUBSCRIPTION"} else 0.45,
-        "SCALABILITY": round(_bounded(float(payload.scalability or 0.5), 0.0, 1.0), 4),
-        "AUTOMATION_FIT": round(_bounded(float(payload.automation_potential or 0.5), 0.0, 1.0), 4),
-        "OWNER_TIME": round(_bounded(1.0 - ((float(payload.owner_time_requirement_hours_weekly or 20.0)) / 60.0), 0.0, 1.0), 4),
-        "STRATEGIC_VALUE": round(_bounded(float(payload.strategic_value or 0.5), 0.0, 1.0), 4),
-        "EVIDENCE_CONFIDENCE": round(_bounded(float(payload.evidence_confidence or specialist.get("fit_score") or 0.45), 0.0, 1.0), 4),
-        "EXPECTED_MARGIN": round(_bounded(float(margin_mid or 0.25), 0.0, 1.0), 4),
-    }
-
-
-def _weighted_rank(dimensions: dict[str, float]) -> float:
-    weights = {
-        "PROBABILITY": 0.18,
-        "CAPITAL_EFFICIENCY": 0.13,
-        "TIME_TO_CASH": 0.12,
-        "DOWNSIDE": 0.11,
-        "RECURRING_REVENUE": 0.08,
-        "SCALABILITY": 0.1,
-        "AUTOMATION_FIT": 0.08,
-        "OWNER_TIME": 0.07,
-        "STRATEGIC_VALUE": 0.07,
-        "EVIDENCE_CONFIDENCE": 0.06,
-    }
-    return round(sum(float(dimensions.get(k, 0.0)) * v for k, v in weights.items()) * 100.0, 4)
 
 
 def _persist_universal_pantheon_snapshot(
@@ -2559,8 +2306,9 @@ def _evaluate_universal_opportunity(
     outcome_class: str,
 ) -> dict[str, Any]:
     _validate_phase3_opportunity(payload)
+    mimir_context = _build_mimir_context(db, payload)
 
-    if _engine_routing_key(payload.engine_id) == "real_estate" and payload.specialist_inputs.get("real_estate_payload"):
+    if svc_engine_routing_key(payload.engine_id) == "real_estate" and payload.specialist_inputs.get("real_estate_payload"):
         real_payload = RealEstateIntelligenceIn(**payload.specialist_inputs["real_estate_payload"])
         real_payload.persist_decision = persist_decision
         real_result, real_loki, real_owner = _compose_real_estate_intelligence_result(real_payload)
@@ -2576,7 +2324,7 @@ def _evaluate_universal_opportunity(
             "STRATEGIC_VALUE": _bounded(float(payload.strategic_value or 0.55), 0.0, 1.0),
             "EVIDENCE_CONFIDENCE": _bounded(float(payload.evidence_confidence or 0.7), 0.0, 1.0),
         }
-        rank_value = _weighted_rank(real_dimensions)
+        rank_value = float(real_result["decision_rank_value"])
         persistence = None
         if persist_decision:
             persistence = _persist_pantheon_snapshot(db, payload=real_payload, result=real_result, loki_objections=real_loki, owner_envelope=real_owner)
@@ -2685,6 +2433,14 @@ def _evaluate_universal_opportunity(
                 "decision_quality": None,
                 "role_accuracy": None,
                 "outcome_observability_state": payload.outcome_observability_state or "LOW",
+                "feedback_linkage": {
+                    "decision_id": f"UO-{payload.opportunity_id}-{payload.engine_id}",
+                    "opportunity_id": payload.opportunity_id,
+                    "prediction_snapshot_id": payload.opportunity_id,
+                    "pantheon_snapshot_id": None if persistence is None else persistence.get("god_verdict_id"),
+                    "mimir_history_ref": payload.case_id or payload.opportunity_id,
+                    "feedback_endpoint": "/api/completion/learning/feedback",
+                },
             },
             "baseline_comparison": {
                 "rule_based_property_model": round(float(real_dimensions["DOWNSIDE"]) * 100.0, 4),
@@ -2715,13 +2471,33 @@ def _evaluate_universal_opportunity(
                 "expected_salvage_value": payload.expected_salvage_value,
                 "blast_radius": payload.blast_radius or "MEDIUM",
                 "required_reserve_to_survive_failure": payload.required_reserve_to_survive_failure,
+                "exit_ladder": [
+                    "LEVEL_0_NORMAL",
+                    "LEVEL_1_CORRECT",
+                    "LEVEL_2_CONTAIN",
+                    "LEVEL_3_RESTRUCTURE",
+                    "LEVEL_4_PARTIAL_EXIT",
+                    "LEVEL_5_FULL_EXIT",
+                    "LEVEL_6_SHIELD",
+                ],
+                "current_level": "LEVEL_0_NORMAL",
+                "point_of_no_return": payload.point_of_no_return,
             },
             "decision_model": decision_model,
             "replay_partition": payload.replay_partition,
+            "mimir_linkage": {
+                "used_in_decision": True,
+                "source_references": mimir_context.get("source_references", []),
+                "prior_successes": mimir_context.get("prior_successes", 0),
+                "prior_failures": mimir_context.get("prior_failures", 0),
+                "superseded_doctrine_hits": mimir_context.get("superseded_doctrine_hits", 0),
+            },
         }
 
+    payload_dict = payload.model_dump(mode="json")
+    payload_dict["mimir_context"] = mimir_context
     result = evaluate_generic_opportunity(
-        payload.model_dump(mode="json"),
+        payload_dict,
         decision_model=decision_model,
         reveal_historical_outcomes=reveal_historical_outcomes,
         expected_outcome_class=outcome_class,
@@ -2744,6 +2520,92 @@ def _evaluate_universal_opportunity(
 
 def _best_option_or_abstain(ranked: list[dict[str, Any]]) -> dict[str, Any]:
     return svc_best_option_or_abstain(ranked)
+
+
+def _resolve_phase3_outcome_class(payload: UniversalOpportunityBatchIn) -> str:
+    if payload.outcome_class is not None:
+        if payload.outcome_class == "VALHALLA_OUTCOME" and (payload.replay_mode or payload.shadow_mode):
+            raise HTTPException(status_code=409, detail="VALHALLA_OUTCOME cannot be used in replay or shadow mode")
+        if payload.outcome_class == "HISTORICAL_OUTCOME" and not payload.replay_mode:
+            raise HTTPException(status_code=409, detail="HISTORICAL_OUTCOME requires replay_mode=true")
+        return payload.outcome_class
+    if payload.replay_mode:
+        return "HISTORICAL_OUTCOME"
+    if payload.shadow_mode:
+        return "SHADOW_OUTCOME"
+    return "VALHALLA_OUTCOME"
+
+
+def _build_mimir_context(db: Session, payload: UniversalOpportunityIn) -> dict[str, Any]:
+    refs: list[dict[str, Any]] = []
+    prior_successes = 0
+    prior_failures = 0
+    recurring_failure_modes: list[str] = []
+
+    fb_rows = (
+        db.query(LearningFeedbackRecord)
+        .order_by(LearningFeedbackRecord.created_at.desc())
+        .limit(200)
+        .all()
+    )
+    for row in fb_rows:
+        score = float(row.operational_score or 0.0)
+        oc = str(row.outcome_class or "").upper()
+        if oc in {"VALHALLA_OUTCOME", "VERIFIED_REAL_OUTCOME", "LIVE_KPI"} or score >= 0.7:
+            prior_successes += 1
+        if row.high_impact or score <= 0.35 or oc in {"FAILURE", "SHADOW_FAILURE"}:
+            prior_failures += 1
+            if row.notes:
+                recurring_failure_modes.append(str(row.notes)[:120])
+        refs.append(
+            {
+                "type": "learning_feedback",
+                "id": row.feedback_id,
+                "outcome_class": row.outcome_class,
+                "created_at": row.created_at.isoformat() if row.created_at else None,
+            }
+        )
+
+    knowledge_rows = (
+        db.query(KnowledgeRegistryItem)
+        .order_by(KnowledgeRegistryItem.updated_at.desc())
+        .limit(100)
+        .all()
+    )
+    superseded_hits = 0
+    title_tokens = [t for t in re.split(r"\W+", payload.title.lower()) if len(t) > 3][:5]
+    for row in knowledge_rows:
+        corpus = " ".join(
+            [
+                str(row.title or "").lower(),
+                str(row.notes or "").lower(),
+                str(row.source or "").lower(),
+                str(row.market or "").lower(),
+            ]
+        )
+        if payload.jurisdiction and row.jurisdiction and payload.jurisdiction != row.jurisdiction:
+            continue
+        if title_tokens and not any(tok in corpus for tok in title_tokens):
+            continue
+        if row.superseded_by:
+            superseded_hits += 1
+        refs.append(
+            {
+                "type": "knowledge_registry",
+                "id": row.item_id,
+                "title": row.title,
+                "citation_ref": row.citation_ref,
+                "superseded_by": row.superseded_by,
+            }
+        )
+
+    return {
+        "prior_successes": prior_successes,
+        "prior_failures": prior_failures,
+        "superseded_doctrine_hits": superseded_hits,
+        "recurring_failure_modes": recurring_failure_modes[:5],
+        "source_references": refs[:30],
+    }
 
 
 @router.get("/phase3/universal-opportunity/engine-audit")
@@ -2787,17 +2649,22 @@ def evaluate_universal_opportunities(payload: UniversalOpportunityBatchIn, db: S
                 detail=f"holdout contamination: reveal_historical_outcomes not allowed while tuning for BLIND_HOLDOUT_SET opportunities {blind}",
             )
 
-    evaluated = [
-        _evaluate_universal_opportunity(
-            opp,
-            db,
-            persist_decision=payload.persist_decision and opp.persist_decision,
-            decision_model=payload.decision_model,
-            reveal_historical_outcomes=payload.reveal_historical_outcomes,
-            outcome_class=("HISTORICAL_OUTCOME" if payload.replay_mode else "SHADOW_OUTCOME"),
-        )
-        for opp in payload.opportunities
-    ]
+    outcome_class = _resolve_phase3_outcome_class(payload)
+    evaluated: list[dict[str, Any]] = []
+    for opp in payload.opportunities:
+        try:
+            evaluated.append(
+                _evaluate_universal_opportunity(
+                    opp,
+                    db,
+                    persist_decision=payload.persist_decision and opp.persist_decision,
+                    decision_model=payload.decision_model,
+                    reveal_historical_outcomes=payload.reveal_historical_outcomes,
+                    outcome_class=outcome_class,
+                )
+            )
+        except LookaheadLeakageBlocked as exc:
+            raise HTTPException(status_code=409, detail=exc.detail)
     ranked = sorted(evaluated, key=lambda r: float(r.get("rank_value") or 0.0), reverse=True)
     decision = _best_option_or_abstain(ranked)
 
@@ -2820,6 +2687,7 @@ def evaluate_universal_opportunities(payload: UniversalOpportunityBatchIn, db: S
         "opportunities_evaluated": len(ranked),
         "evaluations": ranked,
         "decision_model": payload.decision_model,
+        "outcome_class": outcome_class,
         "replay_mode": payload.replay_mode,
         "reveal_historical_outcomes": payload.reveal_historical_outcomes,
         "holdout_contamination_check": {
