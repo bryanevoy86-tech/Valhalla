@@ -83,3 +83,16 @@ Generated: 2026-10-10
 - Certification boundary is explicit:
   - `TEST_FIXTURE_CERTIFICATION` proves deterministic route/path behavior.
   - `REAL_DATA_CERTIFICATION` proves behavior against current real Winnipeg source data.
+
+## Canonical Phase Three Promotion Truth (2026-10-10)
+- Canonical merge to `origin/main` completed from certified candidate branch `promote/phase3-blocker-repair-candidate-v3`.
+- Promotion merge commit: `f89cf246a8e193fecb8717c5bc41e4e9b6b5c839`.
+- Clean-checkout post-push validation passed for:
+  - focused Phase Three suite (`58 passed, 0 failed, 0 errors, 0 skipped`)
+  - Winnipeg fresh-database certification route
+  - Phase Two regression slice (Pantheon/roles/Winnipeg/legacy orchestration/shadow safety)
+- Broad backend gate remains a collect-only parity gate at this stage:
+  - collection interrupted with 9 existing collection errors on both baseline and promoted main
+  - introduced collection regressions: 0
+- Canonical certification boundary remains mandatory:
+  - `TEST_FIXTURE_CERTIFICATION != REAL_DATA_CERTIFICATION`

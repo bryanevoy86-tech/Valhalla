@@ -1,0 +1,96 @@
+{
+  "generated_at": "2026-10-10T00:00:00Z",
+  "pre_promotion_main_hash": "05a467a0b07d863f440df2ac6810cc2674707975",
+  "candidate_hash": "e3c67191f7dba081840487c1029338d0b9477770",
+  "merge_commit_hash": "f89cf246a8e193fecb8717c5bc41e4e9b6b5c839",
+  "post_promotion_main_hash": "f89cf246a8e193fecb8717c5bc41e4e9b6b5c839",
+  "local_merged_main_tests": {
+    "focused_phase3": {
+      "result": "PASS",
+      "tests": 58,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "winnipeg_fresh_db_run_1": "PASS",
+    "winnipeg_fresh_db_run_2": "PASS",
+    "phase2_regression": "PASS",
+    "phase3_bad_deal_recovery_replay_holdout_challenger": "PASS",
+    "secret_scan": "PASS"
+  },
+  "post_push_clean_checkout": {
+    "source_hash": "f89cf246a8e193fecb8717c5bc41e4e9b6b5c839",
+    "focused_phase3": {
+      "result": "PASS",
+      "tests": 58,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "winnipeg_fresh_db": "PASS",
+    "phase2_regression": "PASS",
+    "critical_controls": "PASS",
+    "shadow_safety": {
+      "email": 0,
+      "sms": 0,
+      "calls": 0,
+      "contracts": 0,
+      "e_sign": 0,
+      "money_movement": 0,
+      "accounting_writes": 0,
+      "external_posts": 0
+    }
+  },
+  "broad_backend_gate": {
+    "mode": "collect-only",
+    "promoted_main_collection_errors": 9,
+    "baseline_collection_errors": 9,
+    "introduced_regressions": 0
+  },
+  "capabilities": {
+    "universal_opportunity_pipeline": "PROVEN",
+    "canonical_universal_evaluator": "PROVEN",
+    "pantheon_reuse": "PROVEN",
+    "mimir_decision_linkage": "PROVEN",
+    "mimir_outcome_feedback": "PROVEN",
+    "capital_governance_reuse": "PROVEN",
+    "immutable_predictions": "PROVEN",
+    "historical_outcome": "PROVEN",
+    "shadow_outcome": "PROVEN",
+    "valhalla_outcome": "PROVEN",
+    "as_of_date_protection": "PROVEN",
+    "lookahead_leakage_blocked": "PROVEN",
+    "training_set": "PROVEN",
+    "validation_set": "PROVEN",
+    "blind_holdout_set": "PROVEN",
+    "champion_challenger": "PROVEN",
+    "challenger_shadow_only": "PROVEN",
+    "no_entry_without_exit": "PROVEN",
+    "level_0_normal": "PROVEN",
+    "level_1_correct": "PROVEN",
+    "level_2_contain": "PROVEN",
+    "level_3_restructure": "PROVEN",
+    "level_4_partial_exit": "PROVEN",
+    "level_5_full_exit": "PROVEN",
+    "level_6_shield": "PROVEN",
+    "point_of_no_return": "PROVEN",
+    "systemic_blast_radius_hard_gate": "PROVEN",
+    "survival_capital_hard_gate": "PROVEN",
+    "abstention": "PROVEN",
+    "owner_approval_envelope": "PROVEN",
+    "shadow_safety": "PROVEN"
+  },
+  "historical_archive_status": {
+    "completeness": "PARTIAL",
+    "known_source_gaps": [
+      "June",
+      "August",
+      "recovery logs",
+      "architecture exports",
+      "chat exports"
+    ]
+  },
+  "test_fixture_certification": "PASS",
+  "real_data_certification": "NOT_RUN",
+  "certification_boundary": "TEST_FIXTURE_CERTIFICATION != REAL_DATA_CERTIFICATION"
+}
