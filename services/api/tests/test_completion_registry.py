@@ -1795,6 +1795,18 @@ def test_engine_registry_covers_planned_engines_and_allowed_states():
         ("market_intelligence", "Market Intelligence", "intelligence", "cross_market_intelligence", "READY"),
         ("ops_automation", "Ops Automation", "operations", "operations_automation", "BLOCKED"),
         ("trading_advisory", "Trading Advisory", "capital", "trading_advisory", "OFF"),
+        ("ai_automation_services", "AI Automation Services", "digital_services", "ai_automation", "SANDBOX"),
+        ("micro_saas", "Micro SaaS", "digital_business", "micro_saas", "OFF"),
+        ("lead_generation", "Lead Generation", "growth", "lead_generation", "READY"),
+        (
+            "market_intelligence_data_products",
+            "Market Intelligence Data Products",
+            "intelligence",
+            "data_products",
+            "OFF",
+        ),
+        ("funding_grants", "Funding / Grants", "capital", "funding_grants", "SANDBOX"),
+        ("operations_automation", "Operations Automation", "operations", "operations_automation", "BLOCKED"),
     ]
 
     for engine_id, name, category, industry, state in engines:
@@ -2460,3 +2472,245 @@ def test_phase2_winnipeg_certification_route_returns_rankings_and_shadow_safety(
     assert body["cross_opportunity_ranking"]["best_current_property_opportunity"] is not None
     assert all(v == 0 for v in body["shadow_safety_counters"].values())
     assert len(body["persisted_case_ids"]) >= 10
+
+
+def test_phase3_engine_audit_reports_required_status_classes():
+    client = _build_client()
+
+    seed = client.post(
+        "/api/completion/engine-registry/items",
+        json={
+            "engine_id": "wholesaling",
+            "name": "Wholesaling",
+            "category": "real_estate",
+            "business_industry": "residential_real_estate",
+            "jurisdiction_scope": ["CA-MB"],
+            "current_state": "ACTIVE",
+            "missing_blockers": [],
+        },
+    )
+    assert seed.status_code == 200, seed.text
+
+    blocked = client.post(
+        "/api/completion/engine-registry/items",
+        json={
+            "engine_id": "funding_grants",
+            "name": "Funding / Grants",
+            "category": "capital",
+            "business_industry": "funding_grants",
+            "jurisdiction_scope": ["CA-MB"],
+            "current_state": "BLOCKED",
+            "missing_blockers": ["eligibility_unknown"],
+        },
+    )
+    assert blocked.status_code == 200, blocked.text
+
+    audit = client.get("/api/completion/phase3/universal-opportunity/engine-audit")
+    assert audit.status_code == 200, audit.text
+    body = audit.json()
+    classes = {e["classification"] for e in body["engines"]}
+    assert "ACTIVE" in classes
+    assert "BLOCKED" in classes
+    assert "IDEA_ONLY" in classes
+
+
+def test_phase3_universal_evaluate_cross_engine_ranking_and_norns_labels():
+    client = _build_client()
+
+    resp = client.post(
+        "/api/completion/phase3/universal-opportunity/evaluate",
+        json={
+            "persist_decision": True,
+            "opportunities": [
+                {
+                    "opportunity_id": "UO-001",
+                    "engine_id": "ai_automation_services",
+                    "title": "AI automation pilot",
+                    "summary": "Automate follow-up operations for local operators",
+                    "status": "RESEARCHING",
+                    "required_capital": 8000,
+                    "estimated_test_cost": 1500,
+                    "estimated_time_to_first_revenue_days": 30,
+                    "estimated_time_to_validation_days": 21,
+                    "revenue_type": "SERVICE",
+                    "expected_margin_low": 0.35,
+                    "expected_margin_high": 0.6,
+                    "downside_exposure": 0.25,
+                    "automation_potential": 0.82,
+                    "owner_time_requirement_hours_weekly": 6,
+                    "scalability": 0.73,
+                    "replication_mode": "CENTRAL_REGIONAL",
+                    "strategic_value": 0.7,
+                    "evidence_confidence": 0.58,
+                    "specialist_inputs": {
+                        "customer_pain": 0.72,
+                        "willingness_to_pay": 0.6,
+                        "implementation_effort": 0.4,
+                        "delivery_cost": 0.33,
+                        "recurring_potential": 0.7,
+                        "customer_acquisition_difficulty": 0.45,
+                        "competition": 0.56,
+                        "automation_percentage": 0.87,
+                        "retention_potential": 0.65,
+                    },
+                },
+                {
+                    "opportunity_id": "UO-002",
+                    "engine_id": "micro_saas",
+                    "title": "Micro SaaS candidate",
+                    "summary": "Niche subscription tool",
+                    "status": "RESEARCHING",
+                    "required_capital": 14000,
+                    "estimated_test_cost": 2500,
+                    "estimated_time_to_first_revenue_days": 70,
+                    "estimated_time_to_validation_days": 35,
+                    "revenue_type": "SUBSCRIPTION",
+                    "expected_margin_low": 0.4,
+                    "expected_margin_high": 0.75,
+                    "downside_exposure": 0.42,
+                    "automation_potential": 0.75,
+                    "owner_time_requirement_hours_weekly": 10,
+                    "scalability": 0.81,
+                    "replication_mode": "GLOBAL_SINGLETON",
+                    "strategic_value": 0.66,
+                    "evidence_confidence": 0.53,
+                    "specialist_inputs": {
+                        "problem_severity": 0.61,
+                        "addressable_niche": 0.56,
+                        "pricing_power": 0.52,
+                        "retention": 0.62,
+                        "churn_risk": 0.4,
+                        "technical_build_effort": 0.57,
+                        "hosting_api_cost": 0.35,
+                        "support_burden": 0.44,
+                        "defensibility": 0.5,
+                        "global_reach": 0.75,
+                    },
+                },
+                {
+                    "opportunity_id": "UO-003",
+                    "engine_id": "business_acquisitions",
+                    "title": "Acquisition candidate",
+                    "summary": "Small acquisition with owner dependence risk",
+                    "status": "WAR_TABLE_REVIEW",
+                    "required_capital": 300000,
+                    "estimated_test_cost": 10000,
+                    "estimated_time_to_first_revenue_days": 90,
+                    "estimated_time_to_validation_days": 45,
+                    "revenue_type": "ACQUISITION",
+                    "expected_margin_low": 0.15,
+                    "expected_margin_high": 0.4,
+                    "downside_exposure": 0.76,
+                    "automation_potential": 0.49,
+                    "owner_time_requirement_hours_weekly": 16,
+                    "scalability": 0.6,
+                    "replication_mode": "MULTI_BRAND_SIBLING",
+                    "strategic_value": 0.75,
+                    "evidence_confidence": 0.5,
+                    "specialist_inputs": {
+                        "revenue_strength": 0.58,
+                        "cash_flow_quality": 0.52,
+                        "owner_dependence": 0.72,
+                        "customer_concentration": 0.55,
+                        "durability": 0.57,
+                        "purchase_price_risk": 0.68,
+                        "financing_feasibility": 0.45,
+                        "automation_opportunity": 0.59,
+                        "integration_risk": 0.6,
+                        "management_burden": 0.58,
+                    },
+                },
+            ],
+        },
+    )
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+
+    assert body["opportunities_evaluated"] == 3
+    assert len(body["ranking"]) == 3
+    assert all(v == 0 for v in body["shadow_safety_counters"].values())
+    assert body["owner_recommendation"]["qualified_opportunities"] == 3
+    assert set(body["owner_recommendation"]["engines_covered"]) == {
+        "ai_automation_services",
+        "micro_saas",
+        "business_acquisitions",
+    }
+
+    norns = body["evaluations"][0]["norns"]
+    assert norns["model_state"] == "MODEL_ESTIMATE"
+    assert norns["calibration_state"] == "NOT_YET_CALIBRATED"
+
+
+def test_phase3_shadow_certification_contains_required_engines_and_fixtures():
+    client = _build_client()
+
+    resp = client.post(
+        "/api/completion/phase3/universal-opportunity/certify-shadow",
+        json={"persist_decision": True},
+    )
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+
+    assert body["opportunity_count"] >= 6
+    required = {
+        "wholesaling",
+        "ai_automation_services",
+        "micro_saas",
+        "lead_generation",
+        "business_acquisitions",
+        "funding_grants",
+    }
+    assert required.issubset(set(body["engines_evaluated"]))
+    assert any(not f["simulation_fixture"] and f["source"] == "phase2_certified_real_estate" for f in body["fixtures"])
+    assert any(f["simulation_fixture"] for f in body["fixtures"])
+    assert all(v == 0 for v in body["shadow_safety_counters"].values())
+
+
+def test_phase3_allows_abstention_when_no_opportunity_justifies_deployment():
+    client = _build_client()
+
+    resp = client.post(
+        "/api/completion/phase3/universal-opportunity/evaluate",
+        json={
+            "persist_decision": False,
+            "opportunities": [
+                {
+                    "opportunity_id": "UO-ABSTAIN-1",
+                    "engine_id": "micro_saas",
+                    "title": "Weak SaaS idea",
+                    "summary": "Low evidence and high downside",
+                    "status": "RESEARCHING",
+                    "required_capital": 60000,
+                    "estimated_test_cost": 12000,
+                    "estimated_time_to_first_revenue_days": 210,
+                    "estimated_time_to_validation_days": 90,
+                    "revenue_type": "SUBSCRIPTION",
+                    "expected_margin_low": 0.05,
+                    "expected_margin_high": 0.2,
+                    "downside_exposure": 0.89,
+                    "automation_potential": 0.3,
+                    "owner_time_requirement_hours_weekly": 35,
+                    "scalability": 0.3,
+                    "replication_mode": "GLOBAL_SINGLETON",
+                    "strategic_value": 0.2,
+                    "evidence_confidence": 0.22,
+                    "specialist_inputs": {
+                        "problem_severity": 0.2,
+                        "addressable_niche": 0.18,
+                        "pricing_power": 0.19,
+                        "retention": 0.2,
+                        "churn_risk": 0.82,
+                        "technical_build_effort": 0.87,
+                        "hosting_api_cost": 0.74,
+                        "support_burden": 0.78,
+                        "defensibility": 0.17,
+                        "global_reach": 0.3,
+                    },
+                }
+            ],
+        },
+    )
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body["owner_recommendation"]["abstain"] is True
+    assert body["owner_recommendation"]["heimdall_decision"] in {"HOLD", "REJECT"}
