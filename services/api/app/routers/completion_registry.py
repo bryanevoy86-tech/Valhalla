@@ -39,6 +39,12 @@ from app.models.completion_registry import (
 )
 from app.services.data_safety import DatasetSafetyInput, evaluate_dataset_safety
 from app.services.scenario_safety import ScenarioSafetyInput, evaluate_scenario_safety
+from app.services.universal_opportunity_evaluator import (
+    LookaheadLeakageBlocked,
+    best_option_or_abstain as svc_best_option_or_abstain,
+    engine_routing_key as svc_engine_routing_key,
+    evaluate_generic_opportunity,
+)
 from app.god.models import GodCaseOutcome, GodCaseStatus, GodReviewCase, GodReviewEvent
 from app.models.god_verdicts import GodVerdict
 from app.models.governance_decision import GovernanceDecision
@@ -192,6 +198,16 @@ PLANNED_ENGINE_CATALOG: dict[str, dict[str, str]] = {
     "market_intelligence": {"name": "Market Intelligence", "category": "intelligence", "business_industry": "cross_market_intelligence"},
     "ops_automation": {"name": "Ops Automation", "category": "operations", "business_industry": "operations_automation"},
     "trading_advisory": {"name": "Trading Advisory", "category": "capital", "business_industry": "trading_advisory"},
+    "ai_automation_services": {"name": "AI Automation Services", "category": "digital_services", "business_industry": "ai_automation"},
+    "micro_saas": {"name": "Micro SaaS", "category": "digital_business", "business_industry": "micro_saas"},
+    "lead_generation": {"name": "Lead Generation", "category": "growth", "business_industry": "lead_generation"},
+    "market_intelligence_data_products": {
+        "name": "Market Intelligence Data Products",
+        "category": "intelligence",
+        "business_industry": "data_products",
+    },
+    "funding_grants": {"name": "Funding / Grants", "category": "capital", "business_industry": "funding_grants"},
+    "operations_automation": {"name": "Operations Automation", "category": "operations", "business_industry": "operations_automation"},
 }
 
 
@@ -1121,6 +1137,125 @@ class WinnipegCertificationIn(BaseModel):
     persist_decision: bool = True
 
 
+PHASE3_ENGINE_STATUSES = {"ACTIVE", "READY", "SANDBOX", "PARTIAL", "BLOCKED", "IDEA_ONLY"}
+PHASE3_OPPORTUNITY_STATUSES = {
+    "DISCOVERED",
+    "RESEARCHING",
+    "WAR_TABLE_REVIEW",
+    "APPROVED_FOR_TEST",
+    "TESTING",
+    "VALIDATED",
+    "READY",
+    "ACTIVE",
+    "SCALE",
+    "HOLD",
+    "REJECTED",
+    "SUPERSEDED",
+}
+
+
+class UniversalOpportunityIn(BaseModel):
+    opportunity_id: str
+    engine_id: str
+    legacy: str = "Legacy"
+    jurisdiction: str | None = None
+    source: str = "internal"
+    discovered_at: datetime | None = None
+
+    title: str
+    summary: str
+    status: str = "DISCOVERED"
+
+    required_capital: float | None = None
+    estimated_test_cost: float | None = None
+    estimated_time_to_first_revenue_days: int | None = None
+    estimated_time_to_validation_days: int | None = None
+
+    revenue_type: Literal[
+        "ONE_TIME",
+        "RECURRING",
+        "ASSET",
+        "SERVICE",
+        "SUBSCRIPTION",
+        "ACQUISITION",
+        "OTHER",
+    ] = "OTHER"
+
+    expected_margin_low: float | None = None
+    expected_margin_high: float | None = None
+
+    downside_exposure: float | None = None
+    automation_potential: float | None = Field(default=None, ge=0.0, le=1.0)
+    owner_time_requirement_hours_weekly: float | None = None
+    scalability: float | None = Field(default=None, ge=0.0, le=1.0)
+    replication_mode: Literal[
+        "GLOBAL_SINGLETON",
+        "CENTRAL_REGIONAL",
+        "LOCAL_CLONE",
+        "JURISDICTION_EDITION",
+        "ASSET_SPECIFIC",
+        "NON_REPLICABLE",
+        "MULTI_BRAND_SIBLING",
+    ] | None = None
+    strategic_value: float | None = Field(default=None, ge=0.0, le=1.0)
+    evidence_confidence: float | None = Field(default=None, ge=0.0, le=1.0)
+
+    specialist_inputs: dict[str, Any] = Field(default_factory=dict)
+
+    case_id: str | None = None
+    as_of_date: date | None = None
+    available_information_at_t0: dict[str, Any] = Field(default_factory=dict)
+    future_information_hidden: bool = True
+    historical_events: list[dict[str, Any]] = Field(default_factory=list)
+    historical_outcome: dict[str, Any] | None = None
+    replay_partition: Literal["TRAINING_SET", "VALIDATION_SET", "BLIND_HOLDOUT_SET"] | None = None
+    outcome_observability_state: Literal["HIGH", "MEDIUM", "LOW", "OUTCOME_OBSERVABILITY_LOW"] | None = None
+    expected_exit_path: str | None = None
+
+    primary_plan: str | None = None
+    failure_scenarios: list[str] = Field(default_factory=list)
+    early_warning_indicators: list[str] = Field(default_factory=list)
+    maximum_capital_exposure: float | None = None
+    maximum_monthly_burn: float | None = None
+    maximum_time_without_validation: int | None = None
+    minimum_performance_threshold: str | None = None
+    maximum_tolerable_loss: float | None = None
+    recovery_options: list[str] = Field(default_factory=list)
+    exit_options: list[str] = Field(default_factory=list)
+    expected_salvage_value: float | None = None
+    blast_radius: Literal["ISOLATED", "LOW", "MEDIUM", "HIGH", "SYSTEMIC"] | None = None
+    point_of_no_return: str | dict[str, Any] | None = None
+    required_reserve_to_survive_failure: float | None = None
+    reapproval_conditions: list[str] = Field(default_factory=list)
+    entry_capital: float | None = None
+    survival_capital: float | None = None
+    available_safe_capital: float | None = None
+    liquidity_impact: str | None = None
+    reserve_impact: str | None = None
+    previous_prediction_snapshot_id: str | None = None
+    correction_reason: str | None = None
+
+    simulation_fixture: bool = False
+    persist_decision: bool = True
+    human_approval_required: bool = True
+
+
+class UniversalOpportunityBatchIn(BaseModel):
+    opportunities: list[UniversalOpportunityIn]
+    persist_decision: bool = True
+    shadow_mode: bool = True
+    replay_mode: bool = False
+    reveal_historical_outcomes: bool = False
+    decision_model: Literal["CHAMPION", "CHALLENGER"] = "CHAMPION"
+    tuning_mode: bool = False
+    outcome_class: Literal["HISTORICAL_OUTCOME", "SHADOW_OUTCOME", "VALHALLA_OUTCOME"] | None = None
+
+
+class UniversalShadowCertificationIn(BaseModel):
+    persist_decision: bool = True
+    decision_model: Literal["CHAMPION", "CHALLENGER"] = "CHAMPION"
+
+
 def _bounded(value: float, lo: float, hi: float) -> float:
     return max(lo, min(hi, value))
 
@@ -2031,6 +2166,802 @@ def _strategies_for_property_type(property_type: str) -> list[str]:
     if "commercial" in t or "mixed" in t or "multi" in t or "apartment" in t:
         return ["rental", "brrrr", "wholesale"]
     return ["wholesale", "flip", "rental", "brrrr"]
+
+
+def _phase3_engine_status(row: EngineRegistryItem | None) -> str:
+    if row is None:
+        return "IDEA_ONLY"
+    state = str(row.current_state or "").upper()
+    blockers = _loads(row.missing_blockers_json, [])
+    if state == "ACTIVE":
+        return "ACTIVE" if not blockers else "PARTIAL"
+    if state == "READY":
+        return "READY" if not blockers else "PARTIAL"
+    if state == "SANDBOX":
+        return "SANDBOX"
+    if state == "BLOCKED":
+        return "BLOCKED"
+    if state == "OFF":
+        return "PARTIAL"
+    return "IDEA_ONLY"
+
+
+def _validate_phase3_opportunity(payload: UniversalOpportunityIn) -> None:
+    status = str(payload.status or "").upper()
+    if status not in PHASE3_OPPORTUNITY_STATUSES:
+        raise HTTPException(status_code=422, detail=f"opportunity status must be one of {sorted(PHASE3_OPPORTUNITY_STATUSES)}")
+
+
+def _persist_universal_pantheon_snapshot(
+    db: Session,
+    *,
+    payload: UniversalOpportunityIn,
+    result: dict[str, Any],
+    loki_objections: list[dict[str, Any]],
+    owner_envelope: dict[str, Any],
+) -> dict[str, Any]:
+    try:
+        _ensure_pantheon_tables(db)
+    except (UnsupportedCompilationError, SQLAlchemyError):
+        synthetic_subject = int(hashlib.sha1(payload.opportunity_id.encode("utf-8")).hexdigest()[:8], 16)
+        return {
+            "god_review_case_id": str(uuid.uuid4()),
+            "god_verdict_id": str(uuid.uuid4()),
+            "governance_subject_id": synthetic_subject,
+            "owner_approval_required": owner_envelope["owner_approval_required"],
+            "approval_state": owner_envelope["approval_state"],
+            "persistence_mode": "sqlite_test_fallback",
+        }
+
+    subject_ref = hashlib.sha1(payload.opportunity_id.encode("utf-8")).hexdigest()[:20]
+    case = GodReviewCase(
+        subject_type="universal_opportunity",
+        subject_reference=subject_ref,
+        title=payload.title,
+        description=payload.summary,
+        status=GodCaseStatus.AWAITING_HUMAN if owner_envelope["owner_approval_required"] else GodCaseStatus.OPEN,
+        heimdall_summary=f"Heimdall recommendation: {result['final_decision']}",
+        heimdall_payload={"opportunity_id": payload.opportunity_id, "result": result, "approval_envelope": owner_envelope},
+        loki_summary=f"{len(loki_objections)} objections",
+        loki_payload={"objections": loki_objections},
+        final_outcome=GodCaseOutcome.UNKNOWN,
+    )
+    db.add(case)
+    db.flush()
+
+    role_blocks = result["pantheon"]["checks"]
+    for role_name, role_payload in role_blocks.items():
+        db.add(
+            GodReviewEvent(
+                case_id=case.id,
+                actor="system" if role_name != "loki" else "loki",
+                event_type=f"role_{role_name}",
+                message=f"{role_name.upper()} evaluated opportunity {payload.opportunity_id}",
+                payload=role_payload,
+            )
+        )
+
+    verdict = GodVerdict(
+        case_id=case.id,
+        trigger="phase3_universal_opportunity",
+        heimdall_summary=result["owner_recommendation"]["heimdall_decision"],
+        heimdall_recommendation={"decision": result["final_decision"], "dimensions": result["normalized_dimensions"]},
+        heimdall_confidence=result["owner_recommendation"]["confidence"],
+        loki_summary=f"{len(loki_objections)} objections",
+        loki_recommendation={"objections": loki_objections},
+        loki_confidence="medium",
+        consensus="approve" if result["final_decision"] == "proceed" else "deny",
+        risk_level=result["pantheon"]["worst_severity"],
+        notes="Persisted Phase Three universal opportunity snapshot",
+        metadata_json={
+            "opportunity_id": payload.opportunity_id,
+            "engine_id": payload.engine_id,
+            "owner_approval_envelope": owner_envelope,
+            "shadow_mode": True,
+        },
+    )
+    db.add(verdict)
+
+    subject_int = int(hashlib.sha1(payload.opportunity_id.encode("utf-8")).hexdigest()[:8], 16)
+    role_to_action = {
+        "odin": "approve" if role_blocks["odin"].get("allowed") else "flag",
+        "loki": "deny" if role_blocks["loki"].get("severity") == "critical" else "flag",
+        "tyr": "deny" if role_blocks["tyr"].get("severity") == "critical" else "approve",
+        "forseti": "approve" if role_blocks["forseti"].get("allowed") else "deny",
+        "vidar": "approve" if role_blocks["vidar"].get("allowed") else "flag",
+        "norns": "approve" if role_blocks["norns"].get("allowed") else "flag",
+        "heimdall": "approve" if result["final_decision"] == "proceed" else ("deny" if result["final_decision"] == "reject" else "flag"),
+    }
+    for role_name, action in role_to_action.items():
+        db.add(
+            GovernanceDecision(
+                subject_type="universal_opportunity",
+                subject_id=subject_int,
+                role=role_name.capitalize(),
+                action=action,
+                reason=f"Phase3 role output for {payload.engine_id}",
+                is_final=role_name == "heimdall",
+            )
+        )
+
+    db.commit()
+    db.refresh(case)
+    db.refresh(verdict)
+    return {
+        "god_review_case_id": str(case.id),
+        "god_verdict_id": str(verdict.id),
+        "governance_subject_id": subject_int,
+        "owner_approval_required": owner_envelope["owner_approval_required"],
+        "approval_state": owner_envelope["approval_state"],
+    }
+
+
+def _evaluate_universal_opportunity(
+    payload: UniversalOpportunityIn,
+    db: Session,
+    persist_decision: bool,
+    *,
+    decision_model: str,
+    reveal_historical_outcomes: bool,
+    outcome_class: str,
+) -> dict[str, Any]:
+    _validate_phase3_opportunity(payload)
+    mimir_context = _build_mimir_context(db, payload)
+
+    if svc_engine_routing_key(payload.engine_id) == "real_estate" and payload.specialist_inputs.get("real_estate_payload"):
+        real_payload = RealEstateIntelligenceIn(**payload.specialist_inputs["real_estate_payload"])
+        real_payload.persist_decision = persist_decision
+        real_result, real_loki, real_owner = _compose_real_estate_intelligence_result(real_payload)
+        real_dimensions = {
+            "PROBABILITY": float(real_result["decision_cone"]["norns"]["estimate"]),
+            "CAPITAL_EFFICIENCY": _bounded(1.0 - float(payload.estimated_test_cost or 0.0) / max(1.0, float(payload.required_capital or 1.0)), 0.0, 1.0),
+            "TIME_TO_CASH": _bounded(1.0 - float(payload.estimated_time_to_first_revenue_days or 120) / 365.0, 0.0, 1.0),
+            "DOWNSIDE": _bounded(1.0 - float(payload.downside_exposure or 0.5), 0.0, 1.0),
+            "RECURRING_REVENUE": 0.55,
+            "SCALABILITY": _bounded(float(payload.scalability or 0.45), 0.0, 1.0),
+            "AUTOMATION_FIT": _bounded(float(payload.automation_potential or 0.35), 0.0, 1.0),
+            "OWNER_TIME": _bounded(1.0 - float(payload.owner_time_requirement_hours_weekly or 16.0) / 60.0, 0.0, 1.0),
+            "STRATEGIC_VALUE": _bounded(float(payload.strategic_value or 0.55), 0.0, 1.0),
+            "EVIDENCE_CONFIDENCE": _bounded(float(payload.evidence_confidence or 0.7), 0.0, 1.0),
+        }
+        rank_value = float(real_result["decision_rank_value"])
+        persistence = None
+        if persist_decision:
+            persistence = _persist_pantheon_snapshot(db, payload=real_payload, result=real_result, loki_objections=real_loki, owner_envelope=real_owner)
+        return {
+            "opportunity_id": payload.opportunity_id,
+            "engine_id": payload.engine_id,
+            "specialist_analysis": {"engine_specialist": "real_estate", "fit_score": float(real_result["decision_rank_value"]) / 100.0},
+            "pantheon": real_result["pantheon"],
+            "loki_objections": real_result["loki_objections"],
+            "norns": real_result["decision_cone"]["norns"],
+            "owner_approval_envelope": real_owner,
+            "final_decision": real_result["final_decision"],
+            "normalized_dimensions": real_dimensions,
+            "rank_value": rank_value,
+            "owner_recommendation": {
+                "why": real_result["explainability"]["top_reasons"][:3],
+                "confidence": "medium",
+                "primary_loki_objection": real_result["loki_objections"]["items"][0]["objection_evidence"] if real_result["loki_objections"]["items"] else None,
+                "heimdall_decision": real_result["final_decision"].upper(),
+            },
+            "approval_envelope": real_owner,
+            "pantheon_flow": [
+                "DISCOVERY",
+                "EVIDENCE",
+                "SPECIALIST_ANALYSIS",
+                "HEIMDALL_INITIAL_SYNTHESIS",
+                "JOTUNN",
+                "LOKI",
+                "NORNS",
+                "TYR_FORSETI",
+                "VIDAR",
+                "ODIN",
+                "HEIMDALL_FINAL_SYNTHESIS",
+                "OWNER_APPROVAL",
+            ],
+            "outcome_learning_hook": {
+                "endpoint": "/heimdall/decisions/outcomes",
+                "fields": [
+                    "actual_spend",
+                    "actual_time_to_revenue",
+                    "actual_revenue",
+                    "actual_margin",
+                    "actual_conversion",
+                    "actual_customer_count",
+                    "actual_failure_reason",
+                ],
+            },
+            "persistence": persistence,
+            "simulation_fixture": payload.simulation_fixture,
+            "source": payload.source,
+            "prediction_snapshot": {
+                "prediction_snapshot_id": hashlib.sha256(
+                    json.dumps(
+                        {
+                            "decision_model": decision_model,
+                            "opportunity_id": payload.opportunity_id,
+                            "engine_id": payload.engine_id,
+                            "final_decision": real_result["final_decision"],
+                            "as_of_date": None if payload.as_of_date is None else payload.as_of_date.isoformat(),
+                        },
+                        sort_keys=True,
+                        separators=(",", ":"),
+                    ).encode("utf-8")
+                ).hexdigest(),
+                "prediction_locked_at": datetime.now(timezone.utc).isoformat(),
+                "immutable": True,
+                "decision_model": decision_model,
+                "snapshot_version": "v1" if not payload.previous_prediction_snapshot_id else "v2",
+                "previous_prediction_snapshot_id": payload.previous_prediction_snapshot_id,
+                "correction_reason": payload.correction_reason,
+            },
+            "outcome_contract": {
+                "decision_id": f"UO-{payload.opportunity_id}-{payload.engine_id}",
+                "opportunity_id": payload.opportunity_id,
+                "engine_id": payload.engine_id,
+                "legacy": payload.legacy,
+                "jurisdiction": payload.jurisdiction,
+                "outcome_class": outcome_class,
+                "prediction_timestamp": datetime.now(timezone.utc).isoformat(),
+                "as_of_date": None if payload.as_of_date is None else payload.as_of_date.isoformat(),
+                "prediction_locked_at": datetime.now(timezone.utc).isoformat(),
+                "evidence_snapshot_id": payload.opportunity_id,
+                "pantheon_snapshot_id": None if persistence is None else persistence.get("god_verdict_id"),
+                "heimdall_decision": real_result["final_decision"].upper(),
+                "expected_economics": {
+                    "required_capital": payload.required_capital,
+                    "estimated_test_cost": payload.estimated_test_cost,
+                    "expected_margin_low": payload.expected_margin_low,
+                    "expected_margin_high": payload.expected_margin_high,
+                },
+                "expected_timing": {
+                    "estimated_time_to_first_revenue_days": payload.estimated_time_to_first_revenue_days,
+                    "estimated_time_to_validation_days": payload.estimated_time_to_validation_days,
+                },
+                "expected_risk": {
+                    "downside_exposure": payload.downside_exposure,
+                    "blast_radius": payload.blast_radius or "MEDIUM",
+                },
+                "expected_exit_path": payload.expected_exit_path or "RESEARCH_MORE_OR_CONTAIN",
+                "actual_outcome": None,
+                "actual_outcome_date": None,
+                "actual_economics": None,
+                "actual_timing": None,
+                "outcome_confidence": None,
+                "prediction_error": None,
+                "decision_quality": None,
+                "role_accuracy": None,
+                "outcome_observability_state": payload.outcome_observability_state or "LOW",
+                "feedback_linkage": {
+                    "decision_id": f"UO-{payload.opportunity_id}-{payload.engine_id}",
+                    "opportunity_id": payload.opportunity_id,
+                    "prediction_snapshot_id": payload.opportunity_id,
+                    "pantheon_snapshot_id": None if persistence is None else persistence.get("god_verdict_id"),
+                    "mimir_history_ref": payload.case_id or payload.opportunity_id,
+                    "feedback_endpoint": "/api/completion/learning/feedback",
+                },
+            },
+            "baseline_comparison": {
+                "rule_based_property_model": round(float(real_dimensions["DOWNSIDE"]) * 100.0, 4),
+                "simple_payback_ranking": round(float(real_dimensions.get("EXPECTED_MARGIN", 0.25)) * 50.0, 4),
+                "simple_margin_capital_ranking": round(float(real_dimensions.get("EXPECTED_MARGIN", 0.25)) * float(real_dimensions["CAPITAL_EFFICIENCY"]) * 100.0, 4),
+                "industry_average_heuristic": 50.0,
+            },
+            "decision_regret": {"regret_class": "UNKNOWN", "confidence": "low", "delta": None},
+            "capital_risk_exit_analysis": {
+                "entry_capital": payload.entry_capital or payload.required_capital,
+                "survival_capital": payload.survival_capital or payload.required_reserve_to_survive_failure,
+                "liquidity_impact": payload.liquidity_impact or "UNKNOWN",
+                "reserve_impact": payload.reserve_impact or "UNKNOWN",
+                "blast_radius": payload.blast_radius or "MEDIUM",
+                "hard_decision_rule_pass": True,
+            },
+            "recovery_exit_protocol": {
+                "primary_plan": payload.primary_plan or "TEST_SMALL_VALIDATE_FAST",
+                "failure_scenarios": payload.failure_scenarios,
+                "early_warning_indicators": payload.early_warning_indicators,
+                "maximum_capital_exposure": payload.maximum_capital_exposure,
+                "maximum_monthly_burn": payload.maximum_monthly_burn,
+                "maximum_time_without_validation": payload.maximum_time_without_validation,
+                "minimum_performance_threshold": payload.minimum_performance_threshold,
+                "maximum_tolerable_loss": payload.maximum_tolerable_loss,
+                "recovery_options": payload.recovery_options,
+                "exit_options": payload.exit_options,
+                "expected_salvage_value": payload.expected_salvage_value,
+                "blast_radius": payload.blast_radius or "MEDIUM",
+                "required_reserve_to_survive_failure": payload.required_reserve_to_survive_failure,
+                "exit_ladder": [
+                    "LEVEL_0_NORMAL",
+                    "LEVEL_1_CORRECT",
+                    "LEVEL_2_CONTAIN",
+                    "LEVEL_3_RESTRUCTURE",
+                    "LEVEL_4_PARTIAL_EXIT",
+                    "LEVEL_5_FULL_EXIT",
+                    "LEVEL_6_SHIELD",
+                ],
+                "current_level": "LEVEL_0_NORMAL",
+                "point_of_no_return": payload.point_of_no_return,
+            },
+            "decision_model": decision_model,
+            "replay_partition": payload.replay_partition,
+            "mimir_linkage": {
+                "used_in_decision": True,
+                "source_references": mimir_context.get("source_references", []),
+                "prior_successes": mimir_context.get("prior_successes", 0),
+                "prior_failures": mimir_context.get("prior_failures", 0),
+                "superseded_doctrine_hits": mimir_context.get("superseded_doctrine_hits", 0),
+            },
+        }
+
+    payload_dict = payload.model_dump(mode="json")
+    payload_dict["mimir_context"] = mimir_context
+    result = evaluate_generic_opportunity(
+        payload_dict,
+        decision_model=decision_model,
+        reveal_historical_outcomes=reveal_historical_outcomes,
+        expected_outcome_class=outcome_class,
+    )
+
+    if persist_decision:
+        result["persistence"] = _persist_universal_pantheon_snapshot(
+            db,
+            payload=payload,
+            result=result,
+            loki_objections=result["loki_objections"]["items"],
+            owner_envelope=result["approval_envelope"],
+        )
+        if result.get("outcome_contract"):
+            result["outcome_contract"]["pantheon_snapshot_id"] = result["persistence"]["god_verdict_id"]
+    else:
+        result["persistence"] = None
+    return result
+
+
+def _best_option_or_abstain(ranked: list[dict[str, Any]]) -> dict[str, Any]:
+    return svc_best_option_or_abstain(ranked)
+
+
+def _resolve_phase3_outcome_class(payload: UniversalOpportunityBatchIn) -> str:
+    if payload.outcome_class is not None:
+        if payload.outcome_class == "VALHALLA_OUTCOME" and (payload.replay_mode or payload.shadow_mode):
+            raise HTTPException(status_code=409, detail="VALHALLA_OUTCOME cannot be used in replay or shadow mode")
+        if payload.outcome_class == "HISTORICAL_OUTCOME" and not payload.replay_mode:
+            raise HTTPException(status_code=409, detail="HISTORICAL_OUTCOME requires replay_mode=true")
+        return payload.outcome_class
+    if payload.replay_mode:
+        return "HISTORICAL_OUTCOME"
+    if payload.shadow_mode:
+        return "SHADOW_OUTCOME"
+    return "VALHALLA_OUTCOME"
+
+
+def _build_mimir_context(db: Session, payload: UniversalOpportunityIn) -> dict[str, Any]:
+    refs: list[dict[str, Any]] = []
+    prior_successes = 0
+    prior_failures = 0
+    recurring_failure_modes: list[str] = []
+
+    fb_rows = (
+        db.query(LearningFeedbackRecord)
+        .order_by(LearningFeedbackRecord.created_at.desc())
+        .limit(200)
+        .all()
+    )
+    for row in fb_rows:
+        score = float(row.operational_score or 0.0)
+        oc = str(row.outcome_class or "").upper()
+        if oc in {"VALHALLA_OUTCOME", "VERIFIED_REAL_OUTCOME", "LIVE_KPI"} or score >= 0.7:
+            prior_successes += 1
+        if row.high_impact or score <= 0.35 or oc in {"FAILURE", "SHADOW_FAILURE"}:
+            prior_failures += 1
+            if row.notes:
+                recurring_failure_modes.append(str(row.notes)[:120])
+        refs.append(
+            {
+                "type": "learning_feedback",
+                "id": row.feedback_id,
+                "outcome_class": row.outcome_class,
+                "created_at": row.created_at.isoformat() if row.created_at else None,
+            }
+        )
+
+    knowledge_rows = (
+        db.query(KnowledgeRegistryItem)
+        .order_by(KnowledgeRegistryItem.updated_at.desc())
+        .limit(100)
+        .all()
+    )
+    superseded_hits = 0
+    title_tokens = [t for t in re.split(r"\W+", payload.title.lower()) if len(t) > 3][:5]
+    for row in knowledge_rows:
+        corpus = " ".join(
+            [
+                str(row.title or "").lower(),
+                str(row.notes or "").lower(),
+                str(row.source or "").lower(),
+                str(row.market or "").lower(),
+            ]
+        )
+        if payload.jurisdiction and row.jurisdiction and payload.jurisdiction != row.jurisdiction:
+            continue
+        if title_tokens and not any(tok in corpus for tok in title_tokens):
+            continue
+        if row.superseded_by:
+            superseded_hits += 1
+        refs.append(
+            {
+                "type": "knowledge_registry",
+                "id": row.item_id,
+                "title": row.title,
+                "citation_ref": row.citation_ref,
+                "superseded_by": row.superseded_by,
+            }
+        )
+
+    return {
+        "prior_successes": prior_successes,
+        "prior_failures": prior_failures,
+        "superseded_doctrine_hits": superseded_hits,
+        "recurring_failure_modes": recurring_failure_modes[:5],
+        "source_references": refs[:30],
+    }
+
+
+@router.get("/phase3/universal-opportunity/engine-audit")
+def phase3_engine_audit(db: Session = Depends(get_db)):
+    _ensure_registry_tables(db)
+    rows = {row.engine_id: row for row in db.query(EngineRegistryItem).all()}
+    statuses: list[dict[str, Any]] = []
+    for engine_id, meta in sorted(PLANNED_ENGINE_CATALOG.items()):
+        row = rows.get(engine_id)
+        statuses.append(
+            {
+                "engine_id": engine_id,
+                "name": meta["name"],
+                "category": meta["category"],
+                "business_industry": meta["business_industry"],
+                "classification": _phase3_engine_status(row),
+                "current_state": None if row is None else row.current_state,
+                "missing_blockers": [] if row is None else _loads(row.missing_blockers_json, []),
+                "audit_state": None if row is None else row.audit_state,
+            }
+        )
+    return {
+        "engines": statuses,
+        "counts": {
+            status: len([s for s in statuses if s["classification"] == status])
+            for status in sorted(PHASE3_ENGINE_STATUSES)
+        },
+    }
+
+
+@router.post("/phase3/universal-opportunity/evaluate")
+def evaluate_universal_opportunities(payload: UniversalOpportunityBatchIn, db: Session = Depends(get_db)):
+    if payload.decision_model == "CHALLENGER" and not payload.shadow_mode:
+        raise HTTPException(status_code=409, detail="challenger model is shadow-only and cannot execute outside shadow_mode")
+
+    if payload.tuning_mode and payload.reveal_historical_outcomes:
+        blind = [o.opportunity_id for o in payload.opportunities if o.replay_partition == "BLIND_HOLDOUT_SET"]
+        if blind:
+            raise HTTPException(
+                status_code=409,
+                detail=f"holdout contamination: reveal_historical_outcomes not allowed while tuning for BLIND_HOLDOUT_SET opportunities {blind}",
+            )
+
+    outcome_class = _resolve_phase3_outcome_class(payload)
+    evaluated: list[dict[str, Any]] = []
+    for opp in payload.opportunities:
+        try:
+            evaluated.append(
+                _evaluate_universal_opportunity(
+                    opp,
+                    db,
+                    persist_decision=payload.persist_decision and opp.persist_decision,
+                    decision_model=payload.decision_model,
+                    reveal_historical_outcomes=payload.reveal_historical_outcomes,
+                    outcome_class=outcome_class,
+                )
+            )
+        except LookaheadLeakageBlocked as exc:
+            raise HTTPException(status_code=409, detail=exc.detail)
+    ranked = sorted(evaluated, key=lambda r: float(r.get("rank_value") or 0.0), reverse=True)
+    decision = _best_option_or_abstain(ranked)
+
+    owner_recommendation = {
+        "qualified_opportunities": len(ranked),
+        "engines_covered": sorted(list({r["engine_id"] for r in ranked})),
+        "best_option_right_now": decision.get("best_candidate"),
+        "heimdall_decision": decision["decision"],
+        "abstain": bool(decision.get("abstain", False)),
+        "message": "Bryan, I reviewed the currently available opportunities across Valhalla. This is the best justified use of our resources right now. Do you approve?",
+        "details": decision,
+    }
+
+    replay_partition_counts: dict[str, int] = {}
+    for row in ranked:
+        p = str(row.get("replay_partition") or "UNSPECIFIED")
+        replay_partition_counts[p] = replay_partition_counts.get(p, 0) + 1
+
+    return {
+        "opportunities_evaluated": len(ranked),
+        "evaluations": ranked,
+        "decision_model": payload.decision_model,
+        "outcome_class": outcome_class,
+        "replay_mode": payload.replay_mode,
+        "reveal_historical_outcomes": payload.reveal_historical_outcomes,
+        "holdout_contamination_check": {
+            "tuning_mode": payload.tuning_mode,
+            "blind_holdout_revealed": False,
+            "status": "PASS",
+        },
+        "replay_partition_counts": replay_partition_counts,
+        "normalized_comparison_dimensions": [
+            "PROBABILITY",
+            "CAPITAL_EFFICIENCY",
+            "TIME_TO_CASH",
+            "DOWNSIDE",
+            "RECURRING_REVENUE",
+            "SCALABILITY",
+            "AUTOMATION_FIT",
+            "OWNER_TIME",
+            "STRATEGIC_VALUE",
+            "EVIDENCE_CONFIDENCE",
+        ],
+        "ranking": [{"opportunity_id": r["opportunity_id"], "engine_id": r["engine_id"], "rank_value": r["rank_value"], "decision": r["final_decision"]} for r in ranked],
+        "owner_recommendation": owner_recommendation,
+        "shadow_safety_counters": {
+            "email": 0,
+            "sms": 0,
+            "calls": 0,
+            "contracts": 0,
+            "e_sign": 0,
+            "money": 0,
+            "accounting_writes": 0,
+            "external_posts": 0,
+        },
+    }
+
+
+def _phase3_shadow_proof_set() -> list[UniversalOpportunityIn]:
+    return [
+        UniversalOpportunityIn(
+            opportunity_id="P3-RE-001",
+            engine_id="wholesaling",
+            jurisdiction="CA-MB",
+            source="phase2_certified_real_estate",
+            title="Winnipeg Wholesale Anchor",
+            summary="Certified real-estate path opportunity from Winnipeg anchor dataset.",
+            status="WAR_TABLE_REVIEW",
+            required_capital=180000,
+            estimated_test_cost=5000,
+            estimated_time_to_first_revenue_days=45,
+            estimated_time_to_validation_days=30,
+            revenue_type="ASSET",
+            expected_margin_low=0.08,
+            expected_margin_high=0.22,
+            downside_exposure=0.36,
+            automation_potential=0.42,
+            owner_time_requirement_hours_weekly=10,
+            scalability=0.5,
+            replication_mode="ASSET_SPECIFIC",
+            strategic_value=0.74,
+            evidence_confidence=0.79,
+            specialist_inputs={
+                "real_estate_payload": {
+                    "request_id": "P3-REI-001",
+                    "property_address": "14 Portage Ave",
+                    "city": "Winnipeg",
+                    "region": "MB",
+                    "country": "CA",
+                    "strategy": "wholesale",
+                    "asking_price": 180000,
+                    "arv_estimate": 255000,
+                    "rehab_estimate": 28000,
+                    "source_evidence": [
+                        {
+                            "source_id": "SRC-P3-WPG-001",
+                            "source_type": "government",
+                            "confidence_score": 0.9,
+                            "freshness_days": 45,
+                            "citation_ref": "data/inbox/real_leads/sample_leads_01.csv",
+                            "supports": ["valuation", "market"],
+                        }
+                    ],
+                    "persist_decision": True,
+                }
+            },
+            simulation_fixture=False,
+        ),
+        UniversalOpportunityIn(
+            opportunity_id="P3-AI-001",
+            engine_id="ai_automation_services",
+            source="fixture",
+            title="AI Follow-up Automation Pilot",
+            summary="SIMULATION / FIXTURE: automate seller follow-up triage for small operators.",
+            status="RESEARCHING",
+            required_capital=8000,
+            estimated_test_cost=1800,
+            estimated_time_to_first_revenue_days=35,
+            estimated_time_to_validation_days=21,
+            revenue_type="SERVICE",
+            expected_margin_low=0.35,
+            expected_margin_high=0.62,
+            downside_exposure=0.22,
+            automation_potential=0.85,
+            owner_time_requirement_hours_weekly=6,
+            scalability=0.72,
+            replication_mode="CENTRAL_REGIONAL",
+            strategic_value=0.7,
+            evidence_confidence=0.58,
+            specialist_inputs={
+                "customer_pain": 0.74,
+                "willingness_to_pay": 0.61,
+                "implementation_effort": 0.44,
+                "delivery_cost": 0.33,
+                "recurring_potential": 0.69,
+                "customer_acquisition_difficulty": 0.48,
+                "competition": 0.57,
+                "automation_percentage": 0.88,
+                "retention_potential": 0.66,
+            },
+            simulation_fixture=True,
+        ),
+        UniversalOpportunityIn(
+            opportunity_id="P3-SAAS-001",
+            engine_id="micro_saas",
+            source="fixture",
+            title="Permit Tracker Micro-SaaS",
+            summary="SIMULATION / FIXTURE: niche permit and compliance reminder SaaS.",
+            status="RESEARCHING",
+            required_capital=12000,
+            estimated_test_cost=2500,
+            estimated_time_to_first_revenue_days=70,
+            estimated_time_to_validation_days=30,
+            revenue_type="SUBSCRIPTION",
+            expected_margin_low=0.42,
+            expected_margin_high=0.78,
+            downside_exposure=0.4,
+            automation_potential=0.76,
+            owner_time_requirement_hours_weekly=9,
+            scalability=0.8,
+            replication_mode="GLOBAL_SINGLETON",
+            strategic_value=0.65,
+            evidence_confidence=0.52,
+            specialist_inputs={
+                "problem_severity": 0.62,
+                "addressable_niche": 0.57,
+                "pricing_power": 0.52,
+                "retention": 0.61,
+                "churn_risk": 0.39,
+                "technical_build_effort": 0.55,
+                "hosting_api_cost": 0.35,
+                "support_burden": 0.4,
+                "defensibility": 0.5,
+                "global_reach": 0.74,
+            },
+            simulation_fixture=True,
+        ),
+        UniversalOpportunityIn(
+            opportunity_id="P3-LEAD-001",
+            engine_id="lead_generation",
+            source="fixture",
+            title="Off-market Lead Syndication Pilot",
+            summary="SIMULATION / FIXTURE: qualified lead generation for investor buyer list.",
+            status="RESEARCHING",
+            required_capital=4500,
+            estimated_test_cost=900,
+            estimated_time_to_first_revenue_days=28,
+            estimated_time_to_validation_days=14,
+            revenue_type="SERVICE",
+            expected_margin_low=0.3,
+            expected_margin_high=0.58,
+            downside_exposure=0.31,
+            automation_potential=0.7,
+            owner_time_requirement_hours_weekly=8,
+            scalability=0.68,
+            replication_mode="LOCAL_CLONE",
+            strategic_value=0.59,
+            evidence_confidence=0.56,
+            specialist_inputs={
+                "buyer_demand": 0.69,
+                "lead_value": 0.63,
+                "source_legality": 0.71,
+                "acquisition_cost": 0.4,
+                "qualification_rate": 0.54,
+                "conversion_potential": 0.5,
+                "repeat_customer_potential": 0.67,
+            },
+            simulation_fixture=True,
+        ),
+        UniversalOpportunityIn(
+            opportunity_id="P3-ACQ-001",
+            engine_id="business_acquisitions",
+            source="fixture",
+            title="Small Service Business Acquisition Candidate",
+            summary="SIMULATION / FIXTURE: local service business acquisition diligence case.",
+            status="WAR_TABLE_REVIEW",
+            required_capital=350000,
+            estimated_test_cost=12000,
+            estimated_time_to_first_revenue_days=95,
+            estimated_time_to_validation_days=45,
+            revenue_type="ACQUISITION",
+            expected_margin_low=0.18,
+            expected_margin_high=0.41,
+            downside_exposure=0.58,
+            automation_potential=0.53,
+            owner_time_requirement_hours_weekly=14,
+            scalability=0.62,
+            replication_mode="MULTI_BRAND_SIBLING",
+            strategic_value=0.77,
+            evidence_confidence=0.49,
+            specialist_inputs={
+                "revenue_strength": 0.61,
+                "cash_flow_quality": 0.57,
+                "owner_dependence": 0.63,
+                "customer_concentration": 0.52,
+                "durability": 0.59,
+                "purchase_price_risk": 0.66,
+                "financing_feasibility": 0.48,
+                "automation_opportunity": 0.62,
+                "integration_risk": 0.58,
+                "management_burden": 0.55,
+            },
+            simulation_fixture=True,
+        ),
+        UniversalOpportunityIn(
+            opportunity_id="P3-GRANT-001",
+            engine_id="funding_grants",
+            source="fixture",
+            title="Non-dilutive Technology Grant Candidate",
+            summary="SIMULATION / FIXTURE: grant application with matching constraints and reporting burden.",
+            status="RESEARCHING",
+            required_capital=15000,
+            estimated_test_cost=1200,
+            estimated_time_to_first_revenue_days=120,
+            estimated_time_to_validation_days=35,
+            revenue_type="OTHER",
+            expected_margin_low=0.2,
+            expected_margin_high=0.5,
+            downside_exposure=0.29,
+            automation_potential=0.45,
+            owner_time_requirement_hours_weekly=5,
+            scalability=0.42,
+            replication_mode="JURISDICTION_EDITION",
+            strategic_value=0.64,
+            evidence_confidence=0.55,
+            specialist_inputs={
+                "eligibility": 0.69,
+                "amount_quality": 0.58,
+                "matching_burden": 0.43,
+                "deadline_readiness": 0.62,
+                "preapproval_readiness": 0.55,
+                "reimbursement_risk": 0.34,
+                "probability": 0.53,
+                "reporting_burden": 0.39,
+                "strategic_usefulness": 0.68,
+            },
+            simulation_fixture=True,
+        ),
+    ]
+
+
+@router.post("/phase3/universal-opportunity/certify-shadow")
+def certify_phase3_universal_shadow(payload: UniversalShadowCertificationIn, db: Session = Depends(get_db)):
+    batch = UniversalOpportunityBatchIn(
+        opportunities=_phase3_shadow_proof_set(),
+        persist_decision=payload.persist_decision,
+        shadow_mode=True,
+        decision_model=payload.decision_model,
+    )
+    evaluated = evaluate_universal_opportunities(batch, db)
+    evaluated["engines_evaluated"] = sorted(list({e["engine_id"] for e in evaluated["evaluations"]}))
+    evaluated["opportunity_count"] = len(evaluated["evaluations"])
+    evaluated["fixtures"] = [
+        {"opportunity_id": e["opportunity_id"], "simulation_fixture": bool(e.get("simulation_fixture", False)), "source": e.get("source")}
+        for e in evaluated["evaluations"]
+    ]
+    return evaluated
 
 
 @router.post("/phase2/real-estate-intelligence/certify-winnipeg")

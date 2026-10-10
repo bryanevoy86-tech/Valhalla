@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import csv
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -71,6 +74,39 @@ def _build_client() -> TestClient:
 
     app.dependency_overrides[get_db] = override_get_db
     return TestClient(app)
+
+
+def _seed_winnipeg_anchor_fixture(root: Path, rows: int = 12) -> dict[str, int]:
+    fixture_dir = root / "data" / "inbox" / "real_leads"
+    fixture_file = fixture_dir / "sample_leads_01.csv"
+    fixture_dir.mkdir(parents=True, exist_ok=True)
+
+    with fixture_file.open("w", encoding="utf-8", newline="") as f:
+        writer = csv.DictWriter(
+            f,
+            fieldnames=[
+                "property_address",
+                "city",
+                "province_state",
+                "property_zip",
+                "property_type",
+                "price",
+            ],
+        )
+        writer.writeheader()
+        for idx in range(rows):
+            writer.writerow(
+                {
+                    "property_address": f"{100 + idx} Test Ave",
+                    "city": "Winnipeg",
+                    "province_state": "MB",
+                    "property_zip": f"R2C{idx:02d}",
+                    "property_type": "single_family",
+                    "price": str(140000 + (idx * 4500)),
+                }
+            )
+
+    return {"seeded_rows": rows}
 
 
 def test_create_and_list_registry_items():
@@ -1795,6 +1831,18 @@ def test_engine_registry_covers_planned_engines_and_allowed_states():
         ("market_intelligence", "Market Intelligence", "intelligence", "cross_market_intelligence", "READY"),
         ("ops_automation", "Ops Automation", "operations", "operations_automation", "BLOCKED"),
         ("trading_advisory", "Trading Advisory", "capital", "trading_advisory", "OFF"),
+        ("ai_automation_services", "AI Automation Services", "digital_services", "ai_automation", "SANDBOX"),
+        ("micro_saas", "Micro SaaS", "digital_business", "micro_saas", "OFF"),
+        ("lead_generation", "Lead Generation", "growth", "lead_generation", "READY"),
+        (
+            "market_intelligence_data_products",
+            "Market Intelligence Data Products",
+            "intelligence",
+            "data_products",
+            "OFF",
+        ),
+        ("funding_grants", "Funding / Grants", "capital", "funding_grants", "SANDBOX"),
+        ("operations_automation", "Operations Automation", "operations", "operations_automation", "BLOCKED"),
     ]
 
     for engine_id, name, category, industry, state in engines:
@@ -2442,7 +2490,22 @@ def test_phase2_real_estate_intelligence_norns_state_marked_not_calibrated():
     assert norns["calibration_state"] == "NOT_YET_CALIBRATED"
 
 
-def test_phase2_winnipeg_certification_route_returns_rankings_and_shadow_safety():
+def test_phase2_winnipeg_certification_route_returns_rankings_and_shadow_safety(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    fixture_dir = tmp_path / "data" / "inbox" / "real_leads"
+    fixture_file = fixture_dir / "sample_leads_01.csv"
+    assert fixture_file.exists() is False
+
+    seed_meta = _seed_winnipeg_anchor_fixture(tmp_path, rows=12)
+    assert seed_meta["seeded_rows"] == 12
+    assert fixture_file.exists() is True
+
+    with fixture_file.open("r", encoding="utf-8", newline="") as f:
+        seeded_count = sum(1 for _ in csv.DictReader(f))
+    assert seeded_count == 12
+
+    assert (tmp_path / "valhalla_local.db").exists() is False
+
     client = _build_client()
 
     resp = client.post(
@@ -2460,3 +2523,663 @@ def test_phase2_winnipeg_certification_route_returns_rankings_and_shadow_safety(
     assert body["cross_opportunity_ranking"]["best_current_property_opportunity"] is not None
     assert all(v == 0 for v in body["shadow_safety_counters"].values())
     assert len(body["persisted_case_ids"]) >= 10
+    assert all((e.get("source") or "").startswith("data/inbox/real_leads/") for e in body["evaluations"])
+    assert all("valhalla_local.db" not in (e.get("source") or "") for e in body["evaluations"])
+
+
+def test_phase3_engine_audit_reports_required_status_classes():
+    client = _build_client()
+
+    seed = client.post(
+        "/api/completion/engine-registry/items",
+        json={
+            "engine_id": "wholesaling",
+            "name": "Wholesaling",
+            "category": "real_estate",
+            "business_industry": "residential_real_estate",
+            "jurisdiction_scope": ["CA-MB"],
+            "current_state": "ACTIVE",
+            "missing_blockers": [],
+        },
+    )
+    assert seed.status_code == 200, seed.text
+
+    blocked = client.post(
+        "/api/completion/engine-registry/items",
+        json={
+            "engine_id": "funding_grants",
+            "name": "Funding / Grants",
+            "category": "capital",
+            "business_industry": "funding_grants",
+            "jurisdiction_scope": ["CA-MB"],
+            "current_state": "BLOCKED",
+            "missing_blockers": ["eligibility_unknown"],
+        },
+    )
+    assert blocked.status_code == 200, blocked.text
+
+    audit = client.get("/api/completion/phase3/universal-opportunity/engine-audit")
+    assert audit.status_code == 200, audit.text
+    body = audit.json()
+    classes = {e["classification"] for e in body["engines"]}
+    assert "ACTIVE" in classes
+    assert "BLOCKED" in classes
+    assert "IDEA_ONLY" in classes
+
+
+def test_phase3_universal_evaluate_cross_engine_ranking_and_norns_labels():
+    client = _build_client()
+
+    resp = client.post(
+        "/api/completion/phase3/universal-opportunity/evaluate",
+        json={
+            "persist_decision": True,
+            "opportunities": [
+                {
+                    "opportunity_id": "UO-001",
+                    "engine_id": "ai_automation_services",
+                    "title": "AI automation pilot",
+                    "summary": "Automate follow-up operations for local operators",
+                    "status": "RESEARCHING",
+                    "required_capital": 8000,
+                    "estimated_test_cost": 1500,
+                    "estimated_time_to_first_revenue_days": 30,
+                    "estimated_time_to_validation_days": 21,
+                    "revenue_type": "SERVICE",
+                    "expected_margin_low": 0.35,
+                    "expected_margin_high": 0.6,
+                    "downside_exposure": 0.25,
+                    "automation_potential": 0.82,
+                    "owner_time_requirement_hours_weekly": 6,
+                    "scalability": 0.73,
+                    "replication_mode": "CENTRAL_REGIONAL",
+                    "strategic_value": 0.7,
+                    "evidence_confidence": 0.58,
+                    "specialist_inputs": {
+                        "customer_pain": 0.72,
+                        "willingness_to_pay": 0.6,
+                        "implementation_effort": 0.4,
+                        "delivery_cost": 0.33,
+                        "recurring_potential": 0.7,
+                        "customer_acquisition_difficulty": 0.45,
+                        "competition": 0.56,
+                        "automation_percentage": 0.87,
+                        "retention_potential": 0.65,
+                    },
+                },
+                {
+                    "opportunity_id": "UO-002",
+                    "engine_id": "micro_saas",
+                    "title": "Micro SaaS candidate",
+                    "summary": "Niche subscription tool",
+                    "status": "RESEARCHING",
+                    "required_capital": 14000,
+                    "estimated_test_cost": 2500,
+                    "estimated_time_to_first_revenue_days": 70,
+                    "estimated_time_to_validation_days": 35,
+                    "revenue_type": "SUBSCRIPTION",
+                    "expected_margin_low": 0.4,
+                    "expected_margin_high": 0.75,
+                    "downside_exposure": 0.42,
+                    "automation_potential": 0.75,
+                    "owner_time_requirement_hours_weekly": 10,
+                    "scalability": 0.81,
+                    "replication_mode": "GLOBAL_SINGLETON",
+                    "strategic_value": 0.66,
+                    "evidence_confidence": 0.53,
+                    "specialist_inputs": {
+                        "problem_severity": 0.61,
+                        "addressable_niche": 0.56,
+                        "pricing_power": 0.52,
+                        "retention": 0.62,
+                        "churn_risk": 0.4,
+                        "technical_build_effort": 0.57,
+                        "hosting_api_cost": 0.35,
+                        "support_burden": 0.44,
+                        "defensibility": 0.5,
+                        "global_reach": 0.75,
+                    },
+                },
+                {
+                    "opportunity_id": "UO-003",
+                    "engine_id": "business_acquisitions",
+                    "title": "Acquisition candidate",
+                    "summary": "Small acquisition with owner dependence risk",
+                    "status": "WAR_TABLE_REVIEW",
+                    "required_capital": 300000,
+                    "estimated_test_cost": 10000,
+                    "estimated_time_to_first_revenue_days": 90,
+                    "estimated_time_to_validation_days": 45,
+                    "revenue_type": "ACQUISITION",
+                    "expected_margin_low": 0.15,
+                    "expected_margin_high": 0.4,
+                    "downside_exposure": 0.76,
+                    "automation_potential": 0.49,
+                    "owner_time_requirement_hours_weekly": 16,
+                    "scalability": 0.6,
+                    "replication_mode": "MULTI_BRAND_SIBLING",
+                    "strategic_value": 0.75,
+                    "evidence_confidence": 0.5,
+                    "specialist_inputs": {
+                        "revenue_strength": 0.58,
+                        "cash_flow_quality": 0.52,
+                        "owner_dependence": 0.72,
+                        "customer_concentration": 0.55,
+                        "durability": 0.57,
+                        "purchase_price_risk": 0.68,
+                        "financing_feasibility": 0.45,
+                        "automation_opportunity": 0.59,
+                        "integration_risk": 0.6,
+                        "management_burden": 0.58,
+                    },
+                },
+            ],
+        },
+    )
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+
+    assert body["opportunities_evaluated"] == 3
+    assert len(body["ranking"]) == 3
+    assert all(v == 0 for v in body["shadow_safety_counters"].values())
+    assert body["owner_recommendation"]["qualified_opportunities"] == 3
+    assert set(body["owner_recommendation"]["engines_covered"]) == {
+        "ai_automation_services",
+        "micro_saas",
+        "business_acquisitions",
+    }
+
+    norns = body["evaluations"][0]["norns"]
+    assert norns["model_state"] == "MODEL_ESTIMATE"
+    assert norns["calibration_state"] == "NOT_YET_CALIBRATED"
+
+
+def test_phase3_shadow_certification_contains_required_engines_and_fixtures():
+    client = _build_client()
+
+    resp = client.post(
+        "/api/completion/phase3/universal-opportunity/certify-shadow",
+        json={"persist_decision": True},
+    )
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+
+    assert body["opportunity_count"] >= 6
+    required = {
+        "wholesaling",
+        "ai_automation_services",
+        "micro_saas",
+        "lead_generation",
+        "business_acquisitions",
+        "funding_grants",
+    }
+    assert required.issubset(set(body["engines_evaluated"]))
+    assert any(not f["simulation_fixture"] and f["source"] == "phase2_certified_real_estate" for f in body["fixtures"])
+    assert any(f["simulation_fixture"] for f in body["fixtures"])
+    assert all(v == 0 for v in body["shadow_safety_counters"].values())
+
+
+def test_phase3_allows_abstention_when_no_opportunity_justifies_deployment():
+    client = _build_client()
+
+    resp = client.post(
+        "/api/completion/phase3/universal-opportunity/evaluate",
+        json={
+            "persist_decision": False,
+            "opportunities": [
+                {
+                    "opportunity_id": "UO-ABSTAIN-1",
+                    "engine_id": "micro_saas",
+                    "title": "Weak SaaS idea",
+                    "summary": "Low evidence and high downside",
+                    "status": "RESEARCHING",
+                    "required_capital": 60000,
+                    "estimated_test_cost": 12000,
+                    "estimated_time_to_first_revenue_days": 210,
+                    "estimated_time_to_validation_days": 90,
+                    "revenue_type": "SUBSCRIPTION",
+                    "expected_margin_low": 0.05,
+                    "expected_margin_high": 0.2,
+                    "downside_exposure": 0.89,
+                    "automation_potential": 0.3,
+                    "owner_time_requirement_hours_weekly": 35,
+                    "scalability": 0.3,
+                    "replication_mode": "GLOBAL_SINGLETON",
+                    "strategic_value": 0.2,
+                    "evidence_confidence": 0.22,
+                    "specialist_inputs": {
+                        "problem_severity": 0.2,
+                        "addressable_niche": 0.18,
+                        "pricing_power": 0.19,
+                        "retention": 0.2,
+                        "churn_risk": 0.82,
+                        "technical_build_effort": 0.87,
+                        "hosting_api_cost": 0.74,
+                        "support_burden": 0.78,
+                        "defensibility": 0.17,
+                        "global_reach": 0.3,
+                    },
+                }
+            ],
+        },
+    )
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body["owner_recommendation"]["abstain"] is True
+    assert body["owner_recommendation"]["heimdall_decision"] in {"HOLD", "REJECT"}
+
+
+def test_phase3_prediction_snapshot_and_outcome_contract_are_emitted_and_immutable():
+    client = _build_client()
+
+    payload = {
+        "persist_decision": False,
+        "opportunities": [
+            {
+                "opportunity_id": "UO-SNAP-001",
+                "engine_id": "ai_automation_services",
+                "title": "Snapshot check",
+                "summary": "Verify immutable prediction contract",
+                "status": "RESEARCHING",
+                "required_capital": 9000,
+                "estimated_test_cost": 1800,
+                "estimated_time_to_first_revenue_days": 30,
+                "estimated_time_to_validation_days": 14,
+                "revenue_type": "SERVICE",
+                "expected_margin_low": 0.28,
+                "expected_margin_high": 0.61,
+                "downside_exposure": 0.24,
+                "automation_potential": 0.84,
+                "owner_time_requirement_hours_weekly": 7,
+                "scalability": 0.72,
+                "replication_mode": "CENTRAL_REGIONAL",
+                "strategic_value": 0.66,
+                "evidence_confidence": 0.6,
+                "specialist_inputs": {
+                    "customer_pain": 0.73,
+                    "willingness_to_pay": 0.64,
+                    "implementation_effort": 0.42,
+                    "delivery_cost": 0.35,
+                    "recurring_potential": 0.7,
+                    "customer_acquisition_difficulty": 0.46,
+                    "competition": 0.53,
+                    "automation_percentage": 0.86,
+                    "retention_potential": 0.67,
+                },
+            }
+        ],
+    }
+
+    first = client.post("/api/completion/phase3/universal-opportunity/evaluate", json=payload)
+    assert first.status_code == 200, first.text
+    snap1 = first.json()["evaluations"][0]["prediction_snapshot"]
+    contract1 = first.json()["evaluations"][0]["outcome_contract"]
+
+    second = client.post("/api/completion/phase3/universal-opportunity/evaluate", json=payload)
+    assert second.status_code == 200, second.text
+    snap2 = second.json()["evaluations"][0]["prediction_snapshot"]
+
+    assert snap1["prediction_snapshot_id"] == snap2["prediction_snapshot_id"]
+    assert snap1["immutable"] is True
+    assert contract1["outcome_class"] == "SHADOW_OUTCOME"
+    assert contract1["actual_outcome"] is None
+
+
+def test_phase3_blocks_holdout_outcome_reveal_during_tuning_mode():
+    client = _build_client()
+
+    resp = client.post(
+        "/api/completion/phase3/universal-opportunity/evaluate",
+        json={
+            "persist_decision": False,
+            "replay_mode": True,
+            "reveal_historical_outcomes": True,
+            "tuning_mode": True,
+            "opportunities": [
+                {
+                    "opportunity_id": "UO-HOLDOUT-001",
+                    "engine_id": "micro_saas",
+                    "title": "Holdout candidate",
+                    "summary": "Should block reveal during tuning",
+                    "status": "RESEARCHING",
+                    "replay_partition": "BLIND_HOLDOUT_SET",
+                    "required_capital": 12000,
+                    "estimated_test_cost": 2000,
+                    "estimated_time_to_first_revenue_days": 90,
+                    "estimated_time_to_validation_days": 30,
+                    "revenue_type": "SUBSCRIPTION",
+                    "expected_margin_low": 0.2,
+                    "expected_margin_high": 0.5,
+                }
+            ],
+        },
+    )
+    assert resp.status_code == 409
+    assert "holdout contamination" in resp.json()["detail"]
+
+
+def test_phase3_challenger_model_is_shadow_only():
+    client = _build_client()
+
+    resp = client.post(
+        "/api/completion/phase3/universal-opportunity/evaluate",
+        json={
+            "persist_decision": False,
+            "shadow_mode": False,
+            "decision_model": "CHALLENGER",
+            "opportunities": [
+                {
+                    "opportunity_id": "UO-CHAL-001",
+                    "engine_id": "lead_generation",
+                    "title": "Challenger restriction",
+                    "summary": "Challenger should not run outside shadow mode",
+                    "status": "RESEARCHING",
+                    "required_capital": 3000,
+                    "estimated_test_cost": 500,
+                    "estimated_time_to_first_revenue_days": 21,
+                    "estimated_time_to_validation_days": 14,
+                    "revenue_type": "SERVICE",
+                    "expected_margin_low": 0.25,
+                    "expected_margin_high": 0.55,
+                }
+            ],
+        },
+    )
+
+    assert resp.status_code == 409
+    assert "challenger model is shadow-only" in resp.json()["detail"]
+
+
+def _phase3_strong_opportunity(**overrides):
+    payload = {
+        "opportunity_id": "UO-GATE-BASE",
+        "engine_id": "ops_automation",
+        "title": "Hard gate base",
+        "summary": "Strong baseline for gate testing",
+        "status": "RESEARCHING",
+        "required_capital": 10000,
+        "estimated_test_cost": 1200,
+        "estimated_time_to_first_revenue_days": 30,
+        "estimated_time_to_validation_days": 14,
+        "revenue_type": "SERVICE",
+        "expected_margin_low": 0.3,
+        "expected_margin_high": 0.62,
+        "downside_exposure": 0.2,
+        "automation_potential": 0.82,
+        "owner_time_requirement_hours_weekly": 6,
+        "scalability": 0.75,
+        "replication_mode": "CENTRAL_REGIONAL",
+        "strategic_value": 0.7,
+        "evidence_confidence": 0.66,
+        "specialist_inputs": {},
+        "maximum_capital_exposure": 10000,
+        "maximum_monthly_burn": 2000,
+        "maximum_tolerable_loss": 2500,
+        "recovery_options": ["LEVEL_1_CORRECT", "LEVEL_2_CONTAIN"],
+        "exit_options": ["LEVEL_4_PARTIAL_EXIT", "LEVEL_5_FULL_EXIT"],
+        "expected_salvage_value": 3000,
+        "blast_radius": "LOW",
+        "entry_capital": 10000,
+        "survival_capital": 6000,
+        "available_safe_capital": 10000,
+        "required_reserve_to_survive_failure": 6000,
+        "point_of_no_return": {
+            "condition": "deposit_becomes_non_refundable",
+            "threshold": "$2500 committed",
+            "description": "Non-refundable deposit creates irreversible commitment",
+            "consequence": "capital at risk if execution halted",
+            "requires_reapproval_before_crossing": True,
+            "reversible_before_threshold": True,
+            "source": "operator_plan",
+            "confidence": "MEDIUM",
+        },
+    }
+    payload.update(overrides)
+    return payload
+
+
+def test_phase3_systemic_blast_radius_forbids_proceed_even_with_positive_return():
+    client = _build_client()
+    opp = _phase3_strong_opportunity(opportunity_id="UO-GATE-SYSTEMIC", blast_radius="SYSTEMIC")
+    resp = client.post(
+        "/api/completion/phase3/universal-opportunity/evaluate",
+        json={"persist_decision": False, "opportunities": [opp]},
+    )
+    assert resp.status_code == 200, resp.text
+    row = resp.json()["evaluations"][0]
+    assert row["final_decision"] != "proceed"
+    assert "SYSTEMIC_BLAST_RADIUS_FORBIDS_PROCEED" in row["hard_gate_evaluation"]["reasons"]
+
+
+def test_phase3_survival_capital_gate_blocks_proceed_when_safe_capital_insufficient():
+    client = _build_client()
+    opp = _phase3_strong_opportunity(
+        opportunity_id="UO-GATE-SURVIVAL",
+        available_safe_capital=2000,
+        required_reserve_to_survive_failure=6000,
+    )
+    resp = client.post(
+        "/api/completion/phase3/universal-opportunity/evaluate",
+        json={"persist_decision": False, "opportunities": [opp]},
+    )
+    assert resp.status_code == 200, resp.text
+    row = resp.json()["evaluations"][0]
+    assert row["final_decision"] != "proceed"
+    assert "SURVIVAL_CAPITAL_INSUFFICIENT" in row["hard_gate_evaluation"]["reasons"]
+
+
+def test_phase3_no_entry_without_exit_research_more_when_exit_paths_missing():
+    client = _build_client()
+    opp = _phase3_strong_opportunity(
+        opportunity_id="UO-GATE-NO-EXIT",
+        recovery_options=[],
+        exit_options=[],
+    )
+    resp = client.post(
+        "/api/completion/phase3/universal-opportunity/evaluate",
+        json={"persist_decision": False, "opportunities": [opp]},
+    )
+    assert resp.status_code == 200, resp.text
+    row = resp.json()["evaluations"][0]
+    assert row["final_decision"] in {"research_more", "reject", "hold"}
+    assert "NO_CREDIBLE_EXIT_PATH" in row["hard_gate_evaluation"]["reasons"]
+
+
+def test_phase3_exit_ladder_emits_level_0_for_healthy_and_level_1plus_for_deteriorating():
+    client = _build_client()
+    healthy = _phase3_strong_opportunity(opportunity_id="UO-LEVEL0", failure_scenarios=[], early_warning_indicators=[])
+    healthy_resp = client.post(
+        "/api/completion/phase3/universal-opportunity/evaluate",
+        json={"persist_decision": False, "opportunities": [healthy]},
+    )
+    assert healthy_resp.status_code == 200, healthy_resp.text
+    healthy_row = healthy_resp.json()["evaluations"][0]
+    assert healthy_row["recovery_exit_protocol"]["current_level"] == "LEVEL_0_NORMAL"
+    assert healthy_row["recovery_exit_protocol"]["exit_ladder"][0] == "LEVEL_0_NORMAL"
+
+    bad = _phase3_strong_opportunity(
+        opportunity_id="UO-LEVEL1",
+        early_warning_indicators=["LOW_CONVERSION"],
+        failure_scenarios=["CAC_SPIKE"],
+    )
+    bad_resp = client.post(
+        "/api/completion/phase3/universal-opportunity/evaluate",
+        json={"persist_decision": False, "opportunities": [bad]},
+    )
+    assert bad_resp.status_code == 200, bad_resp.text
+    bad_row = bad_resp.json()["evaluations"][0]
+    assert bad_row["recovery_exit_protocol"]["current_level"] != "LEVEL_0_NORMAL"
+
+
+def test_phase3_hard_blocks_lookahead_leakage_in_historical_replay():
+    client = _build_client()
+    opp = _phase3_strong_opportunity(
+        opportunity_id="UO-LEAK-001",
+        as_of_date="2026-01-10",
+        historical_events=[
+            {
+                "event_date": "2026-02-11",
+                "source_timestamp": "2026-02-11",
+                "note": "future contamination",
+            }
+        ],
+    )
+    resp = client.post(
+        "/api/completion/phase3/universal-opportunity/evaluate",
+        json={
+            "persist_decision": False,
+            "replay_mode": True,
+            "reveal_historical_outcomes": True,
+            "opportunities": [opp],
+        },
+    )
+    assert resp.status_code == 409
+    detail = resp.json()["detail"]
+    assert detail["error_code"] == "LOOKAHEAD_LEAKAGE_BLOCKED"
+
+
+def test_phase3_outcome_classes_cover_shadow_historical_and_valhalla():
+    client = _build_client()
+
+    shadow = client.post(
+        "/api/completion/phase3/universal-opportunity/evaluate",
+        json={"persist_decision": False, "opportunities": [_phase3_strong_opportunity(opportunity_id="UO-OC-SHADOW")]},
+    )
+    assert shadow.status_code == 200, shadow.text
+    assert shadow.json()["evaluations"][0]["outcome_contract"]["outcome_class"] == "SHADOW_OUTCOME"
+
+    historical = client.post(
+        "/api/completion/phase3/universal-opportunity/evaluate",
+        json={
+            "persist_decision": False,
+            "replay_mode": True,
+            "opportunities": [_phase3_strong_opportunity(opportunity_id="UO-OC-HIST")],
+        },
+    )
+    assert historical.status_code == 200, historical.text
+    assert historical.json()["evaluations"][0]["outcome_contract"]["outcome_class"] == "HISTORICAL_OUTCOME"
+
+    valhalla = client.post(
+        "/api/completion/phase3/universal-opportunity/evaluate",
+        json={
+            "persist_decision": False,
+            "shadow_mode": False,
+            "outcome_class": "VALHALLA_OUTCOME",
+            "opportunities": [_phase3_strong_opportunity(opportunity_id="UO-OC-VALHALLA")],
+        },
+    )
+    assert valhalla.status_code == 200, valhalla.text
+    assert valhalla.json()["evaluations"][0]["outcome_contract"]["outcome_class"] == "VALHALLA_OUTCOME"
+
+
+def test_phase3_mimir_linkage_and_outcome_feedback_contract_are_present():
+    client = _build_client()
+
+    domain = client.post(
+        "/api/completion/learning/domains",
+        json={
+            "domain_id": "P3-MIMIR-DOMAIN",
+            "canonical_name": "Phase3 Mimir Domain",
+            "status": "active",
+            "terminal_state": "BUILT_TESTED_FEATURE_GATED",
+        },
+    )
+    assert domain.status_code == 200, domain.text
+
+    curriculum = client.post(
+        "/api/completion/learning/curricula",
+        json={
+            "curriculum_id": "CUR-P3-MIMIR",
+            "domain_id": "P3-MIMIR-DOMAIN",
+            "title": "Phase3 Mimir Curriculum",
+            "version": "v1",
+            "learning_objectives": ["link outcomes to decision evidence"],
+            "playbooks": ["outcome feedback routing"],
+            "benchmarks": ["feedback completeness"],
+            "assessments": ["linkage validation"],
+            "promotion_gates": {"high_impact": 1.0},
+            "status": "active",
+            "terminal_state": "BUILT_TESTED_FEATURE_GATED",
+        },
+    )
+    assert curriculum.status_code == 200, curriculum.text
+
+    feedback = client.post(
+        "/api/completion/learning/feedback",
+        json={
+            "feedback_id": "FB-P3-MIMIR-001",
+            "feedback_type": "operational_result",
+            "domain": "P3-MIMIR-DOMAIN",
+            "curriculum_id": "CUR-P3-MIMIR",
+            "learning_id": "LP-P3-MIMIR",
+            "outcome_class": "SHADOW_OUTCOME",
+            "operational_score": 0.3,
+            "high_impact": True,
+            "notes": "Recurring failure mode: insufficient reserve runway",
+        },
+    )
+    assert feedback.status_code == 200, feedback.text
+
+    resp = client.post(
+        "/api/completion/phase3/universal-opportunity/evaluate",
+        json={"persist_decision": False, "opportunities": [_phase3_strong_opportunity(opportunity_id="UO-MIMIR-001")]},
+    )
+    assert resp.status_code == 200, resp.text
+    row = resp.json()["evaluations"][0]
+
+    assert row["mimir_linkage"]["used_in_decision"] is True
+    assert isinstance(row["mimir_linkage"]["source_references"], list)
+    assert row["mimir_linkage"]["prior_failures"] >= 1
+
+    feedback_linkage = row["outcome_contract"]["feedback_linkage"]
+    assert feedback_linkage["decision_id"] == row["outcome_contract"]["decision_id"]
+    assert feedback_linkage["prediction_snapshot_id"] == row["outcome_contract"]["evidence_snapshot_id"]
+    assert feedback_linkage["feedback_endpoint"] == "/api/completion/learning/feedback"
+
+
+def test_phase3_real_estate_universal_path_preserves_phase2_rank_and_decision_equivalence():
+    client = _build_client()
+
+    phase2_payload = {
+        "request_id": "RE-EQ-001",
+        "property_address": "14 Portage Ave",
+        "city": "Winnipeg",
+        "region": "MB",
+        "country": "CA",
+        "strategy": "wholesale",
+        "asking_price": 180000,
+        "arv_estimate": 255000,
+        "rehab_estimate": 28000,
+        "source_evidence": [
+            {
+                "source_id": "SRC-EQ-001",
+                "source_type": "government",
+                "confidence_score": 0.9,
+                "freshness_days": 45,
+                "citation_ref": "gov:wpg:eq",
+                "supports": ["valuation"],
+            }
+        ],
+        "persist_decision": False,
+    }
+    phase2 = client.post("/api/completion/phase2/real-estate-intelligence/evaluate", json=phase2_payload)
+    assert phase2.status_code == 200, phase2.text
+    phase2_body = phase2.json()
+
+    universal = client.post(
+        "/api/completion/phase3/universal-opportunity/evaluate",
+        json={
+            "persist_decision": False,
+            "opportunities": [
+                _phase3_strong_opportunity(
+                    opportunity_id="UO-RE-EQ-001",
+                    engine_id="wholesaling",
+                    specialist_inputs={"real_estate_payload": phase2_payload},
+                )
+            ],
+        },
+    )
+    assert universal.status_code == 200, universal.text
+    row = universal.json()["evaluations"][0]
+    assert row["final_decision"] == phase2_body["final_decision"]
+    assert round(float(row["rank_value"]), 4) == round(float(phase2_body["decision_rank_value"]), 4)

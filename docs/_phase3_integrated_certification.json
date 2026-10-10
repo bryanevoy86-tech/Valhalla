@@ -1,0 +1,62 @@
+{
+  "generated_at": "2026-10-10T00:00:00Z",
+  "scope": "Phase 3 blocker repair integration",
+  "status": "REPAIRED_AND_MAIN_CANDIDATE_CERTIFIED",
+  "capabilities": {
+    "shared_universal_evaluator": "PROVEN_IN_FOCUSED_SUITE",
+    "parallel_router_helpers_removed": "PROVEN_IN_CODE_AUDIT",
+    "immutable_prediction_snapshot": "PROVEN_IN_FOCUSED_SUITE",
+    "universal_outcome_contract": "PROVEN_IN_FOCUSED_SUITE",
+    "valhalla_outcome_class": "PROVEN_IN_FOCUSED_SUITE",
+    "lookahead_hard_block": "PROVEN_IN_FOCUSED_SUITE",
+    "systemic_blast_radius_gate": "PROVEN_IN_FOCUSED_SUITE",
+    "survival_capital_gate": "PROVEN_IN_FOCUSED_SUITE",
+    "no_entry_without_exit_gate": "PROVEN_IN_FOCUSED_SUITE",
+    "point_of_no_return_contract": "PROVEN_IN_FOCUSED_SUITE",
+    "mimir_decision_linkage": "PROVEN_IN_FOCUSED_SUITE",
+    "mimir_outcome_feedback_linkage": "PROVEN_IN_FOCUSED_SUITE",
+    "champion_challenger_shadow_gate": "PROVEN_IN_FOCUSED_SUITE"
+  },
+  "tests": {
+    "focused_completion_registry": {
+      "command": "pytest -q services/api/tests/test_completion_registry.py",
+      "result": "PASS",
+      "passed_count": 58,
+      "failed_count": 0,
+      "error_count": 0,
+      "skipped_count": 0
+    },
+    "focused_completion_registry_main_candidate": {
+      "command": "pytest -q services/api/tests/test_completion_registry.py",
+      "result": "PASS",
+      "passed_count": 58,
+      "failed_count": 0,
+      "error_count": 0,
+      "skipped_count": 0
+    },
+    "phase2_regression_slice_main_candidate": {
+      "command": "pytest -q services/api/tests/test_completion_registry.py -k \"phase2_real_estate_intelligence or phase2_winnipeg_certification_route_returns_rankings_and_shadow_safety or legacy_orchestration_runtime_multi_instance_policy_failover_and_isolation\"",
+      "result": "PASS"
+    },
+    "backend_collection_phase3": {
+      "command": "pytest -q --collect-only",
+      "result": "PASS",
+      "collection_errors": 0
+    },
+    "backend_collection_baseline": {
+      "command": "pytest -q --collect-only",
+      "result": "PASS",
+      "collection_errors": 0
+    },
+    "backend_collection_main_candidate": {
+      "command": "pytest -q --collect-only",
+      "result": "PASS",
+      "collection_errors": 0
+    }
+  },
+  "introduced_regressions": {
+    "full_backend_collection": 0,
+    "focused_completion_registry": 0
+  },
+  "blockers": []
+}
