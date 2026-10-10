@@ -4,8 +4,10 @@ Pydantic v2 schemas for PACK SZ, TA, TB
 Validation, regex patterns, and constraints for all models.
 """
 
+from __future__ import annotations
+
 from pydantic import BaseModel, Field, field_validator
-from datetime import date
+from datetime import date as DateType
 from typing import List, Optional, Dict
 
 
@@ -16,7 +18,7 @@ from typing import List, Optional, Dict
 class PhilosophyRecordCreate(BaseModel):
     """Create a philosophy record."""
     title: str = Field(..., min_length=1, max_length=255, description="Philosophy title")
-    date: date = Field(..., description="Date record created")
+    date: DateType = Field(..., description="Date record created")
     pillars: List[str] = Field(default_factory=list, description="Core beliefs")
     mission_statement: str = Field(..., min_length=1, description="Mission statement")
     values: List[str] = Field(default_factory=list, description="Core values")
@@ -43,7 +45,7 @@ class PhilosophyRecordResponse(BaseModel):
     id: int
     record_id: str
     title: str
-    date: date
+    date: DateType
     pillars: List[str]
     mission_statement: str
     values: List[str]
@@ -97,7 +99,7 @@ class EmpirePrincipleResponse(BaseModel):
 
 class PhilosophySnapshotCreate(BaseModel):
     """Create a philosophy snapshot."""
-    date: date = Field(..., description="Snapshot date")
+    date: DateType = Field(..., description="Snapshot date")
     core_pillars: List[str] = Field(default_factory=list, description="Current core beliefs")
     recent_updates: List[str] = Field(default_factory=list, description="Recent changes")
     impact_on_system: List[str] = Field(default_factory=list, description="System implications")
@@ -116,7 +118,7 @@ class PhilosophySnapshotResponse(BaseModel):
     """Response model for philosophy snapshot."""
     id: int
     snapshot_id: str
-    date: date
+    date: DateType
     core_pillars: List[str]
     recent_updates: List[str]
     impact_on_system: List[str]
@@ -176,7 +178,7 @@ class RelationshipProfileResponse(BaseModel):
 class TrustEventLogCreate(BaseModel):
     """Create a trust event log entry."""
     profile_id: int = Field(..., description="Relationship profile ID")
-    date: date = Field(..., description="Event date")
+    date: DateType = Field(..., description="Event date")
     event_description: str = Field(..., min_length=1, description="What happened")
     trust_change: int = Field(..., ge=-10, le=10, description="Trust impact (-10 to +10)")
     notes: Optional[str] = Field(None, description="Additional notes")
@@ -194,7 +196,7 @@ class TrustEventLogResponse(BaseModel):
     id: int
     event_id: str
     profile_id: int
-    date: date
+    date: DateType
     event_description: str
     trust_change: int
     notes: Optional[str]
@@ -207,7 +209,7 @@ class TrustEventLogResponse(BaseModel):
 
 class RelationshipMapSnapshotCreate(BaseModel):
     """Create a relationship map snapshot."""
-    date: date = Field(..., description="Snapshot date")
+    date: DateType = Field(..., description="Snapshot date")
     key_people: List[str] = Field(default_factory=list, description="Key people names")
     trust_levels: Dict[str, int] = Field(default_factory=dict, description="Trust levels by name")
     boundaries: Dict[str, List[str]] = Field(default_factory=dict, description="Boundaries by name")
@@ -226,7 +228,7 @@ class RelationshipMapSnapshotResponse(BaseModel):
     """Response model for relationship map snapshot."""
     id: int
     snapshot_id: str
-    date: date
+    date: DateType
     key_people: List[str]
     trust_levels: Dict[str, int]
     boundaries: Dict[str, List[str]]
@@ -335,7 +337,7 @@ class TempoRuleResponse(BaseModel):
 
 class DailyTempoSnapshotCreate(BaseModel):
     """Create a daily tempo snapshot."""
-    date: date = Field(..., description="Snapshot date")
+    date: DateType = Field(..., description="Snapshot date")
     rhythm_followed: bool = Field(default=True, description="Was rhythm followed?")
     adjustments_needed: Optional[str] = Field(None, description="Any adjustments needed?")
     user_notes: Optional[str] = Field(None, description="User notes")
@@ -352,7 +354,7 @@ class DailyTempoSnapshotResponse(BaseModel):
     """Response model for daily tempo snapshot."""
     id: int
     snapshot_id: str
-    date: date
+    date: DateType
     rhythm_followed: bool
     adjustments_needed: Optional[str]
     user_notes: Optional[str]

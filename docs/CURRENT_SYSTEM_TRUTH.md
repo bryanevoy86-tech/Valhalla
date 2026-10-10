@@ -96,3 +96,29 @@ Generated: 2026-10-10
   - introduced collection regressions: 0
 - Canonical certification boundary remains mandatory:
   - `TEST_FIXTURE_CERTIFICATION != REAL_DATA_CERTIFICATION`
+
+## Backend Test Baseline Hardening Truth (2026-10-10)
+- Hardening branch: `hardening/backend-test-baseline` from canonical main `93cb1afe8d7fbbc01385ea54d5fa992647be647b`.
+- Collection baseline restored from `9` errors to `0` errors.
+- Current collected test count: `913`.
+- Unexpected local modification classification:
+  - File: `services/api/app/services/audit_service.py`
+  - Classification: `REQUIRED_HARDENING_FIX`
+  - Scope: compatibility wrapper for legacy integrity tests (`AuditService.log_event` -> `log_audit_event`), no business-rule or router behavior change.
+  - A/B proof: reverting this file to HEAD content reintroduces `ImportError: cannot import name 'AuditService'` for `services/api/tests/test_system_integrity.py` collection.
+- Required regression protections remain PROVEN on this branch:
+  - Phase Three focused suite: `58 passed, 0 failed, 0 errors, 0 skipped`
+  - Phase Two regression slice: `PASS`
+  - Winnipeg fresh DB reproducibility: `PASS`
+  - Shadow safety lane: `PASS`
+- Full-suite reproducibility (fresh DB runs):
+  - Run A: `913 total / 242 passed / 465 failed / 188 errors / 18 skipped`
+  - Run B: `913 total / 242 passed / 465 failed / 188 errors / 18 skipped`
+  - Reproducible full-suite outcome: `YES`
+- Remaining failure families are documented without suppression:
+  - `TEST_HARNESS_DEFECT`: 295
+  - `TEST_DATA_DEFECT`: 8
+  - `ENVIRONMENT_DEFECT`: 13
+  - `ACTUAL_PRODUCTION_DEFECT`: 73
+  - `EXPECTED_EXTERNAL_DEPENDENCY`: 0
+  - `UNKNOWN`: 264

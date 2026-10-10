@@ -11,6 +11,31 @@ from ..models.audit_log import AuditLog
 logger = logging.getLogger(__name__)
 
 
+class AuditService:
+    """Compatibility wrapper retained for legacy system-integrity tests."""
+
+    def __init__(self, db: Session):
+        self.db = db
+
+    def log_event(
+        self,
+        *,
+        deal_id: Optional[int] = None,
+        event_type: str = "",
+        message: str = "",
+        metadata: Optional[dict] = None,
+        event_source: str = "system",
+    ) -> Optional[AuditLog]:
+        return log_audit_event(
+            self.db,
+            deal_id=deal_id,
+            event_type=event_type,
+            message=message,
+            metadata=metadata,
+            event_source=event_source,
+        )
+
+
 def log_audit_event(
     db: Session,
     deal_id: Optional[int] = None,

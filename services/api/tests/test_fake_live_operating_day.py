@@ -38,7 +38,6 @@ from app.models.freeze_events import FreezeEvent
 from app.models.go_live_state import GoLiveState
 from app.models.lead_intake import LeadIntake
 from app.models.match import Buyer, DealBrief
-from app.models.owner_command import OwnerCommand
 from app.models.pending_action import PendingAction
 from app.models.va_approval_queue import VAApprovalQueue
 from app.models.va_audit_log import VAAuditLog
@@ -46,7 +45,7 @@ from app.models.va_lead import VALead
 from app.routers.completion_registry import router as completion_router
 from app.routers.deal_workflow_status import router as deal_workflow_status_router
 from app.routers.flow_full_pipeline import router as full_pipeline_router
-from app.routers.system_self_check import router as self_check_router
+from app.routers.system_selftest import router as self_check_router
 from app.routers.va_intake import router as va_intake_router
 from app.services.va_audit_service import log_va_event
 
@@ -75,7 +74,6 @@ def _build_fake_live_client() -> tuple[TestClient, sessionmaker]:
 
     # Completion/integrity tables
     PendingAction.__table__.create(bind=engine, checkfirst=True)
-    OwnerCommand.__table__.create(bind=engine, checkfirst=True)
     LeadIntake.__table__.create(bind=engine, checkfirst=True)
     GoLiveState.__table__.create(bind=engine, checkfirst=True)
     AuditLog.__table__.create(bind=engine, checkfirst=True)

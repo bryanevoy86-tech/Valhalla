@@ -1,5 +1,7 @@
 # Models module - Import all models here to ensure proper initialization order
 
+from app.models.base import Base
+
 # Core professional models
 from app.models.pro_scorecard import Professional, InteractionLog, Scorecard
 
@@ -76,9 +78,12 @@ from app.models.underwriter_assessment import UnderwriterAssessment
 
 # Deal Notifications
 from app.models.deal_notification import DealNotification
+from app.models.deal import Deal
+from app.models.offer_evidence import OfferEvidence
 
 # Match registry models required for FK graph completeness
 from app.models.match import Buyer, DealBrief
+from app.models.deal_buyer_match import DealBuyerMatch as BuyerMatch
 
 # Offers registry model required for contracts.offer_id FK target
 from app.offers.models import Offer
@@ -138,6 +143,7 @@ __all__ = [
     # Legal
     "LegalProfile",
     # Lead Acquisition Engine
+    "Base",
     "LeadSource",
     "RawLead",
     "NormalizedLead",
@@ -150,6 +156,9 @@ __all__ = [
     "UnderwriterAssessment",
     # Deal Notifications
     "DealNotification",
+    "Deal",
+    "BuyerMatch",
+    "OfferEvidence",
     "Buyer",
     "DealBrief",
     "Offer",
