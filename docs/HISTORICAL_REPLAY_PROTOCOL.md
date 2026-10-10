@@ -17,14 +17,18 @@ Prevent look-ahead leakage while allowing replay mode to evaluate historical opp
 2. `reveal_historical_outcomes=true` is forbidden when `tuning_mode=true` and at least one opportunity is in `BLIND_HOLDOUT_SET`.
 3. `replay_mode=true` decisions are tagged with `outcome_class=HISTORICAL_OUTCOME`.
 4. Non-replay decisions are tagged with `outcome_class=SHADOW_OUTCOME` by default.
+5. Non-shadow live executions are tagged with `outcome_class=VALHALLA_OUTCOME`.
 
 ## Leakage Evidence Emitted
 Each evaluated opportunity includes:
 - `leakage_protection.as_of_date`
 - `leakage_protection.future_events_excluded`
+- `leakage_protection.invalid_timestamp_events`
 - `leakage_protection.future_information_hidden`
 - `leakage_protection.valid`
+- `leakage_protection.reason_codes`
 
 ## Enforcement Surface
 - Endpoint: `/api/completion/phase3/universal-opportunity/evaluate`
 - Error mode: `409` on holdout contamination attempts.
+- Error mode: `409` with `error_code=LOOKAHEAD_LEAKAGE_BLOCKED` when replay contamination is detected.

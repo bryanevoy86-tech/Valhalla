@@ -1,0 +1,56 @@
+{
+  "generated_at": "2026-10-10T00:00:00Z",
+  "branch": "phase3/universal-opportunity-pipeline",
+  "scope": "phase3 promotion blocker repair",
+  "repairs": {
+    "parallel_evaluator_removed": true,
+    "canonical_runtime_path": true,
+    "level_0_normal": true,
+    "point_of_no_return": true,
+    "systemic_blast_radius_gate": true,
+    "survival_capital_gate": true,
+    "no_entry_without_exit": true,
+    "valhalla_outcome": true,
+    "lookahead_hard_block": true,
+    "mimir_decision_linkage": true,
+    "mimir_outcome_feedback": true,
+    "capital_governance_reuse": true,
+    "pantheon_reuse": true
+  },
+  "tests": {
+    "focused_completion_registry": {
+      "result": "PASS",
+      "tests": 58,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "broad_collection_feature": {
+      "result": "PASS",
+      "collection_errors": 0
+    },
+    "broad_collection_baseline": {
+      "result": "PASS",
+      "collection_errors": 0
+    }
+  },
+  "introduced_regressions": 0,
+  "archive": {
+    "path": "D:/dev/historical_logs/ORIGINALS",
+    "total_files": 18,
+    "docx": 12,
+    "md": 6,
+    "txt": 0,
+    "json": 0,
+    "unreadable": 0,
+    "completeness": "PARTIAL",
+    "known_source_gaps": [
+      "June",
+      "August",
+      "recovery logs",
+      "architecture exports",
+      "chat exports"
+    ]
+  },
+  "ready_for_canonical_promotion": "PENDING_MAIN_CANDIDATE_CERTIFICATION"
+}

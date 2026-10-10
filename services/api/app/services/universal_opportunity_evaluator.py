@@ -7,6 +7,23 @@ from typing import Any, Literal
 
 
 ReplayPartition = Literal["TRAINING_SET", "VALIDATION_SET", "BLIND_HOLDOUT_SET"]
+OutcomeClass = Literal["HISTORICAL_OUTCOME", "SHADOW_OUTCOME", "VALHALLA_OUTCOME"]
+
+EXIT_LADDER_LEVELS = [
+    "LEVEL_0_NORMAL",
+    "LEVEL_1_CORRECT",
+    "LEVEL_2_CONTAIN",
+    "LEVEL_3_RESTRUCTURE",
+    "LEVEL_4_PARTIAL_EXIT",
+    "LEVEL_5_FULL_EXIT",
+    "LEVEL_6_SHIELD",
+]
+
+
+class LookaheadLeakageBlocked(Exception):
+    def __init__(self, detail: dict[str, Any]):
+        super().__init__("LOOKAHEAD_LEAKAGE_BLOCKED")
+        self.detail = detail
 
 
 def bounded(value: float, lo: float, hi: float) -> float:
@@ -319,21 +336,79 @@ def apply_lookahead_protection(payload: dict[str, Any], reveal_historical_outcom
         asof = datetime.now(timezone.utc).date()
 
     excluded = 0
+    invalid_timestamps = 0
     for ev in events:
         ts = ev.get("event_date") or ev.get("publication_date") or ev.get("source_timestamp")
         if not ts:
+            invalid_timestamps += 1
             continue
-        d = datetime.fromisoformat(str(ts)).date()
+        try:
+            d = datetime.fromisoformat(str(ts)).date()
+        except Exception:
+            invalid_timestamps += 1
+            continue
         if d > asof:
             excluded += 1
 
-    contaminated = excluded > 0 and reveal_historical_outcomes
+    contaminated = reveal_historical_outcomes and (excluded > 0 or invalid_timestamps > 0)
+    reasons: list[str] = []
+    if excluded > 0:
+        reasons.append("FUTURE_EVENT_CONTAMINATION")
+    if invalid_timestamps > 0:
+        reasons.append("INVALID_PUBLICATION_TIMESTAMP")
     return {
         "as_of_date": asof.isoformat(),
         "future_events_excluded": excluded,
+        "invalid_timestamp_events": invalid_timestamps,
         "future_information_hidden": bool(payload.get("future_information_hidden", True)),
         "valid": not contaminated,
+        "reason_codes": reasons,
     }
+
+
+def _normalize_point_of_no_return(payload: dict[str, Any]) -> dict[str, Any] | None:
+    raw = payload.get("point_of_no_return")
+    if raw is None:
+        return None
+    if isinstance(raw, dict):
+        return {
+            "condition": raw.get("condition"),
+            "threshold": raw.get("threshold"),
+            "description": raw.get("description"),
+            "consequence": raw.get("consequence"),
+            "requires_reapproval_before_crossing": bool(raw.get("requires_reapproval_before_crossing", True)),
+            "reversible_before_threshold": bool(raw.get("reversible_before_threshold", True)),
+            "source": raw.get("source"),
+            "confidence": raw.get("confidence"),
+        }
+    text = str(raw).strip()
+    if not text:
+        return None
+    return {
+        "condition": None,
+        "threshold": None,
+        "description": text,
+        "consequence": None,
+        "requires_reapproval_before_crossing": True,
+        "reversible_before_threshold": True,
+        "source": "payload",
+        "confidence": "LOW",
+    }
+
+
+def _infer_exit_level(payload: dict[str, Any], final_decision: str, point_of_no_return: dict[str, Any] | None, blast_radius: str) -> str:
+    warnings = list(payload.get("early_warning_indicators") or [])
+    failures = list(payload.get("failure_scenarios") or [])
+    exits_present = bool(payload.get("recovery_options") or payload.get("exit_options"))
+    if not warnings and not failures and exits_present and point_of_no_return is not None and blast_radius != "SYSTEMIC":
+        return "LEVEL_0_NORMAL"
+    if warnings or failures:
+        return "LEVEL_1_CORRECT"
+    if final_decision == "research_more":
+        return "LEVEL_2_CONTAIN"
+    if final_decision == "hold":
+        return "LEVEL_3_RESTRUCTURE"
+    return "LEVEL_4_PARTIAL_EXIT"
 
 
 def build_prediction_snapshot(
@@ -405,6 +480,14 @@ def build_outcome_contract(
         "role_accuracy": None,
         "outcome_observability_state": observability_state,
         "norns_probability": norns.get("probability_of_worthwhile_validation"),
+        "feedback_linkage": {
+            "decision_id": decision_id,
+            "opportunity_id": payload.get("opportunity_id"),
+            "prediction_snapshot_id": evidence_snapshot_id,
+            "pantheon_snapshot_id": pantheon_snapshot_id,
+            "mimir_history_ref": payload.get("case_id") or payload.get("opportunity_id"),
+            "feedback_endpoint": "/api/completion/learning/feedback",
+        },
     }
 
 
@@ -439,7 +522,17 @@ def evaluate_generic_opportunity(
     unresolved_material = any((o["materiality"] == "material" and not o["resolved"]) for o in loki_objections)
     fit = float(specialist.get("fit_score") or 0.0)
 
-    pre_loki_recommendation = "proceed" if fit >= 0.62 and norns["probability_of_worthwhile_validation"] >= 0.58 else "hold"
+    mimir_context = dict(payload.get("mimir_context") or {})
+    prior_failures = int(mimir_context.get("prior_failures") or 0)
+    prior_successes = int(mimir_context.get("prior_successes") or 0)
+    superseded_hits = int(mimir_context.get("superseded_doctrine_hits") or 0)
+    mimir_risk_bias = 0.0
+    if prior_failures > prior_successes:
+        mimir_risk_bias += 0.06
+    if superseded_hits > 0:
+        mimir_risk_bias += 0.04
+
+    pre_loki_recommendation = "proceed" if fit >= (0.62 + mimir_risk_bias) and norns["probability_of_worthwhile_validation"] >= (0.58 + mimir_risk_bias) else "hold"
     if unresolved_critical:
         final_decision = "reject"
     elif pre_loki_recommendation == "proceed" and unresolved_material:
@@ -529,6 +622,9 @@ def evaluate_generic_opportunity(
         observability_state=observability,
     )
 
+    point_of_no_return = _normalize_point_of_no_return(payload)
+    blast_radius = str(payload.get("blast_radius") or "MEDIUM").upper()
+    current_exit_level = _infer_exit_level(payload, final_decision, point_of_no_return, blast_radius)
     recovery_exit_protocol = {
         "primary_plan": payload.get("primary_plan") or "TEST_SMALL_VALIDATE_FAST",
         "failure_scenarios": payload.get("failure_scenarios") or ["NO_CUSTOMER_PULL", "COST_OVERRUN", "TIME_OVERRUN"],
@@ -538,11 +634,14 @@ def evaluate_generic_opportunity(
         "maximum_time_without_validation": payload.get("maximum_time_without_validation") or payload.get("estimated_time_to_validation_days"),
         "minimum_performance_threshold": payload.get("minimum_performance_threshold") or "BASELINE_OR_BETTER",
         "maximum_tolerable_loss": payload.get("maximum_tolerable_loss") or owner_envelope["stop_loss"],
-        "recovery_options": payload.get("recovery_options") or ["LEVEL_1_CORRECT", "LEVEL_2_CONTAIN", "LEVEL_3_RESTRUCTURE"],
-        "exit_options": payload.get("exit_options") or ["LEVEL_4_PARTIAL_EXIT", "LEVEL_5_FULL_EXIT", "LEVEL_6_SHIELD"],
+        "recovery_options": payload.get("recovery_options") if payload.get("recovery_options") is not None else ["LEVEL_1_CORRECT", "LEVEL_2_CONTAIN", "LEVEL_3_RESTRUCTURE"],
+        "exit_options": payload.get("exit_options") if payload.get("exit_options") is not None else ["LEVEL_4_PARTIAL_EXIT", "LEVEL_5_FULL_EXIT", "LEVEL_6_SHIELD"],
         "expected_salvage_value": payload.get("expected_salvage_value"),
         "blast_radius": payload.get("blast_radius") or "MEDIUM",
         "required_reserve_to_survive_failure": payload.get("required_reserve_to_survive_failure") or payload.get("survival_capital"),
+        "exit_ladder": EXIT_LADDER_LEVELS,
+        "current_level": current_exit_level,
+        "point_of_no_return": point_of_no_return,
     }
 
     capital_risk_exit_analysis = {
@@ -560,6 +659,56 @@ def evaluate_generic_opportunity(
             )
         ),
     }
+
+    hard_gate_reasons: list[str] = []
+    available_safe_capital = payload.get("available_safe_capital")
+    required_survival_capital = recovery_exit_protocol.get("required_reserve_to_survive_failure")
+    no_exit_path = not recovery_exit_protocol.get("exit_options") and not recovery_exit_protocol.get("recovery_options")
+    point_of_no_return_missing = point_of_no_return is None
+
+    if blast_radius == "SYSTEMIC":
+        hard_gate_reasons.append("SYSTEMIC_BLAST_RADIUS_FORBIDS_PROCEED")
+
+    if blast_radius == "SYSTEMIC" and final_decision == "proceed":
+        final_decision = "hold"
+
+    if available_safe_capital is not None and required_survival_capital is not None:
+        if float(available_safe_capital) < float(required_survival_capital):
+            hard_gate_reasons.append("SURVIVAL_CAPITAL_INSUFFICIENT")
+            if final_decision == "proceed":
+                final_decision = "hold"
+
+    if no_exit_path:
+        hard_gate_reasons.append("NO_CREDIBLE_EXIT_PATH")
+
+    if point_of_no_return_missing:
+        hard_gate_reasons.append("POINT_OF_NO_RETURN_UNDEFINED")
+
+    if final_decision == "proceed":
+        if no_exit_path:
+            final_decision = "research_more"
+        if recovery_exit_protocol.get("maximum_capital_exposure") is None:
+            final_decision = "research_more"
+            hard_gate_reasons.append("MAX_CAPITAL_EXPOSURE_UNDEFINED")
+        if recovery_exit_protocol.get("required_reserve_to_survive_failure") is None:
+            final_decision = "research_more"
+            hard_gate_reasons.append("SURVIVAL_CAPITAL_UNDEFINED")
+        if point_of_no_return_missing:
+            final_decision = "research_more"
+
+    current_exit_level = _infer_exit_level(payload, final_decision, point_of_no_return, blast_radius)
+    recovery_exit_protocol["current_level"] = current_exit_level
+
+    owner_envelope = universal_owner_envelope(payload, final_decision)
+
+    if expected_outcome_class == "HISTORICAL_OUTCOME" and not lookahead.get("valid", True):
+        raise LookaheadLeakageBlocked(
+            {
+                "error_code": "LOOKAHEAD_LEAKAGE_BLOCKED",
+                "detail": "Historical replay blocked due to look-ahead contamination.",
+                "leakage_protection": lookahead,
+            }
+        )
 
     return {
         "opportunity_id": payload.get("opportunity_id"),
@@ -636,6 +785,24 @@ def evaluate_generic_opportunity(
         "recovery_exit_protocol": recovery_exit_protocol,
         "decision_model": decision_model,
         "replay_partition": payload.get("replay_partition"),
+        "hard_gate_evaluation": {
+            "pass": len(hard_gate_reasons) == 0,
+            "reasons": hard_gate_reasons,
+        },
+        "mimir_linkage": {
+            "used_in_decision": True,
+            "prior_successes": prior_successes,
+            "prior_failures": prior_failures,
+            "superseded_doctrine_hits": superseded_hits,
+            "source_references": list(mimir_context.get("source_references") or []),
+            "authority_order": [
+                "current_certified_implementation_and_evidence",
+                "current_approved_doctrine",
+                "latest_approved_historical_decision",
+                "older_historical_decision",
+                "exploratory_discussion",
+            ],
+        },
     }
 
 
