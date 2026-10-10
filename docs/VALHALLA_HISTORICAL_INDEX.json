@@ -1,0 +1,1702 @@
+{
+  "generated_at": "2026-10-10T14:11:21.574148",
+  "decision_mapping_version": "phase3-integrated-v2",
+  "mapping_policy": "Historical entries are evidence of discussion and decisions and require current-code verification before VERIFIED_BUILT status.",
+  "phase3_current_code_evidence": [
+    "services/api/app/services/universal_opportunity_evaluator.py",
+    "services/api/app/routers/completion_registry.py",
+    "services/api/tests/test_completion_registry.py",
+    "docs/PHASE3_INTEGRATED_ARCHITECTURE.md",
+    "docs/HISTORICAL_REPLAY_PROTOCOL.md",
+    "docs/UNIVERSAL_OUTCOME_CONTRACT.md",
+    "docs/RECOVERY_EXIT_PROTOCOL.md"
+  ],
+  "total_files": 18,
+  "root": "D:/dev/historical_logs/ORIGINALS",
+  "entries": [
+    {
+      "source_file": "valhalla april logs.docx",
+      "source_date": "2026-05",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "outcome_learning",
+      "capability": "outcome_learning",
+      "discussion_summary": "valhalla logs 1.docx Document valhalla logs 2.docx Document Valhalla september logs.docx Document Valhalla october logs.docx Document Valhalla november logs.docx Document Valhalla december logs.docx Document Valhalla january logs.docx Document Valhalla feb. logs.docx Document Valhalla march logs.docx Document valhalla zip 20.zip Zip Archive ok deep dive with great detail into a",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "PARTIAL",
+      "current_code_evidence": [
+        "services/api/app/services/universal_opportunity_evaluator.py",
+        "docs/UNIVERSAL_OUTCOME_CONTRACT.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "valhalla april logs.docx",
+      "source_date": "2026-05",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "pantheon",
+      "capability": "pantheon",
+      "discussion_summary": "valhalla logs 1.docx Document valhalla logs 2.docx Document Valhalla september logs.docx Document Valhalla october logs.docx Document Valhalla november logs.docx Document Valhalla december logs.docx Document Valhalla january logs.docx Document Valhalla feb. logs.docx Document Valhalla march logs.docx Document valhalla zip 20.zip Zip Archive ok deep dive with great detail into a",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "VERIFIED_BUILT",
+      "current_code_evidence": [
+        "services/api/app/routers/completion_registry.py",
+        "services/api/tests/test_completion_registry.py"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "valhalla april logs.docx",
+      "source_date": "2026-05",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "capital_allocation",
+      "capability": "capital_allocation",
+      "discussion_summary": "valhalla logs 1.docx Document valhalla logs 2.docx Document Valhalla september logs.docx Document Valhalla october logs.docx Document Valhalla november logs.docx Document Valhalla december logs.docx Document Valhalla january logs.docx Document Valhalla feb. logs.docx Document Valhalla march logs.docx Document valhalla zip 20.zip Zip Archive ok deep dive with great detail into a",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "VERIFIED_BUILT",
+      "current_code_evidence": [
+        "services/api/app/services/universal_opportunity_evaluator.py",
+        "docs/RECOVERY_EXIT_PROTOCOL.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "valhalla april logs.docx",
+      "source_date": "2026-05",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "replication",
+      "capability": "replication",
+      "discussion_summary": "valhalla logs 1.docx Document valhalla logs 2.docx Document Valhalla september logs.docx Document Valhalla october logs.docx Document Valhalla november logs.docx Document Valhalla december logs.docx Document Valhalla january logs.docx Document Valhalla feb. logs.docx Document Valhalla march logs.docx Document valhalla zip 20.zip Zip Archive ok deep dive with great detail into a",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "DECIDED",
+      "current_code_evidence": [
+        "docs/PHASE3_INTEGRATED_ARCHITECTURE.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "valhalla april logs.docx",
+      "source_date": "2026-05",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "business_acquisition",
+      "capability": "business_acquisition",
+      "discussion_summary": "valhalla logs 1.docx Document valhalla logs 2.docx Document Valhalla september logs.docx Document Valhalla october logs.docx Document Valhalla november logs.docx Document Valhalla december logs.docx Document Valhalla january logs.docx Document Valhalla feb. logs.docx Document Valhalla march logs.docx Document valhalla zip 20.zip Zip Archive ok deep dive with great detail into a",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "DECIDED",
+      "current_code_evidence": [
+        "docs/PHASE3_INTEGRATED_ARCHITECTURE.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "valhalla april logs.docx",
+      "source_date": "2026-05",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "real_estate",
+      "capability": "real_estate",
+      "discussion_summary": "valhalla logs 1.docx Document valhalla logs 2.docx Document Valhalla september logs.docx Document Valhalla october logs.docx Document Valhalla november logs.docx Document Valhalla december logs.docx Document Valhalla january logs.docx Document Valhalla feb. logs.docx Document Valhalla march logs.docx Document valhalla zip 20.zip Zip Archive ok deep dive with great detail into a",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "VERIFIED_BUILT",
+      "current_code_evidence": [
+        "services/api/app/routers/completion_registry.py"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla december logs.docx",
+      "source_date": "2026-03",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "historical_replay",
+      "capability": "historical_replay",
+      "discussion_summary": "Ok so now that you have everything from my zip folder and every conversation we have had in this project. Can you tell me exactly where I am in my build. The last prompt you gave me in the chat that I imported the zip to has not yet been completed. That's the next step. But I want to know where I am and how much longer untill Heimdall is building with me Alright \u2014 here\u2019s the cl",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "PARTIAL",
+      "current_code_evidence": [
+        "services/api/app/services/universal_opportunity_evaluator.py",
+        "services/api/app/routers/completion_registry.py"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla december logs.docx",
+      "source_date": "2026-03",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "outcome_learning",
+      "capability": "outcome_learning",
+      "discussion_summary": "Ok so now that you have everything from my zip folder and every conversation we have had in this project. Can you tell me exactly where I am in my build. The last prompt you gave me in the chat that I imported the zip to has not yet been completed. That's the next step. But I want to know where I am and how much longer untill Heimdall is building with me Alright \u2014 here\u2019s the cl",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "PARTIAL",
+      "current_code_evidence": [
+        "services/api/app/services/universal_opportunity_evaluator.py",
+        "docs/UNIVERSAL_OUTCOME_CONTRACT.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla december logs.docx",
+      "source_date": "2026-03",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "pantheon",
+      "capability": "pantheon",
+      "discussion_summary": "Ok so now that you have everything from my zip folder and every conversation we have had in this project. Can you tell me exactly where I am in my build. The last prompt you gave me in the chat that I imported the zip to has not yet been completed. That's the next step. But I want to know where I am and how much longer untill Heimdall is building with me Alright \u2014 here\u2019s the cl",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "VERIFIED_BUILT",
+      "current_code_evidence": [
+        "services/api/app/routers/completion_registry.py",
+        "services/api/tests/test_completion_registry.py"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla december logs.docx",
+      "source_date": "2026-03",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "capital_allocation",
+      "capability": "capital_allocation",
+      "discussion_summary": "Ok so now that you have everything from my zip folder and every conversation we have had in this project. Can you tell me exactly where I am in my build. The last prompt you gave me in the chat that I imported the zip to has not yet been completed. That's the next step. But I want to know where I am and how much longer untill Heimdall is building with me Alright \u2014 here\u2019s the cl",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "VERIFIED_BUILT",
+      "current_code_evidence": [
+        "services/api/app/services/universal_opportunity_evaluator.py",
+        "docs/RECOVERY_EXIT_PROTOCOL.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla december logs.docx",
+      "source_date": "2026-03",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "replication",
+      "capability": "replication",
+      "discussion_summary": "Ok so now that you have everything from my zip folder and every conversation we have had in this project. Can you tell me exactly where I am in my build. The last prompt you gave me in the chat that I imported the zip to has not yet been completed. That's the next step. But I want to know where I am and how much longer untill Heimdall is building with me Alright \u2014 here\u2019s the cl",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "DECIDED",
+      "current_code_evidence": [
+        "docs/PHASE3_INTEGRATED_ARCHITECTURE.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla december logs.docx",
+      "source_date": "2026-03",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "business_acquisition",
+      "capability": "business_acquisition",
+      "discussion_summary": "Ok so now that you have everything from my zip folder and every conversation we have had in this project. Can you tell me exactly where I am in my build. The last prompt you gave me in the chat that I imported the zip to has not yet been completed. That's the next step. But I want to know where I am and how much longer untill Heimdall is building with me Alright \u2014 here\u2019s the cl",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "DECIDED",
+      "current_code_evidence": [
+        "docs/PHASE3_INTEGRATED_ARCHITECTURE.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla feb. logs.docx",
+      "source_date": "2026-03",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "historical_replay",
+      "capability": "historical_replay",
+      "discussion_summary": "Can you pull up the chapters for heimdelbot? Absolutely \u2014 here are the HeimdallBot Chapters exactly as we structured them in the Valhalla system. These are the core \u201cchapters\u201d (modules) that define Heimdall\u2019s abilities, training layers, authority levels, and operational rules. This is the clean, current, fully updated chapter list . \u2694\ufe0f HEIMDALLBOT \u2014 FULL CHAPTER INDEX (MASTER E",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "PARTIAL",
+      "current_code_evidence": [
+        "services/api/app/services/universal_opportunity_evaluator.py",
+        "services/api/app/routers/completion_registry.py"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla feb. logs.docx",
+      "source_date": "2026-03",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "outcome_learning",
+      "capability": "outcome_learning",
+      "discussion_summary": "Can you pull up the chapters for heimdelbot? Absolutely \u2014 here are the HeimdallBot Chapters exactly as we structured them in the Valhalla system. These are the core \u201cchapters\u201d (modules) that define Heimdall\u2019s abilities, training layers, authority levels, and operational rules. This is the clean, current, fully updated chapter list . \u2694\ufe0f HEIMDALLBOT \u2014 FULL CHAPTER INDEX (MASTER E",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "PARTIAL",
+      "current_code_evidence": [
+        "services/api/app/services/universal_opportunity_evaluator.py",
+        "docs/UNIVERSAL_OUTCOME_CONTRACT.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla feb. logs.docx",
+      "source_date": "2026-03",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "pantheon",
+      "capability": "pantheon",
+      "discussion_summary": "Can you pull up the chapters for heimdelbot? Absolutely \u2014 here are the HeimdallBot Chapters exactly as we structured them in the Valhalla system. These are the core \u201cchapters\u201d (modules) that define Heimdall\u2019s abilities, training layers, authority levels, and operational rules. This is the clean, current, fully updated chapter list . \u2694\ufe0f HEIMDALLBOT \u2014 FULL CHAPTER INDEX (MASTER E",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "VERIFIED_BUILT",
+      "current_code_evidence": [
+        "services/api/app/routers/completion_registry.py",
+        "services/api/tests/test_completion_registry.py"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla feb. logs.docx",
+      "source_date": "2026-03",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "capital_allocation",
+      "capability": "capital_allocation",
+      "discussion_summary": "Can you pull up the chapters for heimdelbot? Absolutely \u2014 here are the HeimdallBot Chapters exactly as we structured them in the Valhalla system. These are the core \u201cchapters\u201d (modules) that define Heimdall\u2019s abilities, training layers, authority levels, and operational rules. This is the clean, current, fully updated chapter list . \u2694\ufe0f HEIMDALLBOT \u2014 FULL CHAPTER INDEX (MASTER E",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "VERIFIED_BUILT",
+      "current_code_evidence": [
+        "services/api/app/services/universal_opportunity_evaluator.py",
+        "docs/RECOVERY_EXIT_PROTOCOL.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla feb. logs.docx",
+      "source_date": "2026-03",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "replication",
+      "capability": "replication",
+      "discussion_summary": "Can you pull up the chapters for heimdelbot? Absolutely \u2014 here are the HeimdallBot Chapters exactly as we structured them in the Valhalla system. These are the core \u201cchapters\u201d (modules) that define Heimdall\u2019s abilities, training layers, authority levels, and operational rules. This is the clean, current, fully updated chapter list . \u2694\ufe0f HEIMDALLBOT \u2014 FULL CHAPTER INDEX (MASTER E",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "DECIDED",
+      "current_code_evidence": [
+        "docs/PHASE3_INTEGRATED_ARCHITECTURE.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla feb. logs.docx",
+      "source_date": "2026-03",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "business_acquisition",
+      "capability": "business_acquisition",
+      "discussion_summary": "Can you pull up the chapters for heimdelbot? Absolutely \u2014 here are the HeimdallBot Chapters exactly as we structured them in the Valhalla system. These are the core \u201cchapters\u201d (modules) that define Heimdall\u2019s abilities, training layers, authority levels, and operational rules. This is the clean, current, fully updated chapter list . \u2694\ufe0f HEIMDALLBOT \u2014 FULL CHAPTER INDEX (MASTER E",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "DECIDED",
+      "current_code_evidence": [
+        "docs/PHASE3_INTEGRATED_ARCHITECTURE.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla january logs.docx",
+      "source_date": "2026-03",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "historical_replay",
+      "capability": "historical_replay",
+      "discussion_summary": "Okay, I want you to be extremely critical here and do a deep dive throughout my entire system and tell me what has been missed and what has not been installed in vs code yet Thought for 4m 55s Here\u2019s the brutal, system-wide truth based on the snapshot you provided (the valhalla zip5.zip codebase). You don\u2019t have \u201ca few things missing.\u201d You have multiple parallel backends + the ",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "PARTIAL",
+      "current_code_evidence": [
+        "services/api/app/services/universal_opportunity_evaluator.py",
+        "services/api/app/routers/completion_registry.py"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla january logs.docx",
+      "source_date": "2026-03",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "outcome_learning",
+      "capability": "outcome_learning",
+      "discussion_summary": "Okay, I want you to be extremely critical here and do a deep dive throughout my entire system and tell me what has been missed and what has not been installed in vs code yet Thought for 4m 55s Here\u2019s the brutal, system-wide truth based on the snapshot you provided (the valhalla zip5.zip codebase). You don\u2019t have \u201ca few things missing.\u201d You have multiple parallel backends + the ",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "PARTIAL",
+      "current_code_evidence": [
+        "services/api/app/services/universal_opportunity_evaluator.py",
+        "docs/UNIVERSAL_OUTCOME_CONTRACT.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla january logs.docx",
+      "source_date": "2026-03",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "pantheon",
+      "capability": "pantheon",
+      "discussion_summary": "Okay, I want you to be extremely critical here and do a deep dive throughout my entire system and tell me what has been missed and what has not been installed in vs code yet Thought for 4m 55s Here\u2019s the brutal, system-wide truth based on the snapshot you provided (the valhalla zip5.zip codebase). You don\u2019t have \u201ca few things missing.\u201d You have multiple parallel backends + the ",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "VERIFIED_BUILT",
+      "current_code_evidence": [
+        "services/api/app/routers/completion_registry.py",
+        "services/api/tests/test_completion_registry.py"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla january logs.docx",
+      "source_date": "2026-03",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "capital_allocation",
+      "capability": "capital_allocation",
+      "discussion_summary": "Okay, I want you to be extremely critical here and do a deep dive throughout my entire system and tell me what has been missed and what has not been installed in vs code yet Thought for 4m 55s Here\u2019s the brutal, system-wide truth based on the snapshot you provided (the valhalla zip5.zip codebase). You don\u2019t have \u201ca few things missing.\u201d You have multiple parallel backends + the ",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "VERIFIED_BUILT",
+      "current_code_evidence": [
+        "services/api/app/services/universal_opportunity_evaluator.py",
+        "docs/RECOVERY_EXIT_PROTOCOL.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla january logs.docx",
+      "source_date": "2026-03",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "replication",
+      "capability": "replication",
+      "discussion_summary": "Okay, I want you to be extremely critical here and do a deep dive throughout my entire system and tell me what has been missed and what has not been installed in vs code yet Thought for 4m 55s Here\u2019s the brutal, system-wide truth based on the snapshot you provided (the valhalla zip5.zip codebase). You don\u2019t have \u201ca few things missing.\u201d You have multiple parallel backends + the ",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "DECIDED",
+      "current_code_evidence": [
+        "docs/PHASE3_INTEGRATED_ARCHITECTURE.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla january logs.docx",
+      "source_date": "2026-03",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "business_acquisition",
+      "capability": "business_acquisition",
+      "discussion_summary": "Okay, I want you to be extremely critical here and do a deep dive throughout my entire system and tell me what has been missed and what has not been installed in vs code yet Thought for 4m 55s Here\u2019s the brutal, system-wide truth based on the snapshot you provided (the valhalla zip5.zip codebase). You don\u2019t have \u201ca few things missing.\u201d You have multiple parallel backends + the ",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "DECIDED",
+      "current_code_evidence": [
+        "docs/PHASE3_INTEGRATED_ARCHITECTURE.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "valhalla july logs.docx",
+      "source_date": "2026-07",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "outcome_learning",
+      "capability": "outcome_learning",
+      "discussion_summary": "ChatGPT Plus Sat, Jun 27 at 10:01 PM Pasted text.txt Document so give me the first vs code copy and paste to get what you need so we can keep moving toward a completed system. Pasted markdown.md File Pasted markdown (2).md File Pasted markdown (3).md File Pasted markdown (4).md File VALHALLA CURRENT STATE TRUTH AUDIT \u2014 COMPLETE \ud83d\udccb AUDIT SCOPE COMPLETED All 7 phases verified and ",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "PARTIAL",
+      "current_code_evidence": [
+        "services/api/app/services/universal_opportunity_evaluator.py",
+        "docs/UNIVERSAL_OUTCOME_CONTRACT.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "valhalla july logs.docx",
+      "source_date": "2026-07",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "pantheon",
+      "capability": "pantheon",
+      "discussion_summary": "ChatGPT Plus Sat, Jun 27 at 10:01 PM Pasted text.txt Document so give me the first vs code copy and paste to get what you need so we can keep moving toward a completed system. Pasted markdown.md File Pasted markdown (2).md File Pasted markdown (3).md File Pasted markdown (4).md File VALHALLA CURRENT STATE TRUTH AUDIT \u2014 COMPLETE \ud83d\udccb AUDIT SCOPE COMPLETED All 7 phases verified and ",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "VERIFIED_BUILT",
+      "current_code_evidence": [
+        "services/api/app/routers/completion_registry.py",
+        "services/api/tests/test_completion_registry.py"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "valhalla july logs.docx",
+      "source_date": "2026-07",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "capital_allocation",
+      "capability": "capital_allocation",
+      "discussion_summary": "ChatGPT Plus Sat, Jun 27 at 10:01 PM Pasted text.txt Document so give me the first vs code copy and paste to get what you need so we can keep moving toward a completed system. Pasted markdown.md File Pasted markdown (2).md File Pasted markdown (3).md File Pasted markdown (4).md File VALHALLA CURRENT STATE TRUTH AUDIT \u2014 COMPLETE \ud83d\udccb AUDIT SCOPE COMPLETED All 7 phases verified and ",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "VERIFIED_BUILT",
+      "current_code_evidence": [
+        "services/api/app/services/universal_opportunity_evaluator.py",
+        "docs/RECOVERY_EXIT_PROTOCOL.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "valhalla july logs.docx",
+      "source_date": "2026-07",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "replication",
+      "capability": "replication",
+      "discussion_summary": "ChatGPT Plus Sat, Jun 27 at 10:01 PM Pasted text.txt Document so give me the first vs code copy and paste to get what you need so we can keep moving toward a completed system. Pasted markdown.md File Pasted markdown (2).md File Pasted markdown (3).md File Pasted markdown (4).md File VALHALLA CURRENT STATE TRUTH AUDIT \u2014 COMPLETE \ud83d\udccb AUDIT SCOPE COMPLETED All 7 phases verified and ",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "DECIDED",
+      "current_code_evidence": [
+        "docs/PHASE3_INTEGRATED_ARCHITECTURE.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "valhalla july logs.docx",
+      "source_date": "2026-07",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "business_acquisition",
+      "capability": "business_acquisition",
+      "discussion_summary": "ChatGPT Plus Sat, Jun 27 at 10:01 PM Pasted text.txt Document so give me the first vs code copy and paste to get what you need so we can keep moving toward a completed system. Pasted markdown.md File Pasted markdown (2).md File Pasted markdown (3).md File Pasted markdown (4).md File VALHALLA CURRENT STATE TRUTH AUDIT \u2014 COMPLETE \ud83d\udccb AUDIT SCOPE COMPLETED All 7 phases verified and ",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "DECIDED",
+      "current_code_evidence": [
+        "docs/PHASE3_INTEGRATED_ARCHITECTURE.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "valhalla july logs.docx",
+      "source_date": "2026-07",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "real_estate",
+      "capability": "real_estate",
+      "discussion_summary": "ChatGPT Plus Sat, Jun 27 at 10:01 PM Pasted text.txt Document so give me the first vs code copy and paste to get what you need so we can keep moving toward a completed system. Pasted markdown.md File Pasted markdown (2).md File Pasted markdown (3).md File Pasted markdown (4).md File VALHALLA CURRENT STATE TRUTH AUDIT \u2014 COMPLETE \ud83d\udccb AUDIT SCOPE COMPLETED All 7 phases verified and ",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "VERIFIED_BUILT",
+      "current_code_evidence": [
+        "services/api/app/routers/completion_registry.py"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "valhalla logs 1.docx",
+      "source_date": "2026-03",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "historical_replay",
+      "capability": "historical_replay",
+      "discussion_summary": "Skip to content Chat history You said: ok i asked you to remind me to copy all my chats and save them in a file so i can pass everything to you to organize and give me a clear run down of everything we have ever talked about. can you walk me through that now ChatGPT said: Absolutely \u2014 I\u2019ll walk you through it cleanly and step-by-step so you can gather every chat, save it, and t",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "PARTIAL",
+      "current_code_evidence": [
+        "services/api/app/services/universal_opportunity_evaluator.py",
+        "services/api/app/routers/completion_registry.py"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "valhalla logs 1.docx",
+      "source_date": "2026-03",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "outcome_learning",
+      "capability": "outcome_learning",
+      "discussion_summary": "Skip to content Chat history You said: ok i asked you to remind me to copy all my chats and save them in a file so i can pass everything to you to organize and give me a clear run down of everything we have ever talked about. can you walk me through that now ChatGPT said: Absolutely \u2014 I\u2019ll walk you through it cleanly and step-by-step so you can gather every chat, save it, and t",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "PARTIAL",
+      "current_code_evidence": [
+        "services/api/app/services/universal_opportunity_evaluator.py",
+        "docs/UNIVERSAL_OUTCOME_CONTRACT.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "valhalla logs 1.docx",
+      "source_date": "2026-03",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "pantheon",
+      "capability": "pantheon",
+      "discussion_summary": "Skip to content Chat history You said: ok i asked you to remind me to copy all my chats and save them in a file so i can pass everything to you to organize and give me a clear run down of everything we have ever talked about. can you walk me through that now ChatGPT said: Absolutely \u2014 I\u2019ll walk you through it cleanly and step-by-step so you can gather every chat, save it, and t",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "VERIFIED_BUILT",
+      "current_code_evidence": [
+        "services/api/app/routers/completion_registry.py",
+        "services/api/tests/test_completion_registry.py"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "valhalla logs 1.docx",
+      "source_date": "2026-03",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "capital_allocation",
+      "capability": "capital_allocation",
+      "discussion_summary": "Skip to content Chat history You said: ok i asked you to remind me to copy all my chats and save them in a file so i can pass everything to you to organize and give me a clear run down of everything we have ever talked about. can you walk me through that now ChatGPT said: Absolutely \u2014 I\u2019ll walk you through it cleanly and step-by-step so you can gather every chat, save it, and t",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "VERIFIED_BUILT",
+      "current_code_evidence": [
+        "services/api/app/services/universal_opportunity_evaluator.py",
+        "docs/RECOVERY_EXIT_PROTOCOL.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "valhalla logs 1.docx",
+      "source_date": "2026-03",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "replication",
+      "capability": "replication",
+      "discussion_summary": "Skip to content Chat history You said: ok i asked you to remind me to copy all my chats and save them in a file so i can pass everything to you to organize and give me a clear run down of everything we have ever talked about. can you walk me through that now ChatGPT said: Absolutely \u2014 I\u2019ll walk you through it cleanly and step-by-step so you can gather every chat, save it, and t",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "DECIDED",
+      "current_code_evidence": [
+        "docs/PHASE3_INTEGRATED_ARCHITECTURE.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "valhalla logs 1.docx",
+      "source_date": "2026-03",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "business_acquisition",
+      "capability": "business_acquisition",
+      "discussion_summary": "Skip to content Chat history You said: ok i asked you to remind me to copy all my chats and save them in a file so i can pass everything to you to organize and give me a clear run down of everything we have ever talked about. can you walk me through that now ChatGPT said: Absolutely \u2014 I\u2019ll walk you through it cleanly and step-by-step so you can gather every chat, save it, and t",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "DECIDED",
+      "current_code_evidence": [
+        "docs/PHASE3_INTEGRATED_ARCHITECTURE.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "valhalla logs 2.docx",
+      "source_date": "2026-03",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "historical_replay",
+      "capability": "historical_replay",
+      "discussion_summary": "Skip to content Chat history You said: So tell me this if this system is so good where does it naturally cap off? ChatGPT said: Great question. Let\u2019s break this down clearly, because every system \u2014 even one designed to scale aggressively like yours \u2014 has natural limiting factors . Your system as we\u2019ve designed it is engineered to be \u201cno-cap\u201d in theory , but in practice the ceil",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "PARTIAL",
+      "current_code_evidence": [
+        "services/api/app/services/universal_opportunity_evaluator.py",
+        "services/api/app/routers/completion_registry.py"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "valhalla logs 2.docx",
+      "source_date": "2026-03",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "outcome_learning",
+      "capability": "outcome_learning",
+      "discussion_summary": "Skip to content Chat history You said: So tell me this if this system is so good where does it naturally cap off? ChatGPT said: Great question. Let\u2019s break this down clearly, because every system \u2014 even one designed to scale aggressively like yours \u2014 has natural limiting factors . Your system as we\u2019ve designed it is engineered to be \u201cno-cap\u201d in theory , but in practice the ceil",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "PARTIAL",
+      "current_code_evidence": [
+        "services/api/app/services/universal_opportunity_evaluator.py",
+        "docs/UNIVERSAL_OUTCOME_CONTRACT.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "valhalla logs 2.docx",
+      "source_date": "2026-03",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "pantheon",
+      "capability": "pantheon",
+      "discussion_summary": "Skip to content Chat history You said: So tell me this if this system is so good where does it naturally cap off? ChatGPT said: Great question. Let\u2019s break this down clearly, because every system \u2014 even one designed to scale aggressively like yours \u2014 has natural limiting factors . Your system as we\u2019ve designed it is engineered to be \u201cno-cap\u201d in theory , but in practice the ceil",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "VERIFIED_BUILT",
+      "current_code_evidence": [
+        "services/api/app/routers/completion_registry.py",
+        "services/api/tests/test_completion_registry.py"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "valhalla logs 2.docx",
+      "source_date": "2026-03",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "capital_allocation",
+      "capability": "capital_allocation",
+      "discussion_summary": "Skip to content Chat history You said: So tell me this if this system is so good where does it naturally cap off? ChatGPT said: Great question. Let\u2019s break this down clearly, because every system \u2014 even one designed to scale aggressively like yours \u2014 has natural limiting factors . Your system as we\u2019ve designed it is engineered to be \u201cno-cap\u201d in theory , but in practice the ceil",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "VERIFIED_BUILT",
+      "current_code_evidence": [
+        "services/api/app/services/universal_opportunity_evaluator.py",
+        "docs/RECOVERY_EXIT_PROTOCOL.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "valhalla logs 2.docx",
+      "source_date": "2026-03",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "replication",
+      "capability": "replication",
+      "discussion_summary": "Skip to content Chat history You said: So tell me this if this system is so good where does it naturally cap off? ChatGPT said: Great question. Let\u2019s break this down clearly, because every system \u2014 even one designed to scale aggressively like yours \u2014 has natural limiting factors . Your system as we\u2019ve designed it is engineered to be \u201cno-cap\u201d in theory , but in practice the ceil",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "DECIDED",
+      "current_code_evidence": [
+        "docs/PHASE3_INTEGRATED_ARCHITECTURE.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "valhalla logs 2.docx",
+      "source_date": "2026-03",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "real_estate",
+      "capability": "real_estate",
+      "discussion_summary": "Skip to content Chat history You said: So tell me this if this system is so good where does it naturally cap off? ChatGPT said: Great question. Let\u2019s break this down clearly, because every system \u2014 even one designed to scale aggressively like yours \u2014 has natural limiting factors . Your system as we\u2019ve designed it is engineered to be \u201cno-cap\u201d in theory , but in practice the ceil",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "VERIFIED_BUILT",
+      "current_code_evidence": [
+        "services/api/app/routers/completion_registry.py"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla march logs.docx",
+      "source_date": "2026-04",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "outcome_learning",
+      "capability": "outcome_learning",
+      "discussion_summary": "So now we have to include the ethics part of our system and we will also have to add the checks and the guard rails for ingesting accurate data via websites and textbooks and government regulations and trusted sites Absolutely. Let\u2019s wire this straight into Heimdall as a first-class \u201cEthics & Evidence Guardrail\u201d layer. Below is drop-in architecture + copy-paste artifacts you ca",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "PARTIAL",
+      "current_code_evidence": [
+        "services/api/app/services/universal_opportunity_evaluator.py",
+        "docs/UNIVERSAL_OUTCOME_CONTRACT.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla march logs.docx",
+      "source_date": "2026-04",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "pantheon",
+      "capability": "pantheon",
+      "discussion_summary": "So now we have to include the ethics part of our system and we will also have to add the checks and the guard rails for ingesting accurate data via websites and textbooks and government regulations and trusted sites Absolutely. Let\u2019s wire this straight into Heimdall as a first-class \u201cEthics & Evidence Guardrail\u201d layer. Below is drop-in architecture + copy-paste artifacts you ca",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "VERIFIED_BUILT",
+      "current_code_evidence": [
+        "services/api/app/routers/completion_registry.py",
+        "services/api/tests/test_completion_registry.py"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla march logs.docx",
+      "source_date": "2026-04",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "capital_allocation",
+      "capability": "capital_allocation",
+      "discussion_summary": "So now we have to include the ethics part of our system and we will also have to add the checks and the guard rails for ingesting accurate data via websites and textbooks and government regulations and trusted sites Absolutely. Let\u2019s wire this straight into Heimdall as a first-class \u201cEthics & Evidence Guardrail\u201d layer. Below is drop-in architecture + copy-paste artifacts you ca",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "VERIFIED_BUILT",
+      "current_code_evidence": [
+        "services/api/app/services/universal_opportunity_evaluator.py",
+        "docs/RECOVERY_EXIT_PROTOCOL.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla march logs.docx",
+      "source_date": "2026-04",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "replication",
+      "capability": "replication",
+      "discussion_summary": "So now we have to include the ethics part of our system and we will also have to add the checks and the guard rails for ingesting accurate data via websites and textbooks and government regulations and trusted sites Absolutely. Let\u2019s wire this straight into Heimdall as a first-class \u201cEthics & Evidence Guardrail\u201d layer. Below is drop-in architecture + copy-paste artifacts you ca",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "DECIDED",
+      "current_code_evidence": [
+        "docs/PHASE3_INTEGRATED_ARCHITECTURE.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla march logs.docx",
+      "source_date": "2026-04",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "business_acquisition",
+      "capability": "business_acquisition",
+      "discussion_summary": "So now we have to include the ethics part of our system and we will also have to add the checks and the guard rails for ingesting accurate data via websites and textbooks and government regulations and trusted sites Absolutely. Let\u2019s wire this straight into Heimdall as a first-class \u201cEthics & Evidence Guardrail\u201d layer. Below is drop-in architecture + copy-paste artifacts you ca",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "DECIDED",
+      "current_code_evidence": [
+        "docs/PHASE3_INTEGRATED_ARCHITECTURE.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla march logs.docx",
+      "source_date": "2026-04",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "real_estate",
+      "capability": "real_estate",
+      "discussion_summary": "So now we have to include the ethics part of our system and we will also have to add the checks and the guard rails for ingesting accurate data via websites and textbooks and government regulations and trusted sites Absolutely. Let\u2019s wire this straight into Heimdall as a first-class \u201cEthics & Evidence Guardrail\u201d layer. Below is drop-in architecture + copy-paste artifacts you ca",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "VERIFIED_BUILT",
+      "current_code_evidence": [
+        "services/api/app/routers/completion_registry.py"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "valhalla may logs.docx",
+      "source_date": "2026-06",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "outcome_learning",
+      "capability": "outcome_learning",
+      "discussion_summary": "ChatGPT So you know my entire system right So you know my entire system right Yeah \u2014 I\u2019ve got a clear, working understanding of your system as a whole , not just pieces of it. But I\u2019m not going to pretend it\u2019s some mystical \u201cperfect machine\u201d either \u2014 what you\u2019ve built is very ambitious, layered, and powerful , but it only works if it\u2019s grounded and executed in the real world th",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "PARTIAL",
+      "current_code_evidence": [
+        "services/api/app/services/universal_opportunity_evaluator.py",
+        "docs/UNIVERSAL_OUTCOME_CONTRACT.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "valhalla may logs.docx",
+      "source_date": "2026-06",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "pantheon",
+      "capability": "pantheon",
+      "discussion_summary": "ChatGPT So you know my entire system right So you know my entire system right Yeah \u2014 I\u2019ve got a clear, working understanding of your system as a whole , not just pieces of it. But I\u2019m not going to pretend it\u2019s some mystical \u201cperfect machine\u201d either \u2014 what you\u2019ve built is very ambitious, layered, and powerful , but it only works if it\u2019s grounded and executed in the real world th",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "VERIFIED_BUILT",
+      "current_code_evidence": [
+        "services/api/app/routers/completion_registry.py",
+        "services/api/tests/test_completion_registry.py"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "valhalla may logs.docx",
+      "source_date": "2026-06",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "capital_allocation",
+      "capability": "capital_allocation",
+      "discussion_summary": "ChatGPT So you know my entire system right So you know my entire system right Yeah \u2014 I\u2019ve got a clear, working understanding of your system as a whole , not just pieces of it. But I\u2019m not going to pretend it\u2019s some mystical \u201cperfect machine\u201d either \u2014 what you\u2019ve built is very ambitious, layered, and powerful , but it only works if it\u2019s grounded and executed in the real world th",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "VERIFIED_BUILT",
+      "current_code_evidence": [
+        "services/api/app/services/universal_opportunity_evaluator.py",
+        "docs/RECOVERY_EXIT_PROTOCOL.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "valhalla may logs.docx",
+      "source_date": "2026-06",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "replication",
+      "capability": "replication",
+      "discussion_summary": "ChatGPT So you know my entire system right So you know my entire system right Yeah \u2014 I\u2019ve got a clear, working understanding of your system as a whole , not just pieces of it. But I\u2019m not going to pretend it\u2019s some mystical \u201cperfect machine\u201d either \u2014 what you\u2019ve built is very ambitious, layered, and powerful , but it only works if it\u2019s grounded and executed in the real world th",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "DECIDED",
+      "current_code_evidence": [
+        "docs/PHASE3_INTEGRATED_ARCHITECTURE.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "valhalla may logs.docx",
+      "source_date": "2026-06",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "business_acquisition",
+      "capability": "business_acquisition",
+      "discussion_summary": "ChatGPT So you know my entire system right So you know my entire system right Yeah \u2014 I\u2019ve got a clear, working understanding of your system as a whole , not just pieces of it. But I\u2019m not going to pretend it\u2019s some mystical \u201cperfect machine\u201d either \u2014 what you\u2019ve built is very ambitious, layered, and powerful , but it only works if it\u2019s grounded and executed in the real world th",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "DECIDED",
+      "current_code_evidence": [
+        "docs/PHASE3_INTEGRATED_ARCHITECTURE.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "valhalla may logs.docx",
+      "source_date": "2026-06",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "real_estate",
+      "capability": "real_estate",
+      "discussion_summary": "ChatGPT So you know my entire system right So you know my entire system right Yeah \u2014 I\u2019ve got a clear, working understanding of your system as a whole , not just pieces of it. But I\u2019m not going to pretend it\u2019s some mystical \u201cperfect machine\u201d either \u2014 what you\u2019ve built is very ambitious, layered, and powerful , but it only works if it\u2019s grounded and executed in the real world th",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "VERIFIED_BUILT",
+      "current_code_evidence": [
+        "services/api/app/routers/completion_registry.py"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla november logs.docx",
+      "source_date": "2026-03",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "historical_replay",
+      "capability": "historical_replay",
+      "discussion_summary": "Why do I keep getting these emails that our stuff is not working Short answer: because your GitHub Actions CI workflow is firing on every push/PR and the \u201ctest\u201d job is failing , so GitHub emails you by default when a workflow fails. Here\u2019s how to stop the noise and fix the root cause. 1) Find the exact failure Repo \u2192 Actions \u2192 click the red run \u2192 test job \u2192 expand steps. Note t",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "PARTIAL",
+      "current_code_evidence": [
+        "services/api/app/services/universal_opportunity_evaluator.py",
+        "services/api/app/routers/completion_registry.py"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla november logs.docx",
+      "source_date": "2026-03",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "outcome_learning",
+      "capability": "outcome_learning",
+      "discussion_summary": "Why do I keep getting these emails that our stuff is not working Short answer: because your GitHub Actions CI workflow is firing on every push/PR and the \u201ctest\u201d job is failing , so GitHub emails you by default when a workflow fails. Here\u2019s how to stop the noise and fix the root cause. 1) Find the exact failure Repo \u2192 Actions \u2192 click the red run \u2192 test job \u2192 expand steps. Note t",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "PARTIAL",
+      "current_code_evidence": [
+        "services/api/app/services/universal_opportunity_evaluator.py",
+        "docs/UNIVERSAL_OUTCOME_CONTRACT.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla november logs.docx",
+      "source_date": "2026-03",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "pantheon",
+      "capability": "pantheon",
+      "discussion_summary": "Why do I keep getting these emails that our stuff is not working Short answer: because your GitHub Actions CI workflow is firing on every push/PR and the \u201ctest\u201d job is failing , so GitHub emails you by default when a workflow fails. Here\u2019s how to stop the noise and fix the root cause. 1) Find the exact failure Repo \u2192 Actions \u2192 click the red run \u2192 test job \u2192 expand steps. Note t",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "VERIFIED_BUILT",
+      "current_code_evidence": [
+        "services/api/app/routers/completion_registry.py",
+        "services/api/tests/test_completion_registry.py"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla november logs.docx",
+      "source_date": "2026-03",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "capital_allocation",
+      "capability": "capital_allocation",
+      "discussion_summary": "Why do I keep getting these emails that our stuff is not working Short answer: because your GitHub Actions CI workflow is firing on every push/PR and the \u201ctest\u201d job is failing , so GitHub emails you by default when a workflow fails. Here\u2019s how to stop the noise and fix the root cause. 1) Find the exact failure Repo \u2192 Actions \u2192 click the red run \u2192 test job \u2192 expand steps. Note t",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "VERIFIED_BUILT",
+      "current_code_evidence": [
+        "services/api/app/services/universal_opportunity_evaluator.py",
+        "docs/RECOVERY_EXIT_PROTOCOL.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla november logs.docx",
+      "source_date": "2026-03",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "replication",
+      "capability": "replication",
+      "discussion_summary": "Why do I keep getting these emails that our stuff is not working Short answer: because your GitHub Actions CI workflow is firing on every push/PR and the \u201ctest\u201d job is failing , so GitHub emails you by default when a workflow fails. Here\u2019s how to stop the noise and fix the root cause. 1) Find the exact failure Repo \u2192 Actions \u2192 click the red run \u2192 test job \u2192 expand steps. Note t",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "DECIDED",
+      "current_code_evidence": [
+        "docs/PHASE3_INTEGRATED_ARCHITECTURE.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla november logs.docx",
+      "source_date": "2026-03",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "business_acquisition",
+      "capability": "business_acquisition",
+      "discussion_summary": "Why do I keep getting these emails that our stuff is not working Short answer: because your GitHub Actions CI workflow is firing on every push/PR and the \u201ctest\u201d job is failing , so GitHub emails you by default when a workflow fails. Here\u2019s how to stop the noise and fix the root cause. 1) Find the exact failure Repo \u2192 Actions \u2192 click the red run \u2192 test job \u2192 expand steps. Note t",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "DECIDED",
+      "current_code_evidence": [
+        "docs/PHASE3_INTEGRATED_ARCHITECTURE.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla october 2026 logs part 1.md",
+      "source_date": "2026-10",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "outcome_learning",
+      "capability": "outcome_learning",
+      "discussion_summary": "# Valhalla October 2026 Logs - Part 1 Source: user-provided pasted text #1 Filed: 2026-10-10 --- Loading older messages\u2026Ok so we want another story but make it long and exciting! Full of energy and comedyAbsolutely. From everything we've built together, I think we've reached the point where the project needs to shift from inventing to engineering.For the first year, we were des",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "PARTIAL",
+      "current_code_evidence": [
+        "services/api/app/services/universal_opportunity_evaluator.py",
+        "docs/UNIVERSAL_OUTCOME_CONTRACT.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla october 2026 logs part 1.md",
+      "source_date": "2026-10",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "pantheon",
+      "capability": "pantheon",
+      "discussion_summary": "# Valhalla October 2026 Logs - Part 1 Source: user-provided pasted text #1 Filed: 2026-10-10 --- Loading older messages\u2026Ok so we want another story but make it long and exciting! Full of energy and comedyAbsolutely. From everything we've built together, I think we've reached the point where the project needs to shift from inventing to engineering.For the first year, we were des",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "VERIFIED_BUILT",
+      "current_code_evidence": [
+        "services/api/app/routers/completion_registry.py",
+        "services/api/tests/test_completion_registry.py"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla october 2026 logs part 1.md",
+      "source_date": "2026-10",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "capital_allocation",
+      "capability": "capital_allocation",
+      "discussion_summary": "# Valhalla October 2026 Logs - Part 1 Source: user-provided pasted text #1 Filed: 2026-10-10 --- Loading older messages\u2026Ok so we want another story but make it long and exciting! Full of energy and comedyAbsolutely. From everything we've built together, I think we've reached the point where the project needs to shift from inventing to engineering.For the first year, we were des",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "VERIFIED_BUILT",
+      "current_code_evidence": [
+        "services/api/app/services/universal_opportunity_evaluator.py",
+        "docs/RECOVERY_EXIT_PROTOCOL.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla october 2026 logs part 1.md",
+      "source_date": "2026-10",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "replication",
+      "capability": "replication",
+      "discussion_summary": "# Valhalla October 2026 Logs - Part 1 Source: user-provided pasted text #1 Filed: 2026-10-10 --- Loading older messages\u2026Ok so we want another story but make it long and exciting! Full of energy and comedyAbsolutely. From everything we've built together, I think we've reached the point where the project needs to shift from inventing to engineering.For the first year, we were des",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "DECIDED",
+      "current_code_evidence": [
+        "docs/PHASE3_INTEGRATED_ARCHITECTURE.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla october 2026 logs part 1.md",
+      "source_date": "2026-10",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "real_estate",
+      "capability": "real_estate",
+      "discussion_summary": "# Valhalla October 2026 Logs - Part 1 Source: user-provided pasted text #1 Filed: 2026-10-10 --- Loading older messages\u2026Ok so we want another story but make it long and exciting! Full of energy and comedyAbsolutely. From everything we've built together, I think we've reached the point where the project needs to shift from inventing to engineering.For the first year, we were des",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "VERIFIED_BUILT",
+      "current_code_evidence": [
+        "services/api/app/routers/completion_registry.py"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla october 2026 logs part 1.md",
+      "source_date": "2026-10",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "trust_matrix",
+      "capability": "trust_matrix",
+      "discussion_summary": "# Valhalla October 2026 Logs - Part 1 Source: user-provided pasted text #1 Filed: 2026-10-10 --- Loading older messages\u2026Ok so we want another story but make it long and exciting! Full of energy and comedyAbsolutely. From everything we've built together, I think we've reached the point where the project needs to shift from inventing to engineering.For the first year, we were des",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "DECIDED",
+      "current_code_evidence": [
+        "docs/VALHALLA_DOCTRINE_CONFLICT_MAP.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla october 2026 logs part 2.md",
+      "source_date": "2026-10",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "pantheon",
+      "capability": "pantheon",
+      "discussion_summary": "# Valhalla October 2026 Logs - Part 2 Source: user-provided pasted text #2 Filed: 2026-10-10 --- Loading older messages\u2026Okay, there are electro paints that when you put a different voltage to the paint apparently it changes color. Is that actually available and if so can we paint certain things? For example the ruins or the Viking head so that they're only visible when you put ",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "VERIFIED_BUILT",
+      "current_code_evidence": [
+        "services/api/app/routers/completion_registry.py",
+        "services/api/tests/test_completion_registry.py"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla october 2026 logs part 3.md",
+      "source_date": "2026-10",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "pantheon",
+      "capability": "pantheon",
+      "discussion_summary": "# Valhalla October 2026 Logs - Part 3 Source: user-provided pasted text #3 Filed: 2026-10-10 --- Loading older messages\u2026Ok so another idea here we need a plan b or exit strategy for deals that don't work the way we wanted or predicted we need a way out of bad deals or places that we put ourselves I to without collapsing the systemYes \u2014 and I think this should be a mandatory lay",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "VERIFIED_BUILT",
+      "current_code_evidence": [
+        "services/api/app/routers/completion_registry.py",
+        "services/api/tests/test_completion_registry.py"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla october 2026 logs part 3.md",
+      "source_date": "2026-10",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "capital_allocation",
+      "capability": "capital_allocation",
+      "discussion_summary": "# Valhalla October 2026 Logs - Part 3 Source: user-provided pasted text #3 Filed: 2026-10-10 --- Loading older messages\u2026Ok so another idea here we need a plan b or exit strategy for deals that don't work the way we wanted or predicted we need a way out of bad deals or places that we put ourselves I to without collapsing the systemYes \u2014 and I think this should be a mandatory lay",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "VERIFIED_BUILT",
+      "current_code_evidence": [
+        "services/api/app/services/universal_opportunity_evaluator.py",
+        "docs/RECOVERY_EXIT_PROTOCOL.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla october 2026 logs part 3.md",
+      "source_date": "2026-10",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "ai_businesses",
+      "capability": "ai_businesses",
+      "discussion_summary": "# Valhalla October 2026 Logs - Part 3 Source: user-provided pasted text #3 Filed: 2026-10-10 --- Loading older messages\u2026Ok so another idea here we need a plan b or exit strategy for deals that don't work the way we wanted or predicted we need a way out of bad deals or places that we put ourselves I to without collapsing the systemYes \u2014 and I think this should be a mandatory lay",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "DISCUSSION",
+      "current_code_evidence": [
+        "docs/PHASE3_INTEGRATED_ARCHITECTURE.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla october 2026 logs part 3.md",
+      "source_date": "2026-10",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "recovery_exit",
+      "capability": "recovery_exit",
+      "discussion_summary": "# Valhalla October 2026 Logs - Part 3 Source: user-provided pasted text #3 Filed: 2026-10-10 --- Loading older messages\u2026Ok so another idea here we need a plan b or exit strategy for deals that don't work the way we wanted or predicted we need a way out of bad deals or places that we put ourselves I to without collapsing the systemYes \u2014 and I think this should be a mandatory lay",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "DECIDED",
+      "current_code_evidence": [
+        "docs/RECOVERY_EXIT_PROTOCOL.md",
+        "services/api/app/services/universal_opportunity_evaluator.py"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla october logs.docx",
+      "source_date": "2026-03",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "outcome_learning",
+      "capability": "outcome_learning",
+      "discussion_summary": "you can reread all our chats right? I don\u2019t have the ability to automatically re-read every single past chat on my own. What I do have: This current project memory \u2192 a compressed record of everything you\u2019ve told me to lock in about Valhalla Legacy Inc (all the modules, rules, structures, expansions, family hubs, contingency plans, etc.). Recent conversation history \u2192 I can scro",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "PARTIAL",
+      "current_code_evidence": [
+        "services/api/app/services/universal_opportunity_evaluator.py",
+        "docs/UNIVERSAL_OUTCOME_CONTRACT.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla october logs.docx",
+      "source_date": "2026-03",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "pantheon",
+      "capability": "pantheon",
+      "discussion_summary": "you can reread all our chats right? I don\u2019t have the ability to automatically re-read every single past chat on my own. What I do have: This current project memory \u2192 a compressed record of everything you\u2019ve told me to lock in about Valhalla Legacy Inc (all the modules, rules, structures, expansions, family hubs, contingency plans, etc.). Recent conversation history \u2192 I can scro",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "VERIFIED_BUILT",
+      "current_code_evidence": [
+        "services/api/app/routers/completion_registry.py",
+        "services/api/tests/test_completion_registry.py"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla october logs.docx",
+      "source_date": "2026-03",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "capital_allocation",
+      "capability": "capital_allocation",
+      "discussion_summary": "you can reread all our chats right? I don\u2019t have the ability to automatically re-read every single past chat on my own. What I do have: This current project memory \u2192 a compressed record of everything you\u2019ve told me to lock in about Valhalla Legacy Inc (all the modules, rules, structures, expansions, family hubs, contingency plans, etc.). Recent conversation history \u2192 I can scro",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "VERIFIED_BUILT",
+      "current_code_evidence": [
+        "services/api/app/services/universal_opportunity_evaluator.py",
+        "docs/RECOVERY_EXIT_PROTOCOL.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla october logs.docx",
+      "source_date": "2026-03",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "replication",
+      "capability": "replication",
+      "discussion_summary": "you can reread all our chats right? I don\u2019t have the ability to automatically re-read every single past chat on my own. What I do have: This current project memory \u2192 a compressed record of everything you\u2019ve told me to lock in about Valhalla Legacy Inc (all the modules, rules, structures, expansions, family hubs, contingency plans, etc.). Recent conversation history \u2192 I can scro",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "DECIDED",
+      "current_code_evidence": [
+        "docs/PHASE3_INTEGRATED_ARCHITECTURE.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla october logs.docx",
+      "source_date": "2026-03",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "real_estate",
+      "capability": "real_estate",
+      "discussion_summary": "you can reread all our chats right? I don\u2019t have the ability to automatically re-read every single past chat on my own. What I do have: This current project memory \u2192 a compressed record of everything you\u2019ve told me to lock in about Valhalla Legacy Inc (all the modules, rules, structures, expansions, family hubs, contingency plans, etc.). Recent conversation history \u2192 I can scro",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "VERIFIED_BUILT",
+      "current_code_evidence": [
+        "services/api/app/routers/completion_registry.py"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla october logs.docx",
+      "source_date": "2026-03",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "ai_businesses",
+      "capability": "ai_businesses",
+      "discussion_summary": "you can reread all our chats right? I don\u2019t have the ability to automatically re-read every single past chat on my own. What I do have: This current project memory \u2192 a compressed record of everything you\u2019ve told me to lock in about Valhalla Legacy Inc (all the modules, rules, structures, expansions, family hubs, contingency plans, etc.). Recent conversation history \u2192 I can scro",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "DISCUSSION",
+      "current_code_evidence": [
+        "docs/PHASE3_INTEGRATED_ARCHITECTURE.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla september 2026 logs part 1.md",
+      "source_date": "2026-09",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "capital_allocation",
+      "capability": "capital_allocation",
+      "discussion_summary": "# Valhalla September 2026 Logs - Part 1 Source: user-provided pasted text #1 Filed: 2026-10-10 --- Loading older messages\u2026Okay, I want you to explain to my 9-year-old exactly how Valhalla works and what it is capable ofImagine Valhalla is a huge smart castle for running businesses.Your dad is building the castle, and inside it is a computer helper called Heimdall. Heimdall\u2019s jo",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "VERIFIED_BUILT",
+      "current_code_evidence": [
+        "services/api/app/services/universal_opportunity_evaluator.py",
+        "docs/RECOVERY_EXIT_PROTOCOL.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla september 2026 logs part 1.md",
+      "source_date": "2026-09",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "replication",
+      "capability": "replication",
+      "discussion_summary": "# Valhalla September 2026 Logs - Part 1 Source: user-provided pasted text #1 Filed: 2026-10-10 --- Loading older messages\u2026Okay, I want you to explain to my 9-year-old exactly how Valhalla works and what it is capable ofImagine Valhalla is a huge smart castle for running businesses.Your dad is building the castle, and inside it is a computer helper called Heimdall. Heimdall\u2019s jo",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "DECIDED",
+      "current_code_evidence": [
+        "docs/PHASE3_INTEGRATED_ARCHITECTURE.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla september 2026 logs part 1.md",
+      "source_date": "2026-09",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "real_estate",
+      "capability": "real_estate",
+      "discussion_summary": "# Valhalla September 2026 Logs - Part 1 Source: user-provided pasted text #1 Filed: 2026-10-10 --- Loading older messages\u2026Okay, I want you to explain to my 9-year-old exactly how Valhalla works and what it is capable ofImagine Valhalla is a huge smart castle for running businesses.Your dad is building the castle, and inside it is a computer helper called Heimdall. Heimdall\u2019s jo",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "VERIFIED_BUILT",
+      "current_code_evidence": [
+        "services/api/app/routers/completion_registry.py"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla september 2026 logs part 1.md",
+      "source_date": "2026-09",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "ai_businesses",
+      "capability": "ai_businesses",
+      "discussion_summary": "# Valhalla September 2026 Logs - Part 1 Source: user-provided pasted text #1 Filed: 2026-10-10 --- Loading older messages\u2026Okay, I want you to explain to my 9-year-old exactly how Valhalla works and what it is capable ofImagine Valhalla is a huge smart castle for running businesses.Your dad is building the castle, and inside it is a computer helper called Heimdall. Heimdall\u2019s jo",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "DISCUSSION",
+      "current_code_evidence": [
+        "docs/PHASE3_INTEGRATED_ARCHITECTURE.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla september 2026 logs part 1.md",
+      "source_date": "2026-09",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "trust_matrix",
+      "capability": "trust_matrix",
+      "discussion_summary": "# Valhalla September 2026 Logs - Part 1 Source: user-provided pasted text #1 Filed: 2026-10-10 --- Loading older messages\u2026Okay, I want you to explain to my 9-year-old exactly how Valhalla works and what it is capable ofImagine Valhalla is a huge smart castle for running businesses.Your dad is building the castle, and inside it is a computer helper called Heimdall. Heimdall\u2019s jo",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "DECIDED",
+      "current_code_evidence": [
+        "docs/VALHALLA_DOCTRINE_CONFLICT_MAP.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla september 2026 logs part 1.md",
+      "source_date": "2026-09",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "launch_governance",
+      "capability": "launch_governance",
+      "discussion_summary": "# Valhalla September 2026 Logs - Part 1 Source: user-provided pasted text #1 Filed: 2026-10-10 --- Loading older messages\u2026Okay, I want you to explain to my 9-year-old exactly how Valhalla works and what it is capable ofImagine Valhalla is a huge smart castle for running businesses.Your dad is building the castle, and inside it is a computer helper called Heimdall. Heimdall\u2019s jo",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "DECIDED",
+      "current_code_evidence": [
+        "docs/PHASE3_PROMOTION_GATE.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla september 2026 logs part 2.md",
+      "source_date": "2026-09",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "capital_allocation",
+      "capability": "capital_allocation",
+      "discussion_summary": "# Valhalla September 2026 Logs - Part 2 Source: user-provided pasted text #2 Filed: 2026-10-10 --- Loading older messages\u2026Compacted conversation Updated todo list I will run a strict read-only editor/store readback now to confirm the button interaction still has exactly one execute-workflow action targeting canonical handleLogin, then I\u2019ll return the exact status fields and rea",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "VERIFIED_BUILT",
+      "current_code_evidence": [
+        "services/api/app/services/universal_opportunity_evaluator.py",
+        "docs/RECOVERY_EXIT_PROTOCOL.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla september 2026 logs part 2.md",
+      "source_date": "2026-09",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "weweb_auth",
+      "capability": "weweb_auth",
+      "discussion_summary": "# Valhalla September 2026 Logs - Part 2 Source: user-provided pasted text #2 Filed: 2026-10-10 --- Loading older messages\u2026Compacted conversation Updated todo list I will run a strict read-only editor/store readback now to confirm the button interaction still has exactly one execute-workflow action targeting canonical handleLogin, then I\u2019ll return the exact status fields and rea",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "PARTIAL",
+      "current_code_evidence": [
+        "docs/VALHALLA_DOCTRINE_CONFLICT_MAP.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla september 2026 logs part 3.md",
+      "source_date": "2026-09",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "capital_allocation",
+      "capability": "capital_allocation",
+      "discussion_summary": "# Valhalla September 2026 Logs - Part 3 Source: user-provided pasted text #3 Filed: 2026-10-10 --- Loading older messages\u2026You just missed all of the cloning and all of the mirrors and all of the added expansion territories which then increase deals monthly. Every time we add new zone you've dropped a lot of the system. I don't believe you're reevaluation is very accurate [Conve",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "VERIFIED_BUILT",
+      "current_code_evidence": [
+        "services/api/app/services/universal_opportunity_evaluator.py",
+        "docs/RECOVERY_EXIT_PROTOCOL.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla september 2026 logs part 3.md",
+      "source_date": "2026-09",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "replication",
+      "capability": "replication",
+      "discussion_summary": "# Valhalla September 2026 Logs - Part 3 Source: user-provided pasted text #3 Filed: 2026-10-10 --- Loading older messages\u2026You just missed all of the cloning and all of the mirrors and all of the added expansion territories which then increase deals monthly. Every time we add new zone you've dropped a lot of the system. I don't believe you're reevaluation is very accurate [Conve",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "DECIDED",
+      "current_code_evidence": [
+        "docs/PHASE3_INTEGRATED_ARCHITECTURE.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla september 2026 logs part 3.md",
+      "source_date": "2026-09",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "business_acquisition",
+      "capability": "business_acquisition",
+      "discussion_summary": "# Valhalla September 2026 Logs - Part 3 Source: user-provided pasted text #3 Filed: 2026-10-10 --- Loading older messages\u2026You just missed all of the cloning and all of the mirrors and all of the added expansion territories which then increase deals monthly. Every time we add new zone you've dropped a lot of the system. I don't believe you're reevaluation is very accurate [Conve",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "DECIDED",
+      "current_code_evidence": [
+        "docs/PHASE3_INTEGRATED_ARCHITECTURE.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla september 2026 logs part 3.md",
+      "source_date": "2026-09",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "weweb_auth",
+      "capability": "weweb_auth",
+      "discussion_summary": "# Valhalla September 2026 Logs - Part 3 Source: user-provided pasted text #3 Filed: 2026-10-10 --- Loading older messages\u2026You just missed all of the cloning and all of the mirrors and all of the added expansion territories which then increase deals monthly. Every time we add new zone you've dropped a lot of the system. I don't believe you're reevaluation is very accurate [Conve",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "PARTIAL",
+      "current_code_evidence": [
+        "docs/VALHALLA_DOCTRINE_CONFLICT_MAP.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla september 2026 logs part 3.md",
+      "source_date": "2026-09",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "launch_governance",
+      "capability": "launch_governance",
+      "discussion_summary": "# Valhalla September 2026 Logs - Part 3 Source: user-provided pasted text #3 Filed: 2026-10-10 --- Loading older messages\u2026You just missed all of the cloning and all of the mirrors and all of the added expansion territories which then increase deals monthly. Every time we add new zone you've dropped a lot of the system. I don't believe you're reevaluation is very accurate [Conve",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "DECIDED",
+      "current_code_evidence": [
+        "docs/PHASE3_PROMOTION_GATE.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla september logs.docx",
+      "source_date": "2026-03",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "historical_replay",
+      "capability": "historical_replay",
+      "discussion_summary": "That\u2019s Chunk 20 in the bag. Want me to keep going with Chunk 21: Role-based route guards (admin/operator/viewer) + per-legacy access controls, or do you want a different module next (e.g., Stripe billing, Audit viewer, Multi-tenant orgs)? from project structure chat. can i get the next chunk Got it \u2014 you just wrapped Chunk 20 (Deal Calculator Enhancements) and now we\u2019re on to C",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "PARTIAL",
+      "current_code_evidence": [
+        "services/api/app/services/universal_opportunity_evaluator.py",
+        "services/api/app/routers/completion_registry.py"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla september logs.docx",
+      "source_date": "2026-03",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "pantheon",
+      "capability": "pantheon",
+      "discussion_summary": "That\u2019s Chunk 20 in the bag. Want me to keep going with Chunk 21: Role-based route guards (admin/operator/viewer) + per-legacy access controls, or do you want a different module next (e.g., Stripe billing, Audit viewer, Multi-tenant orgs)? from project structure chat. can i get the next chunk Got it \u2014 you just wrapped Chunk 20 (Deal Calculator Enhancements) and now we\u2019re on to C",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "VERIFIED_BUILT",
+      "current_code_evidence": [
+        "services/api/app/routers/completion_registry.py",
+        "services/api/tests/test_completion_registry.py"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla september logs.docx",
+      "source_date": "2026-03",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "capital_allocation",
+      "capability": "capital_allocation",
+      "discussion_summary": "That\u2019s Chunk 20 in the bag. Want me to keep going with Chunk 21: Role-based route guards (admin/operator/viewer) + per-legacy access controls, or do you want a different module next (e.g., Stripe billing, Audit viewer, Multi-tenant orgs)? from project structure chat. can i get the next chunk Got it \u2014 you just wrapped Chunk 20 (Deal Calculator Enhancements) and now we\u2019re on to C",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "VERIFIED_BUILT",
+      "current_code_evidence": [
+        "services/api/app/services/universal_opportunity_evaluator.py",
+        "docs/RECOVERY_EXIT_PROTOCOL.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla september logs.docx",
+      "source_date": "2026-03",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "replication",
+      "capability": "replication",
+      "discussion_summary": "That\u2019s Chunk 20 in the bag. Want me to keep going with Chunk 21: Role-based route guards (admin/operator/viewer) + per-legacy access controls, or do you want a different module next (e.g., Stripe billing, Audit viewer, Multi-tenant orgs)? from project structure chat. can i get the next chunk Got it \u2014 you just wrapped Chunk 20 (Deal Calculator Enhancements) and now we\u2019re on to C",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "DECIDED",
+      "current_code_evidence": [
+        "docs/PHASE3_INTEGRATED_ARCHITECTURE.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla september logs.docx",
+      "source_date": "2026-03",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "real_estate",
+      "capability": "real_estate",
+      "discussion_summary": "That\u2019s Chunk 20 in the bag. Want me to keep going with Chunk 21: Role-based route guards (admin/operator/viewer) + per-legacy access controls, or do you want a different module next (e.g., Stripe billing, Audit viewer, Multi-tenant orgs)? from project structure chat. can i get the next chunk Got it \u2014 you just wrapped Chunk 20 (Deal Calculator Enhancements) and now we\u2019re on to C",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "VERIFIED_BUILT",
+      "current_code_evidence": [
+        "services/api/app/routers/completion_registry.py"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    },
+    {
+      "source_file": "Valhalla september logs.docx",
+      "source_date": "2026-03",
+      "source_location": "historical_logs/ORIGINALS",
+      "source_excerpt_location": "document body text",
+      "topic": "ai_businesses",
+      "capability": "ai_businesses",
+      "discussion_summary": "That\u2019s Chunk 20 in the bag. Want me to keep going with Chunk 21: Role-based route guards (admin/operator/viewer) + per-legacy access controls, or do you want a different module next (e.g., Stripe billing, Audit viewer, Multi-tenant orgs)? from project structure chat. can i get the next chunk Got it \u2014 you just wrapped Chunk 20 (Deal Calculator Enhancements) and now we\u2019re on to C",
+      "decision": "NEEDS_REVIEW",
+      "later_change": "UNKNOWN",
+      "superseded_by": null,
+      "historical_status": "DISCUSSION",
+      "current_code_evidence": [
+        "docs/PHASE3_INTEGRATED_ARCHITECTURE.md"
+      ],
+      "current_doctrine_status": "PENDING_RECONCILIATION"
+    }
+  ]
+}

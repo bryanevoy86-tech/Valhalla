@@ -2714,3 +2714,124 @@ def test_phase3_allows_abstention_when_no_opportunity_justifies_deployment():
     body = resp.json()
     assert body["owner_recommendation"]["abstain"] is True
     assert body["owner_recommendation"]["heimdall_decision"] in {"HOLD", "REJECT"}
+
+
+def test_phase3_prediction_snapshot_and_outcome_contract_are_emitted_and_immutable():
+    client = _build_client()
+
+    payload = {
+        "persist_decision": False,
+        "opportunities": [
+            {
+                "opportunity_id": "UO-SNAP-001",
+                "engine_id": "ai_automation_services",
+                "title": "Snapshot check",
+                "summary": "Verify immutable prediction contract",
+                "status": "RESEARCHING",
+                "required_capital": 9000,
+                "estimated_test_cost": 1800,
+                "estimated_time_to_first_revenue_days": 30,
+                "estimated_time_to_validation_days": 14,
+                "revenue_type": "SERVICE",
+                "expected_margin_low": 0.28,
+                "expected_margin_high": 0.61,
+                "downside_exposure": 0.24,
+                "automation_potential": 0.84,
+                "owner_time_requirement_hours_weekly": 7,
+                "scalability": 0.72,
+                "replication_mode": "CENTRAL_REGIONAL",
+                "strategic_value": 0.66,
+                "evidence_confidence": 0.6,
+                "specialist_inputs": {
+                    "customer_pain": 0.73,
+                    "willingness_to_pay": 0.64,
+                    "implementation_effort": 0.42,
+                    "delivery_cost": 0.35,
+                    "recurring_potential": 0.7,
+                    "customer_acquisition_difficulty": 0.46,
+                    "competition": 0.53,
+                    "automation_percentage": 0.86,
+                    "retention_potential": 0.67,
+                },
+            }
+        ],
+    }
+
+    first = client.post("/api/completion/phase3/universal-opportunity/evaluate", json=payload)
+    assert first.status_code == 200, first.text
+    snap1 = first.json()["evaluations"][0]["prediction_snapshot"]
+    contract1 = first.json()["evaluations"][0]["outcome_contract"]
+
+    second = client.post("/api/completion/phase3/universal-opportunity/evaluate", json=payload)
+    assert second.status_code == 200, second.text
+    snap2 = second.json()["evaluations"][0]["prediction_snapshot"]
+
+    assert snap1["prediction_snapshot_id"] == snap2["prediction_snapshot_id"]
+    assert snap1["immutable"] is True
+    assert contract1["outcome_class"] == "SHADOW_OUTCOME"
+    assert contract1["actual_outcome"] is None
+
+
+def test_phase3_blocks_holdout_outcome_reveal_during_tuning_mode():
+    client = _build_client()
+
+    resp = client.post(
+        "/api/completion/phase3/universal-opportunity/evaluate",
+        json={
+            "persist_decision": False,
+            "replay_mode": True,
+            "reveal_historical_outcomes": True,
+            "tuning_mode": True,
+            "opportunities": [
+                {
+                    "opportunity_id": "UO-HOLDOUT-001",
+                    "engine_id": "micro_saas",
+                    "title": "Holdout candidate",
+                    "summary": "Should block reveal during tuning",
+                    "status": "RESEARCHING",
+                    "replay_partition": "BLIND_HOLDOUT_SET",
+                    "required_capital": 12000,
+                    "estimated_test_cost": 2000,
+                    "estimated_time_to_first_revenue_days": 90,
+                    "estimated_time_to_validation_days": 30,
+                    "revenue_type": "SUBSCRIPTION",
+                    "expected_margin_low": 0.2,
+                    "expected_margin_high": 0.5,
+                }
+            ],
+        },
+    )
+    assert resp.status_code == 409
+    assert "holdout contamination" in resp.json()["detail"]
+
+
+def test_phase3_challenger_model_is_shadow_only():
+    client = _build_client()
+
+    resp = client.post(
+        "/api/completion/phase3/universal-opportunity/evaluate",
+        json={
+            "persist_decision": False,
+            "shadow_mode": False,
+            "decision_model": "CHALLENGER",
+            "opportunities": [
+                {
+                    "opportunity_id": "UO-CHAL-001",
+                    "engine_id": "lead_generation",
+                    "title": "Challenger restriction",
+                    "summary": "Challenger should not run outside shadow mode",
+                    "status": "RESEARCHING",
+                    "required_capital": 3000,
+                    "estimated_test_cost": 500,
+                    "estimated_time_to_first_revenue_days": 21,
+                    "estimated_time_to_validation_days": 14,
+                    "revenue_type": "SERVICE",
+                    "expected_margin_low": 0.25,
+                    "expected_margin_high": 0.55,
+                }
+            ],
+        },
+    )
+
+    assert resp.status_code == 409
+    assert "challenger model is shadow-only" in resp.json()["detail"]
