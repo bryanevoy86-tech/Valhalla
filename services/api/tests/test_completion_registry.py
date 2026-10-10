@@ -2835,3 +2835,298 @@ def test_phase3_challenger_model_is_shadow_only():
 
     assert resp.status_code == 409
     assert "challenger model is shadow-only" in resp.json()["detail"]
+
+
+def _phase3_strong_opportunity(**overrides):
+    payload = {
+        "opportunity_id": "UO-GATE-BASE",
+        "engine_id": "ops_automation",
+        "title": "Hard gate base",
+        "summary": "Strong baseline for gate testing",
+        "status": "RESEARCHING",
+        "required_capital": 10000,
+        "estimated_test_cost": 1200,
+        "estimated_time_to_first_revenue_days": 30,
+        "estimated_time_to_validation_days": 14,
+        "revenue_type": "SERVICE",
+        "expected_margin_low": 0.3,
+        "expected_margin_high": 0.62,
+        "downside_exposure": 0.2,
+        "automation_potential": 0.82,
+        "owner_time_requirement_hours_weekly": 6,
+        "scalability": 0.75,
+        "replication_mode": "CENTRAL_REGIONAL",
+        "strategic_value": 0.7,
+        "evidence_confidence": 0.66,
+        "specialist_inputs": {},
+        "maximum_capital_exposure": 10000,
+        "maximum_monthly_burn": 2000,
+        "maximum_tolerable_loss": 2500,
+        "recovery_options": ["LEVEL_1_CORRECT", "LEVEL_2_CONTAIN"],
+        "exit_options": ["LEVEL_4_PARTIAL_EXIT", "LEVEL_5_FULL_EXIT"],
+        "expected_salvage_value": 3000,
+        "blast_radius": "LOW",
+        "entry_capital": 10000,
+        "survival_capital": 6000,
+        "available_safe_capital": 10000,
+        "required_reserve_to_survive_failure": 6000,
+        "point_of_no_return": {
+            "condition": "deposit_becomes_non_refundable",
+            "threshold": "$2500 committed",
+            "description": "Non-refundable deposit creates irreversible commitment",
+            "consequence": "capital at risk if execution halted",
+            "requires_reapproval_before_crossing": True,
+            "reversible_before_threshold": True,
+            "source": "operator_plan",
+            "confidence": "MEDIUM",
+        },
+    }
+    payload.update(overrides)
+    return payload
+
+
+def test_phase3_systemic_blast_radius_forbids_proceed_even_with_positive_return():
+    client = _build_client()
+    opp = _phase3_strong_opportunity(opportunity_id="UO-GATE-SYSTEMIC", blast_radius="SYSTEMIC")
+    resp = client.post(
+        "/api/completion/phase3/universal-opportunity/evaluate",
+        json={"persist_decision": False, "opportunities": [opp]},
+    )
+    assert resp.status_code == 200, resp.text
+    row = resp.json()["evaluations"][0]
+    assert row["final_decision"] != "proceed"
+    assert "SYSTEMIC_BLAST_RADIUS_FORBIDS_PROCEED" in row["hard_gate_evaluation"]["reasons"]
+
+
+def test_phase3_survival_capital_gate_blocks_proceed_when_safe_capital_insufficient():
+    client = _build_client()
+    opp = _phase3_strong_opportunity(
+        opportunity_id="UO-GATE-SURVIVAL",
+        available_safe_capital=2000,
+        required_reserve_to_survive_failure=6000,
+    )
+    resp = client.post(
+        "/api/completion/phase3/universal-opportunity/evaluate",
+        json={"persist_decision": False, "opportunities": [opp]},
+    )
+    assert resp.status_code == 200, resp.text
+    row = resp.json()["evaluations"][0]
+    assert row["final_decision"] != "proceed"
+    assert "SURVIVAL_CAPITAL_INSUFFICIENT" in row["hard_gate_evaluation"]["reasons"]
+
+
+def test_phase3_no_entry_without_exit_research_more_when_exit_paths_missing():
+    client = _build_client()
+    opp = _phase3_strong_opportunity(
+        opportunity_id="UO-GATE-NO-EXIT",
+        recovery_options=[],
+        exit_options=[],
+    )
+    resp = client.post(
+        "/api/completion/phase3/universal-opportunity/evaluate",
+        json={"persist_decision": False, "opportunities": [opp]},
+    )
+    assert resp.status_code == 200, resp.text
+    row = resp.json()["evaluations"][0]
+    assert row["final_decision"] in {"research_more", "reject", "hold"}
+    assert "NO_CREDIBLE_EXIT_PATH" in row["hard_gate_evaluation"]["reasons"]
+
+
+def test_phase3_exit_ladder_emits_level_0_for_healthy_and_level_1plus_for_deteriorating():
+    client = _build_client()
+    healthy = _phase3_strong_opportunity(opportunity_id="UO-LEVEL0", failure_scenarios=[], early_warning_indicators=[])
+    healthy_resp = client.post(
+        "/api/completion/phase3/universal-opportunity/evaluate",
+        json={"persist_decision": False, "opportunities": [healthy]},
+    )
+    assert healthy_resp.status_code == 200, healthy_resp.text
+    healthy_row = healthy_resp.json()["evaluations"][0]
+    assert healthy_row["recovery_exit_protocol"]["current_level"] == "LEVEL_0_NORMAL"
+    assert healthy_row["recovery_exit_protocol"]["exit_ladder"][0] == "LEVEL_0_NORMAL"
+
+    bad = _phase3_strong_opportunity(
+        opportunity_id="UO-LEVEL1",
+        early_warning_indicators=["LOW_CONVERSION"],
+        failure_scenarios=["CAC_SPIKE"],
+    )
+    bad_resp = client.post(
+        "/api/completion/phase3/universal-opportunity/evaluate",
+        json={"persist_decision": False, "opportunities": [bad]},
+    )
+    assert bad_resp.status_code == 200, bad_resp.text
+    bad_row = bad_resp.json()["evaluations"][0]
+    assert bad_row["recovery_exit_protocol"]["current_level"] != "LEVEL_0_NORMAL"
+
+
+def test_phase3_hard_blocks_lookahead_leakage_in_historical_replay():
+    client = _build_client()
+    opp = _phase3_strong_opportunity(
+        opportunity_id="UO-LEAK-001",
+        as_of_date="2026-01-10",
+        historical_events=[
+            {
+                "event_date": "2026-02-11",
+                "source_timestamp": "2026-02-11",
+                "note": "future contamination",
+            }
+        ],
+    )
+    resp = client.post(
+        "/api/completion/phase3/universal-opportunity/evaluate",
+        json={
+            "persist_decision": False,
+            "replay_mode": True,
+            "reveal_historical_outcomes": True,
+            "opportunities": [opp],
+        },
+    )
+    assert resp.status_code == 409
+    detail = resp.json()["detail"]
+    assert detail["error_code"] == "LOOKAHEAD_LEAKAGE_BLOCKED"
+
+
+def test_phase3_outcome_classes_cover_shadow_historical_and_valhalla():
+    client = _build_client()
+
+    shadow = client.post(
+        "/api/completion/phase3/universal-opportunity/evaluate",
+        json={"persist_decision": False, "opportunities": [_phase3_strong_opportunity(opportunity_id="UO-OC-SHADOW")]},
+    )
+    assert shadow.status_code == 200, shadow.text
+    assert shadow.json()["evaluations"][0]["outcome_contract"]["outcome_class"] == "SHADOW_OUTCOME"
+
+    historical = client.post(
+        "/api/completion/phase3/universal-opportunity/evaluate",
+        json={
+            "persist_decision": False,
+            "replay_mode": True,
+            "opportunities": [_phase3_strong_opportunity(opportunity_id="UO-OC-HIST")],
+        },
+    )
+    assert historical.status_code == 200, historical.text
+    assert historical.json()["evaluations"][0]["outcome_contract"]["outcome_class"] == "HISTORICAL_OUTCOME"
+
+    valhalla = client.post(
+        "/api/completion/phase3/universal-opportunity/evaluate",
+        json={
+            "persist_decision": False,
+            "shadow_mode": False,
+            "outcome_class": "VALHALLA_OUTCOME",
+            "opportunities": [_phase3_strong_opportunity(opportunity_id="UO-OC-VALHALLA")],
+        },
+    )
+    assert valhalla.status_code == 200, valhalla.text
+    assert valhalla.json()["evaluations"][0]["outcome_contract"]["outcome_class"] == "VALHALLA_OUTCOME"
+
+
+def test_phase3_mimir_linkage_and_outcome_feedback_contract_are_present():
+    client = _build_client()
+
+    domain = client.post(
+        "/api/completion/learning/domains",
+        json={
+            "domain_id": "P3-MIMIR-DOMAIN",
+            "canonical_name": "Phase3 Mimir Domain",
+            "status": "active",
+            "terminal_state": "BUILT_TESTED_FEATURE_GATED",
+        },
+    )
+    assert domain.status_code == 200, domain.text
+
+    curriculum = client.post(
+        "/api/completion/learning/curricula",
+        json={
+            "curriculum_id": "CUR-P3-MIMIR",
+            "domain_id": "P3-MIMIR-DOMAIN",
+            "title": "Phase3 Mimir Curriculum",
+            "version": "v1",
+            "learning_objectives": ["link outcomes to decision evidence"],
+            "playbooks": ["outcome feedback routing"],
+            "benchmarks": ["feedback completeness"],
+            "assessments": ["linkage validation"],
+            "promotion_gates": {"high_impact": 1.0},
+            "status": "active",
+            "terminal_state": "BUILT_TESTED_FEATURE_GATED",
+        },
+    )
+    assert curriculum.status_code == 200, curriculum.text
+
+    feedback = client.post(
+        "/api/completion/learning/feedback",
+        json={
+            "feedback_id": "FB-P3-MIMIR-001",
+            "feedback_type": "operational_result",
+            "domain": "P3-MIMIR-DOMAIN",
+            "curriculum_id": "CUR-P3-MIMIR",
+            "learning_id": "LP-P3-MIMIR",
+            "outcome_class": "SHADOW_OUTCOME",
+            "operational_score": 0.3,
+            "high_impact": True,
+            "notes": "Recurring failure mode: insufficient reserve runway",
+        },
+    )
+    assert feedback.status_code == 200, feedback.text
+
+    resp = client.post(
+        "/api/completion/phase3/universal-opportunity/evaluate",
+        json={"persist_decision": False, "opportunities": [_phase3_strong_opportunity(opportunity_id="UO-MIMIR-001")]},
+    )
+    assert resp.status_code == 200, resp.text
+    row = resp.json()["evaluations"][0]
+
+    assert row["mimir_linkage"]["used_in_decision"] is True
+    assert isinstance(row["mimir_linkage"]["source_references"], list)
+    assert row["mimir_linkage"]["prior_failures"] >= 1
+
+    feedback_linkage = row["outcome_contract"]["feedback_linkage"]
+    assert feedback_linkage["decision_id"] == row["outcome_contract"]["decision_id"]
+    assert feedback_linkage["prediction_snapshot_id"] == row["outcome_contract"]["evidence_snapshot_id"]
+    assert feedback_linkage["feedback_endpoint"] == "/api/completion/learning/feedback"
+
+
+def test_phase3_real_estate_universal_path_preserves_phase2_rank_and_decision_equivalence():
+    client = _build_client()
+
+    phase2_payload = {
+        "request_id": "RE-EQ-001",
+        "property_address": "14 Portage Ave",
+        "city": "Winnipeg",
+        "region": "MB",
+        "country": "CA",
+        "strategy": "wholesale",
+        "asking_price": 180000,
+        "arv_estimate": 255000,
+        "rehab_estimate": 28000,
+        "source_evidence": [
+            {
+                "source_id": "SRC-EQ-001",
+                "source_type": "government",
+                "confidence_score": 0.9,
+                "freshness_days": 45,
+                "citation_ref": "gov:wpg:eq",
+                "supports": ["valuation"],
+            }
+        ],
+        "persist_decision": False,
+    }
+    phase2 = client.post("/api/completion/phase2/real-estate-intelligence/evaluate", json=phase2_payload)
+    assert phase2.status_code == 200, phase2.text
+    phase2_body = phase2.json()
+
+    universal = client.post(
+        "/api/completion/phase3/universal-opportunity/evaluate",
+        json={
+            "persist_decision": False,
+            "opportunities": [
+                _phase3_strong_opportunity(
+                    opportunity_id="UO-RE-EQ-001",
+                    engine_id="wholesaling",
+                    specialist_inputs={"real_estate_payload": phase2_payload},
+                )
+            ],
+        },
+    )
+    assert universal.status_code == 200, universal.text
+    row = universal.json()["evaluations"][0]
+    assert row["final_decision"] == phase2_body["final_decision"]
+    assert round(float(row["rank_value"]), 4) == round(float(phase2_body["decision_rank_value"]), 4)
