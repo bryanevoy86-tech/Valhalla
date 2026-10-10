@@ -1,0 +1,233 @@
+{
+  "generated_at": "2026-10-10T14:11:21.574107",
+  "root": "D:/dev/historical_logs/ORIGINALS",
+  "total_files": 18,
+  "files_by_type": {
+    ".docx": 12,
+    ".md": 6
+  },
+  "duplicate_filenames": [],
+  "unreadable_files": [],
+  "inferred_date_range": {
+    "min": "2026-03",
+    "max": "2026-10"
+  },
+  "entries": [
+    {
+      "source_file": "valhalla april logs.docx",
+      "relative_path": "valhalla april logs.docx",
+      "extension": ".docx",
+      "size_bytes": 14361088,
+      "last_write_time": "2026-05-06T09:03:06.221006",
+      "content_hash": "e1ff58bd1cf95951dcab095967e12d0fb52c0c4bf3a8155c1474a68236f126bd",
+      "text_extraction_status": "PASS",
+      "inferred_date": "2026-05",
+      "inferred_month": 5,
+      "inferred_year": 2026
+    },
+    {
+      "source_file": "Valhalla december logs.docx",
+      "relative_path": "Valhalla december logs.docx",
+      "extension": ".docx",
+      "size_bytes": 3155756,
+      "last_write_time": "2026-03-23T00:14:00.819295",
+      "content_hash": "d8b3bb0472674059ddeffa8759b1eee7836f95788903435ff9192a910d78837b",
+      "text_extraction_status": "PASS",
+      "inferred_date": "2026-03",
+      "inferred_month": 3,
+      "inferred_year": 2026
+    },
+    {
+      "source_file": "Valhalla feb. logs.docx",
+      "relative_path": "Valhalla feb. logs.docx",
+      "extension": ".docx",
+      "size_bytes": 44328523,
+      "last_write_time": "2026-03-26T13:52:10.385567",
+      "content_hash": "37f08f18b482335ecb41668eb2ce95bd98ac38bdfcdb9cf8dba8ed97a53a445e",
+      "text_extraction_status": "PASS",
+      "inferred_date": "2026-03",
+      "inferred_month": 3,
+      "inferred_year": 2026
+    },
+    {
+      "source_file": "Valhalla january logs.docx",
+      "relative_path": "Valhalla january logs.docx",
+      "extension": ".docx",
+      "size_bytes": 72408785,
+      "last_write_time": "2026-03-25T00:51:56.176638",
+      "content_hash": "b2b8e7e13b5440e4a1bb6aca2af18fb8f6aeb94850d13abd583e7976362a3e26",
+      "text_extraction_status": "PASS",
+      "inferred_date": "2026-03",
+      "inferred_month": 3,
+      "inferred_year": 2026
+    },
+    {
+      "source_file": "valhalla july logs.docx",
+      "relative_path": "valhalla july logs.docx",
+      "extension": ".docx",
+      "size_bytes": 109164,
+      "last_write_time": "2026-07-11T17:15:16.902822",
+      "content_hash": "4785f9e1dda3cf4a3a39773273e96be19377df2a87e0e971f15b95333bf1773b",
+      "text_extraction_status": "PASS",
+      "inferred_date": "2026-07",
+      "inferred_month": 7,
+      "inferred_year": 2026
+    },
+    {
+      "source_file": "valhalla logs 1.docx",
+      "relative_path": "valhalla logs 1.docx",
+      "extension": ".docx",
+      "size_bytes": 17089741,
+      "last_write_time": "2026-03-26T14:36:30.393653",
+      "content_hash": "9c89fcd43a7711d9f2a387c601ecf46fd42d709baa564c077e6df62db73655bf",
+      "text_extraction_status": "PASS",
+      "inferred_date": "2026-03",
+      "inferred_month": 3,
+      "inferred_year": 2026
+    },
+    {
+      "source_file": "valhalla logs 2.docx",
+      "relative_path": "valhalla logs 2.docx",
+      "extension": ".docx",
+      "size_bytes": 999414,
+      "last_write_time": "2026-03-26T14:36:14.686725",
+      "content_hash": "37a7caea5505737a94296eab2f9bbe16e61c182f2ccbb90c516de66b55b937ee",
+      "text_extraction_status": "PASS",
+      "inferred_date": "2026-03",
+      "inferred_month": 3,
+      "inferred_year": 2026
+    },
+    {
+      "source_file": "Valhalla march logs.docx",
+      "relative_path": "Valhalla march logs.docx",
+      "extension": ".docx",
+      "size_bytes": 34358817,
+      "last_write_time": "2026-04-03T12:28:19.511261",
+      "content_hash": "e502207b1bd71493177711989cb5b39c9c7dc0763bbfdc1bc1eaa8c50f5adf4e",
+      "text_extraction_status": "PASS",
+      "inferred_date": "2026-04",
+      "inferred_month": 4,
+      "inferred_year": 2026
+    },
+    {
+      "source_file": "valhalla may logs.docx",
+      "relative_path": "valhalla may logs.docx",
+      "extension": ".docx",
+      "size_bytes": 586460,
+      "last_write_time": "2026-06-06T18:01:51.893510",
+      "content_hash": "44c5c757eb7c41fa26ffe4b613a1c2ca4d9b5949c41b52b1888acc9c6a589aca",
+      "text_extraction_status": "PASS",
+      "inferred_date": "2026-06",
+      "inferred_month": 6,
+      "inferred_year": 2026
+    },
+    {
+      "source_file": "Valhalla november logs.docx",
+      "relative_path": "Valhalla november logs.docx",
+      "extension": ".docx",
+      "size_bytes": 2885248,
+      "last_write_time": "2026-03-20T00:11:17.586461",
+      "content_hash": "397147eed46f63d9585788eb2c140ea77f23db08130efe1a7c7fd928bd659c78",
+      "text_extraction_status": "PASS",
+      "inferred_date": "2026-03",
+      "inferred_month": 3,
+      "inferred_year": 2026
+    },
+    {
+      "source_file": "Valhalla october 2026 logs part 1.md",
+      "relative_path": "Valhalla october 2026 logs part 1.md",
+      "extension": ".md",
+      "size_bytes": 57227,
+      "last_write_time": "2026-10-10T14:09:31.321518",
+      "content_hash": "7a57d0f34f2a75e0ccaa32998f22691ade75c10ff96b625be569468cec2bc2f9",
+      "text_extraction_status": "PASS",
+      "inferred_date": "2026-10",
+      "inferred_month": 10,
+      "inferred_year": 2026
+    },
+    {
+      "source_file": "Valhalla october 2026 logs part 2.md",
+      "relative_path": "Valhalla october 2026 logs part 2.md",
+      "extension": ".md",
+      "size_bytes": 6750,
+      "last_write_time": "2026-10-10T14:09:31.409142",
+      "content_hash": "6df4d5a40a2771533a2a45a5e1b7c8f4c20bacb1b42cc5d459d3e88bda2bbfc6",
+      "text_extraction_status": "PASS",
+      "inferred_date": "2026-10",
+      "inferred_month": 10,
+      "inferred_year": 2026
+    },
+    {
+      "source_file": "Valhalla october 2026 logs part 3.md",
+      "relative_path": "Valhalla october 2026 logs part 3.md",
+      "extension": ".md",
+      "size_bytes": 2165,
+      "last_write_time": "2026-10-10T14:09:31.457356",
+      "content_hash": "58af87255940ea32131ad872456d1a7c585b68f51260783905a46b2ce1a7311f",
+      "text_extraction_status": "PASS",
+      "inferred_date": "2026-10",
+      "inferred_month": 10,
+      "inferred_year": 2026
+    },
+    {
+      "source_file": "Valhalla october logs.docx",
+      "relative_path": "Valhalla october logs.docx",
+      "extension": ".docx",
+      "size_bytes": 1379421,
+      "last_write_time": "2026-03-19T20:58:30.345866",
+      "content_hash": "87c8a5e70992bf7b51ca65807fe85b78692cfb93e85a1629636c2d53da3d147f",
+      "text_extraction_status": "PASS",
+      "inferred_date": "2026-03",
+      "inferred_month": 3,
+      "inferred_year": 2026
+    },
+    {
+      "source_file": "Valhalla september 2026 logs part 1.md",
+      "relative_path": "Valhalla september 2026 logs part 1.md",
+      "extension": ".md",
+      "size_bytes": 30515,
+      "last_write_time": "2026-10-10T14:07:41.021202",
+      "content_hash": "128615afe529702bf476dc670ba051b156d00e8f702524020810ffebdd30c87e",
+      "text_extraction_status": "PASS",
+      "inferred_date": "2026-09",
+      "inferred_month": 9,
+      "inferred_year": 2026
+    },
+    {
+      "source_file": "Valhalla september 2026 logs part 2.md",
+      "relative_path": "Valhalla september 2026 logs part 2.md",
+      "extension": ".md",
+      "size_bytes": 1961,
+      "last_write_time": "2026-10-10T14:07:41.118245",
+      "content_hash": "7e0629a5e7845ece8e2edd0d6cb892e905406731eff742fdc13e101f33565352",
+      "text_extraction_status": "PASS",
+      "inferred_date": "2026-09",
+      "inferred_month": 9,
+      "inferred_year": 2026
+    },
+    {
+      "source_file": "Valhalla september 2026 logs part 3.md",
+      "relative_path": "Valhalla september 2026 logs part 3.md",
+      "extension": ".md",
+      "size_bytes": 2082,
+      "last_write_time": "2026-10-10T14:07:41.169588",
+      "content_hash": "86748e8ca1161dbf017838c4b38c3bc6e764a91e1729c2f5086aaae20b08d94f",
+      "text_extraction_status": "PASS",
+      "inferred_date": "2026-09",
+      "inferred_month": 9,
+      "inferred_year": 2026
+    },
+    {
+      "source_file": "Valhalla september logs.docx",
+      "relative_path": "Valhalla september logs.docx",
+      "extension": ".docx",
+      "size_bytes": 751563,
+      "last_write_time": "2026-03-19T20:47:26.333066",
+      "content_hash": "b53bde7c8b62a3196f3960a33ba439b6ab1ab99227d02068817d0eb7dab179b7",
+      "text_extraction_status": "PASS",
+      "inferred_date": "2026-03",
+      "inferred_month": 3,
+      "inferred_year": 2026
+    }
+  ]
+}
