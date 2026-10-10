@@ -1,0 +1,87 @@
+{
+  "generated_at": "2026-10-10T22:09:37.683729+00:00",
+  "baseline": {
+    "total": 913,
+    "passed": 242,
+    "failed": 465,
+    "errors": 188,
+    "skipped": 18,
+    "failed_or_error": 653,
+    "classification_counts": {
+      "OBSOLETE_TEST": 339,
+      "ACTUAL_PRODUCTION_DEFECT": 73,
+      "TEST_HARNESS_DEFECT": 179,
+      "OTHER_PROVEN_CLASS": 1,
+      "ENVIRONMENT_DEFECT": 53,
+      "TEST_DATA_DEFECT": 8
+    },
+    "cluster_count": 14,
+    "unknown_before": 264
+  },
+  "wave_one": {
+    "total": 913,
+    "passed": 242,
+    "failed": 465,
+    "errors": 188,
+    "skipped": 18,
+    "failed_or_error": 653,
+    "classification_counts": {
+      "OBSOLETE_TEST": 339,
+      "ACTUAL_PRODUCTION_DEFECT": 3,
+      "TEST_HARNESS_DEFECT": 179,
+      "OTHER_PROVEN_CLASS": 71,
+      "ENVIRONMENT_DEFECT": 53,
+      "TEST_DATA_DEFECT": 8
+    },
+    "cluster_count": 13,
+    "unknown_after": 0,
+    "clusters_repaired": [
+      "MODEL_REGISTRY_CONFLICT_TRUSTEVENTLOG"
+    ],
+    "cluster_deltas": [
+      {
+        "cluster_id": "MODEL_REGISTRY_CONFLICT_TRUSTEVENTLOG",
+        "baseline": 70,
+        "wave1": 0,
+        "delta": -70
+      },
+      {
+        "cluster_id": "UNCLASSIFIED",
+        "baseline": 1,
+        "wave1": 71,
+        "delta": 70
+      }
+    ],
+    "node_regressions_added": 0,
+    "node_regressions_removed": 0,
+    "new_failure_nodes_sample": [],
+    "removed_failure_nodes_sample": [],
+    "fresh_db_repeatable": true,
+    "repeat_run_totals": {
+      "runA": {
+        "tests": 913,
+        "failures": 465,
+        "errors": 188,
+        "skipped": 18,
+        "passed": 242
+      },
+      "runB": {
+        "tests": 913,
+        "failures": 465,
+        "errors": 188,
+        "skipped": 18,
+        "passed": 242
+      }
+    }
+  },
+  "production_defect_claim_review": {
+    "claimed_results": 73,
+    "independent_clusters_at_baseline": 2,
+    "clusters": {
+      "MODEL_REGISTRY_CONFLICT_TRUSTEVENTLOG": 70,
+      "STATE_KEY_MISSING": 3
+    },
+    "assessment": "73 represented 2 clusters, not 73 independent production defects."
+  },
+  "new_regressions": 0
+}
