@@ -1,6 +1,6 @@
 # BACKEND DEFECT BURNDOWN
 
-Generated: 2026-10-11T20:48:00.383320+00:00
+Generated: 2026-10-11T20:55:34.926939+00:00
 
 ## BASELINE
 - Totals: 913 total / 242 passed / 465 failed / 188 errors / 18 skipped
@@ -26,11 +26,15 @@ Generated: 2026-10-11T20:48:00.383320+00:00
 - Totals: 913 total / 428 passed / 450 failed / 17 errors / 18 skipped
 - Failed/Error population: 467
 
-## Delta From Wave Five
-- passed: +10
-- failed: -10
+## CAMPAIGN WAVE 7
+- Totals: 913 total / 428 passed / 450 failed / 17 errors / 18 skipped
+- Failed/Error population: 467
+
+## Delta From Wave 6
+- passed: +0
+- failed: +0
 - errors: +0
-- failed_error_population: -10
+- failed_error_population: +0
 
 ## Readiness Metrics
 - RAW_BACKEND_PASS_RATE: 0.468784
@@ -46,5 +50,5 @@ Generated: 2026-10-11T20:48:00.383320+00:00
 - UNKNOWN_RELEVANCE_RED_NODES: 0
 
 ## Signature Determinism
-- RAW_SIGNATURE_DIFFERENCES: 12
+- RAW_SIGNATURE_DIFFERENCES: 14
 - NORMALIZED_SIGNATURE_DIFFERENCES: 0
