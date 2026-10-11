@@ -3,7 +3,7 @@ Pydantic schemas for Lead management.
 
 Aligned with canonical database schema for leads table.
 """
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, model_validator
 from datetime import datetime
 from typing import Optional
 from decimal import Decimal
@@ -30,6 +30,24 @@ class LeadCreate(BaseModel):
     
     # Notes
     notes: Optional[str] = Field(None, description="Additional notes about the lead")
+
+    @model_validator(mode="before")
+    @classmethod
+    def _compat_legacy_fields(cls, data):
+        if not isinstance(data, dict):
+            return data
+
+        payload = dict(data)
+        if payload.get("lead_name") is None and payload.get("name") is not None:
+            payload["lead_name"] = payload.get("name")
+        if payload.get("lead_email") is None and payload.get("email") is not None:
+            payload["lead_email"] = payload.get("email")
+        if payload.get("lead_phone") is None and payload.get("phone") is not None:
+            payload["lead_phone"] = payload.get("phone")
+        if payload.get("lead_status") is None and payload.get("status") is not None:
+            payload["lead_status"] = payload.get("status")
+
+        return payload
 
 
 class LeadOut(BaseModel):
