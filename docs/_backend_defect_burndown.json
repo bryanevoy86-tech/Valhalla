@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-11T18:05:42.729197+00:00",
+  "generated_at": "2026-10-11T19:58:27.776293+00:00",
   "baseline": {
     "total": 913,
     "passed": 242,
@@ -32,18 +32,32 @@
     "skipped": 18,
     "failed_or_error": 559
   },
+  "wave_four": {
+    "total": 913,
+    "passed": 412,
+    "failed": 426,
+    "errors": 57,
+    "skipped": 18,
+    "failed_or_error": 483
+  },
   "delta_from_baseline": {
-    "passed": 94,
-    "failed": 26,
-    "errors": -120,
-    "failed_error_population": -94
+    "passed": 170,
+    "failed": -39,
+    "errors": -131,
+    "failed_error_population": -170
+  },
+  "delta_from_wave_three": {
+    "passed": 76,
+    "failed": -65,
+    "errors": -11,
+    "failed_error_population": -76
   },
   "delta_from_wave_two": {
-    "passed": 17,
-    "failed": 76,
-    "errors": -93,
-    "failed_error_population": -17
+    "passed": 93,
+    "failed": 11,
+    "errors": -104,
+    "failed_error_population": -93
   },
-  "current_root_cause_clusters": 17,
+  "current_root_cause_clusters": 16,
   "unknown": 0
 }
