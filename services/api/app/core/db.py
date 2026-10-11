@@ -1,10 +1,18 @@
 from sqlalchemy import create_engine
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.orm import DeclarativeBase, sessionmaker, scoped_session
 from sqlalchemy.pool import StaticPool
 from .settings import settings
 import logging
 
 logger = logging.getLogger("valhalla.db")
+
+
+@compiles(JSONB, "sqlite")
+def _compile_jsonb_sqlite(_type, _compiler, **_kw):
+    # Keep PostgreSQL JSONB in production while letting SQLite test schemas build.
+    return "JSON"
 
 # Try to create the DB engine using the configured DATABASE_URL. If this fails
 # (for example, psycopg/libpq isn't available in the test/dev environment),

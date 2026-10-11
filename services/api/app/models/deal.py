@@ -47,6 +47,11 @@ class Deal(Base):
     _compat_state: ClassVar[str | None] = None
     _compat_price: ClassVar[float | None] = None
     _compat_offer: ClassVar[float | None] = None
+    _compat_address: ClassVar[str | None] = None
+    _compat_region: ClassVar[str | None] = None
+    _compat_property_type: ClassVar[str | None] = None
+    _compat_beds: ClassVar[int | None] = None
+    _compat_baths: ClassVar[int | None] = None
 
     @property
     def repairs(self):
@@ -120,13 +125,86 @@ class Deal(Base):
     def offer(self, value):
         self._compat_offer = value
 
+    @property
+    def purchase_price(self):
+        return self.price
+
+    @purchase_price.setter
+    def purchase_price(self, value):
+        self.price = value
+
+    @property
+    def address(self):
+        return self._compat_address
+
+    @address.setter
+    def address(self, value):
+        self._compat_address = value
+
+    @property
+    def region(self):
+        return self._compat_region
+
+    @region.setter
+    def region(self, value):
+        self._compat_region = value
+
+    @property
+    def property_type(self):
+        return self._compat_property_type
+
+    @property_type.setter
+    def property_type(self, value):
+        self._compat_property_type = value
+
+    @property
+    def beds(self):
+        return self._compat_beds
+
+    @beds.setter
+    def beds(self, value):
+        self._compat_beds = value
+
+    @property
+    def baths(self):
+        return self._compat_baths
+
+    @baths.setter
+    def baths(self, value):
+        self._compat_baths = value
+
     def __init__(self, **kwargs):
         # Keep old field names alive while mapping to canonical fields.
         if kwargs.get("estimated_repair_cost") is None and kwargs.get("repairs") is not None:
             kwargs["estimated_repair_cost"] = kwargs.get("repairs")
         if kwargs.get("max_allowable_offer") is None and kwargs.get("mao") is not None:
             kwargs["max_allowable_offer"] = kwargs.get("mao")
-        compat_keys = ["org_id", "legacy_id", "city", "state", "price", "offer"]
+        if kwargs.get("price") is None and kwargs.get("purchase_price") is not None:
+            kwargs["price"] = kwargs.get("purchase_price")
+        if kwargs.get("created_ts") is None and kwargs.get("created_at") is not None:
+            kwargs["created_ts"] = kwargs.get("created_at")
+        if kwargs.get("updated_ts") is None and kwargs.get("updated_at") is not None:
+            kwargs["updated_ts"] = kwargs.get("updated_at")
+        if kwargs.get("title") is None and kwargs.get("headline") is not None:
+            kwargs["title"] = kwargs.get("headline")
+
+        compat_keys = [
+            "org_id",
+            "legacy_id",
+            "city",
+            "state",
+            "price",
+            "offer",
+            "address",
+            "region",
+            "property_type",
+            "beds",
+            "baths",
+            "headline",
+            "purchase_price",
+            "created_at",
+            "updated_at",
+        ]
         compat_values = {k: kwargs.pop(k, None) for k in compat_keys}
         roi_note = kwargs.pop("roi_note", None)
         if kwargs.get("title") is None:
@@ -141,5 +219,10 @@ class Deal(Base):
         self.state = compat_values["state"]
         self.price = compat_values["price"]
         self.offer = compat_values["offer"]
+        self.address = compat_values["address"]
+        self.region = compat_values["region"]
+        self.property_type = compat_values["property_type"]
+        self.beds = compat_values["beds"]
+        self.baths = compat_values["baths"]
         if roi_note is not None and self.notes is None:
             self.roi_note = roi_note

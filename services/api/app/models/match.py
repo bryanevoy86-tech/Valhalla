@@ -21,6 +21,33 @@ class Buyer(Base):
     active = Column(Boolean, nullable=False, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
+    def __init__(self, **kwargs):
+        # Compatibility mapping for legacy test payloads.
+        if kwargs.get("name") is None and kwargs.get("full_name") is not None:
+            kwargs["name"] = kwargs.pop("full_name")
+
+        if kwargs.get("regions") is None and kwargs.get("preferred_markets") is not None:
+            kwargs["regions"] = kwargs.pop("preferred_markets")
+
+        status = kwargs.pop("status", None)
+        if status is not None and kwargs.get("active") is None:
+            kwargs["active"] = str(status).lower() in {"active", "enabled", "open"}
+
+        buy_box = kwargs.pop("buy_box_json", None)
+        if isinstance(buy_box, dict):
+            if kwargs.get("property_types") is None:
+                kwargs["property_types"] = buy_box.get("property_types")
+            if kwargs.get("min_price") is None:
+                kwargs["min_price"] = buy_box.get("min_price")
+            if kwargs.get("max_price") is None:
+                kwargs["max_price"] = buy_box.get("max_price")
+            if kwargs.get("min_beds") is None:
+                kwargs["min_beds"] = buy_box.get("min_beds")
+            if kwargs.get("min_baths") is None:
+                kwargs["min_baths"] = buy_box.get("min_baths")
+
+        super().__init__(**kwargs)
+
 class DealBrief(Base):
     __tablename__ = "deal_briefs"
     id = Column(Integer, primary_key=True)
