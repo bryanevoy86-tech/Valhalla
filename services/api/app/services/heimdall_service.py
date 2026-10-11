@@ -68,6 +68,20 @@ class DealAnalysis:
         self.can_advance = can_advance
         self.timestamp = datetime.utcnow()
 
+    @property
+    def blockers(self) -> List[Dict[str, str]]:
+        # Legacy tests expect a list of objects with a "flag" key.
+        return [{"flag": flag} for flag in self.blocker_flags]
+
+    @property
+    def recommendation(self) -> Dict[str, Any]:
+        # Legacy tests expect "recommendation['next_stage']".
+        return {
+            "next_stage": self.recommended_stage,
+            "reason": self.recommendation_reason,
+            "can_advance": self.can_advance,
+        }
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert to API response dict."""
         return {
@@ -125,6 +139,20 @@ def _get_deal_context(deal_id: int, db: Session) -> tuple:
         # offers table doesn't exist or model issue - skip
         pass
 
+    # Fallback for canonical offer evidence table used by integrity tests.
+    if not offer:
+        try:
+            from app.models.offer_evidence import OfferEvidence
+
+            offer = (
+                db.query(OfferEvidence)
+                .filter(OfferEvidence.deal_id == deal_id)
+                .order_by(OfferEvidence.created_at.desc())
+                .first()
+            )
+        except Exception:
+            pass
+
     # Get contract (gracefully handle if table doesn't exist)
     contract = None
     try:
@@ -174,8 +202,12 @@ def _build_offer_data_dict(offer: Any) -> Optional[Dict[str, Any]]:
         return None
     return {
         "id": getattr(offer, 'id', None),
-        "deal_id": getattr(offer, 'correlation_id', None),
-        "recommended_offer": float(getattr(offer, 'recommended_offer', 0) or 0),
+        "deal_id": getattr(offer, 'deal_id', None) or getattr(offer, 'correlation_id', None),
+        "recommended_offer": float(
+            getattr(offer, 'recommended_offer', None)
+            or getattr(offer, 'offer_price', None)
+            or 0
+        ),
         "status": getattr(offer, 'status', 'unknown'),
     }
 
@@ -412,6 +444,7 @@ def advance_stage_with_approval(
             print(f"Warning: Could not log rejection event: {e}")
         
         return {
+            "success": False,
             "deal_id": deal_id,
             "action": "stage_advance_rejected",
             "previous_stage": current_stage,
@@ -419,6 +452,7 @@ def advance_stage_with_approval(
             "approved_by": None,
             "requested_stage": requested_stage,
             "result": "rejected",
+            "error": f"Invalid transition from {current_stage} to {requested_stage}",
             "reason": f"Invalid transition from {current_stage} to {requested_stage}",
             "timestamp": datetime.utcnow().isoformat() + "Z",
         }
@@ -450,6 +484,7 @@ def advance_stage_with_approval(
             print(f"Warning: Could not log blocker rejection event: {e}")
         
         return {
+            "success": False,
             "deal_id": deal_id,
             "action": "stage_advance_rejected",
             "previous_stage": current_stage,
@@ -457,6 +492,7 @@ def advance_stage_with_approval(
             "approved_by": None,
             "requested_stage": requested_stage,
             "result": "rejected",
+            "error": f"Blockers prevent advancement: {', '.join(analysis.blocker_flags)}",
             "reason": f"Blockers prevent advancement: {', '.join(analysis.blocker_flags)}",
             "timestamp": datetime.utcnow().isoformat() + "Z",
         }
@@ -529,6 +565,7 @@ def advance_stage_with_approval(
         print(f"Warning: Could not log advancement event: {e}")
 
     return {
+        "success": True,
         "deal_id": deal_id,
         "action": "stage_advanced",
         "previous_stage": current_stage,
