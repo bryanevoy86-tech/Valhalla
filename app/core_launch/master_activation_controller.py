@@ -11,10 +11,25 @@ from enum import Enum
 from datetime import datetime
 import logging
 
+from .activation_conditions import (
+    can_activate as _conditions_can_activate,
+    get_activation_status as _conditions_get_activation_status,
+)
+
 logger = logging.getLogger(__name__)
 
 # Optional module registry integration
 _module_registry = None
+
+
+def can_activate(module_name: str) -> bool:
+    """Compatibility wrapper for tests that patch this module path directly."""
+    return _conditions_can_activate(module_name)
+
+
+def get_activation_status(module_name: str) -> Dict[str, Any]:
+    """Compatibility wrapper for tests that patch this module path directly."""
+    return _conditions_get_activation_status(module_name)
 
 def set_module_registry(registry) -> None:
     """Set the module registry for integration."""
@@ -102,8 +117,6 @@ class ActivationController:
 
     async def check_conditions(self, module_name: str) -> tuple:
         """Check activation conditions for a module."""
-        from .activation_conditions import can_activate, get_activation_status
-        
         state = self.modules.get(module_name)
         if not state:
             return False, "Module not registered"
@@ -119,8 +132,15 @@ class ActivationController:
                 logger.info(f"✅ Conditions met for: {module_name}")
                 return True, "Conditions met"
             else:
+                status = get_activation_status(module_name)
+                failed = [
+                    cond.get("name", "unknown")
+                    for cond in status.get("conditions", [])
+                    if cond.get("last_result") is False
+                ]
+                reason = f"Conditions not met: {', '.join(failed)}" if failed else "Conditions not met"
                 logger.warning(f"❌ Conditions not met for: {module_name}")
-                return False, "Conditions not met"
+                return False, reason
         except Exception as e:
             state.status = ActivationStatus.FAILED
             state.error_message = str(e)

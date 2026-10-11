@@ -31,7 +31,12 @@ class DailyRhythmProfile(Base):
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
     # Relationships
-    tempo_rules = relationship("TempoRule", back_populates="profile", cascade="all, delete-orphan")
+    # Use module-qualified names to avoid ambiguity with app.models.daily_rhythm classes.
+    tempo_rules = relationship(
+        "app.models.pack_tb.TempoRule",
+        back_populates="profile",
+        cascade="all, delete-orphan",
+    )
 
     def __repr__(self):
         return f"<DailyRhythmProfile {self.profile_id}>"
@@ -55,7 +60,7 @@ class TempoRule(Base):
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
     # Relationships
-    profile = relationship("DailyRhythmProfile", back_populates="tempo_rules")
+    profile = relationship("app.models.pack_tb.DailyRhythmProfile", back_populates="tempo_rules")
 
     def __repr__(self):
         return f"<TempoRule {self.rule_id}: {self.time_block}>"

@@ -15,6 +15,20 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+def can_activate(module_name: str) -> bool:
+    """Compatibility wrapper for activation condition checks."""
+    from .activation_conditions import can_activate as _can_activate
+
+    return _can_activate(module_name)
+
+
+def get_activation_status(module_name: str) -> Dict[str, Any]:
+    """Compatibility wrapper for activation status checks."""
+    from .activation_conditions import get_activation_status as _get_activation_status
+
+    return _get_activation_status(module_name)
+
+
 class ActivationPhase(Enum):
     """Phases of activation."""
     INITIALIZATION = "initialization"
@@ -103,8 +117,6 @@ class ActivationController:
         
         This would call activation_conditions.py
         """
-        from .activation_conditions import can_activate, get_activation_status
-        
         state = self.modules.get(module_name)
         if not state:
             return False, "Module not registered"

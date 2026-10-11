@@ -32,7 +32,12 @@ class PhilosophyRecord(Base):
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
     # Relationships
-    principles = relationship("EmpirePrinciple", back_populates="record", cascade="all, delete-orphan")
+    # Use module-qualified targets to avoid clashes with legacy app.models.philosophy classes.
+    principles = relationship(
+        "app.models.pack_sz.EmpirePrinciple",
+        back_populates="record",
+        cascade="all, delete-orphan",
+    )
 
     def __repr__(self):
         return f"<PhilosophyRecord {self.record_id}: {self.title}>"
@@ -55,7 +60,7 @@ class EmpirePrinciple(Base):
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
     # Relationships
-    record = relationship("PhilosophyRecord", back_populates="principles")
+    record = relationship("app.models.pack_sz.PhilosophyRecord", back_populates="principles")
 
     def __repr__(self):
         return f"<EmpirePrinciple {self.principle_id}: {self.category}>"
