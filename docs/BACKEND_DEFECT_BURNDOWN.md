@@ -1,39 +1,44 @@
 # BACKEND DEFECT BURNDOWN
 
-Generated: 2026-10-11T19:58:27.776293+00:00
+Generated: 2026-10-11T20:36:43.297303+00:00
 
-## Baseline
+## BASELINE
 - Totals: 913 total / 242 passed / 465 failed / 188 errors / 18 skipped
 - Failed/Error population: 653
 
-## Wave One
-- Totals: 913 total / 242 passed / 465 failed / 188 errors / 18 skipped
-- Failed/Error population: 653
-
-## Wave Two
+## WAVE TWO
 - Totals: 913 total / 319 passed / 415 failed / 161 errors / 18 skipped
 - Failed/Error population: 576
 
-## Wave Three
+## WAVE THREE
 - Totals: 913 total / 336 passed / 491 failed / 68 errors / 18 skipped
 - Failed/Error population: 559
 
-## Wave Four
+## WAVE FOUR
 - Totals: 913 total / 412 passed / 426 failed / 57 errors / 18 skipped
 - Failed/Error population: 483
 
-## Delta From Baseline
-- passed: +170
-- failed: -39
-- errors: -131
-- failed/error population: -170
+## WAVE FIVE
+- Totals: 913 total / 418 passed / 460 failed / 17 errors / 18 skipped
+- Failed/Error population: 477
 
-## Delta From Wave Three
-- passed: +76
-- failed: -65
-- errors: -11
-- failed/error population: -76
+## Delta From Wave Four
+- passed: +6
+- failed: +34
+- errors: -40
+- failed_error_population: -6
 
-## Current Inventory Snapshot
-- Root-cause cluster count: 16
-- UNKNOWN count: 0
+## Readiness Metrics
+- RAW_BACKEND_PASS_RATE: 0.457831
+- CANONICAL_BACKEND_PASS_RATE: 0.692308
+- CURRENT_CANONICAL_RED_NODES: 114
+- LEGACY_OBSOLETE_RED_NODES: 308
+- EXTERNAL_ENVIRONMENT_RED_NODES: 13
+- SUPPORTED_COMPATIBILITY_RED_NODES: 42
+- UNKNOWN_RELEVANCE_RED_NODES: 0
+- LAUNCH_RELEVANT_RED_NODES: 51
+- NON_LAUNCH_BLOCKING_RED_NODES: 426
+
+## Signature Determinism
+- RAW_SIGNATURE_DIFFERENCES: 4
+- NORMALIZED_SIGNATURE_DIFFERENCES: 0

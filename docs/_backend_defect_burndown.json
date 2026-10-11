@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-11T19:58:27.776293+00:00",
+  "generated_at": "2026-10-11T20:36:43.297303+00:00",
   "baseline": {
     "total": 913,
     "passed": 242,
@@ -40,24 +40,47 @@
     "skipped": 18,
     "failed_or_error": 483
   },
+  "wave_five": {
+    "total": 913,
+    "passed": 418,
+    "failed": 460,
+    "errors": 17,
+    "skipped": 18,
+    "failed_or_error": 477
+  },
   "delta_from_baseline": {
-    "passed": 170,
-    "failed": -39,
-    "errors": -131,
-    "failed_error_population": -170
+    "passed": 176,
+    "failed": -5,
+    "errors": -171,
+    "failed_error_population": -176
+  },
+  "delta_from_wave_four": {
+    "passed": 6,
+    "failed": 34,
+    "errors": -40,
+    "failed_error_population": -6
   },
   "delta_from_wave_three": {
-    "passed": 76,
-    "failed": -65,
-    "errors": -11,
-    "failed_error_population": -76
+    "passed": 82,
+    "failed": -31,
+    "errors": -51,
+    "failed_error_population": -82
   },
-  "delta_from_wave_two": {
-    "passed": 93,
-    "failed": 11,
-    "errors": -104,
-    "failed_error_population": -93
+  "readiness_metrics": {
+    "RAW_BACKEND_PASS_RATE": 0.4578313253012048,
+    "CANONICAL_BACKEND_PASS_RATE": 0.6923076923076923,
+    "CURRENT_CANONICAL_RED_NODES": 114,
+    "LEGACY_OBSOLETE_RED_NODES": 308,
+    "EXTERNAL_ENVIRONMENT_RED_NODES": 13,
+    "SUPPORTED_COMPATIBILITY_RED_NODES": 42,
+    "UNKNOWN_RELEVANCE_RED_NODES": 0,
+    "LAUNCH_RELEVANT_RED_NODES": 51,
+    "NON_LAUNCH_BLOCKING_RED_NODES": 426
   },
-  "current_root_cause_clusters": 16,
+  "signature_determinism": {
+    "RAW_SIGNATURE_DIFFERENCES": 4,
+    "NORMALIZED_SIGNATURE_DIFFERENCES": 0
+  },
+  "current_root_cause_clusters": 17,
   "unknown": 0
 }
