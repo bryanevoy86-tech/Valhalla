@@ -1,8 +1,8 @@
 # BACKEND FAILURE INVENTORY
 
-Generated: 2026-10-10T21:58:19.780790+00:00
+Generated: 2026-10-11T06:15:38.800639+00:00
 
-## Baseline
+## Baseline (Historical)
 - Total: 913
 - Passed: 242
 - Failed: 465
@@ -10,33 +10,57 @@ Generated: 2026-10-10T21:58:19.780790+00:00
 - Skipped: 18
 - Failed+Error results: 653
 
-## Classification Summary
-- OBSOLETE_TEST: 339
-- TEST_HARNESS_DEFECT: 179
-- ACTUAL_PRODUCTION_DEFECT: 73
+## Current Wave Two Inventory (Run A)
+- Total: 913
+- Passed: 319
+- Failed: 415
+- Errors: 161
+- Skipped: 18
+- Failed+Error results: 576
+- Root-cause cluster count: 15
+- UNKNOWN count: 0
+
+## Current Classification Summary
+- TEST_HARNESS_DEFECT: 260
+- OBSOLETE_TEST: 255
 - ENVIRONMENT_DEFECT: 53
 - TEST_DATA_DEFECT: 8
-- OTHER_PROVEN_CLASS: 1
 
-## Cluster Summary
-| cluster_id | type | class | test_count | errors | priority | prod_status | confidence |
-|---|---|---:|---:|---:|---|---|---:|
-| ROUTER_404_CONTRACT_DRIFT | ASSERTION_CONTRACT_DRIFT | TEST_HARNESS_DEFECT | 154 | 73 | P1 | MISCLASSIFIED_TEST_DEFECT | 0.90 |
-| LEGACY_PACK_EXPANSION_ASSERTS | LEGACY_ARCHITECTURE_REFERENCE | OBSOLETE_TEST | 148 | 48 | P3 | MISCLASSIFIED_LEGACY_TEST | 0.86 |
-| LEGACY_BACKEND_PACKAGE_PATH | WRONG_PACKAGE_PATH | OBSOLETE_TEST | 136 | 0 | P3 | MISCLASSIFIED_LEGACY_TEST | 0.99 |
-| MODEL_REGISTRY_CONFLICT_TRUSTEVENTLOG | MODEL_REGISTRY_CONFLICT | ACTUAL_PRODUCTION_DEFECT | 70 | 13 | P0 | CONFIRMED_PRODUCTION_DEFECT | 0.98 |
-| SQLITE_JSONB_COMPILE_ERROR | DATABASE_STATE | ENVIRONMENT_DEFECT | 40 | 40 | P2 | MISCLASSIFIED_ENVIRONMENT_DEFECT | 0.95 |
-| LEGACY_CORE_GOV_PATH | LEGACY_ARCHITECTURE_REFERENCE | OBSOLETE_TEST | 34 | 0 | P3 | MISCLASSIFIED_LEGACY_TEST | 0.99 |
-| LEGACY_PACK_STRUCTURE_ASSERTS | LEGACY_ARCHITECTURE_REFERENCE | OBSOLETE_TEST | 21 | 0 | P3 | MISCLASSIFIED_LEGACY_TEST | 0.90 |
-| MISSING_LAUNCH_ROUTER_NAMES | IMPORT_CONTRACT | TEST_HARNESS_DEFECT | 14 | 14 | P2 | MISCLASSIFIED_TEST_DEFECT | 0.95 |
-| EXTERNAL_CONNECT_REFUSED | EXTERNAL_SERVICE_UNAVAILABLE | ENVIRONMENT_DEFECT | 13 | 0 | P2 | MISCLASSIFIED_ENVIRONMENT_DEFECT | 0.98 |
-| INTAKE_PARSER_STALE_API | STALE_SCHEMA | TEST_HARNESS_DEFECT | 9 | 0 | P2 | MISCLASSIFIED_TEST_DEFECT | 0.98 |
-| LEADCREATE_VALIDATION_CONTRACT | PYDANTIC_CONTRACT | TEST_DATA_DEFECT | 8 | 0 | P2 | MISCLASSIFIED_TEST_DEFECT | 0.92 |
-| STATE_KEY_MISSING | ACTUAL_RUNTIME_EXCEPTION | ACTUAL_PRODUCTION_DEFECT | 3 | 0 | P1 | UNKNOWN | 0.78 |
-| HEIMDALL_BUILD_GATE_404 | ROUTER_NOT_MOUNTED | TEST_HARNESS_DEFECT | 2 | 0 | P2 | MISCLASSIFIED_TEST_DEFECT | 0.88 |
-| UNCLASSIFIED | OTHER_PROVEN_CLASS | OTHER_PROVEN_CLASS | 1 | 0 | P3 | MISCLASSIFIED_TEST_DEFECT | 0.51 |
+## Current Cluster Summary
+| cluster_id | count | class |
+|---|---:|---|
+| TEST_SETUP_CHAIN_FAILURE | 121 | TEST_HARNESS_DEFECT |
+| ROUTER_404_CONTRACT_DRIFT | 119 | TEST_HARNESS_DEFECT |
+| LEGACY_PACK_STRUCTURE_ASSERTS | 85 | OBSOLETE_TEST |
+| LEGACY_PACK_EXPANSION_ASSERTS | 75 | OBSOLETE_TEST |
+| LEGACY_BACKEND_PACKAGE_PATH | 61 | OBSOLETE_TEST |
+| SQLITE_JSONB_COMPILE_ERROR | 40 | ENVIRONMENT_DEFECT |
+| LEGACY_CORE_GOV_PATH | 34 | OBSOLETE_TEST |
+| EXTERNAL_CONNECT_REFUSED | 13 | ENVIRONMENT_DEFECT |
+| INTAKE_PARSER_STALE_API | 10 | TEST_HARNESS_DEFECT |
+| LEADCREATE_VALIDATION_CONTRACT | 8 | TEST_DATA_DEFECT |
+| DEAL_MODEL_ARGUMENT_CONTRACT_DRIFT | 4 | TEST_HARNESS_DEFECT |
+| DEAL_BUYER_SCHEMA_RUNTIME_DRIFT | 2 | TEST_HARNESS_DEFECT |
+| STATE_KEY_MISSING_SOURCE_LIFECYCLE | 2 | TEST_HARNESS_DEFECT |
+| BUYER_MODEL_ARGUMENT_CONTRACT_DRIFT | 1 | TEST_HARNESS_DEFECT |
+| STATE_KEY_MISSING_REMINDER_ID | 1 | TEST_HARNESS_DEFECT |
 
-## High-Leverage Candidates
-- ROUTER_404_CONTRACT_DRIFT: 154 tests, class=TEST_HARNESS_DEFECT, owner=mixed routers/tests, fix_scope=narrow
-- MODEL_REGISTRY_CONFLICT_TRUSTEVENTLOG: 70 tests, class=ACTUAL_PRODUCTION_DEFECT, owner=services/api/app/models, fix_scope=narrow
-- STATE_KEY_MISSING: 3 tests, class=ACTUAL_PRODUCTION_DEFECT, owner=mixed services/models, fix_scope=medium
+## TrustEventLog Signature Reconciliation
+- ORIGINAL_TRUSTEVENTLOG_SIGNATURE_COUNT_AFTER_WAVE2: 0
+- TRUSTEVENTLOG_NODE_COUNT_WITH_NEW_UNDERLYING_FAILURES: 7
+- NEW_CLUSTER_ASSIGNMENTS_FOR_THE_7_NODES:
+- services.api.tests.test_deal_lifecycle::test_lifecycle_action_orchestrates_flows -> DEAL_MODEL_ARGUMENT_CONTRACT_DRIFT (TypeError: 'org_id' is an invalid keyword argument for Deal)
+- services.api.tests.test_deal_lifecycle::test_lifecycle_available_actions_at_stage -> DEAL_MODEL_ARGUMENT_CONTRACT_DRIFT (TypeError: 'org_id' is an invalid keyword argument for Deal)
+- services.api.tests.test_deal_lifecycle::test_lifecycle_run_invalid_action -> DEAL_MODEL_ARGUMENT_CONTRACT_DRIFT (TypeError: 'org_id' is an invalid keyword argument for Deal)
+- services.api.tests.test_deal_lifecycle::test_lifecycle_status_new_deal -> DEAL_MODEL_ARGUMENT_CONTRACT_DRIFT (TypeError: 'org_id' is an invalid keyword argument for Deal)
+- services.api.tests.test_fake_live_operating_day::test_fake_live_operating_day_controlled_stage_report -> BUYER_MODEL_ARGUMENT_CONTRACT_DRIFT (TypeError: 'full_name' is an invalid keyword argument for Buyer)
+- services.api.tests.test_flow_lead_to_deal::test_flow_lead_to_deal_basic -> DEAL_BUYER_SCHEMA_RUNTIME_DRIFT (sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) no such table: buyers)
+- services.api.tests.test_flow_notifications::test_notify_deal_parties_seller_and_buyers -> DEAL_BUYER_SCHEMA_RUNTIME_DRIFT (sqlalchemy.exc.PendingRollbackError: This Session's transaction has been rolled back due to a previous exception during flush. To begin a new transaction with this Session, first issue Session.rollback(). Original exception was: (sqlite3.OperationalError) no such table: buyers)
+
+## Launch Router Signature Reconciliation
+- Baseline MISSING_LAUNCH_ROUTER_NAMES count: 14
+- Current signature count: 0
+
+## STATE_KEY_MISSING Final Classification
+- SOURCE_LIFECYCLE_STATE_KEY_CLASSIFICATION: TEST_HARNESS_DEFECT
+- REMINDER_ID_STATE_KEY_CLASSIFICATION: TEST_HARNESS_DEFECT
