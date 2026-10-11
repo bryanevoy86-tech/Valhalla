@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-11T06:15:57.044187+00:00",
+  "generated_at": "2026-10-11T18:05:42.729197+00:00",
   "baseline": {
     "total": 913,
     "passed": 242,
@@ -22,91 +22,28 @@
     "failed": 415,
     "errors": 161,
     "skipped": 18,
-    "failed_or_error": 576,
-    "cluster_count": 15,
-    "classification_counts": {
-      "OBSOLETE_TEST": 255,
-      "TEST_HARNESS_DEFECT": 260,
-      "ENVIRONMENT_DEFECT": 53,
-      "TEST_DATA_DEFECT": 8
-    },
-    "cluster_counts": {
-      "LEGACY_PACK_EXPANSION_ASSERTS": 75,
-      "LEGACY_PACK_STRUCTURE_ASSERTS": 85,
-      "LEGACY_CORE_GOV_PATH": 34,
-      "ROUTER_404_CONTRACT_DRIFT": 119,
-      "STATE_KEY_MISSING_REMINDER_ID": 1,
-      "LEGACY_BACKEND_PACKAGE_PATH": 61,
-      "STATE_KEY_MISSING_SOURCE_LIFECYCLE": 2,
-      "TEST_SETUP_CHAIN_FAILURE": 121,
-      "INTAKE_PARSER_STALE_API": 10,
-      "SQLITE_JSONB_COMPILE_ERROR": 40,
-      "EXTERNAL_CONNECT_REFUSED": 13,
-      "LEADCREATE_VALIDATION_CONTRACT": 8,
-      "DEAL_MODEL_ARGUMENT_CONTRACT_DRIFT": 4,
-      "BUYER_MODEL_ARGUMENT_CONTRACT_DRIFT": 1,
-      "DEAL_BUYER_SCHEMA_RUNTIME_DRIFT": 2
-    },
-    "unknown_count": 0,
-    "signature_checks": {
-      "ORIGINAL_TRUSTEVENTLOG_SIGNATURE_COUNT_AFTER_WAVE2": 0,
-      "MISSING_LAUNCH_ROUTER_SIGNATURE_COUNT_AFTER_WAVE2": 0
-    },
-    "trusteventlog_reclassification": {
-      "baseline_cluster_count": 70,
-      "TRUSTEVENTLOG_NODE_COUNT_WITH_NEW_UNDERLYING_FAILURES": 7,
-      "NEW_CLUSTER_ASSIGNMENTS_FOR_THE_7_NODES": [
-        {
-          "node_id": "services.api.tests.test_deal_lifecycle::test_lifecycle_action_orchestrates_flows",
-          "new_cluster": "DEAL_MODEL_ARGUMENT_CONTRACT_DRIFT",
-          "signature": "TypeError: 'org_id' is an invalid keyword argument for Deal"
-        },
-        {
-          "node_id": "services.api.tests.test_deal_lifecycle::test_lifecycle_available_actions_at_stage",
-          "new_cluster": "DEAL_MODEL_ARGUMENT_CONTRACT_DRIFT",
-          "signature": "TypeError: 'org_id' is an invalid keyword argument for Deal"
-        },
-        {
-          "node_id": "services.api.tests.test_deal_lifecycle::test_lifecycle_run_invalid_action",
-          "new_cluster": "DEAL_MODEL_ARGUMENT_CONTRACT_DRIFT",
-          "signature": "TypeError: 'org_id' is an invalid keyword argument for Deal"
-        },
-        {
-          "node_id": "services.api.tests.test_deal_lifecycle::test_lifecycle_status_new_deal",
-          "new_cluster": "DEAL_MODEL_ARGUMENT_CONTRACT_DRIFT",
-          "signature": "TypeError: 'org_id' is an invalid keyword argument for Deal"
-        },
-        {
-          "node_id": "services.api.tests.test_fake_live_operating_day::test_fake_live_operating_day_controlled_stage_report",
-          "new_cluster": "BUYER_MODEL_ARGUMENT_CONTRACT_DRIFT",
-          "signature": "TypeError: 'full_name' is an invalid keyword argument for Buyer"
-        },
-        {
-          "node_id": "services.api.tests.test_flow_lead_to_deal::test_flow_lead_to_deal_basic",
-          "new_cluster": "DEAL_BUYER_SCHEMA_RUNTIME_DRIFT",
-          "signature": "sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) no such table: buyers"
-        },
-        {
-          "node_id": "services.api.tests.test_flow_notifications::test_notify_deal_parties_seller_and_buyers",
-          "new_cluster": "DEAL_BUYER_SCHEMA_RUNTIME_DRIFT",
-          "signature": "sqlalchemy.exc.PendingRollbackError: This Session's transaction has been rolled back due to a previous exception during flush. To begin a new transaction with this Session, first issue Session.rollback(). Original exception was: (sqlite3.OperationalError) no such table: buyers"
-        }
-      ]
-    }
+    "failed_or_error": 576
+  },
+  "wave_three": {
+    "total": 913,
+    "passed": 336,
+    "failed": 491,
+    "errors": 68,
+    "skipped": 18,
+    "failed_or_error": 559
   },
   "delta_from_baseline": {
-    "passed": 77,
-    "failed": -50,
-    "errors": -27,
-    "failed_or_error": -77,
-    "new_failing_nodes": 0
+    "passed": 94,
+    "failed": 26,
+    "errors": -120,
+    "failed_error_population": -94
   },
-  "required_gates": {
-    "collection_errors": 0,
-    "phase_two": "PASS",
-    "phase_three": "PASS",
-    "winnipeg": "PASS",
-    "shadow_safety": "PASS",
-    "fresh_db_repeatable": true
-  }
+  "delta_from_wave_two": {
+    "passed": 17,
+    "failed": 76,
+    "errors": -93,
+    "failed_error_population": -17
+  },
+  "current_root_cause_clusters": 17,
+  "unknown": 0
 }
