@@ -4,6 +4,8 @@ Service classes for PACK SZ, TA, TB
 Business logic for philosophy, relationships, and daily rhythm.
 """
 
+import time
+import uuid
 from datetime import datetime
 from typing import Optional, List, Dict
 from sqlalchemy.orm import Session
@@ -26,8 +28,9 @@ from app.schemas.pack_sz_ta_tb import (
 
 def generate_id(prefix: str) -> str:
     """Generate unique ID with timestamp-based suffix."""
-    timestamp = datetime.utcnow().strftime("%s")[-8:]
-    return f"{prefix}-{timestamp}"
+    timestamp = str(int(time.time() * 1000))[-8:]
+    suffix = uuid.uuid4().hex[:6]
+    return f"{prefix}-{timestamp}{suffix}"
 
 
 # =============================================================================

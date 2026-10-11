@@ -9,14 +9,15 @@ def generate_uuid() -> str:
     return str(uuid.uuid4())
 
 
-def generate_id() -> str:
+def generate_id(prefix: str = "") -> str:
     """
     Generate a universal ID for any entity.
     Uses Snowflake-like approach with timestamp + random suffix.
     """
     timestamp = int(time.time() * 1000)
     random_suffix = uuid.uuid4().hex[:12]
-    return f"{timestamp}{random_suffix}"
+    base = f"{timestamp}{random_suffix}"
+    return f"{prefix}-{base}" if prefix else base
 
     """
     Generate a Snowflake-like distributed ID.
