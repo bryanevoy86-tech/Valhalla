@@ -46,3 +46,21 @@ except Exception as e:
     sys.exit(1)
 
 print("========== CRON DEBUG END ==========", flush=True)
+
+# Optional Business Factory tick: disabled unless both secure settings exist.
+# This uses the existing daily cron service with no additional Render service.
+# It never grants external commerce permissions: only owner-approved INTERNAL
+# listing draft tasks are executable by the restricted API endpoint.
+try:
+    from business_factory_tick import run_factory_tick
+
+    factory_result = run_factory_tick()
+    print(
+        "BUSINESS_FACTORY_TICK "
+        f"status={factory_result['status']} "
+        f"verified={factory_result.get('verified', False)}",
+        flush=True,
+    )
+except Exception as exc:
+    print(f"BUSINESS_FACTORY_TICK_FAILED {type(exc).__name__}: {exc}", flush=True)
+    sys.exit(1)
