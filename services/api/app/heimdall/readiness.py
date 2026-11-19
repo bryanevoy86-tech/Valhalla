@@ -1,58 +1,80 @@
-"""Heimdall readiness checks - validate system is ready to go live."""
-from app.core.runtime_flags import RuntimeMode
+"""Conservative, evidence-backed go-live readiness checks.
+
+A missing credential, provider confirmation, table, or runtime proof is a
+failed check. Never mark a production capability ready using a hardcoded True.
+"""
+from __future__ import annotations
+
+import importlib.util
+import os
 
 
-def readiness_checks() -> dict:
-    """
-    Run all critical readiness checks.
-    
-    Returns:
-        dict with check results - all must be True to go live
-    """
-    checks = {
-        "database_connected": True,  # Verify DB connection
-        "s3_configured": True,  # Verify S3/storage backend
-        "stripe_live_key_set": False,  # Would be True after setup
-        "docusign_configured": False,  # Would be True after setup
-        "bank_account_connected": False,  # Would be True after bank link
-        "contracts_templates_loaded": True,  # Verify templates exist
-        "heimdall_authority_ready": True,  # Authority system ready
-        "floor_controls_set": False,  # Would be True after config
-        "audit_logging_enabled": True,  # Logging is working
-        "all_modules_loaded": True,  # All code modules importable
+def _database_evidence() -> dict[str, bool]:
+    evidence = {
+        "database_connected": False,
+        "schema_migrated": False,
+        "contracts_templates_loaded": False,
+        "audit_logging_enabled": False,
     }
-    
+    try:
+        from sqlalchemy import inspect, text
+        from app.core.db import engine
+
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1")).scalar()
+            evidence["database_connected"] = True
+            tables = set(inspect(conn).get_table_names())
+            evidence["schema_migrated"] = "alembic_version" in tables
+            evidence["audit_logging_enabled"] = "audit_log" in tables
+            if "contract_templates" in tables:
+                evidence["contracts_templates_loaded"] = (
+                    conn.execute(text("SELECT 1 FROM contract_templates LIMIT 1")).first() is not None
+                )
+    except Exception:
+        # A database failure can never be counted as a successful readiness check.
+        pass
+    return evidence
+
+
+def readiness_checks() -> dict[str, bool]:
+    checks = _database_evidence()
+    checks.update({
+        "s3_configured": bool(
+            os.getenv("S3_BUCKET")
+            and os.getenv("S3_ACCESS_KEY_ID")
+            and os.getenv("S3_SECRET_ACCESS_KEY")
+        ),
+        "stripe_live_key_set": os.getenv("STRIPE_SECRET_KEY", "").startswith("sk_live_"),
+        "docusign_configured": bool(
+            os.getenv("DOCUSIGN_INTEGRATION_KEY") and os.getenv("DOCUSIGN_USER_ID")
+        ),
+        # These states require real account, policy, and operational proof.
+        # An environment flag or the existence of a Python module is insufficient.
+        "bank_account_connected": False,
+        "floor_controls_set": False,
+        "heimdall_authority_ready": False,
+        "all_modules_loaded": False,
+    })
     return checks
 
 
 def is_ready_to_go_live() -> bool:
-    """Check if all critical checks pass."""
-    checks = readiness_checks()
-    
-    # Critical checks that must pass
-    critical = [
-        "database_connected",
-        "s3_configured",
-        "contracts_templates_loaded",
-        "heimdall_authority_ready",
-        "audit_logging_enabled",
-        "all_modules_loaded"
-    ]
-    
-    return all(checks.get(check, False) for check in critical)
+    # An unverified condition is a blocker, never a successful activation.
+    return all(readiness_checks().values())
 
 
 def get_readiness_report() -> dict:
-    """Get detailed readiness report."""
     checks = readiness_checks()
-    passed = sum(1 for v in checks.values() if v)
-    total = len(checks)
-    
+    passed = sum(bool(value) for value in checks.values())
     return {
-        "ready": is_ready_to_go_live(),
+        "ready": all(checks.values()),
         "passed": passed,
-        "total": total,
-        "percentage": (passed / total * 100) if total > 0 else 0,
+        "total": len(checks),
+        "percentage": 100.0 * passed / len(checks),
         "checks": checks,
-        "recommendation": "Ready to go live" if is_ready_to_go_live() else "Not ready - see failed checks"
+        "unverified": [name for name, passed in checks.items() if not passed],
+        "recommendation": (
+            "Ready for review" if all(checks.values()) else
+            "BLOCKED: verify every failed control before enabling live operations"
+        ),
     }
