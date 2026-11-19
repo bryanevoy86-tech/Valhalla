@@ -73,3 +73,19 @@ Continue the CURRENT Valhalla / Heimdall Prime codebase. Start with a safe git f
 - Every operation returning completed has an independently verifiable receipt.
 - Any remaining setup requiring the owner's external accounts or legal/financial approvals is explicitly identified.
 - No production impact until a reviewed release is authorized.
+
+
+## Added after initial handoff: scheduled execution and database preparation (Nov 19)
+
+- Existing Render daily cron command is services/api/tools/cron/daily_email_ping.py. It now optionally calls business_factory_tick.py AFTER successful email; no second paid cron service is created.
+- The optional tick is DISABLED by default. It requires BOTH BUSINESS_FACTORY_RUN_URL and VALHALLA_FACTORY_KEY. The URL must be HTTPS, an exact path, and an explicitly allowed host. It rejects redirects, missing credentials and unverifiable success.
+- No keys or URLs were configured on live Render. This is SOURCE-CODE PREPARATION, not a deployed worker.
+- The populated Render Postgres db-v2-copy was inspected read-only. It has media_contents and alembic_version, but is missing legacy_instance_registry_items, legacy_instance_work_items and legacy_orchestration_events.
+- Its current alembic_version was 8e43f380be7f on Nov 19. The repository has an existing subsequent revision 20261007_shadow_source_governance.
+- Migration alembic/versions/20261119_factory_legacy_work_schema.py now prepares missing factory tables after the existing governance revision. It preserves existing tables and will not drop business data on downgrade. Review and apply only on an approved deployment.
+- API router requires all four persistent tables before running. It returns HTTP 503 with missing-table details rather than reporting false success.
+- More tests: tests/test_business_factory_cron.py and tests/test_factory_migration.py. The GitHub workflow exercises dry-run email/worker-cron security and idempotent non-destructive migration against disposable SQLite.
+- Root alembic is at alembic/ (not services/api/alembic/). Dockerfile starts services/api/start.py. Render web service currently has an empty pre-deploy command. Do not assume migrations happen automatically.
+- Before any production deployment: establish which database the API actually uses, run an isolated migration rehearsal, validate new auth, review live business data and rollback posture, then obtain owner approval.
+
+**Current live Render services and database have NOT been mutated.** Updating GitHub's isolated development branch does not change Render production until main changes or a deployment is explicitly triggered.
