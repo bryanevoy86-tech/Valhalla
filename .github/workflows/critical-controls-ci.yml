@@ -1,0 +1,36 @@
+name: Critical operational truth checks
+
+on:
+  pull_request:
+    paths:
+      - 'services/api/app/scheduler/runner.py'
+      - 'services/api/app/workers/outbox_dispatcher.py'
+      - 'services/api/app/cron/daily_ops.py'
+      - 'services/api/app/jobs/runner.py'
+      - 'services/api/app/heimdall/readiness.py'
+      - 'tests/test_fail_closed_smoke.py'
+      - '.github/workflows/critical-controls-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Python syntax checks
+        run: |
+          python -m py_compile \
+            services/api/app/scheduler/runner.py \
+            services/api/app/workers/outbox_dispatcher.py \
+            services/api/app/cron/daily_ops.py \
+            services/api/app/jobs/runner.py \
+            services/api/app/heimdall/readiness.py \
+            tests/test_fail_closed_smoke.py
+      - name: Verified completion smoke tests (dependency-free)
+        run: python -m unittest discover -s tests -p test_fail_closed_smoke.py -v
