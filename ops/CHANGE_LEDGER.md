@@ -67,3 +67,56 @@ Do not log Render secrets or connection strings. A future Render mutation entry 
 ## Future updates
 
 Append dated entries, never rewrite historical claims. Each entry must state files, commit SHA, PR, tests, Render actions (or NO CHANGES), exact verified outcome and remaining blockers.
+
+
+## Follow-on GitHub work — 2026-11-19
+
+| Commit | File / action | Outcome |
+|---|---|---|
+| 54c59bc3 | ops/CHANGE_LEDGER.md | Established this persistent change ledger |
+| d216c660 | docs/HEIMDALL_DEFINITION_OF_DONE.md | Documented cross-industry Prime architecture and strict proof stages |
+| 4e175e79 | docs/CODEX_RESUME_2026-12-01.md | Added exact future VS Code Codex branch-fetch and integration prompt |
+| 0e326e14 | services/api/tools/cron/business_factory_tick.py | Added disabled-by-default HTTPS/host-restricted worker tick; no paid service created |
+| d6cc61b9 | services/api/tools/cron/daily_email_ping.py | After email success, optionally invoke restricted worker tick; missing config = skip |
+| bb1930da | tests/test_business_factory_cron.py | Verify no token exposure, no redirect to unauthorized host, and no fake success |
+| d70f886e | .github/workflows/critical-controls-ci.yml | Added cron test + syntax checks |
+| 8bd648e0 | services/api/app/routers/prime_business_factory.py | Return HTTP 503 if required persistent schema missing; do not create tables during API requests |
+| 1e03ddf6 | alembic/versions/20261119_factory_legacy_work_schema.py | Add schema preparation following existing 20261007 governance migration; preserve legacy data |
+| 2eb3ace5 | services/api/app/services/prime_business_execution.py | Harden idempotency across engine, industry, jurisdiction and business scope |
+| 35fc506f | tests/test_business_factory_pilot.py | Test schema missing and cross-scope idempotency denial |
+| b00eb290 | tests/test_factory_migration.py | Test non-destructive, repeatable migration in disposable SQLite |
+| 9cc0d4d6 | .github/workflows/critical-controls-ci.yml | Run real Alembic migration tests |
+| 70c7bb88 | docs/CODEX_RESUME_2026-12-01.md | Added schema and cron handoff facts |
+
+### Latest confirmed CI result
+
+**2026-11-19, GitHub Actions run 44637143438: SUCCESS**
+https://github.com/bryanevoy86-tech/Valhalla/actions/runs/44637143438
+
+- False-success prevention suite: 5 passed.
+- Real FastAPI + disposable SQLite Business Factory lifecycle: 7 passed.
+- Disabled-by-default cron/HTTPS/secret tests: 6 passed.
+- Non-destructive Alembic upgrade tests: 2 passed.
+- Total **20 passed**, no failures in the **targeted suites**.
+- Python syntax check passed.
+- FULL backend suite and actual Render PostgreSQL operation NOT certified.
+
+### Additional Render read-only inspection
+
+Render DB dpg-d9ek3oj7uimc73fooes0-a:
+- public tables include media_contents, media_channels and alembic_version;
+- missing legacy_instance_work_items, legacy_instance_registry_items and legacy_orchestration_events;
+- alembic_version reports 8e43f380be7f;
+- GitHub contains an existing next revision 20261007_shadow_source_governance.
+- API source Dockerfile launches services/api/start.py, which documents external pre-deploy migrations; current Render web service pre-deploy command was observed empty.
+- Therefore the new pilot intentionally refuses production requests with HTTP 503 until schema prepared.
+
+**Render mutations remain ZERO.** No migration applied, worker activated, credentials configured or new service created. Existing live main commit remains unchanged.
+
+### Release and owner handoff
+
+- Current PR contains 18 changed files, all tracked in the PR diff and this ledger.
+- Branch remains fix/fail-closed-operations-20261119 and PR #4 remains draft.
+- No actual commerce, payments, storefront publication, or customer marketing is claimed.
+- A safe approval-controlled release requires validating the true database connection, rehearsing migrations on a disposable copy, reviewing auth and full backend suite, preparing a rollback/containment plan, setting secrets in the authorized provider, merging a reviewed PR and verifying live behavior.
+- On Codex resumption: fetch the development branch; read docs/CODEX_RESUME_2026-12-01.md before additional coding.
