@@ -1,4 +1,4 @@
-name: Critical operational truth checks
+name: Critical operational truth and Business Factory integration
 
 on:
   pull_request:
@@ -8,7 +8,10 @@ on:
       - 'services/api/app/cron/daily_ops.py'
       - 'services/api/app/jobs/runner.py'
       - 'services/api/app/heimdall/readiness.py'
+      - 'services/api/app/services/prime_business_execution.py'
+      - 'services/api/app/routers/prime_business_factory.py'
       - 'tests/test_fail_closed_smoke.py'
+      - 'tests/test_business_factory_pilot.py'
       - '.github/workflows/critical-controls-ci.yml'
   workflow_dispatch:
 
@@ -31,6 +34,31 @@ jobs:
             services/api/app/cron/daily_ops.py \
             services/api/app/jobs/runner.py \
             services/api/app/heimdall/readiness.py \
-            tests/test_fail_closed_smoke.py
+            services/api/app/services/prime_business_execution.py \
+            services/api/app/routers/prime_business_factory.py \
+            tests/test_fail_closed_smoke.py \
+            tests/test_business_factory_pilot.py
       - name: Verified completion smoke tests (dependency-free)
         run: python -m unittest discover -s tests -p test_fail_closed_smoke.py -v
+
+  factory-integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install isolated integration test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install \
+            "fastapi==0.115.0" \
+            "sqlalchemy==2.0.35" \
+            "pydantic==2.9.2" \
+            "pydantic-settings==2.4.0" \
+            "httpx==0.27.2"
+      - name: Business Factory real-database lifecycle checks
+        env:
+          DATABASE_URL: "sqlite://"
+          VALHALLA_JWT_SECRET: "ci-only-not-a-live-secret"
+        run: python -m unittest discover -s tests -p test_business_factory_pilot.py -v
