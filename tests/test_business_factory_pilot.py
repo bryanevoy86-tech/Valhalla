@@ -266,5 +266,23 @@ class BusinessFactoryPilotTests(unittest.TestCase):
         self.assertIsNone(status.json()["receipt"])
 
 
+    def test_missing_schema_blocks_route_without_creating_tables(self):
+        MediaContent.__table__.drop(bind=self.engine)
+        result = self.submit()
+        self.assertEqual(result.status_code, 503, result.text)
+        self.assertEqual(result.json()["detail"]["error"], "BUSINESS_FACTORY_SCHEMA_NOT_READY")
+        self.assertIn("media_contents", result.json()["detail"]["missing_tables"])
+
+    def test_same_request_key_cannot_change_engine_or_jurisdiction(self):
+        first = self.submit()
+        self.assertEqual(first.status_code, 200, first.text)
+        changed = dict(self.payload, engine_id="other_engine")
+        self.assertEqual(self.submit(changed).status_code, 409)
+        changed = dict(self.payload, jurisdiction="CA-ON")
+        self.assertEqual(self.submit(changed).status_code, 409)
+        changed = dict(self.payload, industry="different_industry")
+        self.assertEqual(self.submit(changed).status_code, 409)
+
+
 if __name__ == "__main__":
     unittest.main()
