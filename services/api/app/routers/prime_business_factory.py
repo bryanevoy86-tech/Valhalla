@@ -6,7 +6,8 @@ payments, messaging, or owner money movement.
 """
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import inspect
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
@@ -19,10 +20,29 @@ from app.services.prime_business_execution import (
     action_status,
 )
 
+REQUIRED_TABLES = {
+    "legacy_instance_registry_items",
+    "legacy_instance_work_items",
+    "legacy_orchestration_events",
+    "media_contents",
+}
+
+
+def require_factory_schema(db: Session = Depends(get_db)) -> None:
+    """Explicit fail-closed schema gate; no DDL on API requests."""
+    tables = set(inspect(db.get_bind()).get_table_names(schema="public" if db.bind.dialect.name == "postgresql" else None))
+    missing = sorted(REQUIRED_TABLES - tables)
+    if missing:
+        raise HTTPException(
+            status_code=503,
+            detail={"error": "BUSINESS_FACTORY_SCHEMA_NOT_READY", "missing_tables": missing},
+        )
+
+
 router = APIRouter(
     prefix="/api/business-factory",
     tags=["business-factory"],
-    dependencies=[Depends(require_factory_key)],
+    dependencies=[Depends(require_factory_key), Depends(require_factory_schema)],
 )
 
 
