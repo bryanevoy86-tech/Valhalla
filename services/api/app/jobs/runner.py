@@ -1,56 +1,35 @@
-"""
-Module 42: Job Runner
-Executes cron jobs on demand or schedule.
-"""
+"""Execute registered cron handlers without mistaking invocation for success."""
 from app.cron.registry import CRON_JOBS, get_job
 
 
-def run_job(name):
-    """
-    Run a cron job by name.
-    
-    Args:
-        name: Job name (e.g., 'daily_ops')
-    
-    Returns:
-        dict: Job result or error
-    """
+def run_job(name: str) -> dict:
     job_config = get_job(name)
-    
     if not job_config:
-        return {
-            "status": "error",
-            "error": "job_not_found",
-            "job_name": name
-        }
-    
+        return {"status": "error", "error": "job_not_found", "job_name": name}
+
     try:
-        handler = job_config["handler"]
-        result = handler()
-        return {
-            "status": "success",
-            "job_name": name,
-            "result": result
-        }
-    except Exception as e:
-        return {
-            "status": "error",
-            "error": str(e),
-            "job_name": name
-        }
+        result = job_config["handler"]()
+    except Exception as exc:
+        return {"status": "error", "error": str(exc), "job_name": name}
+
+    # Calling a handler is not proof the underlying business operation ran.
+    # Every handler must provide positive evidence of verified completion.
+    if isinstance(result, dict):
+        if result.get("status") in {"error", "failed", "blocked"}:
+            return {"status": result["status"], "job_name": name, "result": result}
+        if result.get("verified") is True and result.get("status") in {"success", "complete"}:
+            return {"status": "success", "job_name": name, "result": result}
+
+    return {
+        "status": "unverified",
+        "job_name": name,
+        "result": result,
+        "error": "handler did not provide verified completion evidence",
+    }
 
 
 def list_available_jobs():
-    """
-    List all available jobs.
-    
-    Returns:
-        dict: All jobs with schedules and descriptions
-    """
     return {
-        name: {
-            "schedule": config["schedule"],
-            "description": config["description"]
-        }
+        name: {"schedule": config["schedule"], "description": config["description"]}
         for name, config in CRON_JOBS.items()
     }
