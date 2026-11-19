@@ -141,6 +141,9 @@ def submit_listing_draft(db: Session, request: Any) -> dict:
         if (
             existing.legacy_instance_id != request.legacy_instance_id
             or existing.business_id != request.business_id
+            or existing.engine_id != request.engine_id
+            or existing.industry != request.industry
+            or existing.jurisdiction != request.jurisdiction
             or existing.payload_json != _canonical(inputs)
         ):
             raise HTTPException(status_code=409, detail="idempotency key reused with different work")
