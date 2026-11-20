@@ -60,7 +60,7 @@ class ActionIntent:
     consent_verified: bool = False
     circuit_breaker_open: bool = False
     outcome_uncertain: bool = False
-    system_integrity_verified: bool = True
+    system_integrity_verified: bool = False
     emergency_stop: bool = False
     untrusted_source_requests_tool_action: bool = False
 
@@ -169,6 +169,7 @@ def require_internal_draft(
         legacy_id=legacy_id,
         business_scope_verified=bool(business_id and legacy_id),
         tenant_scope_verified=bool(business_id and legacy_id),
+        system_integrity_verified=True,  # caller verified scoped DB work + approval event
         owner_approval_verified=approved,
         emergency_stop=emergency_stop,
     ))
