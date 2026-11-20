@@ -219,3 +219,32 @@ Render DB dpg-d9ek3oj7uimc73fooes0-a:
 **Render mutations:** ZERO. No changes to services, schedules, databases, environment variables, deployment commits, billing or production data.
 
 **Next mandatory acceptance:** full canonical FastAPI import and route registration, complete regression, actual PostgreSQL migration rehearsal, live worker/restart proof, provider-account and financial sandbox integrations, then explicit owner-approved production deployment and external proofs.
+
+
+## Bounded autonomy safeguards — 2026-11-19
+
+User asked how Heimdall can avoid AI hallucinations, harmful optimization, unexpected disruption and the need to micromanage routine business operations. These are **engineering risk controls**, not blanket declarations of fully autonomous business operation.
+
+| Commit | File/action | Verification |
+|---|---|---|
+| 936bf404 | services/api/app/core/autonomy_governor.py: first deterministic risk policy (ALLOW/ABSTAIN/REVIEW_REQUIRED/BLOCK), scope, evidence, spending, circuit breaker, uncertainty, kill switch and shadow-mode checks | New targeted unit tests |
+| 4dd457f5 | services/api/app/services/prime_business_execution.py: verify policy and existing go-live-state kill switch before a real internal artifact write; stamp receipt policy evidence | Integrated Factory tests |
+| df615afe | tests/test_autonomy_governor.py: unit test branches for source uncertainty, injection, consent, disallowed payments, missing owner approval and outages | Targeted CI |
+| 1096040f | tests/test_business_factory_pilot.py: additional emergency env and DB kill-switch tests | Integrated CI |
+| a0b7bcbc | .github/workflows/critical-controls-ci.yml: run new policy tests | Targeted CI |
+| d49a6e8a | core/autonomy_governor.py: tighten unverified system-integrity default to false | Fail-closed test |
+| ee55cf3c | tests/test_autonomy_governor.py: assert default unverified state blocks | Targeted CI |
+| ad75a60e | docs/PRIME_AUTONOMY_SAFETY_CONTRACT.md: original long-term risk model and bounded-autonomy acceptance criteria | Documentation |
+| 6c5c66aa | ops/prime_system_integration_matrix.json: add governor to existing runtime governance source/acceptance contract | Static preflight CI |
+| 490ae55c | CODEX_START_HERE.md: include autonomy governor and risk criteria | Handoff |
+| 7b352cce | docs/CODEX_SYSTEM_FINISH_PASSES.md: add cross-system enforcement, durable circuit breakers and evidence as required work | Handoff |
+| a3bdbd59 | docs/CODEX_RESUME_2026-12-01.md: current guard scope, live caveats and proof | Handoff |
+
+**CI acceptance:** https://github.com/bryanevoy86-tech/Valhalla/actions/runs/44654950056
+Two jobs completed successfully: 47 smoke/policy/static tests + 24 SQLAlchemy/FastAPI/provider-boundary tests = **71 targeted tests passed**. Earlier transient intermediate commit had a failed run before the fail-closed-default correction; the later 71-test run is the verified passing state. Not a green broad suite, PostgreSQL concurrency, provider, or live deployment certification.
+
+**Currently integrated:** new governor is checked by the approved INTERNAL_DRAFT_ONLY Business Factory worker; it reads trusted owner approval event, scoped legacy record and emergency stop before the write. It returns truthful blocked status and leaves the work queued when stop is engaged. Existing GoLiveState database kill-switch is supported when table exists. The missing-go-live-table fallback applies ONLY to internal/no-external-effect pilot.
+
+**NOT integrated:** universal source/evaluation evidence verifier, external publishing, customer outreach, legal contracts, payments, payouts, production code deploy, persistent circuit breaker state, global multi-instance authorization, or owner notification/escalation. The pure governor does not magically secure external adapters that do not call it. Provider effect guards must be wired and tested at actual dispatch boundaries.
+
+**Render:** ZERO mutation. No deployment, service, cron schedule, environment variable, database row or schema changed from this task. The production main branch remains unchanged.
