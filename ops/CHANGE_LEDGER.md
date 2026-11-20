@@ -256,3 +256,67 @@ Two jobs completed successfully: 47 smoke/policy/static tests + 24 SQLAlchemy/Fa
 - Confirmed GitHub Actions run 44654950056 completed SUCCESS with 71 targeted tests.
 - Repo branch includes CODEX_START_HERE.md, docs/PRIME_AUTONOMY_SAFETY_CONTRACT.md and updated December handoffs.
 - **Render mutations from this governance task: NONE.** No environment, credentials, database, cron, payment, or deployment modifications.
+
+
+## Full log triage and integration preparation — 2026-11-19 (UTC CI: Nov 20)
+
+Source inventory: ops/REMAINING_SYSTEM_BLOCKERS_2026-11-19.md. The following are all changes to the existing development branch; **Render mutation count remains ZERO**.
+
+| Commit | File | Concrete change / effect |
+|---|---|---|
+| e1996b6d | services/api/app/routers/auth_weweb.py | Force a configured and matching X-Setup-Token on every enabled owner-password reset |
+| 0c7ec0ef | tests/test_owner_reset_auth.py | Negative tests for disabled, missing secret, wrong secret and missing owner credentials |
+| 249e0139 | services/api/app/core/db.py | Invalid DB engine or schema cannot silently fall back to in-memory SQLite |
+| 71f51914 | tests/test_factory_postgres.py | Disposable PostgreSQL persistence/fresh-session and two-worker deduplication tests |
+| 3f1f2675 | .github/workflows/critical-controls-ci.yml | Added separate PostgreSQL service/job and owner reset tests |
+| 1736649f | services/api/app/models/auth_revocations.py | Persistent hashed JWT revocation data model |
+| efdf59fa | services/api/app/security/token_revocation.py | Shared-DB revocation check and write helper |
+| befa92fa | services/api/app/routers/auth_weweb.py | WeWeb logout/refresh persist revocation; missing table or DB unavailable blocks token use |
+| d83cb59a | alembic/versions/20261119_persistent_auth_revocation.py | Additive, non-destructive WeWeb revocation schema after Factory migration |
+| 0c7188a6 | tests/test_owner_reset_auth.py | Isolate legacy owner reset tests from revocation imports |
+| 0b02fb6f | tests/test_weweb_revocation.py | Test persistence after new SQL session, duplicate revocation and missing schema |
+| bc94cc4c | tests/test_auth_revocation_migration.py | Test schema upgrade, repeat and non-destructive downgrade |
+| 2b1e4653 | .github/workflows/critical-controls-ci.yml | Add revocation, migration and auth regression tests |
+| 9db6ee6a | .github/workflows/critical-controls-ci.yml | Added canonical full app import diagnostic on isolated runner |
+| 2f766e94 | tests/test_postgres_migration_chain.py | Replay new Factory and auth migrations twice on disposable PostgreSQL |
+| d6a35a28 | .github/workflows/critical-controls-ci.yml | Execute PostgreSQL migration-chain rehearsal |
+| 5ce8e426 | services/api/requirements.txt | Normalize UTF-16 text into UTF-8 for reproducible Linux pip installs; pinned dependencies unchanged |
+| 8a9788c5 | .github/workflows/critical-controls-ci.yml | Promote successful full app import and 9-route parity to mandatory gate |
+| 10e635c1 | tests/test_db_fail_closed.py | Test deliberately invalid DB driver must stop startup |
+| c12f2677 | .github/workflows/critical-controls-ci.yml | Add database startup negative test |
+| 4187f97f | .github/workflows/critical-controls-ci.yml | Archive broad pytest collection errors as diagnostic artifact, not false all-green |
+| dcbd0d18 | tests/test_db_fail_closed.py | Fix test subprocess CWD to canonical services/api package (not production code change) |
+| eee4d389 | pytest.ini | Add canonical services/api import path to legacy test collection |
+| 4f859eda | services/api/app/schemas/pack_sz_ta_tb.py | Disambiguate Python date annotation for Pydantic v2 |
+| ae1f9850 | services/api/app/models/__init__.py | Expose canonical Base for legacy model imports |
+| ddefbab5 | .github/workflows/critical-controls-ci.yml | Install missing respx in isolated test-only collection job |
+| d0095b97 | services/api/tests/test_fake_live_operating_day.py | Remove unused reference to nonexistent OwnerCommand table; no replacement module fabricated |
+| 1916ca53 | .github/workflows/critical-controls-ci.yml | Trigger tests on requirements, pytest config and historical backend test files |
+| 58b897fc | ops/prime_system_integration_matrix.json | Update evidence levels for actual route import, PostgreSQL worker/migrations, and durable auth |
+| 4aff8786 | ops/REMAINING_SYSTEM_BLOCKERS_2026-11-19.md | Publish evidence-based cross-source log review and blockers |
+
+### CI truth
+
+- https://github.com/bryanevoy86-tech/Valhalla/actions/runs/44658342650: 85 targeted tests PASS (47 smoke, 35 isolated integration, 3 disposable PostgreSQL). Exact attempted test counts are from GitHub job logs.
+- https://github.com/bryanevoy86-tech/Valhalla/actions/runs/44657703945: canonical full FastAPI import passed; 7/7 required routers and 9/9 required routes present in a clean Linux runner.
+- https://github.com/bryanevoy86-tech/Valhalla/actions/runs/44659074502: source and system test gates passed. Backend pytest COLLECTION remains a separate non-gating diagnostic with 2 failures in historical modules.
+- The last two collected import failures are services/api/tests/test_fake_live_operating_day.py (now requires an absent system_self_check router; rebuilding a safe authenticated real anomaly detector is separate work) and services/api/tests/test_system_integrity.py (expects old Deal/BuyerMatch interfaces not aligned with canonical ORM).
+- Full backend tests have NOT been executed to completion. Passing 85 focused tests is not equivalent to all system features being DONE.
+
+### Render and operational logs
+
+- Initial broad Loki lookup failed with 503, but smaller date-scoped queries succeeded. Log retrieval failure ≠ app outage.
+- Nov 19 daily cron execution logged HTTP 200 for /api/notify/daily-ops-email and completion; provider/inbox delivery not independently verified.
+- No error-level API or cron events / API 5xx request logs returned in queried windows from Oct 25 through Nov 19 (no guarantee of full exhaustive log retention or no historic failures).
+- API remains deployed from commit 93cb1afe8d7fbbc01385ea54d5fa992647be647b (Oct 10), not the PR development branch.
+- GitHub checkout cleanup warns an archive submodule gitlink lacks .gitmodules entry; do not remove preserved archive without explicit review.
+- Render: **NO service, env, cron, database, deployment, payment or schema mutation by these changes**.
+
+### Immediate Dec integration focus
+
+1. Reconcile the two legacy collection errors, then run the complete backend test suite.
+2. Identify exact production API database and rehearse complete migration heads on a disposable production-like PostgreSQL copy.
+3. Upgrade work queue from internal once-per-day draft proof to leased/recoverable business worker with real provider receipts.
+4. Wire all external actions into the same owner-governed safety and idempotency boundary.
+5. Implement true storefront/delivery/payment reconciliation, lawful marketing and independent opportunity discovery with actual proof.
+6. Review whole PR and authorize staged deployment only after rollback and operator controls have been independently tested.
