@@ -6,12 +6,16 @@ from datetime import datetime
 
 from sqlalchemy import (
     Column,
+    JSON,
+    Uuid,
     DateTime,
     ForeignKey,
     String,
     Text,
 )
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy.dialects.postgresql import JSONB
+
+JSON_TYPE = JSON().with_variant(JSONB(), "postgresql")
 from sqlalchemy.orm import relationship
 
 from app.core.db import Base
@@ -36,7 +40,7 @@ class LokiReview(Base):
     """Main review record for Loki AI artifact analysis."""
     __tablename__ = "loki_reviews"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
     created_at = Column(
         DateTime(timezone=True), nullable=False, default=datetime.utcnow
     )
@@ -63,8 +67,8 @@ class LokiReview(Base):
     summary = Column(Text, nullable=True)
     result_severity = Column(String(20), nullable=True)
 
-    raw_input = Column(JSONB, nullable=False)
-    raw_output = Column(JSONB, nullable=True)
+    raw_input = Column(JSON_TYPE, nullable=False)
+    raw_output = Column(JSON_TYPE, nullable=True)
 
     findings = relationship(
         "LokiFinding",
@@ -78,13 +82,13 @@ class LokiFinding(Base):
     """Individual finding within a Loki review."""
     __tablename__ = "loki_findings"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
     created_at = Column(
         DateTime(timezone=True), nullable=False, default=datetime.utcnow
     )
 
     review_id = Column(
-        UUID(as_uuid=True),
+        Uuid(as_uuid=True),
         ForeignKey("loki_reviews.id", ondelete="CASCADE"),
         nullable=False,
     )
@@ -93,6 +97,6 @@ class LokiFinding(Base):
     severity = Column(String(20), nullable=False)
     message = Column(Text, nullable=False)
     suggested_fix = Column(Text, nullable=True)
-    tags = Column(JSONB, nullable=True)
+    tags = Column(JSON_TYPE, nullable=True)
 
     review = relationship("LokiReview", back_populates="findings")
