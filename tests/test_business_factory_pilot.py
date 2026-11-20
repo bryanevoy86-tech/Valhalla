@@ -273,6 +273,87 @@ class BusinessFactoryPilotTests(unittest.TestCase):
         self.assertIsNone(status.json()["receipt"])
 
 
+    def test_status_rejects_malformed_or_misattributed_receipt(self):
+        action_id = self.submit().json()["action_id"]
+        approved = self.client.post(
+            f"/api/business-factory/actions/{action_id}/approve",
+            json={"confirmation": "APPROVE_INTERNAL_DRAFT"}, headers=HEADERS,
+        )
+        self.assertEqual(approved.status_code, 200, approved.text)
+        executed = self.client.post("/api/business-factory/actions/run-once", headers=HEADERS)
+        self.assertTrue(executed.json()["verified"], executed.text)
+        url = f"/api/business-factory/actions/{action_id}"
+        self.assertTrue(self.client.get(url, headers=HEADERS).json()["internal_artifact_verified"])
+
+        db = self.sessions()
+        event = db.query(LegacyOrchestrationEvent).filter_by(
+            event_id=f"BF-RECEIPT-{action_id}"
+        ).one()
+        original = (event.event_type, event.legacy_instance_id, event.payload_json)
+        evidence = json.loads(event.payload_json)
+        db.close()
+
+        variants = [
+            ("wrong action", original[0], original[1], json.dumps(dict(evidence, action_id="another_action"))),
+            ("wrong legacy", original[0], "another_legacy", original[2]),
+            ("wrong event type", "NOT_A_RECEIPT", original[1], original[2]),
+            ("malformed shape", original[0], original[1], json.dumps(["not an object"])),
+            ("wrong media id type", original[0], original[1], json.dumps(dict(evidence, media_content_id=[]))),
+            ("external effects", original[0], original[1], json.dumps(dict(evidence, external_effects=1))),
+            ("fake sale", original[0], original[1], json.dumps(dict(evidence, sales_verified=True))),
+        ]
+        for label, event_type, legacy, payload in variants:
+            with self.subTest(label=label):
+                db = self.sessions()
+                event = db.query(LegacyOrchestrationEvent).filter_by(
+                    event_id=f"BF-RECEIPT-{action_id}"
+                ).one()
+                event.event_type = event_type
+                event.legacy_instance_id = legacy
+                event.payload_json = payload
+                db.commit()
+                db.close()
+                status = self.client.get(url, headers=HEADERS)
+                self.assertEqual(status.status_code, 200, status.text)
+                self.assertFalse(status.json()["internal_artifact_verified"])
+                self.assertIsNone(status.json()["receipt"])
+                self.assertFalse(status.json()["payment_verified"])
+        db = self.sessions()
+        event = db.query(LegacyOrchestrationEvent).filter_by(
+            event_id=f"BF-RECEIPT-{action_id}"
+        ).one()
+        event.event_type, event.legacy_instance_id, event.payload_json = original
+        db.commit()
+        db.close()
+        self.assertTrue(self.client.get(url, headers=HEADERS).json()["internal_artifact_verified"])
+
+    def test_status_rejects_hash_valid_artifact_for_different_listing(self):
+        action_id = self.submit().json()["action_id"]
+        approved = self.client.post(
+            f"/api/business-factory/actions/{action_id}/approve",
+            json={"confirmation": "APPROVE_INTERNAL_DRAFT"}, headers=HEADERS,
+        )
+        self.assertEqual(approved.status_code, 200, approved.text)
+        executed = self.client.post("/api/business-factory/actions/run-once", headers=HEADERS)
+        self.assertTrue(executed.json()["verified"], executed.text)
+        db = self.sessions()
+        event = db.query(LegacyOrchestrationEvent).filter_by(
+            event_id=f"BF-RECEIPT-{action_id}"
+        ).one()
+        payload = json.loads(event.payload_json)
+        media = db.query(MediaContent).filter_by(id=payload["media_content_id"]).one()
+        listing = json.loads(media.body)
+        listing["product_id"] = "different_product"
+        media.body = json.dumps(listing, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
+        payload["sha256"] = hashlib.sha256(media.body.encode("utf-8")).hexdigest()
+        event.payload_json = json.dumps(payload)
+        db.commit()
+        db.close()
+        status = self.client.get(f"/api/business-factory/actions/{action_id}", headers=HEADERS)
+        self.assertEqual(status.status_code, 200, status.text)
+        self.assertFalse(status.json()["internal_artifact_verified"])
+        self.assertIsNone(status.json()["receipt"])
+
     def test_missing_schema_blocks_route_without_creating_tables(self):
         MediaContent.__table__.drop(bind=self.engine)
         result = self.submit()
