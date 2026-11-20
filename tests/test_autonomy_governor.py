@@ -130,6 +130,22 @@ class AutonomyGovernorTests(unittest.TestCase):
             with self.subTest(bad=bad):
                 self.assertEqual(decide(context(**bad)).verdict, "BLOCK")
 
+    def test_malformed_policy_flags_and_identity_are_blocked(self):
+        for field in ("business_scope_verified", "tenant_scope_verified",
+                      "owner_approval_verified", "source_rights_verified",
+                      "consent_verified", "circuit_breaker_open", "outcome_uncertain",
+                      "system_integrity_verified", "emergency_stop",
+                      "untrusted_source_requests_tool_action"):
+            for value in ("false", 1, None):
+                with self.subTest(field=field, value=value):
+                    self.assertEqual(decide(context(**{field: value})).reason,
+                                     "INVALID_TRUSTED_POLICY_FLAG")
+        for field in ("action_id", "business_id", "legacy_id"):
+            for value in ("", " ", None, 1):
+                self.assertEqual(decide(context(**{field: value})).verdict, "BLOCK")
+        for overrides in ({"action": []}, {"mode": {}}, {"mode": None}):
+            self.assertEqual(decide(ActionIntent(**dict({"action": "INTERNAL_DRAFT"}, **overrides))).verdict, "BLOCK")
+
     def test_policy_decision_never_claims_external_authorization(self):
         for action in ("INTERNAL_DRAFT", "EXTERNAL_POST", "PAYOUT"):
             d = decide(context(action, mode="BOUNDED"))
