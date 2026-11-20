@@ -67,3 +67,15 @@ This report reconciles available GitHub change ledger, canonical source, GitHub 
 ## December Codex priority
 
 Start from CODEX_START_HERE.md and docs/CODEX_SYSTEM_FINISH_PASSES.md, run the mandatory full-app import and real PostgreSQL CI suites, then resolve the remaining backend collection failures. Do not generate more packs to paper over missing execution. Continue into Provider Foundry, cross-industry Venture Factory and owned Prime only after the canonical worker and governance spine survives failure injection.
+
+
+## Latest collection rerun after unused fixture cleanup (UTC Nov 20)
+
+GitHub Actions run https://github.com/bryanevoy86-tech/Valhalla/actions/runs/44659074502 completed its REQUIRED core checks successfully: 85 targeted tests and full FastAPI import/route contract. The **separate non-gating backend collection** still reports two errors, but they are now more precisely located:
+
+1. services/api/tests/test_fake_live_operating_day.py imports nonexistent app.routers.system_self_check. The test expects GET /api/system/self-check?probe_isolation_violation=true to actually generate an integrity alert and enforce fail-safe state. **Do not insert a dummy router that returns success**; design a safe, authenticated, evidence-backed anomaly probe and test its actual effects. It should not offer public visitors an unauthenticated kill-switch trigger.
+2. services/api/tests/test_system_integrity.py expects old model exports and a BuyerMatch ORM that does not match current canonical DealBuyerMatch / BuyerCandidate FK semantics. Reconcile actual data/relationships and re-author real outcome checks, rather than aliasing incompatible models.
+
+The earlier unused OwnerCommand table fixture was removed; only then did the next absent historical router become visible. Collection errors may reveal further issues once these are corrected. Do not claim the full suite is green.
+
+A second nonfatal diagnostic: GitHub Actions reports an archived gitlink lacking a .gitmodules URL. This is a source-history cleanup task, not a business operation or a reason to delete preserved archive files.
