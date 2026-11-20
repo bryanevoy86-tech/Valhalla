@@ -2,6 +2,10 @@
 
 This is the one-file handoff from ChatGPT's November 19 development and audit. **Do not create new packs or restart Valhalla.**
 
+## DO NOT DROP THE REST OF VALHALLA
+
+The master scope now has 46 source-anchored workstreams, not only the earlier 25 domains. **Read ops/VALHALLA_FULL_VISION_TRACEABILITY.md before any new code.** It covers the expanded AI Gods/Pantheon, original five-god governance, owner Commander A/B/C/Override, Norns, Mimir, five legacies, product and venture Foundries, 90/10 wealth/Fun Funds, whole-life policy infinite banking, trusts, Canada exit/residency, corporate finance, family succession, Black Ice, resort and expansion. Source-only does NOT equal completed. Do not silently resolve conflicting trust/Pantheon doctrine. No legal, tax, banking or insurer action without owner and relevant professional authority.
+
 ## Existing project
 
 - Repo: https://github.com/bryanevoy86-tech/Valhalla
@@ -12,7 +16,8 @@ This is the one-file handoff from ChatGPT's November 19 development and audit. *
 
 ## Read in this exact order
 
-1. ops/CHANGE_LEDGER.md (every development change, CI evidence, ZERO Render mutations).
+1. ops/VALHALLA_FULL_VISION_TRACEABILITY.md (full project vision and conflicting historical decisions).
+2. ops/CHANGE_LEDGER.md (every development change, CI evidence, ZERO Render mutations).
 2. ops/REMAINING_SYSTEM_BLOCKERS_2026-11-19.md (new cross-source log review and current blockers).
 3. ops/prime_system_integration_matrix.json (25 actual capability anchors, open acceptance conditions).
 4. docs/HEIMDALL_DEFINITION_OF_DONE.md (no more "finished" placeholders).
