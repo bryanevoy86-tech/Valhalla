@@ -325,7 +325,7 @@ def admin_reset_password(
     Security: 
     - Reads VALHALLA_OWNER_EMAIL from env
     - Reads VALHALLA_OWNER_PASSWORD from env  
-    - Requires X-Setup-Token header matching VALHALLA_SETUP_TOKEN (if set)
+    - Requires a configured VALHALLA_SETUP_TOKEN and matching X-Setup-Token header
     - Never returns password or hash
     
     This is a fallback if pre-deploy command fails.
@@ -340,15 +340,19 @@ def admin_reset_password(
             detail="Owner reset not enabled",
         )
     
-    # If setup token is configured, require it
+    # Fail closed: enabling the reset flag alone must never authorize a reset.
     setup_token = os.getenv("VALHALLA_SETUP_TOKEN")
-    if setup_token:
-        provided_token = request.headers.get("X-Setup-Token", "")
-        if not hmac.compare_digest(provided_token or "", setup_token):
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid setup token",
-            )
+    if not setup_token or not setup_token.strip():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Owner reset setup token not configured",
+        )
+    provided_token = request.headers.get("X-Setup-Token", "")
+    if not hmac.compare_digest(provided_token.encode("utf-8"), setup_token.encode("utf-8")):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid setup token",
+        )
     
     # Read credentials from env
     email = (os.getenv("VALHALLA_OWNER_EMAIL") or "").strip()
