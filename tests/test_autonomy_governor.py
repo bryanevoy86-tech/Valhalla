@@ -19,6 +19,7 @@ def context(action="INTERNAL_DRAFT", **overrides):
         "legacy_id": "test-legacy",
         "business_scope_verified": True,
         "tenant_scope_verified": True,
+        "system_integrity_verified": True,
         "owner_approval_verified": True,
         "source_rights_verified": True,
         "independent_sources": 2,
@@ -32,6 +33,9 @@ def context(action="INTERNAL_DRAFT", **overrides):
 
 
 class AutonomyGovernorTests(unittest.TestCase):
+    def test_unverified_system_defaults_to_block(self):
+        self.assertEqual(decide(ActionIntent(action="INTERNAL_DRAFT")).verdict, "BLOCK")
+
     def test_approved_internal_draft_allowed_in_shadow(self):
         d = decide(context())
         self.assertEqual(d.verdict, "ALLOW")
