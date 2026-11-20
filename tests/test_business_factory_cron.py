@@ -161,6 +161,34 @@ class PollingWorkerTests(unittest.TestCase):
         self.assertEqual(self.mod["poll"](lambda: {"status": "idle"}, threading.Event(),
                                           emit=lambda _: None, once=True), 0)
 
+    def test_polling_receipt_contract_rejects_invalid_internal_claims(self):
+        from unittest.mock import MagicMock, Mock
+        factory = MagicMock()
+        db = factory.return_value.__enter__.return_value
+        receipt = {
+            "action_id": "bfd_" + "a" * 32, "sha256": "b" * 64,
+            "artifact_type": "product_listing_draft", "media_content_id": 1,
+            "sales_verified": False, "external_effects": 0,
+            "verification_scope": "database_artifact_only",
+        }
+        tick = self.mod["tick"]
+        result = lambda evidence: {
+            "status": "completed", "verified": True, "receipt": evidence,
+        }
+        self.assertEqual(tick(factory, Mock(return_value=result(receipt)), Mock()),
+                         {"status": "internal_artifact_verified", "verified": True})
+        for key, value in (
+            ("external_effects", False), ("external_effects", 0.0),
+            ("sales_verified", True), ("sha256", "invalid"),
+            ("media_content_id", True), ("action_id", "invalid"),
+            ("artifact_type", "paid_order"),
+        ):
+            with self.subTest(key=key, value=value):
+                db.rollback.reset_mock()
+                with self.assertRaises(RuntimeError):
+                    tick(factory, Mock(return_value=result(dict(receipt, **{key: value}))), Mock())
+                db.rollback.assert_called_once()
+
     def test_tick_owns_session_and_rejects_external_claim(self):
         from unittest.mock import MagicMock, Mock
         factory = MagicMock()
