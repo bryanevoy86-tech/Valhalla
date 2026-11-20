@@ -176,7 +176,7 @@ jobs:
 
 
   full-app-diagnostic:
-    name: Required canonical FastAPI import and 9-route gate
+    name: Required canonical FastAPI import, 15 routes, and Pantheon
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
@@ -225,8 +225,7 @@ jobs:
           echo "Collection exit code: $result"
           tail -n 75 backend-test-collection.log
           exit "$result"
-      - name: Run five-god Pantheon and governance orchestrator regression (diagnostic)
-        continue-on-error: true
+      - name: Require five-god Pantheon and governance orchestrator regression
         env:
           DATABASE_URL: sqlite://
           VALHALLA_JWT_SECRET: ci-governance-test-only
