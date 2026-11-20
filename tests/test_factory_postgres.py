@@ -209,6 +209,54 @@ class FactoryPostgresTests(unittest.TestCase):
             session.close()
 
 
+    def test_worker_failure_after_artifact_flush_rolls_back_and_retries(self):
+        from unittest.mock import patch
+        from app.services import prime_business_execution as factory
+        action_id = self.queue_and_approve()
+        # The actual MediaContent row has been inserted but not committed when
+        # the receipt writer is invoked. Inject a failure at that boundary.
+        def fail_receipt(*args, **kwargs):
+            self.assertEqual(kwargs["event_type"], factory.RECEIPT_EVENT)
+            raise RuntimeError("injected receipt failure")
+
+        with self.sessions() as db, patch.object(factory, "_event", side_effect=fail_receipt):
+            with self.assertRaisesRegex(RuntimeError, "injected receipt failure"):
+                run_one_approved_draft(db)
+        with self.sessions() as db:
+            self.assertEqual(db.query(MediaContent).count(), 0)
+            self.assertEqual(db.query(LegacyOrchestrationEvent).filter_by(
+                event_type=factory.RECEIPT_EVENT).count(), 0)
+            self.assertEqual(db.query(LegacyInstanceWorkItem).filter_by(
+                action_id=action_id).one().status, "queued")
+        with self.sessions() as db:
+            completed = run_one_approved_draft(db)
+            self.assertEqual(completed["status"], "completed")
+            self.assertEqual(completed["receipt"]["action_id"], action_id)
+        with self.sessions() as db:
+            self.assertEqual(run_one_approved_draft(db)["status"], "idle")
+            self.assertEqual(db.query(MediaContent).count(), 1)
+
+    def test_committed_internal_effect_survives_lost_worker_acknowledgement(self):
+        from unittest.mock import patch
+        action_id = self.queue_and_approve()
+        with self.sessions() as db:
+            real_commit = db.commit
+            def commit_then_lose_ack():
+                real_commit()
+                raise RuntimeError("injected lost commit acknowledgement")
+            with patch.object(db, "commit", side_effect=commit_then_lose_ack):
+                with self.assertRaisesRegex(RuntimeError, "lost commit acknowledgement"):
+                    run_one_approved_draft(db)
+        with self.sessions() as db:
+            self.assertEqual(run_one_approved_draft(db)["status"], "idle")
+            self.assertEqual(db.query(MediaContent).count(), 1)
+            self.assertEqual(db.query(LegacyOrchestrationEvent).filter_by(
+                event_type="FACTORY_ARTIFACT_VERIFIED").count(), 1)
+        result = self.client.get(f"/api/business-factory/actions/{action_id}", headers=HEADERS)
+        self.assertEqual(result.status_code, 200, result.text)
+        self.assertTrue(result.json()["internal_artifact_verified"])
+        self.assertFalse(result.json()["payment_verified"])
+
     def _race_same_request(self, conflicting):
         from unittest.mock import patch
         from fastapi import HTTPException
