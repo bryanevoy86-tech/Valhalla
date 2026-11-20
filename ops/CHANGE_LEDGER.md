@@ -128,3 +128,69 @@ Render DB dpg-d9ek3oj7uimc73fooes0-a:
 - Link: https://github.com/bryanevoy86-tech/Valhalla/pull/4
 - This metadata change does not modify application code.
 - Render mutations: NONE. Live production remained unchanged.
+
+
+## System-wide readiness and safety preparation — 2026-11-19 evening
+
+**Scope:** continuation of draft PR #4 on branch fix/fail-closed-operations-20261119. No direct main pushes.
+
+| Commit | Change | Evidence level |
+|---|---|---|
+| e47ed6cd | core/builder_path_policy.py: reject path traversal, absolute paths, symlink escapes and paths outside allowlist | Focused tests |
+| f873bc75 | routers/builder.py: safe repo-root writes, atomic writes and digests, disallow API direct-Git push | Syntax + path tests; full builder integration not yet verified |
+| 749d27f8 | tests/test_builder_path_security.py: 7 path/security cases | Targeted CI pass |
+| 2f503573 | providers/stripe_adapter.py: proper timestamped Stripe-Signature HMAC v1 verification | Targeted CI pass |
+| 9676e3f2 | webhooks/stripe.py: no unsigned event acceptance or false success, 503 until real ledger handler | Targeted CI pass; not a functional payment consumer |
+| 18d19eb0 | integrations/stripe/payouts.py: no fabricated payout id or false "in_transit" status | Targeted CI pass; no real transfer implementation |
+| 54e07b09 | services/media_engine.py: reject unsupported "published" status | Integration tests pass |
+| 935aa316 | services/marketing_service.py: reject unsupported external publication status | Integration tests pass |
+| a71b9de1 | routers/marketing.py: mount existing campaign registry behind Builder owner key | Integration tests pass |
+| 400e01c7 | routers/media_engine.py: require owner key for media records | Integration tests pass |
+| 876669b7 | tests/test_prime_finance_safety.py: verify signed/invalid/replay Stripe and fake payout prevention | Targeted CI pass |
+| 1de4f79d | tests/test_prime_publication_safety.py: FastAPI/SQLite owner and no-fake-publication tests | Targeted CI pass |
+| c763d290 | ops/prime_system_integration_matrix.json: 25 anchored capability contracts with dependencies and exact acceptance tests | Source preflight passed; not live proof |
+| 9840b44c | scripts/prime_system_preflight.py: static source/AST integrity and proof-stage inflation checker | Targeted CI pass |
+| 83646762 | tests/test_prime_system_preflight.py: prevent false live declarations and broken source dependencies | Targeted CI pass |
+| 7c90da0a | CI workflow expanded across Builder, media, marketing, finance and system inventory | Actions run 44652014397 success |
+| f8dfdf03 | core/route_integrity.py: required critical router set and missing-import evidence | Focused tests |
+| 599479d2 | app/main.py: track critical router import failures, avoid deceptive health label, readiness fails when missing | Focused tests; full main import not yet proven |
+| 24941aca | tests/test_route_integrity.py: detect missing critical routers even with many optional routers | Targeted CI pass |
+| cc64d0e0 | app/main.py: default /readyz DB + worker checks, use SQLAlchemy 2 text() | Syntax, focused checks; live behavior not yet proven |
+| 7c917a0f | CI workflow: route integrity check and compilation | Targeted CI pass |
+| bedc3ac6 | core/dependencies.py: legacy session auth fails closed by default; constant-time key comparisons, explicit DEV-only override | Targeted CI pass |
+| 7f3e3968 | tests/test_core_auth_contracts.py: missing secret, dev-only, invalid key and success cases | Targeted CI pass |
+| ae5ff5f4 | CI workflow: include legacy auth checks | Actions run 44652624533 success |
+| a7dbec40 | docs/CODEX_SYSTEM_FINISH_PASSES.md: three rigorous Codex prompts for all 25 domains | Recorded scope, not software completion |
+
+### CI proof for expanded system controls
+
+- Earlier 40-test run (Builder path, Stripe, marketing, media, factory, migration, static system preflight): https://github.com/bryanevoy86-tech/Valhalla/actions/runs/44652014397
+- Latest 49-test run (adds 5 critical router tests and 4 legacy auth tests): https://github.com/bryanevoy86-tech/Valhalla/actions/runs/44652624533
+- All 49 targeted tests passed. THIS IS NOT the canonical full backend suite, live PostgreSQL proof, production deployment or real customer transaction.
+- Machine preflight: 25 source-anchored domains, no missing static anchors, zero domain-level production verified declarations.
+
+### Real cross-domain issues identified for December
+
+- Main router loader previously swallowed failed imports, leaving apparently healthy endpoints; new branch records missing mandatory imports and makes /readyz red. Live route parity remains untested.
+- WeWeb logout uses a process-local revoked-JTI set; restart and multi-instance authentication tests remain.
+- Research service includes in-memory source registration, while scripts contain richer ingestion; automatic durable discovery loop needs integration.
+- Heimdall outcomes include a local JSON path; lasting Mimir outcome learning and replay feedback need integration and durable evidence.
+- Builder prior allowed path traversal and automatic direct Git pushes; new branch blocks these, but safe PR/code-builder autonomy remains to be implemented.
+- Stripe webhook used an invalid illustrative signature check and claimed events recorded; new branch verifies genuine signatures but deliberately returns 503 for financial events until ledger consumption exists.
+- Stripe payout path previously fabricated a provider payout id. New branch blocks unimplemented live payouts.
+- Social post and media records could claim publication without actual provider interaction; now blocked. Real platform publishing still missing.
+- Legacy marketing router was outside the current app.routers autoload and has now been mounted under owner auth.
+- Historical core dependency require_auth allowed no-token operation when no token was configured; new branch defaults to fail closed.
+- Live Render db-v2-copy is missing legacy orchestration tables, and factory migration is not applied. Exact API database link still unverified.
+- Full backend test collection previously had 9 existing collection errors; no new system-wide clean result has been established.
+
+### Render mutation log for this phase
+
+**NONE.** No new service, environment variable, database alteration, deploy, schema migration, payment, outreach or cron activation was initiated. This is GitHub-only preparation for review and Codex handoff.
+
+### Reviewer obligations
+
+- Review diff for backward compatibility and side effects of the stricter auth, published-state and readiness gates before any merge.
+- The media/marketing/finance changes are deliberately incomplete provider adapters; never mislabel them "finished business".
+- Never enter provider secrets or tokens in GitHub files.
+- Run full-suite tests and actual Postgres migration rehearsal; resolve false health and process-local state before activating automatic workflows.
