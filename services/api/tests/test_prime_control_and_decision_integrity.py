@@ -195,3 +195,56 @@ def test_go_live_reads_are_private(monkeypatch, path):
     app.dependency_overrides[get_db] = forbidden_db
     with TestClient(app) as client:
         assert client.get("/governance/go-live" + path).status_code == 401
+
+
+@pytest.mark.parametrize("path", ["/complete", "/incomplete"])
+def test_metadata_mutation_requires_both_credentials(monkeypatch, path):
+    from app.routers.system_status import router
+    monkeypatch.setenv("VALHALLA_PRIME_CONTROL_KEY", "prime-release-test")
+    monkeypatch.setenv("VALHALLA_OWNER_MANDATE_KEY", "owner-release-test")
+    app = FastAPI()
+    app.include_router(router)
+    def forbidden_db():
+        raise AssertionError("unauthorized request reached db")
+    app.dependency_overrides[get_db] = forbidden_db
+    with TestClient(app) as client:
+        for headers in ({}, {"X-Prime-Control-Key": "prime-release-test"},
+                        {"X-Owner-Mandate-Key": "owner-release-test"}):
+            assert client.post("/system/status" + path, headers=headers).status_code == 401
+
+
+def test_go_live_metadata_cannot_certify_release_and_stop_never_auto_resumes():
+    from fastapi import HTTPException
+    from app.models.go_live_state import GoLiveState
+    from app.models.system_metadata import SystemMetadata
+    from app.services.go_live import checklist, set_go_live, set_kill_switch, read_state
+    engine = create_engine("sqlite://")
+    GoLiveState.__table__.create(engine)
+    SystemMetadata.__table__.create(engine)
+    try:
+        with Session(engine) as db:
+            db.add(SystemMetadata(id=1, version="test", backend_complete=True))
+            db.commit()
+            read_state(db)
+            report = checklist(db)
+            assert report["required"]["backend_complete"]["ok"]
+            assert report["required"]["packs_installed"]["ok"]
+            assert not report["ok"]
+            assert not report["required"]["operational_release_evidence"]["ok"]
+            with pytest.raises(HTTPException) as exc:
+                set_go_live(db, True, "test", None)
+            assert exc.value.status_code == 412
+            row = read_state(db)
+            row.go_live_enabled = True  # simulate an old persisted state
+            db.commit()
+            row = set_kill_switch(db, True, "test", None)
+            assert row.kill_switch_engaged and not row.go_live_enabled
+            assert not checklist(db)["required"]["emergency_stop_clear"]["ok"]
+            row = set_kill_switch(db, False, "test", None)
+            assert not row.kill_switch_engaged and not row.go_live_enabled
+            with pytest.raises(ValueError):
+                set_go_live(db, "false", "test", None)
+            with pytest.raises(ValueError):
+                set_kill_switch(db, "false", "test", None)
+    finally:
+        engine.dispose()
