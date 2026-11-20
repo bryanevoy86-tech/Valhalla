@@ -200,6 +200,13 @@ class BusinessFactoryPilotTests(unittest.TestCase):
         self.assertEqual(db.query(LegacyInstanceWorkItem).count(), 1)
         db.close()
 
+    def test_unicode_factory_credential_is_rejected(self):
+        from fastapi import HTTPException
+        from app.services.prime_business_execution import require_factory_key
+        with self.assertRaises(HTTPException) as ctx:
+            require_factory_key(provided="é")
+        self.assertEqual(ctx.exception.status_code, 401)
+
     def test_authentication_and_approval_fail_closed(self):
         self.assertEqual(self.submit(headers={}).status_code, 401)
         self.assertEqual(self.submit(headers={"X-Business-Factory-Key": "wrong"}).status_code, 401)
