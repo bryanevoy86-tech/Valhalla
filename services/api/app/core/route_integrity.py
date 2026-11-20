@@ -14,6 +14,12 @@ REQUIRED_ROUTER_NAMES = frozenset({
     "marketing",              # marketing registry
     "media_engine",           # content records
     "saas_access",            # subordinate subscription access
+    "governance_king",        # original valuation/mission evaluator
+    "governance_queen",       # sustainability/owner wellbeing evaluator
+    "governance_odin",        # market and strategic focus evaluator
+    "governance_loki",        # adverse-case risk evaluator
+    "governance_tyr",         # legal/ethics hard-stop evaluator
+    "governance_orchestrator",# combined five-god decision interface
 })
 
 
