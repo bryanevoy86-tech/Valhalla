@@ -89,3 +89,33 @@ Continue the CURRENT Valhalla / Heimdall Prime codebase. Start with a safe git f
 - Before any production deployment: establish which database the API actually uses, run an isolated migration rehearsal, validate new auth, review live business data and rollback posture, then obtain owner approval.
 
 **Current live Render services and database have NOT been mutated.** Updating GitHub's isolated development branch does not change Render production until main changes or a deployment is explicitly triggered.
+
+
+## December system-wide preparation extension (2026-11-19 evening)
+
+This handoff now has a root entrypoint and THREE ordered integration prompts:
+
+- CODEX_START_HERE.md — one prompt that starts from existing local work.
+- docs/CODEX_SYSTEM_FINISH_PASSES.md — Pass 1 engine/security, Pass 2 Product Foundry, Pass 3 general autonomous Venture Factory.
+- ops/prime_system_integration_matrix.json — 25 source-anchored capability acceptance contracts.
+- scripts/prime_system_preflight.py — read-only, token-free source integrity scanner.
+
+Latest expanded targeted CI: https://github.com/bryanevoy86-tech/Valhalla/actions/runs/44652624533
+49 targeted tests passed; 25-domain source preflight good. This is NOT a green full-suite or live production certification.
+
+Additional code changes on the SAME development branch:
+- services/api/app/core/builder_path_policy.py and routers/builder.py: file traversal and symlink prevention, repo root resolution, digest verification, block direct Git pushes.
+- services/api/app/providers/stripe_adapter.py and webhooks/stripe.py: correct Stripe signed timestamp HMAC; no unprocessed payment acknowledgment.
+- services/api/app/integrations/stripe/payouts.py: real transfers are blocked until provider implementation, no fake IDs.
+- services/api/app/services/media_engine.py and marketing_service.py: no unsupported published states.
+- services/api/app/routers/marketing.py: older marketing CRUD mounted under owner key.
+- services/api/app/routers/media_engine.py: owner key required.
+- services/api/app/core/route_integrity.py and main.py: critical router failures surfaced; /readyz blocks missing critical routes and defaults to DB/heartbeat checks.
+- services/api/app/core/dependencies.py: no default anonymous session-token access; explicit development-only environment switch.
+- New targeted tests cover each of these safety requirements.
+
+Important compatibility warning: the stricter authentication, router readiness and external publication-state transitions are deliberate behavior changes and must undergo full integration regression before merge; do not deploy solely on the 49 focused test successes.
+
+No Render configuration/service/database/deploy changes have occurred. Auth keys, bank accounts and external provider credentials require owner authorization. The new branch does not prove external autonomous business execution.
+
+When Codex resumes, read CODEX_START_HERE.md first and take PASS 1 to green before PASS 2/3. Reconcile any local VS Code-only changes before switching branches.
