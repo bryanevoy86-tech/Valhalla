@@ -45,10 +45,12 @@
         "services/api/app/core/runtime_flags.py",
         "services/api/app/routers/completion_registry.py",
         "services/api/app/core/autonomy_governor.py",
-        "docs/PRIME_AUTONOMY_SAFETY_CONTRACT.md"
+        "docs/PRIME_AUTONOMY_SAFETY_CONTRACT.md",
+        "services/api/app/services/prime_business_execution.py",
+        "tests/test_business_factory_pilot.py"
       ],
-      "source_observation": "Existing shadow/go-live guards and database kill switch; new deterministic autonomy governor enforces approved INTERNAL draft with budget, evidence, scope and outage checks. External adapters are NOT all wired; no system-wide certification.",
-      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "source_observation": "Persisted scoped, expiring, revocable standing owner mandates for ONE internal draft action type; separate owner grant authorization and unattended worker key. Actual SQLite worker tests pass. All external adapters, global stop and automated independent audit gates remain unproven.",
+      "evidence_level": "SQLITE_INTEGRATION_TESTED",
       "production_verified": false,
       "acceptance_test": "Governance unit cases and internal SQLite Factory killswitch pass; full production acceptance requires every external adapter using trusted persisted approval/consent/budget gates, adversarial agent tests, durable circuit breakers, and real Postgres worker failure injection.",
       "depends_on": [
@@ -78,10 +80,12 @@
       "priority": "P1",
       "source_paths": [
         "services/api/app/services/universal_opportunity_evaluator.py",
-        "services/api/app/routers/completion_registry.py"
+        "services/api/app/routers/completion_registry.py",
+        "services/api/tests/test_completion_registry.py",
+        "services/api/tests/test_prime_control_and_decision_integrity.py"
       ],
-      "source_observation": "Specialist scoring, replay, capital risk and abstention logic exist; current endpoint receives supplied candidates",
-      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "source_observation": "Existing completion-registry suite now required in CI and passed; generic proposal rejects inconsistent margin/capital, snapshots final recommendation after risk gates, and reports Tyr/Forseti independent checks NOT_VERIFIED. Supplied candidates only; no autonomous discovery or external execution proved.",
+      "evidence_level": "FOCUSED_CI_TESTED",
       "production_verified": false,
       "acceptance_test": "Cross-industry cases produce repeatable evidence-locked predictions; unknown candidates yield abstention, not artificial opportunity",
       "depends_on": [
@@ -110,10 +114,12 @@
       "priority": "P1",
       "source_paths": [
         "services/api/app/services/heimdall_outcomes.py",
-        "services/api/app/routers/decision_outcome.py"
+        "services/api/app/routers/decision_outcome.py",
+        "services/api/app/routers/completion_registry.py",
+        "services/api/tests/test_prime_control_and_decision_integrity.py"
       ],
-      "source_observation": "Outcome records exist; one path stores outcomes in local JSON, not assured durable on Render",
-      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "source_observation": "Scoped simulated feedback now restricted by engine, legacy and jurisdiction; missing scores not counted as failures; current memory excluded from live and historical predictions pending independently reconciled and as-of evidence. Older local JSON path remains; no real continuous learning proved.",
+      "evidence_level": "SQLITE_INTEGRATION_TESTED",
       "production_verified": false,
       "acceptance_test": "Record actual verified outcomes in PostgreSQL and prove replay correction without holdout leakage",
       "depends_on": [
@@ -144,9 +150,10 @@
       "priority": "P0",
       "source_paths": [
         "services/api/app/services/prime_business_execution.py",
-        "services/api/app/routers/prime_business_factory.py"
+        "services/api/app/routers/prime_business_factory.py",
+        "tests/test_factory_postgres.py"
       ],
-      "source_observation": "Owner-approved internal listing-draft work and SHA-256 receipt passed SQLite tests plus real disposable PostgreSQL persistence and two-worker duplicate-attempt tests. No crash/lease retry or real customer transaction proven.",
+      "source_observation": "Existing internal Factory draft receipt and two-worker duplicate tests passed real PostgreSQL. New finite revocable standing authority for internal drafts passed SQLite integration; a separate two-worker one-use mandate cap PostgreSQL test was added, check latest CI. No external provider effect or autonomous business launch proved.",
       "evidence_level": "POSTGRES_INTEGRATION_TESTED",
       "production_verified": false,
       "acceptance_test": "Real PostgreSQL task lifecycle survives restarts and duplicates; every completed status has independently verified receipt",
@@ -435,10 +442,12 @@
       "priority": "P0",
       "source_paths": [
         "docs/HEIMDALL_DEFINITION_OF_DONE.md",
-        "docs/PHASE3_INTEGRATED_ARCHITECTURE.md"
+        "docs/PHASE3_INTEGRATED_ARCHITECTURE.md",
+        "services/api/app/core/dependencies.py",
+        "services/api/tests/test_prime_control_and_decision_integrity.py"
       ],
-      "source_observation": "Private owner Prime is a source-level design contract, not a verified authorization boundary.",
-      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "source_observation": "Four private router groups now require independently configured X-Prime-Control-Key; HTTP tests reject missing/wrong/Builder credentials. This is NOT complete Prime/subscriber/tenant isolation; other routes require review.",
+      "evidence_level": "FOCUSED_CI_TESTED",
       "production_verified": false,
       "acceptance_test": "Prove no subscriber/clone/tenant can access owner Prime; trace trust and approvals across API, worker, UI, DB and provider adapters.",
       "depends_on": [
@@ -457,9 +466,10 @@
         "services/api/app/routers/governance_loki.py",
         "services/api/app/routers/governance_tyr.py",
         "services/api/app/main.py",
-        "services/api/tests/test_governance_orchestrator.py"
+        "services/api/tests/test_governance_orchestrator.py",
+        "services/api/tests/test_prime_control_and_decision_integrity.py"
       ],
-      "source_observation": "Original five governance evaluators and orchestrator now mounted at canonical /api/governance paths with backward-compatible /governance routes; 18 API tests passed in isolated CI. NOT yet connected to every external action dispatch or expanded Norse role model.",
+      "source_observation": "All five original specialist evaluators now call directly from the original governance orchestrator, without recursive TestClient requests. Focused tests verify Tyr hard-stop and advisory-only partial coverage. Expanded continuous cross-system Gods and real dispatch gating remain unproven.",
       "evidence_level": "FOCUSED_CI_TESTED",
       "production_verified": false,
       "acceptance_test": "Prove all five independent checks and disagreements reach a real dispatch gate, including legal/ethical hard stops, no forged approvals and reproducible audit.",
@@ -816,9 +826,10 @@
         "services/api/app/core/loki_engine.py",
         "services/api/app/routers/loki.py",
         "services/api/app/services/universal_opportunity_evaluator.py",
-        "services/api/tests/test_loki_audit_fail_closed.py"
+        "services/api/tests/test_loki_audit_fail_closed.py",
+        "services/api/tests/test_prime_control_and_decision_integrity.py"
       ],
-      "source_observation": "Three Loki mechanisms are separate: threshold governance (18 focused tests), heuristic agent/text engine (not independent), and review endpoint. A former fake COMPLETED review stub is now blocked pending actual independent provider. In-process universal objections can force hold/rejection but are not independent adversarial assessment. No independent paid AI inference or verified final review exists.",
+      "source_observation": "Existing deterministic Loki challenges now also reject contradictory margin range and capital bounds. Original five-God evaluations and fake audit fail-closed tests pass; no independent AI reviewer, source-grounded counter-analysis or high-impact external dispatch enforcement deployed.",
       "evidence_level": "FOCUSED_CI_TESTED",
       "production_verified": false,
       "acceptance_test": "Independently audit immutable Heimdall proposals with contrary evidence and sourced objection ledger, prove re-audit after changes, equal-standing owner dissent, lawful professional escalation, and mandatory fail-closed high-risk dispatch; realistic adversarial cases and reviewer outage tested in Postgres/staging. Current focused tests cover fail-closed missing reviewer only. Prove proactive cross-system coverage, reports to Prime, immutable independent dissent and recorded Prime response. Owner receives exceptions rather than approving every routine decision.",
