@@ -53,8 +53,7 @@ class UserResponse(BaseModel):
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/weweb/login", auto_error=False)
 
-# Process-local revocation list for explicit logout/refresh token retirement.
-_REVOKED_JTI: set[str] = set()
+from app.security.token_revocation import is_access_token_revoked, revoke_access_token
 
 
 def _auth_runtime():
@@ -107,8 +106,21 @@ def get_current_user(
             detail="Invalid token payload",
         )
 
-    jti = payload.get("jti")
-    if jti and jti in _REVOKED_JTI:
+    try:
+        revoked = is_access_token_revoked(db, payload)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token identity or expiry",
+        ) from None
+    except Exception as exc:
+        # A missing revocation table or unavailable database must never turn
+        # a previously revoked bearer token back into a valid token.
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Persistent session revocation unavailable",
+        ) from exc
+    if revoked:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token has been revoked",
@@ -232,10 +244,18 @@ def refresh_token(
             detail="User not found",
         )
 
-    # Revoke current token identifier and issue a new token.
-    old_jti = current_user.get("jti")
-    if old_jti:
-        _REVOKED_JTI.add(str(old_jti))
+    # Persist revocation BEFORE returning a replacement token. Any failure
+    # must block refresh so the old token never reappears valid on restart.
+    try:
+        revoke_access_token(db, current_user)
+        db.commit()
+    except ValueError:
+        raise HTTPException(status_code=401, detail="Invalid token identity or expiry") from None
+    except Exception as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=503, detail="Could not persist refresh-token revocation"
+        ) from exc
 
     token = _issue_access_token(auth_runtime, user)
 
@@ -257,11 +277,19 @@ def refresh_token(
 @router.post("/logout")
 def logout(
     current_user: Dict[str, Any] = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ) -> Dict[str, Any]:
-    """Explicitly revoke current token identifier for this process runtime."""
-    jti = current_user.get("jti")
-    if jti:
-        _REVOKED_JTI.add(str(jti))
+    """Explicitly and durably revoke access token before confirming logout."""
+    try:
+        revoke_access_token(db, current_user)
+        db.commit()
+    except ValueError:
+        raise HTTPException(status_code=401, detail="Invalid token identity or expiry") from None
+    except Exception as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=503, detail="Could not persist token revocation"
+        ) from exc
     return {"ok": True, "message": "Logged out"}
 
 
