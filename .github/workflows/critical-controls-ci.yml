@@ -4,6 +4,10 @@ on:
   pull_request:
     paths:
       - 'services/api/app/**'
+      - 'services/api/tests/**'
+      - 'services/api/requirements.txt'
+      - 'services/api/main.py'
+      - 'pytest.ini'
       - 'services/api/tools/cron/**'
       - 'alembic/versions/**'
       - 'tests/test_*.py'
