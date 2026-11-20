@@ -520,3 +520,22 @@ Existing draft PR #4 only. Commit 0e99db78 rejects Prime control credentials equ
 ## November 20 — Go-live control boundary
 
 Previous credential work CI 44764192221 completed successfully (workflow conclusion observed). Source inspection found the canonical app/routers/go_live.py had no auth dependency. 095cd013 adds private Prime auth to reads and distinct owner mandate auth as an additional dependency on all four state-changing endpoints (enable, disable, engage/release kill switch). fb631877 adds six parameterized API denial cases using the existing required Prime integrity test module, with forbidden database dependency to prove early rejection. New CI not yet certified. This is authentication, not complete live activation certification: existing pack/backend checklist does not establish provider or production readiness, caller-supplied changed_by is not an independently verified identity, process-local runtime flags and alternate dispatch routes still require reconciliation. Trusted server-side WeWeb control callers must be adapted; never embed keys in browser code. No changes to production, secrets, databases or Render. Owner's standing routine authority remains unchanged.
+
+
+## November 20 — Ten-item release and authority hardening sprint
+
+Prior go-live auth regression CI 44764735598 completed successfully. Current sprint:
+1. ae190e82: readiness checklist includes explicit missing operational evidence and persisted emergency state. Historical packs/metadata cannot certify release.
+2. ae190e82: direct set_go_live(True) refuses HTTP 412 until an actual release evidence service is integrated; no bypass via metadata.
+3. ae190e82: engaging kill switch clears persisted live flag.
+4. ae190e82: releasing switch never auto-resumes live.
+5. ae190e82: recover concurrent singleton creation conflict and serialize state mutations with row lock. PostgreSQL contention proof still needed.
+6. c0cf89db: protect metadata reads with Prime key and completion changes with separate owner mandate key; historical flag is not runtime certification.
+7. 28537c1d: strict boolean trusted policy flags and safe rejection of malformed action/mode types.
+8. 28537c1d: nonblank string action/business/Legacy identity required.
+9. 28998713, 2274373b: mandatory startup checks expanded to 16 router modules and 25 endpoint contracts including go-live, metadata and independent Loki interface. Interface registration does not prove independent reviewer exists.
+10. 1f6aa4eb: require typed Legacy assignment lists to reject malformed or string-substring scope authorization.
+
+Regression commits e797f2a4, 44dda9c6, 786c8879, fae10436. Latest code CI 44782509494 queued at inspection; do not claim PASS until observed. Existing targeted suites only; full collection defects and local-only reconciliation remain. Explicit live-enable hold is temporary intentional safety boundary, not finished release certification. Implement trusted evidence service and all alternate effect gates before removing it. No production activation, secret changes or deployment. Preserve all 47 workstreams.
+
+Development agreement workflow: distinguish DISCUSSED, OWNER_AGREED, RECORDED, IMPLEMENTED, TESTED, LOCAL_OR_OWNER_ACTION_REQUIRED and LIVE_VERIFIED. Record approved changes in the existing traceability/matrix/ledger, reconcile prior conflicting requirements, implement on review branch, require tests and actual evidence, and assign unresolved work to Codex. Never describe a conversation as a GitHub write or a committed feature as production proof. Keep owner-specific benefit and household information outside public repository; no fixed benefit-program assumptions in launch or cash-flow plans.
