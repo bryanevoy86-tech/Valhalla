@@ -25,6 +25,8 @@ MANDATORY_ENDPOINTS = {
     "release_disable": ("POST", "/governance/go-live/disable"),
     "emergency_engage": ("POST", "/governance/go-live/kill-switch/engage"),
     "emergency_release": ("POST", "/governance/go-live/kill-switch/release"),
+    "integrity_inspection": ("GET", "/api/system/self-check"),
+    "integrity_audit": ("POST", "/api/system/self-check"),
     "metadata_complete": ("POST", "/system/status/complete"),
     "metadata_incomplete": ("POST", "/system/status/incomplete"),
     "loki_audit_submission": ("POST", "/loki/reviews"),
@@ -86,8 +88,20 @@ def load_canonical_app() -> dict:
             "exception_type": type(exc).__name__,
             "warning": "No operational or business success proven",
         }
+    try:
+        from sqlalchemy.orm import configure_mappers
+
+        configure_mappers()
+    except Exception as exc:
+        return {
+            "ok": False,
+            "reason": "CANONICAL_ORM_CONFIGURATION_FAILED",
+            "exception_type": type(exc).__name__,
+        }
+
     app = app_module.app
     report = inspect_route_contract(app.routes)
+    report["orm_mappers_configured"] = True
     integrity = getattr(app.state, "router_integrity", None)
     report["critical_router_integrity"] = integrity
     report["ok"] = bool(report["ok"] and integrity and integrity.get("ready"))

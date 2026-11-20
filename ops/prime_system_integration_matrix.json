@@ -359,9 +359,10 @@
       "priority": "P1",
       "source_paths": [
         "services/api/app/routers/execution.py",
-        "services/api/app/routers/heimdall.py"
+        "services/api/app/routers/heimdall.py",
+        "services/api/tests/test_system_integrity.py"
       ],
-      "source_observation": "Intake, case and deal analysis routes exist; complete market-specific customer/deal outcome unverified",
+      "source_observation": "SQLite regression covers audited canonical deal stages and rollback. Historical full-deal intake still fails at the lead contract; buyer-brief linkage, full pipeline and market-specific outcomes are unverified",
       "evidence_level": "SOURCE_INSPECTED_ONLY",
       "production_verified": false,
       "acceptance_test": "Intake-to-deal-to-contract-to-payment simulation then lawful real deal using canonical work lifecycle",
@@ -394,9 +395,11 @@
       "source_paths": [
         "services/api/app/heimdall/readiness.py",
         "services/api/app/main.py",
-        "services/api/app/cron/daily_ops.py"
+        "services/api/app/cron/daily_ops.py",
+        "services/api/app/routers/system_self_check.py",
+        "services/api/tests/test_system_self_check.py"
       ],
-      "source_observation": "Several health/readiness signals previously claimed hardcoded success; fail-closed checks added but some probes remain blocked",
+      "source_observation": "Private integrity checks read release controls and blocked learning tasks and can persist a scoped alert. Continuous monitoring, source isolation, provider evidence and repair loops remain open",
       "evidence_level": "SOURCE_INSPECTED_ONLY",
       "production_verified": false,
       "acceptance_test": "Red/green live status based on DB/worker/provider receipts; alert on stalled jobs, missing routers and invalid migrations",

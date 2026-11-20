@@ -100,34 +100,28 @@ def _build_fake_live_client() -> tuple[TestClient, sessionmaker]:
     try:
         db.add(
             Buyer(
-                full_name="Winnipeg SFH Buyer",
+                name="Winnipeg SFH Buyer",
                 email="wpg-buyer@example.com",
                 phone="555-3001",
-                preferred_markets="Winnipeg",
-                status="active",
-                buy_box_json={
-                    "property_types": "SFH",
-                    "min_price": 200000,
-                    "max_price": 360000,
-                    "min_beds": 2,
-                    "min_baths": 1,
-                },
+                regions="Winnipeg",
+                property_types="SFH",
+                min_price=200000,
+                max_price=360000,
+                min_beds=2,
+                min_baths=1,
             )
         )
         db.add(
             Buyer(
-                full_name="No-Match Buyer",
+                name="No-Match Buyer",
                 email="nomatch@example.com",
                 phone="555-3002",
-                preferred_markets="Calgary",
-                status="active",
-                buy_box_json={
-                    "property_types": "Condo",
-                    "min_price": 900000,
-                    "max_price": 1200000,
-                    "min_beds": 4,
-                    "min_baths": 3,
-                },
+                regions="Calgary",
+                property_types="Condo",
+                min_price=900000,
+                max_price=1200000,
+                min_beds=4,
+                min_baths=3,
             )
         )
         db.commit()
@@ -212,7 +206,13 @@ def _run_pipeline(client: TestClient, *, lead_name: str, email: str, region: str
 
 
 def test_fake_live_operating_day_controlled_stage_report(tmp_path, monkeypatch):
+    monkeypatch.setenv("VALHALLA_PRIME_CONTROL_KEY", "fake-live-prime-key")
+    monkeypatch.setenv("VALHALLA_OWNER_MANDATE_KEY", "fake-live-owner-key")
     client, SessionLocal = _build_fake_live_client()
+    client.headers.update({
+        "X-Prime-Control-Key": "fake-live-prime-key",
+        "X-Owner-Mandate-Key": "fake-live-owner-key",
+    })
 
     heartbeat = tmp_path / "heartbeat.json"
     _write_json(heartbeat, {"ts": time.time()})
@@ -489,7 +489,10 @@ def test_fake_live_operating_day_controlled_stage_report(tmp_path, monkeypatch):
         assert exc.status_code == 409
         failed_actions_blocked += 1
 
-    self_check = client.get("/api/system/self-check?probe_isolation_violation=true")
+    assert client.get("/api/system/self-check", headers={"X-Prime-Control-Key": "wrong"}).status_code == 401
+    snapshot = client.get("/api/system/self-check?probe_isolation_violation=true")
+    assert snapshot.json()["integrity_audit_trail"]["events_emitted"] == 0
+    self_check = client.post("/api/system/self-check")
     assert self_check.status_code == 200
     self_body = self_check.json()
 
@@ -560,6 +563,7 @@ def test_fake_live_operating_day_controlled_stage_report(tmp_path, monkeypatch):
     assert stage_report["NO_BUYER_ESCALATIONS"] >= 1
     assert stage_report["FAILED_ACTIONS_BLOCKED"] >= 1
     assert stage_report["INTEGRITY_ALERTS"] >= 1
+    assert self_body["anomaly_detection"]["signals"]["learning_queue_blocked"] == "1 learning tasks are blocked"
     assert self_body["fail_safe_state"]["active"] is True
     assert self_body["anomaly_detection"]["state"] == "ANOMALY_DETECTED"
 

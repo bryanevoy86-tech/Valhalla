@@ -179,7 +179,7 @@ jobs:
 
 
   full-app-diagnostic:
-    name: Required canonical FastAPI import, 15 routes, and Pantheon
+    name: Required canonical FastAPI import, route contracts and Pantheon
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
@@ -228,7 +228,7 @@ jobs:
           echo "Collection exit code: $result"
           tail -n 75 backend-test-collection.log
           exit "$result"
-      - name: Require five-god Pantheon and governance orchestrator regression
+      - name: Require Pantheon, governance and integrity regressions
         env:
           DATABASE_URL: sqlite://
           VALHALLA_JWT_SECRET: ci-governance-test-only
@@ -247,7 +247,11 @@ jobs:
             services/api/tests/test_governance_orchestrator.py \
             services/api/tests/test_loki_audit_fail_closed.py \
             services/api/tests/test_prime_control_and_decision_integrity.py \
-            services/api/tests/test_completion_registry.py
+            services/api/tests/test_completion_registry.py \
+            services/api/tests/test_system_integrity.py \
+            services/api/tests/test_system_self_check.py \
+            services/api/tests/test_heimdall_ultra.py \
+            services/api/tests/test_pack_sz_ta_tb.py
       - name: Archive backend test collection report
         if: always()
         uses: actions/upload-artifact@v4

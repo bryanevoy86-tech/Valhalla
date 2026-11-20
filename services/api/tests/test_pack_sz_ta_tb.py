@@ -6,6 +6,7 @@ Tests for philosophy, relationships, and daily rhythm functionality.
 
 import pytest
 from datetime import datetime, date
+from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from app.models.pack_sz import PhilosophyRecord, EmpirePrinciple, PhilosophySnapshot
@@ -28,6 +29,23 @@ from app.schemas.pack_sz_ta_tb import (
     DailyTempoSnapshotCreate, DailyTempoSnapshotUpdate,
     TimeBlock
 )
+
+
+@pytest.fixture
+def db():
+    engine = create_engine("sqlite://")
+    models = (
+        PhilosophyRecord, EmpirePrinciple, PhilosophySnapshot,
+        RelationshipProfile, TrustEventLog, RelationshipMapSnapshot,
+        DailyRhythmProfile, TempoRule, DailyTempoSnapshot,
+    )
+    for model in models:
+        model.__table__.create(engine)
+    try:
+        with Session(engine) as session:
+            yield session
+    finally:
+        engine.dispose()
 
 
 # =============================================================================
@@ -653,7 +671,7 @@ class TestDailyTempoSnapshotService:
         data = DailyTempoSnapshotCreate(
             date=date.today(),
             rhythm_followed=True,
-            adjustments_needed=["Extend morning focus block"],
+            adjustments_needed="Extend morning focus block",
             user_notes="Good rhythm day"
         )
         result = DailyTempoSnapshotService.create(db, data)
@@ -666,7 +684,7 @@ class TestDailyTempoSnapshotService:
         data = DailyTempoSnapshotCreate(
             date=date.today(),
             rhythm_followed=False,
-            adjustments_needed=[],
+            adjustments_needed=None,
             user_notes=""
         )
         created = DailyTempoSnapshotService.create(db, data)
@@ -680,7 +698,7 @@ class TestDailyTempoSnapshotService:
             data = DailyTempoSnapshotCreate(
                 date=date.today(),
                 rhythm_followed=(i % 2 == 0),
-                adjustments_needed=[],
+                adjustments_needed=None,
                 user_notes=f"Snapshot {i}"
             )
             DailyTempoSnapshotService.create(db, data)
@@ -693,14 +711,14 @@ class TestDailyTempoSnapshotService:
         data = DailyTempoSnapshotCreate(
             date=date.today(),
             rhythm_followed=False,
-            adjustments_needed=[],
+            adjustments_needed=None,
             user_notes="Original"
         )
         created = DailyTempoSnapshotService.create(db, data)
         
         update_data = DailyTempoSnapshotUpdate(
             rhythm_followed=True,
-            adjustments_needed=["Adjust evening routine"],
+            adjustments_needed="Adjust evening routine",
             user_notes="Updated"
         )
         updated = DailyTempoSnapshotService.update(db, created.id, update_data)

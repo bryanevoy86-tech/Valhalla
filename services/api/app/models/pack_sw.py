@@ -29,7 +29,7 @@ class LifeEvent(Base):
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
     # Relationships
-    milestones = relationship("LifeMilestone", back_populates="event", cascade="all, delete-orphan")
+    milestones = relationship(lambda: LifeMilestone, back_populates="event", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<LifeEvent {self.event_id}: {self.title}>"
@@ -51,7 +51,7 @@ class LifeMilestone(Base):
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
     # Relationships
-    event = relationship("LifeEvent", back_populates="milestones")
+    event = relationship(LifeEvent, back_populates="milestones")
 
     def __repr__(self):
         return f"<LifeMilestone {self.milestone_id}: {self.milestone_type}>"

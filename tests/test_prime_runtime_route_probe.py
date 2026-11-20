@@ -32,7 +32,7 @@ class PrimeRouteProbeTests(unittest.TestCase):
 
     def test_wrong_http_method_does_not_count_as_registered(self):
         routes = [
-            SimpleNamespace(path=path, methods={"GET" if method == "POST" else "POST"})
+            SimpleNamespace(path=path, methods={"PATCH"})
             for method, path in contracts.values()
         ]
         result = check(routes)

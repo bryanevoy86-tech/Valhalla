@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from decimal import Decimal
 
 from app.models.deal import Deal
+from app.offers.models import Offer
 from app.models.contracts import Contract, ContractState
 from app.audit.service import log_event
 from app.audit.schemas import AuditEventCreate
@@ -95,62 +96,30 @@ class DealAnalysis:
 
 # ===== HELPER FUNCTIONS =====
 
-def _get_deal_context(deal_id: int, db: Session) -> tuple:
+def _get_deal_context(deal_id: int, db: Session, *, lock: bool = False) -> tuple:
     """Load deal, offer, contract, buyer_match from database."""
-    # Query canonical Deal model
-    deal = db.query(Deal).filter(Deal.id == deal_id).first()
+    deal_query = db.query(Deal).filter(Deal.id == deal_id)
+    if lock:
+        deal_query = deal_query.populate_existing().with_for_update()
+    deal = deal_query.first()
+    if deal is None:
+        return None, None, None, None
 
-    if not deal:
-        return None, None, None, None, None
-
-    # Get offer (gracefully handle if table doesn't exist)
-    offer = None
-    try:
-        from sqlalchemy import text
-        # Query the offers table by deal_id
-        offer_row = db.execute(
-            text("SELECT id, deal_id, offer_price, status FROM offers WHERE deal_id = :deal_id LIMIT 1"),
-            {"deal_id": deal_id}
-        ).first()
-        # Convert to simple object for compatibility
-        if offer_row:
-            class OfferData:
-                def __init__(self, row):
-                    self.id = row[0]
-                    self.deal_id = row[1]
-                    self.offer_price = row[2]
-                    self.status = row[3]
-            offer = OfferData(offer_row)
-    except Exception:
-        # offers table doesn't exist or model issue - skip
-        pass
-
-    # Get contract (gracefully handle if table doesn't exist)
-    contract = None
-    try:
-        contract = (
-            db.query(Contract)
-            .filter(Contract.deal_id == str(deal_id))
-            .order_by(Contract.created_at.desc())
-            .first()
-        )
-    except Exception:
-        # contracts table doesn't exist or model issue - skip
-        pass
-
-    # Get buyer match (gracefully handle if table doesn't exist)
-    buyer_match_row = None
-    try:
-        from sqlalchemy import text
-        buyer_match_row = db.execute(
-            text("SELECT * FROM buyer_matches WHERE deal_id = ? ORDER BY created_at DESC LIMIT 1"),
-            [deal_id]
-        ).first()
-    except Exception:
-        # buyer_matches table doesn't exist - skip
-        pass
-
-    return deal, offer, contract, buyer_match_row, deal
+    offer = (
+        db.query(Offer)
+        .filter(Offer.deal_id == deal_id)
+        .order_by(Offer.created_at.desc(), Offer.id.desc())
+        .first()
+    )
+    contract = (
+        db.query(Contract)
+        .filter(Contract.deal_id == str(deal_id))
+        .order_by(Contract.created_at.desc(), Contract.id.desc())
+        .first()
+    )
+    # Buyer-match IDs currently refer to deal briefs. A canonical deal ID alone
+    # cannot identify that record safely.
+    return deal, offer, contract, None
 
 
 def _build_deal_data_dict(deal: Any) -> Dict[str, Any]:
@@ -163,7 +132,7 @@ def _build_deal_data_dict(deal: Any) -> Dict[str, Any]:
         "estimated_repair_cost": float(getattr(deal, 'estimated_repair_cost', 0) or 0),
         "max_allowable_offer": float(getattr(deal, 'max_allowable_offer', 0) or 0),
         "score": float(getattr(deal, 'score', 0) or 0),
-        "created_at": str(getattr(deal, 'created_at', 'N/A')),
+        "created_at": str(deal.created_ts),
         "title": getattr(deal, 'title', None),
     }
 
@@ -174,8 +143,8 @@ def _build_offer_data_dict(offer: Any) -> Optional[Dict[str, Any]]:
         return None
     return {
         "id": getattr(offer, 'id', None),
-        "deal_id": getattr(offer, 'correlation_id', None),
-        "recommended_offer": float(getattr(offer, 'recommended_offer', 0) or 0),
+        "deal_id": offer.deal_id,
+        "recommended_offer": float(offer.offer_price),
         "status": getattr(offer, 'status', 'unknown'),
     }
 
@@ -258,9 +227,9 @@ def _detect_blockers(
 
     # Stage-specific blockers
     if current_stage == "preliminary_analysis":
-        if not getattr(deal, 'arv', None):
+        if deal.arv is None or deal.arv <= 0:
             blocker_flags.append("missing_arv")
-        if not getattr(deal, 'estimated_repair_cost', None):
+        if deal.estimated_repair_cost is None or deal.estimated_repair_cost < 0:
             blocker_flags.append("missing_repair_cost")
 
     elif current_stage == "offer_ready":
@@ -320,7 +289,10 @@ def analyze_deal(deal_id: int, db: Session) -> DealAnalysis:
     """
     Analyze a deal and return structured recommendations.
     """
-    deal, offer, contract, buyer_match_row, _ = _get_deal_context(deal_id, db)
+    return _analyze_context(deal_id, *_get_deal_context(deal_id, db))
+
+
+def _analyze_context(deal_id, deal, offer, contract, buyer_match_row) -> DealAnalysis:
 
     if not deal:
         raise ValueError(f"Deal {deal_id} not found")
@@ -337,7 +309,7 @@ def analyze_deal(deal_id: int, db: Session) -> DealAnalysis:
     missing_fields = []
     if not deal_data.get('arv'):
         missing_fields.append("deal.arv")
-    if not deal_data.get('estimated_repair_cost'):
+    if deal.estimated_repair_cost is None:
         missing_fields.append("deal.estimated_repair_cost")
     if not offer_data and current_stage != "lead_received":
         missing_fields.append("offer")
@@ -345,7 +317,10 @@ def analyze_deal(deal_id: int, db: Session) -> DealAnalysis:
         missing_fields.append("contract")
 
     # Detect blockers and risks
-    blocker_flags, risk_flags = _detect_blockers(deal, offer, contract, buyer_match_row, current_stage)
+    blocker_flags, risk_flags = _detect_blockers(
+        deal, offer, contract, buyer_match_row,
+        next(iter(VALID_STAGE_TRANSITIONS.get(current_stage, [])), current_stage),
+    )
 
     # Recommend next stage
     recommended_stage, recommendation_reason = _recommend_next_stage(current_stage, blocker_flags, deal)
@@ -381,152 +356,64 @@ def advance_stage_with_approval(
     if not db:
         raise ValueError("Database session required")
 
-    deal, _, _, _, full_deal = _get_deal_context(deal_id, db)
+    try:
+        deal, offer, contract, buyer_match = _get_deal_context(deal_id, db, lock=True)
+        analysis = _analyze_context(deal_id, deal, offer, contract, buyer_match)
+        current_stage = analysis.current_stage
+        rejection = None
+        if requested_stage not in VALID_STAGE_TRANSITIONS.get(current_stage, []):
+            rejection = f"Invalid transition from {current_stage} to {requested_stage}"
+        elif not approved_by.strip() or not reason.strip():
+            rejection = "Approval identity and reason are required"
+        elif analysis.blocker_flags and (
+            requested_stage in {"under_contract", "closed"}
+            or not (override_reason or "").strip()
+        ):
+            rejection = f"Blockers prevent advancement: {', '.join(analysis.blocker_flags)}"
 
-    if not deal or not full_deal:
-        raise ValueError(f"Deal {deal_id} not found")
-
-    current_stage = getattr(deal, 'stage', 'draft')  # FIXED: Use 'stage' (pipeline), not 'status' (health)
-
-    # Validate transition
-    valid_next_stages = VALID_STAGE_TRANSITIONS.get(current_stage, [])
-    if requested_stage not in valid_next_stages:
-        # Log rejection
-        try:
-            log_event(db, AuditEventCreate(
-                actor="Heimdall_v0.1",
-                action="heimdall_stage_advance_rejected",
-                target=f"deal_{deal_id}",
-                entity_type="deal",
-                entity_id=deal_id,
-                result="rejected",
-                meta={
-                    "deal_id": deal_id,
-                    "from_stage": current_stage,
-                    "requested_stage": requested_stage,
-                    "reason": f"Invalid transition from {current_stage} to {requested_stage}",
-                    "approved_by": approved_by,
-                }
-            ))
-        except Exception as e:
-            print(f"Warning: Could not log rejection event: {e}")
-        
-        return {
-            "deal_id": deal_id,
-            "action": "stage_advance_rejected",
-            "previous_stage": current_stage,
-            "new_stage": None,
-            "approved_by": None,
+        event_details = {
             "requested_stage": requested_stage,
-            "result": "rejected",
-            "reason": f"Invalid transition from {current_stage} to {requested_stage}",
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "blockers": analysis.blocker_flags,
+            "risks": analysis.risk_flags,
         }
-
-    # Analyze for blockers
-    analysis = analyze_deal(deal_id, db)
-
-    # Check blockers
-    if analysis.blocker_flags and not override_reason:
-        # Log rejection
-        try:
+        previous = {"stage": current_stage}
+        if rejection:
             log_event(db, AuditEventCreate(
-                actor="Heimdall_v0.1",
-                action="heimdall_stage_advance_rejected",
-                target=f"deal_{deal_id}",
-                entity_type="deal",
-                entity_id=deal_id,
-                result="rejected",
-                meta={
-                    "deal_id": deal_id,
-                    "from_stage": current_stage,
-                    "requested_stage": requested_stage,
-                    "blockers": analysis.blocker_flags,
-                    "reason": f"Blockers prevent advancement",
-                    "approved_by": approved_by,
-                }
-            ))
-        except Exception as e:
-            print(f"Warning: Could not log blocker rejection event: {e}")
-        
-        return {
-            "deal_id": deal_id,
-            "action": "stage_advance_rejected",
-            "previous_stage": current_stage,
-            "new_stage": None,
-            "approved_by": None,
-            "requested_stage": requested_stage,
-            "result": "rejected",
-            "reason": f"Blockers prevent advancement: {', '.join(analysis.blocker_flags)}",
-            "timestamp": datetime.utcnow().isoformat() + "Z",
-        }
-
-    # Log analysis event
-    try:
-        log_event(db, AuditEventCreate(
-            actor="Heimdall_v0.1",
-            action="heimdall_analyzed_deal",
-            target=f"deal_{deal_id}",
-            entity_type="deal",
-            entity_id=deal_id,
-            result="success",
-            meta={
+                action="heimdall_stage_advance_rejected", entity_type="deal",
+                entity_id=deal_id, user_id=approved_by.strip() or "system",
+                previous_value=previous, new_value=event_details, notes=rejection,
+            ), commit=False)
+            db.commit()
+            return {
                 "deal_id": deal_id,
-                "current_stage": current_stage,
-                "recommended_stage": analysis.recommended_stage,
-                "blockers": analysis.blocker_flags,
-                "risks": analysis.risk_flags,
+                "action": "stage_advance_rejected",
+                "previous_stage": current_stage,
+                "new_stage": None,
+                "approved_by": None,
+                "requested_stage": requested_stage,
+                "result": "rejected",
+                "reason": rejection,
+                "timestamp": datetime.utcnow().isoformat() + "Z",
             }
-        ))
-    except Exception as e:
-        print(f"Warning: Could not log analysis event: {e}")
 
-    # Log recommendation event
-    try:
-        log_event(db, AuditEventCreate(
-            actor="Heimdall_v0.1",
-            action="heimdall_recommended_stage",
-            target=f"deal_{deal_id}",
-            entity_type="deal",
-            entity_id=deal_id,
-            result="success",
-            meta={
-                "deal_id": deal_id,
-                "from_stage": current_stage,
-                "to_stage": requested_stage,
-                "reason": reason,
-                "override_used": bool(override_reason),
-            }
-        ))
-    except Exception as e:
-        print(f"Warning: Could not log recommendation event: {e}")
-
-    # Perform stage advancement
-    full_deal.stage = requested_stage  # FIXED: Write to 'stage' (pipeline), not 'status' (health)
-    db.commit()
-    db.refresh(full_deal)
-
-    # Log advancement event
-    try:
-        log_event(db, AuditEventCreate(
-            actor="Heimdall_v0.1",
-            action="heimdall_stage_advanced",
-            target=f"deal_{deal_id}",
-            entity_type="deal",
-            entity_id=deal_id,
-            result="success",
-            meta={
-                "deal_id": deal_id,
-                "from_stage": current_stage,
-                "to_stage": requested_stage,
-                "approved_by": approved_by,
-                "reason": reason,
-                "override_used": bool(override_reason),
-                "override_reason": override_reason or None,
-            }
-        ))
-    except Exception as e:
-        print(f"Warning: Could not log advancement event: {e}")
+        for action, details in (
+            ("heimdall_analyzed_deal", event_details),
+            ("heimdall_recommended_stage", {"stage": analysis.recommended_stage}),
+            ("heimdall_stage_advanced", {
+                "stage": requested_stage,
+                "override_reason": (override_reason or "").strip() or None,
+            }),
+        ):
+            log_event(db, AuditEventCreate(
+                action=action, entity_type="deal", entity_id=deal_id,
+                user_id=approved_by, previous_value=previous,
+                new_value=details, notes=reason,
+            ), commit=False)
+        deal.stage = requested_stage
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
 
     return {
         "deal_id": deal_id,

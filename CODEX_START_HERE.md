@@ -2,6 +2,13 @@
 
 This is the one-file handoff from ChatGPT's November 19 development and audit. **Do not create new packs or restart Valhalla.**
 
+## November 20 — Current engineering checkpoint
+
+- Continue PR #4 on `fix/fail-closed-operations-20261119`. The latest entry in `ops/CHANGE_LEDGER.md` supersedes older claims below about the two historical collection errors. Full backend execution now runs and reports 215 passed, 63 failed and 2 skipped in isolated Linux. Canonical runtime probe verifies ORM configuration and 27 routes across 17 required router groups.
+- Deal stage updates and audit writes now share one transaction. Private integrity GET reports observed controls and blocked learning work. Private POST records those alerts. Wider probes and automatic response remain open.
+- Next runtime repair begins at the fake-live scenario's stale LeadCreate fields in `flow_full_pipeline.py`. Reconcile Deal fields, canonical freeze evidence and explicit Deal-to-DealBrief linkage together. Preserve meaningful regressions and compare the separate protected Windows checkout before integrating local-only work.
+- The source preflight still covers all 47 workstreams. The exact numbered 50-task register remains to be reconciled with owner records. Follow the existing full-vision traceability and external-activation boundaries.
+
 ## ICE WALL CONTINUATION — latest engineering checkpoint, November 20
 
 **Do not redo the fixes below.** They are committed on draft PR #4, not deployed.
