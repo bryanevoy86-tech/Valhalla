@@ -40,12 +40,14 @@
       "priority": "P0",
       "source_paths": [
         "services/api/app/core/runtime_flags.py",
-        "services/api/app/routers/completion_registry.py"
+        "services/api/app/routers/completion_registry.py",
+        "services/api/app/core/autonomy_governor.py",
+        "docs/PRIME_AUTONOMY_SAFETY_CONTRACT.md"
       ],
-      "source_observation": "Runtime modes and governance registers exist; risk and real side effect isolation must be proven on every adapter",
+      "source_observation": "Existing shadow/go-live guards and database kill switch; new deterministic autonomy governor enforces approved INTERNAL draft with budget, evidence, scope and outage checks. External adapters are NOT all wired; no system-wide certification.",
       "evidence_level": "SOURCE_INSPECTED_ONLY",
       "production_verified": false,
-      "acceptance_test": "Inject denied/outreach/spend/contract calls in each mode and jurisdiction; no external effect",
+      "acceptance_test": "Governance unit cases and internal SQLite Factory killswitch pass; full production acceptance requires every external adapter using trusted persisted approval/consent/budget gates, adversarial agent tests, durable circuit breakers, and real Postgres worker failure injection.",
       "depends_on": [
         "auth"
       ],
