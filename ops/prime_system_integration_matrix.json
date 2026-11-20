@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "generated_date": "2026-11-19",
-  "policy": "Source presence and focused tests are not proof of autonomous commercial operation. Never mark DONE without scope-specific end-to-end evidence.",
+  "policy": "Source presence and focused tests are not proof of autonomous commercial operation. Never mark DONE without scope-specific end-to-end evidence. Full vision additions are source-anchored readiness contracts, not proof of implementation; conflicting doctrine requires owner ratification.",
   "baseline_branch": "fix/fail-closed-operations-20261119",
   "capabilities": [
     {
@@ -429,6 +429,378 @@
         "schema_and_migrations"
       ],
       "owner_external_authorization_required": false
+    },
+    {
+      "id": "prime_private_owner",
+      "priority": "P0",
+      "source_paths": [
+        "docs/HEIMDALL_DEFINITION_OF_DONE.md",
+        "docs/PHASE3_INTEGRATED_ARCHITECTURE.md"
+      ],
+      "source_observation": "Private owner Prime is a source-level design contract, not a verified authorization boundary.",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "Prove no subscriber/clone/tenant can access owner Prime; trace trust and approvals across API, worker, UI, DB and provider adapters.",
+      "depends_on": [
+        "auth",
+        "runtime_governance"
+      ],
+      "owner_external_authorization_required": true
+    },
+    {
+      "id": "pantheon_five_evaluators",
+      "priority": "P0",
+      "source_paths": [
+        "PANTHEON_SUMMARY.md",
+        "GOVERNANCE_SYSTEM.md",
+        "services/api/app/routers/governance_orchestrator.py",
+        "services/api/app/routers/governance_loki.py",
+        "services/api/app/routers/governance_tyr.py"
+      ],
+      "source_observation": "Five-God KING/QUEEN/ODIN/LOKI/TYR source and orchestrator exist; this is not the entire expanded Norse role model.",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "Prove all five independent checks and disagreements reach a real dispatch gate, including legal/ethical hard stops, no forged approvals and reproducible audit.",
+      "depends_on": [
+        "api_wiring",
+        "runtime_governance"
+      ],
+      "owner_external_authorization_required": false
+    },
+    {
+      "id": "pantheon_expanded_bridge",
+      "priority": "P0",
+      "source_paths": [
+        "docs/UNIVERSAL_OPPORTUNITY_PIPELINE.md",
+        "docs/PANTHEON_CALIBRATION_PROTOCOL.md",
+        "services/api/app/services/universal_opportunity_evaluator.py"
+      ],
+      "source_observation": "Expanded Heimdall/Odin/Loki/Norns/Tyr/Forseti/Vidar/Mimir/Njord/Freyja/Bragi/Huginn-Muninn and alternative Valkyrie/Fenrir/Skald/Jotunn names from historical plan; not all currently independent agents.",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "Map historical role/authority variants without losing user intent; test controlled bridge and no unrestricted agent-to-agent tools; owner ratifies conflicting labels.",
+      "depends_on": [
+        "pantheon_five_evaluators",
+        "learning_mimir"
+      ],
+      "owner_external_authorization_required": true
+    },
+    {
+      "id": "norns_probability_calibration",
+      "priority": "P1",
+      "source_paths": [
+        "docs/PANTHEON_CALIBRATION_PROTOCOL.md",
+        "docs/UNIVERSAL_OPPORTUNITY_PIPELINE.md"
+      ],
+      "source_observation": "Forecast and calibration fields exist in contract; no blinded real-outcome calibration proven.",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "Quantify calibration and regret on holdout real outcomes; stop claiming precise first-revenue odds from synthetic scores.",
+      "depends_on": [
+        "universal_evaluator",
+        "learning_mimir"
+      ],
+      "owner_external_authorization_required": false
+    },
+    {
+      "id": "owner_commander_voice",
+      "priority": "P1",
+      "source_paths": [
+        "docs/UNIVERSAL_OPPORTUNITY_PIPELINE.md",
+        "docs/HEIMDALL_DEFINITION_OF_DONE.md"
+      ],
+      "source_observation": "Owner-envelope design exists; historical A/B/C/Override and voice/driving experience not certified in current app.",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "Prove authentic owner briefing, dissent, Norns odds, A/B/C/Override with recorded decisions, secure voice/mobile controls and fallback behavior.",
+      "depends_on": [
+        "auth",
+        "weweb_frontend",
+        "pantheon_five_evaluators"
+      ],
+      "owner_external_authorization_required": true
+    },
+    {
+      "id": "five_initial_legacies",
+      "priority": "P0",
+      "source_paths": [
+        "services/api/app/models/completion_registry.py",
+        "docs/HEIMDALL_DEFINITION_OF_DONE.md"
+      ],
+      "source_observation": "Legacy registry and internal work path exist; five independent profitable operations unproven.",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "Prove five owner-selected mandates with tenant isolation, durable worker, lawful external acts, separately reconciled revenue and cash controls.",
+      "depends_on": [
+        "legacy_execution",
+        "auth",
+        "commerce"
+      ],
+      "owner_external_authorization_required": true
+    },
+    {
+      "id": "clones_vs_mirrors",
+      "priority": "P1",
+      "source_paths": [
+        "docs/VALHALLA_DOCTRINE_CONFLICT_MAP.md",
+        "docs/PHASE3_INTEGRATED_ARCHITECTURE.md"
+      ],
+      "source_observation": "Historical doctrine clarifies production clones versus simulation mirrors; full runtime scaling not verified.",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "Verify no mirror has external authority; governed clone lifecycle, real business identity, permissions, budget and data separation.",
+      "depends_on": [
+        "legacy_instances",
+        "runtime_governance"
+      ],
+      "owner_external_authorization_required": true
+    },
+    {
+      "id": "product_foundry_subscriptions",
+      "priority": "P1",
+      "source_paths": [
+        "docs/CODEX_SYSTEM_FINISH_PASSES.md",
+        "services/api/app/services/prime_business_execution.py"
+      ],
+      "source_observation": "Actual internal product listing draft exists, no external storefront or revenue proof.",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "Complete approved subordinate product package, storefront, real checkout/provider receipt, delivery, refund/chargeback, ledger and customer subscription lifecycle.",
+      "depends_on": [
+        "commerce",
+        "subscription_saas",
+        "legacy_execution"
+      ],
+      "owner_external_authorization_required": true
+    },
+    {
+      "id": "independent_venture_foundry",
+      "priority": "P1",
+      "source_paths": [
+        "docs/CODEX_SYSTEM_FINISH_PASSES.md",
+        "docs/PHASE3_INTEGRATED_ARCHITECTURE.md"
+      ],
+      "source_observation": "Cross-industry evaluation pipeline described, autonomous startup-to-revenue not executed.",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "Scheduled discovery and evidence validation, owner-bounded creation of a new lawful venture, live sales and repeatable outcome learning.",
+      "depends_on": [
+        "discovery_sources",
+        "universal_evaluator",
+        "learning_mimir",
+        "legacy_execution"
+      ],
+      "owner_external_authorization_required": true
+    },
+    {
+      "id": "real_estate_portfolio_legs",
+      "priority": "P1",
+      "source_paths": [
+        "docs/MILLION_PATH_STRATEGY_LAYER.md",
+        "services/api/app/models/deal.py"
+      ],
+      "source_observation": "Real estate strategy models cover wholesaling, flipping, hold and related categories; external closings unverified.",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "Real licensed/legal deal source→underwriting→buyer→contract→closing→settlement with real receipts; replay and privacy controls.",
+      "depends_on": [
+        "real_estate_execution",
+        "contracts_legal"
+      ],
+      "owner_external_authorization_required": true
+    },
+    {
+      "id": "treasury_banking_controls",
+      "priority": "P0",
+      "source_paths": [
+        "capital/banking/executor.py",
+        "services/api/app/routers/banking_structure_planner.py"
+      ],
+      "source_observation": "Old executor falsely reported completed funds transfers with no bank call; branch now explicitly blocks provider-not-connected; regression tested.",
+      "evidence_level": "FOCUSED_CI_TESTED",
+      "production_verified": false,
+      "acceptance_test": "Prove every actual transfer requires owner intent, cap, whitelisted accounts, durable idempotency and a bank settlement receipt; no fake success.",
+      "depends_on": [
+        "finance_webhooks",
+        "runtime_governance"
+      ],
+      "owner_external_authorization_required": true
+    },
+    {
+      "id": "infinite_banking_insurance",
+      "priority": "P1",
+      "source_paths": [
+        "services/api/app/models/whole_life_policy.py",
+        "services/api/app/api/api_v1/endpoints/whole_life_policies.py",
+        "services/api/app/routers/banking_structure_planner.py"
+      ],
+      "source_observation": "Whole-life policy records exist, not a real participating-policy premium/cash-value loan model; no insurer/bank transfer proof.",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "Model actual policy illustration, fees, premiums, loan balance and interest, tax/legal/contract details, adverse scenarios; owner and licensed review before any loan.",
+      "depends_on": [
+        "treasury_banking_controls",
+        "tax_opinions_legal"
+      ],
+      "owner_external_authorization_required": true
+    },
+    {
+      "id": "estate_and_master_trusts",
+      "priority": "P1",
+      "source_paths": [
+        "services/api/app/models/trust.py",
+        "services/api/app/models/protection_stack.py",
+        "legal/TRUST_RESIDENCY_OVERVIEW.md"
+      ],
+      "source_observation": "Legal trust concepts and entity records are present, not actual trust formation. Historic Panama-first vs Canadian-first source conflict unresolved.",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "Trace trustee, protector, beneficiaries, assets and succession; compare structures under cross-border professional advice and preserve owner-approved choice. No auto filings.",
+      "depends_on": [
+        "tax_opinions_legal",
+        "runtime_governance"
+      ],
+      "owner_external_authorization_required": true
+    },
+    {
+      "id": "canada_exit_strategy",
+      "priority": "P1",
+      "source_paths": [
+        "legal/TRUST_RESIDENCY_OVERVIEW.md",
+        "docs/VALHALLA_DOCTRINE_CONFLICT_MAP.md",
+        "services/api/app/models/bahamas_plan.py"
+      ],
+      "source_observation": "International residency and departure concepts are advisory documents; legal/tax outcomes and exact timing unverified.",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "Produce evidence-backed Canada personal/corporate departure scenarios, tax residence tests, continuing ties, immigration, family requirements, legal opinions and actionable owner choices.",
+      "depends_on": [
+        "estate_and_master_trusts",
+        "tax_opinions_legal"
+      ],
+      "owner_external_authorization_required": true
+    },
+    {
+      "id": "global_residency_options",
+      "priority": "P1",
+      "source_paths": [
+        "services/api/app/models/bahamas_plan.py",
+        "services/api/app/models/trust_status.py",
+        "legal/TRUST_RESIDENCY_OVERVIEW.md"
+      ],
+      "source_observation": "Panama/Bahamas and future jurisdictions appear in models/plans. No immigration status or lawful tax residency independently proven.",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "Compare owner-approved country options, rights, real costs, residency/tax reporting and professional validation with no invented approval status.",
+      "depends_on": [
+        "canada_exit_strategy"
+      ],
+      "owner_external_authorization_required": true
+    },
+    {
+      "id": "tax_opinions_legal",
+      "priority": "P0",
+      "source_paths": [
+        "services/api/app/models/tax_interpretations.py",
+        "legal/TRUST_RESIDENCY_OVERVIEW.md",
+        "services/api/app/routers/governance_tyr.py"
+      ],
+      "source_observation": "Jurisdictional tax opinion schema and legal gate exist; legal and regulatory execution not verified.",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "Require source, date, jurisdiction, legal signoff and preserved opinion files; prohibit AI-led filing, fraud, tax evasion and unsupported tax treatments.",
+      "depends_on": [
+        "auth",
+        "runtime_governance"
+      ],
+      "owner_external_authorization_required": true
+    },
+    {
+      "id": "reinvestment_funfund_policy",
+      "priority": "P1",
+      "source_paths": [
+        "valhalla_hand_off/ACCOUNTING_PACKAGE/01_fund_separation.md",
+        "services/api/app/models/funfund_routing.py",
+        "valhalla_hand_off/EIA_PACKAGE/03_risk_controls.md"
+      ],
+      "source_observation": "90/10 intent documented in handoff, with Fun Fund routing field; personalized timing/caps not all represented in current ledger.",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "Verify owner-private cap schedule, taxes, cash reserves, net profit definition, allocation ledger, no unauthorized extraction and documented exceptions.",
+      "depends_on": [
+        "treasury_banking_controls",
+        "commerce"
+      ],
+      "owner_external_authorization_required": true
+    },
+    {
+      "id": "family_payroll_succession",
+      "priority": "P2",
+      "source_paths": [
+        "_archive/legacy_pre_canonicalization/backend_system/app/core_gov/family_payroll/store.py",
+        "services/api/app/models/protection_stack.py"
+      ],
+      "source_observation": "Archived family payroll source exists; not current operational payroll evidence.",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "Keep private lawful employment/payroll/succession only with genuine service, privacy, remuneration evidence, professional filings and owner signoff.",
+      "depends_on": [
+        "estate_and_master_trusts",
+        "tax_opinions_legal"
+      ],
+      "owner_external_authorization_required": true
+    },
+    {
+      "id": "bahamas_resort_growth",
+      "priority": "P2",
+      "source_paths": [
+        "services/api/app/models/bahamas_vault.py",
+        "services/api/app/routers/resort.py"
+      ],
+      "source_observation": "Resort/vault models exist; live property control, bookings and income have no independently verified receipts.",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "Legal ownership, hospitality licensing, bookings, operations, receipts, tax rules and owner-approved capital gates.",
+      "depends_on": [
+        "global_residency_options",
+        "legacy_execution"
+      ],
+      "owner_external_authorization_required": true
+    },
+    {
+      "id": "shield_blackice_protection",
+      "priority": "P1",
+      "source_paths": [
+        "services/api/app/models/protection_stack.py",
+        "services/api/app/routers/blackice.py",
+        "docs/VALHALLA_DOCTRINE_CONFLICT_MAP.md"
+      ],
+      "source_observation": "Black Ice/Shield models and code exist; later doctrine explicitly requires gated validation.",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "Prove operational fail-safe, exception alerts, containment, no unauthorized surveillance, legal boundaries and rollback during real faults.",
+      "depends_on": [
+        "runtime_governance",
+        "operations_observability"
+      ],
+      "owner_external_authorization_required": true
+    },
+    {
+      "id": "recruitment_and_va",
+      "priority": "P2",
+      "source_paths": [
+        "services/api/app/routers/pro_alignment_engine.py",
+        "docs/HEIMDALL_DEFINITION_OF_DONE.md"
+      ],
+      "source_observation": "Professional alignment code exists; historical employee/cognitive tasks not certified as valid assessment.",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "Use job-related exercises, structured interviews, privacy, equal access and accountable owner hiring review; no presumed personality prediction.",
+      "depends_on": [
+        "auth",
+        "runtime_governance"
+      ],
+      "owner_external_authorization_required": true
     }
   ]
 }
