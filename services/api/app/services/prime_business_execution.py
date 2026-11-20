@@ -27,7 +27,8 @@ from app.models.completion_registry import (
 )
 from app.models.media_engine import MediaContent
 from app.core.autonomy_governor import require_internal_draft
-from sqlalchemy import inspect
+from sqlalchemy import func, inspect
+from sqlalchemy.exc import IntegrityError
 
 
 ACTION_TYPE = "draft_product_listing_v1"
@@ -300,20 +301,26 @@ def submit_listing_draft(db: Session, request: Any) -> dict:
     action_id = "bfd_" + key_hash[:32]
     idem_key = "bfv1_" + key_hash
 
-    existing = db.query(LegacyInstanceWorkItem).filter(
-        LegacyInstanceWorkItem.idempotency_key == idem_key
-    ).first()
-    if existing:
-        if (
-            existing.legacy_instance_id != request.legacy_instance_id
-            or existing.business_id != request.business_id
-            or existing.engine_id != request.engine_id
-            or existing.industry != request.industry
-            or existing.jurisdiction != request.jurisdiction
-            or existing.payload_json != _canonical(inputs)
-        ):
-            raise HTTPException(status_code=409, detail="idempotency key reused with different work")
-        return {"action_id": existing.action_id, "status": existing.status, "duplicate": True}
+    def existing_submission():
+        existing = db.query(LegacyInstanceWorkItem).filter(
+            LegacyInstanceWorkItem.idempotency_key == idem_key
+        ).first()
+        if existing:
+            if (
+                existing.legacy_instance_id != request.legacy_instance_id
+                or existing.business_id != request.business_id
+                or existing.engine_id != request.engine_id
+                or existing.industry != request.industry
+                or existing.jurisdiction != request.jurisdiction
+                or existing.payload_json != _canonical(inputs)
+            ):
+                raise HTTPException(status_code=409, detail="idempotency key reused with different work")
+            return {"action_id": existing.action_id, "status": existing.status, "duplicate": True}
+        return None
+
+    duplicate = existing_submission()
+    if duplicate is not None:
+        return duplicate
 
     instance = _check_legacy(
         db,
@@ -347,7 +354,16 @@ def submit_listing_draft(db: Session, request: Any) -> dict:
         message="Internal product listing draft queued, awaiting owner approval",
         payload={"action_id": action_id, "action_type": ACTION_TYPE},
     )
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        # Another submitter may have won the unique-key race. Roll back both
+        # work and queue event, then verify the winner's complete request.
+        db.rollback()
+        duplicate = existing_submission()
+        if duplicate is None:
+            raise
+        return duplicate
     return {"action_id": action_id, "status": "queued", "duplicate": False}
 
 
@@ -428,51 +444,41 @@ def _render_listing(payload: dict[str, Any]) -> str:
     return data
 
 
-def run_one_approved_draft(db: Session) -> dict:
-    """Atomically execute ONE approved internal task and persist its receipt.
+def _execute_locked_draft(db: Session, item: LegacyInstanceWorkItem) -> dict | None:
+    """Execute a single locked row; caller rolls back unsuccessful attempts."""
+    payload = _json(item.payload_json, {})
+    if not isinstance(payload, dict) or payload.get("action_type") != ACTION_TYPE or payload.get("mode") != "INTERNAL_DRAFT_ONLY":
+        return None
+    if payload.get("business_id") != item.business_id:
+        return {"status": "blocked", "action_id": item.action_id,
+                "reason": "work payload business mismatch", "verified": False}
+    approval = db.query(LegacyOrchestrationEvent).filter(
+        LegacyOrchestrationEvent.event_id == _approval_id(item.action_id)
+    ).first()
+    authority = "PER_ACTION"
+    mandate_id = None
+    if not approval:
+        mandate_id = payload.get("mandate_id")
+        if not mandate_id:
+            return None
+        reason = _check_draft_mandate(db, item, payload)
+        if reason:
+            return {"status": "blocked", "action_id": item.action_id,
+                            "reason": reason, "verified": False}
+        authority = "STANDING_MANDATE"
+    else:
+        evidence = _json(approval.payload_json, {})
+        if (
+            approval.event_type != APPROVAL_EVENT
+            or approval.legacy_instance_id != item.legacy_instance_id
+            or not isinstance(evidence, dict)
+            or evidence.get("action_id") != item.action_id
+            or evidence.get("scope") != "INTERNAL_DRAFT_ONLY"
+            or evidence.get("payload_sha256") != hashlib.sha256(item.payload_json.encode("utf-8")).hexdigest()
+        ):
+            return {"status": "blocked", "action_id": item.action_id, "reason": "approval evidence mismatch", "verified": False}
 
-    The draft and verified receipt are committed in the same database transaction.
-    PostgreSQL skip_locked prevents concurrent workers from taking the same row.
-    SQLite is used only in isolated single-worker tests.
-    """
-    queued = db.query(LegacyInstanceWorkItem).filter(
-        LegacyInstanceWorkItem.status == "queued",
-        LegacyInstanceWorkItem.risk_profile == "no_external_effects",
-        LegacyInstanceWorkItem.integration_profile == "none",
-    ).order_by(LegacyInstanceWorkItem.id.asc()).with_for_update(skip_locked=True).limit(100).all()
-
-    last_blocked = None
-    for item in queued:
-        payload = _json(item.payload_json, {})
-        if not isinstance(payload, dict) or payload.get("action_type") != ACTION_TYPE or payload.get("mode") != "INTERNAL_DRAFT_ONLY":
-            continue
-        approval = db.query(LegacyOrchestrationEvent).filter(
-            LegacyOrchestrationEvent.event_id == _approval_id(item.action_id)
-        ).first()
-        authority = "PER_ACTION"
-        mandate_id = None
-        if not approval:
-            mandate_id = payload.get("mandate_id")
-            if not mandate_id:
-                continue
-            reason = _check_draft_mandate(db, item, payload)
-            if reason:
-                last_blocked = {"status": "blocked", "action_id": item.action_id,
-                                "reason": reason, "verified": False}
-                continue
-            authority = "STANDING_MANDATE"
-        else:
-            evidence = _json(approval.payload_json, {})
-            if (
-                approval.event_type != APPROVAL_EVENT
-                or approval.legacy_instance_id != item.legacy_instance_id
-                or not isinstance(evidence, dict)
-                or evidence.get("action_id") != item.action_id
-                or evidence.get("scope") != "INTERNAL_DRAFT_ONLY"
-                or evidence.get("payload_sha256") != hashlib.sha256(item.payload_json.encode("utf-8")).hexdigest()
-            ):
-                return {"status": "blocked", "action_id": item.action_id, "reason": "approval evidence mismatch", "verified": False}
-
+    try:
         _check_legacy(
             db,
             legacy_instance_id=item.legacy_instance_id,
@@ -480,71 +486,114 @@ def run_one_approved_draft(db: Session) -> dict:
             engine_id=item.engine_id,
             jurisdiction=item.jurisdiction,
         )
-        policy = _internal_policy_decision(db, item, approved=True)
-        if policy.verdict != "ALLOW":
-            return {
-                "status": "blocked",
-                "action_id": item.action_id,
-                "verified": False,
-                "reason": policy.reason,
-            }
-        try:
-            draft_body = _render_listing(_json(item.payload_json, {}))
-        except (ValueError, TypeError, KeyError) as exc:
-            return {"status": "blocked", "action_id": item.action_id, "reason": str(exc), "verified": False}
-
-        receipt_id = _receipt_id(item.action_id)
-        if db.query(LegacyOrchestrationEvent).filter(
-            LegacyOrchestrationEvent.event_id == receipt_id
-        ).first():
-            return {"status": "blocked", "action_id": item.action_id, "reason": "receipt exists for queued work; manual reconciliation required", "verified": False}
-
-        media = MediaContent(
-            title=_json(item.payload_json, {})["title"],
-            content_type="product_listing_draft",
-            body=draft_body,
-            tags="business_factory,internal_draft",
-            audience="internal",
-        )
-        db.add(media)
-        db.flush()
-        stored = db.query(MediaContent).filter(MediaContent.id == media.id).first()
-        if not stored or stored.body != draft_body:
-            db.rollback()
-            return {"status": "blocked", "action_id": item.action_id, "reason": "artifact persistence verification failed", "verified": False}
-
-        digest = hashlib.sha256(stored.body.encode("utf-8")).hexdigest()
-        evidence = {
+    except HTTPException as exc:
+        return {"status": "blocked", "action_id": item.action_id,
+                "reason": str(exc.detail), "verified": False}
+    policy = _internal_policy_decision(db, item, approved=True)
+    if policy.verdict != "ALLOW":
+        return {
+            "status": "blocked",
             "action_id": item.action_id,
-            "media_content_id": stored.id,
-            "sha256": digest,
-            "artifact_type": stored.content_type,
-            "external_effects": 0,
-            "sales_verified": False,
-            "verification_scope": "database_artifact_only",
-            "policy_verdict": policy.verdict,
-            "policy_reason": policy.reason,
-            "authority_mode": authority,
-            "mandate_id": mandate_id,
-            "verified_at": datetime.now(timezone.utc).isoformat(),
+            "verified": False,
+            "reason": policy.reason,
         }
-        _event(
-            db,
-            event_id=receipt_id,
-            legacy_instance_id=item.legacy_instance_id,
-            event_type=RECEIPT_EVENT,
-            message="Internal listing draft stored and read back successfully",
-            payload=evidence,
-        )
-        if mandate_id is not None:
-            _event(db, event_id="BF-MUSE-" + hashlib.sha256(item.action_id.encode()).hexdigest(),
-                   legacy_instance_id=item.legacy_instance_id, event_type=_mandate_use_type(mandate_id),
-                   message="Standing mandate use committed with verified draft",
-                   payload={"mandate_id": mandate_id, "action_id": item.action_id, "sha256": digest})
-        item.status = "completed"
-        db.commit()
-        return {"status": "completed", "verified": True, "receipt": evidence}
+    try:
+        draft_body = _render_listing(_json(item.payload_json, {}))
+    except (ValueError, TypeError, KeyError) as exc:
+        return {"status": "blocked", "action_id": item.action_id, "reason": str(exc), "verified": False}
 
+    receipt_id = _receipt_id(item.action_id)
+    if db.query(LegacyOrchestrationEvent).filter(
+        LegacyOrchestrationEvent.event_id == receipt_id
+    ).first():
+        return {"status": "blocked", "action_id": item.action_id, "reason": "receipt exists for queued work; manual reconciliation required", "verified": False}
+
+    media = MediaContent(
+        title=_json(item.payload_json, {})["title"],
+        content_type="product_listing_draft",
+        body=draft_body,
+        tags="business_factory,internal_draft",
+        audience="internal",
+    )
+    db.add(media)
+    db.flush()
+    stored = db.query(MediaContent).filter(MediaContent.id == media.id).first()
+    if not stored or stored.body != draft_body:
+        return {"status": "blocked", "action_id": item.action_id, "reason": "artifact persistence verification failed", "verified": False}
+
+    digest = hashlib.sha256(stored.body.encode("utf-8")).hexdigest()
+    evidence = {
+        "action_id": item.action_id,
+        "media_content_id": stored.id,
+        "sha256": digest,
+        "artifact_type": stored.content_type,
+        "external_effects": 0,
+        "sales_verified": False,
+        "verification_scope": "database_artifact_only",
+        "policy_verdict": policy.verdict,
+        "policy_reason": policy.reason,
+        "authority_mode": authority,
+        "mandate_id": mandate_id,
+        "verified_at": datetime.now(timezone.utc).isoformat(),
+    }
+    _event(
+        db,
+        event_id=receipt_id,
+        legacy_instance_id=item.legacy_instance_id,
+        event_type=RECEIPT_EVENT,
+        message="Internal listing draft stored and read back successfully",
+        payload=evidence,
+    )
+    if mandate_id is not None:
+        _event(db, event_id="BF-MUSE-" + hashlib.sha256(item.action_id.encode()).hexdigest(),
+               legacy_instance_id=item.legacy_instance_id, event_type=_mandate_use_type(mandate_id),
+               message="Standing mandate use committed with verified draft",
+               payload={"mandate_id": mandate_id, "action_id": item.action_id, "sha256": digest})
+    item.status = "completed"
+    db.commit()
+    return {"status": "completed", "verified": True, "receipt": evidence}
+
+
+
+def run_one_approved_draft(db: Session) -> dict:
+    """Complete at most one authorized internal draft in an owned worker session.
+
+    Snapshot a high-water mark so concurrent arrivals cannot extend this pass
+    indefinitely. Lock one work row at a time; release skipped/blocked rows and
+    mandate locks before looking farther down the queue. No provider effects.
+    Call only with a dedicated session containing no unrelated pending writes.
+    """
+    lane = (
+        LegacyInstanceWorkItem.status == "queued",
+        LegacyInstanceWorkItem.risk_profile == "no_external_effects",
+        LegacyInstanceWorkItem.integration_profile == "none",
+    )
+    last_blocked = None
+    cursor = 0
+    try:
+        ceiling = db.query(func.max(LegacyInstanceWorkItem.id)).filter(*lane).scalar()
+        while ceiling is not None and cursor < ceiling:
+            item = db.query(LegacyInstanceWorkItem).filter(
+                *lane, LegacyInstanceWorkItem.id > cursor,
+                LegacyInstanceWorkItem.id <= ceiling,
+            ).order_by(LegacyInstanceWorkItem.id.asc()).with_for_update(skip_locked=True).first()
+            if item is None:
+                break
+            cursor = item.id
+            result = _execute_locked_draft(db, item)
+            if result is not None and result["status"] == "completed":
+                return result
+            # No effect was verified. Release row/mandate locks and discard
+            # any uncommitted artifact rather than block unrelated businesses.
+            db.rollback()
+            if result is not None:
+                last_blocked = result
+                if result.get("reason") == "EMERGENCY_STOP_ACTIVE":
+                    return result
+        db.rollback()
+    except Exception:
+        db.rollback()
+        raise
     return last_blocked or {"status": "idle", "verified": False, "reason": "no eligible owner-approved internal tasks"}
 
 
