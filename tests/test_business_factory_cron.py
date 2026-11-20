@@ -84,5 +84,53 @@ class FactoryCronTests(unittest.TestCase):
                     self.tick()
 
 
+class PollingWorkerTests(unittest.TestCase):
+    def setUp(self):
+        self.mod = runpy.run_path(str(MODULE.with_name("business_factory_worker.py")))
+
+    def test_requires_explicit_postgres_and_activation(self):
+        enabled = {"VALHALLA_INTERNAL_FACTORY_WORKER_ENABLED": "1",
+                   "DATABASE_URL": "postgresql://localhost/disposable"}
+        check = self.mod["configuration_ready"]
+        self.assertTrue(check(enabled))
+        self.assertFalse(check({}))
+        self.assertFalse(check(dict(enabled, DATABASE_URL="sqlite://")))
+        self.assertFalse(check(dict(enabled, VALHALLA_INTERNAL_FACTORY_WORKER_ENABLED="0")))
+
+    def test_error_backoff_and_emergency_stop_sleep(self):
+        from unittest.mock import Mock
+        stop = Mock()
+        stop.is_set.side_effect = [False, False, False, True]
+        work = Mock(side_effect=[RuntimeError("private secret"),
+                                 {"status": "blocked", "verified": False, "emergency_stop": True},
+                                 {"status": "idle", "verified": False}])
+        lines = []
+        self.assertEqual(self.mod["poll"](work, stop, interval=15, emit=lines.append), 0)
+        self.assertEqual([call.args[0] for call in stop.wait.call_args_list], [30, 60, 15])
+        self.assertIn("retry_pending", lines[0])
+        self.assertNotIn("private secret", " ".join(lines))
+
+    def test_once_returns_nonzero_for_block_or_failure(self):
+        import threading
+        self.assertEqual(self.mod["poll"](lambda: {"status": "blocked"}, threading.Event(),
+                                          emit=lambda _: None, once=True), 2)
+        self.assertEqual(self.mod["poll"](lambda: {"status": "idle"}, threading.Event(),
+                                          emit=lambda _: None, once=True), 0)
+
+    def test_tick_owns_session_and_rejects_external_claim(self):
+        from unittest.mock import MagicMock, Mock
+        factory = MagicMock()
+        db = factory.return_value.__enter__.return_value
+        check = Mock()
+        execute = Mock(return_value={"status": "completed", "verified": True,
+                      "receipt": {"external_effects": 1, "sales_verified": False,
+                                  "verification_scope": "database_artifact_only"}})
+        with self.assertRaises(RuntimeError):
+            self.mod["tick"](factory, execute, check)
+        check.assert_called_once_with(db)
+        db.rollback.assert_called_once()
+        factory.return_value.__exit__.assert_called_once()
+
+
 if __name__ == "__main__":
     unittest.main()
