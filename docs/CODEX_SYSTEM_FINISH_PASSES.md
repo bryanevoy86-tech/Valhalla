@@ -107,3 +107,14 @@ CI backend pytest collection has two remaining historical mismatches: test_fake_
 Then execute the entire backend suite, not merely --collect-only, in an isolated environment. Record counts, failing tests, causes and exact fixes. Rehearse the full Alembic upgrade chain against a disposable production-like PostgreSQL schema, confirm live API DB identity without exposing secrets, and maintain a release/rollback plan.
 
 The new auth_revoked_access_tokens table and core/database fail-closed behavior require migration-first deployment planning; attempting to deploy code before schema preparation can make active session APIs fail with HTTP 503. No production merge without explicit owner approval.
+
+
+## Pass 0 and Pass 4: entire original Valhalla vision (mandatory scope)
+
+**Pass 0 BEFORE engine work:** Read ops/VALHALLA_FULL_VISION_TRACEABILITY.md and the expanded 46-workstream ops/prime_system_integration_matrix.json. This full scope includes the named Gods/Bridge Layer, original five-god risk evaluators, Norns, Mimir, Commander/voice A/B/C/Override, five initial legacies, live clones vs simulation mirrors, Product/Venture Foundries, real estate, non-RE engines, 90/10 and private Fun Fund rules, corporate banking, infinite banking, family/estate trusts, Panama and Bahamas, Canada departure/residency, tax/legal opinions, family payroll, Black Ice and resort development.
+
+Reconcile conflicting role/authority and trust-timing documents explicitly; do not choose a doctrine from documentation recency. Reuse real modules only and mark absent capabilities as absent.
+
+**Pass 4 AFTER operating spine and revenue loop are safely proven:** Implement PRIVATELY scoped owner decision tools, not unauthorized cross-border/legal execution: (a) real insurer-illustration-based whole-life/policy loan scenario model including premiums, loans, cash-flow costs and downside, (b) corporate/treasury/fund separation and owner-controlled 90/10 policy and cap schedules, (c) professional-reviewed family trust/succession alternatives with ownership and trustee audit, (d) Canadian personal/corporate tax residency departure comparison and obligations, (e) Bahamas/Panama and other residency option matrices, (f) controlled family/staff payroll and external specialist review. Never claim that a trust record legally establishes a trust, a life insurance policy exists, tax residency is ended, or a bank transfer cleared from a stored row.
+
+**Every Pass:** Report a 46-workstream diff of real evidence stages, missing source dependencies, production verification status, owner/professional approval requirements and unresolved prior agreements. The owner remains sovereign. No uncontrolled payments, registrations, filings, tax advice automation or real-life account changes.
