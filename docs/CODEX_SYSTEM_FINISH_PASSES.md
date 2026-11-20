@@ -39,6 +39,12 @@ COPY TO CODEX:
 
 > Work inside the EXISTING Valhalla repository, continuing the GitHub working branch linked to draft PR #4. Read the persistent change ledger, the 25-domain matrix, the strict definition of DONE and the current integration handoff. Do not add more packs or rebuild existing components. Your first task is to certify the canonical API and infrastructure: import the full FastAPI app, fix any mandatory router omissions or failures, unify root app/app.routes/app.routers paths, verify WeWeb JWT/RBAC and persisted token revocation, fix all silent auth bypasses, and test owner/multi-tenant boundaries. Reconcile the true Render Postgres connection without printing credentials, rehearse the prepared Alembic migrations on disposable PostgreSQL, prove Schema HEAD, and write/execute owner-approved durable work items with row leasing/idempotency, retry/backoff, dead-letter handling, revocation, timeout and restart recovery. Replace process-local business state with durable storage only where needed. Keep code generation isolated to a reviewed branch/PR and disallow any direct main push. Run the complete repo test suite; fix actual failures and classify environmental defects explicitly. CI must fail if a critical module doesn't import, a task can claim an unperformed outcome, or a production provider adapter fakes success. Add exact tests and receipts, record each file/test/commit/Render action in ops/CHANGE_LEDGER.md. Never change production without an explicit reviewed release approval. End by presenting the completed tests, actual runtime evidence, unverified conditions and an exact P0 next-action list.
 
+Before considering PASS 1 complete, run the read-only route probe from an **isolated test environment** with test credentials and the full backend dependencies:
+
+    python scripts/prime_runtime_route_probe.py --import-app --json
+
+This command has not yet been run successfully against the canonical app. Record missing imports/routes and fix them instead of accepting a healthy /health response. The new source scanner is `python scripts/prime_system_preflight.py --json`.
+
 PASS 1 must show:
 - Canonical API import and documented OpenAPI endpoint contract parity pass in a clean environment.
 - Every required critical router either loads or fails readiness; no hidden capability loss.
