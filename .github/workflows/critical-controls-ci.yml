@@ -242,7 +242,9 @@ jobs:
             services/api/tests/test_governance_loki.py \
             services/api/tests/test_governance_tyr.py \
             services/api/tests/test_governance_orchestrator.py \
-            services/api/tests/test_loki_audit_fail_closed.py
+            services/api/tests/test_loki_audit_fail_closed.py \
+            services/api/tests/test_prime_control_and_decision_integrity.py \
+            services/api/tests/test_completion_registry.py
       - name: Archive backend test collection report
         if: always()
         uses: actions/upload-artifact@v4
