@@ -9,7 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
-from app.loki.models import LokiFinding, LokiReview, LokiReviewStatus, LokiResultSeverity
+from app.loki.models import LokiFinding, LokiReview, LokiReviewStatus
 from app.loki.schemas import (
     LokiFindingRead,
     LokiReviewCreate,
@@ -149,46 +149,17 @@ def get_loki_verdict(
     if not review:
         raise HTTPException(status_code=404, detail="Loki review not found")
 
-    # Historical placeholder "completed" reviews do not satisfy a real
-    # adversarial audit. An unfinished/replayed stub may never issue a verdict.
+    # No independently validated review-result publisher is connected yet.
+    # A DB field, status string or model-generated flag is NOT an audit
+    # receipt. Do not infer permission from any of those.
     if review.status != LokiReviewStatus.COMPLETED:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="LOKI_AUDIT_NOT_COMPLETE",
         )
-    if (
-        not isinstance(review.raw_output, dict)
-        or not review.raw_output.get("independent_audit_verified")
-        or "Loki stub analysis" in (review.summary or "")
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="LOKI_AUDIT_NOT_VERIFIED",
-        )
-    severity = review.result_severity
-    if severity not in {
-        LokiResultSeverity.OK, LokiResultSeverity.WARN, LokiResultSeverity.CRITICAL
-    }:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="LOKI_AUDIT_VERDICT_INVALID",
-        )
-    ok_to_proceed = severity == LokiResultSeverity.OK
-    requires_human = severity in (LokiResultSeverity.WARN, LokiResultSeverity.CRITICAL)
-
-    headline = review.summary or "Loki review completed."
-
-    key_risks: list[str] = []
-    for f in review.findings or []:
-        if f.severity in ("high", "critical"):
-            key_risks.append(f.message)
-
-    return LokiVerdict(
-        result_severity=severity,
-        headline=headline,
-        ok_to_proceed=ok_to_proceed,
-        requires_human_review=requires_human,
-        key_risks=key_risks,
+    raise HTTPException(
+        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        detail="LOKI_VERIFIED_VERDICT_PROVIDER_NOT_CONNECTED",
     )
 
 
