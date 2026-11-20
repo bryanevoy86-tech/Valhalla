@@ -16,6 +16,7 @@ from app.models.owner_conversation import OwnerConversation, OwnerTurn, OwnerAtt
 from app.models.prime_specialist_schedule import PrimeSpecialistSchedule
 from app.models.go_live_state import GoLiveState
 from app.services.system_self_check import run_system_self_check
+from app.services.owner_advisory_model import advisory_reply
 
 MAX_BYTES = 5 * 1024 * 1024
 MAX_BODY = 7 * 1024 * 1024
@@ -55,7 +56,7 @@ def turn_meta(row):
     return {"turn_id": row.id, "conversation_id": row.conversation_id, "message": row.message,
             "reply": row.reply, "attachment_ids": row.attachment_ids, "evidence": row.evidence,
             "created_at": row.created_at, "external_effects": 0, "execution_authorized": False,
-            "response_mode": "DETERMINISTIC_READ_ONLY"}
+            "response_mode": "MODEL_ADVISORY_ONLY" if row.evidence.get("model_connected") else "DETERMINISTIC_READ_ONLY"}
 
 def thread_meta(row):
     return {"conversation_id": row.id, "title": row.title, "created_at": row.created_at}
@@ -100,14 +101,24 @@ def decode_upload(payload):
         raise HTTPException(422, "Attachment filename, bytes, checksum or declared type invalid") from None
     return data
 
-def answer(db, message, attachments):
+def answer(db, message, attachments, conversation_id=None):
     text = " ".join(message.casefold().strip().rstrip("?! .").split())
     # Exact allowlisted conversational queries, not substring-triggered actions.
     questions = {"status", "what's happening with valhalla today", "what is happening with valhalla today",
                  "is anything preventing us from operating", "is there anything that needs my attention",
                  "what have the gods been working on", "what is the system status", "briefing", "morning briefing"}
     if text not in questions:
-        return ("I've saved your message in our conversation. Natural-language reasoning and action routing are not connected yet. "
+        # Only the explicitly authorized text inference lane may contact a provider.
+        # Attachments are never forwarded by this path.
+        if conversation_id is not None and not attachments:
+            try:
+                advisory = advisory_reply(db, conversation_id, message)
+            except SQLAlchemyError:
+                db.rollback()
+                raise HTTPException(503, "Advisory context unavailable") from None
+            if advisory is not None:
+                return advisory
+        return ("I've saved your message in our conversation. Natural-language reasoning is unavailable for this request; no action was taken. "
                 "I can provide a persisted system briefing if you ask for status. "
                 + ("Your attachments are stored; I have not analyzed them." if attachments else ""),
                 {"source": "conversation_inbox", "model_connected": False})
@@ -181,7 +192,7 @@ def install(router):
             row = db.get(OwnerAttachment, aid)
             if row is None or row.conversation_id != conversation_id:
                 raise HTTPException(404, "Attachment not found in conversation")
-        reply, evidence = answer(db, message, ids)
+        reply, evidence = answer(db, message, ids, conversation_id)
         row = OwnerTurn(id=payload.turn_id, conversation_id=conversation_id,message=message,reply=reply,evidence=evidence,attachment_ids=ids)
         db.add(row)
         commit(db)
