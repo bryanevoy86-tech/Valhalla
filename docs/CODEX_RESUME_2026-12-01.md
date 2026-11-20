@@ -119,3 +119,17 @@ Important compatibility warning: the stricter authentication, router readiness a
 No Render configuration/service/database/deploy changes have occurred. Auth keys, bank accounts and external provider credentials require owner authorization. The new branch does not prove external autonomous business execution.
 
 When Codex resumes, read CODEX_START_HERE.md first and take PASS 1 to green before PASS 2/3. Reconcile any local VS Code-only changes before switching branches.
+
+
+## Latest canonical API route probe and 53 passing targeted tests
+
+- New script: scripts/prime_runtime_route_probe.py.
+- Exact route contracts checked: owner identity, Phase Three legacy registry, Business Factory submit/run, marketing, media, SaaS plans, Builder and readiness.
+- Its four unit tests pass, but **the actual canonical FastAPI application has NOT yet been imported and verified** by this scripted probe.
+- Run in isolated Python environment after all dependencies/test DB configured:
+
+    python scripts/prime_runtime_route_probe.py --import-app --json
+
+- Do not run this with production external API keys. Imports can execute application initialization, so inspect that environment.
+- Latest 53-test CI: https://github.com/bryanevoy86-tech/Valhalla/actions/runs/44653459058 (targeted only).
+- Do not mistake source preflight or route registration for functioning live business operations.
