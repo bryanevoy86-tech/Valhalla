@@ -3082,7 +3082,7 @@ def test_phase3_mimir_linkage_and_outcome_feedback_contract_are_present():
     domain = client.post(
         "/api/completion/learning/domains",
         json={
-            "domain_id": "P3-MIMIR-DOMAIN",
+            "domain_id": "ops_automation",
             "canonical_name": "Phase3 Mimir Domain",
             "status": "active",
             "terminal_state": "BUILT_TESTED_FEATURE_GATED",
@@ -3094,7 +3094,7 @@ def test_phase3_mimir_linkage_and_outcome_feedback_contract_are_present():
         "/api/completion/learning/curricula",
         json={
             "curriculum_id": "CUR-P3-MIMIR",
-            "domain_id": "P3-MIMIR-DOMAIN",
+            "domain_id": "ops_automation",
             "title": "Phase3 Mimir Curriculum",
             "version": "v1",
             "learning_objectives": ["link outcomes to decision evidence"],
@@ -3113,10 +3113,11 @@ def test_phase3_mimir_linkage_and_outcome_feedback_contract_are_present():
         json={
             "feedback_id": "FB-P3-MIMIR-001",
             "feedback_type": "operational_result",
-            "domain": "P3-MIMIR-DOMAIN",
+            "domain": "ops_automation",
             "curriculum_id": "CUR-P3-MIMIR",
             "learning_id": "LP-P3-MIMIR",
             "outcome_class": "SHADOW_OUTCOME",
+            "business_scope": "Legacy",
             "operational_score": 0.3,
             "high_impact": True,
             "notes": "Recurring failure mode: insufficient reserve runway",
