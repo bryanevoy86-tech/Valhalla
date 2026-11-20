@@ -25,6 +25,9 @@ from app.models.completion_registry import (
     LegacyOrchestrationEvent,
 )
 from app.models.media_engine import MediaContent
+from app.core.autonomy_governor import require_internal_draft
+from sqlalchemy import inspect
+
 
 ACTION_TYPE = "draft_product_listing_v1"
 APPROVAL_EVENT = "FACTORY_OWNER_APPROVED"
@@ -116,6 +119,40 @@ def _event(
     )
 
 
+def _emergency_stop_active(db: Session) -> bool:
+    """Read runtime emergency stop from trusted config and existing DB state.
+
+    This internal-only draft pilot tolerates an absent historical GoLiveState
+    table for isolated test databases. External actions never use this
+    exception. A present but unreadable state fails closed.
+    """
+    if os.environ.get("VALHALLA_EMERGENCY_STOP", "").strip().lower() in {
+        "1", "true", "yes", "on",
+    }:
+        return True
+    try:
+        if not inspect(db.get_bind()).has_table("go_live_state"):
+            return False
+        from app.models.go_live_state import GoLiveState
+
+        state = db.query(GoLiveState).filter(GoLiveState.id == 1).first()
+        return bool(state and state.kill_switch_engaged)
+    except Exception:
+        return True
+
+
+def _internal_policy_decision(
+    db: Session, item: LegacyInstanceWorkItem, approved: bool,
+):
+    return require_internal_draft(
+        action_id=item.action_id,
+        business_id=item.business_id,
+        legacy_id=item.legacy_instance_id,
+        approved=approved,
+        emergency_stop=_emergency_stop_active(db),
+    )
+
+
 def submit_listing_draft(db: Session, request: Any) -> dict:
     """Persist an idempotent work assignment; NO action occurs at submission."""
     inputs = {
@@ -188,6 +225,9 @@ def submit_listing_draft(db: Session, request: Any) -> dict:
 def approve_action(db: Session, action_id: str, confirmation: str) -> dict:
     if confirmation != "APPROVE_INTERNAL_DRAFT":
         raise HTTPException(status_code=422, detail="explicit internal-draft confirmation required")
+
+    if _emergency_stop_active(db):
+        raise HTTPException(status_code=409, detail="EMERGENCY_STOP_ACTIVE")
 
     item = db.query(LegacyInstanceWorkItem).filter(
         LegacyInstanceWorkItem.action_id == action_id
@@ -292,6 +332,14 @@ def run_one_approved_draft(db: Session) -> dict:
             engine_id=item.engine_id,
             jurisdiction=item.jurisdiction,
         )
+        policy = _internal_policy_decision(db, item, approved=True)
+        if policy.verdict != "ALLOW":
+            return {
+                "status": "blocked",
+                "action_id": item.action_id,
+                "verified": False,
+                "reason": policy.reason,
+            }
         try:
             draft_body = _render_listing(_json(item.payload_json, {}))
         except (ValueError, TypeError, KeyError) as exc:
@@ -326,6 +374,8 @@ def run_one_approved_draft(db: Session) -> dict:
             "external_effects": 0,
             "sales_verified": False,
             "verification_scope": "database_artifact_only",
+            "policy_verdict": policy.verdict,
+            "policy_reason": policy.reason,
             "verified_at": datetime.now(timezone.utc).isoformat(),
         }
         _event(
