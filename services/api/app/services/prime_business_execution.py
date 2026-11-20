@@ -559,15 +559,41 @@ def action_status(db: Session, action_id: str) -> dict:
     ).first()
     verified = False
     evidence = _json(receipt.payload_json, {}) if receipt else None
-    if receipt and evidence:
+    # A matching hash alone does not bind an artifact to this action or Legacy.
+    # Reject malformed and contradictory evidence before looking up the artifact.
+    if (
+        item.status == "completed"
+        and receipt is not None
+        and receipt.event_type == RECEIPT_EVENT
+        and receipt.legacy_instance_id == item.legacy_instance_id
+        and isinstance(evidence, dict)
+        and evidence.get("action_id") == item.action_id
+        and evidence.get("artifact_type") == "product_listing_draft"
+        and evidence.get("verification_scope") == "database_artifact_only"
+        and type(evidence.get("external_effects")) is int
+        and evidence["external_effects"] == 0
+        and evidence.get("sales_verified") is False
+        and type(evidence.get("media_content_id")) is int
+        and evidence["media_content_id"] > 0
+        and isinstance(evidence.get("sha256"), str)
+    ):
+        payload = _json(item.payload_json, {})
+        expected_body = None
+        if isinstance(payload, dict) and payload.get("business_id") == item.business_id:
+            try:
+                expected_body = _render_listing(payload)
+            except (ValueError, TypeError, KeyError):
+                pass
         media = db.query(MediaContent).filter(
-            MediaContent.id == evidence.get("media_content_id")
+            MediaContent.id == evidence["media_content_id"]
         ).first()
         verified = (
-            item.status == "completed"
-            and bool(media)
+            expected_body is not None
+            and media is not None
             and media.content_type == "product_listing_draft"
-            and hashlib.sha256(media.body.encode("utf-8")).hexdigest() == evidence.get("sha256")
+            and isinstance(media.body, str)
+            and media.body == expected_body
+            and hashlib.sha256(media.body.encode("utf-8")).hexdigest() == evidence["sha256"]
         )
     return {
         "action_id": action_id,
