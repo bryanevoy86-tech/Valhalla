@@ -16,6 +16,7 @@ import os
 import time
 from datetime import datetime, timezone
 from typing import Any
+from uuid import UUID
 
 from fastapi import Header, HTTPException
 from sqlalchemy.orm import Session
@@ -26,6 +27,7 @@ from app.models.completion_registry import (
     LegacyOrchestrationEvent,
 )
 from app.models.media_engine import MediaContent
+from app.services.product_artifacts import artifact_reference, load_artifact, require_artifact_schema, verify_artifact
 from app.core.autonomy_governor import require_internal_draft
 from sqlalchemy import func, inspect
 from sqlalchemy.exc import IntegrityError
@@ -86,7 +88,7 @@ def _mimir_outcome_id(action_id: str) -> str:
 
 
 def _mimir_outcome(item: LegacyInstanceWorkItem, receipt: dict) -> dict:
-    return {
+    outcome = {
         "action_id": item.action_id,
         "receipt_event_id": _receipt_id(item.action_id),
         "artifact_sha256": receipt["sha256"],
@@ -98,6 +100,9 @@ def _mimir_outcome(item: LegacyInstanceWorkItem, receipt: dict) -> dict:
         "evidence_scope": "INTERNAL_ARTIFACT_ONLY",
         "sales_verified": False,
     }
+    if "product_asset" in receipt:
+        outcome["product_asset"] = receipt["product_asset"]
+    return outcome
 
 
 def _check_legacy(
@@ -307,6 +312,18 @@ def _check_draft_mandate(db: Session, item: LegacyInstanceWorkItem, payload: dic
     return None
 
 
+def _listing_asset(db: Session, artifact_id: UUID, work: Any, product_id: str, *, lock: bool = False) -> dict:
+    require_artifact_schema(db)
+    asset = load_artifact(db, artifact_id, lock=lock)
+    if asset.product_id != product_id or any(
+        getattr(asset, key) != getattr(work, key)
+        for key in ("legacy_instance_id", "business_id", "engine_id", "jurisdiction")
+    ):
+        raise HTTPException(status_code=409, detail="Product artifact does not match the listing scope")
+    verify_artifact(asset)
+    return artifact_reference(asset)
+
+
 def submit_listing_draft(db: Session, request: Any) -> dict:
     """Persist an idempotent work assignment; NO action occurs at submission."""
     inputs = {
@@ -321,6 +338,8 @@ def submit_listing_draft(db: Session, request: Any) -> dict:
     }
     if getattr(request, "mandate_id", None):
         inputs["mandate_id"] = request.mandate_id
+    if (asset_id := getattr(request, "artifact_id", None)) is not None:
+        inputs["product_asset"] = _listing_asset(db, asset_id, request, request.product_id)
     key_hash = hashlib.sha256(
         f"{request.legacy_instance_id}:{request.request_key}".encode("utf-8")
     ).hexdigest()
@@ -464,6 +483,8 @@ def _render_listing(payload: dict[str, Any]) -> str:
         "delivery_configured": False,
         "verification_scope": "internal_media_record_only",
     }
+    if "product_asset" in payload:
+        draft["product_asset"] = payload["product_asset"]
     data = _canonical(draft)
     if len(data.encode("utf-8")) > MAX_BODY_LENGTH:
         raise ValueError("listing exceeds allowed size")
@@ -515,6 +536,17 @@ def _execute_locked_draft(db: Session, item: LegacyInstanceWorkItem) -> dict | N
     except HTTPException as exc:
         return {"status": "blocked", "action_id": item.action_id,
                 "reason": str(exc.detail), "verified": False}
+    if "product_asset" in payload:
+        try:
+            ref = payload["product_asset"]
+            asset = _listing_asset(db, UUID(ref["artifact_id"]), item, payload["product_id"], lock=True)
+            if asset != ref:
+                raise HTTPException(status_code=409, detail="Product artifact replaced since submission")
+        except (TypeError, ValueError, KeyError, HTTPException) as exc:
+            return {
+                "status": "blocked", "action_id": item.action_id, "verified": False,
+                "reason": str(exc.detail) if isinstance(exc, HTTPException) else "Invalid product artifact reference",
+            }
     policy = _internal_policy_decision(db, item, approved=True)
     if policy.verdict != "ALLOW":
         return {
@@ -562,6 +594,8 @@ def _execute_locked_draft(db: Session, item: LegacyInstanceWorkItem) -> dict | N
         "mandate_id": mandate_id,
         "verified_at": datetime.now(timezone.utc).isoformat(),
     }
+    if "product_asset" in payload:
+        evidence["product_asset"] = payload["product_asset"]
     _event(
         db,
         event_id=receipt_id,
@@ -662,7 +696,8 @@ def action_status(db: Session, action_id: str) -> dict:
     ):
         payload = _json(item.payload_json, {})
         expected_body = None
-        if isinstance(payload, dict) and payload.get("business_id") == item.business_id:
+        if (isinstance(payload, dict) and payload.get("business_id") == item.business_id
+                and payload.get("product_asset") == evidence.get("product_asset")):
             try:
                 expected_body = _render_listing(payload)
             except (ValueError, TypeError, KeyError):

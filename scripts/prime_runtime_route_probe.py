@@ -39,6 +39,8 @@ MANDATORY_ENDPOINTS = {
     "owner_identity": ("POST", "/api/weweb/login"),
     "universal_phase3": ("GET", "/api/completion/legacy-instances"),
     "factory_draft_queue": ("POST", "/api/business-factory/listing-drafts"),
+    "product_artifact_stage": ("POST", "/api/business-factory/product-artifacts"),
+    "product_artifact_read": ("GET", "/api/business-factory/product-artifacts/{artifact_id}/download"),
     "factory_execution": ("POST", "/api/business-factory/actions/run-once"),
     "specialist_schedule_create": ("POST", "/api/prime/specialist-schedules"),
     "specialist_schedule_status": ("GET", "/api/prime/specialist-schedules/{schedule_id}"),

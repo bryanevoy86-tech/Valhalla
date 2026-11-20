@@ -6,6 +6,8 @@ payments, messaging, or owner money movement.
 """
 from __future__ import annotations
 
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import inspect
 from pydantic import BaseModel, Field
@@ -50,6 +52,7 @@ router = APIRouter(
 
 
 class ListingDraftRequest(BaseModel):
+    artifact_id: UUID | None = None
     legacy_instance_id: str = Field(min_length=3, max_length=80, pattern=r"^[A-Za-z0-9_-]+$")
     business_id: str = Field(min_length=3, max_length=120, pattern=r"^[A-Za-z0-9_-]+$")
     engine_id: str = Field(min_length=3, max_length=80, pattern=r"^[A-Za-z0-9_-]+$")

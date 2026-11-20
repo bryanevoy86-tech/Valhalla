@@ -588,9 +588,11 @@
       "priority": "P1",
       "source_paths": [
         "docs/CODEX_SYSTEM_FINISH_PASSES.md",
-        "services/api/app/services/prime_business_execution.py"
+        "services/api/app/services/prime_business_execution.py",
+        "services/api/app/routers/product_artifacts.py",
+        "services/api/tests/test_product_artifact_workflow.py"
       ],
-      "source_observation": "Actual internal product listing draft exists, no external storefront or revenue proof.",
+      "source_observation": "Internal product assets have exact scoped versions, owner-attested rights, verified byte retrieval, revocation and checksum-bound Factory draft and Mimir receipts. No authorized external storefront or revenue proof.",
       "evidence_level": "SOURCE_INSPECTED_ONLY",
       "production_verified": false,
       "acceptance_test": "Complete approved subordinate product package, storefront, real checkout/provider receipt, delivery, refund/chargeback, ledger and customer subscription lifecycle.",

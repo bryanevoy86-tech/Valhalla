@@ -14,6 +14,7 @@ REQUIRED_ROUTER_NAMES = frozenset({
     "loki",                   # separate independent audit boundary
     "auth_weweb",             # owner/user identity
     "completion_registry",   # Phase Three, governance and legacy orchestration
+    "product_artifacts",        # owner-attested internal asset staging
     "prime_business_factory", # durable owned execution lane
     "prime_specialist_schedules",  # durable owner-authorized shadow cadence
     "builder",                # controlled software building

@@ -43,6 +43,7 @@ LOKI_RECEIPTS = load("alembic/versions/20261120_loki_review_receipts.py")
 
 
 SPECIALIST = load("alembic/versions/20261120_specialist_schedules.py")
+PRODUCT = load("alembic/versions/20261120_product_artifacts.py")
 
 
 @unittest.skipUnless(url, "Disposable PostgreSQL database not supplied")
@@ -219,6 +220,44 @@ class PostgresMigrationChainTests(unittest.TestCase):
         finally:
             with engine.begin() as connection:
                 connection.execute(text("DROP TABLE IF EXISTS prime_specialist_schedules"))
+            engine.dispose()
+
+
+    def test_product_artifact_migration_retains_binary_version_and_scope(self):
+        engine = create_engine(url, pool_pre_ping=True)
+        try:
+            with engine.connect() as connection:
+                transaction = connection.begin()
+                try:
+                    operations = Operations(MigrationContext.configure(connection))
+                    with patch.object(PRODUCT, "op", operations):
+                        PRODUCT.upgrade()
+                        insert = text("""
+                            INSERT INTO product_artifacts (
+                                id, legacy_instance_id, business_id, engine_id, jurisdiction, product_id,
+                                version, media_type, sha256, data, rights_reference, created_at
+                            ) VALUES (
+                                :id, 'legacy', 'business', 'engine', :jurisdiction, 'product',
+                                1, 'text/plain', :digest, :data, 'internal-rights/proof', now()
+                            )
+                        """)
+                        asset = {"id": "00000000-0000-0000-0000-000000000001",
+                                 "jurisdiction": "CA-MB", "digest": "1" * 64, "data": b"actual\x00bytes"}
+                        connection.execute(insert, asset)
+                        other = {**asset, "id": "00000000-0000-0000-0000-000000000002"}
+                        with self.assertRaises(IntegrityError), connection.begin_nested():
+                            connection.execute(insert, other)
+                        with self.assertRaises(IntegrityError), connection.begin_nested():
+                            connection.execute(insert, {**other, "jurisdiction": "CA-ON", "data": b""})
+                        connection.execute(insert, {**other, "jurisdiction": "CA-ON"})
+                        PRODUCT.downgrade()
+                    recovered = connection.execute(text(
+                        "SELECT data FROM product_artifacts WHERE jurisdiction='CA-MB'"
+                    )).scalar_one()
+                    self.assertEqual(bytes(recovered), asset["data"])
+                finally:
+                    transaction.rollback()
+        finally:
             engine.dispose()
 
 
