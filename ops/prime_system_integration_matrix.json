@@ -49,8 +49,8 @@
         "services/api/app/services/prime_business_execution.py",
         "tests/test_business_factory_pilot.py"
       ],
-      "source_observation": "Persisted scoped, expiring, revocable standing owner mandates for ONE internal draft action type; separate owner grant authorization and unattended worker key. Actual SQLite worker tests pass. All external adapters, global stop and automated independent audit gates remain unproven.",
-      "evidence_level": "SQLITE_INTEGRATION_TESTED",
+      "source_observation": "One internal draft execution lane uses persisted standing owner mandates, separate grant/worker authorization, exact scope, usage/expiry and revocation checks. Isolated SQLite and PostgreSQL one-use concurrency tests passed. Other dispatch paths, continuous full-system specialist coverage and provider effects remain unverified.",
+      "evidence_level": "POSTGRES_INTEGRATION_TESTED",
       "production_verified": false,
       "acceptance_test": "Governance unit cases and internal SQLite Factory killswitch pass; full production acceptance requires every external adapter using trusted persisted approval/consent/budget gates, adversarial agent tests, durable circuit breakers, and real Postgres worker failure injection.",
       "depends_on": [
@@ -153,7 +153,7 @@
         "services/api/app/routers/prime_business_factory.py",
         "tests/test_factory_postgres.py"
       ],
-      "source_observation": "Existing internal Factory draft receipt and two-worker duplicate tests passed real PostgreSQL. New finite revocable standing authority for internal drafts passed SQLite integration; a separate two-worker one-use mandate cap PostgreSQL test was added, check latest CI. No external provider effect or autonomous business launch proved.",
+      "source_observation": "Single internal listing-draft lane and verified database receipts work in SQLite and disposable PostgreSQL. A finite, expiring, revocable standing internal-draft mandate passed SQLite tests and a real PostgreSQL two-worker one-use cap test. No provider execution, crash recovery or autonomous revenue proved.",
       "evidence_level": "POSTGRES_INTEGRATION_TESTED",
       "production_verified": false,
       "acceptance_test": "Real PostgreSQL task lifecycle survives restarts and duplicates; every completed status has independently verified receipt",
@@ -427,7 +427,7 @@
         "scripts/prime_runtime_route_probe.py",
         "services/api/requirements.txt"
       ],
-      "source_observation": "Required CI now tests 15 canonical routes, 13 mandatory router imports, 90 base targeted tests (smoke, integration, Postgres), plus 18 Pentheon evaluation tests; full backend pytest collection still has two historical errors and live release remains blocked.",
+      "source_observation": "CI run 44748568129 passed 190 targeted tests including full existing completion-registry suite, 13 critical router and 15 route contracts, original five Gods, private Prime controls, SQLite and PostgreSQL. Broad historical pytest collection still reports two known errors. No production release.",
       "evidence_level": "FOCUSED_CI_TESTED",
       "production_verified": false,
       "acceptance_test": "Canonical app starts cleanly; all core safety and workflow tests + prod-like Postgres integration; reviewed release/rollback evidence",
