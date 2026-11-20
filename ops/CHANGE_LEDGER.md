@@ -424,3 +424,14 @@ New development commits:
 **Important remaining P0:** A genuine independently run and evidenced Loki audit worker, immutable proposal snapshots, adversarial source and counterfactual tests, re-audit after meaningful edits, unresolved-objection escalation, mandatory high-impact dispatch gate, and owner-visible side-by-side dissent. The implemented 503/409 defenses intentionally block the fake audit until that capability exists; do not conflate blocked mode with being operational.
 
 **Render mutations:** ZERO. No production deployment, financial/legal operation, trust formation, customer contact, or provider transaction undertaken.
+
+
+## 2026-11-20 — Owner-confirmed system-wide AI Gods and Prime authority clarification
+
+Owner clarified that each God covers every relevant authorized subsystem and reports to Prime, who incorporates Loki's independent findings and makes and executes the best permitted operational decision. Updated existing documentation and acceptance matrix, retaining 47 workstreams. Routine authorized work is not per-action owner approval; mandatory high-risk gates and existing explicit authority limits remain. Exact role aliases still require historical reconciliation. Documentation-only; previous CI evidence pertains to prior tested code/matrix, no fresh runtime test claimed, no Render or provider actions.
+
+- 4daa60e2 ops/VALHALLA_FULL_VISION_TRACEABILITY.md
+- b7cdb4b8 docs/PHASE3_INTEGRATED_ARCHITECTURE.md
+- 20597673 docs/LOKI_INDEPENDENT_CHALLENGER_CONTRACT.md
+- 5553527e CODEX_START_HERE.md
+- b3ea1cfb ops/prime_system_integration_matrix.json
