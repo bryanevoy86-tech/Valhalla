@@ -209,6 +209,19 @@ class FactoryPostgresTests(unittest.TestCase):
             session.close()
 
 
+    def test_polling_tick_runs_approved_work_from_fresh_sessions(self):
+        import runpy
+        from app.routers.prime_business_factory import require_factory_schema
+        worker = runpy.run_path(str(ROOT / "services/api/tools/cron/business_factory_worker.py"))
+        action_id = self.queue_and_approve()
+        result = worker["tick"](self.sessions, run_one_approved_draft, require_factory_schema)
+        self.assertEqual(result, {"status": "internal_artifact_verified", "verified": True})
+        self.assertEqual(worker["tick"](self.sessions, run_one_approved_draft, require_factory_schema)["status"], "idle")
+        status = self.client.get(f"/api/business-factory/actions/{action_id}", headers=HEADERS)
+        self.assertTrue(status.json()["internal_artifact_verified"])
+        with self.sessions() as db:
+            self.assertEqual(db.query(MediaContent).count(), 1)
+
     def test_worker_failure_after_artifact_flush_rolls_back_and_retries(self):
         from unittest.mock import patch
         from app.services import prime_business_execution as factory
