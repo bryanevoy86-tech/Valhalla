@@ -10,6 +10,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.core.db import get_db
+from app.core.dependencies import require_prime_control_key
 from app.models.completion_registry import (
     DatasetRegistryItem,
     EngineRegistryItem,
@@ -73,6 +74,9 @@ def _build_client() -> TestClient:
             db.close()
 
     app.dependency_overrides[get_db] = override_get_db
+    # Isolated functional tests use a test-only dependency override.
+    # Real HTTP authentication is tested separately without overrides.
+    app.dependency_overrides[require_prime_control_key] = lambda: True
     return TestClient(app)
 
 
