@@ -17,6 +17,7 @@ from app.routers.system_boot import router as system_boot_router
 from app.routers.test_email import router as test_email_router
 from app.routers import jarvis
 from app.services.post_boot_init import run_post_boot_init
+from app.core.route_integrity import compute_router_integrity
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
@@ -87,6 +88,8 @@ def _autoload_router_modules(app: FastAPI) -> int:
     that exposes a variable named `router`.
     """
     loaded = 0
+    loaded_names: set[str] = set()
+    import_failures: dict[str, str] = {}
     routers_pkg = "app.routers"
 
     package = importlib.import_module(routers_pkg)
@@ -115,14 +118,19 @@ def _autoload_router_modules(app: FastAPI) -> int:
             if router is not None:
                 app.include_router(router)
                 loaded += 1
+                loaded_names.add(mod_name)
                 log.info("Autoloaded router: %s", full_name)
                 
                 # Special logging for auth_weweb
                 if mod_name == "auth_weweb":
                     log.info("✅ auth_weweb router loaded - /api/weweb/* endpoints available")
         except Exception as e:
+            import_failures[mod_name] = type(e).__name__
             log.exception("Failed loading router module %s: %s", full_name, e)
 
+    app.state.router_integrity = compute_router_integrity(loaded_names, import_failures)
+    if not app.state.router_integrity["ready"]:
+        log.error("CRITICAL ROUTER INTEGRITY FAILURE: %s", app.state.router_integrity)
     return loaded
 
 
@@ -185,10 +193,12 @@ log.info("CORS enabled for origins: %s", cors_origins)
 @app.get("/health")
 def health():
     """Quick health check - always responds immediately."""
+    router_state = app.state.router_integrity
     return {
-        "ok": True,
-        "status": "ok",
-        "heimdall": "online",
+        "ok": True,  # only the HTTP process is alive
+        "status": "ok" if router_state["ready"] else "degraded",
+        "heimdall": "api_process_only",
+        "critical_routers": router_state,
         "routers_loaded": loaded_router_count,
     }
 
@@ -225,7 +235,9 @@ def readyz():
         except Exception:
             db_ok = False
 
-    ok = db_ok and (hb_ok or not require_db)
+    router_state = app.state.router_integrity
+    router_ok = router_state["ready"]
+    ok = db_ok and (hb_ok or not require_db) and router_ok
     status = 200 if ok else 503
 
     return JSONResponse(
@@ -234,6 +246,7 @@ def readyz():
             "worker_heartbeat_ok": hb_ok,
             "worker_heartbeat_age_seconds": hb.get("age_seconds"),
             "db_ok": db_ok,
+            "critical_routers": router_state,
             "queue": _queue_counts(cfg),
             "routers_loaded": loaded_router_count,
         },
