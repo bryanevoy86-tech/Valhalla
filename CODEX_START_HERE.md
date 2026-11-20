@@ -72,3 +72,8 @@ Latest targeted CI: https://github.com/bryanevoy86-tech/Valhalla/actions/runs/44
 - Render production remains untouched. API/cron log sweeps found no error/5xx entries in queried windows; live API still runs October 10 commit.
 
 **Critical:** Read the new log triage file before attempting to merge/release. No credentials and no real provider effects are part of the isolated tests.
+
+
+## Newly repaired and TESTED: original five-god Pantheon routes
+
+Before: all 18 legacy King/Queen/Odin/Loki/Tyr/orchestrator tests returned 404 because the original router prefixes and API/war-table contracts disagreed. New branch mounts backward-compatible old /governance and canonical /api/governance paths, makes all 6 modules mandatory, and checks 15 exact API route contracts. 18/18 governance tests passed in isolated GitHub Actions run 44662885729. Pantheon tests have now been promoted to a REQUIRED CI gate. The broader AI Gods/Bridge Layer remains source-only until individually integrated and proven.
