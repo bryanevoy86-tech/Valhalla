@@ -364,3 +364,31 @@ Source inventory: ops/REMAINING_SYSTEM_BLOCKERS_2026-11-19.md. The following are
 **External effects:** NONE. No insurer, bank, account, professional, tax authority or customer was contacted. No trust or residency change, payment, investment or payroll action performed. **Render mutation: ZERO**. Draft PR #4 is not merged or deployed.
 
 The full owner-specific account, trust-beneficiary, tax residency, insurance and household details must be stored in a secure private vault later—not GitHub. The repository contains a requirements/architecture map, not a legal or financial file of actual documents.
+
+
+## Original five-god Pantheon corrective integration — 2026-11-19 (UTC Nov 20)
+
+Discovered during FULL VISION audit: 18/18 historical governance API tests initially returned HTTP 404 in https://github.com/bryanevoy86-tech/Valhalla/actions/runs/44662500410. **Root cause:** original KING/QUEEN/ODIN/LOKI/TYR and governance_orchestrator routers use /governance prefix; tests and the orchestrator itself call /api/governance. Autoloading source files did not make the canonical endpoints actually available.
+
+| Commit | File / action | Verification |
+|---|---|---|
+| 9023fe59 | CI adds actual historical original Pantheon tests as a diagnostic | Detected all 18 HTTP 404 |
+| 9e0e5f08 | app/main.py: add backward-compatible /api/governance aliases for all five gods and orchestrator, preserving /governance paths | Real FastAPI tests passed |
+| 61c0adca | core/route_integrity.py: require all 6 governance routers in critical readiness | CI passed |
+| c4809bf0 | scripts/prime_runtime_route_probe.py: add all 6 canonical Pantheon HTTP route contracts (9→15) | Full FastAPI import CI passed |
+| 426be5c4 | CI promotes 18 passing Pantheon tests and 15-route probe to required (NOT non-gating) | Run 44663174488 success |
+| af64af6d | ops/prime_system_integration_matrix.json: original five Pantheon promoted to FOCUSED_CI_TESTED; expanded Norse roles remain source-only | 46 domain source preflight CI passed |
+| 7dfd4120 | ops/VALHALLA_FULL_VISION_TRACEABILITY.md: record exact 404 root cause and new verified five-god proof | Documentation |
+| b085405e | CODEX_START_HERE.md: update December owner command on tested gods vs unproven expanded pantheon | Documentation |
+| 2ea302a6 | docs/CODEX_RESUME_2026-12-01.md: full fix/CI reference | Documentation |
+
+**Verified CI:** https://github.com/bryanevoy86-tech/Valhalla/actions/runs/44663174488
+- 47 no-dependency smoke/static tests
+- 40 SQLite/integration tests (includes five no-fake-bank-transfer tests)
+- 3 real disposable PostgreSQL integration/migration tests
+- 18 historical King/Queen/Odin/Loki/Tyr/governance-orchestrator FastAPI tests
+- **108 targeted tests passed**. Canonical FastAPI app imported with **13/13 required router modules** and **15/15 required route paths**. Source matrix validates **46/46 source-anchored workstreams**, zero declared live verified.
+- The complete historical backend suite still has two collection errors, notably missing system_self_check route and obsolete system_integrity models. No claim of full backend certification.
+- The newly tested five original gods are **not** the entire Norse specialist bridge, do not enforce all provider actions and are not a production deployment.
+
+**Render mutation / business external effects:** ZERO. No secrets, funds, insurance policies, trusts, residency filings, bank transfers or external provider operations were touched. Draft PR remains review-only.
