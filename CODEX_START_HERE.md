@@ -30,7 +30,8 @@ This is the one-file handoff from ChatGPT's November 19 development and audit. *
 - Fail-closed legacy session API key when no secret is configured, dev bypass explicit.
 - Critical-router import integrity and readiness that do not silently claim modules are loaded.
 - Machine preflight for 25 Prime domains and regression tests.
-- 49 focused tests passed: https://github.com/bryanevoy86-tech/Valhalla/actions/runs/44652624533
+- Canonical FastAPI route probe (scripts/prime_runtime_route_probe.py) to run in an isolated Codex environment with --import-app --json; its own contract tests pass, but full backend imports are not yet certified.
+- 53 targeted tests passed: https://github.com/bryanevoy86-tech/Valhalla/actions/runs/44653459058
 - Full backend regression, live PostgreSQL and real-world business outcomes NOT yet proven.
 
 ## Single prompt to give Codex
