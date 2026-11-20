@@ -3,7 +3,9 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
+from app.core.dependencies import require_prime_control_key
+from app.services.owner_conversation import install as install_owner_conversation
 
 from app.services.jarvis_audit import log_event
 from app.services.jarvis_interactions import add_interaction
@@ -22,7 +24,8 @@ from app.services.heimdall_outcomes import record_outcome
 from app.services.heimdall_feedback import best_channel_for_contact, record_feedback, get_contact_feedback
 from app.services.system_state import get_system_state
 
-router = APIRouter(prefix="/api/jarvis", tags=["jarvis"])
+router = APIRouter(prefix="/api/jarvis", tags=["jarvis"], dependencies=[Depends(require_prime_control_key)])
+install_owner_conversation(router)
 
 
 def _now_iso() -> str:
