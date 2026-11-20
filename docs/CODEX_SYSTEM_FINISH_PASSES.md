@@ -94,3 +94,16 @@ A final production release needs reviewed code, clean CI, migration rehearsal, b
 ## Additional required safety integration for all three passes
 
 Read docs/PRIME_AUTONOMY_SAFETY_CONTRACT.md. Treat the new autonomy_governor.py as the first deterministic policy gate, not a complete deployed security subsystem. PASS 1 must verify the stored owner approval and durable global kill switch before any external operation, test malicious instruction injection and false evidence, add persisted unknown-outcome quarantine and circuit breaker state, and prove tenant/authority boundaries. PASS 2 must enforce confirmed permission, consent, cost limits and legal posting rights at actual external marketing, checkout, payout and customer-support adapters. PASS 3 must require evidence-checked, independent source-grounded evaluation with abstention, cross-agent verification, self-repair within narrow bounds, emergency stop, incident escalation, and performance metrics (owner escalations per 100 actions, double-write count, unsupported decisions, escaped governance checks). No LLM output can set its own approval boolean.
+
+
+## New November 19/20 source and log audit — execute this before Pass 1
+
+Read ops/REMAINING_SYSTEM_BLOCKERS_2026-11-19.md and the updated ops/CHANGE_LEDGER.md.
+
+The current PR branch already proves canonical FastAPI route import (7/7 required routers, 9/9 required endpoints) and 85 focused tests, including real disposable PostgreSQL worker concurrency and additive Factory/WeWeb revocation migrations. Preserve that evidence and don't regress it.
+
+CI backend pytest collection has two remaining historical mismatches: test_fake_live_operating_day now expects a nonexistent app.routers.system_self_check; test_system_integrity expects obsolete Deal/BuyerMatch model exports. Do not invent a fake anomaly endpoint or BuyerMatch ORM merely to get green collection. Reconcile the intended behavior with the actual canonical ORM, implement and test genuine functionality if required, or replace obsolete test cases with real acceptance tests.
+
+Then execute the entire backend suite, not merely --collect-only, in an isolated environment. Record counts, failing tests, causes and exact fixes. Rehearse the full Alembic upgrade chain against a disposable production-like PostgreSQL schema, confirm live API DB identity without exposing secrets, and maintain a release/rollback plan.
+
+The new auth_revoked_access_tokens table and core/database fail-closed behavior require migration-first deployment planning; attempting to deploy code before schema preparation can make active session APIs fail with HTTP 503. No production merge without explicit owner approval.
