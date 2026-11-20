@@ -498,3 +498,15 @@ Reconciliation finding: the older remote codex/logout-contract-parity branch con
 No Render mutations, main pushes, merges, migrations, new paid services, production credentials, or external commercial effects. This is bounded branch-level implementation and evidence, not complete Valhalla or deployment certification.
 
 **Final code-CI observation (Nov 20):** run 44754991782 completed all four jobs successfully, including the real PostgreSQL polling tick and the four standalone polling tests. The 23 newly added test methods across concurrency, queue fairness, Builder review, artifact materialization, transaction failure recovery and polling were observed passing in their designated CI jobs. Source matrix still contains 47 workstreams and zero production-verified entries. Read-only Render deploy lookup confirms the live API remains October 10 commit 93cb1afe. Latest documentation commits do not constitute a new deployed release. Full historical collection is not certified; the prior two mismatches remain. No production action performed.
+
+
+## November 20 — Scheduled and standalone worker receipt parity
+
+Continued existing draft PR #4, not main. Found scheduled HTTP tick accepted short arbitrary digest and missing sales/artifact fields; rejected legitimate blocked results. Standalone worker also accepted boolean/float zero and incomplete receipt identity, and used a scoped session registry rather than explicit fresh session factory.
+
+- b0e4a2ce: require internal artifact type, positive integer media ID, exact action ID and SHA-256 format, integer zero external effects and explicit false sales flag; distinguish blocked/emergency stop from successful completion.
+- d2c61264: tests for blocked states and twelve malformed/contradictory responses.
+- 3d70fd77: align standalone receipt checks with HTTP tick and use SessionLocal.session_factory for fresh polling sessions.
+- 4a9ea158: standalone receipt acceptance and rejection regression cases.
+
+New tests committed; no new CI conclusion observed at this checkpoint. These checks establish receipt shape only, not independent remote/provider evidence. No scheduler activation or Render changes. Local clone attempt in chat environment failed DNS resolution, so full local test execution and reconciliation of local-only work remain blocked. The older self-check service explicitly imports absent OwnerCommand and other overlapping models; do not blindly copy or stub these. Existing 47 domain scope and two historical collection mismatches remain. Continue on this branch, not the separate documentation-only prep/december-2026-completion branch.
