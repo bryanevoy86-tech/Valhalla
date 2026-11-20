@@ -225,6 +225,24 @@ jobs:
           echo "Collection exit code: $result"
           tail -n 75 backend-test-collection.log
           exit "$result"
+      - name: Run five-god Pantheon and governance orchestrator regression (diagnostic)
+        continue-on-error: true
+        env:
+          DATABASE_URL: sqlite://
+          VALHALLA_JWT_SECRET: ci-governance-test-only
+          VALHALLA_OWNER_USERNAME: ci-owner
+          VALHALLA_OWNER_PASSWORD: ci-not-real
+          ENV: dev
+          APP_ENV: dev
+          VALHALLA_EMERGENCY_STOP: "true"
+        run: |
+          python -m pytest -q \
+            services/api/tests/test_governance_king.py \
+            services/api/tests/test_governance_queen.py \
+            services/api/tests/test_governance_odin.py \
+            services/api/tests/test_governance_loki.py \
+            services/api/tests/test_governance_tyr.py \
+            services/api/tests/test_governance_orchestrator.py
       - name: Archive backend test collection report
         if: always()
         uses: actions/upload-artifact@v4
