@@ -34,6 +34,7 @@ from sqlalchemy.exc import IntegrityError
 ACTION_TYPE = "draft_product_listing_v1"
 APPROVAL_EVENT = "FACTORY_OWNER_APPROVED"
 RECEIPT_EVENT = "FACTORY_ARTIFACT_VERIFIED"
+MIMIR_OUTCOME_EVENT = "MIMIR_INTERNAL_ARTIFACT_VERIFIED"
 MAX_BODY_LENGTH = 5000
 
 
@@ -78,6 +79,25 @@ def _approval_id(action_id: str) -> str:
 
 def _receipt_id(action_id: str) -> str:
     return f"BF-RECEIPT-{action_id}"
+
+
+def _mimir_outcome_id(action_id: str) -> str:
+    return "MIMIR-" + hashlib.sha256(action_id.encode()).hexdigest()
+
+
+def _mimir_outcome(item: LegacyInstanceWorkItem, receipt: dict) -> dict:
+    return {
+        "action_id": item.action_id,
+        "receipt_event_id": _receipt_id(item.action_id),
+        "artifact_sha256": receipt["sha256"],
+        "legacy_instance_id": item.legacy_instance_id,
+        "business_id": item.business_id,
+        "engine_id": item.engine_id,
+        "jurisdiction": item.jurisdiction,
+        "observed_at": receipt["verified_at"],
+        "evidence_scope": "INTERNAL_ARTIFACT_ONLY",
+        "sales_verified": False,
+    }
 
 
 def _check_legacy(
@@ -550,6 +570,14 @@ def _execute_locked_draft(db: Session, item: LegacyInstanceWorkItem) -> dict | N
         message="Internal listing draft stored and read back successfully",
         payload=evidence,
     )
+    _event(
+        db,
+        event_id=_mimir_outcome_id(item.action_id),
+        legacy_instance_id=item.legacy_instance_id,
+        event_type=MIMIR_OUTCOME_EVENT,
+        message="Verified internal outcome for Mimir",
+        payload=_mimir_outcome(item, evidence),
+    )
     if mandate_id is not None:
         _event(db, event_id="BF-MUSE-" + hashlib.sha256(item.action_id.encode()).hexdigest(),
                legacy_instance_id=item.legacy_instance_id, event_type=_mandate_use_type(mandate_id),
@@ -658,3 +686,35 @@ def action_status(db: Session, action_id: str) -> dict:
         "externally_published": False,
         "payment_verified": False,
     }
+
+
+
+def verified_internal_outcomes(
+    db: Session, *, legacy_instance_id: str, business_id: str, engine_id: str, jurisdiction: str, limit: int = 20,
+) -> list[dict]:
+    """Project durable facts only after re-reading their scoped source receipt."""
+    items = (
+        db.query(LegacyInstanceWorkItem)
+        .filter_by(
+            status="completed", legacy_instance_id=legacy_instance_id,
+            business_id=business_id, engine_id=engine_id, jurisdiction=jurisdiction,
+        )
+        .order_by(LegacyInstanceWorkItem.updated_at.desc(), LegacyInstanceWorkItem.id.desc())
+        .limit(limit)
+        .all()
+    )
+    outcomes = []
+    for item in items:
+        event_id = _mimir_outcome_id(item.action_id)
+        event = db.query(LegacyOrchestrationEvent).filter_by(
+            event_id=event_id, event_type=MIMIR_OUTCOME_EVENT, legacy_instance_id=legacy_instance_id,
+        ).one_or_none()
+        if event is None:
+            continue
+        current = action_status(db, item.action_id)
+        if not current["internal_artifact_verified"] or not isinstance(current["receipt"].get("verified_at"), str):
+            continue
+        expected = _mimir_outcome(item, current["receipt"])
+        if _json(event.payload_json, {}) == expected:
+            outcomes.append({"outcome_event_id": event_id, **expected})
+    return outcomes

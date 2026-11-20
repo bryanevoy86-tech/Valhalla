@@ -10,10 +10,13 @@ from sqlalchemy import (
     String,
     Text,
 )
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import JSON, Uuid
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 
 from app.core.db import Base
+
+JSON_TYPE = JSON().with_variant(JSONB(), "postgresql")
 
 
 class GodCaseStatus(str):
@@ -42,7 +45,7 @@ class GodReviewCase(Base):
 
     __tablename__ = "god_review_cases"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
     created_at = Column(
         DateTime(timezone=True), nullable=False, default=datetime.utcnow
     )
@@ -77,9 +80,9 @@ class GodReviewCase(Base):
     loki_summary = Column(Text, nullable=True)
     human_summary = Column(Text, nullable=True)
 
-    heimdall_payload = Column(JSONB, nullable=True)
-    loki_payload = Column(JSONB, nullable=True)
-    human_payload = Column(JSONB, nullable=True)
+    heimdall_payload = Column(JSON_TYPE, nullable=True)
+    loki_payload = Column(JSON_TYPE, nullable=True)
+    human_payload = Column(JSON_TYPE, nullable=True)
 
     final_outcome = Column(
         String(30),
@@ -105,13 +108,13 @@ class GodReviewEvent(Base):
 
     __tablename__ = "god_review_events"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
     created_at = Column(
         DateTime(timezone=True), nullable=False, default=datetime.utcnow
     )
 
     case_id = Column(
-        UUID(as_uuid=True),
+        Uuid(as_uuid=True),
         ForeignKey("god_review_cases.id", ondelete="CASCADE"),
         nullable=False,
     )
@@ -128,6 +131,6 @@ class GodReviewEvent(Base):
     )
 
     message = Column(Text, nullable=True)
-    payload = Column(JSONB, nullable=True)
+    payload = Column(JSON_TYPE, nullable=True)
 
     case = relationship("GodReviewCase", back_populates="events")

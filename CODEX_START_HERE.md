@@ -2,6 +2,10 @@
 
 This is the one-file handoff from ChatGPT's November 19 development and audit. **Do not create new packs or restart Valhalla.**
 
+## November 20 — Independent review and Mimir checkpoint
+
+The historical suite passed all 280 checks in GitHub CI. The next implementation adds content-bound independent Loki review, mandatory reconsideration before non-shadow persistence, and one verified internal Factory outcome stream for Mimir. Review fixtures use independent test credentials and active local databases. A hosted reviewer, scheduled cross-system specialist coverage, provider-linked learning, and external release remain open. Start from the latest ledger entry and the 50-task register in the December handoff.
+
 ## November 20 — Historical regression closure
 
 Full local backend execution passed all 280 historical tests. The required CI workflow now runs the complete suite. Contract, buyer, closer and HTTP regressions are resolved against isolated data and storage. See the latest ledger and the December handoff's reconstructed 50-task register. The next architecture gate is a content-bound independent Loki review with mandatory reconsideration before a non-shadow Prime decision is persisted.

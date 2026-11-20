@@ -118,7 +118,7 @@
         "services/api/app/routers/completion_registry.py",
         "services/api/tests/test_prime_control_and_decision_integrity.py"
       ],
-      "source_observation": "Scoped simulated feedback now restricted by engine, legacy and jurisdiction; missing scores not counted as failures; current memory excluded from live and historical predictions pending independently reconciled and as-of evidence. Older local JSON path remains; no real continuous learning proved.",
+      "source_observation": "Scoped simulated feedback now restricted by engine, legacy and jurisdiction; missing scores not counted as failures; Factory transactions record verified internal artifact outcomes for scoped advisory retrieval and recheck their sources. Shadow, replay and commercial results remain distinct. Provider-linked learning and the older local JSON path remain open.",
       "evidence_level": "SQLITE_INTEGRATION_TESTED",
       "production_verified": false,
       "acceptance_test": "Record actual verified outcomes in PostgreSQL and prove replay correction without holdout leakage",
@@ -835,14 +835,16 @@
         "services/api/app/ai/agents/loki.py",
         "services/api/app/core/loki_engine.py",
         "services/api/app/routers/loki.py",
+        "services/api/app/routers/loki_worker.py",
+        "services/api/tests/test_loki_independent_receipt.py",
         "services/api/app/services/universal_opportunity_evaluator.py",
         "services/api/tests/test_loki_audit_fail_closed.py",
         "services/api/tests/test_prime_control_and_decision_integrity.py"
       ],
-      "source_observation": "Existing deterministic Loki challenges now also reject contradictory margin range and capital bounds. Original five-God evaluations and fake audit fail-closed tests pass; no independent AI reviewer, source-grounded counter-analysis or high-impact external dispatch enforcement deployed.",
+      "source_observation": "Existing deterministic Loki challenges now also reject contradictory margin range and capital bounds. Original five-God evaluations and fake audit fail-closed tests pass; An independent worker interface now persists content-bound receipts and objections, and Prime requires reconsideration before non-shadow persistence. External reviewer deployment, proactive cross-system coverage and dispatch enforcement remain unverified.",
       "evidence_level": "FOCUSED_CI_TESTED",
       "production_verified": false,
-      "acceptance_test": "Independently audit immutable Heimdall proposals with contrary evidence and sourced objection ledger, prove re-audit after changes, equal-standing owner dissent, lawful professional escalation, and mandatory fail-closed high-risk dispatch; realistic adversarial cases and reviewer outage tested in Postgres/staging. Current focused tests cover fail-closed missing reviewer only. Prove proactive cross-system coverage, reports to Prime, immutable independent dissent and recorded Prime response. Owner receives exceptions rather than approving every routine decision.",
+      "acceptance_test": "Independently audit immutable Heimdall proposals with contrary evidence and sourced objection ledger, prove re-audit after changes, equal-standing owner dissent, lawful professional escalation, and mandatory fail-closed high-risk dispatch; realistic adversarial cases and reviewer outage tested in Postgres/staging. Prove proactive cross-system coverage, reports to Prime, immutable independent dissent and recorded Prime response. Owner receives exceptions rather than approving every routine decision.",
       "depends_on": [
         "pantheon_five_evaluators",
         "runtime_governance",

@@ -10,6 +10,7 @@ REQUIRED_ROUTER_NAMES = frozenset({
     "go_live",                # owner release and emergency control
     "system_self_check",      # private operational integrity inspection
     "system_status",          # protected metadata, not release evidence
+    "loki_worker",            # authenticated independent reviewer interface
     "loki",                   # separate independent audit boundary
     "auth_weweb",             # owner/user identity
     "completion_registry",   # Phase Three, governance and legacy orchestration

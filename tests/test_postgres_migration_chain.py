@@ -39,6 +39,7 @@ DEAL_LINKS = load("alembic/versions/20261120_deal_brief_links.py")
 FREEZE_EVIDENCE = load("alembic/versions/20261120_freeze_event_evidence.py")
 CLOSER = load("alembic/versions/20261120_closer_sessions.py")
 BUYER_CLAIM = load("alembic/versions/20261120_buyer_claim_expiry.py")
+LOKI_RECEIPTS = load("alembic/versions/20261120_loki_review_receipts.py")
 
 
 @unittest.skipUnless(url, "Disposable PostgreSQL database not supplied")
@@ -156,6 +157,26 @@ class PostgresMigrationChainTests(unittest.TestCase):
                     conn.execute(text("UPDATE deal_buyer_matches SET claim_expires_at=now() WHERE id=9"))
                     self.assertEqual(conn.execute(text("SELECT deal_id FROM closer_sessions")).scalar_one(), 7)
                     self.assertIsNotNone(conn.execute(text("SELECT claim_expires_at FROM deal_buyer_matches WHERE id=9")).scalar_one())
+                finally:
+                    transaction.rollback()
+        finally:
+            engine.dispose()
+
+
+    def test_loki_receipt_migration_retains_old_reviews_without_trusting_them(self):
+        engine = create_engine(url, pool_pre_ping=True)
+        try:
+            with engine.connect() as conn:
+                transaction = conn.begin()
+                try:
+                    conn.execute(text("CREATE TABLE loki_reviews (id UUID PRIMARY KEY)"))
+                    conn.execute(text("INSERT INTO loki_reviews VALUES ('00000000-0000-0000-0000-000000000001')"))
+                    with patch.object(LOKI_RECEIPTS, "op", Operations(MigrationContext.configure(conn))):
+                        LOKI_RECEIPTS.upgrade()
+                    self.assertIsNone(conn.execute(text("SELECT artifact_sha256 FROM loki_reviews")).scalar_one())
+                    self.assertEqual(conn.execute(text("SELECT COUNT(*) FROM loki_independent_receipts")).scalar_one(), 0)
+                    self.assertEqual(conn.execute(text("SELECT COUNT(*) FROM loki_reconsiderations")).scalar_one(), 0)
+                    self.assertTrue(any(row["unique"] for row in inspect(conn).get_indexes("loki_reviews")))
                 finally:
                     transaction.rollback()
         finally:

@@ -12,10 +12,12 @@ from typing import Any, Literal
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
-from sqlalchemy.exc import SQLAlchemyError, UnsupportedCompilationError
+from sqlalchemy import inspect
 
 from app.core.db import get_db
 from app.core.dependencies import require_prime_control_key
+from app.loki.models import LokiReview
+from app.loki.review_service import artifact_digest, reviewer_identity, verdict as independent_loki_verdict
 from app.models.completion_registry import (
     DatasetRegistryItem,
     EngineRegistryItem,
@@ -40,6 +42,7 @@ from app.models.completion_registry import (
 )
 from app.services.data_safety import DatasetSafetyInput, evaluate_dataset_safety
 from app.services.scenario_safety import ScenarioSafetyInput, evaluate_scenario_safety
+from app.services.prime_business_execution import verified_internal_outcomes
 from app.services.universal_opportunity_evaluator import (
     LookaheadLeakageBlocked,
     best_option_or_abstain as svc_best_option_or_abstain,
@@ -1157,6 +1160,7 @@ PHASE3_OPPORTUNITY_STATUSES = {
 
 class UniversalOpportunityIn(BaseModel):
     opportunity_id: str
+    independent_loki_review_id: uuid.UUID | None = None
     engine_id: str
     legacy: str = "Legacy"
     jurisdiction: str | None = None
@@ -1802,11 +1806,10 @@ def _decision_rank_value(final_decision: str, underwriting: dict[str, Any], buye
 
 
 def _ensure_pantheon_tables(db: Session) -> None:
-    bind = db.get_bind()
-    GodReviewCase.__table__.create(bind=bind, checkfirst=True)
-    GodReviewEvent.__table__.create(bind=bind, checkfirst=True)
-    GodVerdict.__table__.create(bind=bind, checkfirst=True)
-    GovernanceDecision.__table__.create(bind=bind, checkfirst=True)
+    checker = inspect(db.connection())
+    models = (GodReviewCase, GodReviewEvent, GodVerdict, GovernanceDecision)
+    if any(not checker.has_table(model.__tablename__) for model in models):
+        raise HTTPException(status_code=503, detail="Pantheon decision schema is not available")
 
 
 def _persist_pantheon_snapshot(
@@ -1817,20 +1820,7 @@ def _persist_pantheon_snapshot(
     loki_objections: list[dict[str, Any]],
     owner_envelope: dict[str, Any],
 ) -> dict[str, Any]:
-    try:
-        _ensure_pantheon_tables(db)
-    except (UnsupportedCompilationError, SQLAlchemyError):
-        # SQLite test harness cannot materialize PostgreSQL JSONB/UUID columns.
-        # Return synthetic IDs so contract-level behavior remains testable.
-        synthetic_subject = int(hashlib.sha1(payload.request_id.encode("utf-8")).hexdigest()[:8], 16)
-        return {
-            "god_review_case_id": str(uuid.uuid4()),
-            "god_verdict_id": str(uuid.uuid4()),
-            "governance_subject_id": synthetic_subject,
-            "owner_approval_required": owner_envelope["owner_approval_required"],
-            "approval_state": owner_envelope["approval_state"],
-            "persistence_mode": "sqlite_test_fallback",
-        }
+    _ensure_pantheon_tables(db)
 
     subject_ref = hashlib.sha1(result["property_identity"]["location_key"].encode("utf-8")).hexdigest()[:20]
     case = GodReviewCase(
@@ -1904,7 +1894,7 @@ def _persist_pantheon_snapshot(
     )
     db.add(verdict)
 
-    subject_int = int(hashlib.sha1(payload.request_id.encode("utf-8")).hexdigest()[:8], 16)
+    subject_int = (int(hashlib.sha1(payload.request_id.encode("utf-8")).hexdigest()[:8], 16) & 0x7FFFFFFF) or 1
     role_to_action = {
         "odin": "approve" if role_blocks["odin"].get("allowed") else "flag",
         "loki": "deny" if role_blocks["loki"].get("severity") == "critical" else "flag",
@@ -2201,18 +2191,7 @@ def _persist_universal_pantheon_snapshot(
     loki_objections: list[dict[str, Any]],
     owner_envelope: dict[str, Any],
 ) -> dict[str, Any]:
-    try:
-        _ensure_pantheon_tables(db)
-    except (UnsupportedCompilationError, SQLAlchemyError):
-        synthetic_subject = int(hashlib.sha1(payload.opportunity_id.encode("utf-8")).hexdigest()[:8], 16)
-        return {
-            "god_review_case_id": str(uuid.uuid4()),
-            "god_verdict_id": str(uuid.uuid4()),
-            "governance_subject_id": synthetic_subject,
-            "owner_approval_required": owner_envelope["owner_approval_required"],
-            "approval_state": owner_envelope["approval_state"],
-            "persistence_mode": "sqlite_test_fallback",
-        }
+    _ensure_pantheon_tables(db)
 
     subject_ref = hashlib.sha1(payload.opportunity_id.encode("utf-8")).hexdigest()[:20]
     case = GodReviewCase(
@@ -2258,12 +2237,13 @@ def _persist_universal_pantheon_snapshot(
             "opportunity_id": payload.opportunity_id,
             "engine_id": payload.engine_id,
             "owner_approval_envelope": owner_envelope,
-            "shadow_mode": True,
+            "shadow_mode": "independent_loki" not in owner_envelope,
+            "external_effects_authorized": False,
         },
     )
     db.add(verdict)
 
-    subject_int = int(hashlib.sha1(payload.opportunity_id.encode("utf-8")).hexdigest()[:8], 16)
+    subject_int = (int(hashlib.sha1(payload.opportunity_id.encode("utf-8")).hexdigest()[:8], 16) & 0x7FFFFFFF) or 1
     role_to_action = {
         "odin": "approve" if role_blocks["odin"].get("allowed") else "flag",
         "loki": "deny" if role_blocks["loki"].get("severity") == "critical" else "flag",
@@ -2305,6 +2285,7 @@ def _evaluate_universal_opportunity(
     decision_model: str,
     reveal_historical_outcomes: bool,
     outcome_class: str,
+    independent_loki: dict | None = None,
 ) -> dict[str, Any]:
     _validate_phase3_opportunity(payload)
     mimir_context = _build_mimir_context(db, payload, outcome_class)
@@ -2327,6 +2308,8 @@ def _evaluate_universal_opportunity(
         }
         rank_value = float(real_result["decision_rank_value"])
         persistence = None
+        if independent_loki is not None:
+            real_owner["independent_loki"] = independent_loki
         if persist_decision:
             persistence = _persist_pantheon_snapshot(db, payload=real_payload, result=real_result, loki_objections=real_loki, owner_envelope=real_owner)
         return {
@@ -2504,6 +2487,9 @@ def _evaluate_universal_opportunity(
         expected_outcome_class=outcome_class,
     )
 
+    if independent_loki is not None:
+        result["independent_loki"] = independent_loki
+        result["approval_envelope"]["independent_loki"] = independent_loki
     if persist_decision:
         result["persistence"] = _persist_universal_pantheon_snapshot(
             db,
@@ -2543,16 +2529,24 @@ def _build_mimir_context(db: Session, payload: UniversalOpportunityIn, outcome_c
     prior_failures = 0
     recurring_failure_modes: list[str] = []
 
-    # Replay must not consume today's memory: it cannot prove the records
-    # existed at the decision's information cutoff. Live outcomes likewise
-    # require independently reconciled evidence, not a self-reported label.
+    # Replay remains blind to current outcomes. Live advisory references may
+    # include independently re-read internal receipts in the same scope.
     if outcome_class != "SHADOW_OUTCOME":
+        business_id = payload.specialist_inputs.get("business_id")
+        if outcome_class == "VALHALLA_OUTCOME" and isinstance(business_id, str) and payload.jurisdiction:
+            refs = [
+                {"type": "verified_internal_outcome", "id": item["outcome_event_id"], **item}
+                for item in verified_internal_outcomes(
+                    db, legacy_instance_id=payload.legacy, business_id=business_id,
+                    engine_id=payload.engine_id, jurisdiction=payload.jurisdiction,
+                )
+            ]
         return {
             "prior_successes": 0,
             "prior_failures": 0,
             "superseded_doctrine_hits": 0,
             "recurring_failure_modes": [],
-            "source_references": [],
+            "source_references": refs,
         }
 
     # Shadow lessons are scoped by engine, legacy and jurisdiction, and
@@ -2628,6 +2622,17 @@ def _build_mimir_context(db: Session, payload: UniversalOpportunityIn, outcome_c
     }
 
 
+@router.get("/learning/verified-internal-outcomes")
+def read_verified_mimir_outcomes(
+    legacy_instance_id: str, business_id: str, engine_id: str, jurisdiction: str,
+    db: Session = Depends(get_db),
+):
+    return {"outcomes": verified_internal_outcomes(
+        db, legacy_instance_id=legacy_instance_id, business_id=business_id,
+        engine_id=engine_id, jurisdiction=jurisdiction,
+    )}
+
+
 @router.get("/phase3/universal-opportunity/engine-audit")
 def phase3_engine_audit(db: Session = Depends(get_db)):
     _ensure_registry_tables(db)
@@ -2656,6 +2661,40 @@ def phase3_engine_audit(db: Session = Depends(get_db)):
     }
 
 
+def _loki_artifact(opportunity: UniversalOpportunityIn) -> dict:
+    return opportunity.model_dump(mode="json", exclude={"independent_loki_review_id", "persist_decision"})
+
+
+@router.post("/phase3/universal-opportunity/review-artifact")
+def universal_review_artifact(opportunity: UniversalOpportunityIn):
+    artifact_type = "universal_opportunity"
+    content = _loki_artifact(opportunity)
+    return {
+        "artifact_type": artifact_type, "heimdall_reference_id": opportunity.opportunity_id, "raw_input": content,
+        "artifact_sha256": artifact_digest(artifact_type, opportunity.opportunity_id, content),
+    }
+
+
+def _require_independent_review(db: Session, opportunity: UniversalOpportunityIn) -> dict:
+    review_id = opportunity.independent_loki_review_id
+    if review_id is None:
+        raise HTTPException(status_code=409, detail="Independent Loki review required before persisting this decision")
+    reviewer_identity()
+    review = db.get(LokiReview, review_id)
+    if review is None:
+        raise HTTPException(status_code=409, detail="Independent Loki review not found")
+    expected = artifact_digest("universal_opportunity", opportunity.opportunity_id, _loki_artifact(opportunity))
+    if review.artifact_sha256 != expected:
+        raise HTTPException(status_code=409, detail="A material change requires a new independent review")
+    decision = independent_loki_verdict(db, review)
+    if not decision.ok_to_proceed:
+        raise HTTPException(status_code=409, detail={
+            "message": "Independent Loki findings require reconsideration",
+            "verdict": decision.model_dump(mode="json"),
+        })
+    return {"review_id": str(review_id), **decision.model_dump(mode="json")}
+
+
 @router.post("/phase3/universal-opportunity/evaluate")
 def evaluate_universal_opportunities(payload: UniversalOpportunityBatchIn, db: Session = Depends(get_db)):
     if payload.decision_model == "CHALLENGER" and not payload.shadow_mode:
@@ -2670,10 +2709,15 @@ def evaluate_universal_opportunities(payload: UniversalOpportunityBatchIn, db: S
             )
 
     outcome_class = _resolve_phase3_outcome_class(payload)
+    checked_reviews = {
+        index: _require_independent_review(db, opp)
+        for index, opp in enumerate(payload.opportunities)
+        if not payload.shadow_mode and not payload.replay_mode and payload.persist_decision and opp.persist_decision
+    }
     evaluated: list[dict[str, Any]] = []
-    for opp in payload.opportunities:
+    for index, opp in enumerate(payload.opportunities):
         try:
-            evaluated.append(
+            row = (
                 _evaluate_universal_opportunity(
                     opp,
                     db,
@@ -2681,8 +2725,12 @@ def evaluate_universal_opportunities(payload: UniversalOpportunityBatchIn, db: S
                     decision_model=payload.decision_model,
                     reveal_historical_outcomes=payload.reveal_historical_outcomes,
                     outcome_class=outcome_class,
+                    independent_loki=checked_reviews.get(index),
                 )
             )
+            if index in checked_reviews:
+                row["independent_loki"] = checked_reviews[index]
+            evaluated.append(row)
         except LookaheadLeakageBlocked as exc:
             raise HTTPException(status_code=409, detail=exc.detail)
     ranked = sorted(evaluated, key=lambda r: float(r.get("rank_value") or 0.0), reverse=True)

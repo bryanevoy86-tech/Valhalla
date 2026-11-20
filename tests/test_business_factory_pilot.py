@@ -179,9 +179,23 @@ class BusinessFactoryPilotTests(unittest.TestCase):
         events = db.query(LegacyOrchestrationEvent).all()
         self.assertEqual(
             {event.event_type for event in events},
-            {"FACTORY_WORK_QUEUED", "FACTORY_OWNER_APPROVED", "FACTORY_ARTIFACT_VERIFIED"},
+            {"FACTORY_WORK_QUEUED", "FACTORY_OWNER_APPROVED", "FACTORY_ARTIFACT_VERIFIED",
+             "MIMIR_INTERNAL_ARTIFACT_VERIFIED"},
         )
         self.assertEqual(db.query(LegacyInstanceWorkItem).first().status, "completed")
+        from app.services.prime_business_execution import verified_internal_outcomes
+        scope = {key: self.payload[key] for key in ("legacy_instance_id", "business_id", "engine_id", "jurisdiction")}
+        outcomes = verified_internal_outcomes(db, **scope)
+        self.assertEqual(len(outcomes), 1)
+        self.assertEqual(outcomes[0]["action_id"], action_id)
+        self.assertFalse(outcomes[0]["sales_verified"])
+        self.assertEqual(verified_internal_outcomes(db, **{**scope, "business_id": "different-business"}), [])
+        original_body = media[0].body
+        media[0].body = "modified"
+        db.flush()
+        self.assertEqual(verified_internal_outcomes(db, **scope), [])
+        media[0].body = original_body
+        db.rollback()
         db.close()
 
         status = self.client.get(f"/api/business-factory/actions/{action_id}", headers=HEADERS)

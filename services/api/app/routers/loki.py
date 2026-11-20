@@ -6,10 +6,13 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
 from app.core.dependencies import require_prime_control_key
+from app.loki.review_service import artifact_digest, record_reconsideration, reviewer_identity, verdict
+from app.services.prime_business_execution import require_owner_mandate_key
 from app.loki.models import LokiFinding, LokiReview, LokiReviewStatus
 from app.loki.schemas import (
     LokiFindingRead,
@@ -17,6 +20,7 @@ from app.loki.schemas import (
     LokiReviewListItem,
     LokiReviewRead,
     LokiVerdict,
+    OwnerReconsiderationIn,
 )
 from app.core.loki_engine import engine as counter_engine
 from app.schemas.loki_analysis import (
@@ -25,15 +29,6 @@ from app.schemas.loki_analysis import (
 )
 
 router = APIRouter(prefix="/loki", tags=["Loki Reviews"], dependencies=[Depends(require_prime_control_key)])
-
-
-# No certified independent Loki auditor is wired into this endpoint yet.
-# An earlier stub marked generic fake findings as COMPLETED, which is unsafe
-# for owner decisions. Refuse new audit requests instead of lying about proof.
-# Governance threshold checks at /api/governance/loki/evaluate remain separate.
-
-
-# --- Endpoints ---------------------------------------------------------------
 
 
 @router.post(
@@ -45,15 +40,34 @@ def create_loki_review(
     payload: LokiReviewCreate,
     db: Session = Depends(get_db),
 ) -> LokiReviewRead:
-    """Do not accept unaudited artifacts as completed Loki analysis.
-
-    A future review worker must be independently evidenced, authenticated,
-    durable, tenant-isolated, and tested before accepting submissions.
-    """
-    raise HTTPException(
-        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-        detail="LOKI_INDEPENDENT_AUDIT_ENGINE_NOT_CONNECTED",
+    """Queue a versioned artifact for the independent worker."""
+    reviewer_identity()
+    digest = artifact_digest(payload.artifact_type, payload.heimdall_reference_id, payload.raw_input)
+    previous = db.query(LokiReview).filter_by(artifact_sha256=digest).one_or_none()
+    if previous is not None:
+        return previous
+    review = LokiReview(
+        artifact_type=payload.artifact_type, input_source=payload.input_source,
+        risk_profile=payload.risk_profile, raw_input=payload.raw_input,
+        heimdall_reference_id=payload.heimdall_reference_id, human_reference_id=payload.human_reference_id,
+        status=LokiReviewStatus.QUEUED, artifact_sha256=digest,
     )
+    db.add(review)
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        previous = db.query(LokiReview).filter_by(artifact_sha256=digest).one_or_none()
+        if previous is None:
+            raise
+        return previous
+    return review
+
+
+@router.post("/reviews/{review_id}/reconsider", dependencies=[Depends(require_owner_mandate_key)])
+def reconsider_review(review_id: UUID, payload: OwnerReconsiderationIn, db: Session = Depends(get_db)):
+    result = record_reconsideration(db, review_id, payload)
+    return {"review_id": result.review_id, "disposition": result.disposition, "artifact_sha256": result.artifact_sha256}
 
 
 @router.get(
@@ -150,18 +164,13 @@ def get_loki_verdict(
     if not review:
         raise HTTPException(status_code=404, detail="Loki review not found")
 
-    # No independently validated review-result publisher is connected yet.
-    # A DB field, status string or model-generated flag is NOT an audit
-    # receipt. Do not infer permission from any of those.
     if review.status != LokiReviewStatus.COMPLETED:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="LOKI_AUDIT_NOT_COMPLETE",
-        )
-    raise HTTPException(
-        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-        detail="LOKI_VERIFIED_VERDICT_PROVIDER_NOT_CONNECTED",
-    )
+        raise HTTPException(status_code=409, detail="LOKI_AUDIT_NOT_COMPLETE")
+    try:
+        reviewer_identity()
+    except HTTPException:
+        raise HTTPException(status_code=503, detail="LOKI_VERIFIED_VERDICT_PROVIDER_NOT_CONNECTED") from None
+    return verdict(db, review)
 
 
 @router.post(

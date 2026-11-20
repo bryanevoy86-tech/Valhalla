@@ -32,6 +32,9 @@ from app.models.completion_registry import (
     ScoringRegistryItem,
     TemplateRegistryItem,
 )
+from app.god.models import GodReviewCase, GodReviewEvent
+from app.models.god_verdicts import GodVerdict
+from app.models.governance_decision import GovernanceDecision
 from app.routers.completion_registry import router
 
 
@@ -62,6 +65,9 @@ def _build_client() -> TestClient:
     LegacyInstancePolicyState.__table__.create(bind=engine, checkfirst=True)
     LegacyOrchestrationEvent.__table__.create(bind=engine, checkfirst=True)
     LegacyInstanceWorkItem.__table__.create(bind=engine, checkfirst=True)
+
+    for model in (GodReviewCase, GodReviewEvent, GodVerdict, GovernanceDecision):
+        model.__table__.create(bind=engine, checkfirst=True)
 
     app = FastAPI()
     app.include_router(router)

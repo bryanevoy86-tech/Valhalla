@@ -1,0 +1,111 @@
+from uuid import UUID
+
+from sqlalchemy.orm import Session
+
+from app.god.models import GodReviewCase, GodReviewEvent
+from app.loki.models import LokiFinding, LokiIndependentReceipt, LokiReconsideration, LokiReview
+from app.models.god_verdicts import GodVerdict
+from app.models.governance_decision import GovernanceDecision
+
+
+ROOT = "/api/completion/phase3/universal-opportunity"
+
+
+def test_independent_receipt_binds_findings_and_owner_reconsideration_to_prime_decision(deal_client, monkeypatch):
+    client, engine = deal_client
+    for model in (LokiReview, LokiFinding, LokiIndependentReceipt, LokiReconsideration,
+                  GodReviewCase, GodReviewEvent, GodVerdict, GovernanceDecision):
+        model.__table__.create(engine)
+
+    reviewer_key = "isolated-independent-key"
+    owner_key = "isolated-owner-mandate-key"
+    monkeypatch.setenv("VALHALLA_LOKI_REVIEWER_KEY", reviewer_key)
+    monkeypatch.setenv("VALHALLA_LOKI_REVIEWER_ID", "isolated-independent-reviewer")
+    monkeypatch.setenv("VALHALLA_OWNER_MANDATE_KEY", owner_key)
+    worker = {"X-Loki-Reviewer-Key": reviewer_key}
+    owner = {"X-Owner-Mandate-Key": owner_key}
+    opportunity = {
+        "opportunity_id": "isolated-loki-01", "engine_id": "micro_saas",
+        "legacy": "test-legacy", "jurisdiction": "CA-MB",
+        "title": "Review case", "summary": "An internally evaluated proposal.",
+    }
+
+    def evaluate(candidate):
+        return client.post(f"{ROOT}/evaluate", json={"shadow_mode": False, "opportunities": [candidate]})
+
+    assert evaluate(opportunity).status_code == 409
+    artifact = client.post(f"{ROOT}/review-artifact", json=opportunity).json()
+    queued = client.post("/loki/reviews", json={**artifact, "input_source": "test-prime"})
+    assert queued.status_code == 201, queued.text
+    review_id = queued.json()["id"]
+    assert queued.json()["status"] == "queued"
+    assert client.post("/loki/reviews", json={**artifact, "input_source": "duplicate"}).json()["id"] == review_id
+    assert client.get("/loki/worker/reviews").status_code == 401
+    item = client.get("/loki/worker/reviews", headers=worker).json()[0]
+    assert item["artifact_sha256"] == artifact["artifact_sha256"]
+    assert item["raw_input"] == artifact["raw_input"]
+
+    result = {
+        "artifact_sha256": item["artifact_sha256"], "analysis_ref": "isolated-evidence:01",
+        "summary": "Challenger documented a potential material assumption.",
+        "findings": [{
+            "category": "unit_economics", "severity": "warn", "material": True,
+            "message": "Verify the renewal assumption.", "evidence_ref": "isolated-evidence:renewals",
+        }],
+    }
+    path = f"/loki/worker/reviews/{review_id}/result"
+    assert client.post(path, json=result).status_code == 401
+    assert client.post(path, headers=worker, json={**result, "artifact_sha256": "a" * 64}).status_code == 409
+    response = client.post(path, json=result, headers=worker)
+    assert response.status_code == 201, response.text
+    assert client.post(path, json=result, headers=worker).status_code == 409
+
+    reviewed = {**opportunity, "independent_loki_review_id": review_id}
+    denied = evaluate(reviewed)
+    assert denied.status_code == 409
+    assert denied.json()["detail"]["verdict"]["reconsideration_status"] == "required"
+    listing = client.get(f"/loki/reviews/{review_id}/findings")
+    finding_id = listing.json()[0]["id"]
+    acknowledgement = {
+        "artifact_sha256": item["artifact_sha256"],
+        "disposition": "accept_risk", "material_finding_ids": [finding_id],
+        "reason": "Owner reconsidered the renewal assumption and retained an internal research scope.",
+    }
+    reconsider = f"/loki/reviews/{review_id}/reconsider"
+    assert client.post(reconsider, json=acknowledgement).status_code == 401
+    assert client.post(reconsider, headers=owner, json={**acknowledgement, "material_finding_ids": []}).status_code == 422
+    accepted = client.post(reconsider, headers=owner, json=acknowledgement)
+    assert accepted.status_code == 200, accepted.text
+    assert evaluate({**reviewed, "summary": "Material version change."}).status_code == 409
+    evaluated = evaluate(reviewed)
+    assert evaluated.status_code == 200, evaluated.text
+    evaluations = evaluated.json()["evaluations"]
+    assert evaluations[0]["independent_loki"]["reconsideration_status"] == "accept_risk"
+    assert evaluations[0]["independent_loki"]["external_effects_authorized"] is False
+    with Session(engine) as db:
+        receipt = db.get(LokiIndependentReceipt, UUID(review_id))
+        assert receipt.reviewer_id == "isolated-independent-reviewer"
+        assert db.get(LokiReconsideration, UUID(review_id)).material_finding_ids == [finding_id]
+        review_case = db.query(GodReviewCase).one()
+        assert review_case.heimdall_payload["result"]["independent_loki"]["review_id"] == review_id
+
+
+    critical_artifact = client.post(f"{ROOT}/review-artifact", json={
+        **opportunity, "summary": "Separate version with a critical finding.",
+    }).json()
+    critical_id = client.post("/loki/reviews", json={**critical_artifact, "input_source": "test-prime"}).json()["id"]
+    critical_result = {
+        **result, "artifact_sha256": critical_artifact["artifact_sha256"],
+        "findings": [{**result["findings"][0], "severity": "critical", "material": False}],
+    }
+    assert client.post(f"/loki/worker/reviews/{critical_id}/result", headers=worker, json=critical_result).status_code == 201
+    critical_finding = client.get(f"/loki/reviews/{critical_id}/findings").json()[0]
+    attempt = {
+        **acknowledgement, "artifact_sha256": critical_artifact["artifact_sha256"],
+        "material_finding_ids": [critical_finding["id"]],
+    }
+    assert client.post(f"/loki/reviews/{critical_id}/reconsider", headers=owner, json=attempt).status_code == 409
+    assert client.post(f"/loki/reviews/{critical_id}/reconsider", headers=owner, json={
+        **attempt, "disposition": "revise",
+    }).status_code == 200
+    assert client.get(f"/loki/reviews/{critical_id}/verdict").json()["ok_to_proceed"] is False
