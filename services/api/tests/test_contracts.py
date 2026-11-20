@@ -1,67 +1,35 @@
-"""
-Unit test for contracts router with mocked HTTP calls.
-Uses respx to mock external API calls without network dependencies.
-"""
-import respx
-import httpx
-import json
+from sqlalchemy.orm import Session
+
+from app.models.contracts import ContractDocument
 
 
-@respx.mock
-def test_contract_gen_pdf_mocked():
-    """Test contract generation flow with mocked HTTP responses (no real network calls)."""
-    api_base = "http://localhost:8000/api"
-    
-    # Mock POST /contracts/templates
-    template_route = respx.post(f"{api_base}/contracts/templates").mock(
-        return_value=httpx.Response(200, json={"id": 999, "name": "MB Assignment v1"})
-    )
-    
-    # Mock POST /contracts/generate
-    generate_route = respx.post(f"{api_base}/contracts/generate").mock(
-        return_value=httpx.Response(200, json={"id": 1234, "filename": "assignment_123.pdf"})
-    )
-    
-    # Mock GET /contracts/records/{id}/pdf
-    pdf_route = respx.get(f"{api_base}/contracts/records/1234/pdf").mock(
-        return_value=httpx.Response(
-            200, 
-            content=b"%PDF-1.4 fake", 
-            headers={"Content-Type": "application/pdf"}
-        )
-    )
-    
-    # Execute test flow
-    headers = {"X-API-Key": "test123", "Content-Type": "application/json"}
-    
-    # Add template
-    tmpl = {
-        "name": "MB Assignment v1",
-        "version": "1.0",
-        "body_text": "Assignment Agreement\nSeller: {{ seller_name }}\n",
-    }
-    r = httpx.post(f"{api_base}/contracts/templates", headers=headers, json=tmpl)
-    assert r.status_code == 200
-    tid = r.json()["id"]
-    assert tid == 999
-    
-    # Generate contract
-    gen = {
-        "template_id": tid,
-        "filename": "assignment_{{deal_id}}.pdf",
+def test_contract_gen_pdf_mocked(contract_client):
+    client, engine = contract_client
+    created = client.post("/api/contracts/templates", json={
+        "name": "Assignment draft", "version": "1.0", "body_text": "Draft for {{ seller_name }}",
+    })
+    assert created.status_code == 200, created.text
+    template = created.json()
+    denied = client.post("/api/contracts/generate", json={
+        "template_id": template["id"], "filename": "../outside.pdf", "data": {"seller_name": "Jane Seller"},
+    })
+    assert denied.status_code == 422
+    created = client.post("/api/contracts/generate", json={
+        "template_id": template["id"], "filename": "assignment_{{ deal_id }}.pdf",
         "data": {"seller_name": "Jane Seller", "deal_id": 123},
-    }
-    r = httpx.post(f"{api_base}/contracts/generate", headers=headers, json=gen)
-    assert r.status_code == 200
-    rec_id = r.json()["id"]
-    assert rec_id == 1234
-    
-    # Fetch PDF
-    r = httpx.get(f"{api_base}/contracts/records/{rec_id}/pdf", headers=headers)
-    assert r.status_code == 200
-    assert r.headers.get("Content-Type", "").startswith("application/pdf")
-    
-    # Verify mocked routes were called
-    assert template_route.called
-    assert generate_route.called
-    assert pdf_route.called
+    })
+    assert created.status_code == 200, created.text
+    doc = created.json()
+    assert doc["template_id"] == template["id"]
+    assert doc["filename"] == "assignment_123.pdf"
+    result = client.get(f"/api/contracts/records/{doc['id']}/pdf")
+    assert result.status_code == 200, result.text
+    assert result.headers["Content-Type"].startswith("application/pdf")
+    assert result.content.startswith(b"%PDF-")
+    with Session(engine) as db:
+        stored = db.get(ContractDocument, doc["id"])
+        assert stored.bytes == len(result.content)
+        assert stored.sha256
+        stored.sha256 = "bad-digest"
+        db.commit()
+    assert client.get(f"/api/contracts/records/{doc['id']}/pdf").status_code == 409

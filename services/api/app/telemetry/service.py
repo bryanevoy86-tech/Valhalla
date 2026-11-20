@@ -1,37 +1,36 @@
-from typing import List
+from sqlalchemy import select
 from sqlalchemy.orm import Session
-from sqlalchemy import select, desc
-from app.models.telemetry import IntegrityEvent
+
+from app.integrity.models import IntegrityEvent
+
 from .schemas import TelemetryIn, TelemetryOut, TelemetryQuery
-import json
+
+
+def _out(row: IntegrityEvent) -> TelemetryOut:
+    return TelemetryOut(
+        id=row.id, ts=row.created_at, event=row.event_type, level=row.level,
+        actor=row.source, meta=row.payload if isinstance(row.payload, dict) else {},
+    )
+
 
 class TelemetryService:
     def __init__(self, db: Session):
         self.db = db
 
     def write(self, body: TelemetryIn) -> TelemetryOut:
-        row = IntegrityEvent(
-            event=body.event,
-            level=body.level,
-            actor=body.actor or 'system',
-            meta=json.dumps(body.meta or {})
-        )
+        row = IntegrityEvent(event_type=body.event, level=body.level, source=body.actor or "system", payload=body.meta)
         self.db.add(row)
         self.db.commit()
         self.db.refresh(row)
-        return TelemetryOut(id=row.id, ts=row.ts, event=row.event, level=row.level, actor=row.actor, meta=json.loads(row.meta or '{}'))
+        return _out(row)
 
-    def list(self, q: TelemetryQuery) -> List[TelemetryOut]:
-        stmt = select(IntegrityEvent).order_by(desc(IntegrityEvent.id))
-        if q.event:
-            stmt = stmt.where(IntegrityEvent.event == q.event)
-        if q.level:
-            stmt = stmt.where(IntegrityEvent.level == q.level)
-        if q.actor:
-            stmt = stmt.where(IntegrityEvent.actor == q.actor)
-        stmt = stmt.offset(q.offset).limit(min(q.limit, 500))
-        rows = self.db.execute(stmt).scalars().all()
-        out: List[TelemetryOut] = []
-        for r in rows:
-            out.append(TelemetryOut(id=r.id, ts=r.ts, event=r.event, level=r.level, actor=r.actor, meta=json.loads(r.meta or '{}')))
-        return out
+    def list(self, query: TelemetryQuery) -> list[TelemetryOut]:
+        stmt = select(IntegrityEvent).order_by(IntegrityEvent.id.desc())
+        if query.event:
+            stmt = stmt.where(IntegrityEvent.event_type == query.event)
+        if query.level:
+            stmt = stmt.where(IntegrityEvent.level == query.level)
+        if query.actor:
+            stmt = stmt.where(IntegrityEvent.source == query.actor)
+        stmt = stmt.offset(query.offset).limit(min(query.limit, 500))
+        return [_out(row) for row in self.db.scalars(stmt)]

@@ -2,9 +2,9 @@
 
 This is the one-file handoff from ChatGPT's November 19 development and audit. **Do not create new packs or restart Valhalla.**
 
-## November 20 — Historical regression continuation
+## November 20 — Historical regression closure
 
-The complete backend run from the 538aa7f2 baseline now returns 260 passed, 18 failed and two skipped. See the latest ledger entry for the components verified and the outstanding historical contract, buyer, closer and HTTP integration cases. Keep resolving those before reporting full regression closure. The December resume handoff contains a reconstructed 50-task register mapped to all 47 existing workstreams and three cross-system integration deliverables.
+Full local backend execution passed all 280 historical tests. The required CI workflow now runs the complete suite. Contract, buyer, closer and HTTP regressions are resolved against isolated data and storage. See the latest ledger and the December handoff's reconstructed 50-task register. The next architecture gate is a content-bound independent Loki review with mandatory reconsideration before a non-shadow Prime decision is persisted.
 
 ## November 20 — Current engineering checkpoint
 

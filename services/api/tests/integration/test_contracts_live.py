@@ -1,30 +1,24 @@
 """
 Integration test for contracts router - hits real API endpoints.
 Run with: pytest -m integration
-Requires API_BASE and API_TOKEN environment variables or valid defaults.
+Uses a disposable loopback server with the canonical app.
 """
-import os
-import httpx
 import pytest
 
 
 @pytest.mark.integration
-def test_contract_gen_pdf_live():
-    """Live integration test hitting real API (network-dependent, optional CI run)."""
-    api_base = os.environ.get("API_BASE", "http://localhost:8000/api")
-    api_token = os.environ.get("API_TOKEN", "test123")
-    headers = {"X-API-Key": api_token, "Content-Type": "application/json"}
-    
+def test_contract_gen_pdf_live(loopback_contract_api):
+    network = loopback_contract_api
     # Add template
     tmpl = {
         "name": "MB Assignment v1",
         "version": "1.0",
         "body_text": "Assignment Agreement\nSeller: {{ seller_name }}\nBuyer: {{ buyer_name }}\nPrice: ${{ price }}\nDeal: {{ deal_headline }}\n",
     }
-    r = httpx.post(f"{api_base}/contracts/templates", headers=headers, json=tmpl, timeout=10)
+    r = network.post(f"/contracts/templates", json=tmpl)
     assert r.status_code == 200, r.text
     tid = r.json()["id"]
-    
+
     # Generate contract
     gen = {
         "template_id": tid,
@@ -37,11 +31,12 @@ def test_contract_gen_pdf_live():
             "deal_id": 123,
         },
     }
-    r = httpx.post(f"{api_base}/contracts/generate", headers=headers, json=gen, timeout=10)
+    r = network.post(f"/contracts/generate", json=gen)
     assert r.status_code == 200, r.text
     rec_id = r.json()["id"]
-    
+
     # Fetch PDF
-    r = httpx.get(f"{api_base}/contracts/records/{rec_id}/pdf", headers=headers, timeout=10)
+    r = network.get(f"/contracts/records/{rec_id}/pdf")
     assert r.status_code == 200, r.text
     assert r.headers.get("Content-Type", "").startswith("application/pdf")
+    assert r.content.startswith(b"%PDF-")

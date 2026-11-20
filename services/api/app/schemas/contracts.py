@@ -15,7 +15,7 @@ class TemplateIn(BaseModel):
 
 
 class TemplateOut(BaseModel):
-    id: int
+    id: str
     name: str
     version: str
     notes: Optional[str]
@@ -26,14 +26,14 @@ class TemplateOut(BaseModel):
 
 # Contract generation schemas
 class GenerateIn(BaseModel):
-    template_id: int
+    template_id: int | str
     filename: str
     data: Dict[str, Any] = Field(default_factory=dict)
 
 
 class RecordOut(BaseModel):
-    id: int
-    template_id: int
+    id: str
+    template_id: str
     filename: str
     pdf_path: Optional[str] = None
     created_at: Optional[datetime] = None
@@ -96,18 +96,4 @@ class EventOut(BaseModel):
     meta: Dict[str, Any]
     created_at: datetime
 
-    model_config = ConfigDict(from_attributes=True)
-
-
-
-class GenerateIn(BaseModel):
-    template_id: int
-    filename: str = Field(..., max_length=200)  # e.g., "assignment_{{deal_id}}.pdf"
-    data: Dict[str, Any] = {}
-
-
-class RecordOut(BaseModel):
-    id: int
-    filename: str
-    template_id: Optional[int] = None
     model_config = ConfigDict(from_attributes=True)

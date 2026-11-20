@@ -175,6 +175,11 @@ for _calculation_router in ("flow_funfunds_planner", "flow_funfunds_presets", "u
     _module = importlib.import_module(f"app.routers.{_calculation_router}")
     app.include_router(_module.router, prefix="/api")
 
+# Keep the established contract and buyer URLs while sharing canonical records.
+for _contract_router in ("contracts", "contract_engine", "buyer_match", "intake", "notify", "buyers", "deals", "match"):
+    _module = importlib.import_module(f"app.routers.{_contract_router}")
+    app.include_router(_module.router, prefix="/api")
+
 # The original Pantheon implementations use /governance/... paths while
 # historical callers and their own orchestrator request /api/governance/....
 # Keep existing routes for compatibility, and explicitly register a
@@ -215,6 +220,7 @@ log.info("CORS enabled for origins: %s", cors_origins)
 # Health/Status Endpoints
 # ============================================================================
 
+@app.get("/api/health")
 @app.get("/health")
 def health():
     """Quick health check - always responds immediately."""

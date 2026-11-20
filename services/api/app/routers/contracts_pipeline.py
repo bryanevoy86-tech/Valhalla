@@ -6,6 +6,7 @@ from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
+from app.core.dependencies import require_prime_control_key
 from app.schemas.contracts import (
     ContractCreateIn,
     ContractOut,
@@ -16,7 +17,7 @@ from app.schemas.contracts import (
 from app.services.contracts.service import ContractPipeline
 from app.models.contracts import ContractEvent, ContractDocument
 
-router = APIRouter(prefix="/api/contracts", tags=["Contracts"])
+router = APIRouter(prefix="/api/contracts", tags=["Contracts"], dependencies=[Depends(require_prime_control_key)])
 
 
 def _actor(request: Request) -> str:

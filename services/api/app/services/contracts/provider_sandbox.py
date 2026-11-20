@@ -20,7 +20,7 @@ class SandboxSignatureProvider(SignatureProvider):
         return ProviderCreateEnvelopeResult(
             provider="sandbox",
             provider_envelope_id=env_id,
-            status="sent" if not sandbox else "queued_sandbox",
+            status="queued_sandbox",
             raw={
                 "contract_id": contract_id,
                 "subject": subject,

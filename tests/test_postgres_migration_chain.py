@@ -37,6 +37,8 @@ FACTORY = load("alembic/versions/20261119_factory_legacy_work_schema.py")
 REVOCATION = load("alembic/versions/20261119_persistent_auth_revocation.py")
 DEAL_LINKS = load("alembic/versions/20261120_deal_brief_links.py")
 FREEZE_EVIDENCE = load("alembic/versions/20261120_freeze_event_evidence.py")
+CLOSER = load("alembic/versions/20261120_closer_sessions.py")
+BUYER_CLAIM = load("alembic/versions/20261120_buyer_claim_expiry.py")
 
 
 @unittest.skipUnless(url, "Disposable PostgreSQL database not supplied")
@@ -128,6 +130,32 @@ class PostgresMigrationChainTests(unittest.TestCase):
                         conn.execute(text("SELECT notes, severity, reason FROM freeze_events WHERE id=1")).one(),
                         ("existing review", "warn", "Policy review"),
                     )
+                finally:
+                    transaction.rollback()
+        finally:
+            engine.dispose()
+
+
+    def test_closer_and_buyer_claim_migrations_preserve_existing_records(self):
+        engine = create_engine(url, pool_pre_ping=True)
+        try:
+            with engine.connect() as conn:
+                transaction = conn.begin()
+                try:
+                    conn.execute(text("CREATE TABLE deals (id INTEGER PRIMARY KEY)"))
+                    conn.execute(text("CREATE TABLE deal_buyer_matches (id INTEGER PRIMARY KEY)"))
+                    conn.execute(text("INSERT INTO deals VALUES (7)"))
+                    conn.execute(text("INSERT INTO deal_buyer_matches VALUES (9)"))
+                    for module in (CLOSER, BUYER_CLAIM):
+                        with patch.object(module, "op", Operations(MigrationContext.configure(conn))):
+                            module.upgrade()
+                    conn.execute(text("""
+                        INSERT INTO closer_sessions (id, deal_id, script, last_section, section_notes)
+                        VALUES ('session', 7, '{}', 'rapport', '[]')
+                    """))
+                    conn.execute(text("UPDATE deal_buyer_matches SET claim_expires_at=now() WHERE id=9"))
+                    self.assertEqual(conn.execute(text("SELECT deal_id FROM closer_sessions")).scalar_one(), 7)
+                    self.assertIsNotNone(conn.execute(text("SELECT claim_expires_at FROM deal_buyer_matches WHERE id=9")).scalar_one())
                 finally:
                     transaction.rollback()
         finally:

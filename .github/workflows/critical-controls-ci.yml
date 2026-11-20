@@ -227,7 +227,7 @@ jobs:
           echo "Collection exit code: $result"
           tail -n 75 backend-test-collection.log
           exit "$result"
-      - name: Require Pantheon, governance and integrity regressions
+      - name: Require full backend regression execution
         env:
           DATABASE_URL: sqlite://
           VALHALLA_JWT_SECRET: ci-governance-test-only
@@ -237,37 +237,7 @@ jobs:
           APP_ENV: dev
           VALHALLA_EMERGENCY_STOP: "true"
         run: |
-          python -m pytest -q \
-            services/api/tests/test_governance_king.py \
-            services/api/tests/test_governance_queen.py \
-            services/api/tests/test_governance_odin.py \
-            services/api/tests/test_governance_loki.py \
-            services/api/tests/test_governance_tyr.py \
-            services/api/tests/test_governance_orchestrator.py \
-            services/api/tests/test_loki_audit_fail_closed.py \
-            services/api/tests/test_prime_control_and_decision_integrity.py \
-            services/api/tests/test_completion_registry.py \
-            services/api/tests/test_system_integrity.py \
-            services/api/tests/test_system_self_check.py \
-            services/api/tests/test_heimdall_ultra.py \
-            services/api/tests/test_pack_sz_ta_tb.py \
-            services/api/tests/test_flow_full_pipeline.py \
-            services/api/tests/test_fake_live_operating_day.py \
-            services/api/tests/test_deal_workflow_and_closing_playbook.py \
-            services/api/tests/test_flow_prepare_closing.py \
-            services/api/tests/test_flow_funfunds_planner.py \
-            services/api/tests/test_flow_funfunds_presets.py \
-            services/api/tests/test_flow_governance_gate.py \
-            services/api/tests/test_flow_lead_to_deal.py \
-            services/api/tests/test_deal_lifecycle.py \
-            services/api/tests/test_flow_notifications.py \
-            services/api/tests/test_governance_policy.py \
-            services/api/tests/test_flow_profit_allocation.py \
-            services/api/tests/test_flow_tax_snapshot.py \
-            services/api/tests/test_portfolio_dashboard.py \
-            services/api/tests/test_underwriting_engine_flow.py \
-            services/api/tests/test_weweb_logout_contract.py \
-            services/api/tests/test_weweb_owner_recognition.py
+          python -m pytest -q services/api/tests
       - name: Archive backend test collection report
         if: always()
         uses: actions/upload-artifact@v4

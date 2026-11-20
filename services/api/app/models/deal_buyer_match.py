@@ -14,4 +14,5 @@ class DealBuyerMatch(Base):
     buyer_id = Column(Integer, ForeignKey("buyer_candidates.id"), nullable=False)
     match_status = Column(String(20), nullable=False, default="candidate")  # candidate, contacted, interested, passed, assigned
     notes = Column(Text, nullable=True)
+    claim_expires_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
