@@ -1,0 +1,160 @@
+"""Prime control-plane privacy and real decision integrity regression tests."""
+from __future__ import annotations
+
+import pytest
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session
+
+from app.core.db import get_db
+from app.models.completion_registry import LearningFeedbackRecord, KnowledgeRegistryItem
+from app.routers import completion_registry, loki, decision_outcome, model_provider
+from app.routers.governance_orchestrator import evaluate_all
+from app.schemas.governance import GovernanceEvaluationRequest
+from app.services.universal_opportunity_evaluator import evaluate_generic_opportunity
+
+
+@pytest.mark.parametrize("path", [
+    "/api/completion/legacy-instances",
+    "/loki/reviews",
+    "/heimdall/decisions/outcomes",
+    "/system/models/",
+])
+def test_private_apis_reject_public_builder_and_unconfigured_access(monkeypatch, path):
+    app = FastAPI()
+    for module in (completion_registry, loki, decision_outcome, model_provider):
+        app.include_router(module.router)
+    # Authentication must reject before any database access.
+    def forbidden_db():
+        raise AssertionError("unauthorized request reached the database")
+    app.dependency_overrides[get_db] = forbidden_db
+    with TestClient(app) as client:
+        monkeypatch.delenv("VALHALLA_PRIME_CONTROL_KEY", raising=False)
+        assert client.get(path).status_code == 503
+        monkeypatch.setenv("VALHALLA_PRIME_CONTROL_KEY", "prime-test-only")
+        assert client.get(path).status_code == 401
+        assert client.get(path, headers={"X-API-Key": "prime-test-only"}).status_code == 401
+        assert client.get(path, headers={"X-Prime-Control-Key": "wrong"}).status_code == 401
+
+
+def test_valid_private_key_allows_authenticated_request(monkeypatch):
+    from app.core.dependencies import require_prime_control_key
+    from fastapi import Depends
+    monkeypatch.setenv("VALHALLA_PRIME_CONTROL_KEY", "prime-test-only")
+    app = FastAPI()
+
+    @app.get("/test-private", dependencies=[Depends(require_prime_control_key)])
+    def test_endpoint():
+        return {"ok": True}
+
+    with TestClient(app) as client:
+        assert client.get("/test-private", headers={"X-Prime-Control-Key": "prime-test-only"}).json() == {"ok": True}
+
+
+def test_partial_specialist_reports_are_not_external_authority():
+    decision = evaluate_all(GovernanceEvaluationRequest(
+        context_type="new_vertical", data={}, gods=["odin", "odin"]
+    ))
+    assert len(decision.checks) == 1
+    assert not decision.full_coverage
+    assert decision.evaluation_only
+    assert not decision.external_effects_authorized
+
+
+def test_direct_pantheon_blocks_tyr_red_line():
+    decision = evaluate_all(GovernanceEvaluationRequest(
+        context_type="new_vertical", data={"tax_evasion": "true"}
+    ))
+    assert decision.full_coverage
+    assert not decision.overall_allowed
+    assert "tyr" in decision.blocked_by
+    assert not decision.external_effects_authorized
+
+
+def test_mimir_only_reads_scoped_shadow_feedback_and_never_claims_live_success():
+    engine = create_engine("sqlite://")
+    LearningFeedbackRecord.__table__.create(engine)
+    KnowledgeRegistryItem.__table__.create(engine)
+    try:
+        with Session(engine) as db:
+            base = dict(feedback_type="operational_result", domain="ops_automation",
+                        jurisdiction="CA-MB", business_scope="legacy-a",
+                        outcome_class="SHADOW_OUTCOME")
+            for id_, changes in [
+                ("good", {"operational_score": .8}),
+                ("bad", {"operational_score": .2}),
+                ("unknown", {"operational_score": None}),
+                ("other-legacy", {"business_scope": "legacy-b", "operational_score": .9}),
+                ("other-domain", {"domain": "real_estate", "operational_score": .9}),
+                ("other-jurisdiction", {"jurisdiction": "CA-ON", "operational_score": .9}),
+                ("claimed-live", {"outcome_class": "VERIFIED_REAL_OUTCOME", "operational_score": .95}),
+            ]:
+                db.add(LearningFeedbackRecord(feedback_id=id_, **dict(base, **changes)))
+            db.commit()
+            opp = completion_registry.UniversalOpportunityIn(
+                opportunity_id="unit-test", engine_id="ops_automation",
+                title="Test opportunity", summary="Test only",
+                legacy="legacy-a", jurisdiction="CA-MB",
+            )
+            result = completion_registry._build_mimir_context(db, opp, "SHADOW_OUTCOME")
+            assert result["prior_successes"] == 1
+            assert result["prior_failures"] == 1
+            ids = {r["id"] for r in result["source_references"]}
+            assert ids == {"good", "bad", "unknown"}
+            for kind in ("VALHALLA_OUTCOME", "HISTORICAL_OUTCOME"):
+                isolated = completion_registry._build_mimir_context(db, opp, kind)
+                assert isolated["prior_successes"] == isolated["prior_failures"] == 0
+                assert not isolated["source_references"]
+    finally:
+        engine.dispose()
+
+
+def opportunity(**changes):
+    original = {
+        "opportunity_id": "scope-test", "engine_id": "ops_automation",
+        "title": "Test", "summary": "Test", "status": "RESEARCHING",
+        "required_capital": 10000, "estimated_test_cost": 500,
+        "estimated_time_to_first_revenue_days": 30,
+        "expected_margin_low": .3, "expected_margin_high": .6,
+        "downside_exposure": .1, "automation_potential": .9,
+        "scalability": .9, "strategic_value": .9, "evidence_confidence": .95,
+        "maximum_capital_exposure": 10000,
+        "maximum_tolerable_loss": 1000,
+        "available_safe_capital": 15000, "required_reserve_to_survive_failure": 2000,
+        "recovery_options": ["CONTAIN"], "exit_options": ["EXIT"],
+        "point_of_no_return": {"condition": "deposit", "source": "test",
+                                "requires_reapproval_before_crossing": True},
+        "specialist_inputs": {},
+    }
+    return dict(original, **changes)
+
+
+def evaluate(payload):
+    return evaluate_generic_opportunity(payload, decision_model="CHAMPION",
+        reveal_historical_outcomes=False, expected_outcome_class="SHADOW_OUTCOME")
+
+
+@pytest.mark.parametrize("fields", [
+    {"expected_margin_low": .8, "expected_margin_high": .2},
+    {"maximum_capital_exposure": 5000},
+])
+def test_loki_rejects_contradictory_proposal_economics(fields):
+    result = evaluate(opportunity(**fields))
+    assert result["final_decision"] == "reject"
+    assert any(
+        "CONSISTENCY" in f["objection_id"] and f["severity"] == "critical"
+        for f in result["loki_objections"]["items"]
+    )
+    assert not result["pantheon"]["independent_audit_verified"]
+
+
+def test_final_risk_gate_and_prediction_always_agree():
+    result = evaluate(opportunity(blast_radius="SYSTEMIC"))
+    assert result["final_decision"] != "proceed"
+    assert result["outcome_contract"]["heimdall_decision"] == result["final_decision"].upper()
+    assert result["outcome_contract"]["evidence_snapshot_id"] == result["prediction_snapshot"]["prediction_snapshot_id"]
+    assert result["hard_gate_evaluation"]["pass"] is False
+    assert not result["pantheon"]["external_effects_authorized"]
+    assert not result["pantheon"]["checks"]["tyr"]["allowed"]
+    assert not result["pantheon"]["checks"]["forseti"]["allowed"]
