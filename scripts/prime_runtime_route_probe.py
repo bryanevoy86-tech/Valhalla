@@ -28,6 +28,12 @@ MANDATORY_ENDPOINTS = {
     "saas_plan_registry": ("GET", "/saas/plans"),
     "builder": ("GET", "/builder/tasks"),
     "system_readiness": ("GET", "/readyz"),
+    "pantheon_king": ("POST", "/api/governance/king/evaluate"),
+    "pantheon_queen": ("POST", "/api/governance/queen/evaluate"),
+    "pantheon_odin": ("POST", "/api/governance/odin/evaluate"),
+    "pantheon_loki": ("POST", "/api/governance/loki/evaluate"),
+    "pantheon_tyr": ("POST", "/api/governance/tyr/evaluate"),
+    "pantheon_war_table": ("POST", "/api/governance/evaluate_all"),
 }
 
 
