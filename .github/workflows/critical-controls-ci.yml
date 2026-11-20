@@ -159,3 +159,44 @@ jobs:
           FACTORY_TEST_POSTGRES_URL: postgresql+psycopg2://factory_ci:local_ci_test_only@127.0.0.1:5432/valhalla_factory_ci
           VALHALLA_JWT_SECRET: ci-test-only-not-a-secret
         run: python -m unittest discover -s tests -p test_factory_postgres.py -v
+
+
+  full-app-diagnostic:
+    name: Canonical API import diagnostic (non-gating until repaired)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install canonical backend requirements (exclude Windows-only dependency)
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          source = Path("services/api/requirements.txt").read_text(encoding="utf-8-sig")
+          lines = [line for line in source.splitlines() if not line.startswith("win32_setctime")]
+          Path("prime-runtime-requirements.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")
+          PY
+          python -m pip install -r prime-runtime-requirements.txt
+      - name: Import actual FastAPI app and report missing routes
+        env:
+          DATABASE_URL: sqlite://
+          VALHALLA_JWT_SECRET: ci-standalone-jwt-secret-not-production
+          VALHALLA_OWNER_USERNAME: ci-owner
+          VALHALLA_OWNER_PASSWORD: ci-test-only-no-real-credentials
+          ENV: dev
+          APP_ENV: dev
+          RESET_OWNER_PASSWORD: "false"
+          VALHALLA_EMERGENCY_STOP: "true"
+        run: |
+          python scripts/prime_runtime_route_probe.py --import-app --output prime-route-diagnostic.json
+          cat prime-route-diagnostic.json
+      - name: Archive import and route diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: canonical-api-import-diagnostic
+          path: prime-route-diagnostic.json
+          if-no-files-found: ignore
