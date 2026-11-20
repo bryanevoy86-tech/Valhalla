@@ -7,6 +7,7 @@ loaded routers as proof of required capabilities.
 from __future__ import annotations
 
 REQUIRED_ROUTER_NAMES = frozenset({
+    "jarvis",                 # private owner conversation and inbox
     "go_live",                # owner release and emergency control
     "system_self_check",      # private operational integrity inspection
     "system_status",          # protected metadata, not release evidence
