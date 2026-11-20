@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
+from app.core.dependencies import require_prime_control_key
 from app.schemas.model_provider import (
     ModelProviderCreate,
     ModelProviderOut,
@@ -21,6 +22,7 @@ from app.services.model_provider import (
 router = APIRouter(
     prefix="/system/models",
     tags=["System", "Models"],
+    dependencies=[Depends(require_prime_control_key)],
 )
 
 
