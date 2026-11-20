@@ -209,6 +209,62 @@ class FactoryPostgresTests(unittest.TestCase):
             session.close()
 
 
+    def _race_same_request(self, conflicting):
+        from unittest.mock import patch
+        from fastapi import HTTPException
+        from app.routers.prime_business_factory import ListingDraftRequest
+        from app.services import prime_business_execution as factory
+
+        barrier = threading.Barrier(2)
+        mutex = threading.Lock()
+        results, errors = [], []
+        original = factory._check_legacy
+
+        def checked(*args, **kwargs):
+            row = original(*args, **kwargs)
+            # Both transactions have passed their initial missing-key lookup.
+            barrier.wait(timeout=5)
+            return row
+
+        def submit(index):
+            args = dict(self.payload)
+            if conflicting and index == 1:
+                args["price_cents_cad"] += 100
+            with self.sessions() as db:
+                try:
+                    result = factory.submit_listing_draft(db, ListingDraftRequest(**args))
+                    with mutex:
+                        results.append(result)
+                except HTTPException as exc:
+                    with mutex:
+                        errors.append(exc.status_code)
+                except Exception as exc:
+                    with mutex:
+                        errors.append(type(exc).__name__)
+
+        with patch.object(factory, "_check_legacy", side_effect=checked):
+            threads = [threading.Thread(target=submit, args=(i,)) for i in range(2)]
+            for t in threads:
+                t.start()
+            for t in threads:
+                t.join(timeout=10)
+        self.assertFalse(any(t.is_alive() for t in threads), "concurrent submission stalled")
+        self.assertEqual(errors, [409] if conflicting else [])
+        self.assertEqual(len(results), 1 if conflicting else 2)
+        self.assertEqual(sum(not r["duplicate"] for r in results), 1)
+        self.assertEqual(len({r["action_id"] for r in results}), 1)
+        with self.sessions() as db:
+            self.assertEqual(db.query(LegacyInstanceWorkItem).count(), 1)
+            self.assertEqual(db.query(LegacyOrchestrationEvent).filter_by(
+                event_type="FACTORY_WORK_QUEUED").count(), 1)
+            self.assertEqual(db.query(MediaContent).count(), 0)
+
+    def test_concurrent_identical_submit_reconciles_unique_key_race(self):
+        self._race_same_request(conflicting=False)
+
+    def test_concurrent_different_submit_rejects_conflicting_request(self):
+        self._race_same_request(conflicting=True)
+
     def test_two_workers_share_one_standing_mandate_cap(self):
         grant = {k: self.payload[k] for k in (
             "legacy_instance_id", "business_id", "engine_id", "jurisdiction", "product_id"
