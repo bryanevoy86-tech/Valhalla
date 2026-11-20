@@ -1,7 +1,6 @@
 """Loki AI review FastAPI router for artifact analysis and compliance checks."""
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
@@ -27,36 +26,10 @@ from app.schemas.loki_analysis import (
 router = APIRouter(prefix="/loki", tags=["Loki Reviews"])
 
 
-# --- Internal helper ---------------------------------------------------------
-
-
-def _stub_loki_analysis(review: LokiReview, db: Session) -> LokiReview:
-    """
-    Temporary stub analysis so the API works now.
-    Real Loki AI logic gets wired in later.
-    """
-    # Very simple behavior:
-    # - mark as COMPLETED
-    # - set severity=warn
-    # - add a generic finding to show the pipe works
-
-    review.status = LokiReviewStatus.COMPLETED
-    review.result_severity = LokiResultSeverity.WARN
-    review.summary = "Loki stub analysis ran. Replace with real AI logic."
-
-    # example finding
-    finding = LokiFinding(
-        review=review,
-        category="stub",
-        severity="low",
-        message="This is a placeholder Loki finding. Implement real checks.",
-        suggested_fix="Wire Loki to the AI analysis pipeline.",
-        tags={"example": True},
-    )
-    db.add(finding)
-    review.updated_at = datetime.utcnow()
-    db.flush()
-    return review
+# No certified independent Loki auditor is wired into this endpoint yet.
+# An earlier stub marked generic fake findings as COMPLETED, which is unsafe
+# for owner decisions. Refuse new audit requests instead of lying about proof.
+# Governance threshold checks at /api/governance/loki/evaluate remain separate.
 
 
 # --- Endpoints ---------------------------------------------------------------
@@ -71,27 +44,15 @@ def create_loki_review(
     payload: LokiReviewCreate,
     db: Session = Depends(get_db),
 ) -> LokiReviewRead:
-    """Create a new Loki review for artifact analysis."""
-    review = LokiReview(
-        input_source=payload.input_source,
-        artifact_type=payload.artifact_type,
-        risk_profile=payload.risk_profile,
-        status=LokiReviewStatus.QUEUED,
-        heimdall_reference_id=payload.heimdall_reference_id,
-        human_reference_id=payload.human_reference_id,
-        raw_input=payload.raw_input,
+    """Do not accept unaudited artifacts as completed Loki analysis.
+
+    A future review worker must be independently evidenced, authenticated,
+    durable, tenant-isolated, and tested before accepting submissions.
+    """
+    raise HTTPException(
+        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        detail="LOKI_INDEPENDENT_AUDIT_ENGINE_NOT_CONNECTED",
     )
-    db.add(review)
-    db.flush()
-    db.refresh(review)
-
-    # For now, we run the stub analysis inline.
-    # Later you can replace this with a background job.
-    _stub_loki_analysis(review, db)
-    db.commit()
-    db.refresh(review)
-
-    return review
 
 
 @router.get(
@@ -188,8 +149,30 @@ def get_loki_verdict(
     if not review:
         raise HTTPException(status_code=404, detail="Loki review not found")
 
-    # Basic verdict logic for now.
-    severity = review.result_severity or LokiResultSeverity.WARN
+    # Historical placeholder "completed" reviews do not satisfy a real
+    # adversarial audit. An unfinished/replayed stub may never issue a verdict.
+    if review.status != LokiReviewStatus.COMPLETED:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="LOKI_AUDIT_NOT_COMPLETE",
+        )
+    if (
+        not isinstance(review.raw_output, dict)
+        or not review.raw_output.get("independent_audit_verified")
+        or "Loki stub analysis" in (review.summary or "")
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="LOKI_AUDIT_NOT_VERIFIED",
+        )
+    severity = review.result_severity
+    if severity not in {
+        LokiResultSeverity.OK, LokiResultSeverity.WARN, LokiResultSeverity.CRITICAL
+    }:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="LOKI_AUDIT_VERDICT_INVALID",
+        )
     ok_to_proceed = severity == LokiResultSeverity.OK
     requires_human = severity in (LokiResultSeverity.WARN, LokiResultSeverity.CRITICAL)
 
