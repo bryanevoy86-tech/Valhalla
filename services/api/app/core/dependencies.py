@@ -19,7 +19,7 @@ def require_builder_key(x_api_key: str | None = Header(None, alias="X-API-Key"))
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Builder key not configured",
         )
-    if not x_api_key or not hmac.compare_digest(x_api_key, settings.BUILDER_KEY):
+    if not x_api_key or not hmac.compare_digest(x_api_key.encode("utf-8"), settings.BUILDER_KEY.encode("utf-8")):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid X-API-Key",
@@ -48,7 +48,7 @@ def require_auth(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Session-token authorization not configured",
         )
-    if not x_session_token or not hmac.compare_digest(x_session_token, expected):
+    if not x_session_token or not hmac.compare_digest(x_session_token.encode("utf-8"), expected.encode("utf-8")):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Unauthorized: X-Session-Token required",
@@ -64,8 +64,11 @@ def require_prime_control_key(
     Deliberately independent of the Builder and Business Factory keys.
     """
     expected = os.environ.get("VALHALLA_PRIME_CONTROL_KEY", "")
-    if not expected:
-        raise HTTPException(status_code=503, detail="Prime control key not configured")
+    other_keys = {settings.BUILDER_KEY, settings.SESSION_TOKEN_DEV,
+                  settings.jwt_secret, os.environ.get("VALHALLA_FACTORY_KEY"),
+                  os.environ.get("VALHALLA_OWNER_MANDATE_KEY")}
+    if not expected or expected in other_keys:
+        raise HTTPException(status_code=503, detail="Distinct Prime control key not configured")
     if not x_prime_control_key or not hmac.compare_digest(
         x_prime_control_key.encode("utf-8"), expected.encode("utf-8")
     ):
