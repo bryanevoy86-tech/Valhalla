@@ -39,7 +39,8 @@ from app.routers.prime_business_factory import router  # noqa: E402
 from app.services.prime_business_execution import run_one_approved_draft  # noqa: E402
 
 KEY = "ci-only-factory-test-key"
-HEADERS = {"X-Business-Factory-Key": KEY}
+WORKER_HEADERS = {"X-Business-Factory-Key": KEY}
+HEADERS = dict(WORKER_HEADERS, **{"X-Owner-Mandate-Key": "ci-owner-only-mandate"})
 TABLES = [
     LegacyInstanceRegistryItem,
     LegacyInstanceWorkItem,
@@ -53,6 +54,8 @@ class FactoryPostgresTests(unittest.TestCase):
     def setUp(self):
         self._prior = os.environ.get("VALHALLA_FACTORY_KEY")
         os.environ["VALHALLA_FACTORY_KEY"] = KEY
+        self._prior_owner_key = os.environ.get("VALHALLA_OWNER_MANDATE_KEY")
+        os.environ["VALHALLA_OWNER_MANDATE_KEY"] = HEADERS["X-Owner-Mandate-Key"]
         self.engine = create_engine(url, pool_pre_ping=True)
         for model in TABLES:
             model.__table__.create(bind=self.engine)
@@ -103,6 +106,10 @@ class FactoryPostgresTests(unittest.TestCase):
 
     def tearDown(self):
         self.client.close()
+        if self._prior_owner_key is None:
+            os.environ.pop("VALHALLA_OWNER_MANDATE_KEY", None)
+        else:
+            os.environ["VALHALLA_OWNER_MANDATE_KEY"] = self._prior_owner_key
         for model in reversed(TABLES):
             model.__table__.drop(bind=self.engine, checkfirst=True)
         self.engine.dispose()
