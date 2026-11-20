@@ -157,3 +157,47 @@ def test_opt_in_model_receives_only_same_thread_text_and_no_tools(client, monkey
     monkeypatch.setenv("VALHALLA_OWNER_CHAT_MODEL", "not-approved")
     assert send(cid, "Another question").json()["evidence"]["model_connected"] is False
     assert len(captured) == 1
+
+
+def test_groq_requires_explicit_free_plan_and_never_falls_back(monkeypatch):
+    from types import SimpleNamespace
+    from app.services import owner_advisory_model as service
+    import httpx
+    monkeypatch.setenv("VALHALLA_OWNER_CHAT_INFERENCE_ENABLED", "1")
+    monkeypatch.setenv("VALHALLA_OWNER_CHAT_VENDOR", "groq")
+    monkeypatch.setenv("VALHALLA_OWNER_CHAT_MODEL", "openai/gpt-oss-120b")
+    monkeypatch.setenv("VALHALLA_OWNER_CHAT_GROQ_KEY", "fixture-groq-not-real")
+    monkeypatch.setenv("VALHALLA_OWNER_CHAT_OPENAI_KEY", "fixture-openai-not-real")
+    monkeypatch.delenv("VALHALLA_OWNER_CHAT_GROQ_FREE_PLAN_CONFIRMED", raising=False)
+    calls = []
+    class FakeDB:
+        def __init__(self):
+            self.responses = iter([
+                [SimpleNamespace(vendor="groq", config={"model":"openai/gpt-oss-120b", "base_url":"https://invalid.example"})],
+                [SimpleNamespace(id=uuid4(), message="private attached content", reply="private response", attachment_ids=["id"]),
+                 SimpleNamespace(id=uuid4(), message="ordinary context", reply="ordinary response", attachment_ids=[])]
+            ])
+        def scalars(self, query):
+            return SimpleNamespace(all=lambda: next(self.responses))
+    class FakeHTTP:
+        def __init__(self, **kwargs):
+            assert kwargs["follow_redirects"] is False
+        def __enter__(self):
+            return self
+        def __exit__(self, *args):
+            pass
+        def post(self, url, **kwargs):
+            calls.append((url, kwargs))
+            return httpx.Response(429, request=httpx.Request("POST", url))
+    monkeypatch.setattr(service.httpx, "Client", FakeHTTP)
+    assert service.advisory_reply(FakeDB(), uuid4(), "hello") is None
+    assert calls == []
+    monkeypatch.setenv("VALHALLA_OWNER_CHAT_GROQ_FREE_PLAN_CONFIRMED", "1")
+    assert service.advisory_reply(FakeDB(), uuid4(), "hello") is None
+    assert len(calls) == 1
+    url, kwargs = calls[0]
+    assert url == "https://api.groq.com/openai/v1/chat/completions"
+    assert kwargs["headers"]["Authorization"] == "Bearer fixture-groq-not-real"
+    assert "private attached content" not in str(kwargs["json"])
+    assert "ordinary context" in str(kwargs["json"])
+    assert "tools" not in kwargs["json"]
