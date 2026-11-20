@@ -168,6 +168,23 @@ from app import models  # noqa: F401
 
 # Auto-load all other routers from app/routers
 loaded_router_count = _autoload_router_modules(app)
+
+# The original Pantheon implementations use /governance/... paths while
+# historical callers and their own orchestrator request /api/governance/....
+# Keep existing routes for compatibility, and explicitly register a
+# namespaced alias so all five independent gods and war table are callable.
+# These modules are critical; import/registration failure must fail startup.
+for _god_router in (
+    "governance_king",
+    "governance_queen",
+    "governance_odin",
+    "governance_loki",
+    "governance_tyr",
+    "governance_orchestrator",
+):
+    _pantheon_module = importlib.import_module(f"app.routers.{_god_router}")
+    app.include_router(_pantheon_module.router, prefix="/api")
+log.info("Pantheon /api/governance aliases registered.")
 log.info("Valhalla startup complete. Loaded %s router modules.", loaded_router_count)
 
 # ============================================================================
