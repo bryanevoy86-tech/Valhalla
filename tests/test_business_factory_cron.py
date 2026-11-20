@@ -64,8 +64,11 @@ class FactoryCronTests(unittest.TestCase):
             "status": "completed",
             "verified": True,
             "receipt": {
-                "action_id": "bfd_123",
-                "sha256": "abcdef",
+                "action_id": "bfd_" + "a" * 32,
+                "sha256": "b" * 64,
+                "artifact_type": "product_listing_draft",
+                "media_content_id": 1,
+                "sales_verified": False,
                 "verification_scope": "database_artifact_only",
                 "external_effects": 0,
             },
@@ -74,6 +77,47 @@ class FactoryCronTests(unittest.TestCase):
             with patch("urllib.request.build_opener") as build:
                 build.return_value.open.return_value = self._network_response(receipt)
                 self.assertEqual(self.tick()["status"], "internal_artifact_verified")
+
+    def test_blocked_result_is_not_success_and_preserves_emergency_stop(self):
+        with patch.dict(os.environ, VALUES):
+            with patch("urllib.request.build_opener") as build:
+                for reason in ("MANDATE_EXPIRED", "EMERGENCY_STOP_ACTIVE"):
+                    with self.subTest(reason=reason):
+                        build.return_value.open.return_value = self._network_response({
+                            "status": "blocked", "verified": False, "reason": reason
+                        })
+                        self.assertEqual(self.tick(), {
+                            "status": "blocked", "verified": False,
+                            "emergency_stop": reason == "EMERGENCY_STOP_ACTIVE",
+                        })
+
+    def test_malformed_and_contradictory_receipts_fail_closed(self):
+        valid = {
+            "action_id": "bfd_" + "a" * 32, "sha256": "b" * 64,
+            "artifact_type": "product_listing_draft", "media_content_id": 1,
+            "sales_verified": False, "external_effects": 0,
+            "verification_scope": "database_artifact_only",
+        }
+        cases = [
+            [], {"status": "completed", "verified": True, "receipt": []},
+            {"status": "blocked", "verified": True},
+        ]
+        for key, value in (
+            ("sales_verified", True), ("sales_verified", None),
+            ("external_effects", False), ("external_effects", 0.0),
+            ("sha256", "not-a-digest"), ("action_id", "wrong"),
+            ("media_content_id", True), ("media_content_id", 0),
+            ("artifact_type", "paid_order"),
+        ):
+            cases.append({"status": "completed", "verified": True,
+                          "receipt": dict(valid, **{key: value})})
+        with patch.dict(os.environ, VALUES):
+            with patch("urllib.request.build_opener") as build:
+                for index, response in enumerate(cases):
+                    with self.subTest(index=index):
+                        build.return_value.open.return_value = self._network_response(response)
+                        with self.assertRaisesRegex(RuntimeError, "did not confirm"):
+                            self.tick()
 
     def test_forged_external_success_cannot_be_accepted(self):
         response = {"status": "completed", "verified": True, "receipt": {"external_effects": 1, "sha256": "abc"}}
