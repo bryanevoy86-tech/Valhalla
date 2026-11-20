@@ -166,9 +166,8 @@ jobs:
 
 
   full-app-diagnostic:
-    name: Canonical API import diagnostic (non-gating until repaired)
+    name: Required canonical FastAPI import and 9-route gate
     runs-on: ubuntu-latest
-    continue-on-error: true
     timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
