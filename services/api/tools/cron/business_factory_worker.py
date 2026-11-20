@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 from pathlib import Path
 import signal
 import sys
@@ -35,7 +36,15 @@ def tick(session_factory: Callable, execute: Callable, check_schema: Callable) -
             if state == "completed":
                 evidence = result.get("receipt")
                 if (result.get("verified") is not True or not isinstance(evidence, dict)
-                        or evidence.get("external_effects") != 0
+                        or type(evidence.get("external_effects")) is not int
+                        or evidence["external_effects"] != 0
+                        or evidence.get("artifact_type") != "product_listing_draft"
+                        or type(evidence.get("media_content_id")) is not int
+                        or evidence["media_content_id"] <= 0
+                        or not isinstance(evidence.get("action_id"), str)
+                        or not re.fullmatch(r"bfd_[0-9a-f]{32}", evidence["action_id"])
+                        or not isinstance(evidence.get("sha256"), str)
+                        or not re.fullmatch(r"[0-9a-f]{64}", evidence["sha256"])
                         or evidence.get("sales_verified") is not False
                         or evidence.get("verification_scope") != "database_artifact_only"):
                     raise RuntimeError("worker completion has invalid internal evidence")
@@ -103,7 +112,7 @@ def main() -> int:
     stop = threading.Event()
     for sig in (signal.SIGINT, signal.SIGTERM):
         signal.signal(sig, lambda *_: stop.set())
-    return poll(lambda: tick(SessionLocal, run_one_approved_draft, require_factory_schema),
+    return poll(lambda: tick(SessionLocal.session_factory, run_one_approved_draft, require_factory_schema),
                 stop, args.poll_seconds, once=args.once)
 
 
