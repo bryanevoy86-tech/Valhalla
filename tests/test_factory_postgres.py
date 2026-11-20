@@ -209,5 +209,48 @@ class FactoryPostgresTests(unittest.TestCase):
             session.close()
 
 
+    def test_two_workers_share_one_standing_mandate_cap(self):
+        grant = {k: self.payload[k] for k in (
+            "legacy_instance_id", "business_id", "engine_id", "jurisdiction", "product_id"
+        )}
+        grant.update(mandate_id="ci-one-use-mandate", ttl_seconds=3600,
+                     max_uses=1, max_price_cents_cad=2000)
+        response = self.client.post("/api/business-factory/mandates", json=grant, headers=HEADERS)
+        self.assertEqual(response.status_code, 200, response.text)
+        for i in range(2):
+            payload = dict(self.payload, mandate_id=grant["mandate_id"], request_key=f"ci-mandate-job-{i}")
+            submitted = self.client.post("/api/business-factory/listing-drafts",
+                                         json=payload, headers=WORKER_HEADERS)
+            self.assertEqual(submitted.status_code, 200, submitted.text)
+
+        barrier = threading.Barrier(2)
+        results, errors = [], []
+        mutex = threading.Lock()
+
+        def worker():
+            with self.sessions() as db:
+                try:
+                    barrier.wait(timeout=5)
+                    result = run_one_approved_draft(db)
+                    with mutex:
+                        results.append(result)
+                except Exception as exc:
+                    with mutex:
+                        errors.append(type(exc).__name__)
+
+        threads = [threading.Thread(target=worker) for _ in range(2)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join(timeout=10)
+        self.assertFalse(any(t.is_alive() for t in threads))
+        self.assertFalse(errors, errors)
+        self.assertEqual(sum(r["status"] == "completed" for r in results), 1, results)
+        with self.sessions() as db:
+            self.assertEqual(run_one_approved_draft(db)["reason"], "MANDATE_EXHAUSTED")
+            self.assertEqual(db.query(MediaContent).count(), 1)
+            self.assertEqual(db.query(LegacyInstanceWorkItem).filter_by(status="completed").count(), 1)
+
+
 if __name__ == "__main__":
     unittest.main()
