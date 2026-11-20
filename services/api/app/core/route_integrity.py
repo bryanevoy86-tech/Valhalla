@@ -7,6 +7,9 @@ loaded routers as proof of required capabilities.
 from __future__ import annotations
 
 REQUIRED_ROUTER_NAMES = frozenset({
+    "go_live",                # owner release and emergency control
+    "system_status",          # protected metadata, not release evidence
+    "loki",                   # separate independent audit boundary
     "auth_weweb",             # owner/user identity
     "completion_registry",   # Phase Three, governance and legacy orchestration
     "prime_business_factory", # durable owned execution lane
