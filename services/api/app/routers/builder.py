@@ -1,4 +1,7 @@
 import json, os
+import hashlib
+import tempfile
+from pathlib import Path
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
@@ -7,7 +10,7 @@ from slugify import slugify
 from ..core.db import get_db
 from ..core.settings import settings
 from ..core.dependencies import require_builder_key
-from ..core.git_utils import git_autocommit_and_push
+from ..core.builder_path_policy import resolve_builder_path, BuilderPathRejected
 from ..models.builder import BuilderTask, BuilderEvent
 from ..schemas.builder import (
     RegisterIn, RegisterOut, TaskIn, TaskOut, DraftOut, FileSpec, TelemetryIn, ApplyIn
@@ -15,9 +18,23 @@ from ..schemas.builder import (
 
 router = APIRouter(prefix="/builder", tags=["builder"])
 
+_REPO_ROOT = Path(__file__).resolve().parents[4]
+
+
+def _source_path(path: str) -> Path:
+    """Always resolve against repository root, never the Render working dir."""
+    try:
+        return resolve_builder_path(path, settings.BUILDER_ALLOWED_DIRS, _REPO_ROOT)
+    except BuilderPathRejected as exc:
+        raise HTTPException(status_code=400, detail=f"builder path denied: {exc}") from None
+
+
 def _path_is_allowed(path: str) -> bool:
-    norm = path.replace("\\", "/").strip().lstrip("./")
-    return any(norm.startswith(d + "/") or norm == d for d in settings.BUILDER_ALLOWED_DIRS)
+    try:
+        _source_path(path)
+        return True
+    except HTTPException:
+        return False
 
 @router.post("/register", response_model=RegisterOut)
 def register(payload: RegisterIn, db: Session = Depends(get_db), _: bool = Depends(require_builder_key)):
@@ -40,7 +57,7 @@ def create_task(payload: TaskIn, db: Session = Depends(get_db), _: bool = Depend
 
 def _read_text(path: str) -> str:
     try:
-        with open(path, "r", encoding="utf-8") as fh:
+        with _source_path(path).open("r", encoding="utf-8") as fh:
             return fh.read()
     except FileNotFoundError:
         return ""
@@ -115,42 +132,60 @@ def apply(payload: ApplyIn, db: Session = Depends(get_db), _: bool = Depends(req
         patch_file = FileSpec(path="__DIFF__.patch", content="".join(combined_patch_parts), mode="add")
         return DraftOut(task_id=t.id, files=[patch_file], diff_summary=t.diff_summary or "")
 
-    # Guardrails: write allowed files only
-    wrote = []
-    for f in proposed:
-        path = f["path"].strip()
-        content = f["content"]
-        mode = f.get("mode", "add")
-        if not _path_is_allowed(path):
-            raise HTTPException(status_code=400, detail=f"path not allowed: {path}")
+    # Never push generated code directly from an API request. Changes must
+    # be committed via a reviewed GitHub branch/PR with CI evidence.
+    if settings.GIT_ENABLE_AUTOCOMMIT:
+        raise HTTPException(
+            status_code=409,
+            detail="Direct Builder git push disabled; use reviewed PR workflow",
+        )
+
+    # Preflight the ENTIRE batch before writing any file.
+    staged = []
+    for item in proposed:
+        path = item["path"]
+        content = item["content"]
+        mode = item.get("mode", "add")
+        target = _source_path(path)
+        if mode not in ("add", "replace"):
+            raise HTTPException(status_code=400, detail=f"bad mode for {path}")
         if len(content.encode("utf-8")) > settings.BUILDER_MAX_FILE_BYTES:
             raise HTTPException(status_code=413, detail=f"file too large: {path}")
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        if mode not in ("add", "replace"): 
-            raise HTTPException(status_code=400, detail=f"bad mode for {path}")
-        with open(path, "w", encoding="utf-8") as fh:
-            fh.write(content)
+        if mode == "add" and target.exists():
+            raise HTTPException(status_code=409, detail=f"file already exists: {path}")
+        if mode == "replace" and not target.is_file():
+            raise HTTPException(status_code=409, detail=f"file missing for replace: {path}")
+        staged.append((path, content, target))
+
+    wrote = []
+    evidence = []
+    for path, content, target in staged:
+        # Atomic replacement avoids torn files if a worker crashes during write.
+        # No external Git operation is performed by this endpoint.
+        target.parent.mkdir(parents=True, exist_ok=True)
+        fd, temporary = tempfile.mkstemp(prefix=".builder-", dir=str(target.parent))
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as handle:
+                handle.write(content)
+                handle.flush()
+                os.fsync(handle.fileno())
+            os.replace(temporary, target)
+        finally:
+            if os.path.exists(temporary):
+                os.unlink(temporary)
+        digest = hashlib.sha256(target.read_bytes()).hexdigest()
+        if digest != hashlib.sha256(content.encode("utf-8")).hexdigest():
+            raise HTTPException(status_code=500, detail=f"write verification failed: {path}")
         wrote.append(path)
+        evidence.append({"path": path, "sha256": digest})
+
 
     t.status = "applied"
     db.add(BuilderEvent(kind="apply", msg=f"applied {len(wrote)} files", meta_json=json.dumps(wrote)))
     db.commit()
 
-    # Optional git autocommit/push
-    if settings.GIT_ENABLE_AUTOCOMMIT:
-        repo_dir = settings.GIT_REPO_DIR or os.getcwd()
-        msg = f"builder: apply task {t.id} ({len(wrote)} files)"
-        res = git_autocommit_and_push(
-            repo_dir=repo_dir,
-            message=msg,
-            remote=settings.GIT_REMOTE_NAME,
-            branch=settings.GIT_BRANCH,
-            user_name=settings.GIT_USER_NAME,
-            user_email=settings.GIT_USER_EMAIL,
-            token=settings.GITHUB_TOKEN,
-        )
-        db.add(BuilderEvent(kind="git", msg="autocommit", meta_json=json.dumps(res)))
-        db.commit()
+    db.add(BuilderEvent(kind="write_receipt", msg="verified local-only file writes", meta_json=json.dumps(evidence)))
+    db.commit()
     return DraftOut(task_id=t.id, files=proposed, diff_summary=f"applied {len(wrote)} files")
 
 @router.post("/telemetry")
