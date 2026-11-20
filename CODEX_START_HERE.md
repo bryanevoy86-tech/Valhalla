@@ -4,7 +4,7 @@ This is the one-file handoff from ChatGPT's November 19 development and audit. *
 
 ## DO NOT DROP THE REST OF VALHALLA
 
-The master scope now has 46 source-anchored workstreams, not only the earlier 25 domains. **Read ops/VALHALLA_FULL_VISION_TRACEABILITY.md before any new code.** It covers the expanded AI Gods/Pantheon, original five-god governance, owner Commander A/B/C/Override, Norns, Mimir, five legacies, product and venture Foundries, 90/10 wealth/Fun Funds, whole-life policy infinite banking, trusts, Canada exit/residency, corporate finance, family succession, Black Ice, resort and expansion. Source-only does NOT equal completed. Do not silently resolve conflicting trust/Pantheon doctrine. No legal, tax, banking or insurer action without owner and relevant professional authority.
+The master scope now has 47 source-anchored workstreams, not only the earlier 25 domains. **Read ops/VALHALLA_FULL_VISION_TRACEABILITY.md before any new code.** It covers the expanded AI Gods/Pantheon, original five-god governance, owner Commander A/B/C/Override, Norns, Mimir, five legacies, product and venture Foundries, 90/10 wealth/Fun Funds, whole-life policy infinite banking, trusts, Canada exit/residency, corporate finance, family succession, Black Ice, resort and expansion. Source-only does NOT equal completed. Do not silently resolve conflicting trust/Pantheon doctrine. No legal, tax, banking or insurer action without owner and relevant professional authority.
 
 ## Existing project
 
@@ -77,3 +77,8 @@ Latest targeted CI: https://github.com/bryanevoy86-tech/Valhalla/actions/runs/44
 ## Newly repaired and TESTED: original five-god Pantheon routes
 
 Before: all 18 legacy King/Queen/Odin/Loki/Tyr/orchestrator tests returned 404 because the original router prefixes and API/war-table contracts disagreed. New branch mounts backward-compatible old /governance and canonical /api/governance paths, makes all 6 modules mandatory, and checks 15 exact API route contracts. 18/18 governance tests passed in isolated GitHub Actions run 44662885729. Pantheon tests have now been promoted to a REQUIRED CI gate. The broader AI Gods/Bridge Layer remains source-only until individually integrated and proven.
+
+
+## Loki is a separate first-class God and mandatory challenger
+
+Read docs/LOKI_INDEPENDENT_CHALLENGER_CONTRACT.md. Original governance Loki's threshold rules passing is NOT proof of the independent adversarial AI God. A legacy /loki/reviews endpoint previously forged COMPLETED from placeholder evidence; this branch blocks that until a verified independent reviewer exists, with regression tests. Codex must build independent scrutiny of Heimdall's immutable proposal, legal/financial/technical worst-case holes, source-backed dissent, re-audits after changes, and mandatory high-risk dispatch gating. Loki cannot edit Heimdall's originals, sign, move money, self-approve or bypass owner/professional authority. Owner receives both positions and chooses A/B/C/Override with all material objections recorded.
