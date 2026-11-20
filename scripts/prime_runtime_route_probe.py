@@ -19,6 +19,16 @@ API_ROOT = REPO_ROOT / "services/api"
 # Exact backend API contracts as authored in the working branch. These
 # checks establish registration, NOT successful execution or authorization.
 MANDATORY_ENDPOINTS = {
+    "release_state": ("GET", "/governance/go-live/state"),
+    "release_checklist": ("GET", "/governance/go-live/checklist"),
+    "release_enable": ("POST", "/governance/go-live/enable"),
+    "release_disable": ("POST", "/governance/go-live/disable"),
+    "emergency_engage": ("POST", "/governance/go-live/kill-switch/engage"),
+    "emergency_release": ("POST", "/governance/go-live/kill-switch/release"),
+    "metadata_complete": ("POST", "/system/status/complete"),
+    "metadata_incomplete": ("POST", "/system/status/incomplete"),
+    "loki_audit_submission": ("POST", "/loki/reviews"),
+    "loki_audit_verdict": ("GET", "/loki/reviews/{review_id}/verdict"),
     "owner_identity": ("POST", "/api/weweb/login"),
     "universal_phase3": ("GET", "/api/completion/legacy-instances"),
     "factory_draft_queue": ("POST", "/api/business-factory/listing-drafts"),
