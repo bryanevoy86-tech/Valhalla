@@ -102,12 +102,18 @@ def _check_legacy(
     context = _json(row.local_knowledge_context_json, {})
     if not isinstance(context, dict):
         raise HTTPException(status_code=409, detail="invalid legacy context")
+    businesses = _json(row.assigned_businesses_json, [])
+    jurisdictions = _json(row.assigned_jurisdictions_json, [])
+    engines = _json(row.engines_json, [])
+    if any(not isinstance(values, list) or any(not isinstance(v, str) for v in values)
+           for values in (businesses, jurisdictions, engines)):
+        raise HTTPException(status_code=409, detail="invalid legacy scope registry")
     if (
         context.get("jurisdiction") != jurisdiction
         or context.get("business_id") != business_id
-        or business_id not in _json(row.assigned_businesses_json, [])
-        or jurisdiction not in _json(row.assigned_jurisdictions_json, [])
-        or engine_id not in _json(row.engines_json, [])
+        or business_id not in businesses
+        or jurisdiction not in jurisdictions
+        or engine_id not in engines
     ):
         raise HTTPException(status_code=409, detail="legacy business, engine, or jurisdiction mismatch")
     return row
