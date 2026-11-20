@@ -475,12 +475,14 @@
       "source_paths": [
         "docs/UNIVERSAL_OPPORTUNITY_PIPELINE.md",
         "docs/PANTHEON_CALIBRATION_PROTOCOL.md",
-        "services/api/app/services/universal_opportunity_evaluator.py"
+        "services/api/app/services/universal_opportunity_evaluator.py",
+        "ops/VALHALLA_FULL_VISION_TRACEABILITY.md",
+        "docs/PHASE3_INTEGRATED_ARCHITECTURE.md"
       ],
       "source_observation": "Expanded Heimdall/Odin/Loki/Norns/Tyr/Forseti/Vidar/Mimir/Njord/Freyja/Bragi/Huginn-Muninn and alternative Valkyrie/Fenrir/Skald/Jotunn names from historical plan; not all currently independent agents.",
       "evidence_level": "SOURCE_INSPECTED_ONLY",
       "production_verified": false,
-      "acceptance_test": "Map historical role/authority variants without losing user intent; test controlled bridge and no unrestricted agent-to-agent tools; owner ratifies conflicting labels.",
+      "acceptance_test": "Map historical role/authority variants without losing user intent; test controlled bridge and no unrestricted agent-to-agent tools; owner ratifies conflicting labels. Owner-confirmed 2026-11-20: prove every specialist covers all authorized relevant subsystems via scheduled and event-driven analysis, durable scoped reports to Prime, independent Loki cross-system challenges, and Prime synthesis/decision/verified execution inside existing mandates without routine owner approval; test missing/stale evidence, escalation and tenant isolation.",
       "depends_on": [
         "pantheon_five_evaluators",
         "learning_mimir"
@@ -819,7 +821,7 @@
       "source_observation": "Three Loki mechanisms are separate: threshold governance (18 focused tests), heuristic agent/text engine (not independent), and review endpoint. A former fake COMPLETED review stub is now blocked pending actual independent provider. In-process universal objections can force hold/rejection but are not independent adversarial assessment. No independent paid AI inference or verified final review exists.",
       "evidence_level": "FOCUSED_CI_TESTED",
       "production_verified": false,
-      "acceptance_test": "Independently audit immutable Heimdall proposals with contrary evidence and sourced objection ledger, prove re-audit after changes, equal-standing owner dissent, lawful professional escalation, and mandatory fail-closed high-risk dispatch; realistic adversarial cases and reviewer outage tested in Postgres/staging. Current focused tests cover fail-closed missing reviewer only.",
+      "acceptance_test": "Independently audit immutable Heimdall proposals with contrary evidence and sourced objection ledger, prove re-audit after changes, equal-standing owner dissent, lawful professional escalation, and mandatory fail-closed high-risk dispatch; realistic adversarial cases and reviewer outage tested in Postgres/staging. Current focused tests cover fail-closed missing reviewer only. Prove proactive cross-system coverage, reports to Prime, immutable independent dissent and recorded Prime response. Owner receives exceptions rather than approving every routine decision.",
       "depends_on": [
         "pantheon_five_evaluators",
         "runtime_governance",
