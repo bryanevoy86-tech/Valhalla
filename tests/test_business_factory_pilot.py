@@ -284,5 +284,58 @@ class BusinessFactoryPilotTests(unittest.TestCase):
         self.assertEqual(self.submit(changed).status_code, 409)
 
 
+    def test_emergency_stop_prevents_approved_draft_from_executing(self):
+        action = self.submit().json()["action_id"]
+        approved = self.client.post(
+            f"/api/business-factory/actions/{action}/approve",
+            json={"confirmation": "APPROVE_INTERNAL_DRAFT"}, headers=HEADERS,
+        )
+        self.assertEqual(approved.status_code, 200, approved.text)
+
+        from unittest.mock import patch
+        with patch.dict(os.environ, {"VALHALLA_EMERGENCY_STOP": "true"}):
+            response = self.client.post("/api/business-factory/actions/run-once", headers=HEADERS)
+            self.assertEqual(response.status_code, 200, response.text)
+            self.assertEqual(response.json()["status"], "blocked")
+            self.assertEqual(response.json()["reason"], "EMERGENCY_STOP_ACTIVE")
+            self.assertFalse(response.json()["verified"])
+
+        db = self.sessions()
+        self.assertEqual(db.query(MediaContent).count(), 0)
+        self.assertEqual(db.query(LegacyInstanceWorkItem).first().status, "queued")
+        db.close()
+
+    def test_database_kill_switch_prevents_approved_draft(self):
+        from app.models.go_live_state import GoLiveState
+
+        GoLiveState.__table__.create(bind=self.engine)
+        db = self.sessions()
+        db.add(GoLiveState(id=1, go_live_enabled=False, kill_switch_engaged=False))
+        db.commit()
+        db.close()
+
+        action = self.submit().json()["action_id"]
+        approved = self.client.post(
+            f"/api/business-factory/actions/{action}/approve",
+            json={"confirmation": "APPROVE_INTERNAL_DRAFT"}, headers=HEADERS,
+        )
+        self.assertEqual(approved.status_code, 200, approved.text)
+
+        db = self.sessions()
+        state = db.query(GoLiveState).first()
+        state.kill_switch_engaged = True
+        db.commit()
+        db.close()
+
+        blocked = self.client.post("/api/business-factory/actions/run-once", headers=HEADERS)
+        self.assertEqual(blocked.status_code, 200, blocked.text)
+        self.assertEqual(blocked.json()["status"], "blocked")
+        self.assertEqual(blocked.json()["reason"], "EMERGENCY_STOP_ACTIVE")
+
+        db = self.sessions()
+        self.assertEqual(db.query(MediaContent).count(), 0)
+        db.close()
+
+
 if __name__ == "__main__":
     unittest.main()
