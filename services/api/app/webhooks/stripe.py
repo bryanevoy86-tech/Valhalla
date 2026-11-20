@@ -1,59 +1,56 @@
+"""Stripe webhook ingress: authenticate before parsing or acknowledging business outcomes.
+
+No payment or refund is booked here until a real idempotent financial-ledger
+consumer is wired in. A 503 causes Stripe to retry rather than losing a paid
+event while returning fictional "payment_recorded" success.
 """
-Module 36: Stripe Webhook Handler
-Handles incoming webhook events from Stripe.
-"""
-from fastapi import APIRouter, Request
+from __future__ import annotations
+
+import json
+
+from fastapi import APIRouter, HTTPException, Request
+
 from app.heimdall.authority import is_live
+from app.providers.stripe_adapter import StripeAdapter
 
 router = APIRouter(prefix="/webhooks/stripe")
+
+FINANCIAL_EVENTS = {
+    "payment_intent.succeeded",
+    "payment_intent.payment_failed",
+    "charge.refunded",
+    "checkout.session.completed",
+    "checkout.session.async_payment_succeeded",
+    "checkout.session.async_payment_failed",
+}
 
 
 @router.post("")
 async def stripe_webhook(req: Request):
-    """
-    Handle Stripe webhook events.
-    
-    Supported events:
-    - payment_intent.succeeded: Payment completed
-    - payment_intent.payment_failed: Payment failed
-    - charge.refunded: Refund processed
-    """
     if not is_live():
-        return {"status": "sandbox_ignored"}
-    
+        # Shadow/sandbox must have NO financial side effects.
+        return {"status": "sandbox_ignored", "verified_financial_effect": False}
+
+    raw_body = await req.body()
+    if not StripeAdapter().validate_signature(raw_body, req.headers.get("Stripe-Signature")):
+        raise HTTPException(status_code=400, detail="invalid Stripe signature")
+
     try:
-        payload = await req.json()
-        event_type = payload.get("type")
+        payload = json.loads(raw_body)
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        raise HTTPException(status_code=400, detail="invalid Stripe event payload") from None
 
-        if event_type == "payment_intent.succeeded":
-            # Log payment success
-            intent_id = payload.get("data", {}).get("object", {}).get("id")
-            return {
-                "status": "payment_recorded",
-                "intent_id": intent_id,
-                "event": "payment_intent.succeeded"
-            }
+    if not isinstance(payload, dict) or not isinstance(payload.get("id"), str):
+        raise HTTPException(status_code=400, detail="missing Stripe event identity")
 
-        elif event_type == "payment_intent.payment_failed":
-            # Log payment failure
-            return {
-                "status": "payment_failure_recorded",
-                "event": "payment_intent.payment_failed"
-            }
+    kind = payload.get("type")
+    if kind not in FINANCIAL_EVENTS:
+        return {"status": "ignored", "verified_financial_effect": False}
 
-        elif event_type == "charge.refunded":
-            # Log refund
-            return {
-                "status": "refund_recorded",
-                "event": "charge.refunded"
-            }
-
-        return {
-            "status": "ignored",
-            "event": event_type
-        }
-    except Exception as e:
-        return {
-            "status": "error",
-            "message": str(e)
-        }
+    # Not safe to acknowledge a payment before the event is persistently
+    # deduplicated, reconciled, and applied to a ledger with provider evidence.
+    # Codex must connect the canonical payment/receipt pipeline first.
+    raise HTTPException(
+        status_code=503,
+        detail="STRIPE_FINANCIAL_EVENT_CONSUMER_NOT_VERIFIED",
+    )
