@@ -5,6 +5,10 @@ from uuid import UUID, uuid4
 
 from sqlalchemy.orm import Session
 
+from app.god.models import GodReviewCase, GodReviewEvent
+from app.loki.models import LokiFinding, LokiIndependentReceipt, LokiReconsideration, LokiReview
+from app.models.god_verdicts import GodVerdict
+from app.models.governance_decision import GovernanceDecision
 from app.models.completion_registry import LegacyInstanceRegistryItem, LegacyInstanceWorkItem, LegacyOrchestrationEvent
 from app.models.media_engine import MediaContent
 from app.models.product_artifact import ProductArtifact
@@ -12,6 +16,7 @@ from app.models.product_artifact import ProductArtifact
 
 FACTORY = "/api/business-factory"
 ASSETS = f"{FACTORY}/product-artifacts"
+PHASE3 = "/api/completion/phase3/universal-opportunity"
 
 
 def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkeypatch):
@@ -82,15 +87,99 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
         assert approved.status_code == 200, approved.text
         return action_id
 
-    action_id = submit_and_approve(listing)
+    for model in (GodReviewCase, GodReviewEvent, GodVerdict, GovernanceDecision, LokiReview,
+                  LokiFinding, LokiIndependentReceipt, LokiReconsideration):
+        model.__table__.create(engine)
+
+    worker = {"X-Loki-Reviewer-Key": "independent-product-test-reviewer"}
+    monkeypatch.setenv("VALHALLA_LOKI_REVIEWER_KEY", worker["X-Loki-Reviewer-Key"])
+    monkeypatch.setenv("VALHALLA_LOKI_REVIEWER_ID", "independent-product-review")
+    proposal = {
+        "opportunity_id": "product-development-001", "engine_id": scope["engine_id"], "legacy": scope["legacy_instance_id"],
+        "jurisdiction": scope["jurisdiction"], "title": listing["title"], "summary": listing["description"],
+        "evidence_confidence": 0.95, "strategic_value": 0.9, "downside_exposure": 0.1, "blast_radius": "LOW",
+        "required_capital": 1000, "maximum_capital_exposure": 1000, "required_reserve_to_survive_failure": 100,
+        "available_safe_capital": 1000, "point_of_no_return": "External publication or paid access",
+        "exit_options": ["Archive the private preview before any publication"],
+        "specialist_inputs": {
+            "business_id": scope["business_id"],
+            "proposed_internal_listing": {
+                **{key: listing[key] for key in (
+                    "artifact_id", "product_id", "industry", "title", "description", "price_cents_cad",
+                )},
+                "artifact_sha256": checksum,
+            },
+            **dict.fromkeys(("niche_demand", "addressable_niche", "pricing_power", "retention", "defensibility", "global_reach"), 0.95),
+            **dict.fromkeys(("churn_risk", "technical_build_effort", "hosting_api_cost", "support_burden"), 0.05),
+        },
+    }
+    assert client.post(f"{FACTORY}/listing-drafts", headers=admin, json={
+        **listing, "prime_verdict_id": str(uuid4()),
+    }).status_code == 409
+    artifact = client.post(f"{PHASE3}/review-artifact", json=proposal).json()
+    queued = client.post("/loki/reviews", json={**artifact, "input_source": "prime-product-rehearsal"})
+    assert queued.status_code == 201, queued.text
+    review_id = queued.json()["id"]
+    review = client.get("/loki/worker/reviews", headers=worker).json()[0]
+    assert review["raw_input"]["specialist_inputs"]["proposed_internal_listing"]["artifact_sha256"] == checksum
+    finding = {
+        "artifact_sha256": review["artifact_sha256"], "analysis_ref": "fixture:dry-run/product-rights",
+        "summary": "Check that the stated permission covers internal testing only.",
+        "findings": [{
+            "category": "license_scope", "severity": "warn", "material": True,
+            "message": "Restrict this action to reversible internal testing.", "evidence_ref": "fixture:owner-attestation",
+        }],
+    }
+    result = client.post(f"/loki/worker/reviews/{review_id}/result", headers=worker, json=finding)
+    assert result.status_code == 201, result.text
+
+    def evaluate():
+        return client.post(f"{PHASE3}/evaluate", json={
+            "shadow_mode": False,
+            "opportunities": [{**proposal, "independent_loki_review_id": review_id}],
+        })
+
+    assert evaluate().status_code == 409
+    findings = client.get(f"/loki/reviews/{review_id}/findings").json()
+    reconsider = client.post(f"/loki/reviews/{review_id}/reconsider", headers=owner, json={
+        "artifact_sha256": review["artifact_sha256"], "disposition": "accept_risk",
+        "material_finding_ids": [findings[0]["id"]],
+        "reason": "Owner confirms that reversible private testing stays within the internal attestation.",
+    })
+    assert reconsider.status_code == 200, reconsider.text
+    decision = evaluate()
+    assert decision.status_code == 200, decision.text
+    advice = decision.json()["evaluations"][0]
+    assert advice["final_decision"] in {"proceed", "research_more"}, advice["final_decision"]
+    assert advice["capital_risk_exit_analysis"]["hard_decision_rule_pass"], advice["hard_gate_evaluation"]
+    listing["prime_verdict_id"] = advice["persistence"]["god_verdict_id"]
+    different_price = client.post(f"{FACTORY}/listing-drafts", headers=admin, json={
+        **listing, "price_cents_cad": listing["price_cents_cad"] + 1,
+    })
+    assert different_price.status_code == 409, different_price.text
+
+    mandate = {
+        **scope, "product_id": asset["product_id"], "mandate_id": "product-rehearsal-mandate",
+        "ttl_seconds": 600, "max_uses": 1, "max_price_cents_cad": listing["price_cents_cad"],
+    }
+    granted = client.post(f"{FACTORY}/mandates", headers=owner, json=mandate)
+    assert granted.status_code == 200, granted.text
+    assigned = client.post(f"{FACTORY}/listing-drafts", headers=admin, json={
+        **listing, "mandate_id": mandate["mandate_id"],
+    })
+    assert assigned.status_code == 200, assigned.text
+    action_id = assigned.json()["action_id"]
     executed = client.post(f"{FACTORY}/actions/run-once", headers=admin).json()
     assert executed["status"] == "completed"
     assert executed["receipt"]["sales_verified"] is False
+    assert executed["receipt"]["authority_mode"] == "STANDING_MANDATE"
     assert executed["receipt"]["product_asset"]["sha256"] == checksum
+    assert executed["receipt"]["prime_decision"]["review_id"] == review_id
+    assert executed["receipt"]["prime_decision"]["verdict_id"] == listing["prime_verdict_id"]
     with Session(engine) as db:
-        artifact = db.get(MediaContent, executed["receipt"]["media_content_id"])
-        assert json.loads(artifact.body)["product_asset"]["sha256"] == checksum
-        assert json.loads(artifact.body)["purchase_url"] is None
+        listing_record = db.get(MediaContent, executed["receipt"]["media_content_id"])
+        assert json.loads(listing_record.body)["product_asset"]["sha256"] == checksum
+        assert json.loads(listing_record.body)["purchase_url"] is None
     assert client.get(f"{FACTORY}/actions/{action_id}", headers=admin).json()["internal_artifact_verified"]
 
     pending_id = submit_and_approve({**listing, "request_key": "workshop-listing-02"})
@@ -110,4 +199,6 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
     with Session(engine) as db:
         assert db.query(MediaContent).count() == 1
         learned = db.query(LegacyOrchestrationEvent).filter_by(event_type="MIMIR_INTERNAL_ARTIFACT_VERIFIED").one()
-        assert json.loads(learned.payload_json)["product_asset"]["sha256"] == checksum
+        verified = json.loads(learned.payload_json)
+        assert verified["product_asset"]["sha256"] == checksum
+        assert verified["prime_decision"]["proposal_sha256"] == artifact["artifact_sha256"]

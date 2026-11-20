@@ -2238,6 +2238,9 @@ def _persist_universal_pantheon_snapshot(
             "engine_id": payload.engine_id,
             "owner_approval_envelope": owner_envelope,
             "shadow_mode": "independent_loki" not in owner_envelope,
+            "internal_draft_eligible": result["final_decision"] in {"proceed", "research_more"}
+            and result["capital_risk_exit_analysis"]["hard_decision_rule_pass"] is True
+            and result["outcome_contract"]["outcome_class"] == "VALHALLA_OUTCOME",
             "external_effects_authorized": False,
         },
     )

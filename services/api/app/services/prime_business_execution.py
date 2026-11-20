@@ -21,6 +21,9 @@ from uuid import UUID
 from fastapi import Header, HTTPException
 from sqlalchemy.orm import Session
 
+from app.loki.models import LokiFinding, LokiIndependentReceipt, LokiReconsideration, LokiReview
+from app.loki.review_service import verdict as independent_verdict
+from app.models.god_verdicts import GodVerdict
 from app.models.completion_registry import (
     LegacyInstanceRegistryItem,
     LegacyInstanceWorkItem,
@@ -102,6 +105,8 @@ def _mimir_outcome(item: LegacyInstanceWorkItem, receipt: dict) -> dict:
     }
     if "product_asset" in receipt:
         outcome["product_asset"] = receipt["product_asset"]
+    if "prime_decision" in receipt:
+        outcome["prime_decision"] = receipt["prime_decision"]
     return outcome
 
 
@@ -324,6 +329,56 @@ def _listing_asset(db: Session, artifact_id: UUID, work: Any, product_id: str, *
     return artifact_reference(asset)
 
 
+def _bound_prime_decision(db: Session, verdict_id: UUID, work: Any, listing: dict) -> dict:
+    asset = listing.get("product_asset")
+    if not isinstance(asset, dict):
+        raise HTTPException(status_code=422, detail="A governed listing requires an exact product asset")
+    schema = inspect(db.connection())
+    if any(not schema.has_table(model.__tablename__) for model in (
+        GodVerdict, LokiReview, LokiIndependentReceipt, LokiFinding, LokiReconsideration,
+    )):
+        raise HTTPException(status_code=503, detail="Prime decision evidence schema not ready")
+    snapshot = db.get(GodVerdict, verdict_id)
+    if not snapshot or snapshot.trigger != "phase3_universal_opportunity":
+        raise HTTPException(status_code=409, detail="A live Prime decision snapshot is required")
+    metadata = snapshot.metadata_json
+    if (not isinstance(metadata, dict) or metadata.get("shadow_mode") is not False
+            or metadata.get("internal_draft_eligible") is not True):
+        raise HTTPException(status_code=409, detail="Prime did not recommend an eligible internal draft")
+    try:
+        independent = metadata["owner_approval_envelope"]["independent_loki"]
+        review = db.get(LokiReview, UUID(independent["review_id"]))
+    except (KeyError, TypeError, ValueError, AttributeError) as exc:
+        raise HTTPException(status_code=409, detail="Prime snapshot has no independent Loki receipt") from exc
+    if not review or review.artifact_type != "universal_opportunity":
+        raise HTTPException(status_code=409, detail="Independent Loki proposal is missing")
+    decision = independent_verdict(db, review)
+    if not decision.ok_to_proceed or decision.artifact_sha256 != independent.get("artifact_sha256"):
+        raise HTTPException(status_code=409, detail="Independent Loki reconsideration is required")
+    proposal = review.raw_input
+    specialist_inputs = proposal.get("specialist_inputs") if isinstance(proposal, dict) else None
+    expected = {
+        "product_id": listing["product_id"], "title": listing["title"],
+        "description": listing["description"], "price_cents_cad": listing["price_cents_cad"],
+        "artifact_id": asset["artifact_id"], "artifact_sha256": asset["sha256"], "industry": work.industry,
+    }
+    if (
+        not isinstance(specialist_inputs, dict)
+        or proposal.get("opportunity_id") != metadata.get("opportunity_id")
+        or proposal.get("simulation_fixture") is not False
+        or proposal.get("legacy") != work.legacy_instance_id
+        or proposal.get("engine_id") != work.engine_id
+        or proposal.get("jurisdiction") != work.jurisdiction
+        or specialist_inputs.get("business_id") != work.business_id
+        or _canonical(specialist_inputs.get("proposed_internal_listing")) != _canonical(expected)
+    ):
+        raise HTTPException(status_code=409, detail="Listing differs from the reviewed Prime proposal")
+    return {
+        "verdict_id": str(verdict_id), "review_id": str(review.id),
+        "proposal_sha256": decision.artifact_sha256,
+    }
+
+
 def submit_listing_draft(db: Session, request: Any) -> dict:
     """Persist an idempotent work assignment; NO action occurs at submission."""
     inputs = {
@@ -340,6 +395,8 @@ def submit_listing_draft(db: Session, request: Any) -> dict:
         inputs["mandate_id"] = request.mandate_id
     if (asset_id := getattr(request, "artifact_id", None)) is not None:
         inputs["product_asset"] = _listing_asset(db, asset_id, request, request.product_id)
+    if (verdict_id := getattr(request, "prime_verdict_id", None)) is not None:
+        inputs["prime_decision"] = _bound_prime_decision(db, verdict_id, request, inputs)
     key_hash = hashlib.sha256(
         f"{request.legacy_instance_id}:{request.request_key}".encode("utf-8")
     ).hexdigest()
@@ -485,6 +542,8 @@ def _render_listing(payload: dict[str, Any]) -> str:
     }
     if "product_asset" in payload:
         draft["product_asset"] = payload["product_asset"]
+    if "prime_decision" in payload:
+        draft["prime_decision"] = payload["prime_decision"]
     data = _canonical(draft)
     if len(data.encode("utf-8")) > MAX_BODY_LENGTH:
         raise ValueError("listing exceeds allowed size")
@@ -547,6 +606,16 @@ def _execute_locked_draft(db: Session, item: LegacyInstanceWorkItem) -> dict | N
                 "status": "blocked", "action_id": item.action_id, "verified": False,
                 "reason": str(exc.detail) if isinstance(exc, HTTPException) else "Invalid product artifact reference",
             }
+    if "prime_decision" in payload:
+        try:
+            ref = payload["prime_decision"]
+            if _bound_prime_decision(db, UUID(ref["verdict_id"]), item, payload) != ref:
+                raise HTTPException(status_code=409, detail="Prime decision evidence mismatch")
+        except (TypeError, ValueError, KeyError, HTTPException) as exc:
+            return {
+                "status": "blocked", "action_id": item.action_id, "verified": False,
+                "reason": str(exc.detail) if isinstance(exc, HTTPException) else "Invalid Prime decision reference",
+            }
     policy = _internal_policy_decision(db, item, approved=True)
     if policy.verdict != "ALLOW":
         return {
@@ -596,6 +665,8 @@ def _execute_locked_draft(db: Session, item: LegacyInstanceWorkItem) -> dict | N
     }
     if "product_asset" in payload:
         evidence["product_asset"] = payload["product_asset"]
+    if "prime_decision" in payload:
+        evidence["prime_decision"] = payload["prime_decision"]
     _event(
         db,
         event_id=receipt_id,
@@ -697,7 +768,8 @@ def action_status(db: Session, action_id: str) -> dict:
         payload = _json(item.payload_json, {})
         expected_body = None
         if (isinstance(payload, dict) and payload.get("business_id") == item.business_id
-                and payload.get("product_asset") == evidence.get("product_asset")):
+                and payload.get("product_asset") == evidence.get("product_asset")
+                and payload.get("prime_decision") == evidence.get("prime_decision")):
             try:
                 expected_body = _render_listing(payload)
             except (ValueError, TypeError, KeyError):
