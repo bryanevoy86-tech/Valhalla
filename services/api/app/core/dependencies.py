@@ -54,3 +54,20 @@ def require_auth(
             detail="Unauthorized: X-Session-Token required",
         )
     return True
+
+
+def require_prime_control_key(
+    x_prime_control_key: str | None = Header(None, alias="X-Prime-Control-Key"),
+) -> bool:
+    """Private server-to-server control plane; never share with SaaS tenants.
+    
+    Deliberately independent of the Builder and Business Factory keys.
+    """
+    expected = os.environ.get("VALHALLA_PRIME_CONTROL_KEY", "")
+    if not expected:
+        raise HTTPException(status_code=503, detail="Prime control key not configured")
+    if not x_prime_control_key or not hmac.compare_digest(
+        x_prime_control_key.encode("utf-8"), expected.encode("utf-8")
+    ):
+        raise HTTPException(status_code=401, detail="Prime control authentication required")
+    return True
