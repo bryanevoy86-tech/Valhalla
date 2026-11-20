@@ -11,8 +11,8 @@
         "services/api/app/main.py",
         "services/api/start.py"
       ],
-      "source_observation": "Dynamic router autoload logs errors and continues; /health is only a process check",
-      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "source_observation": "Actual canonical FastAPI app imported on isolated Linux GitHub Actions; 7 critical routers loaded without import failure and 9/9 required route contracts registered. Production Render app remains at older commit.",
+      "evidence_level": "FOCUSED_CI_TESTED",
       "production_verified": false,
       "acceptance_test": "Prove every mandatory router imports in a clean canonical app; no missing OpenAPI paths or silent startup success",
       "depends_on": [
@@ -26,10 +26,13 @@
       "priority": "P0",
       "source_paths": [
         "services/api/app/routers/auth_weweb.py",
-        "services/api/app/core/dependencies.py"
+        "services/api/app/core/dependencies.py",
+        "services/api/app/security/token_revocation.py",
+        "services/api/app/models/auth_revocations.py",
+        "alembic/versions/20261119_persistent_auth_revocation.py"
       ],
-      "source_observation": "WeWeb JWT flow exists; process-local revocation and optional development session auth need production verification",
-      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "source_observation": "WeWeb logout and refresh revocations moved from process-local memory into hashed persistent database records; owner reset now always requires configured secret. SQLite tests pass. Other auth paths and production migration unverified.",
+      "evidence_level": "SQLITE_INTEGRATION_TESTED",
       "production_verified": false,
       "acceptance_test": "Persistent logout/revocation and RBAC across restart; ownership and tenant-bound denies; real login/logout smoke",
       "depends_on": [],
@@ -143,8 +146,8 @@
         "services/api/app/services/prime_business_execution.py",
         "services/api/app/routers/prime_business_factory.py"
       ],
-      "source_observation": "Owner-approved internal listing draft, DB record and digest receipt pass SQLite integration tests only",
-      "evidence_level": "SQLITE_INTEGRATION_TESTED",
+      "source_observation": "Owner-approved internal listing-draft work and SHA-256 receipt passed SQLite tests plus real disposable PostgreSQL persistence and two-worker duplicate-attempt tests. No crash/lease retry or real customer transaction proven.",
+      "evidence_level": "POSTGRES_INTEGRATION_TESTED",
       "production_verified": false,
       "acceptance_test": "Real PostgreSQL task lifecycle survives restarts and duplicates; every completed status has independently verified receipt",
       "depends_on": [
@@ -158,10 +161,11 @@
       "priority": "P0",
       "source_paths": [
         "alembic/versions/20261119_factory_legacy_work_schema.py",
-        "alembic/env.py"
+        "alembic/env.py",
+        "alembic/versions/20261119_persistent_auth_revocation.py"
       ],
-      "source_observation": "Source migration prepared but live Render DB lacks legacy work tables; startup predeploy migrations not configured",
-      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "source_observation": "Prepared additive Factory and JWT revocation migrations; both upgraded and reran idempotently on disposable PostgreSQL with preexisting data preserved. Not complete historical chain or Render staging migration.",
+      "evidence_level": "POSTGRES_INTEGRATION_TESTED",
       "production_verified": false,
       "acceptance_test": "Rehearse upgrade and no-data-loss on disposable PostgreSQL; verify exact prod DB, heads and release rollback",
       "depends_on": [
@@ -412,9 +416,11 @@
       "priority": "P0",
       "source_paths": [
         ".github/workflows/critical-controls-ci.yml",
-        ".github/workflows/disable-ci.yml"
+        ".github/workflows/disable-ci.yml",
+        "scripts/prime_runtime_route_probe.py",
+        "services/api/requirements.txt"
       ],
-      "source_observation": "Focused CI restored on PR #4; broad suite still has previously reported collection errors",
+      "source_observation": "Required CI now exercises 9-route canonical FastAPI import, 85 targeted unit/SQLite/PostgreSQL tests, and separate nongating legacy pytest collection report. Full backend test execution and staging release remain blocked.",
       "evidence_level": "FOCUSED_CI_TESTED",
       "production_verified": false,
       "acceptance_test": "Canonical app starts cleanly; all core safety and workflow tests + prod-like Postgres integration; reviewed release/rollback evidence",
