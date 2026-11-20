@@ -14,6 +14,7 @@ on:
       - 'tests/test_*.py'
       - 'scripts/prime_system_preflight.py'
       - 'scripts/builder_materialize_review.py'
+      - 'scripts/builder_test_review.py'
       - 'scripts/prime_runtime_route_probe.py'
       - 'ops/prime_system_integration_matrix.json'
       - '.github/workflows/critical-controls-ci.yml'
@@ -97,6 +98,16 @@ jobs:
           python -m unittest discover -s tests -p test_autonomy_governor.py -v
           python scripts/prime_system_preflight.py --json > prime-preflight.json
           cat prime-preflight.json
+      - name: Run Builder candidate tests in a network-disabled container
+        run: |
+          mkdir -p "$RUNNER_TEMP/builder-offline-image"
+          docker build -t valhalla-builder-ci:offline -f - "$RUNNER_TEMP/builder-offline-image" <<'DOCKERFILE'
+          FROM python:3.11-slim
+          RUN python -m pip install --no-cache-dir pytest==8.3.3
+          DOCKERFILE
+          export BUILDER_OFFLINE_TEST_IMAGE="$(docker image inspect --format '{{.Id}}' valhalla-builder-ci:offline)"
+          test -n "$BUILDER_OFFLINE_TEST_IMAGE"
+          python -m unittest discover -s tests -p test_builder_offline_runner.py -v
       - name: Archive read-only system preflight
         uses: actions/upload-artifact@v4
         with:

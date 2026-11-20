@@ -208,9 +208,11 @@
         "services/api/app/core/builder_path_policy.py",
         "tests/test_builder_review_boundary.py",
         "scripts/builder_materialize_review.py",
-        "tests/test_builder_materialize_review.py"
+        "tests/test_builder_materialize_review.py",
+        "scripts/builder_test_review.py",
+        "tests/test_builder_offline_runner.py"
       ],
-      "source_observation": "Existing Builder queue, snapshot-bound review bundles and stale-base/tamper checks tested via FastAPI and SQLite; independent artifact materializer checksum/syntax cases passed. Direct runtime source writes denied. No AI worker, isolated test execution, reviewed PR or deployment yet.",
+      "source_observation": "Existing Builder queue, snapshot-bound review bundles and stale-base/tamper checks tested via FastAPI and SQLite; independent artifact materializer checksum/syntax cases passed. Direct runtime source writes denied. Opt-in offline container runner pins the committed base and image, then records the actual backend test process exit. No autonomous assignment worker or release authority.",
       "evidence_level": "SQLITE_INTEGRATION_TESTED",
       "production_verified": false,
       "acceptance_test": "Prove authorized durable development assignments, snapshot-bound artifact export, isolated fresh checkout and actual regression/security tests, scoped PR review and staged release. No API mutation of running source or unrestricted pushes.",
