@@ -224,14 +224,18 @@ def readyz():
     max_age = int((cfg.get("health", {}) or {}).get("ready_heartbeat_max_age_seconds", 45))
     hb_ok = hb["present"] and hb["age_seconds"] is not None and hb["age_seconds"] <= max_age
 
-    db_ok = True
-    require_db = bool((cfg.get("health", {}) or {}).get("ready_require_db", False))
+    # Runtime readiness differs from shallow HTTP liveness. Require a DB
+    # and a current worker heartbeat unless explicitly disabled by policy.
+    require_db = bool((cfg.get("health", {}) or {}).get("ready_require_db", True))
+    db_ok = not require_db
 
     if require_db and os.getenv("DATABASE_URL"):
         try:
+            from sqlalchemy import text
             from app.core.db import engine
             with engine.connect() as conn:
-                conn.execute("SELECT 1")
+                conn.execute(text("SELECT 1"))
+            db_ok = True
         except Exception:
             db_ok = False
 
