@@ -158,3 +158,40 @@ def test_final_risk_gate_and_prediction_always_agree():
     assert not result["pantheon"]["external_effects_authorized"]
     assert not result["pantheon"]["checks"]["tyr"]["allowed"]
     assert not result["pantheon"]["checks"]["forseti"]["allowed"]
+
+
+@pytest.mark.parametrize("path", [
+    "/enable", "/disable", "/kill-switch/engage", "/kill-switch/release",
+])
+def test_go_live_mutations_require_both_private_and_owner_credentials(monkeypatch, path):
+    from app.routers.go_live import router
+    monkeypatch.setenv("VALHALLA_PRIME_CONTROL_KEY", "prime-release-test")
+    monkeypatch.setenv("VALHALLA_OWNER_MANDATE_KEY", "owner-release-test")
+    monkeypatch.setenv("VALHALLA_FACTORY_KEY", "factory-release-test")
+    app = FastAPI()
+    app.include_router(router)
+
+    def forbidden_db():
+        raise AssertionError("unauthorized request reached the database")
+    app.dependency_overrides[get_db] = forbidden_db
+    body = {"changed_by": "test", "reason": "isolated auth test"}
+    with TestClient(app) as client:
+        for headers in ({}, {"X-Prime-Control-Key": "prime-release-test"},
+                        {"X-Owner-Mandate-Key": "owner-release-test"},
+                        {"X-Prime-Control-Key": "prime-release-test",
+                         "X-Owner-Mandate-Key": "factory-release-test"}):
+            assert client.post("/governance/go-live" + path,
+                               headers=headers, json=body).status_code == 401
+
+
+@pytest.mark.parametrize("path", ["/state", "/checklist"])
+def test_go_live_reads_are_private(monkeypatch, path):
+    from app.routers.go_live import router
+    monkeypatch.setenv("VALHALLA_PRIME_CONTROL_KEY", "prime-release-test")
+    app = FastAPI()
+    app.include_router(router)
+    def forbidden_db():
+        raise AssertionError("unauthorized request reached the database")
+    app.dependency_overrides[get_db] = forbidden_db
+    with TestClient(app) as client:
+        assert client.get("/governance/go-live" + path).status_code == 401
