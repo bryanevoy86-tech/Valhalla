@@ -123,3 +123,9 @@ Reconcile conflicting role/authority and trust-timing documents explicitly; do n
 ## Loki is a separate mandatory independent-audit workstream
 
 Before wiring production external effects, implement and integrate docs/LOKI_INDEPENDENT_CHALLENGER_CONTRACT.md. The current in-process universal_loki_objections and 18 Pantheon tests are beneficial deterministic checks but not independent stress-test inference. Legacy review placeholder success has been disabled. Missing/timeout/unsupported Loki audit must HOLD high-impact actions, and the audit must bind by checksum to a versioned Heimdall proposal. Require three adversarial test scenarios and review-after-edit proof. No self-issued clearance or model-generated provider receipts.
+
+## Additional tested work from November 20
+
+Preserve the newly implemented direct five-God dispatch, Prime control-key isolation, scoped shadow Mimir, corrected post-hard-gate predictions and standing internal-draft authority. Existing completion registry tests are now required CI. Read CODEX_START_HERE.md's November 20 update; do not recreate this work.
+
+Pass 1 must wire securely separated credentials in all server-only callers and prove tenants cannot access Prime controls; no model/worker may obtain the mandate-grant key. No standing grant expands external authority. Preserve real transactional consumption/revocation and verify independently held audit receipt. Pass 2/3: build genuine system-wide recurring specialist report/decision pipeline, source-grounded independent Loki reviewer, real outcome learning, worker leases/recovery, and safe provider adapters using the same authority discipline. Pass 4 remains the original wealth/trust/infinite-banking/Canada-exit and family succession advisory scope. All 47 workstreams remain required, none silently removed.
