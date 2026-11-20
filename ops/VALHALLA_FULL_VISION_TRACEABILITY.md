@@ -89,3 +89,12 @@ Never silently resolve a material conflict from most recent document timestamp a
 6. Scale clones, jurisdictions, resorts, additional industries, treasury complexity and household modules only after observable safety and economics prove operation.
 
 **Definition of DONE:** docs/HEIMDALL_DEFINITION_OF_DONE.md. **No production deployment, account action, insurance policy, tax filing or bank transfer occurred during this audit.** The complete vision is preserved as traceable scope, not yet all operational code.
+
+
+## Pantheon runtime finding and correction — 2026-11-19 (UTC Nov 20)
+
+The original six governance files were indeed auto-loaded, but their path prefix was /governance while historical tests and governance_orchestrator.GOD_ENDPOINTS expected /api/governance. Initial 18/18 historical API tests failed HTTP 404 (run 44662500410), proving source presence was not functional wiring.
+
+Development branch now **registers both old and canonical API paths**, requires all five gods plus orchestrator among critical routers, and demands 15 exact API route contracts. Re-running the 18 historical Pantheon API tests passed. The separate expanded Norse AI specialists / bridge and end-to-end external execution veto remain NOT proven.
+
+CI diagnostic before gate promotion: https://github.com/bryanevoy86-tech/Valhalla/actions/runs/44662885729. New required gate commits: 9e0e5f08, 61c0adca, c4809bf0, 426be5c4. Do not confuse independently callable policy checks with fully enforced real-world effect authorization.
