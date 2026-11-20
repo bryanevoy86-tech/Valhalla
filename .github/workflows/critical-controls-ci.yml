@@ -35,6 +35,7 @@ jobs:
             services/api/app/routers/prime_business_factory.py \
             services/api/app/core/builder_path_policy.py \
             services/api/app/core/route_integrity.py \
+            services/api/app/core/dependencies.py \
             services/api/app/main.py \
             services/api/app/routers/builder.py \
             services/api/app/providers/stripe_adapter.py \
@@ -56,7 +57,8 @@ jobs:
             tests/test_prime_finance_safety.py \
             tests/test_prime_publication_safety.py \
             tests/test_prime_system_preflight.py \
-            tests/test_route_integrity.py
+            tests/test_route_integrity.py \
+            tests/test_core_auth_contracts.py
       - name: No-dependency guardrail tests and source matrix
         run: |
           python -m unittest discover -s tests -p test_fail_closed_smoke.py -v
@@ -98,3 +100,4 @@ jobs:
           python -m unittest discover -s tests -p test_factory_migration.py -v
           python -m unittest discover -s tests -p test_prime_finance_safety.py -v
           python -m unittest discover -s tests -p test_prime_publication_safety.py -v
+          python -m unittest discover -s tests -p test_core_auth_contracts.py -v
