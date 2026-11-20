@@ -42,12 +42,15 @@ from app.models.media_engine import MediaContent  # noqa: E402
 from app.routers.prime_business_factory import router  # noqa: E402
 
 
-HEADERS = {"X-Business-Factory-Key": "test-business-factory-key"}
+WORKER_HEADERS = {"X-Business-Factory-Key": "test-business-factory-key"}
+HEADERS = dict(WORKER_HEADERS, **{"X-Owner-Mandate-Key": "ci-owner-only-mandate"})
 
 
 class BusinessFactoryPilotTests(unittest.TestCase):
     def setUp(self) -> None:
         os.environ["VALHALLA_FACTORY_KEY"] = HEADERS["X-Business-Factory-Key"]
+        self._prior_owner_key = os.environ.get("VALHALLA_OWNER_MANDATE_KEY")
+        os.environ["VALHALLA_OWNER_MANDATE_KEY"] = HEADERS["X-Owner-Mandate-Key"]
         self.engine = create_engine(
             "sqlite://",
             connect_args={"check_same_thread": False},
@@ -90,6 +93,10 @@ class BusinessFactoryPilotTests(unittest.TestCase):
 
     def tearDown(self) -> None:
         self.client.close()
+        if self._prior_owner_key is None:
+            os.environ.pop("VALHALLA_OWNER_MANDATE_KEY", None)
+        else:
+            os.environ["VALHALLA_OWNER_MANDATE_KEY"] = self._prior_owner_key
         self.engine.dispose()
         os.environ.pop("VALHALLA_FACTORY_KEY", None)
 
