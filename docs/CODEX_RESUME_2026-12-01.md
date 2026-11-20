@@ -158,3 +158,12 @@ Start at root CODEX_START_HERE.md and then ops/REMAINING_SYSTEM_BLOCKERS_2026-11
 - services/api/requirements.txt was converted from UTF-16 to UTF-8, pinned dependencies unchanged.
 - Render filtered API/cron logs returned no error-level/5xx matches in queried windows and Nov 19 daily email completed; no claim of successful business automation.
 - No changes were made to production Render services/configuration/DB. The code requires owner-approved staged release with migrations first.
+
+
+## Full Valhalla scope restored — November 19
+
+Do not limit December to 25 broad technical contracts or the Product Foundry. The expanded machine matrix now contains 46 source-anchored workstreams, including full Pantheon/Bridge Layer, Norns/Mimir, voice Commander, five legacies, banking, 90/10 funds, whole-life infinite banking, trusts, Panama/Bahamas planning, Canadian exit/residency, legal/tax opinions, family payroll, Black Ice and more. Master register: ops/VALHALLA_FULL_VISION_TRACEABILITY.md. Pass 0 reconciling all requirements is obligatory before the three technical integration passes, and Pass 4 privately scoped professional-gated wealth/exit advisory implementation comes after the safe operating engine.
+
+Critical additional safety fix: capital/banking/executor.py formerly returned executed with no real bank transfer. It now fails with BANK_TRANSFER_PROVIDER_NOT_CONNECTED and leaves owner approval unused; tests/test_banking_transfer_fail_closed.py added. No bank account was accessed or funds moved.
+
+Conflicting doctrine (Pantheon names, Panama-first vs Canadian-first, advisor-only vs owner-approved autonomous execution) is flagged for owner decision. Do not silently force either side.
