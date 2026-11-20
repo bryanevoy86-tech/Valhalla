@@ -91,7 +91,6 @@ jobs:
           python -m unittest discover -s tests -p test_route_integrity.py -v
           python -m unittest discover -s tests -p test_prime_runtime_route_probe.py -v
           python -m unittest discover -s tests -p test_autonomy_governor.py -v
-          python -m unittest discover -s tests -p test_banking_transfer_fail_closed.py -v
           python scripts/prime_system_preflight.py --json > prime-preflight.json
           cat prime-preflight.json
       - name: Archive read-only system preflight
@@ -131,6 +130,7 @@ jobs:
           python -m unittest discover -s tests -p test_weweb_revocation.py -v
           python -m unittest discover -s tests -p test_auth_revocation_migration.py -v
           python -m unittest discover -s tests -p test_db_fail_closed.py -v
+          python -m unittest discover -s tests -p test_banking_transfer_fail_closed.py -v
 
 
   factory-postgres:
