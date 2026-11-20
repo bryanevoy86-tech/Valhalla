@@ -167,3 +167,8 @@ Do not limit December to 25 broad technical contracts or the Product Foundry. Th
 Critical additional safety fix: capital/banking/executor.py formerly returned executed with no real bank transfer. It now fails with BANK_TRANSFER_PROVIDER_NOT_CONNECTED and leaves owner approval unused; tests/test_banking_transfer_fail_closed.py added. No bank account was accessed or funds moved.
 
 Conflicting doctrine (Pantheon names, Panama-first vs Canadian-first, advisor-only vs owner-approved autonomous execution) is flagged for owner decision. Do not silently force either side.
+
+
+## Original Pantheon integration newly repaired
+
+A real audit found that all 18 historical five-god tests were initially 404. The original routes used /governance; the orchestrator and tests expected /api/governance. The branch now supports both paths, checks all 6 original Pantheon routers as mandatory and tests 15 canonical endpoint contracts. The 18 real FastAPI governance tests passed after the fix (Actions 44662885729) and are now a mandatory CI requirement. The expanded Model C Norse specialists are NOT thereby deployed or connected to every external provider dispatch.
