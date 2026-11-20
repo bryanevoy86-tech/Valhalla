@@ -1,122 +1,57 @@
-# services/api/tests/test_flow_tax_snapshot.py
+from decimal import Decimal
 
-from __future__ import annotations
+from sqlalchemy.orm import Session
 
-from unittest.mock import patch
-from fastapi.testclient import TestClient
-
-from app.main import app
-
-client = TestClient(app)
+from app.leads.models import Lead
+from app.models.deal import Deal
+from app.models.freeze_events import FreezeEvent
+from app.offers.models import Offer
 
 
-def test_tax_snapshot_happy_path():
-    """
-    Test tax snapshot with a mocked profit_allocation response.
-    """
-    # Mock the profit_allocation endpoint response
-    mock_profit_response = {
-        "backend_deal_id": 123,
-        "result": {
-            "metrics": {
-                "purchase_price": 240000,
-                "repairs": 30000,
-                "total_cost_basis": 270000,
-                "sale_price": 340000,
-                "sale_closing_costs": 10000,
-                "extra_expenses": 5000,
-                "gross_profit": 55000,
-                "taxes": 13750,
-                "net_profit_after_tax": 41250,
-            },
-            "flags": {
-                "breach_min_tax_rate": False,
-                "notes": None,
-            },
-            "policy": {
-                "min_tax_rate": 0.20,
-            },
-        },
-        "freeze_event_created": False,
-    }
-
-    with patch("app.routers.flow_tax_snapshot._client.post") as mock_post:
-        mock_post.return_value.status_code = 200
-        mock_post.return_value.json.return_value = mock_profit_response
-
-        payload = {
-            "backend_deal_id": 123,
-            "sale_price": 340000,
-            "sale_closing_costs": 10000,
-            "extra_expenses": 5000,
-            "tax_rate": 0.25,
-        }
-
-        resp = client.post("/api/flow/tax_snapshot_for_deal", json=payload)
-        assert resp.status_code == 200, resp.text
-
-        data = resp.json()
-        assert data["backend_deal_id"] == 123
-
-        numbers = data["numbers"]
-        policy = data["policy"]
-
-        assert numbers["sale_price"] == 340000
-        assert numbers["gross_profit"] == 55000
-        assert numbers["tax_amount"] == 13750
-        assert numbers["net_after_tax"] == 41250
-
-        # In happy path we should not be breaching min tax rate policy
-        assert policy["breach_min_tax_rate"] is False
+def _seed_costs(engine):
+    with Session(engine) as db:
+        lead = Lead(lead_name="Tax scenario", lead_email="tax@example.com", lead_phone="555-010-0101", source="test")
+        db.add(lead)
+        db.flush()
+        deal = Deal(lead_id=lead.id, title="Tax scenario", stage="draft", estimated_repair_cost=30000)
+        db.add(deal)
+        db.flush()
+        db.add(Offer(deal_id=deal.id, offer_price=240000, status="accepted"))
+        db.commit()
+        return deal.id
 
 
-def test_tax_snapshot_below_min_tax_rate_flags_policy():
-    """
-    Test tax snapshot with low tax rate triggering policy flag.
-    """
-    # Mock the profit_allocation endpoint response with breach flag
-    mock_profit_response = {
-        "backend_deal_id": 456,
-        "result": {
-            "metrics": {
-                "purchase_price": 240000,
-                "repairs": 30000,
-                "total_cost_basis": 270000,
-                "sale_price": 340000,
-                "sale_closing_costs": 5000,
-                "extra_expenses": 2000,
-                "gross_profit": 63000,
-                "taxes": 3150,  # 5% tax rate
-                "net_profit_after_tax": 59850,
-            },
-            "flags": {
-                "breach_min_tax_rate": True,
-                "notes": "Tax rate 0.05 is below minimum policy rate of 0.20",
-            },
-            "policy": {
-                "min_tax_rate": 0.20,
-            },
-        },
-        "freeze_event_created": True,
-    }
+def test_tax_snapshot_happy_path(deal_client):
+    client, engine = deal_client
+    deal_id = _seed_costs(engine)
+    response = client.post("/api/flow/tax_snapshot_for_deal", json={
+        "backend_deal_id": deal_id, "sale_price": 340000, "sale_closing_costs": 10000,
+        "extra_expenses": 5000, "tax_rate": "0.25",
+    })
+    assert response.status_code == 200, response.text
+    data = response.json()
+    assert data["backend_deal_id"] == deal_id
+    numbers = data["numbers"]
+    assert numbers["sale_price"] == 340000
+    assert numbers["gross_profit"] == 55000
+    assert numbers["tax_amount"] == 13750
+    assert numbers["net_after_tax"] == 41250
+    assert Decimal(str(numbers["tax_rate_applied"])) == Decimal("0.25")
+    assert data["policy"]["breach_min_tax_rate"] is False
+    with Session(engine) as db:
+        assert db.query(FreezeEvent).count() == 0
 
-    with patch("app.routers.flow_tax_snapshot._client.post") as mock_post:
-        mock_post.return_value.status_code = 200
-        mock_post.return_value.json.return_value = mock_profit_response
 
-        payload = {
-            "backend_deal_id": 456,
-            "sale_price": 340000,
-            "sale_closing_costs": 5000,
-            "extra_expenses": 2000,
-            "tax_rate": 0.05,  # well below default 20% min
-        }
-
-        resp = client.post("/api/flow/tax_snapshot_for_deal", json=payload)
-        assert resp.status_code == 200, resp.text
-
-        data = resp.json()
-        policy = data["policy"]
-
-        # Should flag breach
-        assert policy["breach_min_tax_rate"] is True
+def test_tax_snapshot_below_min_tax_rate_flags_policy(deal_client):
+    client, engine = deal_client
+    deal_id = _seed_costs(engine)
+    response = client.post("/api/flow/tax_snapshot_for_deal", json={
+        "backend_deal_id": deal_id, "sale_price": 340000, "sale_closing_costs": 5000,
+        "extra_expenses": 2000, "tax_rate": "0.05",
+    })
+    assert response.status_code == 200, response.text
+    assert response.json()["policy"]["breach_min_tax_rate"] is True
+    assert response.json()["numbers"]["tax_amount"] == 3150
+    with Session(engine) as db:
+        freeze = db.query(FreezeEvent).filter_by(deal_id=str(deal_id), source="tax_snapshot").one()
+        assert freeze.payload["tax_rate"] == "0.05"

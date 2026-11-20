@@ -4,16 +4,9 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from fastapi.testclient import TestClient
-
-# Adjust this import if your app is exposed differently
-from main import app  # FastAPI instance
 
 
-client = TestClient(app)
-
-
-def test_underwrite_deal_basic_pass_case():
+def test_underwrite_deal_basic_pass_case(deal_client):
     """
     Happy path:
     - LTV under max
@@ -23,6 +16,7 @@ def test_underwrite_deal_basic_pass_case():
     → no freeze_event_created
     """
 
+    client, engine = deal_client
     payload = {
         "deal": {
             "deal_id": None,
@@ -57,10 +51,10 @@ def test_underwrite_deal_basic_pass_case():
     flags = result["flags"]
 
     # Basic sanity checks on metrics
-    assert metrics["total_project_cost"] > 0
-    assert metrics["holding_cost_total"] > 0
-    assert metrics["ltv"] > 0
-    assert metrics["roi"] > 0
+    assert Decimal(metrics["total_project_cost"]) > 0
+    assert Decimal(metrics["holding_cost_total"]) > 0
+    assert Decimal(metrics["ltv"]) > 0
+    assert Decimal(metrics["roi"]) > 0
 
     # In a pass case, no breaches expected
     assert flags["breach_ltv"] is False
@@ -73,7 +67,7 @@ def test_underwrite_deal_basic_pass_case():
           f"Equity%={metrics['equity_percent_of_arv']}, Recommendation={result['recommendation']}")
 
 
-def test_underwrite_deal_violation_triggers_freeze():
+def test_underwrite_deal_violation_triggers_freeze(deal_client):
     """
     Failure path:
     - LTV too high
@@ -84,6 +78,7 @@ def test_underwrite_deal_violation_triggers_freeze():
     """
 
     # Deliberately bad numbers: purchase near or above ARV, high costs
+    client, engine = deal_client
     payload = {
         "deal": {
             "deal_id": None,
@@ -112,9 +107,9 @@ def test_underwrite_deal_violation_triggers_freeze():
     flags = result["flags"]
 
     # Metrics still should be present and valid
-    assert metrics["total_project_cost"] > 0
-    assert metrics["ltv"] >= 0
-    assert metrics["roi"] <= 1
+    assert Decimal(metrics["total_project_cost"]) > 0
+    assert Decimal(metrics["ltv"]) >= 0
+    assert Decimal(metrics["roi"]) <= 1
 
     # With these numbers, we expect at least one breach
     assert (
@@ -123,9 +118,12 @@ def test_underwrite_deal_violation_triggers_freeze():
         or flags["breach_equity"]
     ), "Expected at least one policy breach with bad numbers."
 
-    # A policy breach should trigger a freeze event in production DB.
-    # In dev / SQLite this might not actually write to DB, but the flag should be True.
     assert data["freeze_event_created"] is True
+    from sqlalchemy.orm import Session
+    from app.models.freeze_events import FreezeEvent
+    with Session(engine) as db:
+        freeze = db.query(FreezeEvent).one()
+        assert freeze.payload["org_id"] == 1 and freeze.reason
     assert result["recommendation"] in {"renegotiate", "reject"}
 
     print(f"✅ Violation case validated: LTV={metrics['ltv']}, ROI={metrics['roi']}, "
@@ -134,12 +132,13 @@ def test_underwrite_deal_violation_triggers_freeze():
     print(f"   Policy violations: {flags['notes']}")
 
 
-def test_underwrite_deal_custom_policy():
+def test_underwrite_deal_custom_policy(deal_client):
     """
     Test with custom policy override.
     Use stricter thresholds to ensure a marginal deal gets flagged.
     """
 
+    client, engine = deal_client
     payload = {
         "deal": {
             "deal_id": None,
@@ -174,9 +173,9 @@ def test_underwrite_deal_custom_policy():
     policy = result["policy"]
 
     # Verify custom policy was applied
-    assert policy["max_ltv"] == "0.70"
-    assert policy["min_roi"] == "0.18"
-    assert policy["min_equity_percent"] == "0.15"
+    assert Decimal(policy["max_ltv"]) == Decimal("0.70")
+    assert Decimal(policy["min_roi"]) == Decimal("0.18")
+    assert Decimal(policy["min_equity_percent"]) == Decimal("0.15")
     assert policy["strategy"] == "brrrr"
 
     # With stricter policy, this deal should likely breach
@@ -193,12 +192,13 @@ def test_underwrite_deal_custom_policy():
     print(f"   Recommendation={result['recommendation']}")
 
 
-def test_underwrite_deal_brrrr_with_rent_coverage():
+def test_underwrite_deal_brrrr_with_rent_coverage(deal_client):
     """
     Test BRRRR strategy with rent coverage ratio calculation.
     Ensure rent_coverage_ratio is calculated when expected_rent is provided.
     """
 
+    client, engine = deal_client
     payload = {
         "deal": {
             "deal_id": None,
@@ -239,12 +239,3 @@ def test_underwrite_deal_brrrr_with_rent_coverage():
     print(f"✅ BRRRR case validated: Rent coverage ratio={metrics['rent_coverage_ratio']}")
     print(f"   Monthly rent=$2500 vs monthly costs=$625 = {rent_coverage:.2f}x coverage")
     print(f"   Recommendation={result['recommendation']}")
-
-
-if __name__ == "__main__":
-    print("Running underwriting engine flow tests...\n")
-    test_underwrite_deal_basic_pass_case()
-    test_underwrite_deal_violation_triggers_freeze()
-    test_underwrite_deal_custom_policy()
-    test_underwrite_deal_brrrr_with_rent_coverage()
-    print("\n✅ All underwriting engine tests passed!")

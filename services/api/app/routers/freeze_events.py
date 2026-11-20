@@ -9,28 +9,19 @@ from sqlalchemy.exc import OperationalError, ProgrammingError
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
+from app.core.dependencies import require_prime_control_key
 from app.models.freeze_events import FreezeEvent
 from app.schemas.freeze_events import FreezeEventList, FreezeEventRead
 
 router = APIRouter(
     prefix="/admin/freeze_events",
     tags=["Admin", "Freeze Events"],
+    dependencies=[Depends(require_prime_control_key)],
 )
 
 
 def _handle_db_error(exc: Exception) -> None:
-    """
-    Convert a missing-table / incompatible-schema error into a clean HTTP 500
-    with a helpful message instead of crashing the whole app.
-    """
-    raise HTTPException(
-        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        detail=(
-            "freeze_events table is not available or has an incompatible schema. "
-            "Ensure Postgres migrations have been applied in your production DB. "
-            f"Original error: {exc}"
-        ),
-    )
+    raise HTTPException(status_code=503, detail="Freeze evidence is unavailable") from exc
 
 
 @router.get(

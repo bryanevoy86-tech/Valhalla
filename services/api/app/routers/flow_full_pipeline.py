@@ -59,6 +59,13 @@ def run_full_deal_pipeline(
     payload: FullDealPipelineRequest,
     db: Session = Depends(get_db),
 ) -> FullDealPipelineResponse:
+    result = build_full_deal_pipeline(payload, db)
+    db.commit()
+    return result
+
+
+def build_full_deal_pipeline(payload: FullDealPipelineRequest, db: Session) -> FullDealPipelineResponse:
+    """Stage internal pipeline records in the caller's transaction."""
     # --------- 1. Create Lead (Pack 31) ---------
     try:
         lead_in = LeadCreate(
@@ -213,7 +220,7 @@ def run_full_deal_pipeline(
         "recommendation": underwriting_result.recommendation,
     }
 
-    response = FullDealPipelineResponse(
+    return FullDealPipelineResponse(
         lead=lead_result,
         deal=deal_result,
         backend_deal_id=backend_deal.id,
@@ -223,5 +230,3 @@ def run_full_deal_pipeline(
         notes=" ".join(notes_parts) if notes_parts else None,
         metadata=metadata,
     )
-    db.commit()
-    return response

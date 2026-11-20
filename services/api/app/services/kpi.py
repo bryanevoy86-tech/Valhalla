@@ -16,6 +16,7 @@ def emit_kpi(
     actor: str | None = None,
     correlation_id: str | None = None,
     detail: Dict[str, Any] | str | None = None,
+    *, commit: bool = True,
 ) -> int:
     payload = None
     if isinstance(detail, dict):
@@ -33,6 +34,9 @@ def emit_kpi(
         detail=payload,
     )
     db.add(evt)
-    db.commit()
-    db.refresh(evt)
+    if commit:
+        db.commit()
+        db.refresh(evt)
+    else:
+        db.flush()
     return evt.id

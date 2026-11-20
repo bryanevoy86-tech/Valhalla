@@ -36,6 +36,7 @@ def load(path: str):
 FACTORY = load("alembic/versions/20261119_factory_legacy_work_schema.py")
 REVOCATION = load("alembic/versions/20261119_persistent_auth_revocation.py")
 DEAL_LINKS = load("alembic/versions/20261120_deal_brief_links.py")
+FREEZE_EVIDENCE = load("alembic/versions/20261120_freeze_event_evidence.py")
 
 
 @unittest.skipUnless(url, "Disposable PostgreSQL database not supplied")
@@ -105,6 +106,28 @@ class PostgresMigrationChainTests(unittest.TestCase):
                     self.assertEqual(conn.execute(text("SELECT brief_id FROM deal_brief_links")).scalar_one(), 11)
                     self.assertEqual(conn.execute(text("SELECT COUNT(*) FROM deals")).scalar_one(), 2)
                     self.assertEqual(conn.execute(text("SELECT COUNT(*) FROM deal_briefs")).scalar_one(), 2)
+                finally:
+                    transaction.rollback()
+        finally:
+            engine.dispose()
+
+
+    def test_freeze_evidence_migration_preserves_an_existing_freeze(self):
+        engine = create_engine(url, pool_pre_ping=True)
+        try:
+            with engine.connect() as conn:
+                transaction = conn.begin()
+                try:
+                    conn.execute(text("CREATE TABLE freeze_events (id INTEGER PRIMARY KEY, notes VARCHAR, completed_at TIMESTAMP)"))
+                    conn.execute(text("INSERT INTO freeze_events VALUES (1, 'existing review', NULL)"))
+                    with patch.object(FREEZE_EVIDENCE, "op", Operations(MigrationContext.configure(conn))):
+                        FREEZE_EVIDENCE.upgrade()
+                        conn.execute(text("UPDATE freeze_events SET severity='warn', reason='Policy review' WHERE id=1"))
+                        FREEZE_EVIDENCE.downgrade()
+                    self.assertEqual(
+                        conn.execute(text("SELECT notes, severity, reason FROM freeze_events WHERE id=1")).one(),
+                        ("existing review", "warn", "Policy review"),
+                    )
                 finally:
                     transaction.rollback()
         finally:

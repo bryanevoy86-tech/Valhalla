@@ -58,8 +58,16 @@ def record_feedback(db: Session, province: str, market: str, property_type: str,
     emit_kpi(db, "BUYER_MATCH", "buyer_feedback", success=True, correlation_id=correlation_id, detail={"event": ev.event, "province": node.province, "market": node.market, "property_type": node.property_type})
 
 
-def liquidity_score(db: Session, province: str, market: str, property_type: str) -> Dict[str, Any]:
-    node = _get_or_create_node(db, province, market, property_type)
+def liquidity_score(db: Session, province: str, market: str, property_type: str, *, create: bool = True) -> Dict[str, Any] | None:
+    if create:
+        node = _get_or_create_node(db, province, market, property_type)
+    else:
+        node = db.query(BuyerLiquidityNode).filter_by(
+            province=province.strip().upper(), market=(market or "ALL").strip().upper(),
+            property_type=(property_type or "SFR").strip().upper(),
+        ).first()
+        if node is None:
+            return None
     # Simple weighted score; refine later.
     score = (node.active_buyer_count * 0.5) + (node.avg_response_rate * 50.0) + (node.avg_close_rate * 50.0)
     return {

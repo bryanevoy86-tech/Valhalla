@@ -2,6 +2,10 @@
 
 This is the one-file handoff from ChatGPT's November 19 development and audit. **Do not create new packs or restart Valhalla.**
 
+## November 20 — Historical regression continuation
+
+The complete backend run from the 538aa7f2 baseline now returns 260 passed, 18 failed and two skipped. See the latest ledger entry for the components verified and the outstanding historical contract, buyer, closer and HTTP integration cases. Keep resolving those before reporting full regression closure. The December resume handoff contains a reconstructed 50-task register mapped to all 47 existing workstreams and three cross-system integration deliverables.
+
 ## November 20 — Current engineering checkpoint
 
 - Continue PR #4 on `fix/fail-closed-operations-20261119`. The latest entry in `ops/CHANGE_LEDGER.md` supersedes older claims below about the two historical collection errors. Full backend execution now runs and reports 218 passed, 60 failed and 2 skipped in isolated Linux. Canonical runtime probe verifies ORM configuration and 29 routes across 17 required router groups.

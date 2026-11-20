@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-from fastapi.testclient import TestClient
+import json
 
-from app.main import app
+from sqlalchemy.orm import Session
 
-client = TestClient(app)
+from app.models.audit_log import AuditLog
+from app.models.deal import Deal
 
 
 def _base_pipeline_payload():
@@ -14,7 +15,7 @@ def _base_pipeline_payload():
         "lead": {
             "name": "Gov Pipeline Seller",
             "email": "gov-pipeline@example.com",
-            "phone": "555-9090",
+            "phone": "555-010-9090",
             "source": "Referral",
             "address": "99 Governance St, Winnipeg, MB",
             "tags": "test,governance",
@@ -57,12 +58,13 @@ def _base_pipeline_payload():
     }
 
 
-def test_full_deal_with_governance_allows_clean_deal():
+def test_full_deal_with_governance_allows_clean_deal(deal_client):
     """
     Clean deal: governance should allow. We test the governance approval.
     (Note: In production, the full_deal_pipeline endpoint would be called next,
     but for this test we verify governance passes and would proceed.)
     """
+    client, engine = deal_client
     payload = _base_pipeline_payload()
     payload["governance"] = {
         "hours_per_week": 35,
@@ -77,25 +79,22 @@ def test_full_deal_with_governance_allows_clean_deal():
     }
 
     resp = client.post("/api/flow/full_deal_with_governance", json=payload)
-    # Will be 500 because full_deal_pipeline doesn't exist in test,
-    # but the error message should show governance passed
-    if resp.status_code == 500:
-        # Governance passed, pipeline endpoint missing (expected in test)
-        assert "full_deal_pipeline failed" in resp.text or "Not Found" in resp.text
-    else:
-        # If it somehow succeeds, great
-        assert resp.status_code in (200, 201)
-        data = resp.json()
-        assert "_governance" in data
-        gov = data["_governance"]
-        assert gov["overall_allowed"] is True
+    assert resp.status_code == 201, resp.text
+    data = resp.json()
+    assert data["_governance"]["overall_allowed"] is True
+    with Session(engine) as db:
+        deal = db.get(Deal, data["backend_deal_id"])
+        assert deal.title == payload["deal"]["headline"]
+        audit = db.query(AuditLog).filter_by(deal_id=deal.id, event_type="internal_deal_governance").one()
+        assert json.loads(audit.event_data) == data["_governance"]
 
 
-def test_full_deal_with_governance_blocked_by_tyr():
+def test_full_deal_with_governance_blocked_by_tyr(deal_client):
     """
     If governance flags a hard red-line (e.g., tax evasion), the pipeline
     should NOT run and we should get 409 with governance details.
     """
+    client, engine = deal_client
     payload = _base_pipeline_payload()
     # Explicitly mark as tax evasion to trigger Tyr
     payload["governance"] = {
@@ -115,12 +114,15 @@ def test_full_deal_with_governance_blocked_by_tyr():
     assert gov["overall_allowed"] is False
     assert gov["worst_severity"] == "critical"
     assert "tyr" in gov["blocked_by"]
+    with Session(engine) as db:
+        assert db.query(Deal).count() == 0
 
 
-def test_full_deal_with_governance_blocked_by_queen_burnout():
+def test_full_deal_with_governance_blocked_by_queen_burnout(deal_client):
     """
     If Queen sees unsustainable workload, governance blocks even if all others approve.
     """
+    client, engine = deal_client
     payload = _base_pipeline_payload()
     payload["governance"] = {
         "hours_per_week": 60,  # Beyond Queen's hard cap
@@ -141,10 +143,11 @@ def test_full_deal_with_governance_blocked_by_queen_burnout():
     assert "queen" in gov["blocked_by"]
 
 
-def test_full_deal_with_governance_blocked_by_loki_extreme_downside():
+def test_full_deal_with_governance_blocked_by_loki_extreme_downside(deal_client):
     """
     If Loki sees catastrophic downside, governance blocks.
     """
+    client, engine = deal_client
     payload = _base_pipeline_payload()
     payload["governance"] = {
         "capital_at_risk": 240000,
@@ -164,11 +167,12 @@ def test_full_deal_with_governance_blocked_by_loki_extreme_downside():
     assert len(gov["blocked_by"]) > 0
 
 
-def test_full_deal_with_governance_governance_snapshot_attached():
+def test_full_deal_with_governance_governance_snapshot_attached(deal_client):
     """
     Even when blocked or passed, we verify the governance snapshot structure.
     This test uses an approved deal to verify snapshot structure.
     """
+    client, engine = deal_client
     payload = _base_pipeline_payload()
     payload["governance"] = {
         "hours_per_week": 40,
@@ -177,25 +181,9 @@ def test_full_deal_with_governance_governance_snapshot_attached():
     }
 
     resp = client.post("/api/flow/full_deal_with_governance", json=payload)
-    # Governance passes, but full_deal_pipeline missing
-    # We can still verify the governance decision structure
-    if resp.status_code == 500:
-        # Even on error, if governance had passed we'd see the pipeline error
-        text = resp.text
-        assert "full_deal_pipeline" in text or "Not Found" in text
-    else:
-        data = resp.json()
-        assert "_governance" in data
-        gov = data["_governance"]
-
-        # Verify all five gods checked
-        assert len(gov["checks"]) == 5
-        gods_checked = [c["god"] for c in gov["checks"]]
-        assert set(gods_checked) == {"king", "queen", "odin", "loki", "tyr"}
-
-        # Each check has decision info
-        for check in gov["checks"]:
-            assert "god" in check
-            assert "allowed" in check
-            assert "severity" in check
-            assert "reasons" in check
+    assert resp.status_code == 201, resp.text
+    gov = resp.json()["_governance"]
+    assert len(gov["checks"]) == 5
+    assert {check["god"] for check in gov["checks"]} == {"king", "queen", "odin", "loki", "tyr"}
+    for check in gov["checks"]:
+        assert {"god", "allowed", "severity", "reasons"} <= check.keys()

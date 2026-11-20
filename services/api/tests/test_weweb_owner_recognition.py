@@ -1,5 +1,6 @@
 import os
 import time
+from uuid import uuid4
 
 import pytest
 from fastapi import FastAPI
@@ -12,6 +13,7 @@ from sqlalchemy.pool import StaticPool
 os.environ.setdefault("VALHALLA_OWNER_PASSWORD", "test-owner-pass")
 os.environ.setdefault("VALHALLA_JWT_SECRET", "test-jwt-secret")
 
+from app.models.auth_revocations import RevokedAccessToken
 from app.routers import auth_weweb
 from app.security.auth import SETTINGS, jwt_encode, pbkdf2_hash_password
 from app.users.models import AccountSettings, UserProfile
@@ -28,6 +30,7 @@ def weweb_client(monkeypatch):
 
     UserProfile.__table__.create(bind=engine, checkfirst=True)
     AccountSettings.__table__.create(bind=engine, checkfirst=True)
+    RevokedAccessToken.__table__.create(bind=engine, checkfirst=True)
 
     db = SessionLocal()
     try:
@@ -78,6 +81,7 @@ def weweb_client(monkeypatch):
         now = int(time.time())
         payload = {
             "sub": email,
+            "jti": uuid4().hex,
             "user_id": user_id,
             "iat": now,
             "exp": now + exp_offset_seconds,
@@ -87,7 +91,7 @@ def weweb_client(monkeypatch):
     return client, make_token
 
 
-def _get_user_id(client: TestClient, email: str) -> int:
+def _login(client: TestClient, email: str) -> dict:
     # Use login to avoid hardcoding IDs and keep fixture resilient.
     resp = client.post(
         "/api/weweb/login",
@@ -96,16 +100,15 @@ def _get_user_id(client: TestClient, email: str) -> int:
             "password": "OwnerPass!1" if email == "owner@example.com" else "OtherPass!1",
         },
     )
-    data = resp.json()
-    return data["user"]["id"]
+    assert resp.status_code == 200, resp.text
+    return resp.json()
 
 
 def test_owner_true_for_configured_owner(weweb_client, monkeypatch):
     client, make_token = weweb_client
     monkeypatch.setenv("VALHALLA_OWNER_EMAIL", "owner@example.com")
 
-    owner_id = _get_user_id(client, "owner@example.com")
-    token = make_token("owner@example.com", owner_id)
+    token = _login(client, "owner@example.com")["access_token"]
 
     resp = client.get("/api/weweb/me", headers={"Authorization": f"Bearer {token}"})
     assert resp.status_code == 200
@@ -117,8 +120,7 @@ def test_owner_false_for_different_user(weweb_client, monkeypatch):
     client, make_token = weweb_client
     monkeypatch.setenv("VALHALLA_OWNER_EMAIL", "owner@example.com")
 
-    other_id = _get_user_id(client, "other@example.com")
-    token = make_token("other@example.com", other_id)
+    token = _login(client, "other@example.com")["access_token"]
 
     resp = client.get("/api/weweb/me", headers={"Authorization": f"Bearer {token}"})
     assert resp.status_code == 200
@@ -130,8 +132,7 @@ def test_owner_comparison_is_case_insensitive(weweb_client, monkeypatch):
     client, make_token = weweb_client
     monkeypatch.setenv("VALHALLA_OWNER_EMAIL", "  OWNER@EXAMPLE.COM  ")
 
-    owner_id = _get_user_id(client, "owner@example.com")
-    token = make_token("owner@example.com", owner_id)
+    token = _login(client, "owner@example.com")["access_token"]
 
     resp = client.get("/api/weweb/me", headers={"Authorization": f"Bearer {token}"})
     assert resp.status_code == 200
@@ -143,8 +144,7 @@ def test_missing_owner_configuration_fails_safe_false(weweb_client, monkeypatch)
     client, make_token = weweb_client
     monkeypatch.delenv("VALHALLA_OWNER_EMAIL", raising=False)
 
-    owner_id = _get_user_id(client, "owner@example.com")
-    token = make_token("owner@example.com", owner_id)
+    token = _login(client, "owner@example.com")["access_token"]
 
     resp = client.get("/api/weweb/me", headers={"Authorization": f"Bearer {token}"})
     assert resp.status_code == 200
@@ -166,7 +166,7 @@ def test_invalid_jwt_fails(weweb_client):
 
 def test_expired_jwt_fails(weweb_client):
     client, make_token = weweb_client
-    owner_id = _get_user_id(client, "owner@example.com")
+    owner_id = _login(client, "owner@example.com")["user"]["id"]
     expired = make_token("owner@example.com", owner_id, exp_offset_seconds=-30)
 
     resp = client.get("/api/weweb/me", headers={"Authorization": f"Bearer {expired}"})
@@ -177,8 +177,7 @@ def test_request_data_cannot_grant_owner(weweb_client, monkeypatch):
     client, make_token = weweb_client
     monkeypatch.setenv("VALHALLA_OWNER_EMAIL", "owner@example.com")
 
-    other_id = _get_user_id(client, "other@example.com")
-    token = make_token("other@example.com", other_id)
+    token = _login(client, "other@example.com")["access_token"]
 
     resp = client.get(
         "/api/weweb/me?is_owner=true&owner=true",

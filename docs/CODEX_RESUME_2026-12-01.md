@@ -14,6 +14,63 @@ DO NOT restart the project, regenerate completed packs, or treat API presence as
 - Definition of done: docs/HEIMDALL_DEFINITION_OF_DONE.md
 - Existing architecture: docs/PHASE3_INTEGRATED_ARCHITECTURE.md and docs/UNIVERSAL_OPPORTUNITY_PIPELINE.md
 
+## Reconstructed 50-task register
+
+This working register maps three cross-workstream integration tasks and all 47 owner workstreams to the existing acceptance matrix. The numbers are reconstructed from available requirements. Each workstream retains its existing source anchors, dependencies, and acceptance criteria. Code presence and local tests do not confer external authority.
+
+| Task | Deliverable or workstream ID | Priority |
+|---|---|---|
+| 01 | Resolve the historical backend regression suite without exclusions or fabricated outcomes | P0 |
+| 02 | Reconcile local-only Windows changes with verified recovery and a reviewed integration diff | P0 |
+| 03 | Exercise a controlled end-to-end rehearsal spanning evidence, specialist dissent, owner authority, a bounded worker action and durable learning | P0 |
+| 04 | `api_wiring` | P0 |
+| 05 | `auth` | P0 |
+| 06 | `runtime_governance` | P0 |
+| 07 | `discovery_sources` | P1 |
+| 08 | `universal_evaluator` | P1 |
+| 09 | `knowledge` | P1 |
+| 10 | `learning_mimir` | P1 |
+| 11 | `legacy_instances` | P0 |
+| 12 | `legacy_execution` | P0 |
+| 13 | `schema_and_migrations` | P0 |
+| 14 | `scheduling` | P0 |
+| 15 | `builder_code` | P0 |
+| 16 | `ai_providers` | P1 |
+| 17 | `marketing` | P0 |
+| 18 | `media` | P1 |
+| 19 | `subscription_saas` | P1 |
+| 20 | `commerce` | P0 |
+| 21 | `finance_webhooks` | P0 |
+| 22 | `payouts_and_funds` | P0 |
+| 23 | `contracts_legal` | P1 |
+| 24 | `real_estate_execution` | P1 |
+| 25 | `notifications` | P1 |
+| 26 | `operations_observability` | P0 |
+| 27 | `weweb_frontend` | P1 |
+| 28 | `ci_release` | P0 |
+| 29 | `prime_private_owner` | P0 |
+| 30 | `pantheon_five_evaluators` | P0 |
+| 31 | `pantheon_expanded_bridge` | P0 |
+| 32 | `norns_probability_calibration` | P1 |
+| 33 | `owner_commander_voice` | P1 |
+| 34 | `five_initial_legacies` | P0 |
+| 35 | `clones_vs_mirrors` | P1 |
+| 36 | `product_foundry_subscriptions` | P1 |
+| 37 | `independent_venture_foundry` | P1 |
+| 38 | `real_estate_portfolio_legs` | P1 |
+| 39 | `treasury_banking_controls` | P0 |
+| 40 | `infinite_banking_insurance` | P1 |
+| 41 | `estate_and_master_trusts` | P1 |
+| 42 | `canada_exit_strategy` | P1 |
+| 43 | `global_residency_options` | P1 |
+| 44 | `tax_opinions_legal` | P0 |
+| 45 | `reinvestment_funfund_policy` | P1 |
+| 46 | `family_payroll_succession` | P2 |
+| 47 | `bahamas_resort_growth` | P2 |
+| 48 | `shield_blackice_protection` | P1 |
+| 49 | `recruitment_and_va` | P2 |
+| 50 | `loki_independent_challenger` | P0 |
+
 ### Safely retrieve current work
 
 From your existing local folder C:\dev\valhalla:

@@ -8,6 +8,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.core.db import get_db
+from app.models.auth_revocations import RevokedAccessToken
 from app.routers import auth_weweb
 from app.users.models import AccountSettings, UserProfile
 
@@ -31,6 +32,7 @@ def weweb_client(monkeypatch: pytest.MonkeyPatch):
 
     UserProfile.__table__.create(bind=engine, checkfirst=True)
     AccountSettings.__table__.create(bind=engine, checkfirst=True)
+    RevokedAccessToken.__table__.create(bind=engine, checkfirst=True)
 
     db = SessionLocal()
     try:

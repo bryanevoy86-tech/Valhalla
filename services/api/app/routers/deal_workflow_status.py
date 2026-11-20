@@ -10,10 +10,10 @@ from sqlalchemy.orm import Session
 from app.core.db import get_db
 from app.core.dependencies import require_prime_control_key
 from app.leads.models import Lead
-from app.models.deal import Deal, DealBriefLink
-from app.offers.models import Offer
+from app.models.deal import Deal
 from app.models.match import DealBrief, Buyer
-from app.models.freeze_events import FreezeEvent
+from app.services.deal_context import latest_offer, linked_brief
+from app.services.freeze_events import get_deal_freezes
 
 router = APIRouter(
     prefix="/workflow",
@@ -26,15 +26,7 @@ def _freeze_status_for_deal(db: Session, backend_deal_id: int) -> Dict[str, Any]
     """
     Gather freeze_events affecting this deal, if any.
     """
-    events: List[FreezeEvent] = (
-        db.query(FreezeEvent)
-        .filter(
-            FreezeEvent.deal_id == str(backend_deal_id),
-            FreezeEvent.event_type.in_(("freeze", "underwriting_policy_violation")),
-        )
-        .order_by(FreezeEvent.created_at.desc(), FreezeEvent.id.desc())
-        .all()
-    )
+    events = get_deal_freezes(db, backend_deal_id)
 
     if not events:
         return {
@@ -48,9 +40,9 @@ def _freeze_status_for_deal(db: Session, backend_deal_id: int) -> Dict[str, Any]
         "latest": {
             "id": latest.id,
             "created_at": latest.created_at.isoformat(),
-            "severity": None,
+            "severity": latest.severity,
             "event_type": latest.event_type,
-            "reason": latest.notes,
+            "reason": latest.reason or latest.notes,
             "resolved_at": latest.completed_at.isoformat() if latest.completed_at else None,
         },
         "count": len(events),
@@ -112,13 +104,9 @@ def get_deal_workflow_status(
             detail=f"Deal with id {backend_deal_id} not found.",
         )
 
-    link = db.get(DealBriefLink, backend_deal_id)
-    deal_brief = db.get(DealBrief, link.brief_id) if link is not None else None
+    deal_brief = linked_brief(db, backend_deal_id)
     lead_obj = db.get(Lead, deal.lead_id)
-    offer = (
-        db.query(Offer).filter(Offer.deal_id == backend_deal_id)
-        .order_by(Offer.created_at.desc(), Offer.id.desc()).first()
-    )
+    offer = latest_offer(db, backend_deal_id)
 
     # Freeze status
     freeze_status = _freeze_status_for_deal(db, backend_deal_id)

@@ -9,6 +9,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
+from app.core.dependencies import require_prime_control_key
+from app.offers.models import Offer
 from app.models.deal import Deal
 from app.schemas.profit_allocation import (
     ProfitAllocationBreakdown,
@@ -24,6 +26,7 @@ from app.services.freeze_events import log_freeze_event
 router = APIRouter(
     prefix="/flow",
     tags=["Flow", "ProfitAllocation"],
+    dependencies=[Depends(require_prime_control_key)],
 )
 
 
@@ -42,15 +45,14 @@ def _round_money(value: Decimal) -> Decimal:
     return value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
 
-def _compute_metrics(
-    deal: Deal,
+def compute_profit_metrics(
+    purchase_price: Decimal,
+    repairs: Decimal,
     sale_price: Decimal,
     sale_closing_costs: Decimal,
     extra_expenses: Decimal,
     tax_rate: Decimal,
 ) -> ProfitAllocationMetrics:
-    purchase_price = _decimal(getattr(deal, "offer", None) or getattr(deal, "price", None))
-    repairs = _decimal(getattr(deal, "repairs", None))
     # For now, assume entry closing costs are folded into extra_expenses or repairs.
     entry_closing_costs = Decimal("0")
 
@@ -77,6 +79,19 @@ def _compute_metrics(
         taxes=_round_money(taxes),
         net_profit_after_tax=_round_money(net_profit_after_tax),
     )
+
+
+def recorded_cost_inputs(db: Session, deal_id: int) -> tuple[Decimal, Decimal]:
+    deal = db.get(Deal, deal_id)
+    if deal is None:
+        raise HTTPException(status_code=404, detail="Deal not found")
+    offer = (
+        db.query(Offer).filter_by(deal_id=deal_id, status="accepted")
+        .order_by(Offer.created_at.desc(), Offer.id.desc()).first()
+    )
+    if offer is None or deal.estimated_repair_cost is None:
+        raise HTTPException(status_code=409, detail="Accepted purchase offer and repair estimate are required")
+    return offer.offer_price, deal.estimated_repair_cost
 
 
 def _apply_policy_to_net(
@@ -114,8 +129,12 @@ def _apply_policy_to_net(
         flags.notes = "No net profit after tax; nothing to allocate."
         return breakdown, flags
 
-    ff_amount = _round_money(net * funfunds_percent)
-    reinvest_amount = _round_money(net * reinvest_percent)
+    combined = funfunds_percent + reinvest_percent
+    scale = Decimal("1") / combined if combined > 1 else Decimal("1")
+    if combined > 1:
+        notes.append("Allocation shares were scaled to fit net profit.")
+    ff_amount = min(net, _round_money(net * funfunds_percent * scale))
+    reinvest_amount = min(net - ff_amount, _round_money(net * reinvest_percent * scale))
     # Owner draw gets whatever is left
     owner_draw_amount = _round_money(net - ff_amount - reinvest_amount)
     # Leftover due to rounding / weird config
@@ -147,16 +166,16 @@ def run_profit_allocation(
     payload: RunProfitAllocationRequest,
     db: Session = Depends(get_db),
 ) -> RunProfitAllocationResponse:
+    result = calculate_profit_allocation(payload, db)
+    db.commit()
+    return result
+
+
+def calculate_profit_allocation(payload: RunProfitAllocationRequest, db: Session) -> RunProfitAllocationResponse:
     p = payload.profit
     policy = payload.policy or ProfitAllocationPolicy()
 
-    # 1. Load deal
-    deal = db.query(Deal).filter(Deal.id == p.backend_deal_id).first()
-    if deal is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Deal with id {p.backend_deal_id} not found.",
-        )
+    purchase_price, repairs = recorded_cost_inputs(db, p.backend_deal_id)
 
     sale_price = _decimal(p.sale_price)
     sale_closing_costs = _decimal(p.sale_closing_costs)
@@ -166,8 +185,9 @@ def run_profit_allocation(
     reinvest_percent = _decimal(p.reinvest_percent)
 
     # 2. Compute core metrics
-    metrics = _compute_metrics(
-        deal=deal,
+    metrics = compute_profit_metrics(
+        purchase_price=purchase_price,
+        repairs=repairs,
         sale_price=sale_price,
         sale_closing_costs=sale_closing_costs,
         extra_expenses=extra_expenses,
@@ -201,12 +221,12 @@ def run_profit_allocation(
     # 5. Build summary + debug
     if metrics.gross_profit <= 0:
         summary = (
-            f"Deal {deal.id}: no positive gross profit after sale; "
+            f"Deal {p.backend_deal_id}: no positive gross profit after sale; "
             "allocation is informational only."
         )
     else:
         summary = (
-            f"Deal {deal.id}: gross profit {metrics.gross_profit}, taxes "
+            f"Deal {p.backend_deal_id}: gross profit {metrics.gross_profit}, taxes "
             f"{metrics.taxes}, net after tax {metrics.net_profit_after_tax}. "
             f"Allocated FunFunds {breakdown.funfunds_amount}, reinvest "
             f"{breakdown.reinvest_amount}, owner draw {breakdown.owner_draw_amount}."
@@ -251,7 +271,7 @@ def run_profit_allocation(
             severity=severity,
             reason=reason,
             payload={
-                "backend_deal_id": deal.id,
+                "backend_deal_id": p.backend_deal_id,
                 "gross_profit": str(metrics.gross_profit),
                 "taxes": str(metrics.taxes),
                 "net_profit_after_tax": str(metrics.net_profit_after_tax),
@@ -265,11 +285,12 @@ def run_profit_allocation(
                 },
             },
             notes="Auto-created by profit_allocation flow.",
+            commit=False,
         )
         freeze_event_created = True
 
     return RunProfitAllocationResponse(
-        backend_deal_id=deal.id,
+        backend_deal_id=p.backend_deal_id,
         result=result,
         freeze_event_created=freeze_event_created,
     )

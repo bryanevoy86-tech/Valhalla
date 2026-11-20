@@ -2,15 +2,9 @@
 
 from __future__ import annotations
 
-from fastapi.testclient import TestClient
-
-# Adjust this import if needed
-from app.main import app  # or: from valhalla.services.api.main import app
-
-client = TestClient(app)
 
 
-def _create_pipeline_deal_for_status() -> int:
+def _create_pipeline_deal_for_status(client) -> int:
     """
     Create a deal via the full pipeline so we can test downstream endpoints.
     """
@@ -18,7 +12,7 @@ def _create_pipeline_deal_for_status() -> int:
         "lead": {
             "name": "Status Seller",
             "email": "status-seller@example.com",
-            "phone": "555-2222",
+            "phone": "555-010-2222",
             "source": "Referral",
             "address": "321 Status Ave, Winnipeg, MB",
             "tags": "test,status",
@@ -68,8 +62,9 @@ def _create_pipeline_deal_for_status() -> int:
     return backend_deal_id
 
 
-def test_deal_workflow_status_endpoint():
-    backend_deal_id = _create_pipeline_deal_for_status()
+def test_deal_workflow_status_endpoint(deal_client):
+    client, _ = deal_client
+    backend_deal_id = _create_pipeline_deal_for_status(client)
 
     response = client.get(f"/workflow/deal_status/{backend_deal_id}")
     assert response.status_code == 200, response.text
@@ -87,8 +82,9 @@ def test_deal_workflow_status_endpoint():
     assert deal["status"] in {"draft", "active", "under_contract", "sold", "archived"}
 
 
-def test_closing_playbook_endpoint():
-    backend_deal_id = _create_pipeline_deal_for_status()
+def test_closing_playbook_endpoint(deal_client):
+    client, _ = deal_client
+    backend_deal_id = _create_pipeline_deal_for_status(client)
 
     response = client.get(f"/flow/closing_playbook/{backend_deal_id}")
     assert response.status_code == 200, response.text

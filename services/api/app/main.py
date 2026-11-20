@@ -169,6 +169,12 @@ from app import models  # noqa: F401
 # Auto-load all other routers from app/routers
 loaded_router_count = _autoload_router_modules(app)
 
+# Preserve versioned public paths for the existing calculation routes.
+# The same route objects handle both paths.
+for _calculation_router in ("flow_funfunds_planner", "flow_funfunds_presets", "underwriting_engine", "flow_tax_snapshot", "portfolio_dashboard", "flow_lead_to_deal", "deal_lifecycle"):
+    _module = importlib.import_module(f"app.routers.{_calculation_router}")
+    app.include_router(_module.router, prefix="/api")
+
 # The original Pantheon implementations use /governance/... paths while
 # historical callers and their own orchestrator request /api/governance/....
 # Keep existing routes for compatibility, and explicitly register a
@@ -181,6 +187,8 @@ for _god_router in (
     "governance_loki",
     "governance_tyr",
     "governance_orchestrator",
+    "governance_policy",
+    "flow_governance_gate",
 ):
     _pantheon_module = importlib.import_module(f"app.routers.{_god_router}")
     app.include_router(_pantheon_module.router, prefix="/api")

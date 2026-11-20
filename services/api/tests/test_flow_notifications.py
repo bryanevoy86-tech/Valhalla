@@ -4,16 +4,9 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-# Adjust this import if your app is exposed differently
-from app.main import app  # or: from valhalla.services.api.main import app
-
-from app.core.db import get_db
 from app.models.match import Buyer
-
-client = TestClient(app)
 
 
 def _seed_matching_buyer(db: Session) -> Buyer:
@@ -24,7 +17,7 @@ def _seed_matching_buyer(db: Session) -> Buyer:
     buyer = Buyer(
         name="Notification Test Buyer",
         email="notif-buyer@example.com",
-        phone="555-4444",
+        phone="555-010-4444",
         regions="Winnipeg, Brandon",
         property_types="SFH, Duplex",
         min_price=Decimal("200000"),
@@ -40,7 +33,7 @@ def _seed_matching_buyer(db: Session) -> Buyer:
     return buyer
 
 
-def _create_pipeline_deal() -> int:
+def _create_pipeline_deal(client) -> int:
     """
     Run the full pipeline once and return backend_deal_id.
     Assumes /flow/full_deal_pipeline is wired correctly.
@@ -49,7 +42,7 @@ def _create_pipeline_deal() -> int:
         "lead": {
             "name": "Notify Seller",
             "email": "notify-seller@example.com",
-            "phone": "555-1111",
+            "phone": "555-010-1111",
             "source": "PPC",
             "address": "789 Notification St, Winnipeg, MB",
             "tags": "test,notify",
@@ -99,13 +92,11 @@ def _create_pipeline_deal() -> int:
     return backend_deal_id
 
 
-def test_notify_deal_parties_seller_and_buyers():
-    # Seed buyer + create deal
-    db_gen = get_db()
-    db: Session = next(db_gen)
-    _seed_matching_buyer(db)
-
-    backend_deal_id = _create_pipeline_deal()
+def test_notify_deal_parties_seller_and_buyers(deal_client):
+    client, engine = deal_client
+    with Session(engine) as db:
+        _seed_matching_buyer(db)
+    backend_deal_id = _create_pipeline_deal(client)
 
     payload = {
         "backend_deal_id": backend_deal_id,

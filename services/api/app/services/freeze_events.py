@@ -1,65 +1,50 @@
-# services/api/app/services/freeze_events.py
-
-from __future__ import annotations
+"""Record durable policy evidence on the canonical freeze model."""
 
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any
 
-from sqlalchemy.exc import OperationalError, ProgrammingError
 from sqlalchemy.orm import Session
 
 from app.models.freeze_events import FreezeEvent
 
 
+FREEZE_EVENT_TYPES = ("freeze", "underwriting_policy_violation", "profit_policy_violation")
+
+
 def log_freeze_event(
     db: Session,
     *,
-    source: Optional[str] = None,
-    event_type: Optional[str] = None,
-    severity: Optional[str] = None,
-    reason: Optional[str] = None,
-    payload: Optional[Dict[str, Any]] = None,
-    notes: Optional[str] = None,
+    source: str | None = None,
+    event_type: str = "freeze",
+    severity: str | None = None,
+    reason: str | None = None,
+    payload: dict[str, Any] | None = None,
+    notes: str | None = None,
     resolved: bool = False,
-    resolved_by: Optional[str] = None,
+    resolved_by: str | None = None,
+    commit: bool = True,
 ) -> FreezeEvent:
-    """
-    Create a freeze event safely. This will **never crash your scheduler**.
-
-    Returns the created FreezeEvent ORM object.
-    """
-
-    try:
-        event = FreezeEvent(
-            source=source,
-            event_type=event_type,
-            severity=severity,
-            reason=reason,
-            payload=payload,
-            notes=notes,
-            resolved_at=datetime.utcnow() if resolved else None,
-            resolved_by=resolved_by,
-        )
-
-        db.add(event)
+    evidence = payload or {}
+    deal_id = evidence.get("backend_deal_id", evidence.get("deal_id"))
+    event = FreezeEvent(
+        deal_id=str(deal_id) if deal_id is not None else None,
+        source=source,
+        event_type=event_type,
+        severity=severity,
+        reason=reason,
+        payload=payload,
+        notes=notes,
+        is_completed=resolved,
+        resolved_at=datetime.utcnow() if resolved else None,
+        resolved_by=resolved_by if resolved else None,
+    )
+    db.add(event)
+    if commit:
         db.commit()
         db.refresh(event)
-        return event
-
-    except (ProgrammingError, OperationalError):
-        # Database not ready or table missing — DO NOT kill scheduler
-        # Instead swallow the error and return a synthetic object.
-        db.rollback()
-        return FreezeEvent(
-            id=-1,  # sentinel id for "not actually saved"
-            created_at=datetime.utcnow(),
-            source=source,
-            event_type=event_type,
-            severity=severity,
-            reason=reason,
-            payload=payload,
-            notes="Event not saved due to DB issue (dev mode or migration missing).",
-        )
+    else:
+        db.flush()
+    return event
 
 
 def resolve_freeze_event(
@@ -67,28 +52,28 @@ def resolve_freeze_event(
     freeze_event_id: int,
     *,
     resolved_by: str = "system",
-    notes: Optional[str] = None,
-) -> Optional[FreezeEvent]:
-    """
-    Mark a freeze event as resolved.
-    Returns the updated object or None if not found.
-    """
-
-    try:
-        event = db.query(FreezeEvent).filter(FreezeEvent.id == freeze_event_id).first()
-    except (ProgrammingError, OperationalError):
-        db.rollback()
-        return None
-
-    if not event:
-        return None
-
+    notes: str | None = None,
+) -> FreezeEvent | None:
+    event = db.get(FreezeEvent, freeze_event_id, with_for_update=True)
+    if event is None or event.is_completed:
+        return event
+    event.is_completed = True
     event.resolved_at = datetime.utcnow()
     event.resolved_by = resolved_by
     if notes:
         event.notes = (event.notes or "") + f"\n[resolved] {notes}"
-
-    db.add(event)
     db.commit()
     db.refresh(event)
     return event
+
+
+def get_deal_freezes(db: Session, deal_id: int) -> list[FreezeEvent]:
+    return (
+        db.query(FreezeEvent)
+        .filter(
+            FreezeEvent.deal_id == str(deal_id),
+            FreezeEvent.event_type.in_(FREEZE_EVENT_TYPES),
+        )
+        .order_by(FreezeEvent.created_at.desc(), FreezeEvent.id.desc())
+        .all()
+    )
