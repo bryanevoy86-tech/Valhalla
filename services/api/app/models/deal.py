@@ -36,3 +36,12 @@ class Deal(Base):
     
     # Relationships
     lead = relationship("Lead", foreign_keys=[lead_id]) if 'Lead' in locals() else None
+
+
+class DealBriefLink(Base):
+    """Explicit relationship between separately allocated deal and brief IDs."""
+
+    __tablename__ = "deal_brief_links"
+
+    deal_id = Column(Integer, ForeignKey("deals.id", ondelete="CASCADE"), primary_key=True)
+    brief_id = Column(Integer, ForeignKey("deal_briefs.id", ondelete="CASCADE"), nullable=False, unique=True)

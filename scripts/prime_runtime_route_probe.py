@@ -27,6 +27,8 @@ MANDATORY_ENDPOINTS = {
     "emergency_release": ("POST", "/governance/go-live/kill-switch/release"),
     "integrity_inspection": ("GET", "/api/system/self-check"),
     "integrity_audit": ("POST", "/api/system/self-check"),
+    "private_deal_intake": ("POST", "/flow/full_deal_pipeline"),
+    "private_deal_status": ("GET", "/workflow/deal_status/{backend_deal_id}"),
     "metadata_complete": ("POST", "/system/status/complete"),
     "metadata_incomplete": ("POST", "/system/status/incomplete"),
     "loki_audit_submission": ("POST", "/loki/reviews"),

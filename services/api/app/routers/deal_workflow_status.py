@@ -8,13 +8,17 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
-from app.models.deal import Deal
+from app.core.dependencies import require_prime_control_key
+from app.leads.models import Lead
+from app.models.deal import Deal, DealBriefLink
+from app.offers.models import Offer
 from app.models.match import DealBrief, Buyer
 from app.models.freeze_events import FreezeEvent
 
 router = APIRouter(
     prefix="/workflow",
     tags=["Workflow", "DealStatus"],
+    dependencies=[Depends(require_prime_control_key)],
 )
 
 
@@ -24,8 +28,11 @@ def _freeze_status_for_deal(db: Session, backend_deal_id: int) -> Dict[str, Any]
     """
     events: List[FreezeEvent] = (
         db.query(FreezeEvent)
-        .filter(FreezeEvent.payload["backend_deal_id"].as_integer() == backend_deal_id)
-        .order_by(FreezeEvent.created_at.desc())
+        .filter(
+            FreezeEvent.deal_id == str(backend_deal_id),
+            FreezeEvent.event_type.in_(("freeze", "underwriting_policy_violation")),
+        )
+        .order_by(FreezeEvent.created_at.desc(), FreezeEvent.id.desc())
         .all()
     )
 
@@ -37,14 +44,14 @@ def _freeze_status_for_deal(db: Session, backend_deal_id: int) -> Dict[str, Any]
 
     latest = events[0]
     return {
-        "has_freeze": True,
+        "has_freeze": any(not entry.is_completed for entry in events),
         "latest": {
             "id": latest.id,
             "created_at": latest.created_at.isoformat(),
-            "severity": latest.severity,
+            "severity": None,
             "event_type": latest.event_type,
-            "reason": latest.reason,
-            "resolved_at": latest.resolved_at.isoformat() if latest.resolved_at else None,
+            "reason": latest.notes,
+            "resolved_at": latest.completed_at.isoformat() if latest.completed_at else None,
         },
         "count": len(events),
     }
@@ -105,18 +112,13 @@ def get_deal_workflow_status(
             detail=f"Deal with id {backend_deal_id} not found.",
         )
 
-    # Try to locate DealBrief with same id or via basic matching.
-    # (You can adjust this linkage strategy based on your schema.)
-    deal_brief: Optional[DealBrief] = (
-        db.query(DealBrief)
-        .filter(DealBrief.id == backend_deal_id)
-        .first()
+    link = db.get(DealBriefLink, backend_deal_id)
+    deal_brief = db.get(DealBrief, link.brief_id) if link is not None else None
+    lead_obj = db.get(Lead, deal.lead_id)
+    offer = (
+        db.query(Offer).filter(Offer.deal_id == backend_deal_id)
+        .order_by(Offer.created_at.desc(), Offer.id.desc()).first()
     )
-
-    # Linked lead
-    lead_obj = None
-    if getattr(deal, "lead", None) is not None:
-        lead_obj = deal.lead
 
     # Freeze status
     freeze_status = _freeze_status_for_deal(db, backend_deal_id)
@@ -133,26 +135,23 @@ def get_deal_workflow_status(
         }
 
     # High-level flags
-    ready_for_marketing = (
-        deal_brief is not None and not freeze_status.get("has_freeze", False)
-    )
     blocked = freeze_status.get("has_freeze", False)
 
     return {
         "deal": {
             "id": deal.id,
             "status": deal.status,
-            "price": deal.price,
+            "price": deal_brief.price if deal_brief is not None else None,
             "arv": getattr(deal, "arv", None),
-            "repairs": getattr(deal, "repairs", None),
-            "offer": getattr(deal, "offer", None),
-            "mao": getattr(deal, "mao", None),
+            "repairs": deal.estimated_repair_cost,
+            "offer": offer.offer_price if offer is not None else None,
+            "mao": deal.max_allowable_offer,
         },
         "lead": {
             "id": getattr(lead_obj, "id", None),
-            "name": getattr(lead_obj, "name", None),
-            "email": getattr(lead_obj, "email", None),
-            "phone": getattr(lead_obj, "phone", None),
+            "name": lead_obj.lead_name,
+            "email": lead_obj.lead_email,
+            "phone": lead_obj.lead_phone,
         }
         if lead_obj is not None
         else None,
@@ -169,7 +168,7 @@ def get_deal_workflow_status(
         "freeze": freeze_status,
         "buyer_readiness": buyer_summary,
         "flags": {
-            "ready_for_marketing": ready_for_marketing,
+            "ready_for_marketing": False,
             "blocked_by_freeze": blocked,
         },
     }

@@ -32,7 +32,8 @@ from app.models.completion_registry import (
     SourceRegistryItem,
     TemplateRegistryItem,
 )
-from app.models.deal import Deal
+from app.models.deal import Deal, DealBriefLink
+from app.offers.models import Offer
 from app.models.engine_state import EngineStateRow
 from app.models.freeze_events import FreezeEvent
 from app.models.go_live_state import GoLiveState
@@ -70,6 +71,8 @@ def _build_fake_live_client() -> tuple[TestClient, sessionmaker]:
     Deal.__table__.create(bind=engine, checkfirst=True)
     DealBrief.__table__.create(bind=engine, checkfirst=True)
     Buyer.__table__.create(bind=engine, checkfirst=True)
+    DealBriefLink.__table__.create(bind=engine, checkfirst=True)
+    Offer.__table__.create(bind=engine, checkfirst=True)
     FreezeEvent.__table__.create(bind=engine, checkfirst=True)
 
     # Completion/integrity tables

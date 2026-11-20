@@ -2,16 +2,54 @@
 
 from __future__ import annotations
 
+from decimal import Decimal
+
+import pytest
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from sqlalchemy import create_engine, event
+from sqlalchemy.orm import Session
+from sqlalchemy.pool import StaticPool
 
-# Adjust this import if your app is exposed differently
-from app.main import app  # or from valhalla.services.api.main import app
+from app.core.db import get_db
+from app.leads.models import Lead
+from app.models.deal import Deal, DealBriefLink
+from app.models.freeze_events import FreezeEvent
+from app.models.match import Buyer, DealBrief
+from app.offers.models import Offer
+from app.routers.deal_workflow_status import router as workflow_router
+from app.routers.flow_full_pipeline import router as flow_router
 
 
-client = TestClient(app)
+@pytest.fixture
+def fixture(monkeypatch):
+    engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
+    for model in (Lead, DealBrief, Deal, DealBriefLink, Buyer, FreezeEvent, Offer):
+        model.__table__.create(engine)
+    with Session(engine) as db:
+        db.add(DealBrief(id=1, headline="Existing unrelated brief"))
+        db.add(Buyer(name="Scoped test buyer", regions="Winnipeg", property_types="SFH"))
+        db.commit()
+
+    api = FastAPI()
+    api.include_router(flow_router)
+    api.include_router(workflow_router)
+
+    def isolated_db():
+        with Session(engine) as db:
+            yield db
+
+    api.dependency_overrides[get_db] = isolated_db
+    monkeypatch.setenv("VALHALLA_PRIME_CONTROL_KEY", "pipeline-test-prime-key")
+    headers = {"X-Prime-Control-Key": "pipeline-test-prime-key"}
+    try:
+        with TestClient(api, headers=headers, raise_server_exceptions=False) as client:
+            yield client, engine
+    finally:
+        engine.dispose()
 
 
-def test_full_deal_pipeline_happy_path():
+def test_full_deal_pipeline_happy_path(fixture):
     """
     Happy path for the full deal pipeline:
 
@@ -22,11 +60,12 @@ def test_full_deal_pipeline_happy_path():
     - Matches at least one buyer (assuming buyers seeded elsewhere)
     """
 
+    client, engine = fixture
     payload = {
         "lead": {
             "name": "John Seller",
             "email": "john@example.com",
-            "phone": "555-1234",
+            "phone": "555-010-1234",
             "source": "Facebook",
             "address": "123 Main St, Winnipeg, MB",
             "tags": "motivated,sfh",
@@ -68,6 +107,11 @@ def test_full_deal_pipeline_happy_path():
         },
     }
 
+    denied = client.post(
+        "/flow/full_deal_pipeline", json=payload,
+        headers={"X-Prime-Control-Key": "wrong"},
+    )
+    assert denied.status_code == 401
     response = client.post("/flow/full_deal_pipeline", json=payload)
     assert response.status_code == 201, response.text
 
@@ -101,13 +145,25 @@ def test_full_deal_pipeline_happy_path():
     # Underwriting should have metrics and a recommendation
     assert "metrics" in uw
     assert "recommendation" in uw
-    assert uw["metrics"]["total_project_cost"] > 0
+    assert Decimal(uw["metrics"]["total_project_cost"]) > 0
 
-    # No mandatory freeze in the happy path, but allow either
-    assert isinstance(data["freeze_event_created"], bool)
+    assert matches[0]["name"] == "Scoped test buyer"
+    assert deal["id"] != backend_deal_id
+    path = f"/workflow/deal_status/{backend_deal_id}"
+    assert client.get(path, headers={"X-Prime-Control-Key": "wrong"}).status_code == 401
+    result = client.get(path)
+    assert result.status_code == 200
+    assert result.json()["deal_brief"]["id"] == deal["id"]
+    assert result.json()["lead"]["id"] == lead["id"]
+    assert result.json()["flags"]["ready_for_marketing"] is False
+
+    with Session(engine) as db:
+        db.delete(db.get(DealBriefLink, backend_deal_id))
+        db.commit()
+    assert client.get(path).json()["deal_brief"] is None
 
 
-def test_full_deal_pipeline_bad_underwriting_triggers_freeze():
+def test_full_deal_pipeline_bad_underwriting_triggers_freeze(fixture):
     """
     Failure underwriting case:
 
@@ -116,11 +172,12 @@ def test_full_deal_pipeline_bad_underwriting_triggers_freeze():
     - Should set freeze_event_created = True
     """
 
+    client, engine = fixture
     payload = {
         "lead": {
             "name": "Jane Distress",
             "email": "jane@example.com",
-            "phone": "555-8888",
+            "phone": "555-010-8888",
             "source": "Direct Mail",
             "address": "999 Overpriced Ave, Winnipeg, MB",
             "tags": "distressed,high_ltv",
@@ -176,5 +233,27 @@ def test_full_deal_pipeline_bad_underwriting_triggers_freeze():
         or flags["breach_equity"]
     ), "Expected at least one underwriting policy breach."
 
-    # And the pipeline should record a freeze event
     assert data["freeze_event_created"] is True
+    deal_id = data["backend_deal_id"]
+    with Session(engine) as db:
+        assert db.query(FreezeEvent).filter_by(deal_id=str(deal_id)).one().notes
+    state = client.get(f"/workflow/deal_status/{deal_id}").json()
+    assert state["freeze"]["has_freeze"] is True
+    assert state["flags"]["blocked_by_freeze"] is True
+
+    # The pipeline must roll back the lead, Deal, DealBrief and link together
+    # if the underwriting freeze cannot be persisted.
+    def reject_freeze(*args):
+        raise RuntimeError("injected freeze insert failure")
+
+    event.listen(FreezeEvent, "before_insert", reject_freeze)
+    try:
+        assert client.post("/flow/full_deal_pipeline", json=payload).status_code == 500
+    finally:
+        event.remove(FreezeEvent, "before_insert", reject_freeze)
+    with Session(engine) as db:
+        assert db.query(Lead).count() == 1
+        assert db.query(Deal).count() == 1
+        assert db.query(DealBrief).count() == 2
+        assert db.query(DealBriefLink).count() == 1
+        assert db.query(FreezeEvent).count() == 1

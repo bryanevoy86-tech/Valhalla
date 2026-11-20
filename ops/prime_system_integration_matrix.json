@@ -360,9 +360,11 @@
       "source_paths": [
         "services/api/app/routers/execution.py",
         "services/api/app/routers/heimdall.py",
-        "services/api/tests/test_system_integrity.py"
+        "services/api/tests/test_system_integrity.py",
+        "services/api/tests/test_flow_full_pipeline.py",
+        "services/api/tests/test_fake_live_operating_day.py"
       ],
-      "source_observation": "SQLite regression covers audited canonical deal stages and rollback. Historical full-deal intake still fails at the lead contract; buyer-brief linkage, full pipeline and market-specific outcomes are unverified",
+      "source_observation": "SQLite regressions cover audited deal stages, transactional intake, explicit deal-to-brief linkage, underwriting freezes and a controlled operating-day rehearsal. External closing, payment and market-specific outcomes remain unverified",
       "evidence_level": "SOURCE_INSPECTED_ONLY",
       "production_verified": false,
       "acceptance_test": "Intake-to-deal-to-contract-to-payment simulation then lawful real deal using canonical work lifecycle",

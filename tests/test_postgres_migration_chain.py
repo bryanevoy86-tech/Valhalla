@@ -14,6 +14,7 @@ from unittest.mock import patch
 from alembic.migration import MigrationContext
 from alembic.operations import Operations
 from sqlalchemy import create_engine, inspect, text
+from sqlalchemy.exc import IntegrityError
 
 ROOT = Path(__file__).resolve().parents[1]
 url = os.environ.get("FACTORY_TEST_POSTGRES_URL", "")
@@ -34,6 +35,7 @@ def load(path: str):
 
 FACTORY = load("alembic/versions/20261119_factory_legacy_work_schema.py")
 REVOCATION = load("alembic/versions/20261119_persistent_auth_revocation.py")
+DEAL_LINKS = load("alembic/versions/20261120_deal_brief_links.py")
 
 
 @unittest.skipUnless(url, "Disposable PostgreSQL database not supplied")
@@ -74,6 +76,39 @@ class PostgresMigrationChainTests(unittest.TestCase):
 
         # The dedicated Postgres service is discarded after this job.
         # Never drop a DB simply because this schema test completed.
+
+
+    def test_deal_brief_link_migration_preserves_existing_rows_and_rejects_wrong_links(self):
+        engine = create_engine(url, pool_pre_ping=True)
+        try:
+            # Roll back this test's DDL so the shared disposable CI database
+            # remains usable by the migration above, regardless of test order.
+            with engine.connect() as conn:
+                transaction = conn.begin()
+                try:
+                    conn.execute(text("CREATE TABLE deals (id INTEGER PRIMARY KEY)"))
+                    conn.execute(text("CREATE TABLE deal_briefs (id INTEGER PRIMARY KEY)"))
+                    conn.execute(text("INSERT INTO deals (id) VALUES (7), (8)"))
+                    conn.execute(text("INSERT INTO deal_briefs (id) VALUES (11), (7)"))
+                    op = Operations(MigrationContext.configure(conn))
+                    with patch.object(DEAL_LINKS, "op", op):
+                        DEAL_LINKS.upgrade()
+                        self.assertEqual(conn.execute(text("SELECT COUNT(*) FROM deal_brief_links")).scalar_one(), 0)
+                        conn.execute(text("INSERT INTO deal_brief_links VALUES (7, 11)"))
+                        for statement in (
+                            "INSERT INTO deal_brief_links VALUES (8, 11)",
+                            "INSERT INTO deal_brief_links VALUES (8, 12345)",
+                        ):
+                            with self.assertRaises(IntegrityError), conn.begin_nested():
+                                conn.execute(text(statement))
+                        DEAL_LINKS.downgrade()
+                    self.assertEqual(conn.execute(text("SELECT brief_id FROM deal_brief_links")).scalar_one(), 11)
+                    self.assertEqual(conn.execute(text("SELECT COUNT(*) FROM deals")).scalar_one(), 2)
+                    self.assertEqual(conn.execute(text("SELECT COUNT(*) FROM deal_briefs")).scalar_one(), 2)
+                finally:
+                    transaction.rollback()
+        finally:
+            engine.dispose()
 
 
 if __name__ == "__main__":

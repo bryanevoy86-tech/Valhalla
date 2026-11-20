@@ -209,8 +209,7 @@ jobs:
         run: |
           python scripts/prime_runtime_route_probe.py --import-app --output prime-route-diagnostic.json
           cat prime-route-diagnostic.json
-      - name: Inspect complete backend test collection (diagnostic only)
-        continue-on-error: true
+      - name: Require complete backend test collection
         env:
           DATABASE_URL: sqlite://
           VALHALLA_JWT_SECRET: ci-test-only-not-production
@@ -251,7 +250,9 @@ jobs:
             services/api/tests/test_system_integrity.py \
             services/api/tests/test_system_self_check.py \
             services/api/tests/test_heimdall_ultra.py \
-            services/api/tests/test_pack_sz_ta_tb.py
+            services/api/tests/test_pack_sz_ta_tb.py \
+            services/api/tests/test_flow_full_pipeline.py \
+            services/api/tests/test_fake_live_operating_day.py
       - name: Archive backend test collection report
         if: always()
         uses: actions/upload-artifact@v4
