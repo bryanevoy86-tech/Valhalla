@@ -65,3 +65,7 @@ Missing, failed, timed-out or unverified Loki review must return a blocked/held 
 6. Run malicious-source, forged flag, collision, duplicate, worker-death, legal/cross-tenant privacy, source-withholding and false confidence tests; then controlled PostgreSQL/staging/live proof.
 
 The independent auditor is not complete merely because original five-god rules pass. No production, insurer, bank, tax or legal operations were performed during this correction.
+
+## Owner clarification — 2026-11-20
+
+Loki operates across every authorized subsystem relevant to adversarial risk, proactively as well as on submitted proposals. His independent findings report to Heimdall Prime first, with dissent preserved and visible to the owner. Heimdall synthesizes those findings with other Gods' reports and decides/executes within delegated authority. The owner does not become the ordinary decision processor. A/B/C/Override applies to owner-level exceptions, not each routine authorized action. Required unresolved material audits and hard safety/legal gates must still hold affected actions. See the system-wide doctrine in ops/VALHALLA_FULL_VISION_TRACEABILITY.md. This is an architecture clarification, not a new deployment or permission grant.
