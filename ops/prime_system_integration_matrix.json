@@ -11,7 +11,7 @@
         "services/api/app/main.py",
         "services/api/start.py"
       ],
-      "source_observation": "Actual canonical FastAPI app imported on isolated Linux GitHub Actions; 7 critical routers loaded without import failure and 9/9 required route contracts registered. Production Render app remains at older commit.",
+      "source_observation": "Actual canonical FastAPI app imported on isolated Linux CI; 13/13 designated critical routers and 15/15 endpoint contracts registered, including all five Pantheon gods and orchestrator. Production Render runs older main commit.",
       "evidence_level": "FOCUSED_CI_TESTED",
       "production_verified": false,
       "acceptance_test": "Prove every mandatory router imports in a clean canonical app; no missing OpenAPI paths or silent startup success",
@@ -420,7 +420,7 @@
         "scripts/prime_runtime_route_probe.py",
         "services/api/requirements.txt"
       ],
-      "source_observation": "Required CI now exercises 9-route canonical FastAPI import, 85 targeted unit/SQLite/PostgreSQL tests, and separate nongating legacy pytest collection report. Full backend test execution and staging release remain blocked.",
+      "source_observation": "Required CI now tests 15 canonical routes, 13 mandatory router imports, 90 base targeted tests (smoke, integration, Postgres), plus 18 Pentheon evaluation tests; full backend pytest collection still has two historical errors and live release remains blocked.",
       "evidence_level": "FOCUSED_CI_TESTED",
       "production_verified": false,
       "acceptance_test": "Canonical app starts cleanly; all core safety and workflow tests + prod-like Postgres integration; reviewed release/rollback evidence",
@@ -455,10 +455,12 @@
         "GOVERNANCE_SYSTEM.md",
         "services/api/app/routers/governance_orchestrator.py",
         "services/api/app/routers/governance_loki.py",
-        "services/api/app/routers/governance_tyr.py"
+        "services/api/app/routers/governance_tyr.py",
+        "services/api/app/main.py",
+        "services/api/tests/test_governance_orchestrator.py"
       ],
-      "source_observation": "Five-God KING/QUEEN/ODIN/LOKI/TYR source and orchestrator exist; this is not the entire expanded Norse role model.",
-      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "source_observation": "Original five governance evaluators and orchestrator now mounted at canonical /api/governance paths with backward-compatible /governance routes; 18 API tests passed in isolated CI. NOT yet connected to every external action dispatch or expanded Norse role model.",
+      "evidence_level": "FOCUSED_CI_TESTED",
       "production_verified": false,
       "acceptance_test": "Prove all five independent checks and disagreements reach a real dispatch gate, including legal/ethical hard stops, no forged approvals and reproducible audit.",
       "depends_on": [
