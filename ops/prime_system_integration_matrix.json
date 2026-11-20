@@ -1,0 +1,426 @@
+{
+  "schema_version": 1,
+  "generated_date": "2026-11-19",
+  "policy": "Source presence and focused tests are not proof of autonomous commercial operation. Never mark DONE without scope-specific end-to-end evidence.",
+  "baseline_branch": "fix/fail-closed-operations-20261119",
+  "capabilities": [
+    {
+      "id": "api_wiring",
+      "priority": "P0",
+      "source_paths": [
+        "services/api/app/main.py",
+        "services/api/start.py"
+      ],
+      "source_observation": "Dynamic router autoload logs errors and continues; /health is only a process check",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "Prove every mandatory router imports in a clean canonical app; no missing OpenAPI paths or silent startup success",
+      "depends_on": [
+        "auth",
+        "legacy_execution"
+      ],
+      "owner_external_authorization_required": false
+    },
+    {
+      "id": "auth",
+      "priority": "P0",
+      "source_paths": [
+        "services/api/app/routers/auth_weweb.py",
+        "services/api/app/core/dependencies.py"
+      ],
+      "source_observation": "WeWeb JWT flow exists; process-local revocation and optional development session auth need production verification",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "Persistent logout/revocation and RBAC across restart; ownership and tenant-bound denies; real login/logout smoke",
+      "depends_on": [],
+      "owner_external_authorization_required": false
+    },
+    {
+      "id": "runtime_governance",
+      "priority": "P0",
+      "source_paths": [
+        "services/api/app/core/runtime_flags.py",
+        "services/api/app/routers/completion_registry.py"
+      ],
+      "source_observation": "Runtime modes and governance registers exist; risk and real side effect isolation must be proven on every adapter",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "Inject denied/outreach/spend/contract calls in each mode and jurisdiction; no external effect",
+      "depends_on": [
+        "auth"
+      ],
+      "owner_external_authorization_required": false
+    },
+    {
+      "id": "discovery_sources",
+      "priority": "P1",
+      "source_paths": [
+        "scripts/ingest/ingest_sources.py",
+        "services/api/app/research/service.py"
+      ],
+      "source_observation": "Web/RSS ingestion code exists; research service also has process-local source registry",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "On schedule, acquire permissible fresh independent sources with attribution and dedupe; fail on revoked/expired rights",
+      "depends_on": [
+        "runtime_governance",
+        "scheduling"
+      ],
+      "owner_external_authorization_required": false
+    },
+    {
+      "id": "universal_evaluator",
+      "priority": "P1",
+      "source_paths": [
+        "services/api/app/services/universal_opportunity_evaluator.py",
+        "services/api/app/routers/completion_registry.py"
+      ],
+      "source_observation": "Specialist scoring, replay, capital risk and abstention logic exist; current endpoint receives supplied candidates",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "Cross-industry cases produce repeatable evidence-locked predictions; unknown candidates yield abstention, not artificial opportunity",
+      "depends_on": [
+        "discovery_sources"
+      ],
+      "owner_external_authorization_required": false
+    },
+    {
+      "id": "knowledge",
+      "priority": "P1",
+      "source_paths": [
+        "services/api/app/routers/completion_registry.py",
+        "docs/PHASE3_INTEGRATED_ARCHITECTURE.md"
+      ],
+      "source_observation": "Knowledge and source governance registry code exists; freshness/permission runtime propagation unverified",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "Bad/injected/stale sources blocked from live decisions; citations, correction version and expiry enforced",
+      "depends_on": [
+        "discovery_sources"
+      ],
+      "owner_external_authorization_required": false
+    },
+    {
+      "id": "learning_mimir",
+      "priority": "P1",
+      "source_paths": [
+        "services/api/app/services/heimdall_outcomes.py",
+        "services/api/app/routers/decision_outcome.py"
+      ],
+      "source_observation": "Outcome records exist; one path stores outcomes in local JSON, not assured durable on Render",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "Record actual verified outcomes in PostgreSQL and prove replay correction without holdout leakage",
+      "depends_on": [
+        "universal_evaluator",
+        "legacy_execution"
+      ],
+      "owner_external_authorization_required": false
+    },
+    {
+      "id": "legacy_instances",
+      "priority": "P0",
+      "source_paths": [
+        "services/api/app/routers/completion_registry.py",
+        "services/api/app/models/completion_registry.py"
+      ],
+      "source_observation": "Legacy provisioning, policy sync, multi-instance work-assignment records exist",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "Two isolated legacies may not see or steal each other's tasks; identity/policy and failover tests pass",
+      "depends_on": [
+        "auth",
+        "runtime_governance"
+      ],
+      "owner_external_authorization_required": false
+    },
+    {
+      "id": "legacy_execution",
+      "priority": "P0",
+      "source_paths": [
+        "services/api/app/services/prime_business_execution.py",
+        "services/api/app/routers/prime_business_factory.py"
+      ],
+      "source_observation": "Owner-approved internal listing draft, DB record and digest receipt pass SQLite integration tests only",
+      "evidence_level": "SQLITE_INTEGRATION_TESTED",
+      "production_verified": false,
+      "acceptance_test": "Real PostgreSQL task lifecycle survives restarts and duplicates; every completed status has independently verified receipt",
+      "depends_on": [
+        "legacy_instances",
+        "schema_and_migrations"
+      ],
+      "owner_external_authorization_required": false
+    },
+    {
+      "id": "schema_and_migrations",
+      "priority": "P0",
+      "source_paths": [
+        "alembic/versions/20261119_factory_legacy_work_schema.py",
+        "alembic/env.py"
+      ],
+      "source_observation": "Source migration prepared but live Render DB lacks legacy work tables; startup predeploy migrations not configured",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "Rehearse upgrade and no-data-loss on disposable PostgreSQL; verify exact prod DB, heads and release rollback",
+      "depends_on": [
+        "api_wiring"
+      ],
+      "owner_external_authorization_required": false
+    },
+    {
+      "id": "scheduling",
+      "priority": "P0",
+      "source_paths": [
+        "services/api/tools/cron/daily_email_ping.py",
+        "services/api/tools/cron/business_factory_tick.py"
+      ],
+      "source_observation": "Render daily email cron live; optional owner-approved Business Factory tick added but disabled",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "Approved task executes on schedule, with exact host/credential controls; logs show durable receipt and no double issue",
+      "depends_on": [
+        "legacy_execution"
+      ],
+      "owner_external_authorization_required": false
+    },
+    {
+      "id": "builder_code",
+      "priority": "P0",
+      "source_paths": [
+        "services/api/app/routers/builder.py",
+        "services/api/app/core/builder_path_policy.py"
+      ],
+      "source_observation": "Builder can propose and write files; hardened path guard and direct-push stop pending release",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "Code draft diff, owner review, isolated tests, GitHub branch PR, deploy verification; never write outside source tree",
+      "depends_on": [
+        "auth",
+        "runtime_governance"
+      ],
+      "owner_external_authorization_required": false
+    },
+    {
+      "id": "ai_providers",
+      "priority": "P1",
+      "source_paths": [
+        "services/api/app/routers/model_provider.py",
+        "app/ai/providers.py"
+      ],
+      "source_observation": "AI provider registration and adapter code exists; owner token budget and runtime inference limits unverified",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "Select provider, enforce budget and data privacy, record cost, handle expired key/outage, optionally local model",
+      "depends_on": [
+        "runtime_governance"
+      ],
+      "owner_external_authorization_required": false
+    },
+    {
+      "id": "marketing",
+      "priority": "P0",
+      "source_paths": [
+        "services/api/app/routes/marketing.py",
+        "services/api/app/routers/marketing.py",
+        "services/api/app/services/marketing_service.py"
+      ],
+      "source_observation": "Marketing campaign/post database CRUD exists; now mounted under owner auth; provider publishing unverified",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "True platform authenticated publish and provider receipt, lawful scheduling/consent, click attribution to paid order",
+      "depends_on": [
+        "auth",
+        "media",
+        "commerce"
+      ],
+      "owner_external_authorization_required": true
+    },
+    {
+      "id": "media",
+      "priority": "P1",
+      "source_paths": [
+        "services/api/app/routers/media_engine.py",
+        "services/api/app/services/media_engine.py"
+      ],
+      "source_observation": "Media channel/content records exist; false published status blocked; no real video/social publisher integrated",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "Produce final legal asset, publish with provider confirmation, match URL and verified account, update audit history",
+      "depends_on": [
+        "auth"
+      ],
+      "owner_external_authorization_required": true
+    },
+    {
+      "id": "subscription_saas",
+      "priority": "P1",
+      "source_paths": [
+        "services/api/app/routers/saas_access.py",
+        "services/api/app/models/marketing.py"
+      ],
+      "source_observation": "SaaS access endpoints exist; no proof of paid customer subscription entitlements and tenant isolation",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "Real checkout subscription grants scoped rights, renewal/payment failure revokes, subscriptions isolated from Prime",
+      "depends_on": [
+        "auth",
+        "finance_webhooks"
+      ],
+      "owner_external_authorization_required": true
+    },
+    {
+      "id": "commerce",
+      "priority": "P0",
+      "source_paths": [
+        "services/api/app/routers/prime_business_factory.py",
+        "services/api/app/models/media_engine.py"
+      ],
+      "source_observation": "Internal digital-product draft only; no actual connected storefront or confirmed downloadable product",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "Real approved listing/checkout/delivery/refund, buyer rights and content-hash verified, receipt tied to business",
+      "depends_on": [
+        "legacy_execution",
+        "finance_webhooks"
+      ],
+      "owner_external_authorization_required": true
+    },
+    {
+      "id": "finance_webhooks",
+      "priority": "P0",
+      "source_paths": [
+        "services/api/app/providers/stripe_adapter.py",
+        "services/api/app/webhooks/stripe.py"
+      ],
+      "source_observation": "Old handler recorded fabricated statuses; new code rejects unsigned financial events and returns 503 until ledger consumer exists",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "Signed timestamped webhooks idempotently persist, settle, reverse, reconcile Stripe/Payhip events; provider receipt",
+      "depends_on": [
+        "auth",
+        "schema_and_migrations"
+      ],
+      "owner_external_authorization_required": true
+    },
+    {
+      "id": "payouts_and_funds",
+      "priority": "P0",
+      "source_paths": [
+        "services/api/app/integrations/stripe/payouts.py",
+        "services/api/app/core/runtime_flags.py"
+      ],
+      "source_observation": "Old Stripe payout returned generated fake IDs; new code blocks unimplemented live provider action",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "No transfer without owner limit; provider payout id and settlement reconciled; no fabricated in_transit state",
+      "depends_on": [
+        "finance_webhooks",
+        "runtime_governance"
+      ],
+      "owner_external_authorization_required": true
+    },
+    {
+      "id": "contracts_legal",
+      "priority": "P1",
+      "source_paths": [
+        "services/api/app/routers/contracts.py",
+        "services/api/app/models/contracts.py"
+      ],
+      "source_observation": "Contract template and document routes exist; actual external signature/legal approvals unproven",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "Jurisdiction and licensed review gates; provider envelope true signed-event receipt and revocation evidence",
+      "depends_on": [
+        "auth",
+        "runtime_governance"
+      ],
+      "owner_external_authorization_required": true
+    },
+    {
+      "id": "real_estate_execution",
+      "priority": "P1",
+      "source_paths": [
+        "services/api/app/routers/execution.py",
+        "services/api/app/routers/heimdall.py"
+      ],
+      "source_observation": "Intake, case and deal analysis routes exist; complete market-specific customer/deal outcome unverified",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "Intake-to-deal-to-contract-to-payment simulation then lawful real deal using canonical work lifecycle",
+      "depends_on": [
+        "legacy_execution",
+        "universal_evaluator"
+      ],
+      "owner_external_authorization_required": false
+    },
+    {
+      "id": "notifications",
+      "priority": "P1",
+      "source_paths": [
+        "services/api/app/workers/outbox_dispatcher.py",
+        "services/api/app/core/dependencies.py"
+      ],
+      "source_observation": "Reference dispatcher can no longer record unsent messages dispatched; actual provider pathway must be identified",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "Owner-authorized email/SMS external receipts with opt-out, retry, replay protection and consent logs",
+      "depends_on": [
+        "auth",
+        "legacy_execution"
+      ],
+      "owner_external_authorization_required": false
+    },
+    {
+      "id": "operations_observability",
+      "priority": "P0",
+      "source_paths": [
+        "services/api/app/heimdall/readiness.py",
+        "services/api/app/main.py",
+        "services/api/app/cron/daily_ops.py"
+      ],
+      "source_observation": "Several health/readiness signals previously claimed hardcoded success; fail-closed checks added but some probes remain blocked",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "Red/green live status based on DB/worker/provider receipts; alert on stalled jobs, missing routers and invalid migrations",
+      "depends_on": [
+        "api_wiring",
+        "legacy_execution"
+      ],
+      "owner_external_authorization_required": false
+    },
+    {
+      "id": "weweb_frontend",
+      "priority": "P1",
+      "source_paths": [
+        "services/api/app/routers/auth_weweb.py",
+        "docs/CURRENT_SYSTEM_TRUTH.md"
+      ],
+      "source_observation": "WeWeb authentication API exists; external WeWeb project UI cannot be verified from GitHub source",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "Owner login, real dashboard, approval controls, data updates and session expiry tested in WeWeb against deployment",
+      "depends_on": [
+        "auth",
+        "api_wiring"
+      ],
+      "owner_external_authorization_required": true
+    },
+    {
+      "id": "ci_release",
+      "priority": "P0",
+      "source_paths": [
+        ".github/workflows/critical-controls-ci.yml",
+        ".github/workflows/disable-ci.yml"
+      ],
+      "source_observation": "Focused CI restored on PR #4; broad suite still has previously reported collection errors",
+      "evidence_level": "FOCUSED_CI_TESTED",
+      "production_verified": false,
+      "acceptance_test": "Canonical app starts cleanly; all core safety and workflow tests + prod-like Postgres integration; reviewed release/rollback evidence",
+      "depends_on": [
+        "api_wiring",
+        "schema_and_migrations"
+      ],
+      "owner_external_authorization_required": false
+    }
+  ]
+}
