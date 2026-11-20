@@ -459,3 +459,18 @@ Scope: existing draft PR #4; 47 full-system workstreams and the owner-confirmed 
 **Remaining:** full 47 scope, especially independent actual Loki AI worker, system-wide scheduled and event-triggered God reports, real discovery/decision/verified execution and outcome learning, leased crash recovery, real provider integration, entire historical regression, live DB identification and full migration/rollback rehearsal, owner interface and professional-gated wealth/advisory tools. No claim of business or production completion.
 
 **Render mutation count: zero.** No merge, deploy, DB change, cron activation, payment, bank transfer, account setup or customer contact. This is a branch-level implementation and test record.
+
+
+## 2026-11-20 — Internal Factory receipt read-back integrity and local reconciliation handoff
+
+Continuation remains on draft PR #4. Prior latest required CI run 44748568129 was inspected: all four jobs successful, with 190 targeted cases reported in the previous ledger. That does not certify these new changes or full historical backend tests.
+
+| Change | Commit |
+|---|---|
+| Status read-back rejects wrong action/Legacy/event, malformed receipt fields, contradictory sales/external-effect flags and a digest-valid body not matching the expected listing | d8c73301b17ba53022271915a42cc1ab1b13afb5 |
+| Two regression test methods, including seven malformed/misattributed receipt subcases and hash-valid substitution | e2443402182d1908e412727554fdfe4f19c8864b |
+| Updated root Codex handoff: 47 workstreams, latest tested vs pending evidence, November 30 refresh target, local-only reconciliation and verified recovery gate | 826b760b424320a4d814bda0342ad5ab3dc5379f |
+
+New receipt tests have **not yet been observed passing**. No fresh workflow result was returned for the test commit at inspection. The change is a bounded internal-record consistency check, not cryptographic proof against a malicious database writer, external publication, payment, or a complete worker lifecycle. Existing code still needs the full suite, provider receipts, verified learning, independent Loki, durable leases/recovery and the full 47-workstream integration.
+
+Render read-only inventory confirmed API and daily-email cron on main with auto-deploy enabled, and both Postgres instances available. This does not identify the API's actual database or certify migrations. No Render mutations, production deploys, merges, external provider calls, payments, new paid services, or live mandates. Local VS Code work remains uninspected by the remote connector and must be backed up and reconciled before any integration. Never merge this draft to main before the existing staged release gates and specific authorization.
