@@ -151,9 +151,10 @@
       "source_paths": [
         "services/api/app/services/prime_business_execution.py",
         "services/api/app/routers/prime_business_factory.py",
-        "tests/test_factory_postgres.py"
+        "tests/test_factory_postgres.py",
+        "tests/test_business_factory_pilot.py"
       ],
-      "source_observation": "Single internal listing-draft lane and verified database receipts work in SQLite and disposable PostgreSQL. A finite, expiring, revocable standing internal-draft mandate passed SQLite tests and a real PostgreSQL two-worker one-use cap test. No provider execution, crash recovery or autonomous revenue proved.",
+      "source_observation": "Single internal listing-draft lane and verified database receipts work in SQLite and disposable PostgreSQL. A finite, expiring, revocable standing internal-draft mandate passed SQLite tests and a real PostgreSQL two-worker one-use cap test. No provider execution, crash recovery or autonomous revenue proved. Internal lane now reconciles concurrent submissions, skips waiting/blocked entries, and passes PostgreSQL injected rollback and lost commit acknowledgement tests. Not generalized process-kill/provider recovery.",
       "evidence_level": "POSTGRES_INTEGRATION_TESTED",
       "production_verified": false,
       "acceptance_test": "Real PostgreSQL task lifecycle survives restarts and duplicates; every completed status has independently verified receipt",
@@ -185,9 +186,10 @@
       "priority": "P0",
       "source_paths": [
         "services/api/tools/cron/daily_email_ping.py",
-        "services/api/tools/cron/business_factory_tick.py"
+        "services/api/tools/cron/business_factory_tick.py",
+        "services/api/tools/cron/business_factory_worker.py"
       ],
-      "source_observation": "Render daily email cron live; optional owner-approved Business Factory tick added but disabled",
+      "source_observation": "Render daily email cron live; optional owner-approved Business Factory tick added but disabled Opt-in internal-only Factory polling process added; source-only pending latest CI, no new Render service or activation. Does not implement general provider leases.",
       "evidence_level": "SOURCE_INSPECTED_ONLY",
       "production_verified": false,
       "acceptance_test": "Approved task executes on schedule, with exact host/credential controls; logs show durable receipt and no double issue",
@@ -201,12 +203,15 @@
       "priority": "P0",
       "source_paths": [
         "services/api/app/routers/builder.py",
-        "services/api/app/core/builder_path_policy.py"
+        "services/api/app/core/builder_path_policy.py",
+        "tests/test_builder_review_boundary.py",
+        "scripts/builder_materialize_review.py",
+        "tests/test_builder_materialize_review.py"
       ],
-      "source_observation": "Builder can propose and write files; hardened path guard and direct-push stop pending release",
-      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "source_observation": "Existing Builder queue, snapshot-bound review bundles and stale-base/tamper checks tested via FastAPI and SQLite; independent artifact materializer checksum/syntax cases passed. Direct runtime source writes denied. No AI worker, isolated test execution, reviewed PR or deployment yet.",
+      "evidence_level": "SQLITE_INTEGRATION_TESTED",
       "production_verified": false,
-      "acceptance_test": "Code draft diff, owner review, isolated tests, GitHub branch PR, deploy verification; never write outside source tree",
+      "acceptance_test": "Prove authorized durable development assignments, snapshot-bound artifact export, isolated fresh checkout and actual regression/security tests, scoped PR review and staged release. No API mutation of running source or unrestricted pushes.",
       "depends_on": [
         "auth",
         "runtime_governance"
