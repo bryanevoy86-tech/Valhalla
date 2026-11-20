@@ -14,6 +14,9 @@ from sqlalchemy.orm import Session
 from app.core.db import get_db
 from app.services.prime_business_execution import (
     require_factory_key,
+    require_owner_mandate_key,
+    grant_draft_mandate,
+    revoke_draft_mandate,
     submit_listing_draft,
     approve_action,
     run_one_approved_draft,
@@ -57,6 +60,19 @@ class ListingDraftRequest(BaseModel):
     description: str = Field(min_length=40, max_length=1800)
     price_cents_cad: int = Field(ge=1, le=10_000_000)
     request_key: str = Field(min_length=8, max_length=80)
+    mandate_id: str | None = Field(default=None, min_length=8, max_length=64, pattern=r"^[A-Za-z0-9_-]+$")
+
+
+class DraftMandateRequest(BaseModel):
+    mandate_id: str = Field(min_length=8, max_length=64, pattern=r"^[A-Za-z0-9_-]+$")
+    legacy_instance_id: str = Field(min_length=3, max_length=80)
+    business_id: str = Field(min_length=3, max_length=120)
+    engine_id: str = Field(min_length=3, max_length=80)
+    jurisdiction: str = Field(min_length=2, max_length=80)
+    product_id: str = Field(min_length=3, max_length=80)
+    ttl_seconds: int = Field(ge=60, le=604800, strict=True)
+    max_uses: int = Field(ge=1, le=100, strict=True)
+    max_price_cents_cad: int = Field(ge=1, le=10_000_000, strict=True)
 
 
 class ApprovalRequest(BaseModel):
@@ -68,13 +84,23 @@ def queue_listing(request: ListingDraftRequest, db: Session = Depends(get_db)):
     return submit_listing_draft(db, request)
 
 
-@router.post("/actions/{action_id}/approve")
+@router.post("/actions/{action_id}/approve", dependencies=[Depends(require_owner_mandate_key)])
 def approve_internal_draft(
     action_id: str,
     request: ApprovalRequest,
     db: Session = Depends(get_db),
 ):
     return approve_action(db, action_id, request.confirmation)
+
+
+@router.post("/mandates", dependencies=[Depends(require_owner_mandate_key)])
+def grant_mandate(request: DraftMandateRequest, db: Session = Depends(get_db)):
+    return grant_draft_mandate(db, request)
+
+
+@router.post("/mandates/{mandate_id}/revoke", dependencies=[Depends(require_owner_mandate_key)])
+def revoke_mandate(mandate_id: str, db: Session = Depends(get_db)):
+    return revoke_draft_mandate(db, mandate_id)
 
 
 @router.post("/actions/run-once")
