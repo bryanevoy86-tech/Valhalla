@@ -5,6 +5,7 @@ PACK AC: Content / Media Engine Service
 from typing import List, Optional
 from datetime import datetime
 from sqlalchemy.orm import Session
+from fastapi import HTTPException
 
 from app.models.media_engine import MediaChannel, MediaContent, MediaPublishLog
 from app.schemas.media_engine import (
@@ -78,10 +79,9 @@ def create_publish_entry(
     db: Session,
     payload: MediaPublishCreate,
 ) -> MediaPublishLog:
+    if payload.status == "published":
+        raise HTTPException(status_code=409, detail="MEDIA_PUBLICATION_REQUIRES_VERIFIED_PROVIDER_RECEIPT")
     obj = MediaPublishLog(**payload.model_dump())
-    # if marking as published immediately
-    if obj.status == "published" and not obj.published_at:
-        obj.published_at = datetime.utcnow()
     db.add(obj)
     db.commit()
     db.refresh(obj)
@@ -98,11 +98,10 @@ def update_publish_entry(
         return None
 
     data = payload.model_dump(exclude_unset=True)
+    if data.get("status") == "published":
+        raise HTTPException(status_code=409, detail="MEDIA_PUBLICATION_REQUIRES_VERIFIED_PROVIDER_RECEIPT")
     for field, value in data.items():
         setattr(obj, field, value)
-
-    if obj.status == "published" and obj.published_at is None:
-        obj.published_at = datetime.utcnow()
 
     db.commit()
     db.refresh(obj)
