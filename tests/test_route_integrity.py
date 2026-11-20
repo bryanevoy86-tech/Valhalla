@@ -34,6 +34,12 @@ class RouterIntegrityTests(unittest.TestCase):
         out = report(set(REQUIRED) - {"prime_business_factory"}, {})
         self.assertFalse(out["ready"])
 
+    def test_release_and_independent_audit_routers_are_mandatory(self):
+        for name in ("go_live", "system_status", "loki"):
+            with self.subTest(name=name):
+                self.assertIn(name, REQUIRED)
+                self.assertFalse(report(set(REQUIRED) - {name})["ready"])
+
     def test_main_readyz_explicitly_checks_critical_router_state(self):
         source = (ROOT / "services/api/app/main.py").read_text(encoding="utf-8")
         self.assertIn('app.state.router_integrity = compute_router_integrity', source)
