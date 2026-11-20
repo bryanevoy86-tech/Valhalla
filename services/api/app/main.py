@@ -15,7 +15,6 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.routers.system_boot import router as system_boot_router
 from app.routers.test_email import router as test_email_router
-from app.routers import jarvis
 from app.services.post_boot_init import run_post_boot_init
 from app.core.route_integrity import compute_router_integrity
 
@@ -159,8 +158,6 @@ app.include_router(system_boot_router)
 app.include_router(test_email_router)
 app.include_router(test_email_router, prefix="/api")
 
-# Register Heimdall/Jarvis router
-app.include_router(jarvis.router)
 
 # Import all models upfront to register them with Base.metadata ONCE
 # This prevents duplicate table registration when routers import models
