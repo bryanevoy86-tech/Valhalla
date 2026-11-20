@@ -21,7 +21,7 @@ class DatabaseFailClosedTests(unittest.TestCase):
         result = subprocess.run(
             [sys.executable, "-c", "from app.core.db import engine; print(engine.url.drivername)"],
             env=env,
-            cwd=ROOT,
+            cwd=ROOT / "services/api",
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
