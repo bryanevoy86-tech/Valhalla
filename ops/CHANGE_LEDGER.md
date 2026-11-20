@@ -392,3 +392,35 @@ Discovered during FULL VISION audit: 18/18 historical governance API tests initi
 - The newly tested five original gods are **not** the entire Norse specialist bridge, do not enforce all provider actions and are not a production deployment.
 
 **Render mutation / business external effects:** ZERO. No secrets, funds, insurance policies, trusts, residency filings, bank transfers or external provider operations were touched. Draft PR remains review-only.
+
+
+## Loki as the independent second AI God — Nov 19/20, 2026
+
+Owner clarified the original Loki doctrine: **an independent, equal-standing adversarial challenger of Heimdall**, detecting false assumptions, broken logic, wrong calculations, contractual contradictions, hidden tax/trust exposures, catastrophic downside, unsafe automations and strategy blind spots. Unlike Heimdall, Loki does NOT optimize business outcomes, create binding documents, self-approve, change trusts, move money, or execute provider actions. A controlled bridge shares versioned reports, preserving dissent and an owner-facing A/B/C/Override review. Re-run Loki after significant human/Heimdall changes.
+
+Audit found:
+- governance_loki.py: independently callable deterministic downside/ruin/correlation thresholds; included in 18 passing Pantheon API tests.
+- ai/agents/loki.py: simple amount/risk-score based heuristic; NOT independent adversarial reasoning.
+- core/loki_engine.py: explicitly a keyword/length-based synchronous stub.
+- services/universal_opportunity_evaluator.py: useful in-process universal_loki_objections that can cause research-more/reject, but NOT an isolated independent second reviewer.
+- routers/loki.py: create_loki_review previously generated a generic "stub" finding and labeled it COMPLETED; untrusted historical data could look audit-approved. Historical verdict path only used status/severity and could imply completed review without proof.
+
+New development commits:
+| Commit | Change | Result |
+|---|---|---|
+| 808486c5 | Stop the fake-completed Loki review code and return HTTP 503 until an independent audit worker exists | No false completion |
+| c2851e68 | Forbid final Loki verdict from self-reported database flags/status even if an older row says COMPLETED | Fail-closed |
+| 548270a6 | Seven tests: no provider, no existing review, unfinished, legacy stub, forged verified flag, critical universal objection, material objection | Targeted CI |
+| 09b3688f | Include new tests in mandatory full-app governance regression job | CI |
+| c24cc496 | docs/LOKI_INDEPENDENT_CHALLENGER_CONTRACT.md: owner doctrine, independent evidence/report requirements, high-risk triggers and acceptance tests | Scope restoration |
+| bc9e745c | ops/prime_system_integration_matrix.json: adds Loki as first-class P0 independent workstream, **46→47** | Static preflight |
+| 45148430, 64a0f0b5, c093e96b, 516cc57e, 182b3cfa | Main Codex handoff, definition of done, integration passes, December resume and full vision register updated to enforce Loki review requirements | Handoff |
+
+**Actual green CI:** https://github.com/bryanevoy86-tech/Valhalla/actions/runs/44678616870
+- 47 static/smoke/policy, 40 SQLite/integration, 3 real disposable PostgreSQL, **25 Pantheon/Loki API and fail-closed tests** = **115 targeted tests passed**.
+- 13/13 required router imports, 15/15 canonical route contracts, **47/47 source-backed workstream declarations** valid. NO independent Loki provider/workflow/live audit has been certified.
+- Broad historical backend pytest collection still has two old import/contract errors. This is non-gating diagnostic; not a green full suite.
+
+**Important remaining P0:** A genuine independently run and evidenced Loki audit worker, immutable proposal snapshots, adversarial source and counterfactual tests, re-audit after meaningful edits, unresolved-objection escalation, mandatory high-impact dispatch gate, and owner-visible side-by-side dissent. The implemented 503/409 defenses intentionally block the fake audit until that capability exists; do not conflate blocked mode with being operational.
+
+**Render mutations:** ZERO. No production deployment, financial/legal operation, trust formation, customer contact, or provider transaction undertaken.
