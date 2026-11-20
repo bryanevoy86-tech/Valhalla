@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from urllib.parse import urlparse
 import urllib.error
 import urllib.request
@@ -67,15 +68,29 @@ def run_factory_tick() -> dict:
     except (ValueError, OSError) as exc:
         raise RuntimeError(f"Business Factory request or response failure: {type(exc).__name__}") from None
 
+    if not isinstance(data, dict):
+        raise RuntimeError("Business Factory worker did not confirm a valid internal result")
     status = data.get("status")
     if status == "idle" and data.get("verified") is False:
         return {"status": "idle", "verified": False}
+    if status == "blocked" and data.get("verified") is False:
+        return {"status": "blocked", "verified": False,
+                "emergency_stop": data.get("reason") == "EMERGENCY_STOP_ACTIVE"}
     if status == "completed" and data.get("verified") is True:
-        receipt = data.get("receipt") or {}
+        receipt = data.get("receipt")
         if (
-            receipt.get("verification_scope") == "database_artifact_only"
-            and receipt.get("external_effects") == 0
-            and receipt.get("sha256")
+            isinstance(receipt, dict)
+            and receipt.get("verification_scope") == "database_artifact_only"
+            and receipt.get("artifact_type") == "product_listing_draft"
+            and type(receipt.get("external_effects")) is int
+            and receipt["external_effects"] == 0
+            and receipt.get("sales_verified") is False
+            and type(receipt.get("media_content_id")) is int
+            and receipt["media_content_id"] > 0
+            and isinstance(receipt.get("action_id"), str)
+            and re.fullmatch(r"bfd_[0-9a-f]{32}", receipt["action_id"])
+            and isinstance(receipt.get("sha256"), str)
+            and re.fullmatch(r"[0-9a-f]{64}", receipt["sha256"])
         ):
             return {
                 "status": "internal_artifact_verified",
