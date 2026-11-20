@@ -67,7 +67,12 @@ jobs:
             tests/test_owner_reset_auth.py \
             tests/test_factory_postgres.py \
             services/api/app/routers/auth_weweb.py \
-            services/api/app/core/db.py
+            services/api/app/core/db.py \
+            services/api/app/security/token_revocation.py \
+            services/api/app/models/auth_revocations.py \
+            alembic/versions/20261119_persistent_auth_revocation.py \
+            tests/test_weweb_revocation.py \
+            tests/test_auth_revocation_migration.py
       - name: No-dependency guardrail tests and source matrix
         run: |
           python -m unittest discover -s tests -p test_fail_closed_smoke.py -v
@@ -113,6 +118,8 @@ jobs:
           python -m unittest discover -s tests -p test_prime_publication_safety.py -v
           python -m unittest discover -s tests -p test_core_auth_contracts.py -v
           python -m unittest discover -s tests -p test_owner_reset_auth.py -v
+          python -m unittest discover -s tests -p test_weweb_revocation.py -v
+          python -m unittest discover -s tests -p test_auth_revocation_migration.py -v
 
 
   factory-postgres:
