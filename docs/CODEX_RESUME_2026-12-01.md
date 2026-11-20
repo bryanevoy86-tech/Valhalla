@@ -133,3 +133,13 @@ When Codex resumes, read CODEX_START_HERE.md first and take PASS 1 to green befo
 - Do not run this with production external API keys. Imports can execute application initialization, so inspect that environment.
 - Latest 53-test CI: https://github.com/bryanevoy86-tech/Valhalla/actions/runs/44653459058 (targeted only).
 - Do not mistake source preflight or route registration for functioning live business operations.
+
+
+## Autonomous AI risk safeguards (November 19 addition)
+
+Source and acceptance: docs/PRIME_AUTONOMY_SAFETY_CONTRACT.md.
+Implementation: services/api/app/core/autonomy_governor.py, connected only to the internal approved Business Factory draft in services/api/app/services/prime_business_execution.py. Stop inputs: VALHALLA_EMERGENCY_STOP environment variable and the go_live_state database kill_switch_engaged when that table exists. Shadow external actions always blocked; high-impact calls require review; no actual provider actions wired.
+
+Targeted regression suite: 71 passed at https://github.com/bryanevoy86-tech/Valhalla/actions/runs/44654950056
+
+Critical caveat: This is NOT production global enforcement. For the current internal-no-external-effect pilot only, absence of historical go_live_state table is tolerated by the governor. Real money/outreach/deployment adapters must require durable active policy and fail closed if state missing. Owner approval must be obtained from authentic, persisted and scope-locked records, never an AI-generated field.
