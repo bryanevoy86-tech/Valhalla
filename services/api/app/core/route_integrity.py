@@ -15,6 +15,7 @@ REQUIRED_ROUTER_NAMES = frozenset({
     "auth_weweb",             # owner/user identity
     "completion_registry",   # Phase Three, governance and legacy orchestration
     "prime_business_factory", # durable owned execution lane
+    "prime_specialist_schedules",  # durable owner-authorized shadow cadence
     "builder",                # controlled software building
     "marketing",              # marketing registry
     "media_engine",           # content records

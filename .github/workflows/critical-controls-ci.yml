@@ -40,6 +40,8 @@ jobs:
             services/api/app/heimdall/readiness.py \
             services/api/app/services/prime_business_execution.py \
             services/api/app/routers/prime_business_factory.py \
+            services/api/app/routers/prime_specialist_schedules.py \
+            services/api/tools/cron/specialist_schedule_worker.py \
             services/api/app/core/builder_path_policy.py \
             services/api/app/core/route_integrity.py \
             services/api/app/core/autonomy_governor.py \

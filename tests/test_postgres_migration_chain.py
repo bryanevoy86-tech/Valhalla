@@ -42,6 +42,9 @@ BUYER_CLAIM = load("alembic/versions/20261120_buyer_claim_expiry.py")
 LOKI_RECEIPTS = load("alembic/versions/20261120_loki_review_receipts.py")
 
 
+SPECIALIST = load("alembic/versions/20261120_specialist_schedules.py")
+
+
 @unittest.skipUnless(url, "Disposable PostgreSQL database not supplied")
 class PostgresMigrationChainTests(unittest.TestCase):
     def test_migrations_preserve_baseline_and_repeat_without_duplicate_tables(self):
@@ -180,6 +183,42 @@ class PostgresMigrationChainTests(unittest.TestCase):
                 finally:
                     transaction.rollback()
         finally:
+            engine.dispose()
+
+
+    def test_specialist_schedule_migration_and_exclusive_due_slot(self):
+        engine = create_engine(url, pool_pre_ping=True)
+        try:
+            with engine.begin() as connection:
+                with patch.object(SPECIALIST.op, "create_table", side_effect=Operations(
+                    MigrationContext.configure(connection)
+                ).create_table), patch.object(SPECIALIST.op, "create_index", side_effect=Operations(
+                    MigrationContext.configure(connection)
+                ).create_index):
+                    SPECIALIST.upgrade()
+                connection.execute(text("""
+                    INSERT INTO prime_specialist_schedules
+                        (id, request, cadence_seconds, next_due_at, expires_at, state)
+                    VALUES ('00000000-0000-0000-0000-000000000001', '{}', 300,
+                            now() - interval '1 minute', now() + interval '1 hour', 'active')
+                """))
+            claim = text("""
+                SELECT id FROM prime_specialist_schedules
+                WHERE state = 'active' AND next_due_at <= now() AND expires_at > now()
+                ORDER BY next_due_at, id LIMIT 1 FOR UPDATE SKIP LOCKED
+            """)
+            with engine.begin() as first, engine.connect() as second:
+                self.assertIsNotNone(first.execute(claim).scalar_one())
+                self.assertIsNone(second.execute(claim).scalar_one_or_none())
+                first.execute(text("UPDATE prime_specialist_schedules SET next_due_at = now() + interval '5 minutes'"))
+            with engine.connect() as restarted:
+                self.assertIsNone(restarted.execute(claim).scalar_one_or_none())
+                self.assertIn("ix_prime_specialist_due", {
+                    index["name"] for index in inspect(restarted).get_indexes("prime_specialist_schedules")
+                })
+        finally:
+            with engine.begin() as connection:
+                connection.execute(text("DROP TABLE IF EXISTS prime_specialist_schedules"))
             engine.dispose()
 
 
