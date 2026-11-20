@@ -143,3 +143,18 @@ Implementation: services/api/app/core/autonomy_governor.py, connected only to th
 Targeted regression suite: 71 passed at https://github.com/bryanevoy86-tech/Valhalla/actions/runs/44654950056
 
 Critical caveat: This is NOT production global enforcement. For the current internal-no-external-effect pilot only, absence of historical go_live_state table is tolerated by the governor. Real money/outreach/deployment adapters must require durable active policy and fail closed if state missing. Owner approval must be obtained from authentic, persisted and scope-locked records, never an AI-generated field.
+
+
+## Current audit state and verification (Nov 19 / UTC Nov 20)
+
+Start at root CODEX_START_HERE.md and then ops/REMAINING_SYSTEM_BLOCKERS_2026-11-19.md.
+
+- 85 targeted tests passed: https://github.com/bryanevoy86-tech/Valhalla/actions/runs/44658342650.
+- Real canonical app import and 9 API routes registered in GitHub CI: https://github.com/bryanevoy86-tech/Valhalla/actions/runs/44657703945. The full app import is now a required CI gate.
+- Disposable PostgreSQL verified two workers never both completed the same approved internal product draft. Factory and WeWeb auth migrations reran idempotently and preserved a pre-existing record; no live Postgres mutation.
+- Owner password recovery now requires configured matching setup secret. app.core.db cannot silently start ephemeral in-memory SQLite on invalid driver/schema.
+- WeWeb logout/refresh now store SHA-256 hashes of revoked JWT IDs in shared SQL table auth_revoked_access_tokens; additive migration at alembic/versions/20261119_persistent_auth_revocation.py. The login/logout flow must be staged/tested against the full app after migration.
+- Backend pytest collection diagnostic still has two historical model/route mismatches; see triage. Full backend suite NOT green.
+- services/api/requirements.txt was converted from UTF-16 to UTF-8, pinned dependencies unchanged.
+- Render filtered API/cron logs returned no error-level/5xx matches in queried windows and Nov 19 daily email completed; no claim of successful business automation.
+- No changes were made to production Render services/configuration/DB. The code requires owner-approved staged release with migrations first.
