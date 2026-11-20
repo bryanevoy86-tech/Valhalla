@@ -338,6 +338,9 @@ class GovernanceAggregateDecision(BaseModel):
         description="Per-god detailed decisions.",
     )
     summary: Optional[str] = None
+    full_coverage: bool = False
+    evaluation_only: bool = True
+    external_effects_authorized: Literal[False] = False
 
 
 class GovernanceEvaluationRequest(BaseModel):
