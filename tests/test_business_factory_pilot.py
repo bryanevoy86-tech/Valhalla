@@ -228,6 +228,20 @@ class BusinessFactoryPilotTests(unittest.TestCase):
             "idle",
         )
 
+    def test_legacy_scope_registry_must_be_typed_lists(self):
+        for field in ("assigned_businesses_json", "assigned_jurisdictions_json", "engines_json"):
+            original = {
+                "assigned_businesses_json": json.dumps(["valhalla_digital"]),
+                "assigned_jurisdictions_json": json.dumps(["CA-MB"]),
+                "engines_json": json.dumps(["digital_products"]),
+            }
+            for malformed in ('"valhalla_digital CA-MB digital_products"', 'null', '{}', '[1]'):
+                with self.subTest(field=field, malformed=malformed):
+                    self.seed_instance(**dict(original, **{field: malformed}))
+                    self.assertEqual(self.submit().status_code, 409)
+            self.seed_instance(**original)
+        self.assertEqual(self.submit().status_code, 200)
+
     def test_legacy_scope_and_idempotency_enforced(self):
         bad = dict(self.payload, jurisdiction="US-FL", request_key="separate-wrong-jurisdiction")
         self.assertEqual(self.submit(bad).status_code, 409)
