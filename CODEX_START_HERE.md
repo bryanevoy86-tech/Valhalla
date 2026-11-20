@@ -47,3 +47,10 @@ Continue my EXISTING Heimdall Prime / Valhalla system; do not start over. First 
 - A green CI run is not live production success.
 - Do not guess which Postgres database the live API uses.
 - No direct main commit before a reviewed, explicit deployment approval.
+
+
+## Added: Autonomous risk-control governor
+
+Read docs/PRIME_AUTONOMY_SAFETY_CONTRACT.md. New deterministic autonomy risk governor: services/api/app/core/autonomy_governor.py, integrated into services/api/app/services/prime_business_execution.py. It checks trusted owner approval, scope, cost, source evidence, circuit breaker, uncertain outcomes and emergency stop. External/provider actions remain review or blocked; only internal approved draft is actually wired. Test cases in tests/test_autonomy_governor.py and tests/test_business_factory_pilot.py.
+
+Latest targeted CI: https://github.com/bryanevoy86-tech/Valhalla/actions/runs/44654950056 — 71 passed. NOT proof of broad backend production behavior. Codex must wire external action guards from trusted DB records to every provider, and show independent provider receipts with full integration/staging tests.
