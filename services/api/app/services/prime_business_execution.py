@@ -44,7 +44,7 @@ def require_factory_key(
     expected = os.environ.get("VALHALLA_FACTORY_KEY", "")
     if not expected:
         raise HTTPException(status_code=503, detail="Business Factory admin key not configured")
-    if not provided or not hmac.compare_digest(provided, expected):
+    if not provided or not hmac.compare_digest(provided.encode("utf-8"), expected.encode("utf-8")):
         raise HTTPException(status_code=401, detail="Business Factory authentication required")
 
 
