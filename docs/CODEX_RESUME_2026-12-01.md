@@ -162,7 +162,7 @@ Start at root CODEX_START_HERE.md and then ops/REMAINING_SYSTEM_BLOCKERS_2026-11
 
 ## Full Valhalla scope restored — November 19
 
-Do not limit December to 25 broad technical contracts or the Product Foundry. The expanded machine matrix now contains 46 source-anchored workstreams, including full Pantheon/Bridge Layer, Norns/Mimir, voice Commander, five legacies, banking, 90/10 funds, whole-life infinite banking, trusts, Panama/Bahamas planning, Canadian exit/residency, legal/tax opinions, family payroll, Black Ice and more. Master register: ops/VALHALLA_FULL_VISION_TRACEABILITY.md. Pass 0 reconciling all requirements is obligatory before the three technical integration passes, and Pass 4 privately scoped professional-gated wealth/exit advisory implementation comes after the safe operating engine.
+Do not limit December to 25 broad technical contracts or the Product Foundry. The expanded machine matrix now contains 47 source-anchored workstreams, including full Pantheon/Bridge Layer, Norns/Mimir, voice Commander, five legacies, banking, 90/10 funds, whole-life infinite banking, trusts, Panama/Bahamas planning, Canadian exit/residency, legal/tax opinions, family payroll, Black Ice and more. Master register: ops/VALHALLA_FULL_VISION_TRACEABILITY.md. Pass 0 reconciling all requirements is obligatory before the three technical integration passes, and Pass 4 privately scoped professional-gated wealth/exit advisory implementation comes after the safe operating engine.
 
 Critical additional safety fix: capital/banking/executor.py formerly returned executed with no real bank transfer. It now fails with BANK_TRANSFER_PROVIDER_NOT_CONNECTED and leaves owner approval unused; tests/test_banking_transfer_fail_closed.py added. No bank account was accessed or funds moved.
 
@@ -172,3 +172,8 @@ Conflicting doctrine (Pantheon names, Panama-first vs Canadian-first, advisor-on
 ## Original Pantheon integration newly repaired
 
 A real audit found that all 18 historical five-god tests were initially 404. The original routes used /governance; the orchestrator and tests expected /api/governance. The branch now supports both paths, checks all 6 original Pantheon routers as mandatory and tests 15 canonical endpoint contracts. The 18 real FastAPI governance tests passed after the fix (Actions 44662885729) and are now a mandatory CI requirement. The expanded Model C Norse specialists are NOT thereby deployed or connected to every external provider dispatch.
+
+
+## Loki independent challenger priority fix
+
+Loki must NOT be categorized only as original five-god governance or simple risk threshold evaluator. Inspect services/api/app/routers/loki.py, app/ai/agents/loki.py, core/loki_engine.py, services/universal_opportunity_evaluator.py and docs/LOKI_INDEPENDENT_CHALLENGER_CONTRACT.md. A false-completed review stub was blocked to prevent bogus audits; tests/test_loki_audit_fail_closed.py proves missing engine and self-issued evidence don't pass. The real independent AI audit worker, durable provenance and dispute-loop remains a P0 implementation task, no production proof.
