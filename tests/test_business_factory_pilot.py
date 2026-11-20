@@ -344,5 +344,80 @@ class BusinessFactoryPilotTests(unittest.TestCase):
         db.close()
 
 
+    def grant(self, **overrides):
+        payload = {k: self.payload[k] for k in (
+            "legacy_instance_id", "business_id", "engine_id", "jurisdiction", "product_id"
+        )}
+        payload.update(mandate_id="draft-mandate-01", ttl_seconds=3600,
+                       max_uses=2, max_price_cents_cad=2500)
+        payload.update(overrides)
+        response = self.client.post("/api/business-factory/mandates", json=payload, headers=HEADERS)
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertFalse(response.json()["external_effects_authorized"])
+        return payload
+
+    def run_worker(self):
+        response = self.client.post("/api/business-factory/actions/run-once", headers=WORKER_HEADERS)
+        self.assertEqual(response.status_code, 200, response.text)
+        return response.json()
+
+    def test_worker_cannot_grant_or_approve_own_authority(self):
+        grant = {k: self.payload[k] for k in (
+            "legacy_instance_id", "business_id", "engine_id", "jurisdiction", "product_id"
+        )}
+        grant.update(mandate_id="unauthorized-01", ttl_seconds=3600,
+                     max_uses=2, max_price_cents_cad=2500)
+        response = self.client.post("/api/business-factory/mandates", json=grant, headers=WORKER_HEADERS)
+        self.assertEqual(response.status_code, 401)
+        item = self.submit().json()["action_id"]
+        approve = self.client.post(f"/api/business-factory/actions/{item}/approve",
+            json={"confirmation": "APPROVE_INTERNAL_DRAFT"}, headers=WORKER_HEADERS)
+        self.assertEqual(approve.status_code, 401)
+        self.assertEqual(self.run_worker()["status"], "idle")
+
+    def test_standing_authority_reuses_grant_but_enforces_cap(self):
+        mandate = self.grant()
+        for i in range(3):
+            request = dict(self.payload, request_key=f"mandate-test-{i}", mandate_id=mandate["mandate_id"])
+            queued = self.submit(request, headers=WORKER_HEADERS)
+            self.assertEqual(queued.status_code, 200, queued.text)
+        for _ in range(2):
+            result = self.run_worker()
+            self.assertEqual(result["status"], "completed", result)
+            self.assertEqual(result["receipt"]["authority_mode"], "STANDING_MANDATE")
+            self.assertEqual(result["receipt"]["external_effects"], 0)
+        denied = self.run_worker()
+        self.assertEqual(denied["reason"], "MANDATE_EXHAUSTED")
+        with self.sessions() as db:
+            self.assertEqual(db.query(MediaContent).count(), 2)
+
+    def test_mandate_revocation_prevents_queued_work(self):
+        grant = self.grant()
+        self.assertEqual(self.submit(dict(self.payload, mandate_id=grant["mandate_id"]),
+                                     headers=WORKER_HEADERS).status_code, 200)
+        path = f"/api/business-factory/mandates/{grant['mandate_id']}/revoke"
+        self.assertEqual(self.client.post(path, headers=WORKER_HEADERS).status_code, 401)
+        self.assertEqual(self.client.post(path, headers=HEADERS).status_code, 200)
+        self.assertEqual(self.run_worker()["reason"], "MANDATE_REVOKED")
+
+    def test_mandate_scope_and_price_are_enforced(self):
+        grant = self.grant()
+        for i, change in enumerate([{"product_id": "other_product"}, {"price_cents_cad": 2900}]):
+            payload = dict(self.payload, request_key=f"scope-test-{i}", mandate_id=grant["mandate_id"], **change)
+            self.assertEqual(self.submit(payload, headers=WORKER_HEADERS).status_code, 200)
+        self.assertEqual(self.run_worker()["reason"], "MANDATE_LIMIT_EXCEEDED")
+        with self.sessions() as db:
+            self.assertEqual(db.query(MediaContent).count(), 0)
+
+    def test_mandate_expiry_is_enforced(self):
+        from unittest.mock import patch
+        grant = self.grant(ttl_seconds=60)
+        self.assertEqual(self.submit(dict(self.payload, mandate_id=grant["mandate_id"]),
+                                     headers=WORKER_HEADERS).status_code, 200)
+        with patch("app.services.prime_business_execution.time.time",
+                   return_value=grant["ttl_seconds"] + 9_999_999_999):
+            self.assertEqual(self.run_worker()["reason"], "MANDATE_EXPIRED")
+
+
 if __name__ == "__main__":
     unittest.main()
