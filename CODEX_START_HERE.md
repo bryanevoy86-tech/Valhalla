@@ -2,6 +2,16 @@
 
 This is the one-file handoff from ChatGPT's November 19 development and audit. **Do not create new packs or restart Valhalla.**
 
+## CURRENT HANDOFF — November 20, 2026 (supersedes older counts and instructions below)
+
+- Continue draft PR #4 on `fix/fail-closed-operations-20261119`; no merge to main. The last recorded successful required CI run is 44748568129 (190 targeted tests on code commit 89cf644d); all four jobs were independently checked green. The diagnostic historical collection still has two reported errors and is not a full-suite certification. See the append-only change ledger.
+- New focused receipt-verification change d8c73301b17ba53022271915a42cc1ab1b13afb5 and regression cases e2443402182d1908e412727554fdfe4f19c8864b bind an internal listing's read-back status to its action, Legacy, receipt type and expected listing body. **New CI result not yet observed.** Review and run the required checks before treating this as verified.
+- Latest owner-stated local Codex refresh target: November 30, 2026. Verify actual allowance before resuming. Older dates in the historical handoff are not deadlines.
+- **Local checkout is a separate source of truth.** The November 15 local reports described a dirty `C:\dev\dev` checkout on `codex/logout-contract-parity`, with 225 passing offline workflow tests and a subsequent 262-entry work-state inventory. These are historical local claims, not current GitHub proof. The remote draft's 190 tests are a different suite; do not add the counts or assume one supersedes the other.
+- Before switching branches, changing files, or attempting integration: confirm actual local root/branch/HEAD and working-tree state; obtain authorization for an independent encrypted recovery destination and verify restore; fetch without checkout; compare the local-only work (including the order-to-cash pipeline, founder approvals, WeWeb mappings and intake audit) against the remote draft. Use an isolated checkout/worktree only once recoverability is established. Do not reset, clean, stash, overwrite, force-push, blindly cherry-pick, or store local secrets/financial documents in the public repository.
+- Preserve the entire 47-workstream vision. Priority is the secure commercial core plus Builder working in parallel, not creating new packs. Reconcile actual implementation collisions before developing missing dependencies. Do not infer live authority from internal draft grants.
+- Next technical gates: full collection and regression without hiding the legacy mismatches; durable worker leases/restart/reconciliation; secure private Prime/owner interface and genuinely independent Loki; licensed market discovery and acquisition, actual delivery/collection and verified learning. Production API database identity, staged deployment and rollback remain unverified. No Render mutation or production activation in this continuation.
+
 ## DO NOT DROP THE REST OF VALHALLA
 
 The master scope now has 47 source-anchored workstreams, not only the earlier 25 domains. **Read ops/VALHALLA_FULL_VISION_TRACEABILITY.md before any new code.** It covers the expanded AI Gods/Pantheon, original five-god governance, owner Commander A/B/C/Override, Norns, Mimir, five legacies, product and venture Foundries, 90/10 wealth/Fun Funds, whole-life policy infinite banking, trusts, Canada exit/residency, corporate finance, family succession, Black Ice, resort and expansion. Source-only does NOT equal completed. Do not silently resolve conflicting trust/Pantheon doctrine. No legal, tax, banking or insurer action without owner and relevant professional authority.
@@ -18,12 +28,12 @@ The master scope now has 47 source-anchored workstreams, not only the earlier 25
 
 1. ops/VALHALLA_FULL_VISION_TRACEABILITY.md (full project vision and conflicting historical decisions).
 2. ops/CHANGE_LEDGER.md (every development change, CI evidence, ZERO Render mutations).
-2. ops/REMAINING_SYSTEM_BLOCKERS_2026-11-19.md (new cross-source log review and current blockers).
-3. ops/prime_system_integration_matrix.json (25 actual capability anchors, open acceptance conditions).
-4. docs/HEIMDALL_DEFINITION_OF_DONE.md (no more "finished" placeholders).
-5. docs/CODEX_SYSTEM_FINISH_PASSES.md (the **three** ordered Codex work packages).
-6. docs/CODEX_RESUME_2026-12-01.md (local Git commands, Render facts and current blockers).
-7. docs/PHASE3_INTEGRATED_ARCHITECTURE.md (canonical Prime opportunity pipeline).
+3. ops/REMAINING_SYSTEM_BLOCKERS_2026-11-19.md (new cross-source log review and current blockers).
+4. ops/prime_system_integration_matrix.json (47 source-anchored workstreams; acceptance conditions remain open).
+5. docs/HEIMDALL_DEFINITION_OF_DONE.md (no more "finished" placeholders).
+6. docs/CODEX_SYSTEM_FINISH_PASSES.md (the **three** ordered Codex work packages).
+7. docs/CODEX_RESUME_2026-12-01.md (local Git commands, Render facts and current blockers).
+8. docs/PHASE3_INTEGRATED_ARCHITECTURE.md (canonical Prime opportunity pipeline).
 
 ## Important verified code already committed
 
