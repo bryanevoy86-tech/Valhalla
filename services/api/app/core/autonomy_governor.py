@@ -81,8 +81,16 @@ class PolicyDecision:
 
 def decide(intent: ActionIntent) -> PolicyDecision:
     """Return conservative, explanatory policy decision without side effects."""
-    if intent.action not in ALL_ACTIONS or intent.mode not in {"SHADOW", "BOUNDED", "HALTED"}:
+    if (not isinstance(intent.action, str) or not isinstance(intent.mode, str)
+            or intent.action not in ALL_ACTIONS or intent.mode not in {"SHADOW", "BOUNDED", "HALTED"}):
         return PolicyDecision("BLOCK", "UNKNOWN_ACTION_OR_MODE")
+    flags = (intent.business_scope_verified, intent.tenant_scope_verified,
+             intent.owner_approval_verified, intent.source_rights_verified,
+             intent.consent_verified, intent.circuit_breaker_open,
+             intent.outcome_uncertain, intent.system_integrity_verified,
+             intent.emergency_stop, intent.untrusted_source_requests_tool_action)
+    if any(type(flag) is not bool for flag in flags):
+        return PolicyDecision("BLOCK", "INVALID_TRUSTED_POLICY_FLAG")
     if intent.mode == "HALTED" or intent.emergency_stop:
         return PolicyDecision("BLOCK", "EMERGENCY_STOP_ACTIVE")
     if not intent.system_integrity_verified:
@@ -93,7 +101,9 @@ def decide(intent: ActionIntent) -> PolicyDecision:
         return PolicyDecision("BLOCK", "PRIOR_OUTCOME_UNKNOWN_RECONCILE_FIRST")
     if intent.untrusted_source_requests_tool_action:
         return PolicyDecision("BLOCK", "UNTRUSTED_SOURCE_INSTRUCTION")
-    if not intent.business_scope_verified or not intent.tenant_scope_verified:
+    if (not intent.business_scope_verified or not intent.tenant_scope_verified
+            or any(not isinstance(value, str) or not value.strip()
+                   for value in (intent.action_id, intent.business_id, intent.legacy_id))):
         return PolicyDecision("BLOCK", "BUSINESS_OR_TENANT_SCOPE_NOT_VERIFIED")
     if (
         isinstance(intent.planned_cost_cents, bool)
