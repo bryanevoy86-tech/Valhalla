@@ -10,6 +10,8 @@ from sqlalchemy.orm import Session
 from typing import Dict, Any, Optional, List
 
 from app.core.db import get_db
+from app.core.dependencies import require_prime_control_key
+from app.services.prime_business_execution import require_owner_mandate_key
 from app.schemas.system_status import SystemStatus, SystemStatusUpdate, PackInfo
 from app.services.system_status import (
     get_system_status,
@@ -21,7 +23,8 @@ from app.services.system_status import (
     get_pack_by_id,
 )
 
-router = APIRouter(prefix="/system/status", tags=["System", "Metadata"])
+router = APIRouter(prefix="/system/status", tags=["System", "Metadata"],
+                   dependencies=[Depends(require_prime_control_key)])
 
 
 @router.get("/", response_model=SystemStatus)
@@ -35,14 +38,14 @@ def read_system_status(db: Session = Depends(get_db)) -> SystemStatus:
     
     **Response includes:**
     - version: Semantic version (major.minor.patch)
-    - backend_complete: Whether backend is marked as production-ready
+    - backend_complete: Historical administrative completion flag, not live readiness
     - packs: List of all installed packs with status
     - summary: Human-readable description of backend functionality
     - extra: Metadata including notes and timestamps
     
     **Use cases:**
     - Heimdall can query to know which version is running
-    - Frontend can check backend_complete before showing "ready" status
+    - Frontend must use actual operational readiness, not backend_complete
     - Deployment scripts can verify pack installation
     
     Args:
@@ -78,13 +81,14 @@ def read_system_summary() -> Dict[str, Any]:
     return summary
 
 
-@router.post("/complete", response_model=SystemStatus)
+@router.post("/complete", response_model=SystemStatus,
+             dependencies=[Depends(require_owner_mandate_key)])
 def mark_backend_complete(
     update: Optional[SystemStatusUpdate] = None,
     db: Session = Depends(get_db),
 ) -> SystemStatus:
     """
-    Mark backend as complete/production-ready.
+    Record historical backend metadata, not operational release certification.
     
     Records timestamp and optional notes about completion.
     
@@ -123,7 +127,8 @@ def mark_backend_complete(
     return status
 
 
-@router.post("/incomplete", response_model=SystemStatus)
+@router.post("/incomplete", response_model=SystemStatus,
+             dependencies=[Depends(require_owner_mandate_key)])
 def mark_backend_incomplete(
     update: Optional[SystemStatusUpdate] = None,
     db: Session = Depends(get_db),
