@@ -435,3 +435,27 @@ Owner clarified that each God covers every relevant authorized subsystem and rep
 - 20597673 docs/LOKI_INDEPENDENT_CHALLENGER_CONTRACT.md
 - 5553527e CODEX_START_HERE.md
 - b3ea1cfb ops/prime_system_integration_matrix.json
+
+
+## 2026-11-20 — Prime privacy, real decision integrity and standing routine authority
+
+Scope: existing draft PR #4; 47 full-system workstreams and the owner-confirmed horizontal Gods doctrine preserved. No provider credentials, live operations or Render modifications. Commits:
+
+| Change | Commit(s) |
+|---|---|
+| Separate Prime server control key, protect completion registry, Loki, decision outcomes, model-provider configuration; authenticated isolated registry fixtures | f313ebcf, 8fd0e136, 084bfbaa, 1523fdcb, e66f0a38, 6b3bd2c2 |
+| Direct original five-God dispatch; full coverage and evaluation-only metadata, no external permission | 1bab8088, c9e7ab1c |
+| Mimir per-engine/legacy/jurisdiction shadow feedback; no unverified current memory in historical/live evaluation; scoped test fixture | 1cd3499e, 7dd70f19 |
+| Loki contradictory margin/capital objections; final lock after hard risk gates; Tyr/Forseti not verified | 0480ff3c |
+| Eleven new Prime control and decision-integrity tests, require existing completion-registry tests in CI | 9093fa45, c6b2c014 |
+| Actual bounded, expiring, revocable standing authority in existing internal draft worker; distinct owner authorization on grant/revoke and per-action approval; transactional consumption | da546749, 18b51b26 |
+| Test credential separation, grant caps, revocation, expiry, scope, price limit, two-worker mandate cap | 04b91915, adf84f4d, 44a6114c, 89cf644d |
+| 47-domain matrix and December continuation updated | f2b05ee6, 86769292, 456ed380 |
+
+**Verified CI:** https://github.com/bryanevoy86-tech/Valhalla/actions/runs/44748568129 all four jobs success on code commit 89cf644d. 47 smoke/static/policy + 45 isolated integration + 4 PostgreSQL + 94 selected pytest cases (including 58 completion-registry and 11 new Prime integrity cases) = 190 passing targeted tests. PostgreSQL proves one-use standing grant cannot be exceeded by two simultaneous workers; not provider/crash recovery proof. Earlier full app and selected test run 44748128884 and all-jobs standing-mandate run 44748399051 also succeeded. Broad legacy pytest collection remains non-gating with two import errors (fake-live operating day and system integrity); the full suite is NOT green. Latest documentation may be newer than tested code SHA.
+
+**Deployment compatibility:** VALHALLA_PRIME_CONTROL_KEY / X-Prime-Control-Key required for four sensitive router groups. VALHALLA_OWNER_MANDATE_KEY / X-Owner-Mandate-Key must be distinct from the worker and Prime keys, and is required for new mandate grant/revoke and per-task approval in addition to the Factory key. No keys configured in Render this turn. Update trusted server-side callers, never store secrets in browser bundles or give them to model/worker prompts. New scope is INTERNAL_DRAFT_ONLY and no live grant exists. No new schema was added for mandates (uses existing legacy event and work tables). All other legacy API permissions still require examination.
+
+**Remaining:** full 47 scope, especially independent actual Loki AI worker, system-wide scheduled and event-triggered God reports, real discovery/decision/verified execution and outcome learning, leased crash recovery, real provider integration, entire historical regression, live DB identification and full migration/rollback rehearsal, owner interface and professional-gated wealth/advisory tools. No claim of business or production completion.
+
+**Render mutation count: zero.** No merge, deploy, DB change, cron activation, payment, bank transfer, account setup or customer contact. This is a branch-level implementation and test record.
