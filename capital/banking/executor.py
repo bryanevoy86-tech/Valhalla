@@ -1,5 +1,8 @@
 """
-Executes only approved, capped, whitelisted internal transfers
+Fail-closed internal transfer policy preflight.
+
+No bank adapter or actual settlement verification is connected. This module
+must not report success or consume owner approval for a simulated transfer.
 """
 
 from .registry import INTERNAL_WHITELIST
@@ -21,8 +24,8 @@ def execute_internal_transfer(
     4. Destination account is whitelisted (internal)
     5. Amount is within caps for this account purpose
     
-    Returns: {"status": "executed", "approval_id": approval_id}
-    Raises: RuntimeError if any condition fails
+    Raises RuntimeError until a trusted, receipt-verifying bank connector exists.
+    The approval remains unconsumed when no money is actually moved.
     """
     
     # Check kill switch
@@ -48,11 +51,8 @@ def execute_internal_transfer(
     if per_cap and approval.amount > per_cap:
         raise RuntimeError("Transfer exceeds cap")
 
-    # ---- EXECUTION PLACEHOLDER ----
-    # This is where a real bank API call would go
-    # For now, we mark approval as used and return success
-    # In production: This calls the actual banking service
-    # --------------------------------
-
-    approval.used = True
-    return {"status": "executed", "approval_id": approval.approval_id}
+    # No provider call exists in this module. Never mark approval used,
+    # claim settled funds, or report a successful transfer from a stub.
+    # Real implementation requires owner-scoped authorization, persistent
+    # idempotency, provider receipt, bank reconciliation and incident controls.
+    raise RuntimeError("BANK_TRANSFER_PROVIDER_NOT_CONNECTED")
