@@ -1,11 +1,10 @@
-import json, os
+import json
 import hashlib
-import tempfile
+import difflib
 from pathlib import Path
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from slugify import slugify
 
 from ..core.db import get_db
 from ..core.settings import settings
@@ -55,18 +54,83 @@ def create_task(payload: TaskIn, db: Session = Depends(get_db), _: bool = Depend
     # Empty draft (Heimdall will update via /apply with approve=false first)
     return DraftOut(task_id=t.id, files=[], diff_summary="queued")
 
-def _read_text(path: str) -> str:
-    try:
-        with _source_path(path).open("r", encoding="utf-8") as fh:
-            return fh.read()
-    except FileNotFoundError:
-        return ""
+MAX_BATCH_FILES = 25
+MAX_BATCH_BYTES = 1_000_000
 
-def _unified_diff(old: str, new: str, path: str) -> str:
-    import difflib
-    a = old.splitlines(keepends=True)
-    b = new.splitlines(keepends=True)
-    return "".join(difflib.unified_diff(a, b, fromfile=f"a/{path}", tofile=f"b/{path}"))
+
+def _sha(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def _canonical(payload: object) -> bytes:
+    return json.dumps(payload, sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+
+
+def _read_base(path: str) -> tuple[str, str | None]:
+    target = _source_path(path)
+    try:
+        if not target.exists():
+            return "", None
+        if not target.is_file() or target.stat().st_size > settings.BUILDER_MAX_FILE_BYTES:
+            raise HTTPException(status_code=413, detail="base is not a bounded source file")
+        data = target.read_bytes()
+        if len(data) > settings.BUILDER_MAX_FILE_BYTES:
+            raise HTTPException(status_code=413, detail="base exceeds source size limit")
+        return data.decode("utf-8"), _sha(data)
+    except HTTPException:
+        raise
+    except (OSError, UnicodeError):
+        raise HTTPException(status_code=409, detail="base source unavailable or not UTF-8") from None
+
+
+def _locked_task(db: Session, task_id: int) -> BuilderTask:
+    task = db.query(BuilderTask).filter(BuilderTask.id == task_id).with_for_update().first()
+    if task is None:
+        raise HTTPException(status_code=404, detail="task not found")
+    if task.status not in {"queued", "drafted", "review_ready"}:
+        raise HTTPException(status_code=409, detail="task state is not editable")
+    return task
+
+
+def _prepare_files(files: list[FileSpec]) -> tuple[list[dict], list[dict]]:
+    """Read-only source snapshot; no source mutations or Git operations."""
+    if not 1 <= len(files) <= MAX_BATCH_FILES:
+        raise HTTPException(status_code=422, detail="invalid Builder batch size")
+    records, diffs, seen = [], [], set()
+    total = 0
+    for spec in files:
+        path = spec.path
+        target = _source_path(path)
+        canonical_path = target.relative_to(_REPO_ROOT.resolve()).as_posix()
+        identity = str(target)
+        if identity in seen:
+            raise HTTPException(status_code=422, detail="duplicate normalized Builder target")
+        seen.add(identity)
+        content = spec.content.encode("utf-8")
+        total += len(content)
+        if len(content) > settings.BUILDER_MAX_FILE_BYTES or total > MAX_BATCH_BYTES:
+            raise HTTPException(status_code=413, detail="Builder batch exceeds byte limit")
+        old, base_sha = _read_base(canonical_path)
+        if spec.mode not in {"add", "replace"}:
+            raise HTTPException(status_code=422, detail="invalid Builder file mode")
+        if spec.mode == "add" and base_sha is not None:
+            raise HTTPException(status_code=409, detail="add target already exists")
+        if spec.mode == "replace" and base_sha is None:
+            raise HTTPException(status_code=409, detail="replace target does not exist")
+        if spec.mode == "replace" and old == spec.content:
+            raise HTTPException(status_code=422, detail="replacement does not change source")
+        records.append({"path": canonical_path, "content": spec.content, "mode": spec.mode,
+                        "base_sha256": base_sha, "content_sha256": _sha(content)})
+        patch = "".join(difflib.unified_diff(
+            old.splitlines(keepends=True), spec.content.splitlines(keepends=True),
+            fromfile="/dev/null" if base_sha is None else f"a/{canonical_path}",
+            tofile=f"b/{canonical_path}",
+        ))
+        # The review bundle includes exact content as well as a human-readable
+        # diff (difflib output alone is not guaranteed to be git-apply compatible).
+        diffs.append({"path": canonical_path, "diff": patch})
+    return records, diffs
+
 
 @router.post("/draft")
 def draft(
@@ -75,118 +139,71 @@ def draft(
     db: Session = Depends(get_db),
     _: bool = Depends(require_builder_key),
 ):
-    # Validate task
-    t = db.get(BuilderTask, task_id)
-    if not t:
-        raise HTTPException(status_code=404, detail="task not found")
-    # Dry-run: compute diffs without writing and persist proposed files on the task
-    diffs = []
-    combined_patch_parts: List[str] = []
-    changed = 0
-    for f in files:
-        path = f.path.strip()
-        if not _path_is_allowed(path):
-            raise HTTPException(status_code=400, detail=f"path not allowed: {path}")
-        if len(f.content.encode("utf-8")) > settings.BUILDER_MAX_FILE_BYTES:
-            raise HTTPException(status_code=413, detail=f"file too large: {path}")
-        old = _read_text(path)
-        patch = _unified_diff(old, f.content, path)
-        diffs.append({"path": path, "diff": patch})
-        if patch:
-            changed += 1
-            combined_patch_parts.append(patch)
-    # Persist proposed files to the task
-    t.payload_json = json.dumps([f.__dict__ for f in files])
-    t.diff_summary = f"{changed} files changed"
-    db.add(t); db.commit()
-    return {"ok": True, "changed": changed, "files": diffs, "patch": "".join(combined_patch_parts)}
+    task = _locked_task(db, task_id)
+    records, diffs = _prepare_files(files)
+    envelope = {"version": 2, "task_id": task.id, "files": records}
+    digest = _sha(_canonical(envelope))
+    if len(_canonical(envelope)) > 2 * MAX_BATCH_BYTES:
+        raise HTTPException(status_code=413, detail="encoded Builder bundle exceeds limit")
+    task.payload_json = _canonical({"bundle": envelope, "sha256": digest}).decode("utf-8")
+    task.status = "drafted"
+    task.diff_summary = f"{len(records)} proposed files; source unchanged"
+    db.add(BuilderEvent(kind="draft", msg="snapshot-bound draft stored",
+                        meta_json=json.dumps({"task_id": task.id, "sha256": digest,
+                                              "file_count": len(records)})))
+    db.commit()
+    return {"ok": True, "status": "drafted", "changed": len(records), "files": diffs,
+            "patch": "".join(d["diff"] for d in diffs), "bundle_sha256": digest,
+            "source_modified": False, "tests_verified": False}
+
+
+def _review_bundle(task: BuilderTask) -> tuple[dict, list[dict]]:
+    try:
+        stored = json.loads(task.payload_json or "null")
+        if not isinstance(stored, dict) or set(stored) != {"bundle", "sha256"}:
+            raise ValueError("legacy or malformed draft")
+        bundle = stored["bundle"]
+        if (not isinstance(bundle, dict) or bundle.get("version") != 2
+                or bundle.get("task_id") != task.id
+                or _sha(_canonical(bundle)) != stored["sha256"]):
+            raise ValueError("bundle identity mismatch")
+        specs = [FileSpec.model_validate(row) for row in bundle["files"]]
+    except (ValueError, TypeError, KeyError):
+        raise HTTPException(status_code=409, detail="Builder draft must be regenerated") from None
+    records, diffs = _prepare_files(specs)
+    if records != bundle["files"]:
+        raise HTTPException(status_code=409, detail="Builder base changed; regenerate draft")
+    return stored, diffs
+
 
 @router.post("/apply", response_model=DraftOut)
 def apply(payload: ApplyIn, db: Session = Depends(get_db), _: bool = Depends(require_builder_key)):
-    t = db.get(BuilderTask, payload.task_id)
-    if not t:
-        raise HTTPException(status_code=404, detail="task not found")
-
-    # The last proposed files live in payload_json; on approve we write to disk.
-    try:
-        proposed = json.loads(t.payload_json or "[]")
-    except json.JSONDecodeError:
-        proposed = []
-
-    if not payload.approve:
-        # dry-run diffs using the attached proposed files
-        diffs = []
-        combined_patch_parts: List[str] = []
-        for f in proposed:
-            path = f["path"].strip()
-            if not _path_is_allowed(path):
-                raise HTTPException(status_code=400, detail=f"path not allowed: {path}")
-            old = _read_text(path)
-            patch = _unified_diff(old, f["content"], path)
-            diffs.append({"path": path, "diff": patch})
-            if patch:
-                combined_patch_parts.append(patch)
-        t.diff_summary = f"{sum(1 for d in diffs if d['diff'])} files changed"
-        db.add(t); db.commit()
-        # Return a synthetic patch file in the DraftOut for convenience
-        patch_file = FileSpec(path="__DIFF__.patch", content="".join(combined_patch_parts), mode="add")
-        return DraftOut(task_id=t.id, files=[patch_file], diff_summary=t.diff_summary or "")
-
-    # Never push generated code directly from an API request. Changes must
-    # be committed via a reviewed GitHub branch/PR with CI evidence.
-    if settings.GIT_ENABLE_AUTOCOMMIT:
-        raise HTTPException(
-            status_code=409,
-            detail="Direct Builder git push disabled; use reviewed PR workflow",
-        )
-
-    # Preflight the ENTIRE batch before writing any file.
-    staged = []
-    for item in proposed:
-        path = item["path"]
-        content = item["content"]
-        mode = item.get("mode", "add")
-        target = _source_path(path)
-        if mode not in ("add", "replace"):
-            raise HTTPException(status_code=400, detail=f"bad mode for {path}")
-        if len(content.encode("utf-8")) > settings.BUILDER_MAX_FILE_BYTES:
-            raise HTTPException(status_code=413, detail=f"file too large: {path}")
-        if mode == "add" and target.exists():
-            raise HTTPException(status_code=409, detail=f"file already exists: {path}")
-        if mode == "replace" and not target.is_file():
-            raise HTTPException(status_code=409, detail=f"file missing for replace: {path}")
-        staged.append((path, content, target))
-
-    wrote = []
-    evidence = []
-    for path, content, target in staged:
-        # Atomic replacement avoids torn files if a worker crashes during write.
-        # No external Git operation is performed by this endpoint.
-        target.parent.mkdir(parents=True, exist_ok=True)
-        fd, temporary = tempfile.mkstemp(prefix=".builder-", dir=str(target.parent))
-        try:
-            with os.fdopen(fd, "w", encoding="utf-8") as handle:
-                handle.write(content)
-                handle.flush()
-                os.fsync(handle.fileno())
-            os.replace(temporary, target)
-        finally:
-            if os.path.exists(temporary):
-                os.unlink(temporary)
-        digest = hashlib.sha256(target.read_bytes()).hexdigest()
-        if digest != hashlib.sha256(content.encode("utf-8")).hexdigest():
-            raise HTTPException(status_code=500, detail=f"write verification failed: {path}")
-        wrote.append(path)
-        evidence.append({"path": path, "sha256": digest})
+    """Retain the historical dry-run contract, never apply code in the API process."""
+    if payload.approve:
+        raise HTTPException(status_code=409, detail="Direct Builder source writes disabled; use isolated tested PR release")
+    task = _locked_task(db, payload.task_id)
+    stored, diffs = _review_bundle(task)
+    if task.status != "review_ready":
+        task.status = "review_ready"
+        task.diff_summary = f"{len(diffs)} snapshot-verified proposed files; no tests or deployment"
+        db.add(BuilderEvent(kind="review_ready", msg="verified source snapshot and bundle",
+                            meta_json=json.dumps({"task_id": task.id, "sha256": stored["sha256"]})))
+        db.commit()
+    # Preserve the historical synthetic diff file and return the exact work
+    # separately via /tasks/{id}/review-bundle.
+    patch_file = FileSpec(path="__DIFF__.patch", content="".join(d["diff"] for d in diffs), mode="add")
+    return DraftOut(task_id=task.id, files=[patch_file], diff_summary=task.diff_summary or "")
 
 
-    t.status = "applied"
-    db.add(BuilderEvent(kind="apply", msg=f"applied {len(wrote)} files", meta_json=json.dumps(wrote)))
-    db.commit()
+@router.get("/tasks/{task_id}/review-bundle")
+def review_bundle(task_id: int, db: Session = Depends(get_db), _: bool = Depends(require_builder_key)):
+    task = _locked_task(db, task_id)
+    stored, _ = _review_bundle(task)
+    if task.status != "review_ready":
+        raise HTTPException(status_code=409, detail="prepare review with approve=false first")
+    return {**stored, "status": "review_ready", "source_modified": False,
+            "tests_verified": False, "deployed": False}
 
-    db.add(BuilderEvent(kind="write_receipt", msg="verified local-only file writes", meta_json=json.dumps(evidence)))
-    db.commit()
-    return DraftOut(task_id=t.id, files=proposed, diff_summary=f"applied {len(wrote)} files")
 
 @router.post("/telemetry")
 def telemetry(payload: TelemetryIn, db: Session = Depends(get_db), _: bool = Depends(require_builder_key)):
