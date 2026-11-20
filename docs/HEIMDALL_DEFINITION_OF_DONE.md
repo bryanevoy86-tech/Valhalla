@@ -56,6 +56,11 @@ The authenticated Business Factory pilot queues an internal digital-product list
 
 ## Full-vision completeness is broader than the business factory
 
-This definition of done applies to every workstream in ops/VALHALLA_FULL_VISION_TRACEABILITY.md and all 46 entries in ops/prime_system_integration_matrix.json. In particular, neither a profitable digital product nor a functioning core engine closes the AI Gods/Pantheon, Norns/Mimir, five legacy businesses, clone/mirror, whole-life/infinite banking, trusts, Canada exit/residency, family succession, owner Fun Fund accounting, Shield/Black Ice or resort/expansion workstreams.
+This definition of done applies to every workstream in ops/VALHALLA_FULL_VISION_TRACEABILITY.md and all 47 entries in ops/prime_system_integration_matrix.json. In particular, neither a profitable digital product nor a functioning core engine closes the AI Gods/Pantheon, Norns/Mimir, five legacy businesses, clone/mirror, whole-life/infinite banking, trusts, Canada exit/residency, family succession, owner Fun Fund accounting, Shield/Black Ice or resort/expansion workstreams.
 
 Insurance/tax/trust/residency systems have a different legitimate finish line from the commerce engine: a verified owner-private decision support tool, real data and professional sign-off workflow may be COMPLETE AS AN ADVISORY CAPABILITY, but a real trust formation, insurance purchase, money transfer, residency departure or tax filing can only be marked LIVE VERIFIED after actual lawful authorized proof. Do not convert long-range ambitions into automatic legal instructions. See master traceability register for conflicts requiring owner ratification.
+
+
+## Loki-specific non-negotiable completion
+
+Original governance_loki rules alone are insufficient. The second AI God must independently audit immutable Heimdall recommendations, find failures and contradictions Heimdall missed, preserve cited dissent, re-review after material human/AI revisions, and hold high-risk external operations if his audit is absent, unresolved, or unverified. Owner and licensed professional approvals remain required for consequential legal, trust, insurance and financial actions. See docs/LOKI_INDEPENDENT_CHALLENGER_CONTRACT.md for required test evidence.
