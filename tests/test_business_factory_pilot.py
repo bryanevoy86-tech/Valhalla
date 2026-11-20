@@ -490,6 +490,44 @@ class BusinessFactoryPilotTests(unittest.TestCase):
         with self.sessions() as db:
             self.assertEqual(db.query(MediaContent).count(), 0)
 
+    def test_authorized_work_beyond_first_hundred_waiting_items(self):
+        for i in range(105):
+            response = self.submit(dict(self.payload, request_key=f"waiting-job-{i:03d}"))
+            self.assertEqual(response.status_code, 200, response.text)
+        action = self.submit(dict(self.payload, request_key="ready-after-waiting")).json()["action_id"]
+        approved = self.client.post(f"/api/business-factory/actions/{action}/approve",
+            json={"confirmation": "APPROVE_INTERNAL_DRAFT"}, headers=HEADERS)
+        self.assertEqual(approved.status_code, 200, approved.text)
+        result = self.run_worker()
+        self.assertEqual(result["status"], "completed", result)
+        self.assertEqual(result["receipt"]["action_id"], action)
+        with self.sessions() as db:
+            self.assertEqual(db.query(MediaContent).count(), 1)
+            self.assertEqual(db.query(LegacyInstanceWorkItem).filter_by(status="queued").count(), 105)
+
+    def test_bad_approval_does_not_starve_other_authorized_work(self):
+        actions = []
+        for i in range(2):
+            action = self.submit(dict(self.payload, request_key=f"unrelated-work-{i}")).json()["action_id"]
+            approved = self.client.post(f"/api/business-factory/actions/{action}/approve",
+                json={"confirmation": "APPROVE_INTERNAL_DRAFT"}, headers=HEADERS)
+            self.assertEqual(approved.status_code, 200, approved.text)
+            actions.append(action)
+        with self.sessions() as db:
+            broken = db.query(LegacyInstanceWorkItem).filter_by(action_id=actions[0]).one()
+            payload = json.loads(broken.payload_json)
+            payload["price_cents_cad"] = 99
+            broken.payload_json = json.dumps(payload)
+            db.commit()
+        result = self.run_worker()
+        self.assertEqual(result["status"], "completed", result)
+        self.assertEqual(result["receipt"]["action_id"], actions[1])
+        blocked = self.run_worker()
+        self.assertEqual(blocked["status"], "blocked")
+        self.assertEqual(blocked["action_id"], actions[0])
+        with self.sessions() as db:
+            self.assertEqual(db.query(MediaContent).count(), 1)
+
     def test_mandate_expiry_is_enforced(self):
         from unittest.mock import patch
         grant = self.grant(ttl_seconds=60)
