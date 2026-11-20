@@ -19,6 +19,13 @@ API_ROOT = REPO_ROOT / "services/api"
 # Exact backend API contracts as authored in the working branch. These
 # checks establish registration, NOT successful execution or authorization.
 MANDATORY_ENDPOINTS = {
+    "owner_thread_create": ("POST", "/api/jarvis/conversations"),
+    "owner_thread_list": ("GET", "/api/jarvis/conversations"),
+    "owner_turn_send": ("POST", "/api/jarvis/conversations/{conversation_id}/turns"),
+    "owner_turn_history": ("GET", "/api/jarvis/conversations/{conversation_id}/turns"),
+    "owner_attachment_upload": ("POST", "/api/jarvis/conversations/{conversation_id}/attachments"),
+    "owner_attachment_list": ("GET", "/api/jarvis/conversations/{conversation_id}/attachments"),
+    "owner_attachment_download": ("GET", "/api/jarvis/conversations/{conversation_id}/attachments/{attachment_id}/download"),
     "release_state": ("GET", "/governance/go-live/state"),
     "release_checklist": ("GET", "/governance/go-live/checklist"),
     "release_enable": ("POST", "/governance/go-live/enable"),
