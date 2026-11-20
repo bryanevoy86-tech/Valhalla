@@ -89,3 +89,8 @@ PASS 3 must show:
 A final production release needs reviewed code, clean CI, migration rehearsal, backup plan, verified owner secrets/permissions, Render deployment and live smoke tests, rollback/containment and actual provider receipts. User or professional involvement may still be required for storefront accounts, bank/tax settings, regulated transactions, and provider authorizations.
 
 **Never say "done other than real-world proof" when automated integration tests or live deployment are also missing.** Report exact stages from docs/HEIMDALL_DEFINITION_OF_DONE.md.
+
+
+## Additional required safety integration for all three passes
+
+Read docs/PRIME_AUTONOMY_SAFETY_CONTRACT.md. Treat the new autonomy_governor.py as the first deterministic policy gate, not a complete deployed security subsystem. PASS 1 must verify the stored owner approval and durable global kill switch before any external operation, test malicious instruction injection and false evidence, add persisted unknown-outcome quarantine and circuit breaker state, and prove tenant/authority boundaries. PASS 2 must enforce confirmed permission, consent, cost limits and legal posting rights at actual external marketing, checkout, payout and customer-support adapters. PASS 3 must require evidence-checked, independent source-grounded evaluation with abstention, cross-agent verification, self-repair within narrow bounds, emergency stop, incident escalation, and performance metrics (owner escalations per 100 actions, double-write count, unsupported decisions, escaped governance checks). No LLM output can set its own approval boolean.
