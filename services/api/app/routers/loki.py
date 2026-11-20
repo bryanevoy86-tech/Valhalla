@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
+from app.core.dependencies import require_prime_control_key
 from app.loki.models import LokiFinding, LokiReview, LokiReviewStatus
 from app.loki.schemas import (
     LokiFindingRead,
@@ -23,7 +24,7 @@ from app.schemas.loki_analysis import (
     LokiAnalysisResponse,
 )
 
-router = APIRouter(prefix="/loki", tags=["Loki Reviews"])
+router = APIRouter(prefix="/loki", tags=["Loki Reviews"], dependencies=[Depends(require_prime_control_key)])
 
 
 # No certified independent Loki auditor is wired into this endpoint yet.
