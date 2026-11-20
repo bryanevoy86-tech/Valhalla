@@ -194,3 +194,28 @@ Render DB dpg-d9ek3oj7uimc73fooes0-a:
 - The media/marketing/finance changes are deliberately incomplete provider adapters; never mislabel them "finished business".
 - Never enter provider secrets or tokens in GitHub files.
 - Run full-suite tests and actual Postgres migration rehearsal; resolve false health and process-local state before activating automatic workflows.
+
+
+## Canonical full-application route contract preparation — 2026-11-19 late evening
+
+| Commit | Change | Proof |
+|---|---|---|
+| 19ab05ba | CODEX_START_HERE.md root handoff created, with one main Codex prompt | GitHub committed |
+| 188f6410 | docs/CODEX_RESUME_2026-12-01.md expanded with 25-domain and security changes | GitHub committed |
+| 9bea307e | scripts/prime_runtime_route_probe.py: exact HTTP route registration audit for canonical app; test environment only | Unit tested |
+| 157bcb99 | tests/test_prime_runtime_route_probe.py: four method/route/absence/factual-scope tests | 4/4 passed |
+| cd433985 | CI workflow expanded to include route probe syntax and contract tests | Targeted CI passed |
+| 6c1b6f96 | CODEX_START_HERE.md updated to 53-test results and route probe | GitHub committed |
+| 7801b245 | docs/CODEX_SYSTEM_FINISH_PASSES.md Pass 1 now requires isolated canonical runtime route import | GitHub committed |
+| 6d370c33 | docs/CODEX_RESUME_2026-12-01.md updated to 53-test and route probe evidence | GitHub committed |
+
+**Latest GitHub Actions evidence:** https://github.com/bryanevoy86-tech/Valhalla/actions/runs/44653459058
+- 53/53 targeted tests passed: initial false-success, Builder path security, signature/payout safeguards, marketing/media published-state, strict owner/session auth, route integrity, internal Factory/SQLite, migration, cron, source matrix, and route probe contract tests.
+- The canonical app was NOT imported in this CI run. The new runtime route tool has only been tested against synthetic route lists. This is explicitly a December Pass 1 acceptance gate, not done.
+- Preflight continues to show 25 source-anchored domains and ZERO claimed production-verified domains.
+
+**GitHub PR metadata:** PR #4 remains draft; updated to include 25-domain contracts and system-wide safety boundaries, no merge. Codex should start from root CODEX_START_HERE.md on the same branch.
+
+**Render mutations:** ZERO. No changes to services, schedules, databases, environment variables, deployment commits, billing or production data.
+
+**Next mandatory acceptance:** full canonical FastAPI import and route registration, complete regression, actual PostgreSQL migration rehearsal, live worker/restart proof, provider-account and financial sandbox integrations, then explicit owner-approved production deployment and external proofs.
