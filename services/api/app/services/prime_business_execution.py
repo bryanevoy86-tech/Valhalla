@@ -13,6 +13,7 @@ import hashlib
 import hmac
 import json
 import os
+import time
 from datetime import datetime, timezone
 from typing import Any
 
@@ -44,6 +45,19 @@ def require_factory_key(
         raise HTTPException(status_code=503, detail="Business Factory admin key not configured")
     if not provided or not hmac.compare_digest(provided, expected):
         raise HTTPException(status_code=401, detail="Business Factory authentication required")
+
+
+def require_owner_mandate_key(
+    provided: str | None = Header(default=None, alias="X-Owner-Mandate-Key"),
+) -> None:
+    """Separate grant authority from unattended execution credentials."""
+    expected = os.environ.get("VALHALLA_OWNER_MANDATE_KEY", "")
+    worker_key = os.environ.get("VALHALLA_FACTORY_KEY", "")
+    prime_key = os.environ.get("VALHALLA_PRIME_CONTROL_KEY", "")
+    if not expected or expected in {worker_key, prime_key}:
+        raise HTTPException(status_code=503, detail="Distinct owner mandate key not configured")
+    if not provided or not hmac.compare_digest(provided.encode(), expected.encode()):
+        raise HTTPException(status_code=401, detail="Owner mandate authentication required")
 
 
 def _json(value: str | None, fallback: Any) -> Any:
@@ -153,6 +167,119 @@ def _internal_policy_decision(
     )
 
 
+MANDATE_GRANT = "FACTORY_MANDATE_GRANTED"
+MANDATE_REVOKE = "FACTORY_MANDATE_REVOKED"
+
+
+def _mandate_digest(mandate_id: str) -> str:
+    return hashlib.sha256(mandate_id.encode("utf-8")).hexdigest()
+
+
+def _mandate_event_id(mandate_id: str) -> str:
+    return "BF-MANDATE-" + _mandate_digest(mandate_id)
+
+
+def _mandate_revocation_id(mandate_id: str) -> str:
+    return "BF-REVOKE-" + _mandate_digest(mandate_id)
+
+
+def _mandate_use_type(mandate_id: str) -> str:
+    return "BF-MANDATE-USE-" + _mandate_digest(mandate_id)
+
+
+def _lock_mandate(db: Session, mandate_id: str):
+    return db.query(LegacyOrchestrationEvent).filter(
+        LegacyOrchestrationEvent.event_id == _mandate_event_id(mandate_id),
+        LegacyOrchestrationEvent.event_type == MANDATE_GRANT,
+    ).with_for_update().first()
+
+
+def grant_draft_mandate(db: Session, request: Any) -> dict:
+    """Grant finite standing authority for ONE product's local drafts only."""
+    if _emergency_stop_active(db):
+        raise HTTPException(status_code=409, detail="EMERGENCY_STOP_ACTIVE")
+    _check_legacy(db, legacy_instance_id=request.legacy_instance_id,
+                  business_id=request.business_id, engine_id=request.engine_id,
+                  jurisdiction=request.jurisdiction)
+    if _lock_mandate(db, request.mandate_id):
+        raise HTTPException(status_code=409, detail="Mandate ID already used")
+    grant = {
+        "mandate_id": request.mandate_id,
+        "legacy_instance_id": request.legacy_instance_id,
+        "business_id": request.business_id,
+        "engine_id": request.engine_id,
+        "jurisdiction": request.jurisdiction,
+        "product_id": request.product_id,
+        "scope": "INTERNAL_DRAFT_ONLY",
+        "expires_at_epoch": int(time.time()) + request.ttl_seconds,
+        "max_uses": request.max_uses,
+        "max_price_cents_cad": request.max_price_cents_cad,
+        "external_effects_authorized": False,
+    }
+    _event(db, event_id=_mandate_event_id(request.mandate_id),
+           legacy_instance_id=request.legacy_instance_id, event_type=MANDATE_GRANT,
+           message="Owner granted finite internal-draft standing authority", payload=grant)
+    db.commit()
+    return grant
+
+
+def revoke_draft_mandate(db: Session, mandate_id: str) -> dict:
+    # Lock the same row as the worker so revocation and consumption serialize.
+    row = _lock_mandate(db, mandate_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="Mandate not found")
+    if not db.query(LegacyOrchestrationEvent).filter_by(
+        event_id=_mandate_revocation_id(mandate_id)
+    ).first():
+        _event(db, event_id=_mandate_revocation_id(mandate_id),
+               legacy_instance_id=row.legacy_instance_id, event_type=MANDATE_REVOKE,
+               message="Owner revoked standing draft authority", payload={"mandate_id": mandate_id})
+    db.commit()
+    return {"mandate_id": mandate_id, "status": "revoked", "external_effects_authorized": False}
+
+
+def _check_draft_mandate(db: Session, item: LegacyInstanceWorkItem, payload: dict) -> str | None:
+    """Called within the actual draft transaction. Holds grant lock to commit."""
+    mandate_id = payload.get("mandate_id")
+    if not isinstance(mandate_id, str) or not 8 <= len(mandate_id) <= 64:
+        return "MANDATE_MISSING_OR_INVALID"
+    row = _lock_mandate(db, mandate_id)
+    if row is None:
+        return "MANDATE_NOT_FOUND"
+    if db.query(LegacyOrchestrationEvent).filter_by(event_id=_mandate_revocation_id(mandate_id)).first():
+        return "MANDATE_REVOKED"
+    grant = _json(row.payload_json, {})
+    if not isinstance(grant, dict):
+        return "MANDATE_INVALID"
+    if (
+        grant.get("mandate_id") != mandate_id
+        or grant.get("scope") != "INTERNAL_DRAFT_ONLY"
+        or grant.get("external_effects_authorized") is not False
+        or row.legacy_instance_id != item.legacy_instance_id
+        or grant.get("legacy_instance_id") != item.legacy_instance_id
+        or grant.get("business_id") != item.business_id
+        or grant.get("engine_id") != item.engine_id
+        or grant.get("jurisdiction") != item.jurisdiction
+        or grant.get("product_id") != payload.get("product_id")
+    ):
+        return "MANDATE_SCOPE_MISMATCH"
+    expires, maximum, max_price = (grant.get(k) for k in (
+        "expires_at_epoch", "max_uses", "max_price_cents_cad"))
+    price = payload.get("price_cents_cad")
+    if any(type(v) is not int for v in (expires, maximum, max_price, price)):
+        return "MANDATE_INVALID"
+    if expires <= int(time.time()):
+        return "MANDATE_EXPIRED"
+    if not 1 <= maximum <= 100 or not 1 <= price <= max_price <= 10_000_000:
+        return "MANDATE_LIMIT_EXCEEDED"
+    used = db.query(LegacyOrchestrationEvent).filter_by(
+        event_type=_mandate_use_type(mandate_id), legacy_instance_id=item.legacy_instance_id
+    ).count()
+    if used >= maximum:
+        return "MANDATE_EXHAUSTED"
+    return None
+
+
 def submit_listing_draft(db: Session, request: Any) -> dict:
     """Persist an idempotent work assignment; NO action occurs at submission."""
     inputs = {
@@ -165,6 +292,8 @@ def submit_listing_draft(db: Session, request: Any) -> dict:
         "currency": "CAD",
         "mode": "INTERNAL_DRAFT_ONLY",
     }
+    if getattr(request, "mandate_id", None):
+        inputs["mandate_id"] = request.mandate_id
     key_hash = hashlib.sha256(
         f"{request.legacy_instance_id}:{request.request_key}".encode("utf-8")
     ).hexdigest()
@@ -312,18 +441,37 @@ def run_one_approved_draft(db: Session) -> dict:
         LegacyInstanceWorkItem.integration_profile == "none",
     ).order_by(LegacyInstanceWorkItem.id.asc()).with_for_update(skip_locked=True).limit(100).all()
 
+    last_blocked = None
     for item in queued:
+        payload = _json(item.payload_json, {})
+        if not isinstance(payload, dict) or payload.get("action_type") != ACTION_TYPE or payload.get("mode") != "INTERNAL_DRAFT_ONLY":
+            continue
         approval = db.query(LegacyOrchestrationEvent).filter(
             LegacyOrchestrationEvent.event_id == _approval_id(item.action_id)
         ).first()
+        authority = "PER_ACTION"
+        mandate_id = None
         if not approval:
-            continue
-        evidence = _json(approval.payload_json, {})
-        if (
-            evidence.get("scope") != "INTERNAL_DRAFT_ONLY"
-            or evidence.get("payload_sha256") != hashlib.sha256(item.payload_json.encode("utf-8")).hexdigest()
-        ):
-            return {"status": "blocked", "action_id": item.action_id, "reason": "approval evidence mismatch", "verified": False}
+            mandate_id = payload.get("mandate_id")
+            if not mandate_id:
+                continue
+            reason = _check_draft_mandate(db, item, payload)
+            if reason:
+                last_blocked = {"status": "blocked", "action_id": item.action_id,
+                                "reason": reason, "verified": False}
+                continue
+            authority = "STANDING_MANDATE"
+        else:
+            evidence = _json(approval.payload_json, {})
+            if (
+                approval.event_type != APPROVAL_EVENT
+                or approval.legacy_instance_id != item.legacy_instance_id
+                or not isinstance(evidence, dict)
+                or evidence.get("action_id") != item.action_id
+                or evidence.get("scope") != "INTERNAL_DRAFT_ONLY"
+                or evidence.get("payload_sha256") != hashlib.sha256(item.payload_json.encode("utf-8")).hexdigest()
+            ):
+                return {"status": "blocked", "action_id": item.action_id, "reason": "approval evidence mismatch", "verified": False}
 
         _check_legacy(
             db,
@@ -376,6 +524,8 @@ def run_one_approved_draft(db: Session) -> dict:
             "verification_scope": "database_artifact_only",
             "policy_verdict": policy.verdict,
             "policy_reason": policy.reason,
+            "authority_mode": authority,
+            "mandate_id": mandate_id,
             "verified_at": datetime.now(timezone.utc).isoformat(),
         }
         _event(
@@ -386,11 +536,16 @@ def run_one_approved_draft(db: Session) -> dict:
             message="Internal listing draft stored and read back successfully",
             payload=evidence,
         )
+        if mandate_id is not None:
+            _event(db, event_id="BF-MUSE-" + hashlib.sha256(item.action_id.encode()).hexdigest(),
+                   legacy_instance_id=item.legacy_instance_id, event_type=_mandate_use_type(mandate_id),
+                   message="Standing mandate use committed with verified draft",
+                   payload={"mandate_id": mandate_id, "action_id": item.action_id, "sha256": digest})
         item.status = "completed"
         db.commit()
         return {"status": "completed", "verified": True, "receipt": evidence}
 
-    return {"status": "idle", "verified": False, "reason": "no eligible owner-approved internal tasks"}
+    return last_blocked or {"status": "idle", "verified": False, "reason": "no eligible owner-approved internal tasks"}
 
 
 def action_status(db: Session, action_id: str) -> dict:
