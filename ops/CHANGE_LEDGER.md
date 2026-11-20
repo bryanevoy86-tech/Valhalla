@@ -328,3 +328,39 @@ Source inventory: ops/REMAINING_SYSTEM_BLOCKERS_2026-11-19.md. The following are
 - Current review: https://github.com/bryanevoy86-tech/Valhalla/pull/4 (draft; not merged). Recorded previous head 887db759761ece1f04331215c1355c3c8cd552b4. This ledger metadata update will create a newer head.
 - CI sources: https://github.com/bryanevoy86-tech/Valhalla/actions/runs/44658342650 (85 targeted tests); https://github.com/bryanevoy86-tech/Valhalla/actions/runs/44659074502 (required app-import gate and focused jobs succeeded). Broad backend pytest collection remains diagnostic, with two failures; no full-suite certification.
 - Render deployment/service/configuration/schema/environment mutations: ZERO. Existing live `main` commit unchanged; no database migration, provider action, paid service or real-world operation authorized or performed.
+
+
+## Full Vision / AI Gods / Infinite Banking / Trust / Canada Exit scope recovery — 2026-11-19 (UTC CI Nov 20)
+
+**Reason:** Owner correctly identified that the previous 25-domain integration audit foregrounded FastAPI/Business Factory at the expense of the agreed full enterprise vision. This round **does not claim to implement 21 missing systems**; it restores traceability, acceptance and safety boundaries in the same development branch.
+
+| Commit | Scope | Evidence |
+|---|---|---|
+| b908389c | capital/banking/executor.py: fix false "executed" transfer with no bank call; now BLOCKS unconnected funds movement and does not consume authorization | Targeted CI |
+| 1747db7a | tests/test_banking_transfer_fail_closed.py: five cases for no-provider, kill switch, destination whitelist, expiry and cap | Targeted CI |
+| a33e330e | CI initial finance regression gate | Initial smoke failed because test requires pydantic |
+| 5ceddbd6 | Move finance test to dependency-equipped CI integration job; all four CI jobs pass | Actions run 44661325096 |
+| 47a5be65 | ops/VALHALLA_FULL_VISION_TRACEABILITY.md: explicitly index Pantheon variations, five legacies, sovereign Prime, Venture/Product Foundries, real estate, infinite banking, 90/10 funds, corporate/family trusts, Panama/Bahamas, Canada exit, tax residency, family payroll, Black Ice and resorts | Documentary traceability only |
+| f529136b | ops/prime_system_integration_matrix.json: expanded 25→46 distinct source-anchored workstreams with acceptance/professional-gate requirements; no fake live verification | 46-path source preflight passed |
+| 09abf7d2 | CODEX_START_HERE.md: mandatory full-vision scope before narrower passes | Documentation |
+| 20217baa | docs/CODEX_SYSTEM_FINISH_PASSES.md: Pass 0 full scope, Pass 4 owner-private wealth/exit advisory and conflict resolution | Documentation |
+| 95d1be73 | docs/HEIMDALL_DEFINITION_OF_DONE.md: include long-horizon wealth/Pantheon scope while distinguishing advisory completion from actual legal transactions | Documentation |
+| 1419ba21 | docs/CODEX_RESUME_2026-12-01.md: December must include all 46 workstreams, never silently ratify conflicting doctrine | Documentation |
+
+**Confirmed passing CI:** https://github.com/bryanevoy86-tech/Valhalla/actions/runs/44662029960
+- 47 smoke/static tests + 40 isolated integration tests including five new banking cases + 3 disposable PostgreSQL tests = **90 targeted tests passed**.
+- Static source preflight reported **46 capability contracts**, no missing source anchors, and no asserted production verified domains.
+- Canonical FastAPI critical router/9-route check passed on isolated Linux runner.
+- Full enterprise integration and complete historical backend suite remain NOT verified.
+
+**Material historical/doctrine contradictions flagged for owner decision:**
+1. Original KING/QUEEN/ODIN/LOKI/TYR governance engine vs expanded Norse Pantheon/Bridge Layer and early Valkyrie/Fenrir/Skald/Jotunn labels. Do not duplicate roles or delete earlier intent.
+2. Earlier Panama-first umbrella trust idea vs later Canadian-first/professionally reviewed future offshore doctrine; neither represented as an executed trust or automatically ratified decision.
+3. Advisor-only Heimdall source docs vs intended bounded autonomous cross-industry Prime; owner, regulatory and financial authority must be explicit and enforceable.
+4. Historical descriptions of "infinite banking" vs actual whole-life-policy data records. No insurer contract, cash-value loan or economic outcome proven.
+5. Never equate a trustee/residency behavioral score model with actual legal trusts or tax residency.
+6. The previously false-success internal banking executor is now blocked until a true provider receipt exists.
+
+**External effects:** NONE. No insurer, bank, account, professional, tax authority or customer was contacted. No trust or residency change, payment, investment or payroll action performed. **Render mutation: ZERO**. Draft PR #4 is not merged or deployed.
+
+The full owner-specific account, trust-beneficiary, tax residency, insurance and household details must be stored in a secure private vault later—not GitHub. The repository contains a requirements/architecture map, not a legal or financial file of actual documents.
