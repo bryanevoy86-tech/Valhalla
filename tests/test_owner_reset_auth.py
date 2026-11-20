@@ -36,6 +36,13 @@ class OwnerResetGuardTests(unittest.TestCase):
         db = _stub("app.core.db", get_db=lambda: None)
         users = _stub("app.users")
         users.__path__ = []
+        security = _stub("app.security")
+        security.__path__ = []
+        revocation = _stub(
+            "app.security.token_revocation",
+            is_access_token_revoked=lambda db, payload: False,
+            revoke_access_token=lambda db, payload: True,
+        )
         models = _stub(
             "app.users.models",
             UserProfile=type("UserProfile", (), {}),
@@ -47,6 +54,8 @@ class OwnerResetGuardTests(unittest.TestCase):
             "app.core.db": db,
             "app.users": users,
             "app.users.models": models,
+            "app.security": security,
+            "app.security.token_revocation": revocation,
         }):
             cls.fn = staticmethod(runpy.run_path(str(MODULE))["admin_reset_password"])
 
