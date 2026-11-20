@@ -2307,7 +2307,7 @@ def _evaluate_universal_opportunity(
     outcome_class: str,
 ) -> dict[str, Any]:
     _validate_phase3_opportunity(payload)
-    mimir_context = _build_mimir_context(db, payload)
+    mimir_context = _build_mimir_context(db, payload, outcome_class)
 
     if svc_engine_routing_key(payload.engine_id) == "real_estate" and payload.specialist_inputs.get("real_estate_payload"):
         real_payload = RealEstateIntelligenceIn(**payload.specialist_inputs["real_estate_payload"])
@@ -2537,35 +2537,54 @@ def _resolve_phase3_outcome_class(payload: UniversalOpportunityBatchIn) -> str:
     return "VALHALLA_OUTCOME"
 
 
-def _build_mimir_context(db: Session, payload: UniversalOpportunityIn) -> dict[str, Any]:
+def _build_mimir_context(db: Session, payload: UniversalOpportunityIn, outcome_class: str = "SHADOW_OUTCOME") -> dict[str, Any]:
     refs: list[dict[str, Any]] = []
     prior_successes = 0
     prior_failures = 0
     recurring_failure_modes: list[str] = []
 
+    # Replay must not consume today's memory: it cannot prove the records
+    # existed at the decision's information cutoff. Live outcomes likewise
+    # require independently reconciled evidence, not a self-reported label.
+    if outcome_class != "SHADOW_OUTCOME":
+        return {
+            "prior_successes": 0,
+            "prior_failures": 0,
+            "superseded_doctrine_hits": 0,
+            "recurring_failure_modes": [],
+            "source_references": [],
+        }
+
+    # Shadow lessons are scoped by engine, legacy and jurisdiction, and
+    # remain simulated observations. A missing score is not a failure.
     fb_rows = (
         db.query(LearningFeedbackRecord)
+        .filter(
+            LearningFeedbackRecord.domain == payload.engine_id,
+            LearningFeedbackRecord.business_scope == payload.legacy,
+            LearningFeedbackRecord.jurisdiction == payload.jurisdiction,
+            LearningFeedbackRecord.outcome_class.in_(["SHADOW_OUTCOME", "SHADOW_FAILURE"]),
+        )
         .order_by(LearningFeedbackRecord.created_at.desc())
         .limit(200)
         .all()
     )
     for row in fb_rows:
-        score = float(row.operational_score or 0.0)
+        score = row.operational_score
         oc = str(row.outcome_class or "").upper()
-        if oc in {"VALHALLA_OUTCOME", "VERIFIED_REAL_OUTCOME", "LIVE_KPI"} or score >= 0.7:
-            prior_successes += 1
-        if row.high_impact or score <= 0.35 or oc in {"FAILURE", "SHADOW_FAILURE"}:
+        if oc == "SHADOW_FAILURE" or (score is not None and 0 <= score <= 0.35):
             prior_failures += 1
             if row.notes:
                 recurring_failure_modes.append(str(row.notes)[:120])
-        refs.append(
-            {
-                "type": "learning_feedback",
-                "id": row.feedback_id,
-                "outcome_class": row.outcome_class,
-                "created_at": row.created_at.isoformat() if row.created_at else None,
-            }
-        )
+        elif score is not None and 0.7 <= score <= 1:
+            prior_successes += 1
+        refs.append({
+            "type": "learning_feedback",
+            "id": row.feedback_id,
+            "outcome_class": row.outcome_class,
+            "evidence_scope": "SHADOW_ONLY",
+            "created_at": row.created_at.isoformat() if row.created_at else None,
+        })
 
     knowledge_rows = (
         db.query(KnowledgeRegistryItem)
