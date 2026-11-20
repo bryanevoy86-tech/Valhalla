@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError, UnsupportedCompilationError
 
 from app.core.db import get_db
+from app.core.dependencies import require_prime_control_key
 from app.models.completion_registry import (
     DatasetRegistryItem,
     EngineRegistryItem,
@@ -49,7 +50,7 @@ from app.god.models import GodCaseOutcome, GodCaseStatus, GodReviewCase, GodRevi
 from app.models.god_verdicts import GodVerdict
 from app.models.governance_decision import GovernanceDecision
 
-router = APIRouter(prefix="/api/completion", tags=["completion-registry"])
+router = APIRouter(prefix="/api/completion", tags=["completion-registry"], dependencies=[Depends(require_prime_control_key)])
 
 ALLOWED_TERMINAL_STATES = {
     RegistryStates.ACTIVE_AND_VERIFIED,
