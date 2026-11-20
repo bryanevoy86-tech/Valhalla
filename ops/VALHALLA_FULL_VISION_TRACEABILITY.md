@@ -98,3 +98,10 @@ The original six governance files were indeed auto-loaded, but their path prefix
 Development branch now **registers both old and canonical API paths**, requires all five gods plus orchestrator among critical routers, and demands 15 exact API route contracts. Re-running the 18 historical Pantheon API tests passed. The separate expanded Norse AI specialists / bridge and end-to-end external execution veto remain NOT proven.
 
 CI diagnostic before gate promotion: https://github.com/bryanevoy86-tech/Valhalla/actions/runs/44662885729. New required gate commits: 9e0e5f08, 61c0adca, c4809bf0, 426be5c4. Do not confuse independently callable policy checks with fully enforced real-world effect authorization.
+
+
+## Loki owner correction — independent second God, not just threshold policy
+
+Per owner doctrine, Loki's equal-standing independent review of Heimdall is a major pillar. Loki receives immutable Heimdall proposals, attacks logic/math/legal/tax/trust/contracts/AI code and catastrophic downside, reports independent sourced objections and alternatives, and returns them to the owner. Heimdall cannot silently suppress the dissent. On material changes by Heimdall or human expert, Loki re-audits. Loki does not act, approve his own work, move assets or sign documents. See docs/LOKI_INDEPENDENT_CHALLENGER_CONTRACT.md.
+
+Current working source comprises (1) original five-god risk thresholds, (2) basic risk-score heuristic agent, (3) keyword/text counter-analysis heuristic, and (4) in-process universal objections. **None is the finished independent adversarial audit AI.** A separate Loki review endpoint falsely marked a generic stub COMPLETED; it now rejects submissions (503) and refuses unverified final verdicts. An independent reviewer and mandatory high-risk dispatch gate must be built and end-to-end tested. This is now its own P0 workstream, expanding the source matrix to **47**. No live Render changes.
