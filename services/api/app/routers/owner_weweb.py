@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.core.db import get_db
 from app.routers.auth_weweb import private_owner_response, require_owner_session
+from app.services.owner_startup import StartupPlanIn, prepare_startup
 from app.services.owner_conversation import (
     ThreadIn, TurnIn, UploadIn, attachment_summaries, bounded_upload, create_conversation, local_extraction,
     store_attachment, submit_turn,
@@ -39,3 +40,8 @@ def owner_extract_attachment(conversation_id: UUID, attachment_id: UUID, db: Ses
 @router.get("/owner-conversations/{conversation_id}/attachments")
 def owner_list_attachments(conversation_id: UUID, limit: int = 50, db: Session = Depends(get_db)):
     return private_owner_response(attachment_summaries(conversation_id, limit, db))
+
+
+@router.post("/owner-startup/compare")
+def startup_comparison(payload: StartupPlanIn):
+    return private_owner_response(prepare_startup(payload))

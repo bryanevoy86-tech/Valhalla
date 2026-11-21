@@ -50,6 +50,49 @@ def test_trial_is_bound_to_authenticated_subscriber_and_tenant(deal_client, monk
     assert client.post(root, headers=owner, json=trial).json() == issued.json()
 
     monkeypatch.setenv("VALHALLA_OWNER_EMAIL", "one@example.invalid")
+    from app.services import owner_startup
+
+    monkeypatch.setattr(owner_startup, "FEE_CHECKED_ON", datetime.now(timezone.utc).date())
+    path = "/api/weweb/owner-startup/compare"
+    plan = {
+        "named_corporation": True, "manitoba_operations": True, "startup_cash_available_minor": 50000,
+        "operating_reserve_target_minor": 120000, "operating_cash_available_minor": 60000,
+        "funded_infrastructure": [{"key": "fixture-host", "label": "Existing host",
+                                    "funded_to_date_minor": 40000, "committed_monthly_minor": 2000}],
+        "surplus_assets": [{"label": "Hypothetical excess fixture", "owner_valuation_minor": 800000}],
+        "costs": [
+            {"key": "corporate_legal", "label": "Fixture legal quote", "cadence": "ACTIVATION",
+             "basis": "PROFESSIONAL_QUOTE", "amount_minor": 20000, "reference": "private-fixture-quote"},
+            {"key": "tax_and_accounting", "label": "Fixture accountant", "cadence": "ACTIVATION",
+             "basis": "PROFESSIONAL_QUOTE", "amount_minor": 10000, "reference": "private-fixture-accountant"},
+            {"key": "commission", "label": "Incremental maintenance", "cadence": "MONTHLY",
+             "basis": "OWNER_ESTIMATE", "amount_minor": 3000},
+        ],
+    }
+    assert client.post(path, json=plan).status_code == 401
+    assert client.post(path, headers=outsider, json=plan).status_code == 403
+    quote = client.post(path, headers=bearer, json=plan)
+    assert quote.status_code == 200, quote.text
+    assert quote.headers["cache-control"] == "no-store"
+    budget = quote.json()
+    mb, federal, foreign = budget["options"]
+    assert mb["activation"]["verified_government_minor"] == 39500
+    assert mb["activation"]["estimate_including_all_items_minor"] == 69500
+    assert mb["activation"]["minimum_additional_capital_minor"] == 19500
+    assert federal["activation"]["verified_government_minor"] == 59500
+    assert "foreign_filing_cad" in foreign["activation"]["unpriced_keys"]
+    assert foreign["activation"]["minimum_additional_capital_minor"] is None
+    assert mb["operating"]["known_annual_cost_minor"] == 66500
+    assert mb["operating"]["reserve_gap_minor"] == 60000
+    assert budget["checklist"][-1]["sequence"] == 7 and budget["selected_jurisdiction"] is None
+    assert budget["activation_authorized"] is False and budget["external_effects"] == 0
+    assert client.post(path, headers=bearer, json={
+        **plan, "costs": [*plan["costs"], {**plan["costs"][0], "key": "fixture-host"}],
+    }).status_code == 422
+    monkeypatch.setattr(owner_startup, "FEE_CHECKED_ON", datetime.now(timezone.utc).date() - timedelta(days=91))
+    stale = client.post(path, headers=bearer, json=plan).json()["options"][0]["activation"]
+    assert stale["verified_government_minor"] == 0 and stale["minimum_additional_capital_minor"] is None
+
     from app.models.owner_conversation import OwnerAttachment, OwnerAttachmentExtraction, OwnerConversation, OwnerTurn
 
     for model in (LearningTaskQueueItem, GoLiveState, PrimeSpecialistSchedule, PrimeScheduleTrigger, OwnerConversation, OwnerTurn, OwnerAttachment, OwnerAttachmentExtraction):
@@ -128,5 +171,6 @@ def test_trial_is_bound_to_authenticated_subscriber_and_tenant(deal_client, monk
     assert client.post("/api/weweb/logout", headers=bearer).status_code == 200
     assert client.get(access, headers=bearer).status_code == 401
     assert client.get(briefing, headers=bearer).status_code == 401
+    assert client.post(path, headers=bearer, json=plan).status_code == 401
     assert client.get(history, headers=bearer).status_code == 401
     assert client.get(f"{inbox}/attachments", headers=bearer).status_code == 401

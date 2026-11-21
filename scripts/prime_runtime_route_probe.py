@@ -48,6 +48,7 @@ MANDATORY_ENDPOINTS = {
     "saas_tenant_entitlement": ("GET", "/saas/tenant-entitlements/{tenant_id}/access/{module_key}"),
     "treasury_trajectory": ("GET", "/api/governance/floor/trajectory/month"),
     "weweb_owner_briefing": ("GET", "/api/weweb/owner-briefing"),
+    "weweb_owner_startup": ("POST", "/api/weweb/owner-startup/compare"),
     "provider_prices": ("POST", "/api/prime/provider-intelligence/price-quotes"),
     "provider_staging_selection": ("POST", "/api/prime/provider-intelligence/select-staging-candidate"),
     "norns_holdout": ("POST", "/api/prime/norns/forecasts/{forecast_id}/holdout"),
