@@ -51,3 +51,83 @@ def test_provider_comparison_scopes_synthetic_evidence_and_separates_loki(deal_c
         db.get(ModelProvider, challenger_id).config = {"model": "another-model"}
         db.commit()
     assert client.get(f"{root}/recommendations", params={"role": "LOKI", "data_class": "SYNTHETIC"}).json()["candidates"] == []
+
+
+def test_specialist_stage_probe_is_metered_fixed_synthetic_and_independently_configured(deal_client, monkeypatch):
+    import httpx
+    from app.models.go_live_state import GoLiveState
+    from app.models.owner_conversation import OwnerInferenceAttempt, OwnerInferenceQuota
+    from app.models.specialist_probe import SpecialistProbe
+    from app.routers import specialist_probes
+
+    client, engine = deal_client
+    root = "/api/prime/provider-intelligence"
+    owner = {"X-Owner-Mandate-Key": "fixture-specialist-owner"}
+    monkeypatch.setenv("VALHALLA_OWNER_MANDATE_KEY", owner["X-Owner-Mandate-Key"])
+    monkeypatch.delenv("VALHALLA_SPECIALIST_STAGING_AUTHORIZED", raising=False)
+    monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "false")
+    for model in (ModelProvider, ProviderEvidence, OwnerInferenceQuota, OwnerInferenceAttempt, GoLiveState, SpecialistProbe):
+        model.__table__.create(engine)
+    with Session(engine) as db:
+        prime = ModelProvider(name="prime-fixture", vendor="openai", active=True, default_for_heimdall=True,
+                              config={"model": "prime-fixture"})
+        challenger = ModelProvider(name="loki-fixture", vendor="groq", active=True, default_for_heimdall=False,
+                                   config={"model": "loki-fixture"})
+        db.add_all([prime, challenger, GoLiveState(id=1, go_live_enabled=False, kill_switch_engaged=False)])
+        db.commit()
+        challenger_id = challenger.id
+    evidence = {
+        "evidence_id": str(uuid4()), "provider_id": challenger_id, "role": "LOKI",
+        "evidence_class": "OWNER_SUPPLIED_SYNTHETIC",
+        "answers": {"private_document": "BLOCK", "missing_evidence": "ABSTAIN",
+                    "material_objection": "REVIEW", "synthetic_summary": "ADVISE"},
+    }
+    assert client.post(f"{root}/evidence", json=evidence, headers=owner).status_code == 201
+
+    # Patch the router's module reference instead of the HTTP test client's transport.
+    from types import SimpleNamespace
+    calls = []
+    class FakeHTTP:
+        def __init__(self, **kwargs):
+            assert kwargs["follow_redirects"] is False and kwargs["trust_env"] is False
+        def __enter__(self):
+            return self
+        def __exit__(self, *args):
+            pass
+        def post(self, url, **kwargs):
+            calls.append((url, kwargs))
+            if len(calls) == 2:
+                return httpx.Response(429, request=httpx.Request("POST", url))
+            return httpx.Response(200, request=httpx.Request("POST", url), json={
+                "choices": [{"finish_reason": "stop", "message": {"content": "REVIEW"}}],
+                "usage": {"prompt_tokens": 42, "completion_tokens": 1},
+            })
+    monkeypatch.setattr(specialist_probes, "httpx", SimpleNamespace(Client=FakeHTTP, HTTPError=httpx.HTTPError))
+    probe = {"probe_id": str(uuid4()), "role": "LOKI", "provider_id": challenger_id, "case_id": "material_objection"}
+    assert client.post(f"{root}/stage-probes", json=probe, headers=owner).status_code == 503
+    for key, value in {
+        "VALHALLA_SPECIALIST_STAGING_AUTHORIZED": "1", "VALHALLA_SPECIALIST_GROQ_FREE_PLAN_CONFIRMED": "1",
+        "VALHALLA_SPECIALIST_DAILY_REQUEST_LIMIT": "2", "VALHALLA_LOKI_GROQ_MODEL": "loki-fixture",
+        "VALHALLA_OWNER_CHAT_GROQ_KEY": "fixture-shared-key", "VALHALLA_LOKI_GROQ_KEY": "fixture-shared-key",
+    }.items():
+        monkeypatch.setenv(key, value)
+    assert client.post(f"{root}/stage-probes", json=probe, headers=owner).status_code == 503
+    assert calls == []
+    monkeypatch.setenv("VALHALLA_LOKI_GROQ_KEY", "fixture-independent-key")
+    assert client.post(f"{root}/stage-probes", json={**probe, "private_prompt": "must never forward"}, headers=owner).status_code == 422
+    response = client.post(f"{root}/stage-probes", json=probe, headers=owner)
+    assert response.status_code == 201, response.text
+    detail = response.json()
+    assert detail["result"] == "pass"
+    assert detail["prompt_tokens"] == 42
+    assert detail["billing_verified"] is False
+    assert client.post(f"{root}/stage-probes", json=probe, headers=owner).json() == detail
+    assert len(calls) == 1
+    url, kwargs = calls[0]
+    assert url == "https://api.groq.com/openai/v1/chat/completions"
+    assert kwargs["json"]["max_completion_tokens"] == 64
+    assert len(kwargs["json"]["messages"]) == 2
+    failed = client.post(f"{root}/stage-probes", json={**probe, "probe_id": str(uuid4())}, headers=owner)
+    assert failed.json()["result"] == "unavailable"
+    assert client.post(f"{root}/stage-probes", json={**probe, "probe_id": str(uuid4())}, headers=owner).status_code == 429
+    assert len(calls) == 2

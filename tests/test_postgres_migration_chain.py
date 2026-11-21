@@ -51,6 +51,9 @@ OWNER_MEMORY = load("alembic/versions/20261121_owner_memory.py")
 EXTRACTIONS = load("alembic/versions/20261121_owner_extractions.py")
 NORNS = load("alembic/versions/20261121_norns_forecasts.py")
 PROVIDER_EVIDENCE = load("alembic/versions/20261121_provider_evidence.py")
+ASSIGNMENTS = load("alembic/versions/20261121_specialist_assignments.py")
+LOKI_DIGEST = load("alembic/versions/20261121_loki_result_digest.py")
+PROBES = load("alembic/versions/20261121_specialist_probes.py")
 
 
 @unittest.skipUnless(url, "Disposable PostgreSQL database not supplied")
@@ -184,6 +187,9 @@ class PostgresMigrationChainTests(unittest.TestCase):
                     conn.execute(text("INSERT INTO loki_reviews VALUES ('00000000-0000-0000-0000-000000000001')"))
                     with patch.object(LOKI_RECEIPTS, "op", Operations(MigrationContext.configure(conn))):
                         LOKI_RECEIPTS.upgrade()
+                    with patch.object(LOKI_DIGEST, "op", Operations(MigrationContext.configure(connection))):
+                        LOKI_DIGEST.upgrade()
+                    self.assertIn("result_sha256", {column["name"] for column in inspect(connection).get_columns("loki_independent_receipts")})
                     self.assertIsNone(conn.execute(text("SELECT artifact_sha256 FROM loki_reviews")).scalar_one())
                     self.assertEqual(conn.execute(text("SELECT COUNT(*) FROM loki_independent_receipts")).scalar_one(), 0)
                     self.assertEqual(conn.execute(text("SELECT COUNT(*) FROM loki_reconsiderations")).scalar_one(), 0)
@@ -293,12 +299,13 @@ class PostgresMigrationChainTests(unittest.TestCase):
                         INSERT INTO prime_owner_conversations (id, title, created_at)
                         VALUES ('00000000-0000-0000-0000-000000000001', 'prior thread', now())
                     """))
-                    for module in (INFERENCE, OWNER_MEMORY, EXTRACTIONS, NORNS, PROVIDER_EVIDENCE):
+                    for module in (INFERENCE, OWNER_MEMORY, EXTRACTIONS, NORNS, PROVIDER_EVIDENCE, ASSIGNMENTS, PROBES):
                         with patch.object(module, "op", operations):
                             module.upgrade()
                     expected = {
                         "prime_owner_inference_quotas", "prime_owner_inference_attempts", "prime_owner_memory_entries",
                         "prime_owner_attachment_extractions", "prime_norns_forecasts", "prime_provider_evidence",
+                        "prime_specialist_assignments", "prime_specialist_probes",
                     }
                     self.assertTrue(expected <= set(inspect(connection).get_table_names()))
                     self.assertEqual(connection.execute(text("SELECT title FROM prime_owner_conversations")).scalar_one(), "prior thread")

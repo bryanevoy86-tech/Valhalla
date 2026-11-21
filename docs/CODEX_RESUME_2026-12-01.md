@@ -274,3 +274,9 @@ Use a same-origin authenticated owner server proxy. The proxy holds the Prime ke
 | Read uploaded evidence | Upload to the thread, call the attachment /extract endpoint, then send a “Review attached extraction” turn with the attachment ID |
 
 Model requests do not carry this data. The authenticated proxy and voice interface still need implementation and acceptance. For staging, start with these local contracts and run the real provider smoke only after explicit authorization. Retain evidence of transport identity, privacy and budget limits before release.
+
+## Active intelligence continuation
+
+Enroll explicit scopes at POST /api/prime/pantheon/assignments. A process using services/api/tools/cron/pantheon_worker.py takes owned role assignments on their cadence or verified Factory outcome. Each role is mapped to a local monitoring lens. Extend those adapters to the full authorized subsystem map and licensed research sources. Review a specialist receipt using its /challenge endpoint. When a proposed Prime decision includes specialist_inputs.pantheon_report_ids, both the decision and the referenced current report require independent review and reconsideration. Factory checks them again at execution.
+
+The local Loki worker runs from services/api/tools/cron/loki_analyst_worker.py using only the separately scoped reviewer credential and HTTPS queue origin. It performs independent local checks and has no provider or release authority. Staged role transport is available at /api/prime/provider-intelligence/stage-probes for fixed synthetic benchmark cases only. Leave it disabled until authorized staging verification. Owner briefings now show current internal evidence and unreconciled amounts; reconcile actual account and provider settlement before claiming cash or revenue verified.

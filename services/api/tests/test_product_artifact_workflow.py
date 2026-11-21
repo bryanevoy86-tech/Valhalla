@@ -1,7 +1,7 @@
 import base64
 import hashlib
 import json
-from datetime import timedelta
+from datetime import date, timedelta
 from uuid import UUID, uuid4
 
 from sqlalchemy.orm import Session
@@ -11,12 +11,17 @@ from app.loki.models import LokiFinding, LokiIndependentReceipt, LokiReconsidera
 from app.models.god_verdicts import GodVerdict
 from app.models.governance_decision import GovernanceDecision
 from app.models.completion_registry import (
-    KnowledgeRegistryItem, LearningFeedbackRecord, LegacyInstanceRegistryItem, LegacyInstanceWorkItem, LegacyOrchestrationEvent, SourceRegistryItem,
+    KnowledgeRegistryItem, LearningFeedbackRecord, LearningTaskQueueItem, LegacyInstanceRegistryItem, LegacyInstanceWorkItem, LegacyOrchestrationEvent, SourceRegistryItem,
 )
 from app.models.media_engine import MediaContent
+from app.models.audit_log import AuditLog
+from app.models.go_live_state import GoLiveState
+from app.models.revenue_ledger import RevenueLedger
 from app.models.owner_conversation import OwnerConversation, OwnerTurn
 from app.models.product_artifact import ProductArtifact
 from app.models.prime_specialist_schedule import PrimeSpecialistSchedule
+from app.models.specialist_assignment import SpecialistAssignment
+from app.pantheon.monitor import run_assignment
 from app.routers.prime_specialist_schedules import _utc_now, run_due_schedule
 
 
@@ -119,7 +124,7 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
             **dict.fromkeys(("churn_risk", "technical_build_effort", "hosting_api_cost", "support_burden"), 0.05),
         },
     }
-    for model in (KnowledgeRegistryItem, SourceRegistryItem, LearningFeedbackRecord, PrimeSpecialistSchedule, OwnerConversation, OwnerTurn):
+    for model in (KnowledgeRegistryItem, SourceRegistryItem, LearningFeedbackRecord, PrimeSpecialistSchedule, OwnerConversation, OwnerTurn, SpecialistAssignment):
         model.__table__.create(engine)
     schedule_root = "/api/prime/specialist-schedules"
     schedule_id = str(uuid4())
@@ -171,11 +176,22 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
     assert client.post(f"{FACTORY}/listing-drafts", headers=admin, json={
         **listing, "prime_verdict_id": str(uuid4()),
     }).status_code == 409
+    assignment_id = str(uuid4())
+    enrolled = client.post("/api/prime/pantheon/assignments", json={
+        **scope, "assignment_id": assignment_id, "role": "MIMIR", "cadence_seconds": 600, "duration_seconds": 1200,
+    }, headers=owner)
+    assert enrolled.status_code == 201, enrolled.text
+    with Session(engine) as db:
+        specialist_report_id = run_assignment(db, "MIMIR")["report_event_id"]
+    challenged = client.post(f"/api/prime/pantheon/reports/{specialist_report_id}/challenge")
+    assert challenged.status_code == 201, challenged.text
+    report_review = challenged.json()
+    proposal["specialist_inputs"]["pantheon_report_ids"] = [specialist_report_id]
     artifact = client.post(f"{PHASE3}/review-artifact", json=proposal).json()
     queued = client.post("/loki/reviews", json={**artifact, "input_source": "prime-product-rehearsal"})
     assert queued.status_code == 201, queued.text
     review_id = queued.json()["id"]
-    review = client.get("/loki/worker/reviews", headers=worker).json()[0]
+    review = client.get("/loki/worker/reviews", params={"artifact_type": "universal_opportunity"}, headers=worker).json()[0]
     assert review["raw_input"]["specialist_inputs"]["proposed_internal_listing"]["artifact_sha256"] == checksum
     finding = {
         "artifact_sha256": review["artifact_sha256"], "analysis_ref": "fixture:dry-run/product-rights",
@@ -202,6 +218,23 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
         "reason": "Owner confirms that reversible private testing stays within the internal attestation.",
     })
     assert reconsider.status_code == 200, reconsider.text
+    assert evaluate().status_code == 409
+    from app.loki.analyst import challenge
+
+    specialist_queue = client.get("/loki/worker/reviews", params={"artifact_type": "pantheon_report"}, headers=worker)
+    specialist_input = specialist_queue.json()[0]
+    specialist_result = challenge(specialist_input).model_dump(mode="json")
+    specialist_path = f"/loki/reviews/{report_review['review_id']}"
+    published = client.post(f"/loki/worker/reviews/{report_review['review_id']}/result", headers=worker, json=specialist_result)
+    assert published.status_code == 201, published.text
+    assert evaluate().status_code == 409
+    specialist_findings = client.get(f"{specialist_path}/findings").json()
+    acknowledged = client.post(f"{specialist_path}/reconsider", headers=owner, json={
+        "artifact_sha256": report_review["artifact_sha256"], "disposition": "accept_risk",
+        "material_finding_ids": [item["id"] for item in specialist_findings],
+        "reason": "Rechecked source references within the authorized workshop rehearsal.",
+    })
+    assert acknowledged.status_code == 200, acknowledged.text
     decision = evaluate()
     assert decision.status_code == 200, decision.text
     advice = decision.json()["evaluations"][0]
@@ -234,6 +267,7 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
     assert executed["receipt"]["authority_mode"] == "STANDING_MANDATE"
     assert executed["receipt"]["product_asset"]["sha256"] == checksum
     assert executed["receipt"]["prime_decision"]["review_id"] == review_id
+    assert executed["receipt"]["prime_decision"]["reviewed_specialist_reports"][0]["review_id"] == report_review["review_id"]
     assert executed["receipt"]["prime_decision"]["verdict_id"] == listing["prime_verdict_id"]
     with Session(engine) as db:
         listing_record = db.get(MediaContent, executed["receipt"]["media_content_id"])
@@ -254,6 +288,19 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
     follow_up = owner_turn("What did we learn after the internal draft?", specialist_schedule_id=schedule_id)
     assert follow_up["evidence"]["verified_internal_outcome_ids"] == [report["trigger_outcome_event_id"]]
     assert len(client.get(turns).json()) == 4
+    for model in (LearningTaskQueueItem, RevenueLedger, GoLiveState):
+        model.__table__.create(engine)
+    with Session(engine) as db:
+        db.add(AuditLog(event_type="integrity_alert", event_source="rehearsal", message="Fixture recorded alert"))
+        db.add(GoLiveState(id=1, go_live_enabled=False, kill_switch_engaged=False))
+        db.add(RevenueLedger(engine_code="micro_saas", currency="CAD", gross_amount=50, as_of_date=date.today()))
+        db.commit()
+    brief = owner_turn("Morning briefing")["evidence"]["operating_evidence"]
+    assert any(item["report_event_id"] == specialist_report_id for item in brief["latest_specialist_reports"])
+    assert brief["loki"]["available"] is True
+    assert brief["latest_integrity_alerts"][0]["source"] == "rehearsal"
+    assert brief["financials"]["totals_by_currency"] == [{"currency": "CAD", "entries": 1, "recorded_gross": "50.00"}]
+    assert brief["verified_cash_balance"] is None
     assert client.get(f"{schedule_root}/{other_schedule_id}").json()["latest_report"] == unrelated_advice
     with Session(engine) as db:
         assert run_due_schedule(db, now=slot_time + timedelta(seconds=1)) == {"status": "idle"}

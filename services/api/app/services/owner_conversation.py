@@ -19,6 +19,7 @@ from app.services.system_self_check import run_system_self_check
 from app.services.owner_advisory_model import advisory_reply
 from app.services.owner_attachment_extraction import extract_local, extraction_receipt, verified_attachment
 from app.services.owner_memory import MemoryIn, memory_receipt, prepare_entry, recall_entries
+from app.services.owner_operating_brief import operating_evidence
 from app.services.owner_specialist_context import prime_decision_context, specialist_context
 
 MAX_BYTES = 5 * 1024 * 1024
@@ -138,6 +139,7 @@ def answer(db, message, attachments, turn_id=None, provider_data_class="PRIVATE"
             PrimeSpecialistSchedule.state=="active", PrimeSpecialistSchedule.expires_at>now))
         reports = db.scalar(select(func.count()).select_from(PrimeSpecialistSchedule).where(
             PrimeSpecialistSchedule.last_report_event_id.is_not(None)))
+        operating = operating_evidence(db)
     except SQLAlchemyError:
         db.rollback()
         raise HTTPException(503, "System briefing evidence unavailable") from None
@@ -148,6 +150,11 @@ def answer(db, message, attachments, turn_id=None, provider_data_class="PRIVATE"
              f"Observed integrity signals: {len(signals)}. "
              f"Active advisory schedules: {schedules}; schedules referencing a report: {reports}. "
              "These are limited internal checks, not proof of live readiness or commercial results.")
+    reply += f" Recent verified specialist receipts: {len(operating['latest_specialist_reports'])}."
+    if operating["loki"]["available"]:
+        reply += f" Loki reviews queued: {operating['loki']['queued_count']}. Recent unresolved or unverified reviews: {len(operating['loki']['latest_outstanding'])}."
+    if operating["financials"]["available"]:
+        reply += " Recorded unreconciled revenue entries are attached by currency."
     if signals:
         reply += " Attention: " + "; ".join(signals.values()) + "."
     if attachments:
@@ -155,6 +162,7 @@ def answer(db, message, attachments, turn_id=None, provider_data_class="PRIVATE"
     return reply, {"source": "persisted_integrity_and_specialist_schedules", "integrity": report,
                    "live_flag": release.go_live_enabled if release is not None else None,
                    "active_advisory_schedules": schedules, "schedules_with_report_reference": reports,
+                   "operating_evidence": operating,
                    "model_connected": False}
 
 def install(router):
