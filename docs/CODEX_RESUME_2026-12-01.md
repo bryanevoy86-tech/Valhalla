@@ -6,7 +6,19 @@ DO NOT restart the project, regenerate completed packs, or treat API presence as
 
 ## Start here — current continuation
 
-Use the current head of draft PR #4 and confirm the latest required CI run. Earlier checkpoints below are historic records. The operating routes below supersede older instructions to implement the initial economic containment/recovery, local discovery intake, and owner briefing/history lanes. There are 50 acceptance contracts, 53 task entries and seven construction packages.
+Use the current head of draft PR #4 and confirm the latest required CI run. Use the verified workstream index below before following a dated checkpoint. Dated checkpoints are historical records. The operating routes below supersede older instructions to implement the initial economic containment/recovery, local discovery intake, and owner briefing/history lanes. There are 50 acceptance contracts, 53 task entries and seven construction packages.
+
+## Current workstream index and startup order
+
+For tasks 04–53, follow the workstream ID in the task register to the corresponding row in `ops/prime_system_integration_matrix.json`. Each row provides exact `source_paths`, `depends_on`, implementation state and an evidence level. Read the `continuation` fields for existing test evidence, next implementation and the owner action, then use the unchanged `acceptance_test` as the proof contract. `production_verified` remains false where real operation has not been established.
+
+| Task | Current evidence and source | Remaining work and dependency | Owner action and acceptance evidence |
+|---|---|---|---|
+| Cross-cutting 01 | Full backend regression passes. Canonical gate is `.github/workflows/critical-controls-ci.yml`. | Keep the full suite green through additive migrations and a reviewed staging release. | Existing internal verification authority. Preserve the complete test result and any genuine exclusions. |
+| Cross-cutting 02 | The current draft is the verified shared continuation point. Local Windows differences remain unverified in this runtime. | Obtain an actual Windows diff if changes still exist. Review commits and resolve scope conflicts before any merge. | Provide the local diff or checkout only if it contains changes that must be recovered. Acceptance is a reviewed file/commit comparison. |
+| Cross-cutting 03 | `services/api/tests/test_economic_control.py` and `services/api/tests/test_product_artifact_workflow.py` exercise scoped research, owner decisions, internal execution, and fixture settlement. | Connect one separately authorized staged provider and extend worker interruption and proof over an end-to-end run. | Authorize the named staging providers and test scope separately. Acceptance requires independent receipts and scoped Mimir outcome lineage. |
+
+Startup sequence is private owner interaction, authorized source ingestion, economic feasibility, reviewed internal execution, then approved staging proof. Historical wealth engines remain optional candidates. Regulated banking, tax, professional, insurance, trust and expansion activity retains its dedicated approval gates.
 
 ## Repository and change control
 
@@ -332,3 +344,12 @@ Use `/containment` to protect an enrolled Factory lane immediately. No endpoint 
 5. WeWeb owner JWTs read `/api/weweb/owner-conversations` and scoped turn history. The existing owner briefing shows durable discovery state and errors. The browser receives no Prime key.
 
 Startup-critical next work includes independently authorized market-source connectors, enrollment and controls for the actual startup paths, complete purchase-to-settlement rehearsals with real receipt formats, independent bank reconciliation, full authenticated WeWeb interaction and retention, 24/7 staging soak, and audit-ready professional preparation. Keep live inference, spending, external commerce, banking, trading and deployment separately authorized. Continue the wider owner vision in its existing workstreams.
+
+## Owner and startup evidence continuation — November 21, 2026
+
+- `POST /api/weweb/owner-conversations` and thread suffixes `/turns`, `/attachments` and `/attachments/{id}/extract` use the private owner bearer and existing JARVIS store. Browser turns are forced to local processing. `/owner-briefing?mode=driving` provides short read-only output for eventual voice rendering.
+- Attachment dispositions still require the separate owner mandate. `retain_until` is an inclusive UTC date. Once elapsed, ordinary download, re-extraction and saved-extract disclosure are blocked. The underlying bytes and audit history remain stored. Implement verified deletion and restore handling as separate retention work.
+- Mimir's decision record accepts purpose, rationale and scoped memory dependency IDs. “Review past decisions” lists differences under an exact normalized topic without making a finding about truth or authority.
+- `PUT /api/prime/foundry/intake/sources/{source_id}/signing-key` enrolls a publisher public key with an owner mandate. External export intake is still a signed-file handoff. No outbound source execution is configured.
+- Product Foundry fixture settlement compares signed event deltas with unique indexed statement entries. Existing refunds remain available during emergency containment. This rehearsal produces no actual settlement receipt.
+- Builder claims expire and only three lease attempts are available before `lease_exhausted`. The owner briefing shows remaining recorded failures. Restart the approved staged worker under the existing configuration only after the independent staging authorization.

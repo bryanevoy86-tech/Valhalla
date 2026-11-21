@@ -113,3 +113,7 @@ The current planned catalog is `PLANNED_ENGINE_CATALOG` in the canonical Complet
 ### Scoped startup intake
 
 Authorized local demand and procurement exports enter `POST /api/prime/foundry/intake`. Each job binds a registered source and observation key, dated freshness, citation, buyer segment, sample and demand counts, and an exact Legacy scope. The worker creates digest-checked Foundry evidence and wakes existing specialist assignments. Revenue models can be described for previously unknown opportunity categories. The Universal Evaluator provides a shadow recommendation and the economic registry compares its source-bound demand and economics within the mandate and currency. Candidate intake has no activation authority.
+
+### Signed source exports
+
+An owner can enroll an Ed25519 public key for a registered demand or procurement export source. Once enrolled, that source accepts only signed local exports with fresh timestamps. Scope, sample counts, provenance and the source identity are covered by the signature and checked again before research consumes the evidence. A rotated key invalidates older signatures for current use. The adapter is an ingestion contract for a future authorized connector, with no outbound fetch or inferred proof of market demand.

@@ -165,3 +165,14 @@ No bank, securities, FX, insurance, liquidation, or external contract action is 
 | Owner and operations | Owner-private discovery counters and last-known job errors, job retry state, authenticated conversation list and turns, revocation checks | Always-on staging proof, push notifications, attachments retention policy and voice |
 
 The seven existing construction packages and the 50 workstreams remain in force. Synthetic samples, simulated reservations and internally exercised routes carry no commercial, investment, or funds-movement authority.
+
+## Owner interaction and startup controls — November 21, 2026
+
+| Scope | Internal evidence | Still required |
+|---|---|---|
+| JARVIS and Mimir | Owner JWT messages and digested uploads use the canonical conversation. Retention limits extract/download access and historical disclosure. Owner decisions carry rationale, purpose and scoped dependencies. Same-topic different positions are flagged for review. | Semantic contradictions across new evidence and proposed action, deletion workflow and authorized provider operation |
+| Voice readiness | A private read-only driving brief summarizes emergency and attention states. | Speech input/output, accessibility and vehicle usability testing |
+| Discovery and commercial evidence | Signed source fixture passed to existing evaluation and Loki. Payment fixture deltas reconciled with an exact statement posting, and a difference was reported for a mismatched amount. | Activated authorized source connector, actual bank/payment settlement and commercial validation |
+| Builder | Bounded lease recovery proved repeated interruption becomes an inspectable terminal state. | Full process-kill staging soak, reviewed GitHub submission and broader candidate generation |
+
+Valhalla retains all 50 acceptance criteria, 53 development tasks and seven construction packages. Remaining work and authorization are tracked per workstream in the integration matrix.
