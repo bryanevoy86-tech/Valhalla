@@ -161,10 +161,3 @@ def delete_rule(db: Session, rule_id: int) -> bool:
     db.delete(rule)
     db.commit()
     return True
-    """List all constraints for a profile."""
-    return (
-        db.query(TuningConstraint)
-        .filter(TuningConstraint.profile_id == profile_id)
-        .order_by(TuningConstraint.created_at.asc())
-        .all()
-    )

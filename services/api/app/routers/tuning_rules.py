@@ -23,8 +23,8 @@ router = APIRouter(
 )
 
 
-def get_tenant_id(request) -> str:
-    """Extract tenant_id from request context."""
+def get_tenant_id() -> str:
+    """Use the existing default tuning namespace."""
     return "default-tenant"
 
 
