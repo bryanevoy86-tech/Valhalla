@@ -33,7 +33,9 @@ def record_evidence(request: EvidenceIn, db: Session = Depends(get_db)):
     _check_legacy(db, **scope)
     if request.observed_on > datetime.now(timezone.utc).date():
         raise HTTPException(422, "Observed date is in the future")
-    payload = request.model_dump(mode="json")
+    # Preserve the exact payload shape and digest of historical records without acquisition terms.
+    excludes = {"acquisition"} if request.acquisition is None else set()
+    payload = request.model_dump(mode="json", exclude=excludes)
     digest = artifact_digest("foundry_evidence", str(request.evidence_id), payload)
     row = db.get(FoundryEvidence, request.evidence_id)
     if row:

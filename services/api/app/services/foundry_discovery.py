@@ -18,6 +18,27 @@ SCOPE_FIELDS = {"legacy_instance_id", "business_id", "engine_id", "jurisdiction"
 DISCOVERY_ROLES = frozenset({"ODIN", "HUGINN", "NJORD", "FREYJA", "TYR", "FORSETI"})
 
 
+class AcquisitionTerms(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    purchase_price: Cents
+    closing_and_transition_cost: Cents
+    funded_working_reserve: Cents
+    financed_principal: Cents
+    monthly_debt_service: Cents
+
+    @model_validator(mode="after")
+    def validate_funding(self):
+        if self.purchase_price == 0 or self.financed_principal > self.purchase_price:
+            raise ValueError("Acquisition financing must be covered by a positive purchase price")
+        if bool(self.financed_principal) != bool(self.monthly_debt_service):
+            raise ValueError("Declare debt service only for financed acquisitions")
+        return self
+
+    @property
+    def required_equity(self):
+        return self.purchase_price - self.financed_principal + self.closing_and_transition_cost + self.funded_working_reserve
+
+
 class EvidenceIn(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
     evidence_id: UUID
@@ -40,11 +61,14 @@ class EvidenceIn(BaseModel):
     test_cost: Cents
     monthly_units: int = Field(strict=True, ge=0, le=1_000_000)
     rights_attestation: Literal["AUTHORIZED_INTERNAL_RESEARCH"]
+    acquisition: AcquisitionTerms | None = None
 
     @model_validator(mode="after")
     def validate_dates(self):
         if not self.observed_on <= self.expires_on <= self.observed_on + timedelta(days=366):
             raise ValueError("Invalid evidence validity dates")
+        if self.acquisition and (self.kind != "ACQUISITION" or self.startup_capital < self.acquisition.required_equity):
+            raise ValueError("Acquisition scenario requires acquisition evidence and adequate declared startup capital")
         return self
 
 
@@ -52,7 +76,7 @@ def economics(payload: EvidenceIn) -> dict:
     contribution = payload.unit_price - payload.variable_cost_per_unit - payload.acquisition_cost_per_unit
     estimated = contribution * payload.monthly_units - payload.monthly_fixed_cost
     stressed_units = payload.monthly_units * 3 // 4
-    return {
+    result = {
         "basis": "DECLARED_INPUTS_ONLY", "currency": payload.currency,
         "monthly_units": payload.monthly_units, "unit_contribution_minor": contribution,
         "break_even_units": ((payload.monthly_fixed_cost + contribution - 1) // contribution if contribution > 0 else None),
@@ -62,6 +86,24 @@ def economics(payload: EvidenceIn) -> dict:
         "declared_startup_capital_minor": payload.startup_capital, "declared_validation_cost_minor": payload.test_cost,
         "verified_revenue_minor": None,
     }
+    if payload.acquisition:
+        terms = payload.acquisition
+        debt = terms.monthly_debt_service
+        stress = result["stress_monthly_operating_contribution_minor"]
+        result["acquisition"] = {
+            "declared_purchase_price_minor": terms.purchase_price,
+            "declared_financed_principal_minor": terms.financed_principal,
+            "required_equity_and_reserve_minor": terms.required_equity,
+            "monthly_debt_service_minor": debt,
+            "monthly_available_cash_after_debt_minor": estimated - debt,
+            "stress_monthly_available_cash_after_debt_minor": stress - debt,
+            "operating_cash_to_debt_service_bp": 10000 * estimated // debt if debt else None,
+            "stress_operating_cash_to_debt_service_bp": 10000 * stress // debt if debt else None,
+            "debt_inclusive_break_even_units": ((payload.monthly_fixed_cost + debt + contribution - 1) // contribution
+                                               if contribution > 0 else None),
+            "financing_verified": False,
+        }
+    return result
 
 
 def checked_evidence(row: FoundryEvidence, scope: dict, today: date) -> EvidenceIn:
@@ -81,6 +123,9 @@ def review_priority(role: str, metrics: dict) -> str:
         return "VERIFY_SOURCE_AND_RIGHTS"
     if role == "FREYJA":
         return "VALIDATE_DEMAND_AND_ACQUISITION_COST"
+    acquisition = metrics.get("acquisition")
+    if acquisition and acquisition["stress_monthly_available_cash_after_debt_minor"] < 0:
+        return "INVESTIGATE_ACQUISITION_DEBT_COVERAGE"
     contribution = metrics["estimated_monthly_operating_contribution_minor"]
     if metrics["unit_contribution_minor"] <= 0 or contribution < 0:
         return "INVESTIGATE_UNVIABLE_ECONOMICS"
