@@ -1,6 +1,7 @@
 import base64
 import hashlib
 import json
+from datetime import timedelta
 from uuid import UUID, uuid4
 
 from sqlalchemy.orm import Session
@@ -9,9 +10,13 @@ from app.god.models import GodReviewCase, GodReviewEvent
 from app.loki.models import LokiFinding, LokiIndependentReceipt, LokiReconsideration, LokiReview
 from app.models.god_verdicts import GodVerdict
 from app.models.governance_decision import GovernanceDecision
-from app.models.completion_registry import LegacyInstanceRegistryItem, LegacyInstanceWorkItem, LegacyOrchestrationEvent
+from app.models.completion_registry import (
+    KnowledgeRegistryItem, LearningFeedbackRecord, LegacyInstanceRegistryItem, LegacyInstanceWorkItem, LegacyOrchestrationEvent,
+)
 from app.models.media_engine import MediaContent
 from app.models.product_artifact import ProductArtifact
+from app.models.prime_specialist_schedule import PrimeSpecialistSchedule
+from app.routers.prime_specialist_schedules import _utc_now, run_due_schedule
 
 
 FACTORY = "/api/business-factory"
@@ -33,7 +38,7 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
     with Session(engine) as db:
         db.add(LegacyInstanceRegistryItem(
             legacy_instance_id=scope["legacy_instance_id"], display_name="Internal operating legacy",
-            assigned_businesses_json='["workshop"]', assigned_jurisdictions_json='["CA-MB"]', engines_json='["micro_saas"]',
+            assigned_businesses_json='["workshop"]', assigned_jurisdictions_json='["CA-MB"]', engines_json='["micro_saas", "market_intelligence"]',
             local_knowledge_context_json='{"business_id":"workshop","jurisdiction":"CA-MB"}',
             synchronization_status="SYNCED", status="PASS",
         ))
@@ -113,6 +118,28 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
             **dict.fromkeys(("churn_risk", "technical_build_effort", "hosting_api_cost", "support_burden"), 0.05),
         },
     }
+    for model in (KnowledgeRegistryItem, LearningFeedbackRecord, PrimeSpecialistSchedule):
+        model.__table__.create(engine)
+    schedule_root = "/api/prime/specialist-schedules"
+    schedule_id = str(uuid4())
+    other_schedule_id = str(uuid4())
+    schedule = {
+        "schedule_id": schedule_id, "cadence_seconds": 3600, "duration_seconds": 7200,
+        "on_verified_outcome": True, "opportunity": proposal, "business_id": scope["business_id"],
+    }
+    for configuration in (schedule, {
+        **schedule, "schedule_id": other_schedule_id,
+        "opportunity": {**proposal, "engine_id": "market_intelligence"},
+    }):
+        created = client.post(schedule_root, headers=owner, json=configuration)
+        assert created.status_code == 201, created.text
+    slot_time = _utc_now() + timedelta(seconds=1)
+    for _ in range(2):
+        with Session(engine) as db:
+            assert run_due_schedule(db, now=slot_time)["status"] == "evaluated"
+    next_cadence = client.get(f"{schedule_root}/{schedule_id}").json()["next_due_at"]
+    unrelated_advice = client.get(f"{schedule_root}/{other_schedule_id}").json()["latest_report"]
+
     assert client.post(f"{FACTORY}/listing-drafts", headers=admin, json={
         **listing, "prime_verdict_id": str(uuid4()),
     }).status_code == 409
@@ -181,6 +208,20 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
         assert json.loads(listing_record.body)["product_asset"]["sha256"] == checksum
         assert json.loads(listing_record.body)["purchase_url"] is None
     assert client.get(f"{FACTORY}/actions/{action_id}", headers=admin).json()["internal_artifact_verified"]
+
+    with Session(engine) as db:
+        triggered = run_due_schedule(db, now=slot_time + timedelta(seconds=1))
+        assert triggered["status"] == "evaluated"
+    advice = client.get(f"{schedule_root}/{schedule_id}").json()
+    assert advice["next_due_at"] == next_cadence
+    report = advice["latest_report"]
+    assert report["trigger"] == "VERIFIED_OUTCOME"
+    assert report["trigger_outcome_event_id"] == report["verified_internal_outcomes"][0]["outcome_event_id"]
+    assert report["verified_internal_outcomes"][0]["prime_decision"]["verdict_id"] == listing["prime_verdict_id"]
+    assert report["verified_internal_outcomes"][0]["sales_verified"] is False
+    assert client.get(f"{schedule_root}/{other_schedule_id}").json()["latest_report"] == unrelated_advice
+    with Session(engine) as db:
+        assert run_due_schedule(db, now=slot_time + timedelta(seconds=1)) == {"status": "idle"}
 
     pending_id = submit_and_approve({**listing, "request_key": "workshop-listing-02"})
     with Session(engine) as db:

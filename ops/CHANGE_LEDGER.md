@@ -654,3 +654,8 @@ Product Foundry artifact staging passed [hosted CI](https://github.com/bryanevoy
 
 - Confirmed the latest owner-advisory checkpoint at 92a50b0b had four successful hosted jobs [44823687821](https://github.com/bryanevoy86-tech/Valhalla/actions/runs/44823687821).
 - The legacy clone and regional mirror policy APIs now require the private Prime credential. Passing a policy check still records eligibility. A trigger without a dispatcher records a blocked decision and leaves the cooldown unchanged. This preserves the distinction between business clone eligibility and regional mirror eligibility and stops false dispatch receipts. Provisioning, replayable playbooks and deploy/runtime proof remain open.
+
+## November 20 — Event-driven specialist follow-up
+
+- Owner-authorized schedules can subscribe to exact-scope verified Factory outcomes by legacy, business, engine and jurisdiction. The Factory transaction commits the artifact receipt, Mimir evidence and wake-up together. The worker revalidates the triggering receipt before running the advisory evaluator. An event-only run leaves the planned cadence intact. Pending observations coalesce to the newest receipt and cannot wake a schedule in another engine.
+- Recovery from the previous checkout preserved the current owner-conversation migration in the dependency chain and did not overwrite advisory changes. The existing guided Factory rehearsal now exercises the event wake-up and scope isolation. The disposable PostgreSQL test exercises locking and preservation of existing schedule rows.

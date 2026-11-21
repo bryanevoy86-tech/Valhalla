@@ -7,7 +7,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel, Field, ValidationError
-from sqlalchemy import inspect, update
+from sqlalchemy import inspect, or_, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -25,6 +25,8 @@ from app.services.prime_business_execution import (
     verified_internal_outcomes,
 )
 
+from app.services.specialist_triggers import outcome_scope_key
+
 
 REPORT_EVENT = "PRIME_SPECIALIST_SHADOW_REPORT"
 
@@ -34,6 +36,9 @@ def require_schedule_schema(db: Session = Depends(get_db)):
     inspector = inspect(db.get_bind())
     required = ("prime_specialist_schedules", "learning_feedback_records", "knowledge_registry_items")
     if any(not inspector.has_table(name) for name in required):
+        raise HTTPException(status_code=503, detail="Specialist scheduling schema not ready")
+    columns = {column["name"] for column in inspector.get_columns(PrimeSpecialistSchedule.__tablename__)}
+    if not {"outcome_scope_key", "pending_outcome_event_id"} <= columns:
         raise HTTPException(status_code=503, detail="Specialist scheduling schema not ready")
 
 
@@ -49,6 +54,7 @@ class ScheduleIn(BaseModel):
     opportunity: UniversalOpportunityIn
     cadence_seconds: int = Field(ge=300, le=86400, strict=True)
     duration_seconds: int = Field(ge=300, le=2592000, strict=True)
+    on_verified_outcome: bool = False
 
 
 def _utc_now() -> datetime:
@@ -85,6 +91,7 @@ def _describe(db: Session, row: PrimeSpecialistSchedule) -> dict:
         "next_due_at": row.next_due_at.replace(tzinfo=timezone.utc),
         "expires_at": row.expires_at.replace(tzinfo=timezone.utc),
         "latest_report": report,
+        "on_verified_outcome": row.outcome_scope_key is not None,
     }
 
 
@@ -109,6 +116,7 @@ def create_schedule(payload: ScheduleIn, db: Session = Depends(get_db)):
     row = PrimeSpecialistSchedule(
         id=payload.schedule_id, request=request, cadence_seconds=payload.cadence_seconds,
         next_due_at=now, expires_at=now + timedelta(seconds=payload.duration_seconds), state="active",
+        outcome_scope_key=outcome_scope_key(_scope(normalized)) if payload.on_verified_outcome else None,
     )
     db.add(row)
     try:
@@ -116,7 +124,7 @@ def create_schedule(payload: ScheduleIn, db: Session = Depends(get_db)):
     except IntegrityError:
         db.rollback()
         row = _lookup(db, payload.schedule_id)
-        if row.request != request:
+        if {"on_verified_outcome": False, **row.request} != request:
             raise HTTPException(status_code=409, detail="Schedule ID already has a different mandate")
     return _describe(db, row)
 
@@ -151,7 +159,10 @@ def run_due_schedule(db: Session, *, now: datetime | None = None) -> dict:
     row = (
         db.query(PrimeSpecialistSchedule)
         .filter_by(state="active")
-        .filter(PrimeSpecialistSchedule.next_due_at <= now, PrimeSpecialistSchedule.expires_at > now)
+        .filter(
+            PrimeSpecialistSchedule.expires_at > now,
+            or_(PrimeSpecialistSchedule.next_due_at <= now, PrimeSpecialistSchedule.pending_outcome_event_id.is_not(None)),
+        )
         .order_by(PrimeSpecialistSchedule.next_due_at, PrimeSpecialistSchedule.id)
         .with_for_update(skip_locked=True)
         .first()
@@ -159,10 +170,12 @@ def run_due_schedule(db: Session, *, now: datetime | None = None) -> dict:
     if row is None:
         return {"status": "idle"}
     # Coalesce missed slots after downtime. Preserve the original cadence.
-    elapsed_slots = (now - row.next_due_at) // timedelta(seconds=row.cadence_seconds)
-    next_due = row.next_due_at + timedelta(seconds=(elapsed_slots + 1) * row.cadence_seconds)
-    slot = row.next_due_at.replace(tzinfo=timezone.utc).isoformat()
-    report_id = "SPECIALIST-" + hashlib.sha256(f"{row.id}/{slot}".encode()).hexdigest()
+    timed = row.next_due_at <= now
+    outcome_id = row.pending_outcome_event_id
+    elapsed_slots = (now - row.next_due_at) // timedelta(seconds=row.cadence_seconds) if timed else 0
+    slot = row.next_due_at.replace(tzinfo=timezone.utc).isoformat() if timed else None
+    occurrence = slot if timed else outcome_id
+    report_id = "SPECIALIST-" + hashlib.sha256(f"{row.id}/{occurrence}".encode()).hexdigest()
     payload = ScheduleIn.model_validate(row.request)
     scope = _scope(payload)
     report = {
@@ -170,16 +183,21 @@ def run_due_schedule(db: Session, *, now: datetime | None = None) -> dict:
         "observed_at": now.replace(tzinfo=timezone.utc).isoformat(), "scope": scope,
         "external_authority": False, "independent_loki_cleared": False,
         "effect": "ADVISORY_ONLY", "missed_slots_coalesced": elapsed_slots,
+        "trigger": "VERIFIED_OUTCOME" if outcome_id else "CADENCE",
+        "trigger_outcome_event_id": outcome_id,
     }
     try:
         _check_legacy(db, **scope)
+        outcomes = verified_internal_outcomes(db, **scope)
+        if outcome_id and not any(item["outcome_event_id"] == outcome_id for item in outcomes):
+            raise HTTPException(status_code=409, detail="Trigger outcome evidence failed revalidation")
         result = evaluate_universal_opportunities(UniversalOpportunityBatchIn(
             opportunities=[payload.opportunity], shadow_mode=True, persist_decision=False,
         ), db)
         report.update(
             status="evaluated", evaluation=result["evaluations"][0],
             recommendation=result["owner_recommendation"],
-            verified_internal_outcomes=verified_internal_outcomes(db, **scope),
+            verified_internal_outcomes=outcomes,
         )
     except (HTTPException, ValidationError) as exc:
         report.update(status="blocked", reason=exc.detail if isinstance(exc, HTTPException) else "Invalid specialist inputs")
@@ -187,7 +205,9 @@ def run_due_schedule(db: Session, *, now: datetime | None = None) -> dict:
         db, event_id=report_id, legacy_instance_id=scope["legacy_instance_id"], event_type=REPORT_EVENT,
         message=f"Prime specialist schedule {report['status']}", payload=jsonable_encoder(report),
     )
-    row.next_due_at = next_due
+    if timed:
+        row.next_due_at += timedelta(seconds=(elapsed_slots + 1) * row.cadence_seconds)
+    row.pending_outcome_event_id = None
     row.last_report_event_id = report_id
     db.commit()
     return {"status": report["status"], "report_event_id": report_id}

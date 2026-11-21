@@ -30,6 +30,7 @@ from app.models.completion_registry import (
     LegacyOrchestrationEvent,
 )
 from app.models.media_engine import MediaContent
+from app.services.specialist_triggers import publish_verified_outcome
 from app.services.product_artifacts import artifact_reference, load_artifact, require_artifact_schema, verify_artifact
 from app.core.autonomy_governor import require_internal_draft
 from sqlalchemy import func, inspect
@@ -675,14 +676,19 @@ def _execute_locked_draft(db: Session, item: LegacyInstanceWorkItem) -> dict | N
         message="Internal listing draft stored and read back successfully",
         payload=evidence,
     )
+    outcome_event_id = _mimir_outcome_id(item.action_id)
     _event(
         db,
-        event_id=_mimir_outcome_id(item.action_id),
+        event_id=outcome_event_id,
         legacy_instance_id=item.legacy_instance_id,
         event_type=MIMIR_OUTCOME_EVENT,
         message="Verified internal outcome for Mimir",
         payload=_mimir_outcome(item, evidence),
     )
+    publish_verified_outcome(db, {
+        "legacy_instance_id": item.legacy_instance_id, "business_id": item.business_id,
+        "engine_id": item.engine_id, "jurisdiction": item.jurisdiction,
+    }, outcome_event_id)
     if mandate_id is not None:
         _event(db, event_id="BF-MUSE-" + hashlib.sha256(item.action_id.encode()).hexdigest(),
                legacy_instance_id=item.legacy_instance_id, event_type=_mandate_use_type(mandate_id),

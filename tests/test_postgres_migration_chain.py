@@ -44,6 +44,7 @@ LOKI_RECEIPTS = load("alembic/versions/20261120_loki_review_receipts.py")
 
 SPECIALIST = load("alembic/versions/20261120_specialist_schedules.py")
 PRODUCT = load("alembic/versions/20261120_product_artifacts.py")
+SPECIALIST_TRIGGERS = load("alembic/versions/20261120_specialist_triggers.py")
 
 
 @unittest.skipUnless(url, "Disposable PostgreSQL database not supplied")
@@ -203,15 +204,27 @@ class PostgresMigrationChainTests(unittest.TestCase):
                     VALUES ('00000000-0000-0000-0000-000000000001', '{}', 300,
                             now() - interval '1 minute', now() + interval '1 hour', 'active')
                 """))
+            with engine.begin() as connection:
+                with patch.object(SPECIALIST_TRIGGERS, "op", Operations(MigrationContext.configure(connection))):
+                    SPECIALIST_TRIGGERS.upgrade()
+                self.assertIsNone(connection.execute(text(
+                    "SELECT outcome_scope_key FROM prime_specialist_schedules"
+                )).scalar_one())
+                connection.execute(text("""
+                    UPDATE prime_specialist_schedules
+                    SET outcome_scope_key = :key, pending_outcome_event_id = 'MIMIR-fixture',
+                        next_due_at = now() + interval '5 minutes'
+                """), {"key": "a" * 64})
             claim = text("""
                 SELECT id FROM prime_specialist_schedules
-                WHERE state = 'active' AND next_due_at <= now() AND expires_at > now()
+                WHERE state = 'active' AND expires_at > now()
+                AND (next_due_at <= now() OR pending_outcome_event_id IS NOT NULL)
                 ORDER BY next_due_at, id LIMIT 1 FOR UPDATE SKIP LOCKED
             """)
             with engine.begin() as first, engine.connect() as second:
                 self.assertIsNotNone(first.execute(claim).scalar_one())
                 self.assertIsNone(second.execute(claim).scalar_one_or_none())
-                first.execute(text("UPDATE prime_specialist_schedules SET next_due_at = now() + interval '5 minutes'"))
+                first.execute(text("UPDATE prime_specialist_schedules SET pending_outcome_event_id = null"))
             with engine.connect() as restarted:
                 self.assertIsNone(restarted.execute(claim).scalar_one_or_none())
                 self.assertIn("ix_prime_specialist_due", {
