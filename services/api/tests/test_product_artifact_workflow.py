@@ -21,8 +21,8 @@ from app.models.go_live_state import GoLiveState
 from app.models.revenue_ledger import RevenueLedger
 from app.models.owner_conversation import OwnerConversation, OwnerTurn
 from app.models.product_artifact import ProductArtifact
-from app.models.prime_specialist_schedule import PrimeSpecialistSchedule
-from app.models.specialist_assignment import SpecialistAssignment
+from app.models.prime_specialist_schedule import PrimeScheduleTrigger, PrimeSpecialistSchedule
+from app.models.specialist_assignment import SpecialistAssignment, SpecialistTrigger
 from app.pantheon.monitor import run_assignment
 from app.routers.prime_specialist_schedules import _utc_now, run_due_schedule
 
@@ -126,7 +126,7 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
             **dict.fromkeys(("churn_risk", "technical_build_effort", "hosting_api_cost", "support_burden"), 0.05),
         },
     }
-    for model in (KnowledgeRegistryItem, SourceRegistryItem, LearningFeedbackRecord, PrimeSpecialistSchedule, OwnerConversation, OwnerTurn, SpecialistAssignment):
+    for model in (KnowledgeRegistryItem, SourceRegistryItem, LearningFeedbackRecord, PrimeSpecialistSchedule, PrimeScheduleTrigger, OwnerConversation, OwnerTurn, SpecialistAssignment, SpecialistTrigger):
         model.__table__.create(engine)
     schedule_root = "/api/prime/specialist-schedules"
     schedule_id = str(uuid4())

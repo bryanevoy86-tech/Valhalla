@@ -12,7 +12,7 @@ from app.loki.models import LokiFinding, LokiIndependentReceipt, LokiReconsidera
 from app.models.completion_registry import LegacyInstanceRegistryItem, LegacyInstanceWorkItem, LegacyOrchestrationEvent
 from app.models.economic_control import EconomicOperation, EconomicPool, EconomicRecord
 from app.models.revenue_ledger import RevenueLedger
-from app.models.specialist_assignment import SpecialistAssignment
+from app.models.specialist_assignment import SpecialistAssignment, SpecialistTrigger
 from app.pantheon.monitor import run_assignment
 from app.routers import economic_control
 from app.services.economic_control import require_no_containment
@@ -34,7 +34,7 @@ def economic_client(deal_client, monkeypatch):
     monkeypatch.setenv("VALHALLA_LOKI_REVIEWER_ID", "economic-independent-fixture")
     monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "false")
     for model in (LegacyInstanceRegistryItem, LegacyInstanceWorkItem, LegacyOrchestrationEvent, EconomicOperation,
-                  EconomicPool, EconomicRecord, RevenueLedger, SpecialistAssignment, LokiReview, LokiFinding,
+                  EconomicPool, EconomicRecord, RevenueLedger, SpecialistAssignment, SpecialistTrigger, LokiReview, LokiFinding,
                   LokiIndependentReceipt, LokiReconsideration):
         model.__table__.create(engine)
     with Session(engine) as db:

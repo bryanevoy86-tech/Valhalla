@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.models.completion_registry import LegacyInstanceRegistryItem, LegacyInstanceWorkItem, LegacyOrchestrationEvent
 from app.models.media_engine import MediaContent
 from app.models.norns_forecast import NornsForecast, NornsHoldout
-from app.models.specialist_assignment import SpecialistAssignment
+from app.models.specialist_assignment import SpecialistAssignment, SpecialistTrigger
 from app.pantheon.monitor import run_assignment
 from app.routers import norns_forecasts
 
@@ -18,7 +18,7 @@ def test_norns_requires_pre_execution_forecast_and_scores_only_observed_outcomes
     monkeypatch.setenv("VALHALLA_FACTORY_KEY", factory["X-Business-Factory-Key"])
     monkeypatch.setenv("VALHALLA_OWNER_MANDATE_KEY", owner["X-Owner-Mandate-Key"])
     monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "false")
-    for model in (LegacyInstanceRegistryItem, LegacyInstanceWorkItem, LegacyOrchestrationEvent, MediaContent, NornsForecast, NornsHoldout, SpecialistAssignment):
+    for model in (LegacyInstanceRegistryItem, LegacyInstanceWorkItem, LegacyOrchestrationEvent, MediaContent, NornsForecast, NornsHoldout, SpecialistAssignment, SpecialistTrigger):
         model.__table__.create(engine)
     with Session(engine) as db:
         db.add(LegacyInstanceRegistryItem(

@@ -11,10 +11,9 @@ from app.loki.evidence import artifact_digest
 from app.models.completion_registry import LegacyInstanceRegistryItem
 from app.models.economic_control import EconomicOperation, EconomicPool, EconomicRecord
 from app.models.foundry_evidence import FoundryEvidence
-from app.models.specialist_assignment import SpecialistAssignment
 from app.schemas.economic_control import Containment, Liquidity, Mandate, Obligation, Opportunity, Performance, Plan
 from app.services.foundry_discovery import checked_evidence, demand_evidence, economics
-from app.services.specialist_triggers import outcome_scope_key
+from app.services.specialist_triggers import enqueue_research, outcome_scope_key
 from app.services.universal_opportunity_evaluator import rank_economic_options
 
 
@@ -66,13 +65,7 @@ def store_record(db, operation, kind, payload, *, receipt_ref=None):
 
 
 def trigger_reassessment(db, scope, record_id, at):
-    if inspect(db.connection()).has_table(SpecialistAssignment.__tablename__):
-        assignment = SpecialistAssignment
-        with db.no_autoflush:
-            db.execute(update(assignment).where(
-                assignment.scope_key == outcome_scope_key(scope), assignment.role.in_(REVIEW_ROLES),
-                assignment.state == "active", assignment.expires_at > at, assignment.pending_event_id.is_(None),
-            ).values(pending_event_id=f"ECON-{record_id}"))
+    enqueue_research(db, outcome_scope_key(scope), f"ECON-{record_id}", at, roles=REVIEW_ROLES)
 
 
 def verify_trigger(db, scope, event):

@@ -9,9 +9,12 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.models.owner_conversation import OwnerAttachment, OwnerAttachmentExtraction
+from app.services.owner_attachment_review import restore_hold_active
 
 
 def verified_attachment(db: Session, conversation_id, attachment_id, *, lock=False) -> OwnerAttachment:
+    if restore_hold_active():
+        raise HTTPException(503, "Attachment access paused for restore reconciliation")
     row = db.get(OwnerAttachment, attachment_id, with_for_update=lock)
     if row is None or row.conversation_id != conversation_id:
         raise HTTPException(404, "Attachment not found in conversation")

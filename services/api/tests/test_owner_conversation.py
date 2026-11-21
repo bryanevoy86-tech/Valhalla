@@ -16,7 +16,7 @@ from app.models.model_provider import ModelProvider
 from app.models.owner_conversation import OwnerConversation, OwnerAttachment, OwnerTurn, OwnerInferenceAttempt, OwnerInferenceQuota, OwnerMemoryEntry, OwnerAttachmentExtraction, OwnerAttachmentReview
 from app.models.completion_registry import LearningTaskQueueItem, LegacyOrchestrationEvent, KnowledgeRegistryItem, SourceRegistryItem
 from app.models.go_live_state import GoLiveState
-from app.models.prime_specialist_schedule import PrimeSpecialistSchedule
+from app.models.prime_specialist_schedule import PrimeScheduleTrigger, PrimeSpecialistSchedule
 from app.routers.jarvis import router
 
 HEADERS = {"X-Prime-Control-Key": "ci-owner-chat-private"}
@@ -28,7 +28,7 @@ def client(monkeypatch):
     monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "true")
     monkeypatch.delenv("VALHALLA_OWNER_CHAT_INFERENCE_ENABLED", raising=False)
     engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
-    for model in (OwnerConversation, OwnerTurn, OwnerAttachment, LearningTaskQueueItem, GoLiveState, PrimeSpecialistSchedule, ModelProvider, OwnerInferenceQuota, OwnerInferenceAttempt, OwnerMemoryEntry, OwnerAttachmentExtraction, OwnerAttachmentReview, LegacyOrchestrationEvent, KnowledgeRegistryItem, SourceRegistryItem):
+    for model in (OwnerConversation, OwnerTurn, OwnerAttachment, LearningTaskQueueItem, GoLiveState, PrimeSpecialistSchedule, PrimeScheduleTrigger, ModelProvider, OwnerInferenceQuota, OwnerInferenceAttempt, OwnerMemoryEntry, OwnerAttachmentExtraction, OwnerAttachmentReview, LegacyOrchestrationEvent, KnowledgeRegistryItem, SourceRegistryItem):
         model.__table__.create(engine)
     with Session(engine) as db:
         db.add(GoLiveState(id=1, go_live_enabled=False, kill_switch_engaged=True))
@@ -614,3 +614,60 @@ def test_attachment_disposition_purges_active_bytes_and_extracts_and_prevents_re
     history = client.get(turns, headers=HEADERS)
     assert "private disposition marker" not in history.text
     assert "unrelated private content" in history.text
+
+
+
+def test_retention_worker_applies_latest_deadline_and_restore_hold_hides_old_extracts(client, monkeypatch):
+    from datetime import date, timedelta
+    from app.services import owner_attachment_review, owner_attachment_retention
+
+    first_day = date(2026, 11, 21)
+    clock = [first_day]
+    monkeypatch.setattr(owner_attachment_review, "retention_day", lambda: clock[0])
+    monkeypatch.setattr(owner_attachment_retention, "retention_day", lambda: clock[0])
+    monkeypatch.setenv("VALHALLA_OWNER_MANDATE_KEY", "fixture-owner-retention")
+    owner = {**HEADERS, "X-Owner-Mandate-Key": "fixture-owner-retention"}
+    cid = create(client)
+    body = asset(b"Old snapshot confidential extract", "text/plain", "old.txt")
+    root = f"{BASE}/{cid}/attachments"
+    url = f"{root}/{body['attachment_id']}"
+    assert client.post(root, headers=HEADERS, json=body).status_code == 201
+    assert client.post(f"{url}/extract", headers=HEADERS).status_code == 200
+    turns = f"{BASE}/{cid}/turns"
+    turn = {"turn_id": str(uuid4()), "message": "Review attached extraction", "attachment_ids": [body["attachment_id"]]}
+    assert "Old snapshot confidential extract" in client.post(turns, headers=HEADERS, json=turn).text
+
+    def review(deadline):
+        response = client.post(f"{url}/review", headers=owner, json={
+            "review_id": str(uuid4()), "source_sha256": body["sha256"], "disposition": "ACCEPT_LOCAL",
+            "reason": "Owner-controlled fixture deadline.", "retain_until": deadline.isoformat(),
+        })
+        assert response.status_code == 201, response.text
+
+    def tick():
+        with contextmanager(client.app.dependency_overrides[get_db])() as db:
+            return owner_attachment_retention.expire_due_attachment(db)["status"]
+
+    review(first_day)
+    review(first_day + timedelta(days=1))
+    with contextmanager(client.app.dependency_overrides[get_db])() as db:
+        db.get(GoLiveState, 1).kill_switch_engaged = False
+        db.commit()
+    assert tick() == "blocked"
+    monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "false")
+    monkeypatch.setenv("VALHALLA_OWNER_ATTACHMENT_RESTORE_HOLD", "1")
+    assert tick() == "blocked"
+    assert client.get(root, headers=HEADERS).status_code == 503
+    assert client.get(f"{url}/download", headers=HEADERS).status_code == 503
+    assert client.post(f"{url}/extract", headers=HEADERS).status_code == 503
+    assert client.post(root, headers=HEADERS, json=body).status_code == 503
+    assert "Old snapshot confidential extract" not in client.get(turns, headers=HEADERS).text
+    assert "Old snapshot confidential extract" not in client.post(turns, headers=HEADERS, json=turn).text
+    monkeypatch.delenv("VALHALLA_OWNER_ATTACHMENT_RESTORE_HOLD")
+    clock[0] += timedelta(days=1)
+    assert tick() == "idle"
+    clock[0] += timedelta(days=1)
+    assert tick() == "expired"
+    assert tick() == "idle"
+    assert client.get(f"{url}/download", headers=HEADERS).status_code == 410
+    assert "Old snapshot confidential extract" not in client.get(turns, headers=HEADERS).text

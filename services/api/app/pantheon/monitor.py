@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from app.loki.review_service import artifact_digest
 from app.models.completion_registry import EngineRegistryItem, LegacyInstanceWorkItem, LegacyOrchestrationEvent
 from app.models.norns_forecast import NornsForecast, NornsHoldout
-from app.models.specialist_assignment import SpecialistAssignment
+from app.models.specialist_assignment import SpecialistAssignment, SpecialistTrigger
 from app.pantheon.roles import LENSES
 from app.pantheon.forecasts import issue_scoped_estimate
 from app.services.foundry_discovery import DISCOVERY_ROLES, discover
@@ -30,7 +30,8 @@ def utc_now():
 
 
 def assignment_schema(db: Session):
-    if not inspect(db.connection()).has_table(SpecialistAssignment.__tablename__):
+    schema = inspect(db.connection())
+    if not all(schema.has_table(model.__tablename__) for model in (SpecialistAssignment, SpecialistTrigger)):
         raise HTTPException(503, "Specialist assignment schema not ready")
 
 
@@ -103,15 +104,24 @@ def run_assignment(db: Session, role: str, *, now=None) -> dict:
     if _emergency_stop_active(db):
         return {"status": "blocked", "emergency_stop": True}
     now = now or utc_now()
+    oldest_queued = select(func.min(SpecialistTrigger.queued_at)).where(
+        SpecialistTrigger.assignment_id == SpecialistAssignment.id,
+        SpecialistTrigger.failure_code.is_(None),
+    ).scalar_subquery()
     assignment = db.scalar(select(SpecialistAssignment).where(
         SpecialistAssignment.role == role,
         SpecialistAssignment.state == "active", SpecialistAssignment.expires_at > now,
-        or_(SpecialistAssignment.next_due_at <= now, SpecialistAssignment.pending_event_id.is_not(None)),
-    ).order_by(SpecialistAssignment.next_due_at, SpecialistAssignment.id)
-        .with_for_update(skip_locked=True).limit(1))
+        or_(SpecialistAssignment.next_due_at <= now, SpecialistAssignment.pending_event_id.is_not(None), oldest_queued.is_not(None)),
+    ).order_by((SpecialistAssignment.next_due_at <= now).desc(),
+               func.coalesce(oldest_queued, SpecialistAssignment.next_due_at), SpecialistAssignment.id)
+        .with_for_update(skip_locked=True, key_share=True).limit(1))
     if assignment is None:
         return {"status": "idle"}
-    event = assignment.pending_event_id
+    legacy_event = assignment.pending_event_id
+    queued = db.scalar(select(SpecialistTrigger).where(
+        SpecialistTrigger.assignment_id == assignment.id, SpecialistTrigger.failure_code.is_(None),
+    ).order_by(SpecialistTrigger.queued_at, SpecialistTrigger.event_id).limit(1)) if legacy_event is None else None
+    event = legacy_event or (queued.event_id if queued is not None else None)
     due = assignment.next_due_at <= now
     economic_event = bool(event and event.startswith("ECON-"))
     discovery_event = bool(event and event.startswith("DISCOVERY-"))
@@ -124,14 +134,25 @@ def run_assignment(db: Session, role: str, *, now=None) -> dict:
             previous = verified_report(db, event_id)
         except HTTPException as exc:
             if exc.status_code != 404:
-                raise
+                if exc.status_code != 409 or queued is None:
+                    raise
+                queued.failure_code = "EXISTING_REPORT_INTEGRITY_FAILED"
+                db.commit()
+                return {"status": "blocked", "failure_code": queued.failure_code}
         else:
             if (previous.get("assignment_id"), previous.get("role"), previous.get("scope"),
                 previous.get("trigger"), previous.get("trigger_event_id")) != (
                 str(assignment.id), role, assignment.scope, trigger_type, event,
             ):
-                raise HTTPException(409, "Specialist event replay scope does not match")
-            assignment.pending_event_id = None
+                if queued is None:
+                    raise HTTPException(409, "Specialist event replay scope does not match")
+                queued.failure_code = "EXISTING_REPORT_SCOPE_MISMATCH"
+                db.commit()
+                return {"status": "blocked", "failure_code": queued.failure_code}
+            if queued is not None:
+                db.delete(queued)
+            else:
+                assignment.pending_event_id = None
             db.commit()
             return {"status": "replayed", "report_event_id": event_id}
 
@@ -169,7 +190,10 @@ def run_assignment(db: Session, role: str, *, now=None) -> dict:
     _event(db, event_id=event_id, legacy_instance_id=assignment.scope["legacy_instance_id"],
            event_type=REPORT_EVENT, message="Local specialist assignment observed", payload=report)
     assignment.last_report_event_id = event_id
-    assignment.pending_event_id = None
+    if queued is not None:
+        db.delete(queued)
+    elif legacy_event:
+        assignment.pending_event_id = None
     if due:
         assignment.next_due_at += cadence * elapsed_slots
     db.commit()

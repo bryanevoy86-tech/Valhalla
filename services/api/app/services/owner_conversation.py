@@ -18,7 +18,7 @@ from app.models.go_live_state import GoLiveState
 from app.services.system_self_check import run_system_self_check
 from app.services.owner_advisory_model import advisory_reply
 from app.services.owner_attachment_extraction import extract_local, extraction_receipt, verified_attachment
-from app.services.owner_attachment_review import ReviewIn, attachment_use_blocked, latest_review, latest_reviews, require_local_use, retention_expired, review_receipt, save_review
+from app.services.owner_attachment_review import ReviewIn, attachment_use_blocked, latest_review, latest_reviews, require_local_use, restore_hold_active, retention_expired, review_receipt, save_review
 from app.services.prime_business_execution import require_owner_mandate_key
 from app.services.owner_memory import MemoryIn, decision_context_recall, memory_receipt, prepare_entry, recall_entries
 from app.services.owner_operating_brief import operating_evidence
@@ -331,6 +331,8 @@ def submit_turn(conversation_id: UUID, payload: TurnIn, db: Session, *, local_on
 
 
 def store_attachment(conversation_id: UUID, payload: UploadIn, db: Session):
+    if restore_hold_active():
+        raise HTTPException(503, "Attachment access paused for restore reconciliation")
     thread(db, conversation_id)
     data = decode_upload(payload)
     existing = db.get(OwnerAttachment, payload.attachment_id)
@@ -346,6 +348,8 @@ def store_attachment(conversation_id: UUID, payload: UploadIn, db: Session):
 
 
 def attachment_summaries(conversation_id: UUID, limit: int, db: Session):
+    if restore_hold_active():
+        raise HTTPException(503, "Attachment access paused for restore reconciliation")
     thread(db, conversation_id)
     query = select(OwnerAttachment).options(defer(OwnerAttachment.data)).where(
         OwnerAttachment.conversation_id == conversation_id,

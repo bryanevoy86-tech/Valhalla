@@ -56,6 +56,7 @@ LOKI_DIGEST = load("alembic/versions/20261121_loki_result_digest.py")
 PROBES = load("alembic/versions/20261121_specialist_probes.py")
 BUILDER_ASSIGNMENTS = load("alembic/versions/20261121_builder_assignments.py")
 NORNS_HISTORY = load("alembic/versions/20261121_norns_scoped_history.py")
+SPECIALIST_BACKLOG = load("alembic/versions/20261123_specialist_backlog.py")
 OWNER_DISPOSITION = load("alembic/versions/20261123_owner_disposition.py")
 BUILDER_LEASE_CAP = load("alembic/versions/20261123_builder_lease_cap.py")
 FIXTURE_SETTLEMENT = load("alembic/versions/20261123_fixture_settlement.py")
@@ -324,17 +325,17 @@ class PostgresMigrationChainTests(unittest.TestCase):
                     """))
                     connection.execute(text("CREATE TABLE saas_plans (id INTEGER PRIMARY KEY)"))
                     connection.execute(text("CREATE TABLE user_profiles (user_id INTEGER PRIMARY KEY)"))
-                    for module in (INFERENCE, OWNER_MEMORY, EXTRACTIONS, NORNS, PROVIDER_EVIDENCE,
+                    for module in (SPECIALIST, SPECIALIST_TRIGGERS, INFERENCE, OWNER_MEMORY, EXTRACTIONS, NORNS, PROVIDER_EVIDENCE,
                                    ASSIGNMENTS, PROBES, BUILDER_ASSIGNMENTS, NORNS_HISTORY, ATTACHMENT_REVIEWS,
                                    FOUNDRY_EVIDENCE, SAAS_TRIALS, FOUNDRY_CHECKOUT, PROVIDER_PRICING, NORNS_HOLDOUT,
                                    CAMPAIGN_REHEARSAL, MARKET_EVIDENCE, MARKET_FORECASTS, ECONOMIC_CONTROL,
-                                   STARTUP_INTAKE, STATEMENT_FIXTURES, OWNER_RETENTION, FIXTURE_SETTLEMENT, BUILDER_LEASE_CAP, OWNER_DISPOSITION):
+                                   STARTUP_INTAKE, STATEMENT_FIXTURES, OWNER_RETENTION, FIXTURE_SETTLEMENT, BUILDER_LEASE_CAP, OWNER_DISPOSITION, SPECIALIST_BACKLOG):
                         with patch.object(module, "op", operations):
                             module.upgrade()
                     expected = {
                         "prime_owner_inference_quotas", "prime_owner_inference_attempts", "prime_owner_memory_entries",
                         "prime_owner_attachment_extractions", "prime_owner_attachment_reviews", "prime_norns_forecasts", "prime_provider_evidence",
-                        "prime_specialist_assignments", "prime_specialist_probes", "prime_builder_assignments",
+                        "prime_specialist_assignments", "prime_specialist_triggers", "prime_schedule_triggers", "prime_specialist_probes", "prime_builder_assignments",
                         "prime_foundry_evidence", "prime_foundry_rehearsal_orders", "prime_foundry_rehearsal_payments",
                         "saas_tenant_entitlements", "prime_provider_price_quotes",
                         "prime_provider_usage_reconciliations", "prime_norns_holdout", "prime_foundry_campaign_visits", "prime_market_evidence", "prime_norns_market_forecasts", "prime_economic_pools",

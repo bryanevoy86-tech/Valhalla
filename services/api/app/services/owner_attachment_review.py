@@ -1,5 +1,6 @@
 """Append owner dispositions without treating uploaded claims as verified."""
 from datetime import date, datetime, timedelta, timezone
+import os
 from typing import Literal
 from uuid import UUID
 
@@ -18,6 +19,10 @@ class ReviewIn(BaseModel):
     disposition: Literal["ACCEPT_LOCAL", "REJECT"]
     retain_until: date | None = None
     reason: str = Field(min_length=1, max_length=1400)
+
+
+def restore_hold_active() -> bool:
+    return os.getenv("VALHALLA_OWNER_ATTACHMENT_RESTORE_HOLD", "").strip().lower() not in {"", "0", "false", "off"}
 
 
 def latest_review(db: Session, attachment: OwnerAttachment):
@@ -50,6 +55,8 @@ def retention_expired(decision):
 
 
 def attachment_use_blocked(db: Session, attachment: OwnerAttachment) -> bool:
+    if restore_hold_active():
+        return True
     decision = latest_review(db, attachment)
     return decision is not None and (
         decision.source_sha256 != attachment.sha256

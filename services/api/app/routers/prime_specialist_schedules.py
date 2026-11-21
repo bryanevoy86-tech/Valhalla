@@ -7,14 +7,15 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel, Field, ValidationError
-from sqlalchemy import inspect, or_, update
+from sqlalchemy import func, inspect, or_, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
 from app.core.dependencies import require_prime_control_key
+from app.loki.evidence import artifact_digest
 from app.models.completion_registry import LegacyOrchestrationEvent
-from app.models.prime_specialist_schedule import PrimeSpecialistSchedule
+from app.models.prime_specialist_schedule import PrimeScheduleTrigger, PrimeSpecialistSchedule
 from app.routers.completion_registry import (
     UniversalOpportunityBatchIn, UniversalOpportunityIn, _validate_phase3_opportunity,
     evaluate_universal_opportunities,
@@ -34,7 +35,7 @@ REPORT_EVENT = "PRIME_SPECIALIST_SHADOW_REPORT"
 def require_schedule_schema(db: Session = Depends(get_db)):
     require_factory_schema(db)
     inspector = inspect(db.get_bind())
-    required = ("prime_specialist_schedules", "learning_feedback_records", "knowledge_registry_items")
+    required = ("prime_specialist_schedules", "prime_schedule_triggers", "learning_feedback_records", "knowledge_registry_items")
     if any(not inspector.has_table(name) for name in required):
         raise HTTPException(status_code=503, detail="Specialist scheduling schema not ready")
     columns = {column["name"] for column in inspector.get_columns(PrimeSpecialistSchedule.__tablename__)}
@@ -80,13 +81,29 @@ def _lookup(db: Session, schedule_id: UUID) -> PrimeSpecialistSchedule:
 def _report(db: Session, schedule_id: UUID, event_id: str) -> dict | None:
     event = db.query(LegacyOrchestrationEvent).filter_by(event_id=event_id, event_type=REPORT_EVENT).one_or_none()
     report = json.loads(event.payload_json) if event else None
-    return report if report and report["schedule_id"] == str(schedule_id) else None
+    if not isinstance(report, dict) or report.get("schedule_id") != str(schedule_id):
+        return None
+    digest = report.get("report_sha256")
+    if digest and digest != shadow_report_digest(event_id, report):
+        raise HTTPException(409, "Specialist schedule report failed integrity checks")
+    return report
+
+
+def shadow_report_digest(event_id: str, report: dict) -> str:
+    return artifact_digest("prime_specialist_report", event_id, {
+        key: value for key, value in report.items() if key != "report_sha256"
+    })
 
 
 def _describe(db: Session, row: PrimeSpecialistSchedule) -> dict:
     report = _report(db, row.id, row.last_report_event_id) if row.last_report_event_id else None
+    counts = dict(db.execute(select(PrimeScheduleTrigger.failure_code, func.count()).where(
+        PrimeScheduleTrigger.schedule_id == row.id,
+    ).group_by(PrimeScheduleTrigger.failure_code)).all())
     return {
         "schedule_id": row.id,
+        "queued_outcome_count": counts.pop(None, 0) + int(row.pending_outcome_event_id is not None),
+        "failed_outcome_counts": counts,
         "state": "expired" if row.state == "active" and row.expires_at <= _utc_now() else row.state,
         "next_due_at": row.next_due_at.replace(tzinfo=timezone.utc),
         "expires_at": row.expires_at.replace(tzinfo=timezone.utc),
@@ -156,28 +173,63 @@ def run_due_schedule(db: Session, *, now: datetime | None = None) -> dict:
     if _emergency_stop_active(db):
         return {"status": "blocked", "emergency_stop": True}
     now = now if now is not None else _utc_now()
+    oldest = select(func.min(PrimeScheduleTrigger.queued_at)).where(
+        PrimeScheduleTrigger.schedule_id == PrimeSpecialistSchedule.id,
+        PrimeScheduleTrigger.failure_code.is_(None),
+    ).scalar_subquery()
     row = (
         db.query(PrimeSpecialistSchedule)
         .filter_by(state="active")
         .filter(
             PrimeSpecialistSchedule.expires_at > now,
-            or_(PrimeSpecialistSchedule.next_due_at <= now, PrimeSpecialistSchedule.pending_outcome_event_id.is_not(None)),
+            or_(PrimeSpecialistSchedule.next_due_at <= now,
+                PrimeSpecialistSchedule.pending_outcome_event_id.is_not(None), oldest.is_not(None)),
         )
-        .order_by(PrimeSpecialistSchedule.next_due_at, PrimeSpecialistSchedule.id)
-        .with_for_update(skip_locked=True)
+        .order_by((PrimeSpecialistSchedule.next_due_at <= now).desc(),
+                  func.coalesce(oldest, PrimeSpecialistSchedule.next_due_at), PrimeSpecialistSchedule.id)
+        .with_for_update(skip_locked=True, key_share=True)
         .first()
     )
     if row is None:
         return {"status": "idle"}
     # Coalesce missed slots after downtime. Preserve the original cadence.
     timed = row.next_due_at <= now
-    outcome_id = row.pending_outcome_event_id
+    legacy_outcome = row.pending_outcome_event_id
+    queued = db.scalar(select(PrimeScheduleTrigger).where(
+        PrimeScheduleTrigger.schedule_id == row.id, PrimeScheduleTrigger.failure_code.is_(None),
+    ).order_by(PrimeScheduleTrigger.queued_at, PrimeScheduleTrigger.event_id).limit(1)) if legacy_outcome is None else None
+    outcome_id = legacy_outcome or (queued.event_id if queued is not None else None)
     elapsed_slots = (now - row.next_due_at) // timedelta(seconds=row.cadence_seconds) if timed else 0
     slot = row.next_due_at.replace(tzinfo=timezone.utc).isoformat() if timed else None
-    occurrence = slot if timed else outcome_id
+    occurrence = outcome_id or slot
     report_id = "SPECIALIST-" + hashlib.sha256(f"{row.id}/{occurrence}".encode()).hexdigest()
     payload = ScheduleIn.model_validate(row.request)
     scope = _scope(payload)
+    if outcome_id:
+        existing = db.scalar(select(LegacyOrchestrationEvent).where(
+            LegacyOrchestrationEvent.event_id == report_id,
+        ))
+        if existing is not None:
+            try:
+                previous = json.loads(existing.payload_json or "null")
+            except ValueError:
+                previous = None
+            if (existing.event_type != REPORT_EVENT or existing.legacy_instance_id != scope["legacy_instance_id"]
+                    or not isinstance(previous, dict) or previous.get("scope") != scope
+                    or previous.get("schedule_id") != str(row.id)
+                    or previous.get("trigger_outcome_event_id") != outcome_id
+                    or previous.get("report_sha256") != shadow_report_digest(report_id, previous)):
+                if queued is None:
+                    raise HTTPException(409, "Prior specialist outcome report failed integrity checks")
+                queued.failure_code = "EXISTING_REPORT_INTEGRITY_FAILED"
+                db.commit()
+                return {"status": "blocked", "failure_code": queued.failure_code}
+            if queued is not None:
+                db.delete(queued)
+            else:
+                row.pending_outcome_event_id = None
+            db.commit()
+            return {"status": "replayed", "report_event_id": report_id}
     report = {
         "schedule_id": str(row.id), "report_event_id": report_id, "scheduled_for": slot,
         "observed_at": now.replace(tzinfo=timezone.utc).isoformat(), "scope": scope,
@@ -201,13 +253,18 @@ def run_due_schedule(db: Session, *, now: datetime | None = None) -> dict:
         )
     except (HTTPException, ValidationError) as exc:
         report.update(status="blocked", reason=exc.detail if isinstance(exc, HTTPException) else "Invalid specialist inputs")
+    report = jsonable_encoder(report)
+    report["report_sha256"] = shadow_report_digest(report_id, report)
     _event(
         db, event_id=report_id, legacy_instance_id=scope["legacy_instance_id"], event_type=REPORT_EVENT,
-        message=f"Prime specialist schedule {report['status']}", payload=jsonable_encoder(report),
+        message=f"Prime specialist schedule {report['status']}", payload=report,
     )
     if timed:
         row.next_due_at += timedelta(seconds=(elapsed_slots + 1) * row.cadence_seconds)
-    row.pending_outcome_event_id = None
+    if queued is not None:
+        db.delete(queued)
+    elif legacy_outcome:
+        row.pending_outcome_event_id = None
     row.last_report_event_id = report_id
     db.commit()
     return {"status": report["status"], "report_event_id": report_id}

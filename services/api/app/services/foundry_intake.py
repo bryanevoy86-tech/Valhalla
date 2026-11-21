@@ -7,19 +7,18 @@ from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from fastapi import HTTPException
 from pydantic import AwareDatetime, Field, model_validator
-from sqlalchemy import inspect, select, update
+from sqlalchemy import inspect, select
 from sqlalchemy.exc import IntegrityError, OperationalError
 
 from app.loki.evidence import artifact_digest
 from app.models.completion_registry import SourceRegistryItem
 from app.models.foundry_evidence import FoundryEvidence
 from app.models.foundry_intake import FoundryIntakeJob
-from app.models.specialist_assignment import SpecialistAssignment
 from app.schemas.market_intelligence import StrictModel
 from app.services.foundry_discovery import EvidenceIn, SCOPE_FIELDS
 from app.services.market_intelligence import authorized_source
 from app.services.prime_business_execution import _check_legacy, _emergency_stop_active
-from app.services.specialist_triggers import outcome_scope_key
+from app.services.specialist_triggers import enqueue_research, outcome_scope_key
 
 
 class Intake(StrictModel):
@@ -119,15 +118,9 @@ def materialize(db, job, now):
                           observed_on=evidence.observed_on, expires_on=evidence.expires_on,
                           payload=payload, digest=artifact_digest("foundry_evidence", str(job.id), payload))
     db.add(row)
-    if inspect(db.connection()).has_table(SpecialistAssignment.__tablename__):
-        from app.services.foundry_discovery import DISCOVERY_ROLES
+    from app.services.foundry_discovery import DISCOVERY_ROLES
 
-        assignment = SpecialistAssignment
-        db.execute(update(assignment).where(
-            assignment.scope_key == row.scope_key, assignment.state == "active",
-            assignment.expires_at > now, assignment.pending_event_id.is_(None),
-            assignment.role.in_(DISCOVERY_ROLES),
-        ).values(pending_event_id=f"DISCOVERY-{job.id}"))
+    enqueue_research(db, row.scope_key, f"DISCOVERY-{job.id}", now, roles=DISCOVERY_ROLES)
     db.flush()
 
 

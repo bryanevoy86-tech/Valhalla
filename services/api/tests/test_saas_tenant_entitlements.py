@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.models.auth_revocations import RevokedAccessToken
 from app.models.completion_registry import LearningTaskQueueItem
 from app.models.go_live_state import GoLiveState
-from app.models.prime_specialist_schedule import PrimeSpecialistSchedule
+from app.models.prime_specialist_schedule import PrimeScheduleTrigger, PrimeSpecialistSchedule
 from app.models.saas_access import SaaSPlan, SaaSPlanModule, SaaSTenantEntitlement, Subscription
 from app.routers.auth_weweb import _auth_runtime, _issue_access_token
 from app.users.models import AccountSettings, UserProfile
@@ -52,7 +52,7 @@ def test_trial_is_bound_to_authenticated_subscriber_and_tenant(deal_client, monk
     monkeypatch.setenv("VALHALLA_OWNER_EMAIL", "one@example.invalid")
     from app.models.owner_conversation import OwnerAttachment, OwnerAttachmentExtraction, OwnerConversation, OwnerTurn
 
-    for model in (LearningTaskQueueItem, GoLiveState, PrimeSpecialistSchedule, OwnerConversation, OwnerTurn, OwnerAttachment, OwnerAttachmentExtraction):
+    for model in (LearningTaskQueueItem, GoLiveState, PrimeSpecialistSchedule, PrimeScheduleTrigger, OwnerConversation, OwnerTurn, OwnerAttachment, OwnerAttachmentExtraction):
         model.__table__.create(engine)
     thread_id = uuid4()
     with Session(engine) as db:

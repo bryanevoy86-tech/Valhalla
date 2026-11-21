@@ -10,6 +10,8 @@ from app.loki.review_service import verdict
 from app.models.audit_log import AuditLog
 from app.models.completion_registry import LegacyOrchestrationEvent
 from app.models.builder_assignment import BuilderAssignment
+from app.models.prime_specialist_schedule import PrimeScheduleTrigger
+from app.models.specialist_assignment import SpecialistTrigger
 from app.models.foundry_intake import FoundryIntakeJob
 from app.models.revenue_ledger import RevenueLedger
 from app.pantheon.monitor import REPORT_EVENT, verified_report
@@ -118,6 +120,11 @@ def operating_evidence(db: Session) -> dict:
         ))
         builder = {"available": True, "expired_leases": expired, "lease_exhausted": terminal,
                    "release_authorized": False, "production_worker_verified": False}
-    return {"latest_specialist_reports": report_items, "invalid_specialist_report_ids": invalid_reports,
+    research_queue = {}
+    for lane, model in (("pantheon", SpecialistTrigger), ("prime", PrimeScheduleTrigger)):
+        if schema.has_table(model.__tablename__):
+            counts = dict(db.execute(select(model.failure_code, func.count()).group_by(model.failure_code)).all())
+            research_queue[lane] = {"queued": counts.pop(None, 0), "failed": sum(counts.values())}
+    return {"specialist_queue": research_queue, "latest_specialist_reports": report_items, "invalid_specialist_report_ids": invalid_reports,
             "specialist_cadence_alerts": cadence_alerts, "loki": loki, "latest_integrity_alerts": alerts, "latest_market_alerts": market_alerts, "latest_economic_alerts": economic_alerts, "financials": financials,
             "verified_cash_balance": None, "foundry_intake_health": discovery, "builder_lease_health": builder}

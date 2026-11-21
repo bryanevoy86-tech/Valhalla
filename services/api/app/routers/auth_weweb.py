@@ -479,6 +479,7 @@ def owner_briefing(mode: Literal["standard", "driving"] = "standard", db: Sessio
             "discovery": len(operating["foundry_intake_health"].get("recent_job_errors", [])),
             "builder": operating["builder_lease_health"].get("lease_exhausted", 0),
             "specialist_cadence": len(operating["specialist_cadence_alerts"]),
+            "specialist_failed_events": sum(lane["failed"] for lane in operating["specialist_queue"].values()),
         }
         spoken = ("Emergency stop is active. " if stop_active else "") + (
             "There are items to review when parked." if any(attention.values()) else "No sampled items need attention."

@@ -19,7 +19,7 @@ from app.models.market_intelligence import MarketEvidence
 from app.models.norns_forecast import NornsMarketForecast
 from app.routers import market_intelligence, norns_market
 from app.models.revenue_ledger import RevenueLedger
-from app.models.specialist_assignment import SpecialistAssignment
+from app.models.specialist_assignment import SpecialistAssignment, SpecialistTrigger
 from app.pantheon.monitor import run_assignment
 from app.services.owner_operating_brief import operating_evidence
 
@@ -37,7 +37,7 @@ def market_client(deal_client, monkeypatch):
     monkeypatch.setenv("VALHALLA_OWNER_MANDATE_KEY", OWNER["X-Owner-Mandate-Key"])
     monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "false")
     for model in (LegacyInstanceRegistryItem, LegacyInstanceWorkItem, LegacyOrchestrationEvent, SourceRegistryItem,
-                  MarketEvidence, NornsMarketForecast, RevenueLedger, SpecialistAssignment, LokiReview, LokiFinding,
+                  MarketEvidence, NornsMarketForecast, RevenueLedger, SpecialistAssignment, SpecialistTrigger, LokiReview, LokiFinding,
                   LokiIndependentReceipt, LokiReconsideration):
         model.__table__.create(engine)
     with Session(engine) as db:

@@ -2,16 +2,15 @@ import json
 from datetime import timedelta
 from uuid import UUID, uuid4
 
-import pytest
-from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.models.completion_registry import LegacyInstanceRegistryItem, LegacyInstanceWorkItem, LegacyOrchestrationEvent
 from app.models.media_engine import MediaContent
-from app.models.specialist_assignment import SpecialistAssignment
+from app.models.specialist_assignment import SpecialistAssignment, SpecialistTrigger
 from app.pantheon.monitor import run_assignment, utc_now
 from app.pantheon.roles import ROLES
 from app.services.owner_operating_brief import operating_evidence
+from app.services.specialist_triggers import enqueue_research, outcome_scope_key
 
 
 def test_workers_run_independent_role_and_scope_cadences_and_recheck_factory_outcomes(deal_client, monkeypatch):
@@ -21,7 +20,7 @@ def test_workers_run_independent_role_and_scope_cadences_and_recheck_factory_out
     monkeypatch.setenv("VALHALLA_FACTORY_KEY", factory["X-Business-Factory-Key"])
     monkeypatch.setenv("VALHALLA_OWNER_MANDATE_KEY", owner["X-Owner-Mandate-Key"])
     monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "false")
-    for model in (LegacyInstanceRegistryItem, LegacyInstanceWorkItem, LegacyOrchestrationEvent, MediaContent, SpecialistAssignment):
+    for model in (LegacyInstanceRegistryItem, LegacyInstanceWorkItem, LegacyOrchestrationEvent, MediaContent, SpecialistAssignment, SpecialistTrigger):
         model.__table__.create(engine)
     scopes = [
         {"legacy_instance_id": "research-legacy", "business_id": "research-lab", "jurisdiction": "CA-MB", "engine_id": "micro_saas"},
@@ -94,14 +93,30 @@ def test_workers_run_independent_role_and_scope_cadences_and_recheck_factory_out
     with Session(engine) as db:
         resumed = db.get(SpecialistAssignment, UUID(correct))
         due_at = resumed.next_due_at
-        resumed.pending_event_id = report["trigger_event_id"]
+        for invalid in ("DISCOVERY-duplicate-source", "ECON-missing-financial-evidence"):
+            enqueue_research(db, outcome_scope_key(scopes[0]), invalid, at, roles={"MIMIR"})
+        enqueue_research(db, outcome_scope_key(scopes[0]), report["trigger_event_id"],
+                         at - timedelta(seconds=1), roles={"MIMIR"})
+        enqueue_research(db, outcome_scope_key(scopes[0]), report["trigger_event_id"],
+                         at, roles={"MIMIR"})
         db.commit()
+        assert client.get(f"{root}/assignments/{correct}").json()["queued_event_count"] == 3
+        assert client.get(f"{root}/assignments/{other}").json()["queued_event_count"] == 0
+        monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "true")
+        assert run_assignment(db, "MIMIR", now=at)["status"] == "blocked"
+        monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "false")
         # A duplicate wake-up and the missed cadence coexist after an interruption.
         recovered_at = due_at + timedelta(seconds=610)
         assert run_assignment(db, "MIMIR", now=recovered_at) == {
             "status": "replayed", "report_event_id": report["report_event_id"],
         }
         assert resumed.next_due_at == due_at
+        blocked = [run_assignment(db, "MIMIR", now=at) for _ in range(2)]
+        assert [result["status"] for result in blocked] == ["blocked", "blocked"]
+        assert {client.get(f"{root}/reports/{item['report_event_id']}").json()["trigger"] for item in blocked} == {
+            "SOURCE_DISCOVERY", "ECONOMIC_REASSESSMENT",
+        }
+        assert run_assignment(db, "MIMIR", now=at) == {"status": "idle"}
     with Session(engine) as db:
         resumed_reports = [run_assignment(db, "MIMIR", now=recovered_at) for _ in range(2)]
         assert all(result["status"] == "observed" for result in resumed_reports)
@@ -119,11 +134,16 @@ def test_workers_run_independent_role_and_scope_cadences_and_recheck_factory_out
     with Session(engine) as db:
         saved = db.query(LegacyOrchestrationEvent).filter_by(event_id=report["report_event_id"]).one()
         saved.payload_json = saved.payload_json.replace("VERIFIED_OUTCOME", "UNVERIFIED")
-        db.get(SpecialistAssignment, UUID(correct)).pending_event_id = report["trigger_event_id"]
+        enqueue_research(db, outcome_scope_key(scopes[0]), report["trigger_event_id"], at, roles={"MIMIR"})
         db.commit()
-        with pytest.raises(HTTPException) as rejected:
-            run_assignment(db, "MIMIR", now=at)
-        assert rejected.value.status_code == 409
+        assert run_assignment(db, "MIMIR", now=at) == {
+            "status": "blocked", "failure_code": "EXISTING_REPORT_INTEGRITY_FAILED",
+        }
+        assert run_assignment(db, "MIMIR", now=at) == {"status": "idle"}
+        assert operating_evidence(db)["specialist_queue"]["pantheon"]["failed"] == 1
+        assert client.get(f"{root}/assignments/{correct}").json()["failed_event_counts"] == {
+            "EXISTING_REPORT_INTEGRITY_FAILED": 1,
+        }
     assert client.get(f"{root}/reports/{report['report_event_id']}").status_code == 409
     assert client.delete(f"{root}/assignments/{correct}", headers=owner).json()["state"] == "revoked"
     monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "true")

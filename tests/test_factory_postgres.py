@@ -5,6 +5,7 @@ Never point FACTORY_TEST_POSTGRES_URL at a Render, staging or production DB.
 """
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
 import json
 import os
 from pathlib import Path
@@ -12,6 +13,7 @@ import sys
 import threading
 import types
 import unittest
+from uuid import uuid4
 
 url = os.environ.get("FACTORY_TEST_POSTGRES_URL", "")
 if url and not url.endswith("/valhalla_factory_ci"):
@@ -27,13 +29,15 @@ sys.modules["app.models"] = models_pkg
 
 from fastapi import FastAPI  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
-from sqlalchemy import create_engine  # noqa: E402
+from sqlalchemy import create_engine, select  # noqa: E402
 from sqlalchemy.orm import sessionmaker  # noqa: E402
 
 from app.core.db import get_db  # noqa: E402
 from app.models.completion_registry import (  # noqa: E402
     LegacyInstanceRegistryItem, LegacyInstanceWorkItem, LegacyOrchestrationEvent,
 )
+from app.models.specialist_assignment import SpecialistAssignment, SpecialistTrigger  # noqa: E402
+from app.services.specialist_triggers import enqueue_research, outcome_scope_key  # noqa: E402
 from app.models.media_engine import MediaContent  # noqa: E402
 from app.routers.prime_business_factory import router  # noqa: E402
 from app.services.prime_business_execution import run_one_approved_draft  # noqa: E402
@@ -46,11 +50,49 @@ TABLES = [
     LegacyInstanceWorkItem,
     LegacyOrchestrationEvent,
     MediaContent,
+    SpecialistAssignment,
+    SpecialistTrigger,
 ]
 
 
 @unittest.skipUnless(url, "Disposable Postgres database is not configured")
 class FactoryPostgresTests(unittest.TestCase):
+    def test_simultaneous_specialist_sources_survive_a_rolled_back_claim(self):
+        scope_key = outcome_scope_key({"business_id": "queue-fixture"})
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        assignment_id = uuid4()
+        with self.sessions.begin() as db:
+            db.add(SpecialistAssignment(id=assignment_id, role="MIMIR", scope_key=scope_key,
+                                       scope={"business_id": "queue-fixture"}, next_due_at=now,
+                                       expires_at=now + timedelta(hours=1), state="active", cadence_seconds=60))
+        barrier = threading.Barrier(3)
+
+        def publish(event_id):
+            with self.sessions.begin() as db:
+                barrier.wait(timeout=5)
+                enqueue_research(db, scope_key, event_id, now)
+
+        from concurrent.futures import ThreadPoolExecutor
+
+        events = {"ECON-concurrent", "DISCOVERY-concurrent", "OUTCOME-concurrent"}
+        with ThreadPoolExecutor(max_workers=3) as executor:
+            list(executor.map(publish, events, timeout=10))
+        with self.sessions() as interrupted, self.sessions() as other_worker:
+            claim = select(SpecialistAssignment).where(SpecialistAssignment.id == assignment_id).with_for_update(
+                key_share=True, skip_locked=True,
+            )
+            assert interrupted.scalar(claim) is not None
+            assert other_worker.scalar(claim) is None
+            interrupted.delete(interrupted.get(SpecialistTrigger, (assignment_id, "OUTCOME-concurrent")))
+            interrupted.flush()
+            interrupted.rollback()
+        with self.sessions.begin() as db:
+            enqueue_research(db, scope_key, "OUTCOME-concurrent", now)
+            remaining = db.scalars(select(SpecialistTrigger.event_id).where(
+                SpecialistTrigger.assignment_id == assignment_id,
+            ))
+            self.assertEqual(set(remaining), events)
+
     def setUp(self):
         self._prior = os.environ.get("VALHALLA_FACTORY_KEY")
         os.environ["VALHALLA_FACTORY_KEY"] = KEY

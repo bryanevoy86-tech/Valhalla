@@ -7,8 +7,9 @@ from app.models.completion_registry import (
     KnowledgeRegistryItem, LearningFeedbackRecord, LegacyInstanceRegistryItem, LegacyInstanceWorkItem, LegacyOrchestrationEvent,
 )
 from app.models.media_engine import MediaContent
-from app.models.prime_specialist_schedule import PrimeSpecialistSchedule
+from app.models.prime_specialist_schedule import PrimeScheduleTrigger, PrimeSpecialistSchedule
 from app.routers.prime_specialist_schedules import REPORT_EVENT, _utc_now, run_due_schedule
+from app.services.specialist_triggers import publish_verified_outcome
 
 
 ROOT = "/api/prime/specialist-schedules"
@@ -22,6 +23,7 @@ def test_owner_schedule_runs_durable_scoped_shadow_advice(deal_client, monkeypat
     config = {
         "schedule_id": schedule_id, "business_id": "internal-product", "cadence_seconds": 300,
         "duration_seconds": 1800,
+        "on_verified_outcome": True,
         "opportunity": {
             "opportunity_id": "scheduler-01", "engine_id": "micro_saas", "legacy": "legacy-01",
             "jurisdiction": "CA-MB", "title": "Product opportunity", "summary": "Internal hypotheses and evidence.",
@@ -34,6 +36,7 @@ def test_owner_schedule_runs_durable_scoped_shadow_advice(deal_client, monkeypat
         model.__table__.create(engine)
     assert client.post(ROOT, headers=owner, json=config).status_code == 503
     PrimeSpecialistSchedule.__table__.create(engine)
+    PrimeScheduleTrigger.__table__.create(engine)
     assert client.post(ROOT, json=config).status_code == 401
     assert client.post(ROOT, headers=owner, json=config).status_code == 409
 
@@ -75,6 +78,24 @@ def test_owner_schedule_runs_durable_scoped_shadow_advice(deal_client, monkeypat
     assert report["independent_loki_cleared"] is False
     assert report["missed_slots_coalesced"] == 2
     assert report["verified_internal_outcomes"] == []
+
+    scope = {"legacy_instance_id": "legacy-01", "business_id": "internal-product",
+             "engine_id": "micro_saas", "jurisdiction": "CA-MB"}
+    with Session(engine) as db:
+        for event_id in ("MISSING-A", "MISSING-B", "MISSING-A"):
+            publish_verified_outcome(db, scope, event_id)
+        db.commit()
+    assert client.get(f"{ROOT}/{schedule_id}").json()["queued_outcome_count"] == 2
+    with Session(engine) as db:
+        for expected in ("MISSING-A", "MISSING-B"):
+            blocked = run_due_schedule(db, now=tick_time)
+            assert blocked["status"] == "blocked"
+            source = client.get(f"{ROOT}/{schedule_id}/reports/{blocked['report_event_id']}").json()
+            assert source["trigger_outcome_event_id"] == expected
+        publish_verified_outcome(db, scope, "MISSING-A")
+        db.commit()
+        assert run_due_schedule(db, now=tick_time)["status"] == "replayed"
+        assert run_due_schedule(db, now=tick_time) == {"status": "idle"}
 
     with Session(engine) as db:
         db.query(LegacyInstanceRegistryItem).one().synchronization_status = "STALE"

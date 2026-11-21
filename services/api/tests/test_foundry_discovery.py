@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.models.completion_registry import KnowledgeRegistryItem, LearningFeedbackRecord, LegacyInstanceRegistryItem, LegacyInstanceWorkItem, LegacyOrchestrationEvent
 from app.models.foundry_evidence import FoundryEvidence
-from app.models.specialist_assignment import SpecialistAssignment
+from app.models.specialist_assignment import SpecialistAssignment, SpecialistTrigger
 from app.pantheon.monitor import run_assignment, utc_now
 from app.routers.completion_registry import UniversalOpportunityIn, _loki_artifact
 from app.services.foundry_discovery import require_current_candidate
@@ -19,7 +19,7 @@ def test_scoped_foundry_sources_create_role_specific_research_and_reject_revoked
     owner = {"X-Owner-Mandate-Key": "foundry-source-fixture-owner"}
     monkeypatch.setenv("VALHALLA_OWNER_MANDATE_KEY", owner["X-Owner-Mandate-Key"])
     monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "false")
-    for model in (LegacyInstanceRegistryItem, LegacyInstanceWorkItem, LegacyOrchestrationEvent, SpecialistAssignment, FoundryEvidence, KnowledgeRegistryItem, LearningFeedbackRecord):
+    for model in (LegacyInstanceRegistryItem, LegacyInstanceWorkItem, LegacyOrchestrationEvent, SpecialistAssignment, SpecialistTrigger, FoundryEvidence, KnowledgeRegistryItem, LearningFeedbackRecord):
         model.__table__.create(engine)
     scope = {"legacy_instance_id": "discovery-legacy", "business_id": "fixture-venture",
              "jurisdiction": "CA-MB", "engine_id": "micro_saas"}
@@ -84,7 +84,7 @@ def test_acquisition_research_stresses_debt_and_requires_funded_equity(deal_clie
     owner = {"X-Owner-Mandate-Key": "foundry-acquisition-owner"}
     monkeypatch.setenv("VALHALLA_OWNER_MANDATE_KEY", owner["X-Owner-Mandate-Key"])
     monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "false")
-    for model in (LegacyInstanceRegistryItem, LegacyInstanceWorkItem, LegacyOrchestrationEvent, SpecialistAssignment, FoundryEvidence):
+    for model in (LegacyInstanceRegistryItem, LegacyInstanceWorkItem, LegacyOrchestrationEvent, SpecialistAssignment, SpecialistTrigger, FoundryEvidence):
         model.__table__.create(engine)
     scope = {"legacy_instance_id": "acquisition-legacy", "business_id": "fixture-venture",
              "jurisdiction": "CA-MB", "engine_id": "acquire"}
