@@ -875,3 +875,8 @@ Development commit `54114dd42ed1f123e1815f0b7ad0c6dc6a5e3a46` extends the existi
 Development commit `22979daf355991d715370b7bb640110346ce4756` reuses scoped containment when granting a new per-action approval or standing Factory mandate. The fixture leaves one existing approved action blocked at execution, denies new approvals and releases no grant, verifies the absence of new authority receipts, and retains read access and revocation for prior grants. All four hosted jobs passed in [run 44959393511](https://github.com/bryanevoy86-tech/Valhalla/actions/runs/44959393511). Hosted evidence covers 370 backend tests, 21 disposable PostgreSQL checks, eight Builder materializer checks, one simulated-browser voice test, 36 critical routers and 94 required routes. Local executor was unavailable. The rehearsal used isolated fixtures.
 
 The 50 acceptance contracts, 53 task entries and seven packages are preserved. The December handoff records unchanged external commissioning requirements and the updated internal verification steps.
+
+
+## November 21 — Norns automatic outcome resolution
+
+Development commit `be03ebbe709f1e3944503f68a0f5f5dd60d6f32a` resolves scoped Factory forecasts through existing Norns worker ticks using the manual receipt validator. The regression verifies deadline resolution, replay, calibration update and exclusion of contradictory receipt evidence. Disposable PostgreSQL verifies another worker defers a locked forecast, rollback leaves it eligible, a wrong scope cannot claim it, and the committed label stays settled. Local regression passed 370 backend tests and 22 PostgreSQL checks.

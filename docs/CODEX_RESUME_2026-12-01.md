@@ -468,3 +468,8 @@ Use the existing private `POST /builder/assignments/prepare` with an owner manda
 ### Containment at Factory authorization
 
 The existing Factory approval and standing mandate routes now apply the same scoped economic containment check as execution. With a contained scope, check for HTTP 409 and confirm no new approval or grant receipt exists. Reading queued state and revoking a prior grant remain available. This rehearsal uses a registered internal scope, owner authorization and synthetic records. Production commissioning still requires scoped PostgreSQL migration and worker recovery proof on the authorized staging service.
+
+
+### Norns automatic outcome resolution
+
+The existing owner-scoped NORNS assignment scans up to 20 eligible forecasts per tick. It uses the same receipt checks as manual resolution. The report lists resolved forecast IDs, unverified IDs, locked/deferred rows and a continuation cursor. Contradictory receipts stay pending and out of calibration. The cursor rotates through the eligible records so later items still receive attention. The emergency stop pauses the existing worker. Staging acceptance requires an authorized PostgreSQL worker rehearsal with interrupted transactions, missed deadlines, a real internal artifact and verified report continuity.
