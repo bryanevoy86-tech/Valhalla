@@ -1,7 +1,9 @@
 import json
 from datetime import timedelta
-from uuid import uuid4
+from uuid import UUID, uuid4
 
+import pytest
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.models.completion_registry import LegacyInstanceRegistryItem, LegacyInstanceWorkItem, LegacyOrchestrationEvent
@@ -9,6 +11,7 @@ from app.models.media_engine import MediaContent
 from app.models.specialist_assignment import SpecialistAssignment
 from app.pantheon.monitor import run_assignment, utc_now
 from app.pantheon.roles import ROLES
+from app.services.owner_operating_brief import operating_evidence
 
 
 def test_workers_run_independent_role_and_scope_cadences_and_recheck_factory_outcomes(deal_client, monkeypatch):
@@ -88,14 +91,40 @@ def test_workers_run_independent_role_and_scope_cadences_and_recheck_factory_out
     assert report["trigger_event_id"] in report["observations"]["verified_internal_outcomes"]
     assert report["external_authority"] is False
     assert tick("MIMIR") == {"status": "idle"}
-    assert client.get(f"{root}/assignments/{other}").json() == previous
+    with Session(engine) as db:
+        resumed = db.get(SpecialistAssignment, UUID(correct))
+        due_at = resumed.next_due_at
+        resumed.pending_event_id = report["trigger_event_id"]
+        db.commit()
+        # A duplicate wake-up and the missed cadence coexist after an interruption.
+        recovered_at = due_at + timedelta(seconds=610)
+        assert run_assignment(db, "MIMIR", now=recovered_at) == {
+            "status": "replayed", "report_event_id": report["report_event_id"],
+        }
+        assert resumed.next_due_at == due_at
+    with Session(engine) as db:
+        resumed_reports = [run_assignment(db, "MIMIR", now=recovered_at) for _ in range(2)]
+        assert all(result["status"] == "observed" for result in resumed_reports)
+        assert run_assignment(db, "MIMIR", now=recovered_at) == {"status": "idle"}
+        alerts = operating_evidence(db)["specialist_cadence_alerts"]
+        assert any(alert["scope"] == scopes[0] and alert["missed_slots"] == 1 for alert in alerts)
+    resumed_reports = [client.get(f"{root}/reports/{item['report_event_id']}").json() for item in resumed_reports]
+    recovered_report = next(item for item in resumed_reports if item["assignment_id"] == correct)
+    assert recovered_report["trigger"] == "CADENCE"
+    assert recovered_report["cadence"]["slots_elapsed"] == 2
+    assert recovered_report["cadence"]["missed_slots"] == 1
+    assert client.get(f"{root}/assignments/{other}").json()["scope"] == previous["scope"]
     assert tick("TYR")["observations"]["recorded_approval_event_ids"] == [f"BF-APPROVED-{action}"]
-    assert client.delete(f"{root}/assignments/{correct}", headers=owner).json()["state"] == "revoked"
 
     with Session(engine) as db:
         saved = db.query(LegacyOrchestrationEvent).filter_by(event_id=report["report_event_id"]).one()
         saved.payload_json = saved.payload_json.replace("VERIFIED_OUTCOME", "UNVERIFIED")
+        db.get(SpecialistAssignment, UUID(correct)).pending_event_id = report["trigger_event_id"]
         db.commit()
+        with pytest.raises(HTTPException) as rejected:
+            run_assignment(db, "MIMIR", now=at)
+        assert rejected.value.status_code == 409
     assert client.get(f"{root}/reports/{report['report_event_id']}").status_code == 409
+    assert client.delete(f"{root}/assignments/{correct}", headers=owner).json()["state"] == "revoked"
     monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "true")
     assert tick("MIMIR") == {"status": "blocked", "emergency_stop": True}

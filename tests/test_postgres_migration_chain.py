@@ -56,6 +56,7 @@ LOKI_DIGEST = load("alembic/versions/20261121_loki_result_digest.py")
 PROBES = load("alembic/versions/20261121_specialist_probes.py")
 BUILDER_ASSIGNMENTS = load("alembic/versions/20261121_builder_assignments.py")
 NORNS_HISTORY = load("alembic/versions/20261121_norns_scoped_history.py")
+OWNER_DISPOSITION = load("alembic/versions/20261123_owner_disposition.py")
 BUILDER_LEASE_CAP = load("alembic/versions/20261123_builder_lease_cap.py")
 FIXTURE_SETTLEMENT = load("alembic/versions/20261123_fixture_settlement.py")
 OWNER_RETENTION = load("alembic/versions/20261123_owner_retention.py")
@@ -316,13 +317,18 @@ class PostgresMigrationChainTests(unittest.TestCase):
                         INSERT INTO prime_owner_conversations (id, title, created_at)
                         VALUES ('00000000-0000-0000-0000-000000000001', 'prior thread', now())
                     """))
+                    connection.execute(text("""
+                        INSERT INTO prime_owner_attachments (id, conversation_id, filename, media_type, sha256, data, size_bytes, created_at)
+                        VALUES ('00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000001',
+                                'pre-existing.txt', 'text/plain', repeat('a', 64), decode('61', 'hex'), 1, now())
+                    """))
                     connection.execute(text("CREATE TABLE saas_plans (id INTEGER PRIMARY KEY)"))
                     connection.execute(text("CREATE TABLE user_profiles (user_id INTEGER PRIMARY KEY)"))
                     for module in (INFERENCE, OWNER_MEMORY, EXTRACTIONS, NORNS, PROVIDER_EVIDENCE,
                                    ASSIGNMENTS, PROBES, BUILDER_ASSIGNMENTS, NORNS_HISTORY, ATTACHMENT_REVIEWS,
                                    FOUNDRY_EVIDENCE, SAAS_TRIALS, FOUNDRY_CHECKOUT, PROVIDER_PRICING, NORNS_HOLDOUT,
                                    CAMPAIGN_REHEARSAL, MARKET_EVIDENCE, MARKET_FORECASTS, ECONOMIC_CONTROL,
-                                   STARTUP_INTAKE, STATEMENT_FIXTURES, OWNER_RETENTION, FIXTURE_SETTLEMENT, BUILDER_LEASE_CAP):
+                                   STARTUP_INTAKE, STATEMENT_FIXTURES, OWNER_RETENTION, FIXTURE_SETTLEMENT, BUILDER_LEASE_CAP, OWNER_DISPOSITION):
                         with patch.object(module, "op", operations):
                             module.upgrade()
                     expected = {
@@ -337,6 +343,17 @@ class PostgresMigrationChainTests(unittest.TestCase):
                     }
                     self.assertTrue(expected <= set(inspect(connection).get_table_names()))
                     self.assertEqual(connection.execute(text("SELECT title FROM prime_owner_conversations")).scalar_one(), "prior thread")
+                    self.assertEqual(connection.execute(text(
+                        "SELECT length(data) FROM prime_owner_attachments WHERE deleted_at IS NULL"
+                    )).scalar_one(), 1)
+                    with self.assertRaises(IntegrityError), connection.begin_nested():
+                        connection.execute(text("UPDATE prime_owner_attachments SET data = NULL"))
+                    connection.execute(text("""
+                        UPDATE prime_owner_attachments
+                        SET data = NULL, deleted_at = now(), deletion_reason = 'OWNER_REQUEST'
+                    """))
+                    with self.assertRaises(IntegrityError), connection.begin_nested():
+                        connection.execute(text("UPDATE prime_owner_attachments SET data = decode('61', 'hex')"))
                     reserve = text("""
                         INSERT INTO prime_owner_inference_quotas(day, requests) VALUES ('2026-11-21', 1)
                         ON CONFLICT (day) DO UPDATE SET requests = prime_owner_inference_quotas.requests + 1

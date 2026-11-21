@@ -1,7 +1,8 @@
 """Private owner chat and attachment transport: real isolated API/DB checks."""
 import base64
 import hashlib
-from uuid import uuid4
+from contextlib import contextmanager
+from uuid import UUID, uuid4
 
 import pytest
 from fastapi import FastAPI
@@ -551,6 +552,8 @@ def test_retention_deadline_restricts_download_and_redacts_historical_extracts(c
         "reason": "Allow local reading through the explicit date.", "retain_until": today.isoformat(),
     })
     assert recorded.status_code == 201, recorded.text
+    deletion = {"source_sha256": body["sha256"], "reason": "RETENTION_EXPIRED"}
+    assert client.request("DELETE", url, headers=owner, json=deletion).status_code == 409
     monkeypatch.setattr(owner_attachment_review, "retention_day", lambda: today + timedelta(days=1))
     assert client.get(f"{url}/download", headers=HEADERS).status_code == 409
     assert client.post(f"{url}/extract", headers=HEADERS).status_code == 409
@@ -558,3 +561,52 @@ def test_retention_deadline_restricts_download_and_redacts_historical_extracts(c
     assert "Private retention marker" not in history.text
     assert history.json()[0]["evidence"]["extractions"][0]["state"] == "RESTRICTED"
     assert "Private retention marker" not in client.post(turns, headers=HEADERS, json=turn).text
+    assert client.request("DELETE", url, headers=owner, json=deletion).json()["state"] == "DELETED"
+    assert client.get(f"{url}/download", headers=HEADERS).status_code == 410
+
+
+def test_attachment_disposition_purges_active_bytes_and_extracts_and_prevents_resurrection(client, monkeypatch):
+    monkeypatch.setenv("VALHALLA_OWNER_MANDATE_KEY", "fixture-owner-disposition")
+    owner = {**HEADERS, "X-Owner-Mandate-Key": "fixture-owner-disposition"}
+    cid, other_cid = create(client), create(client)
+    first = asset(b"private disposition marker", "text/plain", "purge.txt")
+    second = asset(b"unrelated private content", "text/plain", "keep.txt")
+    root = f"{BASE}/{cid}/attachments"
+    ids = [body["attachment_id"] for body in (first, second)]
+    for body, aid in zip((first, second), ids):
+        assert client.post(root, headers=HEADERS, json=body).status_code == 201
+        assert client.post(f"{root}/{aid}/extract", headers=HEADERS).status_code == 200
+    turn = {"turn_id": str(uuid4()), "message": "Review attached extractions", "attachment_ids": ids}
+    turns = f"{BASE}/{cid}/turns"
+    assert client.post(turns, headers=HEADERS, json=turn).status_code == 201
+    url = f"{root}/{ids[0]}"
+
+    def delete(target=url, headers=owner, digest=first["sha256"], reason="OWNER_REQUEST"):
+        return client.request("DELETE", target, headers=headers, json={"source_sha256": digest, "reason": reason})
+
+    assert delete(headers=HEADERS).status_code == 401
+    assert delete(f"{BASE}/{other_cid}/attachments/{ids[0]}").status_code == 404
+    assert delete(digest="0" * 64).status_code == 409
+    assert delete(reason="RETENTION_EXPIRED").status_code == 409
+    response = delete()
+    assert response.status_code == 200, response.text
+    assert response.json()["state"] == "DELETED"
+    assert response.json() == delete().json()
+    assert delete(reason="RETENTION_EXPIRED").status_code == 409
+    assert client.get(f"{url}/download", headers=HEADERS).status_code == 410
+    assert client.post(f"{url}/extract", headers=HEADERS).status_code == 410
+    assert client.post(turns, headers=HEADERS, json={**turn, "turn_id": str(uuid4())}).status_code == 410
+    assert client.post(root, headers=HEADERS, json=first).status_code == 409
+
+    with contextmanager(client.app.dependency_overrides[get_db])() as db:
+        assert db.get(OwnerAttachment, UUID(ids[0])).data is None
+        assert db.get(OwnerAttachmentExtraction, UUID(ids[0])) is None
+        persisted = db.get(OwnerTurn, UUID(turn["turn_id"]))
+        assert persisted.message == turn["message"]
+        disposed, kept = persisted.evidence["extractions"]
+        assert disposed == {"state": "SOURCE_DELETED", "attachment_id": ids[0], "source_sha256": first["sha256"]}
+        assert "unrelated private content" in str(kept)
+
+    history = client.get(turns, headers=HEADERS)
+    assert "private disposition marker" not in history.text
+    assert "unrelated private content" in history.text

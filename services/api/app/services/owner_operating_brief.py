@@ -19,6 +19,7 @@ def operating_evidence(db: Session) -> dict:
     schema = inspect(db.connection())
     report_items = []
     invalid_reports = []
+    cadence_alerts = []
     market_alerts = []
     economic_alerts = []
     reviewed_economic_scopes = set()
@@ -32,6 +33,10 @@ def operating_evidence(db: Session) -> dict:
             except HTTPException:
                 invalid_reports.append(event_id)
                 continue
+            cadence = report.get("cadence")
+            if cadence and cadence["missed_slots"]:
+                cadence_alerts.append({"report_id": event_id, "role": report["role"], "scope": report["scope"],
+                                       "observed_at": report["observed_at"], **cadence})
             economic = report.get("observations", {}).get("economic_reassessment")
             scope_key = tuple(sorted(report["scope"].items())) if economic else None
             if economic and scope_key not in reviewed_economic_scopes:
@@ -114,5 +119,5 @@ def operating_evidence(db: Session) -> dict:
         builder = {"available": True, "expired_leases": expired, "lease_exhausted": terminal,
                    "release_authorized": False, "production_worker_verified": False}
     return {"latest_specialist_reports": report_items, "invalid_specialist_report_ids": invalid_reports,
-            "loki": loki, "latest_integrity_alerts": alerts, "latest_market_alerts": market_alerts, "latest_economic_alerts": economic_alerts, "financials": financials,
+            "specialist_cadence_alerts": cadence_alerts, "loki": loki, "latest_integrity_alerts": alerts, "latest_market_alerts": market_alerts, "latest_economic_alerts": economic_alerts, "financials": financials,
             "verified_cash_balance": None, "foundry_intake_health": discovery, "builder_lease_health": builder}

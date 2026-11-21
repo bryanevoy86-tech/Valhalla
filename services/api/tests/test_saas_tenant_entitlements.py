@@ -106,6 +106,11 @@ def test_trial_is_bound_to_authenticated_subscriber_and_tenant(deal_client, monk
               "sha256": hashlib.sha256(content).hexdigest(), "content_base64": base64.b64encode(content).decode()}
     attachment = client.post(f"{inbox}/attachments", headers=bearer, json=upload)
     assert attachment.status_code == 201, attachment.text
+    assert client.get(f"{inbox}/attachments", headers=outsider).status_code == 403
+    metadata = client.get(f"{inbox}/attachments", headers=bearer)
+    assert metadata.headers["cache-control"] == "no-store"
+    assert metadata.json() == [attachment.json()]
+    assert "content_base64" not in metadata.text and upload["content_base64"] not in metadata.text
     attachment_root = f"{inbox}/attachments/{upload['attachment_id']}"
     assert client.post(f"{attachment_root}/extract", headers=outsider).status_code == 403
     extraction = client.post(f"{attachment_root}/extract", headers=bearer)
@@ -124,3 +129,4 @@ def test_trial_is_bound_to_authenticated_subscriber_and_tenant(deal_client, monk
     assert client.get(access, headers=bearer).status_code == 401
     assert client.get(briefing, headers=bearer).status_code == 401
     assert client.get(history, headers=bearer).status_code == 401
+    assert client.get(f"{inbox}/attachments", headers=bearer).status_code == 401

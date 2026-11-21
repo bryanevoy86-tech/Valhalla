@@ -26,7 +26,13 @@ class OwnerTurn(Base):
 class OwnerAttachment(Base):
     __tablename__ = "prime_owner_attachments"
     __table_args__ = (
-        CheckConstraint("length(data) BETWEEN 1 AND 5242880", name="ck_prime_owner_attachment_size"),
+        CheckConstraint(
+            "(deleted_at IS NULL AND deletion_reason IS NULL AND data IS NOT NULL "
+            "AND length(data) BETWEEN 1 AND 5242880) OR "
+            "(deleted_at IS NOT NULL AND deletion_reason IS NOT NULL AND data IS NULL "
+            "AND deletion_reason IN ('OWNER_REQUEST', 'RETENTION_EXPIRED'))",
+            name="ck_prime_owner_attachment_state",
+        ),
         Index("ix_prime_owner_attachment_thread", "conversation_id"),
     )
     id = Column(Uuid(), primary_key=True)
@@ -34,7 +40,9 @@ class OwnerAttachment(Base):
     filename = Column(String(180), nullable=False)
     media_type = Column(String(100), nullable=False)
     sha256 = Column(String(64), nullable=False)
-    data = Column(LargeBinary(), nullable=False)
+    data = Column(LargeBinary())
+    deleted_at = Column(DateTime(timezone=True))
+    deletion_reason = Column(String(24))
     size_bytes = Column(Integer(), nullable=False)
     created_at = Column(DateTime(timezone=True), nullable=False, default=now)
 

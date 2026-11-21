@@ -15,6 +15,8 @@ def verified_attachment(db: Session, conversation_id, attachment_id, *, lock=Fal
     row = db.get(OwnerAttachment, attachment_id, with_for_update=lock)
     if row is None or row.conversation_id != conversation_id:
         raise HTTPException(404, "Attachment not found in conversation")
+    if row.deleted_at is not None:
+        raise HTTPException(410, "Attachment content was deleted")
     if len(row.data) != row.size_bytes or hashlib.sha256(row.data).hexdigest() != row.sha256:
         raise HTTPException(409, "Stored attachment integrity check failed")
     return row

@@ -85,7 +85,15 @@ def observations(db: Session, lens: str, scope: dict, outcomes: list[dict], now,
         return {"work_status_counts": counts, "recent_work_ids": list(actions),
                 "verified_internal_outcome_ids": [item["outcome_event_id"] for item in outcomes],
                 "independent_review_required_for_material_execution": True}
-    return {"work_status_counts": counts, "recent_work_ids": list(actions)}
+    stalled_filter = (*scope_filter, work.status.in_(("queued", "approved", "running")),
+                      work.updated_at < now - timedelta(seconds=cadence))
+    stalled_count = db.scalar(select(func.count()).select_from(work).where(*stalled_filter))
+    oldest = db.scalars(select(work.action_id).where(*stalled_filter)
+                        .order_by(work.updated_at, work.id).limit(10)).all()
+    return {"work_status_counts": counts, "recent_work_ids": list(actions),
+            "stalled_work": {"count": stalled_count, "oldest_action_ids": list(oldest),
+                             "age_threshold_seconds": cadence,
+                             "basis": "AGE_SINCE_LAST_RECORDED_WORK_UPDATE"}}
 
 
 def run_assignment(db: Session, role: str, *, now=None) -> dict:
@@ -111,10 +119,33 @@ def run_assignment(db: Session, role: str, *, now=None) -> dict:
                     else "VERIFIED_OUTCOME" if event else "CADENCE")
     material = f"{assignment.id}/{event or assignment.next_due_at.isoformat()}"
     event_id = "GOD-" + hashlib.sha256(material.encode()).hexdigest()
+    if event:
+        try:
+            previous = verified_report(db, event_id)
+        except HTTPException as exc:
+            if exc.status_code != 404:
+                raise
+        else:
+            if (previous.get("assignment_id"), previous.get("role"), previous.get("scope"),
+                previous.get("trigger"), previous.get("trigger_event_id")) != (
+                str(assignment.id), role, assignment.scope, trigger_type, event,
+            ):
+                raise HTTPException(409, "Specialist event replay scope does not match")
+            assignment.pending_event_id = None
+            db.commit()
+            return {"status": "replayed", "report_event_id": event_id}
+
+    cadence = timedelta(seconds=assignment.cadence_seconds)
+    elapsed_slots = (now - assignment.next_due_at) // cadence + 1 if due else 0
     report = {
         "report_event_id": event_id, "assignment_id": str(assignment.id), "role": role,
         "lens": LENSES[role], "scope": assignment.scope, "observed_at": now.isoformat() + "Z",
         "trigger": trigger_type, "trigger_event_id": event,
+        "cadence": {
+            "scheduled_for": assignment.next_due_at.isoformat() + "Z" if due else None,
+            "slots_elapsed": elapsed_slots,
+            "missed_slots": max(0, elapsed_slots - 1),
+        },
         "model_used": False, "external_authority": False, "independent_review_authority": False,
     }
     try:
@@ -140,8 +171,7 @@ def run_assignment(db: Session, role: str, *, now=None) -> dict:
     assignment.last_report_event_id = event_id
     assignment.pending_event_id = None
     if due:
-        cadence = timedelta(seconds=assignment.cadence_seconds)
-        assignment.next_due_at += cadence * (((now - assignment.next_due_at) // cadence) + 1)
+        assignment.next_due_at += cadence * elapsed_slots
     db.commit()
     return {"status": report["status"], "report_event_id": event_id}
 

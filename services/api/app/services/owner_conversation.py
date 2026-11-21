@@ -10,7 +10,7 @@ from fastapi import Depends, HTTPException, Request, Response
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from sqlalchemy import select, func
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, defer
 from app.core.db import get_db
 from app.models.owner_conversation import OwnerConversation, OwnerTurn, OwnerAttachment, OwnerAttachmentExtraction
 from app.models.prime_specialist_schedule import PrimeSpecialistSchedule
@@ -51,6 +51,12 @@ class UploadIn(BaseModel):
     sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     content_base64: str = Field(min_length=4, max_length=4*((MAX_BYTES+2)//3))
 
+class DeleteAttachmentIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    source_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    reason: Literal["OWNER_REQUEST", "RETENTION_EXPIRED"]
+
+
 def thread(db, cid):
     row = db.get(OwnerConversation, cid)
     if row is None:
@@ -61,7 +67,13 @@ def meta(row):
     return {"attachment_id": row.id, "conversation_id": row.conversation_id,
             "filename": row.filename, "media_type": row.media_type, "sha256": row.sha256,
             "size_bytes": row.size_bytes, "created_at": row.created_at,
-            "state": "QUARANTINED_UNREVIEWED", "analysis_complete": False}
+            "state": "DELETED" if row.deleted_at else "QUARANTINED_UNREVIEWED",
+            "deleted_at": row.deleted_at, "deletion_reason": row.deletion_reason,
+            "analysis_complete": False}
+
+
+def deleted_source(attachment):
+    return {"attachment_id": str(attachment.id), "source_sha256": attachment.sha256, "state": "SOURCE_DELETED"}
 
 def turn_meta(row, db):
     evidence = row.evidence
@@ -71,6 +83,8 @@ def turn_meta(row, db):
             attachment = db.get(OwnerAttachment, UUID(receipt["attachment_id"]))
             if attachment is None or attachment.conversation_id != row.conversation_id or attachment.sha256 != receipt["source_sha256"]:
                 extracts.append({"attachment_id": receipt["attachment_id"], "state": "SOURCE_UNAVAILABLE"})
+            elif attachment.deleted_at is not None:
+                extracts.append(deleted_source(attachment))
             elif attachment_use_blocked(db, attachment):
                 extracts.append({"attachment_id": receipt["attachment_id"], "state": "RESTRICTED",
                                  "source_sha256": attachment.sha256})
@@ -166,6 +180,8 @@ def answer(db, message, attachments, turn_id=None, provider_data_class="PRIVATE"
              f"Active advisory schedules: {schedules}; schedules referencing a report: {reports}. "
              "These are limited internal checks, not proof of live readiness or commercial results.")
     reply += f" Recent verified specialist receipts: {len(operating['latest_specialist_reports'])}."
+    if operating["specialist_cadence_alerts"]:
+        reply += f" Recent specialist reports covering missed schedule slots: {len(operating['specialist_cadence_alerts'])}."
     if operating["loki"]["available"]:
         reply += f" Loki reviews queued: {operating['loki']['queued_count']}. Recent unresolved or unverified reviews: {len(operating['loki']['latest_outstanding'])}."
     economic = operating["latest_economic_alerts"]
@@ -247,10 +263,9 @@ def submit_turn(conversation_id: UUID, payload: TurnIn, db: Session, *, local_on
         if existing.evidence.get("requested_knowledge_scope") != knowledge_scope:
             raise HTTPException(409, "Turn knowledge scope already recorded")
         return turn_meta(existing, db)
-    for aid in payload.attachment_ids:
-        row = db.get(OwnerAttachment, aid)
-        if row is None or row.conversation_id != conversation_id:
-            raise HTTPException(404, "Attachment not found in conversation")
+    # Acquire consistently ordered locks before writing a turn that refers to raw bytes.
+    attachments = {aid: verified_attachment(db, conversation_id, aid, lock=True)
+                   for aid in sorted(payload.attachment_ids)}
     normalized = " ".join(message.casefold().rstrip("?! .").split())
     if payload.prime_decision_id:
         evidence = prime_decision_context(db, payload.prime_decision_id)
@@ -285,7 +300,7 @@ def submit_turn(conversation_id: UUID, payload: TurnIn, db: Session, *, local_on
     elif normalized in {"review attached extraction", "review attached extractions"} and payload.attachment_ids:
         receipts = []
         for attachment_id in payload.attachment_ids:
-            attachment = verified_attachment(db, conversation_id, attachment_id, lock=True)
+            attachment = attachments[attachment_id]
             require_local_use(db, attachment)
             extraction = db.get(OwnerAttachmentExtraction, attachment_id)
             if extraction is None or extraction.source_sha256 != attachment.sha256:
@@ -328,6 +343,49 @@ def store_attachment(conversation_id: UUID, payload: UploadIn, db: Session):
     db.add(row)
     commit(db)
     return meta(row)
+
+
+def attachment_summaries(conversation_id: UUID, limit: int, db: Session):
+    thread(db, conversation_id)
+    query = select(OwnerAttachment).options(defer(OwnerAttachment.data)).where(
+        OwnerAttachment.conversation_id == conversation_id,
+    ).order_by(OwnerAttachment.created_at.desc(), OwnerAttachment.id).limit(max(1, min(limit, 100)))
+    return [meta(row) for row in db.scalars(query)]
+
+
+def delete_attachment(conversation_id: UUID, attachment_id: UUID, payload: DeleteAttachmentIn, db: Session):
+    attachment = db.get(OwnerAttachment, attachment_id, with_for_update=True)
+    if attachment is None or attachment.conversation_id != conversation_id:
+        raise HTTPException(404, "Attachment not found in conversation")
+    if attachment.sha256 != payload.source_sha256:
+        raise HTTPException(409, "Deletion digest does not match the attachment")
+    if attachment.deleted_at is not None:
+        if attachment.deletion_reason != payload.reason:
+            raise HTTPException(409, "Deletion reason already recorded")
+        return meta(attachment)
+    if payload.reason == "RETENTION_EXPIRED":
+        review = latest_review(db, attachment)
+        if not retention_expired(review) or review.source_sha256 != attachment.sha256:
+            raise HTTPException(409, "Matching attachment retention deadline has not expired")
+    extraction = db.get(OwnerAttachmentExtraction, attachment_id)
+    if extraction is not None:
+        db.delete(extraction)
+    source = deleted_source(attachment)
+    turns = db.scalars(select(OwnerTurn).where(OwnerTurn.conversation_id == conversation_id)
+                       .order_by(OwnerTurn.id).with_for_update().execution_options(yield_per=100))
+    for turn in turns:
+        extracts = turn.evidence.get("extractions")
+        if extracts and str(attachment_id) in turn.attachment_ids:
+            turn.evidence = {**turn.evidence, "extractions": [
+                source if receipt.get("attachment_id") == source["attachment_id"] else receipt
+                for receipt in extracts
+            ]}
+    attachment.data = None
+    attachment.filename = "[deleted]"
+    attachment.deleted_at = datetime.now(timezone.utc)
+    attachment.deletion_reason = payload.reason
+    commit(db)
+    return meta(attachment)
 
 
 def local_extraction(conversation_id: UUID, attachment_id: UUID, db: Session):
@@ -382,11 +440,7 @@ def install(router):
     @router.get("/conversations/{conversation_id}/attachments")
     def attachments(conversation_id: UUID, limit: int = 50, db: Session = Depends(get_db)):
         thread(db, conversation_id)
-        # Avoid loading file bytes for a metadata-only response.
-        from sqlalchemy.orm import defer
-        rows = db.scalars(select(OwnerAttachment).options(defer(OwnerAttachment.data)).where(
-            OwnerAttachment.conversation_id==conversation_id).order_by(OwnerAttachment.created_at.desc(),OwnerAttachment.id).limit(max(1,min(limit,100)))).all()
-        return [meta(row) for row in rows]
+        return attachment_summaries(conversation_id, limit, db)
 
     @router.post("/conversations/{conversation_id}/attachments/{attachment_id}/review", status_code=201,
                  dependencies=[Depends(require_owner_mandate_key)])
@@ -395,6 +449,12 @@ def install(router):
         review = save_review(db, attachment, payload)
         commit(db)
         return review_receipt(review)
+
+    @router.delete("/conversations/{conversation_id}/attachments/{attachment_id}",
+                   dependencies=[Depends(require_owner_mandate_key)])
+    def dispose_attachment(conversation_id: UUID, attachment_id: UUID, payload: DeleteAttachmentIn,
+                           db: Session = Depends(get_db)):
+        return delete_attachment(conversation_id, attachment_id, payload, db)
 
     @router.get("/conversations/{conversation_id}/attachments/{attachment_id}/review")
     def read_review(conversation_id: UUID, attachment_id: UUID, db: Session = Depends(get_db)):
