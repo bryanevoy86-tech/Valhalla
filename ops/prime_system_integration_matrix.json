@@ -11,7 +11,7 @@
         "services/api/app/main.py",
         "services/api/start.py"
       ],
-      "source_observation": "Actual canonical FastAPI app imported on isolated Linux CI; 13/13 designated critical routers and 15/15 endpoint contracts registered, including all five Pantheon gods and orchestrator. Production Render runs older main commit.",
+      "source_observation": "Canonical FastAPI import registered 32 critical routers and all 71 required routes on the isolated regression runtime.",
       "evidence_level": "FOCUSED_CI_TESTED",
       "production_verified": false,
       "acceptance_test": "Prove every mandatory router imports in a clean canonical app; no missing OpenAPI paths or silent startup success",
@@ -215,7 +215,7 @@
         "scripts/builder_test_review.py",
         "tests/test_builder_offline_runner.py"
       ],
-      "source_observation": "Snapshot-bound candidates can be queued, leased, tested by the existing isolated runner and returned with bounded review receipts. Automatic candidate generation and release are pending.",
+      "source_observation": "An owner-authorized literal edit creates a snapshot-bound review candidate and queues the existing isolated test worker in one transaction. Source bytes and release authority stay unchanged. Broader autonomous authoring and reviewed GitHub submission remain pending.",
       "evidence_level": "SQLITE_INTEGRATION_TESTED",
       "production_verified": false,
       "acceptance_test": "Prove authorized durable development assignments, snapshot-bound artifact export, isolated fresh checkout and actual regression/security tests, scoped PR review and staged release. No API mutation of running source or unrestricted pushes.",
@@ -229,6 +229,7 @@
       "id": "ai_providers",
       "priority": "P1",
       "source_paths": [
+        "services/api/app/routers/provider_pricing.py",
         "services/api/app/routers/specialist_probes.py",
         "services/api/app/routers/model_provider.py",
         "app/ai/providers.py",
@@ -236,8 +237,8 @@
         "services/api/app/routers/provider_evidence.py",
         "services/api/tests/test_provider_evidence.py"
       ],
-      "source_observation": "Fixed-host advisory inference and metered Groq staging probes use scoped role evidence and fixed synthetic inputs. Loki requires separate configuration. Actual paid costs and live model suitability remain unverified.",
-      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "source_observation": "Dated owner-attested quotes, role benchmark evidence, exact synthetic usage reconciliation and a budget-ranked staging candidate are recorded. Loki candidates exclude the active Prime model. External catalog discovery, provider billing and live suitability are pending.",
+      "evidence_level": "SQLITE_INTEGRATION_TESTED",
       "production_verified": false,
       "acceptance_test": "Select provider, enforce budget and data privacy, record cost, handle expired key/outage, optionally local model",
       "depends_on": [
@@ -249,12 +250,13 @@
       "id": "marketing",
       "priority": "P0",
       "source_paths": [
+        "services/api/app/routers/foundry_checkout.py",
         "services/api/app/routes/marketing.py",
         "services/api/app/routers/marketing.py",
         "services/api/app/services/marketing_service.py"
       ],
-      "source_observation": "Marketing campaign/post database CRUD exists; now mounted under owner auth; provider publishing unverified",
-      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "source_observation": "Private simulation traces scoped visits through signed checkout capture and refunds and tests conversion attribution. Live publishing, audience consent and paid-order attribution are pending.",
+      "evidence_level": "SQLITE_INTEGRATION_TESTED",
       "production_verified": false,
       "acceptance_test": "True platform authenticated publish and provider receipt, lawful scheduling/consent, click attribution to paid order",
       "depends_on": [
@@ -284,11 +286,12 @@
       "id": "subscription_saas",
       "priority": "P1",
       "source_paths": [
+        "services/api/tests/test_saas_tenant_entitlements.py",
         "services/api/app/routers/saas_access.py",
         "services/api/app/models/marketing.py"
       ],
-      "source_observation": "SaaS access endpoints exist; no proof of paid customer subscription entitlements and tenant isolation",
-      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "source_observation": "Prime and owner authorization protect administrative mutations. Internal revocable WeWeb trial access binds account, tenant, plan, expiry and permitted module. Paid entitlements and tenant-bound engine data paths are pending.",
+      "evidence_level": "SQLITE_INTEGRATION_TESTED",
       "production_verified": false,
       "acceptance_test": "Real checkout subscription grants scoped rights, renewal/payment failure revokes, subscriptions isolated from Prime",
       "depends_on": [
@@ -301,11 +304,12 @@
       "id": "commerce",
       "priority": "P0",
       "source_paths": [
+        "services/api/app/routers/foundry_checkout.py",
         "services/api/app/routers/prime_business_factory.py",
         "services/api/app/models/media_engine.py"
       ],
-      "source_observation": "Internal digital-product draft only; no actual connected storefront or confirmed downloadable product",
-      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "source_observation": "An internal verified artifact reaches signed fixture capture, refunds, delivery and campaign conversion with scoped rights, matching price and bytes. Connected storefront and authentic transactions are pending.",
+      "evidence_level": "SQLITE_INTEGRATION_TESTED",
       "production_verified": false,
       "acceptance_test": "Real approved listing/checkout/delivery/refund, buyer rights and content-hash verified, receipt tied to business",
       "depends_on": [
@@ -318,11 +322,12 @@
       "id": "finance_webhooks",
       "priority": "P0",
       "source_paths": [
+        "services/api/app/models/foundry_checkout.py",
         "services/api/app/providers/stripe_adapter.py",
         "services/api/app/webhooks/stripe.py"
       ],
-      "source_observation": "Old handler recorded fabricated statuses; new code rejects unsigned financial events and returns 503 until ledger consumer exists",
-      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "source_observation": "The Foundry rehearsal accepts signed local fixtures for capture and refunds. It excludes these amounts from commercial accounting. Provider receipts and settlement are pending.",
+      "evidence_level": "SQLITE_INTEGRATION_TESTED",
       "production_verified": false,
       "acceptance_test": "Signed timestamped webhooks idempotently persist, settle, reverse, reconcile Stripe/Payhip events; provider receipt",
       "depends_on": [
@@ -429,8 +434,8 @@
         "services/api/app/routers/auth_weweb.py",
         "docs/CURRENT_SYSTEM_TRUTH.md"
       ],
-      "source_observation": "WeWeb authentication API exists; external WeWeb project UI cannot be verified from GitHub source",
-      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "source_observation": "A revocable owner bearer route exposes the private briefing without a browser Prime key. The frontend conversation proxy and voice integration are pending.",
+      "evidence_level": "SQLITE_INTEGRATION_TESTED",
       "production_verified": false,
       "acceptance_test": "Owner login, real dashboard, approval controls, data updates and session expiry tested in WeWeb against deployment",
       "depends_on": [
@@ -462,6 +467,7 @@
       "id": "prime_private_owner",
       "priority": "P0",
       "source_paths": [
+        "services/api/app/services/attachment_parser.py",
         "services/api/app/services/owner_attachment_extraction.py",
         "services/api/app/services/owner_conversation.py",
         "docs/HEIMDALL_DEFINITION_OF_DONE.md",
@@ -469,8 +475,8 @@
         "services/api/app/core/dependencies.py",
         "services/api/tests/test_prime_control_and_decision_integrity.py"
       ],
-      "source_observation": "Four private router groups now require independently configured X-Prime-Control-Key; HTTP tests reject missing/wrong/Builder credentials. This is NOT complete Prime/subscriber/tenant isolation; other routes require review.. Private chat retains checksummed local extracts, bounded image OCR when installed and owner upload dispositions. Briefings include verified role reports, Loki review state, alerts and per-currency unreconciled ledger amounts",
-      "evidence_level": "FOCUSED_CI_TESTED",
+      "source_observation": "The owner briefing works through the revocable owner bearer route. Private attachments can extract limited scanned PDF pages locally when Poppler and Tesseract are installed. Extracts stay untrusted.",
+      "evidence_level": "SQLITE_INTEGRATION_TESTED",
       "production_verified": false,
       "acceptance_test": "Prove no subscriber/clone/tenant can access owner Prime; trace trust and approvals across API, worker, UI, DB and provider adapters.",
       "depends_on": [
@@ -506,6 +512,7 @@
       "id": "pantheon_expanded_bridge",
       "priority": "P0",
       "source_paths": [
+        "services/api/app/routers/foundry_discovery.py",
         "services/api/app/pantheon/monitor.py",
         "docs/UNIVERSAL_OPPORTUNITY_PIPELINE.md",
         "docs/PANTHEON_CALIBRATION_PROTOCOL.md",
@@ -513,8 +520,8 @@
         "ops/VALHALLA_FULL_VISION_TRACEABILITY.md",
         "docs/PHASE3_INTEGRATED_ARCHITECTURE.md"
       ],
-      "source_observation": "All expanded role names support durable scope subscriptions. Per-role local adapters poll cadence and exact verified Factory outcomes. Domain-specialized AI and external discovery are pending.",
-      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "source_observation": "Six existing specialists now produce role-specific Foundry signals from assigned scope and date-bound opportunity evidence. Prime and Factory enforce the cited source. Broader authorized adapters and external model use are pending.",
+      "evidence_level": "SQLITE_INTEGRATION_TESTED",
       "production_verified": false,
       "acceptance_test": "Map historical role/authority variants without losing user intent; test controlled bridge and no unrestricted agent-to-agent tools; owner ratifies conflicting labels. Owner-confirmed 2026-11-20: prove every specialist covers all authorized relevant subsystems via scheduled and event-driven analysis, durable scoped reports to Prime, independent Loki cross-system challenges, and Prime synthesis/decision/verified execution inside existing mandates without routine owner approval; test missing/stale evidence, escalation and tenant isolation.",
       "depends_on": [
@@ -527,13 +534,14 @@
       "id": "norns_probability_calibration",
       "priority": "P1",
       "source_paths": [
+        "services/api/app/pantheon/forecasts.py",
         "docs/PANTHEON_CALIBRATION_PROTOCOL.md",
         "docs/UNIVERSAL_OPPORTUNITY_PIPELINE.md",
         "services/api/app/routers/norns_forecasts.py",
         "services/api/tests/test_norns_forecasts.py"
       ],
-      "source_observation": "Norns workers issue prospective exact-scope historical baselines from earlier resolved observations with matching horizons and stored lineage. The owner estimate cohort and worker baseline are scored separately. Commercial and independent model calibration remain open.",
-      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "source_observation": "Prospective holdout enrolment persists before resolution or deadline. Holdouts stay outside baseline training and ordinary calibration. Evaluation separates holdouts and ordinary observations by estimate source.",
+      "evidence_level": "SQLITE_INTEGRATION_TESTED",
       "production_verified": false,
       "acceptance_test": "Quantify calibration and regret on holdout real outcomes; stop claiming precise first-revenue odds from synthetic scores.",
       "depends_on": [
@@ -601,13 +609,14 @@
       "id": "product_foundry_subscriptions",
       "priority": "P1",
       "source_paths": [
+        "services/api/app/routers/foundry_checkout.py",
         "docs/CODEX_SYSTEM_FINISH_PASSES.md",
         "services/api/app/services/prime_business_execution.py",
         "services/api/app/routers/product_artifacts.py",
         "services/api/tests/test_product_artifact_workflow.py"
       ],
-      "source_observation": "Internal product assets have exact scoped versions, owner-attested rights, verified byte retrieval, revocation and checksum-bound Factory draft and Mimir receipts. No authorized external storefront or revenue proof.",
-      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "source_observation": "The verified internal listing reaches signed local checkout, delivery, attribution and refunds. Trial module entitlements are tenant-bound. Storefront, paid licenses, settlement and renewal are pending.",
+      "evidence_level": "SQLITE_INTEGRATION_TESTED",
       "production_verified": false,
       "acceptance_test": "Complete approved subordinate product package, storefront, real checkout/provider receipt, delivery, refund/chargeback, ledger and customer subscription lifecycle.",
       "depends_on": [
@@ -621,11 +630,12 @@
       "id": "independent_venture_foundry",
       "priority": "P1",
       "source_paths": [
+        "services/api/app/routers/foundry_discovery.py",
         "docs/CODEX_SYSTEM_FINISH_PASSES.md",
         "docs/PHASE3_INTEGRATED_ARCHITECTURE.md"
       ],
-      "source_observation": "Cross-industry evaluation pipeline described, autonomous startup-to-revenue not executed.",
-      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "source_observation": "Scoped acquisition, product, SaaS, service and real estate leads feed existing specialist assignments and produce shadow Prime candidates with unit economics and sensitivity. Source freshness and revocation are checked before affected execution.",
+      "evidence_level": "SQLITE_INTEGRATION_TESTED",
       "production_verified": false,
       "acceptance_test": "Scheduled discovery and evidence validation, owner-bounded creation of a new lawful venture, live sales and repeatable outcome learning.",
       "depends_on": [
@@ -657,11 +667,12 @@
       "id": "treasury_banking_controls",
       "priority": "P0",
       "source_paths": [
+        "services/api/tests/test_floor_currency.py",
         "capital/banking/executor.py",
         "services/api/app/routers/banking_structure_planner.py"
       ],
-      "source_observation": "Old executor falsely reported completed funds transfers with no bank call; branch now explicitly blocks provider-not-connected; regression tested.",
-      "evidence_level": "FOCUSED_CI_TESTED",
+      "source_observation": "Private treasury floor projections use exact month and currency boundaries and label existing ledger amounts unreconciled. Bank statements, transfers and settlement controls are pending.",
+      "evidence_level": "SQLITE_INTEGRATION_TESTED",
       "production_verified": false,
       "acceptance_test": "Prove every actual transfer requires owner intent, cap, whitelisted accounts, durable idempotency and a bank settlement receipt; no fake success.",
       "depends_on": [
@@ -850,6 +861,7 @@
       "id": "loki_independent_challenger",
       "priority": "P0",
       "source_paths": [
+        "services/api/app/routers/provider_evidence.py",
         "services/api/tools/cron/loki_analyst_worker.py",
         "docs/LOKI_INDEPENDENT_CHALLENGER_CONTRACT.md",
         "services/api/app/routers/governance_loki.py",
@@ -862,8 +874,8 @@
         "services/api/tests/test_loki_audit_fail_closed.py",
         "services/api/tests/test_prime_control_and_decision_integrity.py"
       ],
-      "source_observation": "An independent queue worker runs deterministic checks, binds findings to versioned evidence and requires reconsideration of linked specialist reports before decision and execution. Live independent AI remains staged.",
-      "evidence_level": "FOCUSED_CI_TESTED",
+      "source_observation": "Independent Loki receipts and reconsideration remain required for reviewed specialist material. Staging advice excludes the active Prime model across providers. A separate real model and transport proof remain pending.",
+      "evidence_level": "SQLITE_INTEGRATION_TESTED",
       "production_verified": false,
       "acceptance_test": "Independently audit immutable Heimdall proposals with contrary evidence and sourced objection ledger, prove re-audit after changes, equal-standing owner dissent, lawful professional escalation, and mandatory fail-closed high-risk dispatch; realistic adversarial cases and reviewer outage tested in Postgres/staging. Prove proactive cross-system coverage, reports to Prime, immutable independent dissent and recorded Prime response. Owner receives exceptions rather than approving every routine decision.",
       "depends_on": [
