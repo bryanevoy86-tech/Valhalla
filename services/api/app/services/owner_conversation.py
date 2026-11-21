@@ -17,6 +17,8 @@ from app.models.prime_specialist_schedule import PrimeSpecialistSchedule
 from app.models.go_live_state import GoLiveState
 from app.services.system_self_check import run_system_self_check
 from app.services.owner_advisory_model import advisory_reply
+from app.services.owner_memory import MemoryIn, memory_receipt, prepare_entry, recall_entries
+from app.services.owner_specialist_context import specialist_context
 
 MAX_BYTES = 5 * 1024 * 1024
 MAX_BODY = 7 * 1024 * 1024
@@ -32,6 +34,7 @@ class TurnIn(BaseModel):
     message: str = Field(min_length=1, max_length=8000)
     attachment_ids: list[UUID] = Field(default_factory=list, max_length=8)
     provider_data_class: Literal["PRIVATE", "SYNTHETIC"] = "PRIVATE"
+    specialist_schedule_id: UUID | None = None
 
 class UploadIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -190,17 +193,48 @@ def install(router):
                 raise HTTPException(409, "Turn ID already used")
             if existing.evidence.get("requested_provider_class", "PRIVATE") != payload.provider_data_class:
                 raise HTTPException(409, "Turn classification already recorded")
+            if existing.evidence.get("requested_specialist_schedule_id") != (
+                str(payload.specialist_schedule_id) if payload.specialist_schedule_id else None
+            ):
+                raise HTTPException(409, "Turn specialist reference already recorded")
             return turn_meta(existing)
         for aid in payload.attachment_ids:
             row = db.get(OwnerAttachment, aid)
             if row is None or row.conversation_id != conversation_id:
                 raise HTTPException(404, "Attachment not found in conversation")
-        reply, evidence = answer(db, message, ids, payload.turn_id, payload.provider_data_class)
+        normalized = " ".join(message.casefold().rstrip("?! .").split())
+        if payload.specialist_schedule_id:
+            evidence = specialist_context(db, payload.specialist_schedule_id)
+            evidence.update(source="persisted_specialist_receipt", model_connected=False)
+            reply = (
+                f"Specialist report {evidence['report_event_id']} is {evidence['status']}. "
+                f"Recorded recommendation: {evidence['heimdall_decision'] or 'none'}. "
+                "This report is advisory and grants no execution authority."
+            )
+        elif normalized in {"what do you remember", "review my memory", "open obligations"}:
+            entries = recall_entries(db, conversation_id, open_only=normalized == "open obligations")
+            evidence = {"source": "private_owner_memory", "memory_entries": entries, "model_connected": False}
+            reply = "I've retrieved the scoped memory records." if entries else "I found no matching memory records."
+        else:
+            reply, evidence = answer(db, message, ids, payload.turn_id, payload.provider_data_class)
+        evidence["requested_specialist_schedule_id"] = str(payload.specialist_schedule_id) if payload.specialist_schedule_id else None
         evidence["requested_provider_class"] = payload.provider_data_class
         row = OwnerTurn(id=payload.turn_id, conversation_id=conversation_id,message=message,reply=reply,evidence=evidence,attachment_ids=ids)
         db.add(row)
         commit(db)
         return turn_meta(row)
+
+    @router.post("/conversations/{conversation_id}/memory", status_code=201)
+    def save_memory(conversation_id: UUID, payload: MemoryIn, db: Session = Depends(get_db)):
+        thread(db, conversation_id)
+        entry = prepare_entry(db, conversation_id, payload)
+        commit(db)
+        return memory_receipt(entry)
+
+    @router.get("/conversations/{conversation_id}/memory")
+    def list_memory(conversation_id: UUID, limit: int = 15, db: Session = Depends(get_db)):
+        thread(db, conversation_id)
+        return recall_entries(db, conversation_id, max(1, min(limit, 50)))
 
     @router.post("/conversations/{conversation_id}/attachments", status_code=201)
     def upload(conversation_id: UUID, payload: UploadIn = Depends(bounded_upload), db: Session = Depends(get_db)):

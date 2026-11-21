@@ -54,3 +54,18 @@ class OwnerInferenceAttempt(Base):
     status = Column(String(20), nullable=False)
     prompt_tokens = Column(Integer(), nullable=True)
     completion_tokens = Column(Integer(), nullable=True)
+
+
+class OwnerMemoryEntry(Base):
+    __tablename__ = "prime_owner_memory_entries"
+    __table_args__ = (Index("ix_prime_owner_memory_scope", "conversation_id", "visibility", "created_at"),)
+    id = Column(Uuid(), primary_key=True)
+    conversation_id = Column(Uuid(), ForeignKey("prime_owner_conversations.id"), nullable=False)
+    source_turn_id = Column(Uuid(), ForeignKey("prime_owner_turns.id"), nullable=False)
+    supersedes_id = Column(Uuid(), ForeignKey("prime_owner_memory_entries.id"), unique=True)
+    kind = Column(String(20), nullable=False)
+    visibility = Column(String(20), nullable=False)
+    topic = Column(String(120), nullable=False)
+    statement = Column(Text(), nullable=False)
+    state = Column(String(20), nullable=False)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=now)

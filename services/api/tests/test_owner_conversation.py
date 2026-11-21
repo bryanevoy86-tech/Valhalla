@@ -12,8 +12,8 @@ from sqlalchemy.pool import StaticPool
 
 from app.core.db import get_db
 from app.models.model_provider import ModelProvider
-from app.models.owner_conversation import OwnerConversation, OwnerAttachment, OwnerTurn, OwnerInferenceAttempt, OwnerInferenceQuota
-from app.models.completion_registry import LearningTaskQueueItem
+from app.models.owner_conversation import OwnerConversation, OwnerAttachment, OwnerTurn, OwnerInferenceAttempt, OwnerInferenceQuota, OwnerMemoryEntry
+from app.models.completion_registry import LearningTaskQueueItem, LegacyOrchestrationEvent
 from app.models.go_live_state import GoLiveState
 from app.models.prime_specialist_schedule import PrimeSpecialistSchedule
 from app.routers.jarvis import router
@@ -27,7 +27,7 @@ def client(monkeypatch):
     monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "true")
     monkeypatch.delenv("VALHALLA_OWNER_CHAT_INFERENCE_ENABLED", raising=False)
     engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
-    for model in (OwnerConversation, OwnerTurn, OwnerAttachment, LearningTaskQueueItem, GoLiveState, PrimeSpecialistSchedule, ModelProvider, OwnerInferenceQuota, OwnerInferenceAttempt):
+    for model in (OwnerConversation, OwnerTurn, OwnerAttachment, LearningTaskQueueItem, GoLiveState, PrimeSpecialistSchedule, ModelProvider, OwnerInferenceQuota, OwnerInferenceAttempt, OwnerMemoryEntry, LegacyOrchestrationEvent):
         model.__table__.create(engine)
     with Session(engine) as db:
         db.add(GoLiveState(id=1, go_live_enabled=False, kill_switch_engaged=True))
@@ -199,3 +199,87 @@ def test_advisory_is_quota_bound_synthetic_only_and_never_falls_back(client, mon
         assert attempts["unavailable"].completion_tokens is None
     finally:
         gen.close()
+
+
+def test_memory_scope_provenance_recall_and_conflicting_revision(client):
+    first = create(client)
+    second = create(client)
+
+    def send(cid, text):
+        result = client.post(f"{BASE}/{cid}/turns", headers=HEADERS, json={"turn_id": str(uuid4()), "message": text})
+        assert result.status_code == 201, result.text
+        return result.json()
+
+    original = send(first, "I prefer weekly reporting.")
+    outside = send(second, "Record the decision from this thread.")
+    payload = {"entry_id": str(uuid4()), "kind": "PREFERENCE", "topic": "cadence",
+               "statement": "Weekly reporting", "source_turn_id": original["turn_id"], "visibility": "OWNER"}
+    memory = f"{BASE}/{first}/memory"
+    assert client.post(memory, json=payload).status_code == 401
+    assert client.post(memory, headers=HEADERS, json={**payload, "source_turn_id": outside["turn_id"]}).status_code == 404
+    saved = client.post(memory, headers=HEADERS, json=payload)
+    assert saved.status_code == 201, saved.text
+    assert saved.json()["evidence_class"] == "OWNER_REPORTED"
+    assert saved.json()["verified_fact"] is False
+    assert client.post(memory, headers=HEADERS, json=payload).json() == saved.json()
+
+    obligation = {"entry_id": str(uuid4()), "kind": "OBLIGATION", "topic": "audit", "state": "OPEN",
+                  "statement": "Check the forecast", "source_turn_id": original["turn_id"]}
+    written = client.post(memory, headers=HEADERS, json=obligation)
+    assert written.status_code == 201, written.text
+    simulated = {**obligation, "entry_id": str(uuid4()), "kind": "SIMULATION", "state": "RECORDED"}
+    result = client.post(memory, headers=HEADERS, json=simulated)
+    assert result.json()["evidence_class"] == "SIMULATION"
+    assert len(send(first, "Open obligations?")["evidence"]["memory_entries"]) == 1
+    assert send(second, "Open obligations")["evidence"]["memory_entries"] == []
+
+    revision = {**payload, "entry_id": str(uuid4()), "statement": "Monthly reporting",
+                "source_turn_id": outside["turn_id"], "supersedes_id": payload["entry_id"]}
+    other_memory = f"{BASE}/{second}/memory"
+    revised = client.post(other_memory, headers=HEADERS, json=revision)
+    assert revised.status_code == 201, revised.text
+    assert client.post(other_memory, headers=HEADERS, json={**revision, "entry_id": str(uuid4())}).status_code == 409
+    records = send(second, "What do you remember?")["evidence"]["memory_entries"]
+    assert [entry["statement"] for entry in records] == ["Monthly reporting"]
+    assert records[0]["source_turn_id"] == outside["turn_id"]
+    assert records[0]["execution_authorized"] is False
+
+
+def test_conversation_links_exact_specialist_receipt_without_promoting_it(client):
+    from datetime import datetime, timedelta, timezone
+    import json
+
+    cid = create(client)
+    schedule_id = uuid4()
+    event_id = "SPECIALIST-fixture-receipt"
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    session = client.app.dependency_overrides[get_db]()
+    db = next(session)
+    try:
+        db.add(PrimeSpecialistSchedule(
+            id=schedule_id, request={}, cadence_seconds=600, next_due_at=now,
+            expires_at=now + timedelta(hours=1), state="active", last_report_event_id=event_id,
+        ))
+        db.add(LegacyOrchestrationEvent(
+            event_id=event_id, legacy_instance_id="fixture-legacy", event_type="PRIME_SPECIALIST_SHADOW_REPORT",
+            message="Advisory report", payload_json=json.dumps({
+                "schedule_id": str(schedule_id), "report_event_id": event_id, "status": "evaluated",
+                "scope": {"legacy_instance_id": "fixture-legacy"}, "recommendation": {"heimdall_decision": "ABSTAIN"},
+                "verified_internal_outcomes": [{"outcome_event_id": "MIMIR-fixture"}],
+            }),
+        ))
+        db.commit()
+    finally:
+        session.close()
+    intent = {"turn_id": str(uuid4()), "message": "Walk me through this specialist report",
+              "specialist_schedule_id": str(schedule_id)}
+    result = client.post(f"{BASE}/{cid}/turns", headers=HEADERS, json=intent)
+    assert result.status_code == 201, result.text
+    assert result.json()["evidence"]["report_event_id"] == event_id
+    assert result.json()["evidence"]["heimdall_decision"] == "ABSTAIN"
+    assert result.json()["execution_authorized"] is False
+    assert result.json()["evidence"]["independent_loki_cleared"] is False
+    assert result.json()["response_mode"] == "DETERMINISTIC_READ_ONLY"
+    assert client.post(f"{BASE}/{cid}/turns", headers=HEADERS, json={
+        **intent, "specialist_schedule_id": str(uuid4()),
+    }).status_code == 409

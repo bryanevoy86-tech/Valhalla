@@ -672,3 +672,9 @@ Product Foundry artifact staging passed [hosted CI](https://github.com/bryanevoy
 - Owner chat defaults to private input and local deterministic handling. Explicit synthetic text alone can pass the fixed-host advisory gateway after separate release approval, confirmed provider authorization, passing both emergency-stop controls and a durable daily call reservation. Historical turns, attachments and internal evidence stay local. Approved OpenAI spending has a separate gate. No provider fallback or retry occurs.
 - Added additive quota and attempt persistence, per-turn replay protection, and provider-reported token counters. Isolated API fixtures exercised both provider configurations, blocked authorization and emergency cases, replay, quota exhaustion, and provider rate limiting. No actual provider call.
 - Corrected the doctrine and traceability records for regional operating mirrors and proven business-playbook clones.
+
+## Package 1 — Sourced owner continuity and specialist context
+
+- Added private persisted preferences, decisions, obligations, assumptions and simulations with exact source-turn references, thread scope or deliberate owner-wide visibility, and append-only corrections. The local conversation can recall records and open obligations. Owner-reported statements, assumptions and simulations cannot become verified facts by writing memory.
+- A private conversation turn can bind a persisted specialist schedule receipt and retain its outcome references, scope and advice. The response keeps its advisory status and grants no independent Loki clearance or execution authority.
+- Twelve focused owner conversation tests passed locally, including cross-thread provenance rejection, owner-wide revision, isolated obligations and receipt-bound conversation.

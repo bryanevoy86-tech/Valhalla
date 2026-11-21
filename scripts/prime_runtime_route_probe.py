@@ -23,6 +23,8 @@ MANDATORY_ENDPOINTS = {
     "owner_thread_list": ("GET", "/api/jarvis/conversations"),
     "owner_turn_send": ("POST", "/api/jarvis/conversations/{conversation_id}/turns"),
     "owner_turn_history": ("GET", "/api/jarvis/conversations/{conversation_id}/turns"),
+    "owner_memory_save": ("POST", "/api/jarvis/conversations/{conversation_id}/memory"),
+    "owner_memory_recall": ("GET", "/api/jarvis/conversations/{conversation_id}/memory"),
     "owner_attachment_upload": ("POST", "/api/jarvis/conversations/{conversation_id}/attachments"),
     "owner_attachment_list": ("GET", "/api/jarvis/conversations/{conversation_id}/attachments"),
     "owner_attachment_download": ("GET", "/api/jarvis/conversations/{conversation_id}/attachments/{attachment_id}/download"),
