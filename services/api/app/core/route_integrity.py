@@ -14,6 +14,7 @@ REQUIRED_ROUTER_NAMES = frozenset({
     "pantheon_assignments",   # durable per-role monitoring
     "loki_worker",            # authenticated independent reviewer interface
     "loki",                   # separate independent audit boundary
+    "owner_weweb",              # private owner conversation writes
     "auth_weweb",             # owner/user identity
     "completion_registry",   # Phase Three, governance and legacy orchestration
     "product_artifacts",        # owner-attested internal asset staging

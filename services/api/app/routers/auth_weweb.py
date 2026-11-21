@@ -18,7 +18,6 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
-from app.services.owner_conversation import ThreadIn, TurnIn, UploadIn, bounded_upload
 from app.users.models import UserProfile, AccountSettings
 
 router = APIRouter(prefix="/api/weweb", tags=["weweb-auth"])
@@ -500,34 +499,3 @@ def owner_conversation_history(conversation_id: uuid.UUID, limit: int = 50, db: 
     from app.services.owner_conversation import conversation_history
 
     return private_owner_response(conversation_history(db, conversation_id, limit))
-
-@router.post("/owner-conversations", status_code=201, dependencies=[Depends(require_owner_session)])
-def owner_create_conversation(payload: ThreadIn, db: Session = Depends(get_db)):
-    from app.services.owner_conversation import create_conversation
-
-    return private_owner_response(create_conversation(payload, db), status_code=201)
-
-
-@router.post("/owner-conversations/{conversation_id}/turns", status_code=201,
-             dependencies=[Depends(require_owner_session)])
-def owner_submit_turn(conversation_id: uuid.UUID, payload: TurnIn, db: Session = Depends(get_db)):
-    from app.services.owner_conversation import submit_turn
-
-    return private_owner_response(submit_turn(conversation_id, payload, db, local_only=True), status_code=201)
-
-
-@router.post("/owner-conversations/{conversation_id}/attachments", status_code=201,
-             dependencies=[Depends(require_owner_session)])
-def owner_upload_attachment(conversation_id: uuid.UUID, payload: UploadIn = Depends(bounded_upload),
-                            db: Session = Depends(get_db)):
-    from app.services.owner_conversation import store_attachment
-
-    return private_owner_response(store_attachment(conversation_id, payload, db), status_code=201)
-
-
-@router.post("/owner-conversations/{conversation_id}/attachments/{attachment_id}/extract",
-             dependencies=[Depends(require_owner_session)])
-def owner_extract_attachment(conversation_id: uuid.UUID, attachment_id: uuid.UUID, db: Session = Depends(get_db)):
-    from app.services.owner_conversation import local_extraction
-
-    return private_owner_response(local_extraction(conversation_id, attachment_id, db))
