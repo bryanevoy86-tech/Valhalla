@@ -849,3 +849,7 @@ Development commit `9c0ffae9f8993286caff449d9fa56eb91fbadd0c` binds review diffs
 | `652f8e1213adf53702bc4e76aa6451281b7a6242` | All six canonical tuning routes require the existing private Prime control identity. The regression exercises unauthorized reads, writes and evaluation, then proves authorized threshold and historical profile behavior. |
 
 Local full regression passed 369 backend tests, 21 disposable PostgreSQL checks, eight Builder materializer checks and one simulated-browser voice test. The runtime route probe found 36 critical routers and 94 required routes. The source preflight validated all 50 contracts. The 53 indexed tasks and seven construction packages were preserved. All evidence is isolated development, fixture accounting, or simulation. External acceptance is tracked in the December handoff.
+
+## November 21 — Source withdrawal reaches Prime and Pantheon before cadence
+
+Development commit `e6baa4dd0208d9139deb121052cd0c99b48ac9f8` records Foundry source withdrawal and its uniquely scoped notification in one transaction. SaaS, service and real-estate fixtures each proved one event after two identical withdrawal requests, a Norns withdrawal report, and an opted-in Prime HOLD before the next cadence slot. The allocation comparison excluded the withdrawn source. The fixtures produced no revenue. Full local backend regression passed 369 tests, and all 21 disposable PostgreSQL checks passed.
