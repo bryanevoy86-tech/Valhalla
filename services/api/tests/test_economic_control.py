@@ -248,21 +248,42 @@ def test_immediate_containment_holds_existing_factory_lane(economic_client, monk
     headers = {**OWNER, "X-Business-Factory-Key": "economic-factory-test"}
     today = datetime.now(timezone.utc).date()
     post(client, "mandates", mandate(today))
-    created = client.post("/api/business-factory/listing-drafts", headers=headers, json={
+    factory = "/api/business-factory"
+    listing = {
         **SCOPE, "product_id": "candidate_product", "industry": "digital_products",
         "title": "Scoped internal product", "description": "Candidate for a private economic containment rehearsal.",
         "price_cents_cad": 600, "request_key": "econ-contained-fixture",
-    })
+    }
+    created = client.post(f"{factory}/listing-drafts", headers=headers, json=listing)
     assert created.status_code == 200, created.text
     action_id = created.json()["action_id"]
     approve = client.post(f"/api/business-factory/actions/{action_id}/approve",
                           headers=headers, json={"confirmation": "APPROVE_INTERNAL_DRAFT"})
     assert approve.status_code == 200, approve.text
+    pending = client.post(f"{factory}/listing-drafts", headers=headers,
+                          json={**listing, "request_key": "queued-before-containment"})
+    assert pending.status_code == 200, pending.text
+    pending_id = pending.json()["action_id"]
+    draft_mandate = {**SCOPE, "mandate_id": "previously-open-fixture", "product_id": "candidate_product",
+                     "ttl_seconds": 600, "max_uses": 1, "max_price_cents_cad": 600}
+    assert client.post(f"{factory}/mandates", headers=headers, json=draft_mandate).status_code == 200
     freeze = {"id": str(uuid4()), "scope": SCOPE, "rationale": "Stop further commitments until the issue is understood."}
     assert client.post(f"{ROOT}/containment", json=freeze).status_code == 401
     receipt = post(client, "containment", freeze)
     assert post(client, "containment", freeze) == receipt
+    denied = client.post(f"{factory}/actions/{pending_id}/approve", headers=headers,
+                         json={"confirmation": "APPROVE_INTERNAL_DRAFT"})
+    assert denied.status_code == 409 and "containment" in denied.json()["detail"]
+    denied_grant = client.post(f"{factory}/mandates", headers=headers,
+                               json={**draft_mandate, "mandate_id": "contained-fixture"})
+    assert denied_grant.status_code == 409 and "containment" in denied_grant.json()["detail"]
+    assert client.get(f"{factory}/actions/{pending_id}", headers=headers).status_code == 200
+    assert client.post(f"{factory}/mandates/{draft_mandate['mandate_id']}/revoke", headers=headers).status_code == 200
     with Session(engine) as db:
+        from app.services.prime_business_execution import _approval_id, _mandate_event_id
+
+        assert db.query(LegacyOrchestrationEvent).filter_by(event_id=_approval_id(pending_id)).count() == 0
+        assert db.query(LegacyOrchestrationEvent).filter_by(event_id=_mandate_event_id("contained-fixture")).count() == 0
         outcome = run_one_approved_draft(db)
         assert outcome["status"] == "blocked" and "containment" in outcome["reason"]
         assert db.query(MediaContent).count() == 0

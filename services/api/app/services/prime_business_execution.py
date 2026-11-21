@@ -232,6 +232,14 @@ def _lock_mandate(db: Session, mandate_id: str):
     ).with_for_update().first()
 
 
+def require_factory_scope_open(db: Session, item: Any) -> None:
+    from app.services.economic_control import require_no_containment
+
+    require_no_containment(db, {
+        key: getattr(item, key) for key in ("legacy_instance_id", "business_id", "engine_id", "jurisdiction")
+    })
+
+
 def grant_draft_mandate(db: Session, request: Any) -> dict:
     """Grant finite standing authority for ONE product's local drafts only."""
     if _emergency_stop_active(db):
@@ -241,6 +249,7 @@ def grant_draft_mandate(db: Session, request: Any) -> dict:
                   jurisdiction=request.jurisdiction)
     if _lock_mandate(db, request.mandate_id):
         raise HTTPException(status_code=409, detail="Mandate ID already used")
+    require_factory_scope_open(db, request)
     grant = {
         "mandate_id": request.mandate_id,
         "legacy_instance_id": request.legacy_instance_id,
@@ -511,10 +520,13 @@ def approve_action(db: Session, action_id: str, confirmation: str) -> dict:
         engine_id=item.engine_id,
         jurisdiction=item.jurisdiction,
     )
+    require_factory_scope_open(db, item)
     approval_id = _approval_id(action_id)
     approved = db.query(LegacyOrchestrationEvent).filter(
         LegacyOrchestrationEvent.event_id == approval_id
     ).first()
+    if approved and not approval_matches_action(item, approved):
+        raise HTTPException(status_code=409, detail="approval evidence mismatch")
     if not approved:
         _event(
             db,
@@ -618,13 +630,8 @@ def _execute_locked_draft(db: Session, item: LegacyInstanceWorkItem) -> dict | N
     except HTTPException as exc:
         return {"status": "blocked", "action_id": item.action_id,
                 "reason": str(exc.detail), "verified": False}
-    from app.services.economic_control import require_no_containment
-
     try:
-        require_no_containment(db, {
-            "legacy_instance_id": item.legacy_instance_id, "business_id": item.business_id,
-            "engine_id": item.engine_id, "jurisdiction": item.jurisdiction,
-        })
+        require_factory_scope_open(db, item)
     except HTTPException as exc:
         return {"status": "blocked", "action_id": item.action_id, "reason": str(exc.detail), "verified": False}
     if "product_asset" in payload:
