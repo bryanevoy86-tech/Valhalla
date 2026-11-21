@@ -1,6 +1,8 @@
 # CODEX START HERE — Heimdall Prime integration (December 2026)
 
-This is the one-file handoff from ChatGPT's November 19 development and audit. **Do not create new packs or restart Valhalla.**
+Continue draft PR #4 on `fix/fail-closed-operations-20261119`. Start with the [current workstream index](docs/CODEX_RESUME_2026-12-01.md#current-workstream-index-and-startup-order), the [integration matrix](ops/prime_system_integration_matrix.json), and the [change ledger](ops/CHANGE_LEDGER.md). Together they preserve the 50 acceptance contracts, 53 tasks and seven construction packages. Verify the actual checkout and draft head using the [safe retrieval steps](docs/CODEX_RESUME_2026-12-01.md#safely-retrieve-current-work).
+
+All material below records earlier checkpoints and prompts. Historical counts, paths, and directives apply to their recorded checkpoint. Use the current index and matrix for the next implementation and evidence. External actions retain the separate authorization gates in the current handoff.
 
 ## November 20 — Independent review and Mimir checkpoint
 
@@ -10,14 +12,14 @@ The historical suite passed all 280 checks in GitHub CI. The next implementation
 
 Full local backend execution passed all 280 historical tests. The required CI workflow now runs the complete suite. Contract, buyer, closer and HTTP regressions are resolved against isolated data and storage. See the latest ledger and the December handoff's reconstructed 50-task register. The next architecture gate is a content-bound independent Loki review with mandatory reconsideration before a non-shadow Prime decision is persisted.
 
-## November 20 — Current engineering checkpoint
+## November 20 engineering checkpoint
 
 - Continue PR #4 on `fix/fail-closed-operations-20261119`. The latest entry in `ops/CHANGE_LEDGER.md` supersedes older claims below about the two historical collection errors. Full backend execution now runs and reports 218 passed, 60 failed and 2 skipped in isolated Linux. Canonical runtime probe verifies ORM configuration and 29 routes across 17 required router groups.
 - Deal stage updates and audit writes now share one transaction. Private integrity GET reports observed controls and blocked learning work. Private POST records those alerts. Wider probes and automatic response remain open.
 - The controlled operating-day and full intake regressions now pass. Intake writes lead, deal, explicit brief linkage and any underwriting freeze in one transaction. Both intake and status require the private Prime key. Reconcile the remaining closing, contract and alternate lifecycle routes with the same canonical data before merging. Compare the separate protected Windows checkout before integrating local-only work.
 - The source preflight still covers all 47 workstreams. The exact numbered 50-task register remains to be reconciled with owner records. Follow the existing full-vision traceability and external-activation boundaries.
 
-## ICE WALL CONTINUATION — latest engineering checkpoint, November 20
+## November 20 Ice Wall checkpoint
 
 **Do not redo the fixes below.** They are committed on draft PR #4, not deployed.
 
@@ -30,7 +32,7 @@ Full local backend execution passed all 280 historical tests. The required CI wo
 
 Next: after independent encrypted local recovery/restore, reconcile the two development histories, resolve real missing self-check and obsolete integrity test contracts, finish whole-app test execution, integrate the existing Builder artifact handoff into a least-privilege coding/testing/PR worker, and connect system-wide proactive scheduled/event-driven Gods, independent Loki and Prime decisions to durable work and verified learning. Proceed in parallel with market discovery, Product/Venture Foundries, compliant marketing/customer acquisition, real order-to-cash and financial proof. Retain all 47 original workstreams, wealth/residency, household/secure founder chat and integrated provider responsibilities. No production merge, migration, external operation or new paid service without approved release and specific authority.
 
-## CURRENT HANDOFF — November 20, 2026 (supersedes older counts and instructions below)
+## November 20 handoff snapshot
 
 - Continue draft PR #4 on `fix/fail-closed-operations-20261119`; no merge to main. The last recorded successful required CI run is 44748568129 (190 targeted tests on code commit 89cf644d); all four jobs were independently checked green. The diagnostic historical collection still has two reported errors and is not a full-suite certification. See the append-only change ledger.
 - New focused receipt-verification change d8c73301b17ba53022271915a42cc1ab1b13afb5 and regression cases e2443402182d1908e412727554fdfe4f19c8864b bind an internal listing's read-back status to its action, Legacy, receipt type and expected listing body. **New CI result not yet observed.** Review and run the required checks before treating this as verified.
@@ -52,7 +54,7 @@ The master scope now has 47 source-anchored workstreams, not only the earlier 25
 - Review draft: https://github.com/bryanevoy86-tech/Valhalla/pull/4
 - Live production and Render have NOT been mutated by this branch.
 
-## Read in this exact order
+## Original reading sequence
 
 1. ops/VALHALLA_FULL_VISION_TRACEABILITY.md (full project vision and conflicting historical decisions).
 2. ops/CHANGE_LEDGER.md (every development change, CI evidence, ZERO Render mutations).
@@ -78,7 +80,7 @@ The master scope now has 47 source-anchored workstreams, not only the earlier 25
 - 85 targeted tests passed: https://github.com/bryanevoy86-tech/Valhalla/actions/runs/44658342650 (47 smoke + 35 SQLite integration + 3 disposable PostgreSQL)
 - Full backend regression, live PostgreSQL and real-world business outcomes NOT yet proven.
 
-## Single prompt to give Codex
+## Original resumption prompt
 
 Continue my EXISTING Heimdall Prime / Valhalla system; do not start over. First preserve any local-only changes, then fetch origin/fix/fail-closed-operations-20261119, review its draft PR #4, and read CODEX_START_HERE.md, ops/CHANGE_LEDGER.md, ops/prime_system_integration_matrix.json, docs/HEIMDALL_DEFINITION_OF_DONE.md, and docs/CODEX_SYSTEM_FINISH_PASSES.md. Execute the three ordered integration passes against current source code, beginning with canonical full-app import, full regression tests, PostgreSQL migration rehearsal, secure identity, durable workers and evidence receipts. Repair the missing connections across the complete private Heimdall Prime, general discovery/decision/Mimir learning, five legacy businesses, Product Foundry and independently operating Venture Foundry. Reuse existing modules; no new pack scaffolds. Each claimed completed operation must have actual execution and independent proof. Keep all changes in GitHub review branches and record file changes, SHAs, CI results, unresolved dependencies and any Render action in ops/CHANGE_LEDGER.md. Never force-push, publish customer material, spend money, transfer funds, change external accounts or deploy production without my specific authorization. Once each pass is tested, give me the exact remaining gaps and an evidenced next step, not an optimistic completion percentage.
 
@@ -138,6 +140,6 @@ The full 47-workstream inventory and owner-confirmed system-wide Pantheon doctri
 
 Before deployment: reconcile local checkout and review latest PR/CI; configure separate server-side keys securely only after authorized migration/release; update trusted callers including internal tooling, cron and frontend server; test all auth and policy routes, revoke/expire/concurrency, verify database target, backups and rollback. No direct main push, provider credentials or production activation. Continue full specialist bridge, independent Loki, true discovery, leased recoverable worker, provider settlement/publishing and the whole 47-workstream vision. Do not downgrade regulated/wealth planning scope.
 
-## Current draft evidence — November 20 continuation
+## November 20 draft evidence
 
 Required GitHub CI now runs and passes all 280 historical backend tests with no skips. This supersedes the earlier collection and regression notes. The later independent Loki and scoped Mimir commit also passed hosted CI. Read the current checkpoint in docs/CODEX_RESUME_2026-12-01.md for the reconstructed 50-task register and operational sequence. An opt-in durable specialist worker runs scoped advisory evaluations with finite owner mandates. Event-driven independent God workers, independent reviewer operation, and commercial or regulated execution remain open.

@@ -3,7 +3,7 @@ Last reconciled: 2026-11-20
 Development branch: fix/fail-closed-operations-20261119
 Review PR: https://github.com/bryanevoy86-tech/Valhalla/pull/4
 
-This is an ordered execution plan, not three promises of instant completion. Run a pass until its acceptance gate is green. If a real provider, account authorization, design choice or funding is required, stop at OWNER_ACTION_REQUIRED, record evidence and do not fake a result.
+The pass descriptions below preserve the historical acceptance intent. Use the [current workstream index](CODEX_RESUME_2026-12-01.md#current-workstream-index-and-startup-order) and the [integration matrix](../ops/prime_system_integration_matrix.json) to select unfinished work and confirm prior evidence. The original numbered prompts and dates are archival. Continue internal work when a provider or external authorization is pending. The [external verification register](CODEX_RESUME_2026-12-01.md#external-verification-readiness) records the conditions for a separate authorized test.
 
 ## Original scope that MUST NOT be lost
 
@@ -96,7 +96,7 @@ A final production release needs reviewed code, clean CI, migration rehearsal, b
 Read docs/PRIME_AUTONOMY_SAFETY_CONTRACT.md. Treat the new autonomy_governor.py as the first deterministic policy gate, not a complete deployed security subsystem. PASS 1 must verify the stored owner approval and durable global kill switch before any external operation, test malicious instruction injection and false evidence, add persisted unknown-outcome quarantine and circuit breaker state, and prove tenant/authority boundaries. PASS 2 must enforce confirmed permission, consent, cost limits and legal posting rights at actual external marketing, checkout, payout and customer-support adapters. PASS 3 must require evidence-checked, independent source-grounded evaluation with abstention, cross-agent verification, self-repair within narrow bounds, emergency stop, incident escalation, and performance metrics (owner escalations per 100 actions, double-write count, unsupported decisions, escaped governance checks). No LLM output can set its own approval boolean.
 
 
-## New November 19/20 source and log audit — execute this before Pass 1
+## Historical November 19/20 source and log audit
 
 Read ops/REMAINING_SYSTEM_BLOCKERS_2026-11-19.md and the updated ops/CHANGE_LEDGER.md.
 
@@ -109,7 +109,7 @@ Then execute the entire backend suite, not merely --collect-only, in an isolated
 The new auth_revoked_access_tokens table and core/database fail-closed behavior require migration-first deployment planning; attempting to deploy code before schema preparation can make active session APIs fail with HTTP 503. No production merge without explicit owner approval.
 
 
-## Pass 0 and Pass 4: entire original Valhalla vision (mandatory scope)
+## Historical Pass 0 and Pass 4 — full scope references
 
 **Pass 0 BEFORE engine work:** Read ops/VALHALLA_FULL_VISION_TRACEABILITY.md and the expanded 47-workstream ops/prime_system_integration_matrix.json. This full scope includes the named Gods/Bridge Layer, original five-god risk evaluators, Norns, Mimir, Commander/voice A/B/C/Override, five initial legacies, proven business-playbook clones vs regional Legacy mirrors, separately from simulation and safety replicas, Product/Venture Foundries, real estate, non-RE engines, 90/10 and private Fun Fund rules, corporate banking, infinite banking, family/estate trusts, Panama and Bahamas, Canada departure/residency, tax/legal opinions, family payroll, Black Ice and resort development.
 

@@ -774,3 +774,13 @@ Product Foundry artifact staging passed [hosted CI](https://github.com/bryanevoy
 - Builder interruption claims are capped at three persisted attempts. The lease test exercised recovery and exhaustion without accepting a fabricated test receipt or conferring release authority.
 - Local verification passed 326 backend tests, 18 disposable PostgreSQL checks, 35 critical routers and 89 required routes. All 50 acceptance criteria, 53 task entries, and seven packages were preserved. Per-workstream continuation now lives in the integration matrix and the December handoff points directly to it.
 - Hosted run 44931582292 exposed an isolated owner-reset import regression. The owner write adapter now loads separately from the auth module while sharing the same owner dependency and JARVIS store. The isolated owner-reset and persistent revocation checks each passed four local cases. The corrected route manifest includes 36 critical routers and 89 required routes.
+
+## November 21 continuation — Owner attachment disposition and specialist recovery
+
+| Development commit | Canonical paths | Local verification |
+|---|---|---|
+| `ea93779fceb78aa1078a3229ad3ff2b21629aa3a` | `owner_conversation.py`, existing WeWeb owner router, `20261123_owner_disposition`, Pantheon monitor and private briefing | 327 backend tests passed. 18 checks passed on disposable PostgreSQL. Canonical import found 36 critical routers and all 91 required methods and paths. Alembic reported one head, `20261123_owner_disposition`. |
+
+The disposition rehearsal removed local fixture bytes and saved extraction text while preserving the owner's message and deletion evidence. PostgreSQL preserved the pre-existing attachment across migration and rejected contradictory storage state. The existing owner bearer sees attachment metadata and no raw payload. The specialist rehearsal consumed an exact duplicate without consuming the following schedule slot, recovered a share of missed work with one current read, rejected tampered evidence and included the measured missed slot in the private briefing.
+
+CI for the complete continuation is attached to the draft PR head. The December index and external verification readiness table specify the remaining gates. No production migration, provider inference, external delivery, financial activity or commercial validation occurred during this continuation.

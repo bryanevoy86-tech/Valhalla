@@ -11,7 +11,7 @@
         "services/api/app/main.py",
         "services/api/start.py"
       ],
-      "source_observation": "Canonical FastAPI import registered 36 critical routers and all 89 required routes in the isolated runtime.",
+      "source_observation": "Canonical FastAPI import registered 36 critical routers and all 91 required routes in the isolated runtime.",
       "evidence_level": "FOCUSED_CI_TESTED",
       "production_verified": false,
       "acceptance_test": "Prove every mandatory router imports in a clean canonical app; no missing OpenAPI paths or silent startup success",
@@ -22,7 +22,7 @@
       "owner_external_authorization_required": false,
       "continuation": {
         "next_implementation": "Exercise the registered routes in an authorized staging environment with migrated PostgreSQL.",
-        "existing_test_evidence": "Canonical route probe for 89 methods and paths.",
+        "existing_test_evidence": "Canonical route probe verified all 91 required methods and paths.",
         "owner_action": "Internal continuation is authorized under the standing development scope.",
         "required_acceptance_evidence_field": "acceptance_test"
       }
@@ -228,7 +228,8 @@
       "source_paths": [
         "alembic/versions/20261119_factory_legacy_work_schema.py",
         "alembic/env.py",
-        "alembic/versions/20261119_persistent_auth_revocation.py"
+        "alembic/versions/20261119_persistent_auth_revocation.py",
+        "alembic/versions/20261123_owner_disposition.py"
       ],
       "source_observation": "Prepared additive Factory and JWT revocation migrations; both upgraded and reran idempotently on disposable PostgreSQL with preexisting data preserved. Not complete historical chain or Render staging migration.",
       "evidence_level": "POSTGRES_INTEGRATION_TESTED",
@@ -240,7 +241,7 @@
       "owner_external_authorization_required": false,
       "continuation": {
         "next_implementation": "Rehearse the full deployment migration at staging scale and check restoration from backup.",
-        "existing_test_evidence": "See POSTGRES_INTEGRATION_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
+        "existing_test_evidence": "PostgreSQL migration chain preserved prior attachments and required content or a tombstone, with inconsistent states rejected.",
         "owner_action": "Internal continuation is authorized under the standing development scope.",
         "required_acceptance_evidence_field": "acceptance_test"
       }
@@ -253,7 +254,9 @@
         "services/api/tools/cron/business_factory_tick.py",
         "services/api/tools/cron/business_factory_worker.py",
         "services/api/tools/cron/specialist_schedule_worker.py",
-        "services/api/app/routers/prime_specialist_schedules.py"
+        "services/api/app/routers/prime_specialist_schedules.py",
+        "services/api/app/pantheon/monitor.py",
+        "services/api/tests/test_pantheon_assignments.py"
       ],
       "source_observation": "Isolated advisory specialist cadence writes a scoped report and advances due time in one transaction. PostgreSQL tests demonstrate concurrent workers cannot both take the same due row. No Render activation, independent agent scheduling, or general provider leases.",
       "evidence_level": "SOURCE_INSPECTED_ONLY",
@@ -264,8 +267,8 @@
       ],
       "owner_external_authorization_required": false,
       "continuation": {
-        "next_implementation": "Prove durable retries and expired-job recovery during a sustained multi-worker staging run.",
-        "existing_test_evidence": "See SOURCE_INSPECTED_ONLY and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
+        "next_implementation": "Prove missed and expired work recovery during a sustained multi-worker staging run. Address the single pending trigger slot when multiple independent events arrive.",
+        "existing_test_evidence": "test_pantheon_assignments.py replays an interrupted scope from persisted state, discards a verified duplicate, and records the missed schedule slot.",
         "owner_action": "Internal continuation is authorized under the standing development scope.",
         "required_acceptance_evidence_field": "acceptance_test"
       }
@@ -565,7 +568,7 @@
       "owner_external_authorization_required": false,
       "continuation": {
         "next_implementation": "Verify worker recovery and alerts in a controlled always-on staging run.",
-        "existing_test_evidence": "Owner conversation and WeWeb integration tests exercise local briefing and driving evidence contracts.",
+        "existing_test_evidence": "Owner integration tests exercise local and driving briefing contracts. Pantheon assignment tests show verified missed cadence records in briefing evidence.",
         "owner_action": "Internal continuation is authorized under the standing development scope.",
         "required_acceptance_evidence_field": "acceptance_test"
       }
@@ -590,7 +593,7 @@
       "owner_external_authorization_required": true,
       "continuation": {
         "next_implementation": "Connect and rehearse the actual WeWeb UI, visible approval routing and persistent session UX.",
-        "existing_test_evidence": "test_saas_tenant_entitlements.py uses separately authenticated owner/subscriber sessions, owner-only message/upload/extract and revocation.",
+        "existing_test_evidence": "test_saas_tenant_entitlements.py verifies owner-only conversation, attachment metadata, upload/extract, no-store, subscriber denial and revocation.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
         "required_acceptance_evidence_field": "acceptance_test"
       }
@@ -632,7 +635,8 @@
         "services/api/app/core/dependencies.py",
         "services/api/tests/test_prime_control_and_decision_integrity.py",
         "services/api/tests/test_owner_conversation.py",
-        "services/api/app/routers/owner_weweb.py"
+        "services/api/app/routers/owner_weweb.py",
+        "alembic/versions/20261123_owner_disposition.py"
       ],
       "source_observation": "Owner-only WeWeb writes are local-only, and existing separate mandates control retention. Expired bytes are unavailable through normal downloads and extracts and cached conversation extracts are redacted on read. Physical deletion and retention enforcement outside these surfaces remain open.",
       "evidence_level": "SQLITE_INTEGRATION_TESTED",
@@ -644,8 +648,8 @@
       ],
       "owner_external_authorization_required": true,
       "continuation": {
-        "next_implementation": "Complete deletion policy, integrity retention and environment-level access validation.",
-        "existing_test_evidence": "test_owner_conversation.py verifies elapsed retention blocks downloads/extraction and redacts saved extract history.",
+        "next_implementation": "Add bounded authorized expiry handling and validate backup retention and restore behavior, then verify environment-level access.",
+        "existing_test_evidence": "test_owner_conversation.py verifies elapsed retention blocks reads, disposition purges active bytes and extracts, and retries, digest conflicts and reused IDs fail safely.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
         "required_acceptance_evidence_field": "acceptance_test"
       }
@@ -689,7 +693,8 @@
         "docs/PANTHEON_CALIBRATION_PROTOCOL.md",
         "services/api/app/services/universal_opportunity_evaluator.py",
         "ops/VALHALLA_FULL_VISION_TRACEABILITY.md",
-        "docs/PHASE3_INTEGRATED_ARCHITECTURE.md"
+        "docs/PHASE3_INTEGRATED_ARCHITECTURE.md",
+        "services/api/tests/test_pantheon_assignments.py"
       ],
       "source_observation": "Six existing specialists now produce role-specific Foundry signals from assigned scope and date-bound opportunity evidence. Prime and Factory enforce the cited source. Broader authorized adapters and external model use are pending.",
       "evidence_level": "SQLITE_INTEGRATION_TESTED",
@@ -702,7 +707,7 @@
       "owner_external_authorization_required": true,
       "continuation": {
         "next_implementation": "Add domain-specific research and evidence retrieval for remaining specialist scope.",
-        "existing_test_evidence": "See SQLITE_INTEGRATION_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
+        "existing_test_evidence": "test_pantheon_assignments.py covers scope-specific receipts, verified outcomes, missed work, duplicate evidence, digest corruption and emergency stop.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
         "required_acceptance_evidence_field": "acceptance_test"
       }
@@ -753,7 +758,7 @@
       "owner_external_authorization_required": true,
       "continuation": {
         "next_implementation": "Implement speech input/output and independently verify safe driving controls and their non-authority.",
-        "existing_test_evidence": "test_saas_tenant_entitlements.py verifies the private emergency driving briefing response.",
+        "existing_test_evidence": "test_saas_tenant_entitlements.py verifies the authenticated read-only driving briefing, including the emergency-stop state. Verified missed cadence counts are included in its attention summary.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
         "required_acceptance_evidence_field": "acceptance_test"
       }
@@ -1274,5 +1279,6 @@
         "required_acceptance_evidence_field": "acceptance_test"
       }
     }
-  ]
+  ],
+  "current_task_index": "docs/CODEX_RESUME_2026-12-01.md#current-workstream-index-and-startup-order"
 }

@@ -6,7 +6,7 @@ DO NOT restart the project, regenerate completed packs, or treat API presence as
 
 ## Start here — current continuation
 
-Use the current head of draft PR #4 and confirm the latest required CI run. Use the verified workstream index below before following a dated checkpoint. Dated checkpoints are historical records. The operating routes below supersede older instructions to implement the initial economic containment/recovery, local discovery intake, and owner briefing/history lanes. There are 50 acceptance contracts, 53 task entries and seven construction packages.
+Use the current head of draft PR #4 and confirm the latest required CI run. Use the current workstream index, integration matrix and latest ledger verification to choose unfinished work. Dated checkpoints and original prompts are historical records. The same index supersedes earlier execution orders in the root start page and the finish passes. There are 50 acceptance contracts, 53 task entries and seven construction packages.
 
 ## Current workstream index and startup order
 
@@ -92,13 +92,27 @@ This working register maps three cross-workstream integration tasks and all 47 o
 
 ### Safely retrieve current work
 
-From your existing local folder C:\dev\valhalla:
+On Windows, open PowerShell in the actual VS Code project folder and verify it on resumption. The November paths were historical and this Linux run cannot inspect them.
 
-    git status --short
-    git fetch origin
-    git switch -c codex-business-factory origin/fix/fail-closed-operations-20261119
+```powershell
+$repoRoot = git rev-parse --show-toplevel
+if ($LASTEXITCODE -ne 0) { throw 'Open the actual Valhalla checkout and retry.' }
+$remoteUrl = git -C $repoRoot config --get remote.origin.url
+if ($remoteUrl -notmatch '^(https://github\.com/|git@github\.com:)bryanevoy86-tech/Valhalla(\.git)?/?$') {
+    throw 'Verify the checkout origin against draft PR #4 without printing credentials.'
+}
+git -C $repoRoot status --short --branch
+git -C $repoRoot fetch origin fix/fail-closed-operations-20261119
+if ($LASTEXITCODE -ne 0) { throw 'Resolve the fetch before switching branches.' }
+git -C $repoRoot log -1 --oneline FETCH_HEAD
+git -C $repoRoot log --left-right --oneline HEAD...FETCH_HEAD
+```
 
-If there are uncommitted local changes, preserve them before switching. Do NOT reset or delete local work. If the branch name exists already, choose a new name. Codex must compare local-only work against GitHub before merging any changes.
+Compare the fetched SHA to the draft PR. Preserve local-only commits and pending changes for review. Use a separate worktree from `FETCH_HEAD` if the active checkout has changes, and record the verified absolute path on resumption.
+
+## Historical checkpoints
+
+Each dated section below preserves implementation history. Use the current index above for execution order.
 
 ## Code already on the development branch
 
@@ -114,7 +128,7 @@ If there are uncommitted local changes, preserve them before switching. Do NOT r
 
 New pilot is INTERNAL_DRAFT_ONLY: persistent, idempotent, owner-approved, verified record and receipt. No claim of a storefront, payments, generated downloads, marketing or sale. All new pilot API calls require X-Business-Factory-Key, compared to the secure server-side VALHALLA_FACTORY_KEY. Missing key = HTTP 503. The required key has NOT been set on Render in this work.
 
-## Required Codex next actions (in order)
+## Original execution sequence (archived)
 
 1. Read the ledger, acceptance contract, this handoff and PR #4 before writing code.
 2. Fetch the branch. Run focused and integrated CI tests in an isolated environment. Review tests for meaningful proof and inspect legacy full-suite errors without hiding or ignoring them.
@@ -127,7 +141,7 @@ New pilot is INTERNAL_DRAFT_ONLY: persistent, idempotent, owner-approved, verifi
 9. Re-run complete tests. Maintain an evidence table per capability: code, focused test, real integrated test, staging proof, deployed commit, live receipt and outcome.
 10. Propose a controlled deployment and rollback plan for owner approval. Do not push to main or change Render service configuration without that approval.
 
-## Current Render inspection — 2026-11-19
+## Historical Render inspection — 2026-11-19
 
 - Workspace: tea-d3fbf3r3fgac73b3ed40
 - API service srv-d3hatinfte5s73cqbbh0: live Git commit 93cb1afe (October 10).
@@ -138,7 +152,7 @@ New pilot is INTERNAL_DRAFT_ONLY: persistent, idempotent, owner-approved, verifi
 - Production API database identity remains unverified.
 - Do not print or commit credentials. Do not create new paid Render services casually.
 
-## Paste this prompt into Codex on resumption
+## Original resumption prompt (archived)
 
 Continue the CURRENT Valhalla / Heimdall Prime codebase. Start with a safe git fetch, review GitHub PR #4 (branch fix/fail-closed-operations-20261119), and read ops/CHANGE_LEDGER.md, docs/CODEX_RESUME_2026-12-01.md, docs/HEIMDALL_DEFINITION_OF_DONE.md and docs/PHASE3_INTEGRATED_ARCHITECTURE.md. Preserve all existing local-only changes. DO NOT create more standalone packs, reset the repository, or mark simulated functionality complete. Verify the real FastAPI and SQLAlchemy integration of the new owner-approved Business Factory execution lane and its SHA-256 receipts. Run all new CI checks, diagnose broad-suite failures, and then build the missing durable Postgres worker/recovery, actual product artifact storage, provider-backed storefront fulfilment, verified sales/refunds/accounting, lawful automated marketing, and proactive multi-industry opportunity discovery into ONE canonical governed end-to-end lifecycle. Reuse the existing Prime, legacy, Phase Three evaluator and Mimir modules wherever possible. Record every file/commit, CI link, Render action and real-world evidence in ops/CHANGE_LEDGER.md. Do not push to main or deploy production until I authorize a reviewed release; do not expose secrets or spend funds. The final deliverable must demonstrate a real business from independent discovery through verified execution, customer delivery, and reconciled profit, not endpoints that only return success.
 
@@ -335,7 +349,7 @@ Code checkpoint `ba302311e6d5c17c46e61bc2df662ffa5a34cb04`. Read the change ledg
 
 Use `/containment` to protect an enrolled Factory lane immediately. No endpoint allocates actual funds or automatically resumes a contained operation. Future integration needs independent bank and obligations reconciliation, reviewed winding-down and recovery case lifecycle, scoped cash release rules, full portfolio coverage, and internal priority tradeoffs with each Legacy. Preserve advisor-only investment authority and continue the private WeWeb, voice, notifications, Builder, SaaS, real estate, and regulated planning workstream backlog.
 
-## Startup operating integration — current operating paths
+## Startup operating integration checkpoint
 
 1. Register approved practice sources typed `DEMAND_EXPORT` or `PROCUREMENT_EXPORT` and scoped specialist assignments. Submit owner-authorized exports at `POST /api/prime/foundry/intake`. The opt-in `foundry_discovery_worker.py` uses the existing PostgreSQL worker controls and the explicit `VALHALLA_FOUNDRY_DISCOVERY_WORKER_ENABLED` flag. Inspect durable jobs by ID. Recheck source rights and freshness when generating a candidate from the scoped report. Losing source authorization invalidates that candidate.
 2. Use the existing economic registry for ranking. A reviewed `RESTART` binds the exact current assessment and cannot increase exposure. Late, disputed, or open tracked obligations can block restart. Cancel an unneeded simulated reservation via `/reservation-releases`. Lifetime funded totals and losses stay in force. `/portfolio-exposure` returns per-currency aggregates and missing evidence counts.
@@ -348,8 +362,33 @@ Startup-critical next work includes independently authorized market-source conne
 ## Owner and startup evidence continuation — November 21, 2026
 
 - `POST /api/weweb/owner-conversations` and thread suffixes `/turns`, `/attachments` and `/attachments/{id}/extract` use the private owner bearer and existing JARVIS store. Browser turns are forced to local processing. `/owner-briefing?mode=driving` provides short read-only output for eventual voice rendering.
-- Attachment dispositions still require the separate owner mandate. `retain_until` is an inclusive UTC date. Once elapsed, ordinary download, re-extraction and saved-extract disclosure are blocked. The underlying bytes and audit history remain stored. Implement verified deletion and restore handling as separate retention work.
+- Attachment dispositions still require the separate owner mandate. `retain_until` is an inclusive UTC date. Once elapsed, ordinary download, re-extraction and saved-extract disclosure are blocked. At this checkpoint only read suppression was available. The disposition follow-up below supersedes that limitation for active storage.
 - Mimir's decision record accepts purpose, rationale and scoped memory dependency IDs. “Review past decisions” lists differences under an exact normalized topic without making a finding about truth or authority.
 - `PUT /api/prime/foundry/intake/sources/{source_id}/signing-key` enrolls a publisher public key with an owner mandate. External export intake is still a signed-file handoff. No outbound source execution is configured.
 - Product Foundry fixture settlement compares signed event deltas with unique indexed statement entries. Existing refunds remain available during emergency containment. This rehearsal produces no actual settlement receipt.
 - Builder claims expire and only three lease attempts are available before `lease_exhausted`. The owner briefing shows remaining recorded failures. Restart the approved staged worker under the existing configuration only after the independent staging authorization.
+
+## Current continuation evidence
+
+- Owner disposition is implemented in `services/api/app/services/owner_conversation.py` and `alembic/versions/20261123_owner_disposition.py`. `DELETE /api/jarvis/conversations/{conversation_id}/attachments/{attachment_id}` requires the private Prime key and the separate owner mandate. The body binds `source_sha256` and `reason` (`OWNER_REQUEST` or `RETENTION_EXPIRED`). The route removes active bytes and extraction copies in one transaction and retains a tombstone. Expiry still blocks access after the inclusive UTC date. Batch deletion and backup retention/restore verification remain open. Existing authored chat and review history stay available.
+- `GET /api/weweb/owner-conversations/{conversation_id}/attachments` uses the revocable owner bearer, returns metadata with `Cache-Control: no-store`, and shows tombstones. Browser disposition requires the existing separate owner approval path. Test references are `services/api/tests/test_owner_conversation.py` and `services/api/tests/test_saas_tenant_entitlements.py`.
+- `services/api/app/pantheon/monitor.py` consumes duplicate triggers using digest-verified reports and accounts for missed cadence slots without moving the next deadline on replay. The work-queue lens reports overdue recorded work within exact scope. The private briefing and driving view project sampled missed cadence evidence. `services/api/tests/test_pantheon_assignments.py` checks replay, tamper rejection, recovery and scope separation. Multi-worker staging soak, domain-specific coverage, and event backlog handling remain open.
+- Next internal review starts with the matrix rows for `pantheon_expanded_bridge`, `scheduling`, `weweb_frontend`, `notifications`, `owner_commander_voice`, `discovery_sources`, `product_foundry_subscriptions` and `treasury_banking_controls`. Continue through other authorized unfinished rows as their dependencies allow. The [ledger](../ops/CHANGE_LEDGER.md) records the exact development commit and verification.
+
+## External verification readiness
+
+The following are staging gates for existing workstreams. Record the approved environment, connector, scope, budget and expected evidence before each test. Staging hosts, account identifiers and costs that have never been approved remain pending. Keep credential values server-side and out of receipts.
+
+| Integration and endpoint | Credential and test scope | Cost and side effects | Expected receipt and owner authorization |
+|---|---|---|---|
+| Render API/worker and PostgreSQL. Staging service IDs/host pending; `GET /health` and mandatory route probe against the selected application. | Existing staging project/service access and staging-only database URL. Test disposable migration, restore, forced worker interruption and restart with synthetic rows. | Hosting quote pending. Possible staging build, process restart and schema writes; no production DB access. | Service and build IDs, commit, Alembic head, isolated DB identity marker, checksums and a timed recovery log. Owner approves the staging resources, access, cost and window. |
+| WeWeb private preview. `POST /api/weweb/login`, `GET /api/weweb/owner-briefing`, and `/api/weweb/owner-conversations` as documented above. | Project editor access and a synthetic staging owner/subscriber pair with revocable JWTs. Verify session continuity, tenant denial, cache headers, disposition receipt display and logout on two clients. | Existing plan and preview cost unconfirmed; preview edits, session and fixture storage only. | Preview revision, redacted request/response evidence and revocation receipt. Owner approves the exact preview project and writer access. |
+| Owner Groq adapter. `POST https://api.groq.com/openai/v1/chat/completions`. Alternate OpenAI owner endpoint in `owner_advisory_model.py`; separately approved only. | Server-side `VALHALLA_OWNER_CHAT_GROQ_KEY`, explicit owner-chat release and model allowlist, synthetic data class and request cap. Staging-only smoke test of one approved request and outage handling. | Free-plan evidence and request quota required before any call. One synthetic payload and token usage; paid fallback disabled. | Provider request/model identity, recorded status and reconciled tokens with provider receipt. Owner separately approves the exact synthetic payload class, model, limits and inference. |
+| Independent Loki. `POST /loki/worker/reviews/{review_id}/result` and `POST /loki/reviews/{review_id}/reconsider`. External model vendor/URL pending. | Separate reviewer identity and `VALHALLA_LOKI_REVIEWER_KEY`, plus a distinct staged model credential when selected. Exercise an exact fixture digest, material objection, rejection and reconsideration. | Model costs or zero-cost allowance unverified; staged review writes and approved synthetic inference only. | Independent reviewer/model attribution, source/result digests, objection and reconsideration receipts. Owner approves the independent model, separation, synthetic inputs and budget. |
+| Source discovery. `PUT /api/prime/foundry/intake/sources/{source_id}/signing-key` and `POST /api/prime/foundry/intake`. Upstream host and export rights pending source selection. | Publisher Ed25519 public key plus owner mandate, a licensed signed export and exact Legacy scope. Test duplicate, stale and wrong-scope records. | No API fee for local fixtures. Any outbound connector price, pull scope and data terms require approval; staging jobs and reports persist. | Source license, timestamp, export digest, intake receipt and scoped finding. Owner approves the source, terms and permitted access. |
+| Checkout and settlement. Fixture `POST /api/prime/foundry/rehearsal/payment-fixtures` and `/orders/{order_id}/settlement-fixtures`. Merchant test account and callback destination pending. | Selected provider’s test-only key and webhook signing secret server-side. Exercise authorized test checkout, fulfillment, duplicate refund and statement reconciliation. | Sandbox cost and any webhook email effects require confirmation. Synthetic order and fulfillment only. | Signed provider event IDs, order/delivery identity and matched statement entry. Owner approves merchant, callback, products and synthetic scope. |
+| Bank statements and QuickBooks. `/api/prime/economy` statement fixture contract and `services/api/app/integrations/quickbooks/client.py`; bank endpoint and company realm pending. | Approved read-only sandbox bank credential or signed sample statement. QuickBooks sandbox OAuth app/realm with scoped test access. Compare opening/closing balances, fees, unmatched entries and duplicate imports. | Vendor fees unconfirmed. Staging imports or synthetic sandbox entries only; no transfers. | Statement provenance, reconciliation report and remote journal/readback IDs when configured. Owner approves institution, realm, data access and any write. |
+| DocuSign and Google workspace. Legacy adapter paths `services/api/app/integrations/docusign/client.py` and project storage integration; demonstration account, exact instance and folder pending. | DocuSign demo integration credentials, scoped consent and synthetic envelope; Google test workspace OAuth or scoped service account and private fixture folder. | Vendor/license costs unconfirmed. Test only controlled envelope recipients and disposable documents, with explicit consent for email or remote writes. | Provider-generated envelope/file IDs, signature or access receipts and cleanup record. Owner approves destination, access scope and test side effects. |
+| Notifications and voice. Existing private briefing `GET /api/weweb/owner-briefing?mode=driving` and fail-closed `outbox_dispatcher.py`. Provider and send/speech URLs pending. | Approved sandbox sender and controlled test recipient or device-local speech permission. Check consent, deduplication, outage and emergency controls. | SMS, voice or email costs unknown; funded or recipient-facing tests require separate approval. No sensitive briefing content in fixtures. | Transport acceptance and provider delivery/readback, or a device-local voice replay trace. Owner approves opt-in destinations, channel, payload and cost. |
+| Marketing, real estate, acquisitions, SaaS pilot and professional preparation. Existing Foundry/Legacy scope interfaces; external project, recipient, portal and exact endpoint pending provider or professional selection. | A scoped pilot/test account for any external connector. Professional document exchange uses separately approved access and reviewed redacted material; no blanket mandate. | Quotes and contact scope pending. Any outreach, filing, agreement, activation, signing or regulated step requires specific authorization. | Provider receipt or dated licensed reviewer sign-off with scope and disposition. Owner selects recipients and authorizes each external action. |
+| Investment and FX market data. Existing advisory replay interfaces. Named licensed data/broker feed and sandbox endpoint pending. | Read-only test data credential scoped to timestamped quotes and provenance. Exercise replay, costs, stale quotes and classification. | Data-license fees unconfirmed. Quote readback only. | Source timestamp, venue/license and replay receipt. Owner approves source access and fees. Trading and transfers remain outside scope. |
