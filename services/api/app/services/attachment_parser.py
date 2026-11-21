@@ -3,7 +3,9 @@ from io import BytesIO
 import json
 import re
 import resource
+import subprocess
 import sys
+from pathlib import Path
 from xml.etree import ElementTree as ET
 from zipfile import ZipFile
 
@@ -84,6 +86,44 @@ def office(data, mime):
         return bounded(sections, "XLSX", worksheet_count=len(sheet_names), formulas_evaluated=False)
 
 
+def image_text(data, mime):
+    from PIL import Image
+
+    Image.MAX_IMAGE_PIXELS = 12_000_000
+    formats = ["PNG"] if mime == "image/png" else ["JPEG"]
+    with Image.open(BytesIO(data), formats=formats) as image:
+        if image.width * image.height > Image.MAX_IMAGE_PIXELS:
+            raise ValueError("image pixel limit exceeded")
+        info = {"width": image.width, "height": image.height, "vision_performed": False}
+        kind = image.format
+        image.verify()
+
+    binary = Path("/usr/bin/tesseract")
+    if not binary.is_file():
+        return bounded([], kind, **info, ocr_performed=False, ocr_status="UNAVAILABLE")
+    # Re-encode only decoded, grayscale pixels. The OCR process sees no original
+    # container data, metadata, command arguments from the file, or credentials.
+    with Image.open(BytesIO(data), formats=formats) as image:
+        image.thumbnail((1600, 1600))
+        grayscale = image.convert("L")
+        sanitized = Image.frombytes("L", grayscale.size, grayscale.tobytes())
+        png = BytesIO()
+        sanitized.save(png, format="PNG")
+    try:
+        result = subprocess.run(
+            [str(binary), "stdin", "stdout", "-l", "eng", "--psm", "6"],
+            input=png.getvalue(), stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+            env={"OMP_THREAD_LIMIT": "1"}, timeout=4, check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return bounded([], kind, **info, ocr_performed=False, ocr_status="UNAVAILABLE")
+    if result.returncode != 0 or len(result.stdout) > 100_000:
+        return bounded([], kind, **info, ocr_performed=False, ocr_status="UNAVAILABLE")
+    text = result.stdout.decode("utf-8", errors="replace").strip()
+    return bounded([("image OCR", text)] if text else [], kind, **info, ocr_performed=True,
+                   ocr_status="EXTRACTED" if text else "NO_TEXT")
+
+
 def parse(data, mime):
     if mime == "text/plain":
         return bounded([("text", data.decode("utf-8"))], "TEXT")
@@ -101,14 +141,7 @@ def parse(data, mime):
         result["bounded_output"] |= count > MAX_SECTIONS
         return result
     if mime in {"image/png", "image/jpeg"}:
-        from PIL import Image
-        Image.MAX_IMAGE_PIXELS = 12_000_000
-        with Image.open(BytesIO(data), formats=["PNG"] if mime == "image/png" else ["JPEG"]) as image:
-            if image.width * image.height > Image.MAX_IMAGE_PIXELS:
-                raise ValueError("image pixel limit exceeded")
-            result = bounded([], image.format, width=image.width, height=image.height, vision_performed=False)
-            image.verify()
-            return result
+        return image_text(data, mime)
     raise ValueError("unsupported media type")
 
 

@@ -206,6 +206,7 @@
       "id": "builder_code",
       "priority": "P0",
       "source_paths": [
+        "scripts/builder_assignment_worker.py",
         "services/api/app/routers/builder.py",
         "services/api/app/core/builder_path_policy.py",
         "tests/test_builder_review_boundary.py",
@@ -214,7 +215,7 @@
         "scripts/builder_test_review.py",
         "tests/test_builder_offline_runner.py"
       ],
-      "source_observation": "Existing Builder queue, snapshot-bound review bundles and stale-base/tamper checks tested via FastAPI and SQLite; independent artifact materializer checksum/syntax cases passed. Direct runtime source writes denied. Opt-in offline container runner pins the committed base and image, then records the actual backend test process exit. No autonomous assignment worker or release authority.",
+      "source_observation": "Snapshot-bound candidates can be queued, leased, tested by the existing isolated runner and returned with bounded review receipts. Automatic candidate generation and release are pending.",
       "evidence_level": "SQLITE_INTEGRATION_TESTED",
       "production_verified": false,
       "acceptance_test": "Prove authorized durable development assignments, snapshot-bound artifact export, isolated fresh checkout and actual regression/security tests, scoped PR review and staged release. No API mutation of running source or unrestricted pushes.",
@@ -228,13 +229,14 @@
       "id": "ai_providers",
       "priority": "P1",
       "source_paths": [
+        "services/api/app/routers/specialist_probes.py",
         "services/api/app/routers/model_provider.py",
         "app/ai/providers.py",
         "services/api/app/services/owner_advisory_model.py",
         "services/api/app/routers/provider_evidence.py",
         "services/api/tests/test_provider_evidence.py"
       ],
-      "source_observation": "Fixed-host advisory lane requires explicit release and provider approval, synthetic input, emergency clearance and an atomic daily reservation. Provider-reported token usage is recorded when supplied. Versioned, owner-supplied synthetic fixture outputs can be scored and compared by expanded specialist role. Loki comparison excludes the active Prime model identity. Live benchmarks, external cost confirmation and autonomous selection remain open.",
+      "source_observation": "Fixed-host advisory inference and metered Groq staging probes use scoped role evidence and fixed synthetic inputs. Loki requires separate configuration. Actual paid costs and live model suitability remain unverified.",
       "evidence_level": "SOURCE_INSPECTED_ONLY",
       "production_verified": false,
       "acceptance_test": "Select provider, enforce budget and data privacy, record cost, handle expired key/outage, optionally local model",
@@ -504,13 +506,14 @@
       "id": "pantheon_expanded_bridge",
       "priority": "P0",
       "source_paths": [
+        "services/api/app/pantheon/monitor.py",
         "docs/UNIVERSAL_OPPORTUNITY_PIPELINE.md",
         "docs/PANTHEON_CALIBRATION_PROTOCOL.md",
         "services/api/app/services/universal_opportunity_evaluator.py",
         "ops/VALHALLA_FULL_VISION_TRACEABILITY.md",
         "docs/PHASE3_INTEGRATED_ARCHITECTURE.md"
       ],
-      "source_observation": "Expanded Heimdall/Odin/Loki/Norns/Tyr/Forseti/Vidar/Mimir/Njord/Freyja/Bragi/Huginn-Muninn and alternative Valkyrie/Fenrir/Skald/Jotunn names from historical plan; not all currently independent agents.",
+      "source_observation": "All expanded role names support durable scope subscriptions. Per-role local adapters poll cadence and exact verified Factory outcomes. Domain-specialized AI and external discovery are pending.",
       "evidence_level": "SOURCE_INSPECTED_ONLY",
       "production_verified": false,
       "acceptance_test": "Map historical role/authority variants without losing user intent; test controlled bridge and no unrestricted agent-to-agent tools; owner ratifies conflicting labels. Owner-confirmed 2026-11-20: prove every specialist covers all authorized relevant subsystems via scheduled and event-driven analysis, durable scoped reports to Prime, independent Loki cross-system challenges, and Prime synthesis/decision/verified execution inside existing mandates without routine owner approval; test missing/stale evidence, escalation and tenant isolation.",
@@ -847,6 +850,7 @@
       "id": "loki_independent_challenger",
       "priority": "P0",
       "source_paths": [
+        "services/api/tools/cron/loki_analyst_worker.py",
         "docs/LOKI_INDEPENDENT_CHALLENGER_CONTRACT.md",
         "services/api/app/routers/governance_loki.py",
         "services/api/app/ai/agents/loki.py",
@@ -858,7 +862,7 @@
         "services/api/tests/test_loki_audit_fail_closed.py",
         "services/api/tests/test_prime_control_and_decision_integrity.py"
       ],
-      "source_observation": "Existing deterministic Loki challenges now also reject contradictory margin range and capital bounds. Original five-God evaluations and fake audit fail-closed tests pass; An independent worker interface now persists content-bound receipts and objections, and Prime requires reconsideration before non-shadow persistence. External reviewer deployment, proactive cross-system coverage and dispatch enforcement remain unverified.",
+      "source_observation": "An independent queue worker runs deterministic checks, binds findings to versioned evidence and requires reconsideration of linked specialist reports before decision and execution. Live independent AI remains staged.",
       "evidence_level": "FOCUSED_CI_TESTED",
       "production_verified": false,
       "acceptance_test": "Independently audit immutable Heimdall proposals with contrary evidence and sourced objection ledger, prove re-audit after changes, equal-standing owner dissent, lawful professional escalation, and mandatory fail-closed high-risk dispatch; realistic adversarial cases and reviewer outage tested in Postgres/staging. Prove proactive cross-system coverage, reports to Prime, immutable independent dissent and recorded Prime response. Owner receives exceptions rather than approving every routine decision.",

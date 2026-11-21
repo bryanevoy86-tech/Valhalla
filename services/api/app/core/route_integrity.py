@@ -24,6 +24,7 @@ REQUIRED_ROUTER_NAMES = frozenset({
     "norns_forecasts",          # timestamped observable forecasts
     "prime_specialist_schedules",  # durable owner-authorized shadow cadence
     "builder",                # controlled software building
+    "builder_assignments",      # isolated worker leasing and receipts
     "marketing",              # marketing registry
     "media_engine",           # content records
     "saas_access",            # subordinate subscription access

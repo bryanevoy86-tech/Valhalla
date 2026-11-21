@@ -69,6 +69,8 @@ MANDATORY_ENDPOINTS = {
     "media_registry": ("POST", "/media/content"),
     "saas_plan_registry": ("GET", "/saas/plans"),
     "builder": ("GET", "/builder/tasks"),
+    "builder_assignment": ("POST", "/builder/assignments"),
+    "builder_assignment_claim": ("POST", "/builder/assignments/claim"),
     "system_readiness": ("GET", "/readyz"),
     "pantheon_king": ("POST", "/api/governance/king/evaluate"),
     "pantheon_queen": ("POST", "/api/governance/queen/evaluate"),

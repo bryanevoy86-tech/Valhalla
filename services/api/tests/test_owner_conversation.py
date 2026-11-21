@@ -428,3 +428,32 @@ def test_mimir_owner_turn_scopes_registered_sources_and_escalates_conflict(clien
     assert turn["response_mode"] == "DETERMINISTIC_READ_ONLY"
     assert turn["execution_authorized"] is False
     assert client.post(turns, headers=HEADERS, json={**request, "knowledge_jurisdiction": "CA-ON"}).status_code == 409
+
+
+def test_private_image_ocr_extracts_pixels_or_reports_runtime_unavailable(client):
+    from io import BytesIO
+    from pathlib import Path
+
+    from PIL import Image, ImageDraw, ImageFont
+
+    img = Image.new("RGB", (600, 110), "white")
+    font = ImageFont.load_default(size=44)
+    ImageDraw.Draw(img).text((24, 22), "VALHALLA INVOICE", fill="black", font=font)
+    png = BytesIO()
+    img.save(png, format="PNG")
+    cid = create(client)
+    attachment = asset(png.getvalue(), "image/png", "invoice.png")
+    root = f"{BASE}/{cid}/attachments"
+    assert client.post(root, headers=HEADERS, json=attachment).status_code == 201
+    result = client.post(f"{root}/{attachment['attachment_id']}/extract", headers=HEADERS)
+    assert result.status_code == 200, result.text
+    extract = result.json()
+    assert extract["source_sha256"] == attachment["sha256"]
+    assert extract["sent_to_provider"] is False
+    assert extract["vision_performed"] is False
+    assert extract["evidence_class"] == "UNTRUSTED_ATTACHMENT"
+    if Path("/usr/bin/tesseract").is_file():
+        assert extract["ocr_status"] == "EXTRACTED", extract
+        assert "VALHALLA INVOICE" in extract["sections"][0]["text"]
+    else:
+        assert extract["ocr_status"] == "UNAVAILABLE"

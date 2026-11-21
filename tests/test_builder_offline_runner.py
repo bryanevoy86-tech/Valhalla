@@ -11,6 +11,7 @@ import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 from builder_materialize_review import canonical, sha
 from builder_test_review import test_review as run_review
+from builder_assignment_worker import tick
 
 
 class BuilderOfflineRunnerTests(unittest.TestCase):
@@ -77,8 +78,35 @@ def test_candidate_and_isolation():
         os.environ["BUILDER_HOST_ONLY_SENTINEL"] = "host-only"
         try:
             review = self.review()
-            result = run_review(review, self.repo, self.commit, image, 45)
+            assignment = {
+                "assignment_id": "00000000-0000-0000-0000-000000000001", "lease_id": "fixture-lease",
+                "status": "leased", "image_id": image, "base_commit": self.commit, "review": review,
+            }
+            receipts = []
+
+            class WorkerResponse:
+                def __init__(self, data):
+                    self.data = data
+
+                def raise_for_status(self):
+                    pass
+
+                def json(self):
+                    return self.data
+
+            class WorkerTransport:
+                def post(self, path, **kwargs):
+                    if path.endswith("/claim"):
+                        return WorkerResponse(assignment)
+                    receipts.append(kwargs["json"])
+                    return WorkerResponse({"status": "review_ready"})
+
+            outcome = tick(WorkerTransport(), self.repo, image)
+            self.assertEqual(outcome["status"], "review_ready")
+            self.assertEqual(len(receipts), 1)
+            result = receipts[0]
             self.assertEqual(result["status"], "suite_exited_zero", json.dumps(result))
+            self.assertEqual(result["lease_id"], assignment["lease_id"])
             self.assertEqual(result["bundle_sha256"], review["sha256"])
             self.assertFalse(result["release_authorized"])
             failed = run_review(self.review(value=3), self.repo, self.commit, image, 45)

@@ -24,7 +24,7 @@ def extraction_receipt(row):
     return {
         "attachment_id": str(row.attachment_id), "source_sha256": row.source_sha256,
         "created_at": row.created_at.isoformat(), "evidence_class": "UNTRUSTED_ATTACHMENT",
-        "extractor_version": 1, "execution_authorized": False, "sent_to_provider": False, **row.result,
+        "extractor_version": 2 if "ocr_status" in row.result else 1, "execution_authorized": False, "sent_to_provider": False, **row.result,
     }
 
 

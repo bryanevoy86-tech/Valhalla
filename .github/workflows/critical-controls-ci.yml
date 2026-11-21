@@ -15,6 +15,7 @@ on:
       - 'scripts/prime_system_preflight.py'
       - 'scripts/builder_materialize_review.py'
       - 'scripts/builder_test_review.py'
+      - 'scripts/builder_assignment_worker.py'
       - 'scripts/prime_runtime_route_probe.py'
       - 'ops/prime_system_integration_matrix.json'
       - '.github/workflows/critical-controls-ci.yml'

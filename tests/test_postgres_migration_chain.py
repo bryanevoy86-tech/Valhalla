@@ -187,9 +187,9 @@ class PostgresMigrationChainTests(unittest.TestCase):
                     conn.execute(text("INSERT INTO loki_reviews VALUES ('00000000-0000-0000-0000-000000000001')"))
                     with patch.object(LOKI_RECEIPTS, "op", Operations(MigrationContext.configure(conn))):
                         LOKI_RECEIPTS.upgrade()
-                    with patch.object(LOKI_DIGEST, "op", Operations(MigrationContext.configure(connection))):
+                    with patch.object(LOKI_DIGEST, "op", Operations(MigrationContext.configure(conn))):
                         LOKI_DIGEST.upgrade()
-                    self.assertIn("result_sha256", {column["name"] for column in inspect(connection).get_columns("loki_independent_receipts")})
+                    self.assertIn("result_sha256", {column["name"] for column in inspect(conn).get_columns("loki_independent_receipts")})
                     self.assertIsNone(conn.execute(text("SELECT artifact_sha256 FROM loki_reviews")).scalar_one())
                     self.assertEqual(conn.execute(text("SELECT COUNT(*) FROM loki_independent_receipts")).scalar_one(), 0)
                     self.assertEqual(conn.execute(text("SELECT COUNT(*) FROM loki_reconsiderations")).scalar_one(), 0)
