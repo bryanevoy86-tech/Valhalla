@@ -9,6 +9,12 @@
       "cacheSeconds": 0
     },
     {
+      "name": "read_owner_briefing",
+      "method": "GET",
+      "url": "/api/weweb/owner-briefing",
+      "cacheSeconds": 0
+    },
+    {
       "name": "read_driving_briefing",
       "method": "GET",
       "url": "/api/weweb/owner-briefing?mode=driving",

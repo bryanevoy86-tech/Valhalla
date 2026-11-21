@@ -853,3 +853,7 @@ Local full regression passed 369 backend tests, 21 disposable PostgreSQL checks,
 ## November 21 — Source withdrawal reaches Prime and Pantheon before cadence
 
 Development commit `e6baa4dd0208d9139deb121052cd0c99b48ac9f8` records Foundry source withdrawal and its uniquely scoped notification in one transaction. SaaS, service and real-estate fixtures each proved one event after two identical withdrawal requests, a Norns withdrawal report, and an opted-in Prime HOLD before the next cadence slot. The allocation comparison excluded the withdrawn source. The fixtures produced no revenue. Full local backend regression passed 369 tests, and all 21 disposable PostgreSQL checks passed.
+
+## November 21 — Private Prime advisory and integrity notices
+
+Development commit `308e1b1b39d2a88fc541ba950cf0da2ba062bcec` surfaces digest-verified active Prime HOLD and blocked receipts in the existing owner briefing and attention feed. A missing digest removes the advisory from that feed and produces an unverified receipt reference. The authenticated WeWeb fixture verified owner and subscriber isolation, no-store headers and count-only driving mode. The simulated-browser voice test still passed. The WeWeb collection maps the parked and driving paths. External preview, physical-device playback and delivery-provider verification remain pending. Final local regression passed 369 backend tests and 21 disposable PostgreSQL checks.

@@ -573,7 +573,7 @@
         "services/api/tests/test_system_self_check.py",
         "services/api/app/services/owner_operating_brief.py"
       ],
-      "source_observation": "Owner briefings expose recorded discovery failures and Builder lease health. The private driving summary provides reduced read-only attention counts. Continuous external monitoring and notification transport remain open.",
+      "source_observation": "Owner briefings expose recorded discovery failures and Builder lease health. Private owner attention now surfaces digest-verified current Prime HOLD or blocked receipts and separate integrity references for unverified receipts. An authenticated WeWeb fixture verifies owner-only access, no-cache headers and driving counts without private report details. Continuous external monitoring and notification transport remain open.",
       "evidence_level": "SQLITE_INTEGRATION_TESTED",
       "production_verified": false,
       "acceptance_test": "Red/green live status based on DB/worker/provider receipts; alert on stalled jobs, missing routers and invalid migrations",
