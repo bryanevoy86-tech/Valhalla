@@ -70,6 +70,11 @@ class BuilderMaterializeTests(unittest.TestCase):
             MOD["materialize_handoff"]({**packet, "test_receipt_sha256": "0" * 64}, self.base, self.output)
         output = MOD["materialize_handoff"](packet, self.base, self.output)
         self.assertEqual((output / "files" / self.path).read_bytes(), b"VALUE = 2\n")
+        patch = output / "review.diff"
+        self.assertIn(b"-VALUE = 1\n+VALUE = 2\n", patch.read_bytes())
+        self.assertEqual(json.loads((output / "receipt.json").read_text())["review_diff_sha256"], sha(patch.read_bytes()))
+        self.assertEqual(git("apply", "--check", str(patch)), "")
+        self.assertEqual(git("status", "--porcelain"), "")
         git("-c", "user.name=Builder Fixture", "-c", "user.email=fixture@example.invalid", "commit",
             "--allow-empty", "-qm", "moved")
         with self.assertRaises(ValueError):

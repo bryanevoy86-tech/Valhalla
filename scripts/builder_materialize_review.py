@@ -8,6 +8,7 @@ clean checkout and test it with no production credentials.
 from __future__ import annotations
 
 import argparse
+import difflib
 import hashlib
 import json
 from pathlib import Path
@@ -136,6 +137,35 @@ def materialize(review: dict, base_root: Path, output_parent: Path,
         raise
 
 
+def write_review_diff(output: Path, base_root: Path, packet: dict) -> None:
+    receipt_path = output / "receipt.json"
+    receipt = json.loads(receipt_path.read_bytes())
+    chunks = []
+    for record in receipt["files"]:
+        path = record["path"]
+        added = record["mode"] == "add"
+        target = resolve_path(path, list(DEFAULT_ALLOWED_DIRS), base_root)
+        previous = b""
+        if not added:
+            with target.open("rb") as handle:
+                previous = handle.read(MAX_FILE_BYTES + 1)
+        if (added and target.exists()) or (not added and sha(previous) != record["base_sha256"]):
+            raise ValueError("Review comparison base changed")
+        change = (output / "files" / path).read_bytes()
+        if sha(change) != record["content_sha256"]:
+            raise ValueError("Review comparison artifact changed")
+        lines = difflib.diff_bytes(
+            difflib.unified_diff, previous.splitlines(keepends=True), change.splitlines(keepends=True),
+            fromfile=("/dev/null" if added else f"a/{path}").encode(), tofile=f"b/{path}".encode(),
+        )
+        chunks.extend(line if line.endswith(b"\n") else line + b"\n\\ No newline at end of file\n" for line in lines)
+    patch = b"".join(chunks)
+    (output / "review.diff").write_bytes(patch)
+    receipt.update(review_diff_sha256=sha(patch), handoff_sha256=packet["handoff_sha256"],
+                   base_commit=packet["base_commit"], test_receipt_sha256=packet["test_receipt_sha256"])
+    receipt_path.write_bytes(canonical(receipt))
+
+
 def materialize_handoff(packet: dict, base_root: Path, output_parent: Path) -> Path:
     """Check the owner packet and committed base before producing review artifacts."""
     if not isinstance(packet, dict):
@@ -162,7 +192,13 @@ def materialize_handoff(packet: dict, base_root: Path, output_parent: Path) -> P
     ).stdout.splitlines()
     if len(result) != 2 or Path(result[0]).resolve() != expected_root or result[1] != base_commit:
         raise ValueError("Review checkout differs from the tested Git base")
-    return materialize(review, expected_root, output_parent)
+    output = materialize(review, expected_root, output_parent)
+    try:
+        write_review_diff(output, expected_root, packet)
+    except BaseException:
+        shutil.rmtree(output)
+        raise
+    return output
 
 
 def main() -> int:

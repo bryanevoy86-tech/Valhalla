@@ -1,5 +1,5 @@
 from datetime import timedelta
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from sqlalchemy.orm import Session
 
@@ -126,3 +126,22 @@ def test_norns_requires_pre_execution_forecast_and_scores_only_observed_outcomes
     assert newer["training_count"] == 3
     assert newer["probability"] == 0.4
     assert client.get(f"{base}/calibration").json()["resolved_sample_count"] == 3
+
+    # A previously resolved label must agree with the original artifact timing.
+    with Session(engine) as db:
+        db.get(NornsForecast, UUID(estimate["forecast_id"])).observed_outcome = 0
+        db.commit()
+    assert client.get(f"{forecasts}/{estimate['forecast_id']}").status_code == 409
+    assert client.post(resolve).status_code == 409
+    contradictory = client.get(f"{base}/calibration").json()
+    assert contradictory["resolved_sample_count"] == 2
+    assert contradictory["evidence_excluded_count"] == 1
+    after = later + timedelta(minutes=8)
+    queue("post-contradiction-prospective-check")
+    with Session(engine) as db:
+        exclusion_id = run_assignment(db, "NORNS", now=after)["report_event_id"]
+    excluded = client.get(f"/api/prime/pantheon/reports/{exclusion_id}").json()["observations"]
+    assert excluded["forecast_status"] == "INSUFFICIENT_SCOPED_HISTORY"
+    assert excluded["training_count"] == 2
+    assert excluded["evidence_excluded_count"] == 1
+    assert client.get(f"{base}/calibration", params={**query, "cohort": "HOLDOUT"}).json()["brier_score"] == 0.16

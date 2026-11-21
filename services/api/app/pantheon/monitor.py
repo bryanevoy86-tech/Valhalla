@@ -4,7 +4,7 @@ import hashlib
 import json
 
 from fastapi import HTTPException
-from sqlalchemy import exists, func, inspect, or_, select
+from sqlalchemy import func, inspect, or_, select
 from sqlalchemy.orm import Session
 
 from app.loki.review_service import artifact_digest
@@ -12,7 +12,7 @@ from app.models.completion_registry import EngineRegistryItem, LegacyInstanceWor
 from app.models.norns_forecast import NornsForecast, NornsHoldout
 from app.models.specialist_assignment import SpecialistAssignment, SpecialistTrigger
 from app.pantheon.roles import LENSES
-from app.pantheon.forecasts import issue_scoped_estimate
+from app.pantheon.forecasts import calibration_measurements, issue_scoped_estimate
 from app.services.foundry_discovery import DISCOVERY_ROLES, discover
 from app.services.foundry_intake import verify_intake_trigger
 from app.services.market_intelligence import market_observations
@@ -60,14 +60,7 @@ def observations(db: Session, lens: str, scope: dict, outcomes: list[dict], now,
             return {"evidence_status": "FORECAST_SCHEMA_UNAVAILABLE"}
         if "estimate_source" not in {item["name"] for item in schema.get_columns(NornsForecast.__tablename__)}:
             return {"evidence_status": "FORECAST_SCHEMA_UNAVAILABLE"}
-        forecast = NornsForecast
-        diff = forecast.probability_bp - 10000 * forecast.observed_outcome
-        count, squared_error = db.execute(select(func.count(), func.avg(diff * diff)).select_from(forecast).join(
-            work, work.action_id == forecast.action_id,
-        ).where(*scope_filter, forecast.observed_outcome.is_not(None),
-                ~exists(select(NornsHoldout.forecast_id).where(NornsHoldout.forecast_id == forecast.id)))).one()
-        return {"resolved_sample_count": count,
-                "brier_score": round(float(squared_error) / 100_000_000, 6) if count else None,
+        return {**calibration_measurements(db, now, scope=scope),
                 "score_cohort": "ORDINARY_INTERNAL_ESTIMATE_SOURCES",
                 "target": "VERIFIED_INTERNAL_ARTIFACT_BY_DEADLINE",
                 **issue_scoped_estimate(db, scope, now, cadence)}

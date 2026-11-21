@@ -5,7 +5,7 @@ from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy import exists, func, inspect, select
+from sqlalchemy import inspect, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -13,12 +13,13 @@ from app.core.db import get_db
 from app.core.dependencies import require_prime_control_key
 from app.models.completion_registry import LegacyInstanceWorkItem, LegacyOrchestrationEvent
 from app.models.norns_forecast import NornsForecast, NornsHoldout
+from app.pantheon.forecasts import calibration_measurements, outcome_matches_receipt
 from app.services.prime_business_execution import ACTION_TYPE, _json, _receipt_id, action_status, require_owner_mandate_key
 
 
 def require_forecast_schema(db: Session = Depends(get_db)):
     schema = inspect(db.connection())
-    if any(not schema.has_table(model.__tablename__) for model in (NornsForecast, NornsHoldout)):
+    if any(not schema.has_table(model.__tablename__) for model in (NornsForecast, NornsHoldout, LegacyInstanceWorkItem)):
         raise HTTPException(503, "Norns forecast schema not ready")
 
 
@@ -97,6 +98,10 @@ def read_forecast(forecast_id: UUID, db: Session = Depends(get_db)):
     forecast = db.get(NornsForecast, forecast_id)
     if forecast is None:
         raise HTTPException(404, "Forecast not found")
+    if forecast.resolved_at is not None:
+        item = db.scalar(select(LegacyInstanceWorkItem).where(LegacyInstanceWorkItem.action_id == forecast.action_id))
+        if not outcome_matches_receipt(db, forecast, item, _now()):
+            raise HTTPException(409, "Recorded outcome no longer matches Factory evidence")
     return _explain(forecast)
 
 
@@ -105,10 +110,12 @@ def resolve_forecast(forecast_id: UUID, db: Session = Depends(get_db)):
     forecast = db.get(NornsForecast, forecast_id, with_for_update=True)
     if forecast is None:
         raise HTTPException(404, "Forecast not found")
-    if forecast.resolved_at is not None:
-        return _explain(forecast)
     item = _lock_work(db, forecast.action_id)
     now = _now()
+    if forecast.resolved_at is not None:
+        if not outcome_matches_receipt(db, forecast, item, now):
+            raise HTTPException(409, "Recorded outcome no longer matches Factory evidence")
+        return _explain(forecast)
     result = action_status(db, forecast.action_id)
     if result["internal_artifact_verified"]:
         try:
@@ -160,14 +167,8 @@ def enroll_holdout(forecast_id: UUID, db: Session = Depends(get_db)):
 @router.get("/calibration")
 def calibration(estimate_source: Literal["OWNER_ESTIMATE", "SCOPED_HISTORICAL_RATE"] = "OWNER_ESTIMATE",
                 cohort: Literal["ORDINARY", "HOLDOUT"] = "ORDINARY", db: Session = Depends(get_db)):
-    diff = NornsForecast.probability_bp - 10000 * NornsForecast.observed_outcome
-    holdout = exists(select(NornsHoldout.forecast_id).where(NornsHoldout.forecast_id == NornsForecast.id))
-    count, squared_error = db.execute(select(func.count(), func.avg(diff * diff)).where(
-        NornsForecast.observed_outcome.is_not(None), NornsForecast.estimate_source == estimate_source,
-        holdout if cohort == "HOLDOUT" else ~holdout,
-    )).one()
+    result = calibration_measurements(db, _now(), estimate_source=estimate_source, cohort=cohort)
     return {
         "target": "VERIFIED_INTERNAL_ARTIFACT_BY_DEADLINE", "estimate_source": estimate_source, "cohort": cohort,
-        "resolved_sample_count": count, "brier_score": round(float(squared_error) / 100_000_000, 6) if count else None,
-        "accuracy_claim": "OBSERVED_INTERNAL_SAMPLE" if count else "INSUFFICIENT_EVIDENCE",
+        **result, "accuracy_claim": "OBSERVED_INTERNAL_SAMPLE" if result["resolved_sample_count"] else "INSUFFICIENT_EVIDENCE",
     }
