@@ -582,7 +582,7 @@
         "services/api/tests/test_saas_tenant_entitlements.py",
         "services/api/app/routers/owner_weweb.py"
       ],
-      "source_observation": "A revocable owner JWT reads and writes the canonical JARVIS conversation and local upload/extraction lane without a browser Prime key. Restricted extract content is hidden from history, and driving mode provides short read-only briefings.",
+      "source_observation": "The private owner routes support JARVIS and attachment access gating. Driving mode includes specialist backlog integrity failures as an attention count.",
       "evidence_level": "SQLITE_INTEGRATION_TESTED",
       "production_verified": false,
       "acceptance_test": "Owner login, real dashboard, approval controls, data updates and session expiry tested in WeWeb against deployment",
@@ -592,8 +592,8 @@
       ],
       "owner_external_authorization_required": true,
       "continuation": {
-        "next_implementation": "Connect and rehearse the actual WeWeb UI, visible approval routing and persistent session UX.",
-        "existing_test_evidence": "test_saas_tenant_entitlements.py verifies owner-only conversation, attachment metadata, upload/extract, no-store, subscriber denial and revocation.",
+        "next_implementation": "Wire the exact owner-preview routes in the December handoff. Verify status handling and device-local speech with a separately authorized preview project and test device.",
+        "existing_test_evidence": "Owner API and tenant regressions verify JWT isolation, disposition metadata, restore-hold blocking, no-store and revoked sessions.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
         "required_acceptance_evidence_field": "acceptance_test"
       }
@@ -636,9 +636,11 @@
         "services/api/tests/test_prime_control_and_decision_integrity.py",
         "services/api/tests/test_owner_conversation.py",
         "services/api/app/routers/owner_weweb.py",
-        "alembic/versions/20261123_owner_disposition.py"
+        "alembic/versions/20261123_owner_disposition.py",
+        "services/api/app/services/owner_attachment_retention.py",
+        "services/api/tools/cron/owner_attachment_retention_worker.py"
       ],
-      "source_observation": "Owner-only WeWeb writes are local-only, and existing separate mandates control retention. Expired bytes are unavailable through normal downloads and extracts and cached conversation extracts are redacted on read. Physical deletion and retention enforcement outside these surfaces remain open.",
+      "source_observation": "An opt-in PostgreSQL worker expires owner-reviewed attachment bytes and stored extracts. Restore hold blocks attachment disclosure while a backup is reconciled.",
       "evidence_level": "SQLITE_INTEGRATION_TESTED",
       "production_verified": false,
       "acceptance_test": "Prove no subscriber/clone/tenant can access owner Prime; trace trust and approvals across API, worker, UI, DB and provider adapters.",
@@ -648,8 +650,8 @@
       ],
       "owner_external_authorization_required": true,
       "continuation": {
-        "next_implementation": "Add bounded authorized expiry handling and validate backup retention and restore behavior, then verify environment-level access.",
-        "existing_test_evidence": "test_owner_conversation.py verifies elapsed retention blocks reads, disposition purges active bytes and extracts, and retries, digest conflicts and reused IDs fail safely.",
+        "next_implementation": "Prove staging quarantine and post-snapshot deletion reconciliation with independently retained disposition receipts before clearing the restore hold.",
+        "existing_test_evidence": "Owner API verifies latest inclusive UTC deadline, restore hold, emergency stop, expiry, idempotent reruns and redacted extracts. Disposable PostgreSQL logical backup rehearsal checked pre- and post-expiry restores.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
         "required_acceptance_evidence_field": "acceptance_test"
       }
@@ -694,9 +696,12 @@
         "services/api/app/services/universal_opportunity_evaluator.py",
         "ops/VALHALLA_FULL_VISION_TRACEABILITY.md",
         "docs/PHASE3_INTEGRATED_ARCHITECTURE.md",
-        "services/api/tests/test_pantheon_assignments.py"
+        "services/api/tests/test_pantheon_assignments.py",
+        "services/api/app/services/specialist_triggers.py",
+        "alembic/versions/20261123_specialist_backlog.py",
+        "tests/test_factory_postgres.py"
       ],
-      "source_observation": "Six existing specialists now produce role-specific Foundry signals from assigned scope and date-bound opportunity evidence. Prime and Factory enforce the cited source. Broader authorized adapters and external model use are pending.",
+      "source_observation": "Scoped discovery, economic reassessment and outcome publishers feed a durable assignment backlog. Prime's shadow evaluator has a separate durable verified-outcome backlog. Owners see waiting and integrity failure counts; reports remain advisory.",
       "evidence_level": "SQLITE_INTEGRATION_TESTED",
       "production_verified": false,
       "acceptance_test": "Map historical role/authority variants without losing user intent; test controlled bridge and no unrestricted agent-to-agent tools; owner ratifies conflicting labels. Owner-confirmed 2026-11-20: prove every specialist covers all authorized relevant subsystems via scheduled and event-driven analysis, durable scoped reports to Prime, independent Loki cross-system challenges, and Prime synthesis/decision/verified execution inside existing mandates without routine owner approval; test missing/stale evidence, escalation and tenant isolation.",
@@ -706,8 +711,8 @@
       ],
       "owner_external_authorization_required": true,
       "continuation": {
-        "next_implementation": "Add domain-specific research and evidence retrieval for remaining specialist scope.",
-        "existing_test_evidence": "test_pantheon_assignments.py covers scope-specific receipts, verified outcomes, missed work, duplicate evidence, digest corruption and emergency stop.",
+        "next_implementation": "Extend substantive domain coverage and explicit contradiction handling. Prove independent Loki review of scoped evidence continuing to a governed Prime decision, verified execution and Mimir reassessment.",
+        "existing_test_evidence": "Pantheon/Prime API regressions exercise scoped queuing, deduplication, replay, stale or missing evidence, digest corruption and emergency stop. Disposable PostgreSQL proves three concurrent publishers and recovery from a rolled-back claim.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
         "required_acceptance_evidence_field": "acceptance_test"
       }

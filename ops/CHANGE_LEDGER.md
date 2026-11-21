@@ -784,3 +784,11 @@ Product Foundry artifact staging passed [hosted CI](https://github.com/bryanevoy
 The disposition rehearsal removed local fixture bytes and saved extraction text while preserving the owner's message and deletion evidence. PostgreSQL preserved the pre-existing attachment across migration and rejected contradictory storage state. The existing owner bearer sees attachment metadata and no raw payload. The specialist rehearsal consumed an exact duplicate without consuming the following schedule slot, recovered a share of missed work with one current read, rejected tampered evidence and included the measured missed slot in the private briefing.
 
 GitHub Actions run [44939488595](https://github.com/bryanevoy86-tech/Valhalla/actions/runs/44939488595) passed all four required jobs at `e88d0c8fbb076a65b00bae63334d9b02f8b822ea`. The owner inbox follow-up adds the digest-bound elapsed-retention or active review status to attachment metadata. Its regression checks cover accepted, expired and deleted states. The December index and external verification readiness table specify the remaining gates. No production migration, provider inference, external delivery, financial activity or commercial validation occurred during this continuation.
+
+## November 21 — Durable research and owner retention
+
+| Implementation commit | Verified development evidence |
+|---|---|
+| `025f69aa280b531a4a2a4d6ad4d6638b991577dc` | 328 backend tests and 19 required disposable PostgreSQL checks passed locally. The extra scoped PostgreSQL rehearsal ran two concurrent expiry workers and restored a pre-expiry and post-expiry logical dump. The earlier restore's configured hold hid old material and the later restore preserved deleted content tombstones. |
+
+Distinct wake-ups now survive simultaneous source activity and interrupted claims. A replay never consumes an unrelated cadence slot. Parked and driving briefings expose failure signals. New owner retention work stays in the same private attachment lane. The December handoff records the staging opt-in flags, restore hold, authoritative-receipt reconciliation and precise WeWeb wiring. External verification requires the owner-selected environments and permissions. The PR workflow records required CI for the continuation head.

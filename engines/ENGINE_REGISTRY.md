@@ -117,3 +117,5 @@ Authorized local demand and procurement exports enter `POST /api/prime/foundry/i
 ### Signed source exports
 
 An owner can enroll an Ed25519 public key for a registered demand or procurement export source. Once enrolled, that source accepts only signed local exports with fresh timestamps. Scope, sample counts, provenance and the source identity are covered by the signature and checked again before research consumes the evidence. A rotated key invalidates older signatures for current use. The adapter is an ingestion contract for a future authorized connector, with no outbound fetch or inferred proof of market demand.
+
+The discovery and economic reassessment publishers now retain each distinct wake-up for an active scoped specialist. A verified internal outcome can independently wake an opted-in Prime shadow schedule. An event or shadow recommendation still carries only advisory authority. Source freshness, capital assessment and independent challenge remain on their existing paths.
