@@ -18,7 +18,7 @@ from app.services.foundry_intake import verify_intake_trigger
 from app.services.market_intelligence import market_observations
 from app.services.economic_control import ready as economic_ready, specialist_economics, verify_trigger
 from app.services.prime_business_execution import (
-    _approval_id, _check_legacy, _emergency_stop_active, _event, verified_internal_outcomes,
+    _approval_id, _check_legacy, _emergency_stop_active, _event, scoped_factory_findings, verified_internal_outcomes,
 )
 
 
@@ -187,6 +187,8 @@ def run_assignment(db: Session, role: str, *, now=None) -> dict:
             checkout = scoped_checkout_learning(db, assignment.scope, outcomes)
             if checkout:
                 facts["checkout_learning"] = checkout
+        if role in {"TYR", "LOKI", "MIMIR", "HEIMDALL"}:
+            facts["factory_evidence_reconciliation"] = scoped_factory_findings(db, assignment.scope, outcomes)
         facts.update(specialist_economics(db, role, assignment.scope, now.date()))
         report.update(status="observed", observations=facts)
     except HTTPException as exc:

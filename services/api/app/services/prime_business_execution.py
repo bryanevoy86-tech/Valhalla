@@ -568,6 +568,20 @@ def _render_listing(payload: dict[str, Any]) -> str:
     return data
 
 
+def approval_matches_action(item: LegacyInstanceWorkItem, approval: LegacyOrchestrationEvent) -> bool:
+    evidence = _json(approval.payload_json, {})
+    return (
+        approval.event_id == _approval_id(item.action_id)
+        and approval.event_type == APPROVAL_EVENT
+        and approval.legacy_instance_id == item.legacy_instance_id
+        and isinstance(evidence, dict)
+        and evidence.get("action_id") == item.action_id
+        and evidence.get("scope") == "INTERNAL_DRAFT_ONLY"
+        and isinstance(item.payload_json, str)
+        and evidence.get("payload_sha256") == hashlib.sha256(item.payload_json.encode("utf-8")).hexdigest()
+    )
+
+
 def _execute_locked_draft(db: Session, item: LegacyInstanceWorkItem) -> dict | None:
     """Execute a single locked row; caller rolls back unsuccessful attempts."""
     payload = _json(item.payload_json, {})
@@ -590,17 +604,8 @@ def _execute_locked_draft(db: Session, item: LegacyInstanceWorkItem) -> dict | N
             return {"status": "blocked", "action_id": item.action_id,
                             "reason": reason, "verified": False}
         authority = "STANDING_MANDATE"
-    else:
-        evidence = _json(approval.payload_json, {})
-        if (
-            approval.event_type != APPROVAL_EVENT
-            or approval.legacy_instance_id != item.legacy_instance_id
-            or not isinstance(evidence, dict)
-            or evidence.get("action_id") != item.action_id
-            or evidence.get("scope") != "INTERNAL_DRAFT_ONLY"
-            or evidence.get("payload_sha256") != hashlib.sha256(item.payload_json.encode("utf-8")).hexdigest()
-        ):
-            return {"status": "blocked", "action_id": item.action_id, "reason": "approval evidence mismatch", "verified": False}
+    elif not approval_matches_action(item, approval):
+        return {"status": "blocked", "action_id": item.action_id, "reason": "approval evidence mismatch", "verified": False}
 
     try:
         _check_legacy(
@@ -857,3 +862,56 @@ def verified_internal_outcomes(
         if _json(event.payload_json, {}) == expected:
             outcomes.append({"outcome_event_id": event_id, **expected})
     return outcomes
+
+
+def scoped_factory_findings(db: Session, scope: dict, verified_outcomes: list[dict]) -> dict:
+    """Reconcile recent scoped work against approval, artifact and learning receipts."""
+    work = LegacyInstanceWorkItem
+    items = db.query(work).filter_by(**scope).filter(
+        work.action_id.startswith("bfd_", autoescape=True),
+    ).order_by(work.updated_at.desc(), work.id.desc()).limit(20).all()
+    outcomes = {entry["action_id"] for entry in verified_outcomes}
+    event_ids = [
+        event_id for item in items for event_id in
+        (_approval_id(item.action_id), _receipt_id(item.action_id), _mimir_outcome_id(item.action_id))
+    ]
+    events = {row.event_id: row for row in db.query(LegacyOrchestrationEvent).filter(
+        LegacyOrchestrationEvent.event_id.in_(event_ids),
+    )} if event_ids else {}
+    contradictions = []
+    approvals = []
+    for item in items:
+        action_id = item.action_id
+        payload = _json(item.payload_json, {})
+        issues = {}
+        valid_payload = (
+            isinstance(payload, dict) and payload.get("action_type") == ACTION_TYPE
+            and payload.get("mode") == "INTERNAL_DRAFT_ONLY" and payload.get("business_id") == item.business_id
+        )
+        if not valid_payload:
+            issues["FACTORY_ACTION_PAYLOAD_MISMATCH"] = None
+        approval_id = _approval_id(action_id)
+        if approval_id in events:
+            if valid_payload and approval_matches_action(item, events[approval_id]):
+                approvals.append(approval_id)
+            else:
+                issues["FACTORY_APPROVAL_BINDING_MISMATCH"] = approval_id
+        receipt_id = _receipt_id(action_id)
+        learning_id = _mimir_outcome_id(action_id)
+        if item.status == "completed" and action_id not in outcomes and valid_payload:
+            proof = action_status(db, action_id)
+            if proof["internal_artifact_verified"]:
+                issues["MIMIR_OUTCOME_UNVERIFIED"] = learning_id
+            else:
+                issues["FACTORY_COMPLETION_UNVERIFIED"] = receipt_id
+        elif item.status != "completed":
+            if receipt_id in events:
+                issues["FACTORY_RECEIPT_WITHOUT_COMPLETION"] = receipt_id
+            if learning_id in events:
+                issues["MIMIR_OUTCOME_WITHOUT_COMPLETION"] = learning_id
+        contradictions.extend(
+            {"action_id": action_id, "code": code, "evidence_ref": ref}
+            for code, ref in issues.items()
+        )
+    return {"reviewed_action_count": len(items), "verified_approval_event_ids": approvals,
+            "contradictions": contradictions, "operational_authority": False}

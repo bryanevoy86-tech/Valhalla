@@ -4,7 +4,13 @@ from uuid import UUID, uuid4
 
 from sqlalchemy.orm import Session
 
-from app.models.completion_registry import LegacyInstanceRegistryItem, LegacyInstanceWorkItem, LegacyOrchestrationEvent
+from app.models.completion_registry import (
+    KnowledgeRegistryItem, LearningFeedbackRecord, LegacyInstanceRegistryItem, LegacyInstanceWorkItem,
+    LegacyOrchestrationEvent,
+)
+from app.models.prime_specialist_schedule import PrimeScheduleTrigger, PrimeSpecialistSchedule
+from app.routers.prime_specialist_schedules import run_due_schedule
+from app.services.prime_business_execution import _approval_id, _mimir_outcome_id
 from app.models.media_engine import MediaContent
 from app.models.specialist_assignment import SpecialistAssignment, SpecialistTrigger
 from app.pantheon.monitor import run_assignment, utc_now
@@ -20,7 +26,9 @@ def test_workers_run_independent_role_and_scope_cadences_and_recheck_factory_out
     monkeypatch.setenv("VALHALLA_FACTORY_KEY", factory["X-Business-Factory-Key"])
     monkeypatch.setenv("VALHALLA_OWNER_MANDATE_KEY", owner["X-Owner-Mandate-Key"])
     monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "false")
-    for model in (LegacyInstanceRegistryItem, LegacyInstanceWorkItem, LegacyOrchestrationEvent, MediaContent, SpecialistAssignment, SpecialistTrigger):
+    for model in (LegacyInstanceRegistryItem, LegacyInstanceWorkItem, LegacyOrchestrationEvent, MediaContent, SpecialistAssignment,
+                  SpecialistTrigger, PrimeSpecialistSchedule, PrimeScheduleTrigger, KnowledgeRegistryItem,
+                  LearningFeedbackRecord):
         model.__table__.create(engine)
     scopes = [
         {"legacy_instance_id": "research-legacy", "business_id": "research-lab", "jurisdiction": "CA-MB", "engine_id": "micro_saas"},
@@ -46,6 +54,19 @@ def test_workers_run_independent_role_and_scope_cadences_and_recheck_factory_out
         enrolled = client.post(f"{root}/assignments", json=request, headers=owner)
         assert enrolled.status_code == 201, enrolled.text
         return request["assignment_id"]
+
+    schedules = "/api/prime/specialist-schedules"
+    schedule_id = str(uuid4())
+    registered = client.post(schedules, headers=owner, json={
+        "schedule_id": schedule_id, "business_id": scopes[0]["business_id"],
+        "cadence_seconds": 300, "duration_seconds": 1800,
+        "opportunity": {
+            "opportunity_id": "factory-evidence-rehearsal", "engine_id": scopes[0]["engine_id"],
+            "legacy": scopes[0]["legacy_instance_id"], "jurisdiction": scopes[0]["jurisdiction"],
+            "title": "Factory evidence rehearsal", "summary": "Internal workflow evidence only.",
+        },
+    })
+    assert registered.status_code == 201, registered.text
 
     correct = assign(scopes[0], "MIMIR")
     other = assign(scopes[1], "MIMIR")
@@ -145,6 +166,50 @@ def test_workers_run_independent_role_and_scope_cadences_and_recheck_factory_out
             "EXISTING_REPORT_INTEGRITY_FAILED": 1,
         }
     assert client.get(f"{root}/reports/{report['report_event_id']}").status_code == 409
+    def tick_prime(when):
+        with Session(engine) as db:
+            result = run_due_schedule(db, now=when)
+        assert result["status"] == "evaluated", result
+        response = client.get(f"{schedules}/{schedule_id}/reports/{result['report_event_id']}")
+        assert response.status_code == 200, response.text
+        return response.json()
+
+    baseline = tick_prime(at)
+    assert "factory_evidence_contradictions" not in (baseline.get("operating_reassessment") or {})
+    approval_id, outcome_id = _approval_id(action), _mimir_outcome_id(action)
+    with Session(engine) as db:
+        receipts = db.query(LegacyOrchestrationEvent).filter(
+            LegacyOrchestrationEvent.event_id.in_([approval_id, outcome_id]),
+        ).all()
+        originals = {row.event_id: row.payload_json for row in receipts}
+        assert set(originals) == {approval_id, outcome_id}
+        for row in receipts:
+            row.payload_json = "{}"
+        db.commit()
+    conflicted_at = at + timedelta(seconds=601)
+    conflict = tick_prime(conflicted_at)
+    reassessment = conflict["operating_reassessment"]
+    expected = {"FACTORY_APPROVAL_BINDING_MISMATCH", "MIMIR_OUTCOME_UNVERIFIED"}
+    assert set(reassessment["blockers"]) == expected
+    assert {item["evidence_ref"] for item in reassessment["factory_evidence_contradictions"]} == {
+        approval_id, outcome_id,
+    }
+    assert conflict["recommendation"]["heimdall_decision"] == "HOLD"
+    assert conflict["verified_internal_outcomes"] == []
+    with Session(engine) as db:
+        tyr_result = run_assignment(db, "TYR", now=conflicted_at)
+    findings = client.get(f"{root}/reports/{tyr_result['report_event_id']}").json()["observations"][
+        "factory_evidence_reconciliation"
+    ]
+    assert findings["verified_approval_event_ids"] == []
+    assert {item["code"] for item in findings["contradictions"]} == expected
+    with Session(engine) as db:
+        for row in db.query(LegacyOrchestrationEvent).filter(LegacyOrchestrationEvent.event_id.in_(originals)):
+            row.payload_json = originals[row.event_id]
+        db.commit()
+    reconciled = tick_prime(at + timedelta(seconds=902))
+    assert "factory_evidence_contradictions" not in (reconciled.get("operating_reassessment") or {})
+    assert len(reconciled["verified_internal_outcomes"]) == 1
     assert client.delete(f"{root}/assignments/{correct}", headers=owner).json()["state"] == "revoked"
     monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "true")
     assert tick("MIMIR") == {"status": "blocked", "emergency_stop": True}

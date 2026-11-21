@@ -23,7 +23,7 @@ from app.routers.completion_registry import (
 from app.routers.prime_business_factory import require_factory_schema
 from app.services.prime_business_execution import (
     _check_legacy, _emergency_stop_active, _event, require_owner_mandate_key,
-    verified_internal_outcomes,
+    scoped_factory_findings, verified_internal_outcomes,
 )
 
 from app.services.foundry_discovery import WITHDRAWAL_PREFIX, verify_withdrawal
@@ -207,6 +207,8 @@ def attach_operating_reassessment(db, payload, scope, today, outcomes, report):
             blockers.add("CHECKOUT_FIXTURE_UNRECONCILED")
         if (row.get("fixture_contribution_minor") or 0) < 0:
             blockers.add("NEGATIVE_FIXTURE_CONTRIBUTION")
+    factory_findings = scoped_factory_findings(db, scope, outcomes)["contradictions"]
+    blockers.update(item["code"] for item in factory_findings)
     recommendation = report["recommendation"]
     if checkout or capital or source_assessment or blockers:
         report["operating_reassessment"] = {
@@ -214,6 +216,8 @@ def attach_operating_reassessment(db, payload, scope, today, outcomes, report):
             "source_assessment": source_assessment, "blockers": sorted(blockers),
             "external_authority": False, "prior_recommendation": recommendation["heimdall_decision"],
         }
+    if factory_findings:
+        report["operating_reassessment"]["factory_evidence_contradictions"] = factory_findings
     if blockers:
         report["recommendation"] = {**recommendation, "heimdall_decision": "HOLD", "best_option_right_now": None,
                                     "abstain": True, "message": "Hold for review of the scoped operating evidence.",
