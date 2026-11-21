@@ -869,3 +869,9 @@ Development commit `a622acf57be1a756d5c537b26767f7594bc213b2` compares Factory w
 ## November 21 — Governed Builder multi-file candidates
 
 Development commit `54114dd42ed1f123e1815f0b7ad0c6dc6a5e3a46` extends the existing prepare route with a bounded group of owner-authorized literal replacements. The test rejects missing authority, stale inputs and duplicate targets, checks that a failed group creates no rows, then claims one combined bundle and verifies both source files stayed intact. All four hosted jobs passed in [run 44959214232](https://github.com/bryanevoy86-tech/Valhalla/actions/runs/44959214232).
+
+## November 21 — Factory containment at the authorization boundary
+
+Development commit `22979daf355991d715370b7bb640110346ce4756` reuses scoped containment when granting a new per-action approval or standing Factory mandate. The fixture leaves one existing approved action blocked at execution, denies new approvals and releases no grant, verifies the absence of new authority receipts, and retains read access and revocation for prior grants. All four hosted jobs passed in [run 44959393511](https://github.com/bryanevoy86-tech/Valhalla/actions/runs/44959393511). Hosted evidence covers 370 backend tests, 21 disposable PostgreSQL checks, eight Builder materializer checks, one simulated-browser voice test, 36 critical routers and 94 required routes. Local executor was unavailable. The rehearsal used isolated fixtures.
+
+The 50 acceptance contracts, 53 task entries and seven packages are preserved. The December handoff records unchanged external commissioning requirements and the updated internal verification steps.

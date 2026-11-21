@@ -464,3 +464,7 @@ TYR, LOKI, MIMIR and HEIMDALL report `factory_evidence_reconciliation`, includin
 ### Governed Builder multi-file preparation
 
 Use the existing private `POST /builder/assignments/prepare` with an owner mandate, Prime control credential, exact base commit and pinned image. The single-file request remains supported. For a coordinated candidate, pass `edits`, each with `path`, `source_sha256`, unique `before` and explicit `after`. Rejected input leaves no persisted assignment. An accepted candidate produces one hashed review bundle and one runner lease. Existing review and release controls still apply. Use the later isolated runner to apply the exact artifact to a clean checkout.
+
+### Containment at Factory authorization
+
+The existing Factory approval and standing mandate routes now apply the same scoped economic containment check as execution. With a contained scope, check for HTTP 409 and confirm no new approval or grant receipt exists. Reading queued state and revoking a prior grant remain available. This rehearsal uses a registered internal scope, owner authorization and synthetic records. Production commissioning still requires scoped PostgreSQL migration and worker recovery proof on the authorized staging service.
