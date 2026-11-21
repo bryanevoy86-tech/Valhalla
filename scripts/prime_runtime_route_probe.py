@@ -19,6 +19,8 @@ API_ROOT = REPO_ROOT / "services/api"
 # Exact backend API contracts as authored in the working branch. These
 # checks establish registration, NOT successful execution or authorization.
 MANDATORY_ENDPOINTS = {
+    "norns_forecast_create": ("POST", "/api/prime/norns/forecasts"),
+    "norns_calibration": ("GET", "/api/prime/norns/calibration"),
     "owner_thread_create": ("POST", "/api/jarvis/conversations"),
     "owner_thread_list": ("GET", "/api/jarvis/conversations"),
     "owner_turn_send": ("POST", "/api/jarvis/conversations/{conversation_id}/turns"),

@@ -684,3 +684,8 @@ Product Foundry artifact staging passed [hosted CI](https://github.com/bryanevoy
 - Added a checksummed, conversation-scoped local extraction route and durable receipts. A resource-bounded worker process reads searchable PDFs, DOCX paragraphs, XLSX displayed values with formulas omitted, and UTF-8 text. PNG/JPEG handling returns validated dimensions and file type. OCR, image interpretation, malware scanning and attachment retention controls remain open.
 - The reader keeps original file bytes local and labels extracted sections as untrusted data with file hash and locator. Conversations can retrieve a saved extract, including inert embedded instructions. Tests use actual PDF, Word, workbook, image and text bytes, and verify malformed XML rejection and replay.
 - Thirteen focused owner conversation tests passed locally.
+
+## Package 1 — Norns prospective observation and scoring
+
+- Added immutable, timestamped owner probability estimates for one defined internal target, verified Factory artifact by the declared deadline. The work row is locked so a forecast cannot be entered after execution. The resolver checks the exact receipt and timestamp, excludes invalid completed evidence, and records a missed deadline only after the time horizon.
+- Private calibration shows the measured sample and Brier score. Estimates remain owner estimates. No model-calibration or commercial predictive accuracy is claimed. The focused API case executed a real private artifact and measured both a successful forecast outcome and an elapsed deadline without a receipt.
