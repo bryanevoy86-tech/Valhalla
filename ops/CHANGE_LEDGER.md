@@ -836,3 +836,7 @@ A separate disposable PostgreSQL Norns rehearsal verified one eligible ordinary 
 Development commit `54fc3ad0c29b298edeca7f05303c17138c4da79d` restores named profiles and structured constraints within the canonical TuningRule schema and six existing routes. The seven historical assertions now run inside canonical regression. Deterministic settings and constraint persistence, stable profile identity, weight round-trip, parent-scoped lookup and grouped deletion guards are covered. The retired CI5 endpoints have canonical equivalents documented in the December handoff. The new index passed its disposable PostgreSQL rehearsal with existing executable rule rows retained and separate profile identity by namespace. Archived database contents remain unverified.
 
 Local verification passed 368 canonical backend tests, 20 disposable PostgreSQL checks and the simulated-browser voice check.
+
+## November 21 — Committed-source Builder review
+
+Development commit `9c0ffae9f8993286caff449d9fa56eb91fbadd0c` binds review diffs to committed Git blobs from the tested HEAD. Eight materializer checks passed, including rehashed dirty-base evidence, an attempted addition over a tracked file and successful dry application of the valid patch. A separately authorized GitHub submission and sustained staging worker rehearsal remain pending.
