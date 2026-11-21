@@ -27,3 +27,12 @@ class FoundryRehearsalPayment(Base):
     sha256 = Column(String(64), nullable=False)
     captured_delta = Column(Integer(), nullable=False)
     refunded_delta = Column(Integer(), nullable=False)
+
+
+class FoundryCampaignVisit(Base):
+    __tablename__ = "prime_foundry_campaign_visits"
+
+    id = Column(Uuid(), primary_key=True)
+    campaign_id = Column(Integer(), nullable=False, index=True)
+    scope_key = Column(String(64), nullable=False)
+    order_id = Column(Uuid(), ForeignKey("prime_foundry_rehearsal_orders.id"), unique=True)

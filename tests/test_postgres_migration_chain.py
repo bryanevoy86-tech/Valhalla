@@ -57,6 +57,12 @@ PROBES = load("alembic/versions/20261121_specialist_probes.py")
 BUILDER_ASSIGNMENTS = load("alembic/versions/20261121_builder_assignments.py")
 NORNS_HISTORY = load("alembic/versions/20261121_norns_scoped_history.py")
 ATTACHMENT_REVIEWS = load("alembic/versions/20261121_attachment_reviews.py")
+FOUNDRY_EVIDENCE = load("alembic/versions/20261121_foundry_evidence.py")
+SAAS_TRIALS = load("alembic/versions/20261122_saas_trial_entitlements.py")
+FOUNDRY_CHECKOUT = load("alembic/versions/20261122_foundry_checkout.py")
+PROVIDER_PRICING = load("alembic/versions/20261122_provider_pricing.py")
+NORNS_HOLDOUT = load("alembic/versions/20261122_norns_holdout.py")
+CAMPAIGN_REHEARSAL = load("alembic/versions/20261122_campaign_rehearsal.py")
 
 
 @unittest.skipUnless(url, "Disposable PostgreSQL database not supplied")
@@ -302,13 +308,21 @@ class PostgresMigrationChainTests(unittest.TestCase):
                         INSERT INTO prime_owner_conversations (id, title, created_at)
                         VALUES ('00000000-0000-0000-0000-000000000001', 'prior thread', now())
                     """))
-                    for module in (INFERENCE, OWNER_MEMORY, EXTRACTIONS, NORNS, PROVIDER_EVIDENCE, ASSIGNMENTS, PROBES, BUILDER_ASSIGNMENTS, NORNS_HISTORY, ATTACHMENT_REVIEWS):
+                    connection.execute(text("CREATE TABLE saas_plans (id INTEGER PRIMARY KEY)"))
+                    connection.execute(text("CREATE TABLE user_profiles (user_id INTEGER PRIMARY KEY)"))
+                    for module in (INFERENCE, OWNER_MEMORY, EXTRACTIONS, NORNS, PROVIDER_EVIDENCE,
+                                   ASSIGNMENTS, PROBES, BUILDER_ASSIGNMENTS, NORNS_HISTORY, ATTACHMENT_REVIEWS,
+                                   FOUNDRY_EVIDENCE, SAAS_TRIALS, FOUNDRY_CHECKOUT, PROVIDER_PRICING, NORNS_HOLDOUT,
+                                   CAMPAIGN_REHEARSAL):
                         with patch.object(module, "op", operations):
                             module.upgrade()
                     expected = {
                         "prime_owner_inference_quotas", "prime_owner_inference_attempts", "prime_owner_memory_entries",
                         "prime_owner_attachment_extractions", "prime_owner_attachment_reviews", "prime_norns_forecasts", "prime_provider_evidence",
                         "prime_specialist_assignments", "prime_specialist_probes", "prime_builder_assignments",
+                        "prime_foundry_evidence", "prime_foundry_rehearsal_orders", "prime_foundry_rehearsal_payments",
+                        "saas_tenant_entitlements", "prime_provider_price_quotes",
+                        "prime_provider_usage_reconciliations", "prime_norns_holdout", "prime_foundry_campaign_visits",
                     }
                     self.assertTrue(expected <= set(inspect(connection).get_table_names()))
                     self.assertEqual(connection.execute(text("SELECT title FROM prime_owner_conversations")).scalar_one(), "prior thread")
