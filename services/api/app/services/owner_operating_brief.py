@@ -1,5 +1,5 @@
 """Read bounded private briefing evidence without dispatching workers."""
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 
 from fastapi import HTTPException
 from sqlalchemy import func, inspect, select
@@ -9,6 +9,7 @@ from app.loki.models import LokiFinding, LokiIndependentReceipt, LokiReconsidera
 from app.loki.review_service import verdict
 from app.models.audit_log import AuditLog
 from app.models.completion_registry import LegacyOrchestrationEvent
+from app.models.builder_assignment import BuilderAssignment
 from app.models.foundry_intake import FoundryIntakeJob
 from app.models.revenue_ledger import RevenueLedger
 from app.pantheon.monitor import REPORT_EVENT, verified_report
@@ -101,6 +102,17 @@ def operating_evidence(db: Session) -> dict:
                      "recent_job_errors": [{"job_id": str(row.id), "status": row.status, "code": row.error_code}
                                            for row in latest_errors],
                      "production_worker_verified": False}
+    builder = {"available": False}
+    if schema.has_table(BuilderAssignment.__tablename__):
+        assignment = BuilderAssignment
+        expired = db.scalar(select(func.count()).select_from(assignment).where(
+            assignment.status == "leased", assignment.lease_until <= datetime.now(timezone.utc).replace(tzinfo=None),
+        ))
+        terminal = db.scalar(select(func.count()).select_from(assignment).where(
+            assignment.status == "lease_exhausted",
+        ))
+        builder = {"available": True, "expired_leases": expired, "lease_exhausted": terminal,
+                   "release_authorized": False, "production_worker_verified": False}
     return {"latest_specialist_reports": report_items, "invalid_specialist_report_ids": invalid_reports,
             "loki": loki, "latest_integrity_alerts": alerts, "latest_market_alerts": market_alerts, "latest_economic_alerts": economic_alerts, "financials": financials,
-            "verified_cash_balance": None, "foundry_intake_health": discovery}
+            "verified_cash_balance": None, "foundry_intake_health": discovery, "builder_lease_health": builder}

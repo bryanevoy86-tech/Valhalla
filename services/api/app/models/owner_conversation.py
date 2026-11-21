@@ -1,6 +1,6 @@
 """Private owner conversation records and quarantined attachments."""
 from datetime import datetime, timezone
-from sqlalchemy import Column, String, Text, DateTime, LargeBinary, Integer, JSON, Uuid, ForeignKey, CheckConstraint, Index
+from sqlalchemy import Column, String, Text, Date, DateTime, LargeBinary, Integer, JSON, Uuid, ForeignKey, CheckConstraint, Index
 from app.core.db import Base
 
 def now():
@@ -68,6 +68,7 @@ class OwnerMemoryEntry(Base):
     topic = Column(String(120), nullable=False)
     statement = Column(Text(), nullable=False)
     state = Column(String(20), nullable=False)
+    decision_context = Column(JSON())
     created_at = Column(DateTime(timezone=True), nullable=False, default=now)
 
 
@@ -86,4 +87,5 @@ class OwnerAttachmentReview(Base):
     source_sha256 = Column(String(64), nullable=False)
     disposition = Column(String(24), nullable=False)
     reason = Column(Text(), nullable=False)
+    retain_until = Column(Date())
     created_at = Column(DateTime(timezone=True), nullable=False, default=now)

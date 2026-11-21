@@ -17,13 +17,15 @@ from app.core.db import get_db
 from app.core.dependencies import require_prime_control_key
 from app.loki.evidence import artifact_digest
 from app.models.completion_registry import LegacyInstanceWorkItem, LegacyOrchestrationEvent
-from app.models.foundry_checkout import FoundryCampaignVisit, FoundryRehearsalOrder, FoundryRehearsalPayment
+from app.models.foundry_checkout import FoundryCampaignVisit, FoundryFixtureSettlement, FoundryRehearsalOrder, FoundryRehearsalPayment
+from app.models.treasury_reconciliation import StatementEntry, StatementImport
 from app.models.marketing import MarketingCampaign
 from app.providers.stripe_adapter import verify_stripe_signature
 from app.services.economic_control import require_no_containment
-from app.services.prime_business_execution import _check_legacy, _event, _json, action_status, require_owner_mandate_key
+from app.services.prime_business_execution import _check_legacy, _emergency_stop_active, _event, _json, action_status, require_owner_mandate_key
 from app.services.product_artifacts import load_artifact, verify_artifact
 from app.services.specialist_triggers import outcome_scope_key
+from app.services.treasury_reconciliation import payload_for, statement_ready
 
 
 def schema(db: Session = Depends(get_db)):
@@ -46,6 +48,8 @@ class OrderIn(BaseModel):
 
 
 def _listing(db, action_id):
+    if _emergency_stop_active(db):
+        raise HTTPException(503, "Checkout rehearsal paused by emergency stop")
     state = action_status(db, action_id)
     receipt = state["receipt"]
     asset = receipt.get("product_asset") if receipt else None
@@ -250,6 +254,11 @@ def apply_fixture(event: tuple = Depends(_signed_fixture), db: Session = Depends
     if kind == "payment_intent.succeeded":
         if amount != order.amount_minor or order.captured_minor:
             raise HTTPException(409, "Fixture capture does not match the outstanding order amount")
+        listing, asset, price, _ = _listing(db, order.action_id)
+        if (listing["sha256"], asset.id, asset.sha256, price) != (
+            order.listing_sha256, order.artifact_id, order.artifact_sha256, order.amount_minor,
+        ):
+            raise HTTPException(409, "Checkout evidence changed before capture")
         captured = amount
         order.captured_minor = amount
     else:
@@ -331,3 +340,61 @@ def campaign_summary(campaign_id: int, scope: CampaignScope, db: Session = Depen
                                          if totals and all(item["fixture_cost_count"] for item in totals) else None),
         "actual_profit_minor": None, "verified_commercial_revenue": False,
     }
+
+class SettlementIn(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    statement_id: UUID
+    entry_ref: str = Field(min_length=3, max_length=180)
+    payment_event_id: str = Field(pattern=r"^evt_fixture_[a-zA-Z0-9_]{3,80}$")
+
+
+@router.post("/orders/{order_id}/settlement-fixtures", dependencies=owner)
+def reconcile_settlement(order_id: UUID, request: SettlementIn, db: Session = Depends(get_db)):
+    if not statement_ready(db) or not inspect(db.connection()).has_table(FoundryFixtureSettlement.__tablename__):
+        raise HTTPException(503, "Rehearsal settlement schema unavailable")
+    order = db.get(FoundryRehearsalOrder, order_id, with_for_update=True)
+    payment = db.get(FoundryRehearsalPayment, request.payment_event_id)
+    if order is None or payment is None or payment.order_id != order_id:
+        raise HTTPException(404, "Signed payment event not found for order")
+    _view(db, order)
+    work = db.scalar(select(LegacyInstanceWorkItem).filter_by(action_id=order.action_id))
+    if work is None:
+        raise HTTPException(409, "Rehearsal order scope unavailable")
+    scope = {key: getattr(work, key) for key in ("legacy_instance_id", "business_id", "engine_id", "jurisdiction")}
+    _check_legacy(db, **scope)
+    statement = db.get(StatementImport, request.statement_id)
+    if statement is None:
+        raise HTTPException(404, "Statement fixture not found")
+    document = payload_for(statement)
+    if document.scope.model_dump() != scope or document.purpose != "BUSINESS" or document.currency != "CAD":
+        raise HTTPException(409, "Statement scope, purpose or currency does not match the order")
+    entry_ref = request.entry_ref.casefold()
+    entry = next((item for item in document.entries if item.external_ref.casefold() == entry_ref), None)
+    key = artifact_digest("statement_transaction", statement.account_key, entry_ref)
+    indexed = db.get(StatementEntry, key)
+    if entry is None or indexed is None or indexed.statement_id != statement.id or entry.category != "TRANSFER":
+        raise HTTPException(409, "An indexed settlement transfer entry is required")
+    amount = payment.captured_delta - payment.refunded_delta
+    detail = {"order_id": order_id, "payment_event_id": payment.event_id, "statement_id": statement.id,
+              "payment_sha256": payment.sha256, "statement_sha256": statement.digest,
+              "expected_minor": amount, "statement_minor": entry.amount_minor,
+              "difference_minor": entry.amount_minor - amount, "currency": document.currency,
+              "basis": "RECONCILIATION_FIXTURE", "actual_settlement_verified": False}
+    previous = db.get(FoundryFixtureSettlement, payment.event_id)
+    if previous is not None and (previous.statement_entry_key, previous.statement_id, previous.statement_sha256,
+                                 previous.payment_sha256, previous.amount_minor) != (
+        key, statement.id, statement.digest, payment.sha256, amount,
+    ):
+        raise HTTPException(409, "Payment already reconciled to different fixture evidence")
+    if amount != entry.amount_minor:
+        return {**detail, "status": "DISCREPANCY"}
+    if previous is None:
+        db.add(FoundryFixtureSettlement(payment_event_id=payment.event_id, statement_entry_key=key,
+                                        statement_id=statement.id, statement_sha256=statement.digest,
+                                        payment_sha256=payment.sha256, amount_minor=amount))
+        try:
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+            raise HTTPException(409, "Statement posting or signed payment already reconciled") from None
+    return {**detail, "status": "MATCHED_FIXTURE"}

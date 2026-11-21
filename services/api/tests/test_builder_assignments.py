@@ -109,3 +109,17 @@ def test_owner_prepares_snapshot_candidate_for_existing_runner(deal_client, tmp_
     assert lease["review"]["sha256"] == prepared.json()["bundle_sha256"]
     assert target.read_bytes() == original
     assert lease["review"]["deployed"] is False
+
+
+    clock = [builder_assignments.now()]
+    monkeypatch.setattr(builder_assignments, "now", lambda: clock[0])
+    for expected in (2, 3):
+        clock[0] += timedelta(minutes=16)
+        replay = client.post("/builder/assignments/claim", headers=runner).json()
+        assert replay["status"] == "leased" and replay["claim_count"] == expected
+        assert replay["release_authorized"] is False
+    clock[0] += timedelta(minutes=16)
+    exhausted = client.post("/builder/assignments/claim", headers=runner).json()
+    assert exhausted["status"] == "lease_exhausted" and exhausted["receipt"] is None
+    assert exhausted["claim_count"] == 3 and exhausted["release_authorized"] is False
+    assert client.post("/builder/assignments/claim", headers=runner).json()["status"] == "idle"

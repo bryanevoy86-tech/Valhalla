@@ -11,13 +11,14 @@ import time
 import hmac
 import os
 import uuid
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Literal, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
+from app.services.owner_conversation import ThreadIn, TurnIn, UploadIn, bounded_upload
 from app.users.models import UserProfile, AccountSettings
 
 router = APIRouter(prefix="/api/weweb", tags=["weweb-auth"])
@@ -455,20 +456,35 @@ def require_owner_session(
         raise HTTPException(403, "Configured owner session required")
 
 
-def private_owner_response(content):
+def private_owner_response(content, *, status_code=200):
     from fastapi.encoders import jsonable_encoder
     from fastapi.responses import JSONResponse
 
-    return JSONResponse(content=jsonable_encoder(content),
+    return JSONResponse(content=jsonable_encoder(content), status_code=status_code,
                         headers={"Cache-Control": "no-store", "Vary": "Authorization"})
 
 
 @router.get("/owner-briefing", dependencies=[Depends(require_owner_session)])
-def owner_briefing(db: Session = Depends(get_db)):
+def owner_briefing(mode: Literal["standard", "driving"] = "standard", db: Session = Depends(get_db)):
     """Expose a read-only owner projection over the existing revocable session."""
     from app.services.owner_conversation import answer
 
     reply, evidence = answer(db, "briefing", [])
+    if mode == "driving":
+        operating = evidence["operating_evidence"]
+        stop_active = evidence["integrity"]["fail_safe_state"]["active"]
+        attention = {
+            "integrity": len(evidence["integrity"]["anomaly_detection"]["signals"]),
+            "economic": len(operating["latest_economic_alerts"]),
+            "independent_reviews": len(operating["loki"]["latest_outstanding"]),
+            "discovery": len(operating["foundry_intake_health"].get("recent_job_errors", [])),
+            "builder": operating["builder_lease_health"].get("lease_exhausted", 0),
+        }
+        spoken = ("Emergency stop is active. " if stop_active else "") + (
+            "There are items to review when parked." if any(attention.values()) else "No sampled items need attention."
+        )
+        return private_owner_response({"reply": spoken, "attention": attention, "emergency_stop": stop_active,
+                                       "mode": mode, "execution_authorized": False})
     return private_owner_response({"reply": reply, "evidence": evidence, "execution_authorized": False})
 
 
@@ -484,3 +500,34 @@ def owner_conversation_history(conversation_id: uuid.UUID, limit: int = 50, db: 
     from app.services.owner_conversation import conversation_history
 
     return private_owner_response(conversation_history(db, conversation_id, limit))
+
+@router.post("/owner-conversations", status_code=201, dependencies=[Depends(require_owner_session)])
+def owner_create_conversation(payload: ThreadIn, db: Session = Depends(get_db)):
+    from app.services.owner_conversation import create_conversation
+
+    return private_owner_response(create_conversation(payload, db), status_code=201)
+
+
+@router.post("/owner-conversations/{conversation_id}/turns", status_code=201,
+             dependencies=[Depends(require_owner_session)])
+def owner_submit_turn(conversation_id: uuid.UUID, payload: TurnIn, db: Session = Depends(get_db)):
+    from app.services.owner_conversation import submit_turn
+
+    return private_owner_response(submit_turn(conversation_id, payload, db, local_only=True), status_code=201)
+
+
+@router.post("/owner-conversations/{conversation_id}/attachments", status_code=201,
+             dependencies=[Depends(require_owner_session)])
+def owner_upload_attachment(conversation_id: uuid.UUID, payload: UploadIn = Depends(bounded_upload),
+                            db: Session = Depends(get_db)):
+    from app.services.owner_conversation import store_attachment
+
+    return private_owner_response(store_attachment(conversation_id, payload, db), status_code=201)
+
+
+@router.post("/owner-conversations/{conversation_id}/attachments/{attachment_id}/extract",
+             dependencies=[Depends(require_owner_session)])
+def owner_extract_attachment(conversation_id: uuid.UUID, attachment_id: uuid.UUID, db: Session = Depends(get_db)):
+    from app.services.owner_conversation import local_extraction
+
+    return private_owner_response(local_extraction(conversation_id, attachment_id, db))

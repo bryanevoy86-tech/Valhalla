@@ -13,6 +13,7 @@ class BuilderAssignment(Base):
     image_id = Column(String(71), nullable=False)
     status = Column(String(20), nullable=False, index=True)
     created_at = Column(DateTime(), nullable=False)
+    claim_count = Column(Integer(), nullable=False, default=0, server_default="0")
     lease_id = Column(Uuid())
     lease_until = Column(DateTime())
     receipt = Column(JSON())

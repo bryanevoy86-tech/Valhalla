@@ -10,6 +10,13 @@ from sqlalchemy.orm import Session, aliased
 from app.models.owner_conversation import OwnerMemoryEntry, OwnerTurn
 
 
+class DecisionContext(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    purpose: str = Field(min_length=3, max_length=400)
+    rationale: str = Field(min_length=3, max_length=1500)
+    dependency_entry_ids: list[UUID] = Field(default_factory=list, max_length=8)
+
+
 class MemoryIn(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
     entry_id: UUID
@@ -20,6 +27,7 @@ class MemoryIn(BaseModel):
     topic: str = Field(min_length=1, max_length=120)
     statement: str = Field(min_length=1, max_length=1500)
     state: Literal["RECORDED", "OPEN", "DONE", "RETRACTED"] = "RECORDED"
+    decision_context: DecisionContext | None = None
 
 
 def memory_receipt(entry: OwnerMemoryEntry) -> dict:
@@ -29,6 +37,7 @@ def memory_receipt(entry: OwnerMemoryEntry) -> dict:
         "supersedes_id": str(entry.supersedes_id) if entry.supersedes_id else None,
         "kind": entry.kind, "visibility": entry.visibility, "topic": entry.topic,
         "statement": entry.statement, "state": entry.state, "created_at": entry.created_at.isoformat(),
+        "decision_context": entry.decision_context,
         "evidence_class": entry.kind if entry.kind in {"ASSUMPTION", "SIMULATION"} else "OWNER_REPORTED",
         "verified_fact": False, "execution_authorized": False,
     }
@@ -44,6 +53,19 @@ def prepare_entry(db: Session, conversation_id: UUID, payload: MemoryIn) -> Owne
         raise HTTPException(422, "Closing or retracting a record requires its prior entry")
 
     values = payload.model_dump(exclude={"entry_id"})
+    if payload.decision_context is not None:
+        if payload.kind != "DECISION":
+            raise HTTPException(422, "Decision context requires a decision entry")
+        refs = payload.decision_context.dependency_entry_ids
+        if len(set(refs)) != len(refs) or payload.entry_id in refs:
+            raise HTTPException(422, "Decision dependencies must be distinct prior entries")
+        for reference in refs:
+            related = db.get(OwnerMemoryEntry, reference)
+            if related is None or (related.conversation_id != conversation_id and related.visibility != "OWNER"):
+                raise HTTPException(404, "Decision dependency unavailable in this conversation")
+            if payload.visibility == "OWNER" and related.visibility != "OWNER":
+                raise HTTPException(409, "Owner-wide decisions cannot reference conversation-private dependencies")
+        values["decision_context"] = payload.decision_context.model_dump(mode="json")
     existing = db.get(OwnerMemoryEntry, payload.entry_id)
     if existing is not None:
         if existing.conversation_id != conversation_id or any(getattr(existing, key) != v for key, v in values.items()):
@@ -78,3 +100,18 @@ def recall_entries(db: Session, conversation_id: UUID, limit: int = 15, *, open_
         query = query.where(entry.kind == "OBLIGATION", entry.state == "OPEN")
     records = db.scalars(query.order_by(entry.created_at.desc(), entry.id.desc()).limit(limit)).all()
     return [memory_receipt(record) for record in records]
+
+
+def decision_context_recall(db: Session, conversation_id: UUID):
+    selected = [entry for entry in recall_entries(db, conversation_id, 50) if entry["kind"] == "DECISION"]
+    by_topic = {}
+    for item in selected:
+        topic = " ".join(item["topic"].casefold().split())
+        by_topic.setdefault(topic, []).append(item)
+    differences = [
+        {"topic": topic, "entry_ids": [item["entry_id"] for item in entries],
+         "state": "DIFFERENT_RECORDED_POSITIONS_REVIEW_REQUIRED"}
+        for topic, entries in by_topic.items()
+        if len({" ".join(item["statement"].casefold().split()) for item in entries}) > 1
+    ]
+    return {"decisions": selected, "potential_conflicts": differences, "maximum_recent_entries": 50}

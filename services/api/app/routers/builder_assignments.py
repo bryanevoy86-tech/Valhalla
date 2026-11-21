@@ -21,9 +21,13 @@ from app.schemas.builder import FileSpec
 from app.services.prime_business_execution import _emergency_stop_active, require_owner_mandate_key
 
 
+MAX_LEASE_CLAIMS = 3
+
+
 def require_schema(db: Session = Depends(get_db)):
     schema = inspect(db.connection())
-    if any(not schema.has_table(model.__tablename__) for model in (BuilderTask, BuilderAssignment)):
+    if (any(not schema.has_table(model.__tablename__) for model in (BuilderTask, BuilderAssignment))
+            or not any(column["name"] == "claim_count" for column in schema.get_columns(BuilderAssignment.__tablename__))):
         raise HTTPException(503, "Builder assignment schema not ready")
 
 
@@ -82,7 +86,7 @@ def now():
 
 def view(row):
     return {"assignment_id": row.id, "task_id": row.task_id, "status": row.status, "receipt": row.receipt,
-            "base_commit": row.base_commit, "image_id": row.image_id, "bundle_sha256": row.bundle_sha256,
+            "claim_count": row.claim_count, "base_commit": row.base_commit, "image_id": row.image_id, "bundle_sha256": row.bundle_sha256,
             "release_authorized": False}
 
 
@@ -165,6 +169,11 @@ def claim(db: Session = Depends(get_db)):
     )).order_by(BuilderAssignment.created_at, BuilderAssignment.id).with_for_update(skip_locked=True).limit(1))
     if row is None:
         return {"status": "idle"}
+    if row.claim_count >= MAX_LEASE_CLAIMS:
+        row.status = "lease_exhausted"
+        row.lease_until = None
+        db.commit()
+        return view(row)
     task = db.get(BuilderTask, row.task_id)
     try:
         if task is None or task.status != "review_ready":
@@ -177,6 +186,7 @@ def claim(db: Session = Depends(get_db)):
         db.commit()
         return view(row)
     row.status = "leased"
+    row.claim_count += 1
     row.lease_id = uuid4()
     row.lease_until = at + timedelta(minutes=15)
     db.commit()

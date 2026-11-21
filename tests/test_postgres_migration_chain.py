@@ -56,6 +56,9 @@ LOKI_DIGEST = load("alembic/versions/20261121_loki_result_digest.py")
 PROBES = load("alembic/versions/20261121_specialist_probes.py")
 BUILDER_ASSIGNMENTS = load("alembic/versions/20261121_builder_assignments.py")
 NORNS_HISTORY = load("alembic/versions/20261121_norns_scoped_history.py")
+BUILDER_LEASE_CAP = load("alembic/versions/20261123_builder_lease_cap.py")
+FIXTURE_SETTLEMENT = load("alembic/versions/20261123_fixture_settlement.py")
+OWNER_RETENTION = load("alembic/versions/20261123_owner_retention.py")
 ATTACHMENT_REVIEWS = load("alembic/versions/20261121_attachment_reviews.py")
 FOUNDRY_EVIDENCE = load("alembic/versions/20261121_foundry_evidence.py")
 SAAS_TRIALS = load("alembic/versions/20261122_saas_trial_entitlements.py")
@@ -319,7 +322,7 @@ class PostgresMigrationChainTests(unittest.TestCase):
                                    ASSIGNMENTS, PROBES, BUILDER_ASSIGNMENTS, NORNS_HISTORY, ATTACHMENT_REVIEWS,
                                    FOUNDRY_EVIDENCE, SAAS_TRIALS, FOUNDRY_CHECKOUT, PROVIDER_PRICING, NORNS_HOLDOUT,
                                    CAMPAIGN_REHEARSAL, MARKET_EVIDENCE, MARKET_FORECASTS, ECONOMIC_CONTROL,
-                                   STARTUP_INTAKE, STATEMENT_FIXTURES):
+                                   STARTUP_INTAKE, STATEMENT_FIXTURES, OWNER_RETENTION, FIXTURE_SETTLEMENT, BUILDER_LEASE_CAP):
                         with patch.object(module, "op", operations):
                             module.upgrade()
                     expected = {
@@ -330,7 +333,7 @@ class PostgresMigrationChainTests(unittest.TestCase):
                         "saas_tenant_entitlements", "prime_provider_price_quotes",
                         "prime_provider_usage_reconciliations", "prime_norns_holdout", "prime_foundry_campaign_visits", "prime_market_evidence", "prime_norns_market_forecasts", "prime_economic_pools",
                         "prime_economic_operations", "prime_economic_records", "prime_foundry_intake_jobs",
-                        "prime_statement_accounts", "prime_statement_imports", "prime_statement_entries",
+                        "prime_statement_accounts", "prime_statement_imports", "prime_statement_entries", "prime_foundry_fixture_settlements",
                     }
                     self.assertTrue(expected <= set(inspect(connection).get_table_names()))
                     self.assertEqual(connection.execute(text("SELECT title FROM prime_owner_conversations")).scalar_one(), "prior thread")

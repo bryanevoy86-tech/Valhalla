@@ -393,12 +393,28 @@ def test_discovery_queue_sources_rank_and_do_not_claim_external_demand(economic_
     url = "/api/prime/foundry/intake"
     stale = {**evidence, "observed_on": (today - timedelta(days=5)).isoformat()}
     assert client.post(url, headers=OWNER, json={**job, "evidence": stale}).status_code == 409
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+
+    publisher = Ed25519PrivateKey.generate()
+    key_url = f"{url}/sources/{job['source_id']}/signing-key"
+    key = {"public_key_hex": publisher.public_key().public_bytes_raw().hex()}
+    assert client.put(key_url, json=key).status_code == 401
+    assert client.put(key_url, headers=OWNER, json=key).status_code == 200
+    assert client.post(url, headers=OWNER, json=job).status_code == 409
+    job["source_signed_at"] = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    def signed(values):
+        return {**values, "source_signature": publisher.sign(foundry_intake.source_signature_message(values)).hex()}
+    expired = signed({**job, "source_signed_at": (datetime.now(timezone.utc) - timedelta(hours=1))
+                      .isoformat().replace("+00:00", "Z")})
+    assert client.post(url, headers=OWNER, json=expired).status_code == 409
+    job = signed(job)
+    assert client.post(url, headers=OWNER, json={**job, "sample_count": 80}).status_code == 409
     queued = client.post(url, headers=OWNER, json=job)
     assert queued.status_code == 202, queued.text
     assert client.post(url, headers=OWNER, json=job).json() == queued.json()
     duplicate = {**evidence, "evidence_id": str(uuid4())}
-    assert client.post(url, headers=OWNER, json={**job, "evidence": duplicate,
-                                              "external_key": "calibrationsurvey"}).status_code == 409
+    assert client.post(url, headers=OWNER, json=signed({**job, "evidence": duplicate,
+                                                       "external_key": "calibrationsurvey"})).status_code == 409
     original = foundry_intake.materialize
     def unavailable(*args):
         raise OperationalError("fixture", None, Exception())

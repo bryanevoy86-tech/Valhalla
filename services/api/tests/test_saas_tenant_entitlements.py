@@ -50,9 +50,9 @@ def test_trial_is_bound_to_authenticated_subscriber_and_tenant(deal_client, monk
     assert client.post(root, headers=owner, json=trial).json() == issued.json()
 
     monkeypatch.setenv("VALHALLA_OWNER_EMAIL", "one@example.invalid")
-    from app.models.owner_conversation import OwnerConversation, OwnerTurn
+    from app.models.owner_conversation import OwnerAttachment, OwnerAttachmentExtraction, OwnerConversation, OwnerTurn
 
-    for model in (LearningTaskQueueItem, GoLiveState, PrimeSpecialistSchedule, OwnerConversation, OwnerTurn):
+    for model in (LearningTaskQueueItem, GoLiveState, PrimeSpecialistSchedule, OwnerConversation, OwnerTurn, OwnerAttachment, OwnerAttachmentExtraction):
         model.__table__.create(engine)
     thread_id = uuid4()
     with Session(engine) as db:
@@ -69,6 +69,9 @@ def test_trial_is_bound_to_authenticated_subscriber_and_tenant(deal_client, monk
     assert owned.headers["cache-control"] == "no-store"
     assert owned.json()["execution_authorized"] is False
     assert owned.json()["evidence"]["integrity"]["fail_safe_state"]["active"] is True
+    driving = client.get(briefing, params={"mode": "driving"}, headers=bearer)
+    assert driving.status_code == 200 and driving.json()["emergency_stop"] is True
+    assert "evidence" not in driving.json() and driving.json()["execution_authorized"] is False
 
     threads = "/api/weweb/owner-conversations"
     history = f"{threads}/{thread_id}/turns"
@@ -77,6 +80,37 @@ def test_trial_is_bound_to_authenticated_subscriber_and_tenant(deal_client, monk
     turn = client.get(history, headers=bearer)
     assert turn.headers["cache-control"] == "no-store"
     assert turn.json()[0]["evidence"]["source"] == "fixture"
+
+    import base64
+    import hashlib
+
+    def forbidden_inference(*args, **kwargs):
+        raise AssertionError("Owner browser messages must never call a provider")
+    monkeypatch.setattr("app.services.owner_conversation.advisory_reply", forbidden_inference)
+    fresh = str(uuid4())
+    assert client.post(threads, headers=outsider, json={"conversation_id": fresh, "title": "Fixture"}).status_code == 403
+    assert client.post(threads, headers=bearer, json={"conversation_id": fresh, "title": "Fixture"}).status_code == 201
+    inbox = f"{threads}/{fresh}"
+    payload = {"turn_id": str(uuid4()), "message": "Review my operating options"}
+    submitted = client.post(f"{inbox}/turns", headers=bearer, json=payload)
+    assert submitted.status_code == 201, submitted.text
+    assert submitted.headers["cache-control"] == "no-store"
+    assert submitted.json()["execution_authorized"] is False
+    assert client.post(f"{inbox}/turns", headers=bearer, json=payload).json() == submitted.json()
+    assert client.post(f"{inbox}/turns", headers=bearer, json={**payload, "message": "Changed"}).status_code == 409
+    assert client.post(f"{inbox}/turns", headers=bearer, json={
+        **payload, "provider_data_class": "SYNTHETIC",
+    }).status_code == 422
+    content = b"Owner private attachment fixture"
+    upload = {"attachment_id": str(uuid4()), "filename":"source.txt", "media_type":"text/plain",
+              "sha256": hashlib.sha256(content).hexdigest(), "content_base64": base64.b64encode(content).decode()}
+    attachment = client.post(f"{inbox}/attachments", headers=bearer, json=upload)
+    assert attachment.status_code == 201, attachment.text
+    attachment_root = f"{inbox}/attachments/{upload['attachment_id']}"
+    assert client.post(f"{attachment_root}/extract", headers=outsider).status_code == 403
+    extraction = client.post(f"{attachment_root}/extract", headers=bearer)
+    assert extraction.status_code == 200, extraction.text
+    assert extraction.json()["sent_to_provider"] is False
 
     access = f"{root}/{trial['tenant_id']}/access/wholesale_engine"
     assert client.get(access).status_code == 401

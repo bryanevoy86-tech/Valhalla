@@ -2,6 +2,7 @@
 from datetime import datetime, timezone
 from uuid import UUID
 
+from pydantic import BaseModel, ConfigDict, Field
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import inspect, select
 from sqlalchemy.exc import IntegrityError
@@ -10,6 +11,7 @@ from sqlalchemy.orm import Session
 from app.core.db import get_db
 from app.core.dependencies import require_prime_control_key
 from app.loki.evidence import artifact_digest
+from app.models.completion_registry import SourceRegistryItem
 from app.models.foundry_evidence import FoundryEvidence
 from app.pantheon.monitor import verified_report
 from app.services.foundry_discovery import EvidenceIn, SCOPE_FIELDS, candidate_fields, checked_evidence
@@ -87,7 +89,7 @@ def queue_intake(request: Intake, db: Session = Depends(get_db)):
         raise HTTPException(503, "Discovery intake not migrated")
     now = current_time()
     _check_legacy(db, **request.evidence.model_dump(include=SCOPE_FIELDS))
-    source_for(db, request, now.date(), lock=True)
+    source_for(db, request, now.date(), lock=True, verify_enrollment_time=True)
     payload = request.model_dump(mode="json", exclude_none=True)
     job_id = request.evidence.evidence_id
     digest = artifact_digest("foundry_intake", str(job_id), payload)
@@ -122,3 +124,29 @@ def read_intake(job_id: UUID, db: Session = Depends(get_db)):
     scope = Intake.model_validate(job.payload).evidence.model_dump(include=SCOPE_FIELDS)
     _check_legacy(db, **scope)
     return job_view(job)
+
+
+class SourceSigningKey(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    public_key_hex: str = Field(pattern=r"^[0-9a-f]{64}$")
+    previous_public_key_hex: str | None = Field(None, pattern=r"^[0-9a-f]{64}$")
+
+
+@router.put("/intake/sources/{source_id}/signing-key", dependencies=owner)
+def enroll_signing_key(source_id: str, request: SourceSigningKey, db: Session = Depends(get_db)):
+    if not intake_ready(db):
+        raise HTTPException(503, "Discovery intake not migrated")
+    source = db.scalar(select(SourceRegistryItem).filter_by(source_id=source_id).with_for_update())
+    if source is None or source.source_type.upper() not in {"DEMAND_EXPORT", "PROCUREMENT_EXPORT"}:
+        raise HTTPException(404, "Eligible discovery source not found")
+    proposed = f"ed25519:{request.public_key_hex}"
+    if source.provenance_method == proposed:
+        return {"source_id": source_id, "signature_required": True}
+    current = source.provenance_method
+    if current and current != f"ed25519:{request.previous_public_key_hex}":
+        raise HTTPException(409, "Existing source provenance does not match the expected key")
+    if not current and request.previous_public_key_hex:
+        raise HTTPException(409, "Prior source signing key not found")
+    source.provenance_method = proposed
+    db.commit()
+    return {"source_id": source_id, "signature_required": True}

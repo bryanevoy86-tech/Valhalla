@@ -3,8 +3,10 @@ from datetime import datetime, timedelta, timezone
 from typing import Annotated, Literal
 from uuid import UUID
 
+from cryptography.exceptions import InvalidSignature
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from fastapi import HTTPException
-from pydantic import Field, model_validator
+from pydantic import AwareDatetime, Field, model_validator
 from sqlalchemy import inspect, select, update
 from sqlalchemy.exc import IntegrityError, OperationalError
 
@@ -28,10 +30,13 @@ class Intake(StrictModel):
     buyer_segment: Annotated[str, Field(min_length=3, max_length=120)]
     sample_count: Annotated[int, Field(strict=True, ge=1, le=1_000_000)]
     demand_count: Annotated[int, Field(strict=True, ge=0, le=1_000_000)]
+    source_signature: str | None = Field(None, pattern=r"^[0-9a-f]{128}$")
+    source_signed_at: AwareDatetime | None = None
 
     @model_validator(mode="after")
     def observation_bounds(self):
-        if self.demand_count > self.sample_count or self.evidence.provenance is not None:
+        if (self.demand_count > self.sample_count or self.evidence.provenance is not None
+                or bool(self.source_signature) != bool(self.source_signed_at)):
             raise ValueError("Invalid observation counts or caller-supplied provenance")
         return self
 
@@ -46,7 +51,13 @@ def current_time():
     return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
-def source_for(db, request, today, *, lock=False):
+def source_signature_message(request):
+    normalized = request if isinstance(request, dict) else request.model_dump(mode="json", exclude_none=True)
+    signed = {key: value for key, value in normalized.items() if key != "source_signature"}
+    return artifact_digest("foundry_signed_export_v1", signed["source_id"], signed).encode("ascii")
+
+
+def source_for(db, request, today, *, lock=False, verify_enrollment_time=False):
     evidence = request.evidence
     source = authorized_source(db, request.source_id, evidence.jurisdiction, evidence.evidence_class, lock=lock)
     maximum_age = min(30, max(0, (source.freshness_sla_hours or 168) // 24))
@@ -54,6 +65,21 @@ def source_for(db, request, today, *, lock=False):
         raise HTTPException(409, "Source does not permit the specified discovery adapter")
     if not today - timedelta(days=maximum_age) <= evidence.observed_on <= today <= evidence.expires_on:
         raise HTTPException(409, "Discovery observation is stale or future-dated")
+    method = source.provenance_method or ""
+    if method.startswith("ed25519:"):
+        if request.source_signature is None:
+            raise HTTPException(409, "Registered source requires a signed export")
+        try:
+            public_key = Ed25519PublicKey.from_public_bytes(bytes.fromhex(method.removeprefix("ed25519:")))
+            public_key.verify(bytes.fromhex(request.source_signature), source_signature_message(request))
+        except (ValueError, InvalidSignature):
+            raise HTTPException(409, "Discovery export signature does not match the registered source") from None
+        if verify_enrollment_time:
+            received = datetime.now(timezone.utc)
+            if not received - timedelta(minutes=15) <= request.source_signed_at <= received + timedelta(seconds=30):
+                raise HTTPException(409, "Discovery export signature timestamp is outside the intake window")
+    elif request.source_signature:
+        raise HTTPException(409, "No signature key is enrolled for this source")
     return source
 
 

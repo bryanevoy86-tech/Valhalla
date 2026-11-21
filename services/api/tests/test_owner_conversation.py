@@ -258,6 +258,19 @@ def test_memory_scope_provenance_recall_and_conflicting_revision(client):
     assert [entry["statement"] for entry in records] == ["Monthly reporting"]
     assert records[0]["source_turn_id"] == outside["turn_id"]
     assert records[0]["execution_authorized"] is False
+    decision = {"entry_id": str(uuid4()), "kind": "DECISION", "topic": "review cadence",
+                "statement": "Monthly review", "source_turn_id": outside["turn_id"], "visibility": "OWNER",
+                "decision_context": {"purpose": "Preserve review capacity", "rationale": "Monthly work fits staffing",
+                                     "dependency_entry_ids": [revision["entry_id"]]}}
+    created = client.post(other_memory, json=decision, headers=HEADERS)
+    assert created.status_code == 201, created.text
+    assert client.post(other_memory, json={**decision, "entry_id": str(uuid4()),
+                                          "statement": "Weekly review"}, headers=HEADERS).status_code == 201
+    context = send(first, "Review past decisions")["evidence"]
+    assert context["potential_conflicts"][0]["topic"] == "review cadence"
+    assert context["decisions"][0]["decision_context"]["rationale"] == "Monthly work fits staffing"
+    assert all(not item["execution_authorized"] for item in context["decisions"])
+
 
 
 def test_conversation_links_exact_specialist_receipt_without_promoting_it(client):
@@ -514,3 +527,34 @@ def test_private_scanned_pdf_reuses_attachment_ocr_receipt(client):
         assert "VALHALLA SCAN" in receipt["sections"][0]["text"]
     else:
         assert receipt["ocr_status"] == "UNAVAILABLE"
+
+
+def test_retention_deadline_restricts_download_and_redacts_historical_extracts(client, monkeypatch):
+    from datetime import date, timedelta
+    from app.services import owner_attachment_review
+
+    today = date(2026, 11, 21)
+    monkeypatch.setattr(owner_attachment_review, "retention_day", lambda: today)
+    monkeypatch.setenv("VALHALLA_OWNER_MANDATE_KEY", "fixture-owner-retention")
+    owner = {**HEADERS, "X-Owner-Mandate-Key": "fixture-owner-retention"}
+    cid = create(client)
+    body = asset(b"Private retention marker", "text/plain", "claims.txt")
+    root = f"{BASE}/{cid}/attachments"
+    assert client.post(root, headers=HEADERS, json=body).status_code == 201
+    url = f"{root}/{body['attachment_id']}"
+    assert client.post(f"{url}/extract", headers=HEADERS).status_code == 200
+    turn = {"turn_id": str(uuid4()), "message": "Review attached extraction", "attachment_ids": [body["attachment_id"]]}
+    turns = f"{BASE}/{cid}/turns"
+    assert "Private retention marker" in client.post(turns, headers=HEADERS, json=turn).text
+    recorded = client.post(f"{url}/review", headers=owner, json={
+        "review_id": str(uuid4()), "source_sha256": body["sha256"], "disposition": "ACCEPT_LOCAL",
+        "reason": "Allow local reading through the explicit date.", "retain_until": today.isoformat(),
+    })
+    assert recorded.status_code == 201, recorded.text
+    monkeypatch.setattr(owner_attachment_review, "retention_day", lambda: today + timedelta(days=1))
+    assert client.get(f"{url}/download", headers=HEADERS).status_code == 409
+    assert client.post(f"{url}/extract", headers=HEADERS).status_code == 409
+    history = client.get(turns, headers=HEADERS)
+    assert "Private retention marker" not in history.text
+    assert history.json()[0]["evidence"]["extractions"][0]["state"] == "RESTRICTED"
+    assert "Private retention marker" not in client.post(turns, headers=HEADERS, json=turn).text

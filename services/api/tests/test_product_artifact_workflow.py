@@ -14,7 +14,7 @@ from app.models.completion_registry import (
     KnowledgeRegistryItem, LearningFeedbackRecord, LearningTaskQueueItem, LegacyInstanceRegistryItem, LegacyInstanceWorkItem, LegacyOrchestrationEvent, SourceRegistryItem,
 )
 from app.models.media_engine import MediaContent
-from app.models.foundry_checkout import FoundryCampaignVisit, FoundryRehearsalOrder, FoundryRehearsalPayment
+from app.models.foundry_checkout import FoundryCampaignVisit, FoundryFixtureSettlement, FoundryRehearsalOrder, FoundryRehearsalPayment
 from app.models.marketing import MarketingCampaign
 from app.models.audit_log import AuditLog
 from app.models.go_live_state import GoLiveState
@@ -389,6 +389,9 @@ def rehearse_checkout(client, engine, monkeypatch, owner, action_id, price, scop
     assert apply(capture, "evt_fixture_capture", price, live=True).status_code == 422
     assert apply(capture, "evt_fixture_capture", price, valid=False).status_code == 400
     assert apply(capture, "evt_fixture_capture", price + 5).status_code == 409
+    monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "true")
+    assert apply(capture, "evt_fixture_capture", price).status_code == 503
+    monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "false")
     paid = apply(capture, "evt_fixture_capture", price)
     assert paid.status_code == 200, paid.text
     assert apply(capture, "evt_fixture_capture", price).json() == paid.json()
@@ -407,7 +410,9 @@ def rehearse_checkout(client, engine, monkeypatch, owner, action_id, price, scop
     assert cost.json()["fixture_contribution_minor"] == price - 175
     assert apply(refund, "evt_fixture_refund_one", price // 2).status_code == 200
     assert apply(refund, "evt_fixture_over_refund", price + 1).status_code == 409
+    monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "true")
     assert apply(refund, "evt_fixture_refund_final", price).status_code == 200
+    monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "false")
     final = client.get(f"{root}/orders/{order_id}").json()
     assert final["captured_minor"] == final["refunded_minor"] == price
     assert final["net_minor"] == 0
@@ -416,5 +421,39 @@ def rehearse_checkout(client, engine, monkeypatch, owner, action_id, price, scop
     assert summary()["rehearsed_contribution_minor"] == -175
     assert summary()["actual_profit_minor"] is None
     assert summary()["verified_commercial_revenue"] is False
+    from app.models.treasury_reconciliation import StatementAccount, StatementEntry, StatementImport
+
+    for model in (StatementAccount, StatementEntry, StatementImport, FoundryFixtureSettlement):
+        model.__table__.create(engine)
+    statement_id = str(uuid4())
+    today = date.today().isoformat()
+    entries = [
+        {"external_ref": "wrong-amount", "amount_minor": price + 1},
+        {"external_ref": "capture-1", "amount_minor": price},
+        {"external_ref": "refund-1", "amount_minor": -(price // 2)},
+    ]
+    statement = {"id": statement_id, "scope": scope, "source_id": "fixture:checkout-bank",
+                 "account_ref": "fixture:payment-account", "purpose": "BUSINESS", "currency": "CAD",
+                 "start": today, "end": today, "opening_minor": 0,
+                 "closing_minor": sum(row["amount_minor"] for row in entries),
+                 "outstanding_liabilities_minor": 0, "expense_budget_minor": 0,
+                 "entries": [{**row, "posted_on": today, "category": "TRANSFER"} for row in entries],
+                 "basis": "LOCAL_STATEMENT_FIXTURE"}
+    imported = client.post("/api/governance/floor/treasury/statement-fixtures", headers=owner, json=statement)
+    assert imported.status_code == 201, imported.text
+    endpoint = f"{root}/orders/{order_id}/settlement-fixtures"
+    link = {"statement_id": statement_id, "entry_ref": "wrong-amount", "payment_event_id": "evt_fixture_capture"}
+    mismatch = client.post(endpoint, headers=owner, json=link)
+    assert mismatch.json()["status"] == "DISCREPANCY" and mismatch.json()["difference_minor"] == 1
+    link["entry_ref"] = "capture-1"
+    matched = client.post(endpoint, headers=owner, json=link)
+    assert matched.json()["status"] == "MATCHED_FIXTURE"
+    assert matched.json()["actual_settlement_verified"] is False
+    assert client.post(endpoint, headers=owner, json=link).json() == matched.json()
+    assert client.post(endpoint, headers=owner, json={**link, "entry_ref": "wrong-amount"}).status_code == 409
+    assert client.post(endpoint, headers=owner, json={
+        **link, "entry_ref": "refund-1", "payment_event_id": "evt_fixture_refund_one",
+    }).json()["status"] == "MATCHED_FIXTURE"
+
     with Session(engine) as db:
         assert db.query(FoundryRehearsalPayment).count() == 3

@@ -36,3 +36,14 @@ class FoundryCampaignVisit(Base):
     campaign_id = Column(Integer(), nullable=False, index=True)
     scope_key = Column(String(64), nullable=False)
     order_id = Column(Uuid(), ForeignKey("prime_foundry_rehearsal_orders.id"), unique=True)
+
+
+class FoundryFixtureSettlement(Base):
+    __tablename__ = "prime_foundry_fixture_settlements"
+
+    payment_event_id = Column(String(120), ForeignKey("prime_foundry_rehearsal_payments.event_id"), primary_key=True)
+    statement_entry_key = Column(String(64), unique=True, nullable=False)
+    statement_id = Column(Uuid(), nullable=False)
+    statement_sha256 = Column(String(64), nullable=False)
+    payment_sha256 = Column(String(64), nullable=False)
+    amount_minor = Column(Integer(), nullable=False)
