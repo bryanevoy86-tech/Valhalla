@@ -69,3 +69,11 @@ class OwnerMemoryEntry(Base):
     statement = Column(Text(), nullable=False)
     state = Column(String(20), nullable=False)
     created_at = Column(DateTime(timezone=True), nullable=False, default=now)
+
+
+class OwnerAttachmentExtraction(Base):
+    __tablename__ = "prime_owner_attachment_extractions"
+    attachment_id = Column(Uuid(), ForeignKey("prime_owner_attachments.id"), primary_key=True)
+    source_sha256 = Column(String(64), nullable=False)
+    result = Column(JSON(), nullable=False)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=now)

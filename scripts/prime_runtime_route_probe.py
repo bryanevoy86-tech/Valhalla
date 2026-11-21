@@ -28,6 +28,7 @@ MANDATORY_ENDPOINTS = {
     "owner_attachment_upload": ("POST", "/api/jarvis/conversations/{conversation_id}/attachments"),
     "owner_attachment_list": ("GET", "/api/jarvis/conversations/{conversation_id}/attachments"),
     "owner_attachment_download": ("GET", "/api/jarvis/conversations/{conversation_id}/attachments/{attachment_id}/download"),
+    "owner_attachment_extract": ("POST", "/api/jarvis/conversations/{conversation_id}/attachments/{attachment_id}/extract"),
     "release_state": ("GET", "/governance/go-live/state"),
     "release_checklist": ("GET", "/governance/go-live/checklist"),
     "release_enable": ("POST", "/governance/go-live/enable"),

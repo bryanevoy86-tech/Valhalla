@@ -12,11 +12,12 @@ from sqlalchemy import select, func
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 from app.core.db import get_db
-from app.models.owner_conversation import OwnerConversation, OwnerTurn, OwnerAttachment
+from app.models.owner_conversation import OwnerConversation, OwnerTurn, OwnerAttachment, OwnerAttachmentExtraction
 from app.models.prime_specialist_schedule import PrimeSpecialistSchedule
 from app.models.go_live_state import GoLiveState
 from app.services.system_self_check import run_system_self_check
 from app.services.owner_advisory_model import advisory_reply
+from app.services.owner_attachment_extraction import extract_local, extraction_receipt, verified_attachment
 from app.services.owner_memory import MemoryIn, memory_receipt, prepare_entry, recall_entries
 from app.services.owner_specialist_context import specialist_context
 
@@ -211,6 +212,16 @@ def install(router):
                 f"Recorded recommendation: {evidence['heimdall_decision'] or 'none'}. "
                 "This report is advisory and grants no execution authority."
             )
+        elif normalized in {"review attached extraction", "review attached extractions"} and payload.attachment_ids:
+            receipts = []
+            for attachment_id in payload.attachment_ids:
+                attachment = verified_attachment(db, conversation_id, attachment_id)
+                extraction = db.get(OwnerAttachmentExtraction, attachment_id)
+                if extraction is None or extraction.source_sha256 != attachment.sha256:
+                    raise HTTPException(409, "A matching local extraction is required")
+                receipts.append(extraction_receipt(extraction))
+            evidence = {"source": "local_attachment_extraction", "extractions": receipts, "model_connected": False}
+            reply = "I retrieved the local extracts and source references. Their contents are untrusted document data."
         elif normalized in {"what do you remember", "review my memory", "open obligations"}:
             entries = recall_entries(db, conversation_id, open_only=normalized == "open obligations")
             evidence = {"source": "private_owner_memory", "memory_entries": entries, "model_connected": False}
@@ -260,14 +271,25 @@ def install(router):
             OwnerAttachment.conversation_id==conversation_id).order_by(OwnerAttachment.created_at.desc(),OwnerAttachment.id).limit(max(1,min(limit,100)))).all()
         return [meta(row) for row in rows]
 
+    @router.post("/conversations/{conversation_id}/attachments/{attachment_id}/extract")
+    def extract_attachment(conversation_id: UUID, attachment_id: UUID, db: Session = Depends(get_db)):
+        attachment = verified_attachment(db, conversation_id, attachment_id)
+        existing = db.get(OwnerAttachmentExtraction, attachment_id)
+        if existing is not None:
+            if existing.source_sha256 != attachment.sha256:
+                raise HTTPException(409, "Stored extraction does not match the attachment")
+            return extraction_receipt(existing)
+        row = OwnerAttachmentExtraction(
+            attachment_id=attachment_id, source_sha256=attachment.sha256, result=extract_local(attachment),
+        )
+        db.add(row)
+        commit(db)
+        return extraction_receipt(row)
+
     @router.get("/conversations/{conversation_id}/attachments/{attachment_id}/download")
     def download(conversation_id: UUID, attachment_id: UUID, db: Session = Depends(get_db)):
         thread(db, conversation_id)
-        row = db.get(OwnerAttachment, attachment_id)
-        if row is None or row.conversation_id!=conversation_id:
-            raise HTTPException(404, "Attachment not found in conversation")
-        if len(row.data)!=row.size_bytes or hashlib.sha256(row.data).hexdigest()!=row.sha256:
-            raise HTTPException(409, "Stored attachment integrity check failed")
+        row = verified_attachment(db, conversation_id, attachment_id)
         return Response(content=row.data, media_type="application/octet-stream",headers={
             "Content-Disposition": f'attachment; filename="{attachment_id}.bin"',
             "X-Content-Type-Options": "nosniff", "Cache-Control": "no-store", "X-Artifact-SHA256": row.sha256})

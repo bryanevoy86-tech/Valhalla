@@ -678,3 +678,9 @@ Product Foundry artifact staging passed [hosted CI](https://github.com/bryanevoy
 - Added private persisted preferences, decisions, obligations, assumptions and simulations with exact source-turn references, thread scope or deliberate owner-wide visibility, and append-only corrections. The local conversation can recall records and open obligations. Owner-reported statements, assumptions and simulations cannot become verified facts by writing memory.
 - A private conversation turn can bind a persisted specialist schedule receipt and retain its outcome references, scope and advice. The response keeps its advisory status and grants no independent Loki clearance or execution authority.
 - Twelve focused owner conversation tests passed locally, including cross-thread provenance rejection, owner-wide revision, isolated obligations and receipt-bound conversation.
+
+## Package 1 — Controlled attachment extraction
+
+- Added a checksummed, conversation-scoped local extraction route and durable receipts. A resource-bounded worker process reads searchable PDFs, DOCX paragraphs, XLSX displayed values with formulas omitted, and UTF-8 text. PNG/JPEG handling returns validated dimensions and file type. OCR, image interpretation, malware scanning and attachment retention controls remain open.
+- The reader keeps original file bytes local and labels extracted sections as untrusted data with file hash and locator. Conversations can retrieve a saved extract, including inert embedded instructions. Tests use actual PDF, Word, workbook, image and text bytes, and verify malformed XML rejection and replay.
+- Thirteen focused owner conversation tests passed locally.
