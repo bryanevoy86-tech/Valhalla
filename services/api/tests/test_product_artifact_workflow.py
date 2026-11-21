@@ -307,6 +307,12 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
 
     pending_id = submit_and_approve({**listing, "request_key": "workshop-listing-02"})
     with Session(engine) as db:
+        updated_specialist = run_assignment(db, "MIMIR")
+        assert updated_specialist["report_event_id"] != specialist_report_id
+    stale = client.post(f"{FACTORY}/actions/run-once", headers=admin).json()
+    assert stale["action_id"] == pending_id
+    assert "stale" in stale["reason"]
+    with Session(engine) as db:
         db.get(ProductArtifact, UUID(asset_id)).data = b"Bad storage bytes"
         db.commit()
     assert client.get(download_url, headers=owner).status_code == 409

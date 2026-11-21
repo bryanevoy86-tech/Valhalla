@@ -77,3 +77,13 @@ class OwnerAttachmentExtraction(Base):
     source_sha256 = Column(String(64), nullable=False)
     result = Column(JSON(), nullable=False)
     created_at = Column(DateTime(timezone=True), nullable=False, default=now)
+
+
+class OwnerAttachmentReview(Base):
+    __tablename__ = "prime_owner_attachment_reviews"
+    id = Column(Uuid(), primary_key=True)
+    attachment_id = Column(Uuid(), ForeignKey("prime_owner_attachments.id"), nullable=False, index=True)
+    source_sha256 = Column(String(64), nullable=False)
+    disposition = Column(String(24), nullable=False)
+    reason = Column(Text(), nullable=False)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=now)

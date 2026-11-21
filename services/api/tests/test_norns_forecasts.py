@@ -6,6 +6,8 @@ from sqlalchemy.orm import Session
 from app.models.completion_registry import LegacyInstanceRegistryItem, LegacyInstanceWorkItem, LegacyOrchestrationEvent
 from app.models.media_engine import MediaContent
 from app.models.norns_forecast import NornsForecast
+from app.models.specialist_assignment import SpecialistAssignment
+from app.pantheon.monitor import run_assignment
 from app.routers import norns_forecasts
 
 
@@ -16,7 +18,7 @@ def test_norns_requires_pre_execution_forecast_and_scores_only_observed_outcomes
     monkeypatch.setenv("VALHALLA_FACTORY_KEY", factory["X-Business-Factory-Key"])
     monkeypatch.setenv("VALHALLA_OWNER_MANDATE_KEY", owner["X-Owner-Mandate-Key"])
     monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "false")
-    for model in (LegacyInstanceRegistryItem, LegacyInstanceWorkItem, LegacyOrchestrationEvent, MediaContent, NornsForecast):
+    for model in (LegacyInstanceRegistryItem, LegacyInstanceWorkItem, LegacyOrchestrationEvent, MediaContent, NornsForecast, SpecialistAssignment):
         model.__table__.create(engine)
     with Session(engine) as db:
         db.add(LegacyInstanceRegistryItem(
@@ -80,3 +82,35 @@ def test_norns_requires_pre_execution_forecast_and_scores_only_observed_outcomes
     assert stats["resolved_sample_count"] == 2
     assert stats["brier_score"] == 0.065
     assert stats["accuracy_claim"] == "OBSERVED_INTERNAL_SAMPLE"
+
+    third = forecast(queue("another-missed-deadline"), 4000)
+    assert client.post(forecasts, headers=owner, json=third).status_code == 201
+    later = simulated_clock + timedelta(minutes=3)
+    monkeypatch.setattr(norns_forecasts, "_now", lambda: later)
+    assert client.post(f"{forecasts}/{third['forecast_id']}/resolve").json()["observed_outcome"] == 0
+    candidate = queue("prospective-norns-worker")
+    assigned = client.post("/api/prime/pantheon/assignments", headers=owner, json={
+        "assignment_id": str(uuid4()), "role": "NORNS", "cadence_seconds": 120, "duration_seconds": 1800,
+        "legacy_instance_id": "cal-legacy", "business_id": "internal-product", "jurisdiction": "CA-MB",
+        "engine_id": "micro_saas",
+    })
+    assert assigned.status_code == 201, assigned.text
+    with Session(engine) as db:
+        report_id = run_assignment(db, "NORNS", now=later + timedelta(seconds=1))["report_event_id"]
+    report = client.get(f"/api/prime/pantheon/reports/{report_id}").json()["observations"]
+    assert report["forecast_status"] == "ISSUED"
+    assert report["action_id"] == candidate
+    assert report["probability"] == 0.4
+    estimate_id = report["forecast_id"]
+    prospective = client.get(f"{forecasts}/{estimate_id}").json()
+    assert prospective["estimate_source"] == "SCOPED_HISTORICAL_RATE"
+    assert set(prospective["training_evidence"]["eligible_forecast_ids"]) == {
+        estimate["forecast_id"], pending["forecast_id"], third["forecast_id"],
+    }
+    assert prospective["observed_outcome"] is None
+    query = {"estimate_source": "SCOPED_HISTORICAL_RATE"}
+    assert client.get(f"{base}/calibration", params=query).json()["resolved_sample_count"] == 0
+    monkeypatch.setattr(norns_forecasts, "_now", lambda: later + timedelta(minutes=3))
+    assert client.post(f"{forecasts}/{estimate_id}/resolve").json()["observed_outcome"] == 0
+    assert client.get(f"{base}/calibration", params=query).json()["brier_score"] == 0.16
+    assert client.get(f"{base}/calibration").json()["resolved_sample_count"] == 3

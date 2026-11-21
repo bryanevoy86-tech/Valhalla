@@ -1,5 +1,5 @@
 """Timestamped estimates and measured internal Factory outcomes."""
-from sqlalchemy import CheckConstraint, Column, DateTime, Integer, String, Uuid
+from sqlalchemy import CheckConstraint, Column, DateTime, Integer, JSON, String, Uuid
 
 from app.core.db import Base
 
@@ -18,3 +18,5 @@ class NornsForecast(Base):
     resolved_at = Column(DateTime())
     observed_outcome = Column(Integer())
     evidence_ref = Column(String(180))
+    estimate_source = Column(String(40), nullable=False, server_default="OWNER_ESTIMATE")
+    training_evidence = Column(JSON())

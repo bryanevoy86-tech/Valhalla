@@ -18,6 +18,8 @@ from app.models.go_live_state import GoLiveState
 from app.services.system_self_check import run_system_self_check
 from app.services.owner_advisory_model import advisory_reply
 from app.services.owner_attachment_extraction import extract_local, extraction_receipt, verified_attachment
+from app.services.owner_attachment_review import ReviewIn, latest_review, require_local_use, review_receipt, save_review
+from app.services.prime_business_execution import require_owner_mandate_key
 from app.services.owner_memory import MemoryIn, memory_receipt, prepare_entry, recall_entries
 from app.services.owner_operating_brief import operating_evidence
 from app.services.owner_specialist_context import prime_decision_context, specialist_context
@@ -260,7 +262,8 @@ def install(router):
         elif normalized in {"review attached extraction", "review attached extractions"} and payload.attachment_ids:
             receipts = []
             for attachment_id in payload.attachment_ids:
-                attachment = verified_attachment(db, conversation_id, attachment_id)
+                attachment = verified_attachment(db, conversation_id, attachment_id, lock=True)
+                require_local_use(db, attachment)
                 extraction = db.get(OwnerAttachmentExtraction, attachment_id)
                 if extraction is None or extraction.source_sha256 != attachment.sha256:
                     raise HTTPException(409, "A matching local extraction is required")
@@ -318,9 +321,24 @@ def install(router):
             OwnerAttachment.conversation_id==conversation_id).order_by(OwnerAttachment.created_at.desc(),OwnerAttachment.id).limit(max(1,min(limit,100)))).all()
         return [meta(row) for row in rows]
 
+    @router.post("/conversations/{conversation_id}/attachments/{attachment_id}/review", status_code=201,
+                 dependencies=[Depends(require_owner_mandate_key)])
+    def record_review(conversation_id: UUID, attachment_id: UUID, payload: ReviewIn, db: Session = Depends(get_db)):
+        attachment = verified_attachment(db, conversation_id, attachment_id, lock=True)
+        review = save_review(db, attachment, payload)
+        commit(db)
+        return review_receipt(review)
+
+    @router.get("/conversations/{conversation_id}/attachments/{attachment_id}/review")
+    def read_review(conversation_id: UUID, attachment_id: UUID, db: Session = Depends(get_db)):
+        attachment = verified_attachment(db, conversation_id, attachment_id)
+        review = latest_review(db, attachment)
+        return review_receipt(review) if review is not None else {"disposition": "UNREVIEWED"}
+
     @router.post("/conversations/{conversation_id}/attachments/{attachment_id}/extract")
     def extract_attachment(conversation_id: UUID, attachment_id: UUID, db: Session = Depends(get_db)):
-        attachment = verified_attachment(db, conversation_id, attachment_id)
+        attachment = verified_attachment(db, conversation_id, attachment_id, lock=True)
+        require_local_use(db, attachment)
         existing = db.get(OwnerAttachmentExtraction, attachment_id)
         if existing is not None:
             if existing.source_sha256 != attachment.sha256:

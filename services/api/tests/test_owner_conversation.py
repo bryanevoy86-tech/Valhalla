@@ -12,7 +12,7 @@ from sqlalchemy.pool import StaticPool
 
 from app.core.db import get_db
 from app.models.model_provider import ModelProvider
-from app.models.owner_conversation import OwnerConversation, OwnerAttachment, OwnerTurn, OwnerInferenceAttempt, OwnerInferenceQuota, OwnerMemoryEntry, OwnerAttachmentExtraction
+from app.models.owner_conversation import OwnerConversation, OwnerAttachment, OwnerTurn, OwnerInferenceAttempt, OwnerInferenceQuota, OwnerMemoryEntry, OwnerAttachmentExtraction, OwnerAttachmentReview
 from app.models.completion_registry import LearningTaskQueueItem, LegacyOrchestrationEvent, KnowledgeRegistryItem, SourceRegistryItem
 from app.models.go_live_state import GoLiveState
 from app.models.prime_specialist_schedule import PrimeSpecialistSchedule
@@ -27,7 +27,7 @@ def client(monkeypatch):
     monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "true")
     monkeypatch.delenv("VALHALLA_OWNER_CHAT_INFERENCE_ENABLED", raising=False)
     engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
-    for model in (OwnerConversation, OwnerTurn, OwnerAttachment, LearningTaskQueueItem, GoLiveState, PrimeSpecialistSchedule, ModelProvider, OwnerInferenceQuota, OwnerInferenceAttempt, OwnerMemoryEntry, OwnerAttachmentExtraction, LegacyOrchestrationEvent, KnowledgeRegistryItem, SourceRegistryItem):
+    for model in (OwnerConversation, OwnerTurn, OwnerAttachment, LearningTaskQueueItem, GoLiveState, PrimeSpecialistSchedule, ModelProvider, OwnerInferenceQuota, OwnerInferenceAttempt, OwnerMemoryEntry, OwnerAttachmentExtraction, OwnerAttachmentReview, LegacyOrchestrationEvent, KnowledgeRegistryItem, SourceRegistryItem):
         model.__table__.create(engine)
     with Session(engine) as db:
         db.add(GoLiveState(id=1, go_live_enabled=False, kill_switch_engaged=True))
@@ -457,3 +457,33 @@ def test_private_image_ocr_extracts_pixels_or_reports_runtime_unavailable(client
         assert "VALHALLA INVOICE" in extract["sections"][0]["text"]
     else:
         assert extract["ocr_status"] == "UNAVAILABLE"
+
+
+def test_owner_review_can_quarantine_an_extract_without_erasing_provenance(client, monkeypatch):
+    key = "attachment-review-owner-fixture"
+    monkeypatch.setenv("VALHALLA_OWNER_MANDATE_KEY", key)
+    owner = {**HEADERS, "X-Owner-Mandate-Key": key}
+    cid = create(client)
+    payload = asset(b"Unverified input", "text/plain", "claims.txt")
+    base = f"{BASE}/{cid}/attachments"
+    assert client.post(base, json=payload, headers=HEADERS).status_code == 201
+    url = f"{base}/{payload['attachment_id']}"
+    initial = client.post(f"{url}/extract", headers=HEADERS)
+    assert initial.status_code == 200
+    review = {"review_id": str(uuid4()), "source_sha256": payload["sha256"],
+              "disposition": "REJECT", "reason": "Source evidence remains disputed."}
+    assert client.post(f"{url}/review", json=review, headers=HEADERS).status_code == 401
+    recorded = client.post(f"{url}/review", json=review, headers=owner)
+    assert recorded.status_code == 201, recorded.text
+    assert recorded.json()["verified_fact"] is False
+    assert client.post(f"{url}/extract", headers=HEADERS).status_code == 409
+    turn = {"turn_id": str(uuid4()), "message": "Review attached extraction", "attachment_ids": [payload["attachment_id"]]}
+    assert client.post(f"{BASE}/{cid}/turns", headers=HEADERS, json=turn).status_code == 409
+    assert client.get(f"{url}/download", headers=HEADERS).content == b"Unverified input"
+    accepted = client.post(f"{url}/review", headers=owner, json={
+        **review, "review_id": str(uuid4()), "disposition": "ACCEPT_LOCAL", "reason": "Allow local inspection as a claim.",
+    })
+    assert accepted.status_code == 201, accepted.text
+    assert client.get(f"{url}/review", headers=HEADERS).json()["review_id"] == accepted.json()["review_id"]
+    assert client.post(f"{url}/extract", headers=HEADERS).json() == initial.json()
+    assert client.post(f"{BASE}/{cid}/turns", headers=HEADERS, json=turn).status_code == 201

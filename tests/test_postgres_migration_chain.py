@@ -54,6 +54,9 @@ PROVIDER_EVIDENCE = load("alembic/versions/20261121_provider_evidence.py")
 ASSIGNMENTS = load("alembic/versions/20261121_specialist_assignments.py")
 LOKI_DIGEST = load("alembic/versions/20261121_loki_result_digest.py")
 PROBES = load("alembic/versions/20261121_specialist_probes.py")
+BUILDER_ASSIGNMENTS = load("alembic/versions/20261121_builder_assignments.py")
+NORNS_HISTORY = load("alembic/versions/20261121_norns_scoped_history.py")
+ATTACHMENT_REVIEWS = load("alembic/versions/20261121_attachment_reviews.py")
 
 
 @unittest.skipUnless(url, "Disposable PostgreSQL database not supplied")
@@ -299,13 +302,13 @@ class PostgresMigrationChainTests(unittest.TestCase):
                         INSERT INTO prime_owner_conversations (id, title, created_at)
                         VALUES ('00000000-0000-0000-0000-000000000001', 'prior thread', now())
                     """))
-                    for module in (INFERENCE, OWNER_MEMORY, EXTRACTIONS, NORNS, PROVIDER_EVIDENCE, ASSIGNMENTS, PROBES):
+                    for module in (INFERENCE, OWNER_MEMORY, EXTRACTIONS, NORNS, PROVIDER_EVIDENCE, ASSIGNMENTS, PROBES, BUILDER_ASSIGNMENTS, NORNS_HISTORY, ATTACHMENT_REVIEWS):
                         with patch.object(module, "op", operations):
                             module.upgrade()
                     expected = {
                         "prime_owner_inference_quotas", "prime_owner_inference_attempts", "prime_owner_memory_entries",
-                        "prime_owner_attachment_extractions", "prime_norns_forecasts", "prime_provider_evidence",
-                        "prime_specialist_assignments", "prime_specialist_probes",
+                        "prime_owner_attachment_extractions", "prime_owner_attachment_reviews", "prime_norns_forecasts", "prime_provider_evidence",
+                        "prime_specialist_assignments", "prime_specialist_probes", "prime_builder_assignments",
                     }
                     self.assertTrue(expected <= set(inspect(connection).get_table_names()))
                     self.assertEqual(connection.execute(text("SELECT title FROM prime_owner_conversations")).scalar_one(), "prior thread")

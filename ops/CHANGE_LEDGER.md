@@ -714,3 +714,11 @@ Product Foundry artifact staging passed [hosted CI](https://github.com/bryanevoy
 
 - Builder owner-approved assignments bind a reviewed candidate to its bundle hash, a base commit and the pinned offline image. A separate runner credential claims a time-limited lease and submits an exact sandbox receipt. Expired leases can be reclaimed and stale receipts are rejected. The runner cannot change source or release code. Candidate authoring remains through the existing scoped Builder interface.
 - Private image extraction now attempts bounded, local English OCR using sanitized grayscale pixel data when the system Tesseract runtime is present. Text remains untrusted and bound to the original attachment receipt. Missing runtime is reported explicitly and metadata stays available. Local image OCR extracted the fixture text.
+
+## Package 1 — Prospective Norns worker and upload dispositions
+
+- The active Pantheon, independent local Loki, Groq staging boundary, Builder lease and image OCR checkpoint at 579131c0 passed all four [GitHub CI jobs](https://github.com/bryanevoy86-tech/Valhalla/actions/runs/44854747759).
+- An enrolled Norns worker can now issue one prospective, scope-matched baseline probability from at least three earlier resolved observations of the exact forecast horizon. It records the cutoff and eligible training IDs, with verified receipt checks for positive training outcomes. Pending estimates are excluded from scoring and worker and owner cohorts are measured separately. Independent-model accuracy and commercial calibration remain open.
+- An owner can append an exact-hash upload disposition. Rejection blocks further extraction and conversational reuse without erasing bytes or past evidence. A local-use decision confers neither factual verification nor tool/provider authority.
+- Added an operating rehearsal assertion that a newer specialist report invalidates execution against the stale version. All existing 47 acceptance criteria and the reconstructed 50-task register were preserved.
+- Final local verification passed 307 backend tests with no skips, 16 disposable PostgreSQL tests, 27 critical routers and 60 required routes. Compared the current matrix and handoff against 696486a6 and confirmed identical acceptance criteria and task rows.

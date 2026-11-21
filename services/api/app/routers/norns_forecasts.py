@@ -1,6 +1,7 @@
 """Calibrate a bounded observable forecast against real internal Factory evidence."""
 from datetime import datetime, timedelta, timezone
 from uuid import UUID
+from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict, Field
@@ -42,7 +43,8 @@ def _explain(forecast):
     return {
         "forecast_id": forecast.id, "action_id": forecast.action_id,
         "target": "VERIFIED_INTERNAL_ARTIFACT_BY_DEADLINE",
-        "estimate_source": "OWNER_ESTIMATE", "probability": forecast.probability_bp / 10000,
+        "estimate_source": forecast.estimate_source, "probability": forecast.probability_bp / 10000,
+        "training_evidence": forecast.training_evidence,
         "issued_at": forecast.issued_at.replace(tzinfo=timezone.utc),
         "deadline_at": forecast.deadline_at.replace(tzinfo=timezone.utc),
         "observed_outcome": forecast.observed_outcome, "evidence_ref": forecast.evidence_ref,
@@ -134,13 +136,14 @@ def resolve_forecast(forecast_id: UUID, db: Session = Depends(get_db)):
 
 
 @router.get("/calibration")
-def calibration(db: Session = Depends(get_db)):
+def calibration(estimate_source: Literal["OWNER_ESTIMATE", "SCOPED_HISTORICAL_RATE"] = "OWNER_ESTIMATE",
+                db: Session = Depends(get_db)):
     diff = NornsForecast.probability_bp - 10000 * NornsForecast.observed_outcome
     count, squared_error = db.execute(select(func.count(), func.avg(diff * diff)).where(
-        NornsForecast.observed_outcome.is_not(None),
+        NornsForecast.observed_outcome.is_not(None), NornsForecast.estimate_source == estimate_source,
     )).one()
     return {
-        "target": "VERIFIED_INTERNAL_ARTIFACT_BY_DEADLINE", "estimate_source": "OWNER_ESTIMATE",
+        "target": "VERIFIED_INTERNAL_ARTIFACT_BY_DEADLINE", "estimate_source": estimate_source,
         "resolved_sample_count": count, "brier_score": round(float(squared_error) / 100_000_000, 6) if count else None,
         "accuracy_claim": "OBSERVED_INTERNAL_SAMPLE" if count else "INSUFFICIENT_EVIDENCE",
     }

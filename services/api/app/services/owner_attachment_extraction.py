@@ -11,8 +11,8 @@ from sqlalchemy.orm import Session
 from app.models.owner_conversation import OwnerAttachment, OwnerAttachmentExtraction
 
 
-def verified_attachment(db: Session, conversation_id, attachment_id) -> OwnerAttachment:
-    row = db.get(OwnerAttachment, attachment_id)
+def verified_attachment(db: Session, conversation_id, attachment_id, *, lock=False) -> OwnerAttachment:
+    row = db.get(OwnerAttachment, attachment_id, with_for_update=lock)
     if row is None or row.conversation_id != conversation_id:
         raise HTTPException(404, "Attachment not found in conversation")
     if len(row.data) != row.size_bytes or hashlib.sha256(row.data).hexdigest() != row.sha256:

@@ -12,6 +12,7 @@ from app.models.completion_registry import EngineRegistryItem, LegacyInstanceWor
 from app.models.norns_forecast import NornsForecast
 from app.models.specialist_assignment import SpecialistAssignment
 from app.pantheon.roles import LENSES
+from app.pantheon.forecasts import issue_scoped_estimate
 from app.services.prime_business_execution import (
     _approval_id, _check_legacy, _emergency_stop_active, _event, verified_internal_outcomes,
 )
@@ -29,7 +30,7 @@ def assignment_schema(db: Session):
         raise HTTPException(503, "Specialist assignment schema not ready")
 
 
-def observations(db: Session, lens: str, scope: dict, outcomes: list[dict]) -> dict:
+def observations(db: Session, lens: str, scope: dict, outcomes: list[dict], now, cadence: int) -> dict:
     work = LegacyInstanceWorkItem
     scope_filter = [getattr(work, field) == value for field, value in scope.items()]
     if lens == "verified_learning":
@@ -49,7 +50,10 @@ def observations(db: Session, lens: str, scope: dict, outcomes: list[dict]) -> d
             "market_opportunities_verified": False,
         }
     if lens == "forecast_outcomes":
-        if not inspect(db.connection()).has_table(NornsForecast.__tablename__):
+        schema = inspect(db.connection())
+        if not schema.has_table(NornsForecast.__tablename__):
+            return {"evidence_status": "FORECAST_SCHEMA_UNAVAILABLE"}
+        if "estimate_source" not in {item["name"] for item in schema.get_columns(NornsForecast.__tablename__)}:
             return {"evidence_status": "FORECAST_SCHEMA_UNAVAILABLE"}
         forecast = NornsForecast
         diff = forecast.probability_bp - 10000 * forecast.observed_outcome
@@ -58,7 +62,9 @@ def observations(db: Session, lens: str, scope: dict, outcomes: list[dict]) -> d
         ).where(*scope_filter, forecast.observed_outcome.is_not(None))).one()
         return {"resolved_sample_count": count,
                 "brier_score": round(float(squared_error) / 100_000_000, 6) if count else None,
-                "target": "VERIFIED_INTERNAL_ARTIFACT_BY_DEADLINE"}
+                "score_cohort": "MIXED_INTERNAL_ESTIMATE_SOURCES",
+                "target": "VERIFIED_INTERNAL_ARTIFACT_BY_DEADLINE",
+                **issue_scoped_estimate(db, scope, now, cadence)}
 
     counts = dict(db.execute(select(work.status, func.count()).where(*scope_filter).group_by(work.status)).all())
     actions = db.scalars(select(work.action_id).where(*scope_filter).order_by(work.id.desc()).limit(20)).all()
@@ -107,7 +113,7 @@ def run_assignment(db: Session, role: str, *, now=None) -> dict:
         outcomes = verified_internal_outcomes(db, **assignment.scope)
         if event and not any(item["outcome_event_id"] == event for item in outcomes):
             raise HTTPException(409, "Trigger receipt could not be revalidated")
-        report.update(status="observed", observations=observations(db, LENSES[role], assignment.scope, outcomes))
+        report.update(status="observed", observations=observations(db, LENSES[role], assignment.scope, outcomes, now, assignment.cadence_seconds))
     except HTTPException as exc:
         report.update(status="blocked", reason=exc.detail)
     report["report_sha256"] = artifact_digest("pantheon_report", event_id, report)

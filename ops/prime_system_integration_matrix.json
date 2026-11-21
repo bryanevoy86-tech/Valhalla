@@ -469,7 +469,7 @@
         "services/api/app/core/dependencies.py",
         "services/api/tests/test_prime_control_and_decision_integrity.py"
       ],
-      "source_observation": "Four private router groups now require independently configured X-Prime-Control-Key; HTTP tests reject missing/wrong/Builder credentials. This is NOT complete Prime/subscriber/tenant isolation; other routes require review.. Private chat now retains local checksummed office/PDF/text extracts and image metadata, with no provider forwarding",
+      "source_observation": "Four private router groups now require independently configured X-Prime-Control-Key; HTTP tests reject missing/wrong/Builder credentials. This is NOT complete Prime/subscriber/tenant isolation; other routes require review.. Private chat retains checksummed local extracts, bounded image OCR when installed and owner upload dispositions. Briefings include verified role reports, Loki review state, alerts and per-currency unreconciled ledger amounts",
       "evidence_level": "FOCUSED_CI_TESTED",
       "production_verified": false,
       "acceptance_test": "Prove no subscriber/clone/tenant can access owner Prime; trace trust and approvals across API, worker, UI, DB and provider adapters.",
@@ -532,7 +532,7 @@
         "services/api/app/routers/norns_forecasts.py",
         "services/api/tests/test_norns_forecasts.py"
       ],
-      "source_observation": "Prospective owner estimates for exact internal Factory artifact deadlines persist and resolve against recorded receipts. Brier scores include only observed internal samples. Blinded model and commercial calibration remain open.",
+      "source_observation": "Norns workers issue prospective exact-scope historical baselines from earlier resolved observations with matching horizons and stored lineage. The owner estimate cohort and worker baseline are scored separately. Commercial and independent model calibration remain open.",
       "evidence_level": "SOURCE_INSPECTED_ONLY",
       "production_verified": false,
       "acceptance_test": "Quantify calibration and regret on holdout real outcomes; stop claiming precise first-revenue odds from synthetic scores.",
