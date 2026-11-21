@@ -830,3 +830,9 @@ Local acceptance passed 334 canonical backend tests, 19 disposable PostgreSQL ch
 Local verification passed 361 canonical backend tests, 19 disposable PostgreSQL checks, eight Builder materializer checks and one simulated-browser voice check. The route probe verified 36 critical routers and 94 required routes. Seven separately exercised CI5 profile/constraint tests now run but fail on the retired endpoints. Historic models existed in predecessor trees; the canonical threshold CRUD and all recovered notification cases pass. The supplemental source and expectations remain preserved. See the December handoff for owner-controlled rollout, review and external verification boundaries.
 
 A separate disposable PostgreSQL Norns rehearsal verified one eligible ordinary result, one excluded contradiction and one independent holdout on the same streamed query path.
+
+## November 21 — Historical CI5 compatibility restored
+
+Development commit `54fc3ad0c29b298edeca7f05303c17138c4da79d` restores named profiles and structured constraints within the canonical TuningRule schema and six existing routes. The seven historical assertions now run inside canonical regression. Deterministic settings and constraint persistence, stable profile identity, weight round-trip, parent-scoped lookup and grouped deletion guards are covered. The retired CI5 endpoints have canonical equivalents documented in the December handoff. The new index passed its disposable PostgreSQL rehearsal with existing executable rule rows retained and separate profile identity by namespace. Archived database contents remain unverified.
+
+Local verification passed 368 canonical backend tests, 20 disposable PostgreSQL checks and the simulated-browser voice check.

@@ -10,7 +10,9 @@
       "source_paths": [
         "services/api/app/main.py",
         "services/api/start.py",
-        "services/api/tests/test_tuning_rule_contract.py"
+        "services/api/tests/test_tuning_rule_contract.py",
+        "services/api/tests/test_tuning_profile_compatibility.py",
+        "alembic/versions/20261123_tuning_profile_identity.py"
       ],
       "source_observation": "Canonical FastAPI import registered 36 critical routers and all 94 required routes in the isolated runtime.",
       "evidence_level": "FOCUSED_CI_TESTED",
@@ -23,7 +25,7 @@
       "owner_external_authorization_required": false,
       "continuation": {
         "next_implementation": "Exercise the registered routes in an authorized staging environment with migrated PostgreSQL.",
-        "existing_test_evidence": "Canonical route probe verified all 94 required methods and paths. Canonical tuning rule creation, list, update, threshold evaluation and delete pass after fixing the stale route dependency.",
+        "existing_test_evidence": "Canonical route probe verified all 94 required methods and paths. Canonical threshold CRUD and all seven historical CI5 tuning checks pass. Disposable PostgreSQL verified the additive profile index preserves executable rule names and maintains separate profile identities across namespaces.",
         "owner_action": "Internal continuation is authorized under the standing development scope.",
         "required_acceptance_evidence_field": "acceptance_test"
       }
