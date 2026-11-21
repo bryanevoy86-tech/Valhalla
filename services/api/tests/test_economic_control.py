@@ -299,3 +299,196 @@ def test_foundry_comparison_uses_scoped_evidence_and_immutable_opening_history(e
     assert snapshot["cumulative_loss_minor"] == 12 and snapshot["pool_committed_minor"] == 10
     client.delete(f"/api/prime/foundry/evidence/{intake['evidence_id']}", headers=OWNER)
     assert "FOUNDRY_SOURCE_UNAVAILABLE" in post(client, "assessment", SCOPE, 200)["alternatives"][0]["blockers"]
+
+
+def test_reviewed_restart_releases_reservations_without_restoring_lifetime_limits(economic_client, monkeypatch):
+    client, engine = economic_client
+    clock = [datetime.now(timezone.utc) - timedelta(days=3)]
+    monkeypatch.setattr(economic_control, "now", lambda: clock[0])
+    today = clock[0].date()
+    post(client, "mandates", mandate(today))
+    post(client, "performance", performance(today))
+    post(client, "liquidity", liquidity(today))
+    expansion, _ = queue_review(client, plan(), reconsider=True)
+    reservation = post(client, "decisions", expansion)
+    release = {"id": str(uuid4()), "scope": SCOPE, "decision_id": reservation["id"],
+               "reason": "CANCELLED", "evidence_ref": "fixture:cancel-prelaunch"}
+    result = post(client, "reservation-releases", release)
+    assert post(client, "reservation-releases", release) == result
+    assert result["released_simulation_minor"] == 120 and not result["cumulative_budget_restored"]
+    post(client, "reservation-releases", {**release, "id": str(uuid4())}, 409)
+    totals = client.get(f"{ROOT}/portfolio-exposure", headers=OWNER).json()["totals"]
+    assert next(item for item in totals if item["currency"] == "CAD")["outstanding_reservations_minor"] == 0
+    assessment = post(client, "assessment", SCOPE, 200)
+    assert assessment["simulated_funding_minor"] == 120 and assessment["comparison_budget_minor"] == 80
+
+    post(client, "containment", {"id": str(uuid4()), "scope": SCOPE, "rationale": "Freeze launch while reviewing coverage."})
+    with Session(engine) as db:
+        mirror = db.query(LegacyInstanceRegistryItem).filter_by(legacy_instance_id=MIRROR["legacy_instance_id"]).one()
+        mirror.parent_instance_id = SCOPE["legacy_instance_id"]
+        db.commit()
+    with Session(engine) as db, pytest.raises(HTTPException, match="containment"):
+        require_no_containment(db, MIRROR)
+    restart = plan(action="RESTART", requested_additional_minor=0)
+    preview = post(client, "review-artifact", restart, 200)
+    assert "RESTART_REQUIRES_POST_CONTAINMENT_PERFORMANCE" in preview["raw_input"]["analysis"]["blockers"]
+    clock[0] += timedelta(days=1)
+    post(client, "performance", performance(clock[0].date()))
+    obligation = {"id": str(uuid4()), "scope": SCOPE, "obligation_key": "coverage-renewal",
+                  "due_on": clock[0].date().isoformat(), "status": "OPEN", "amount_minor": 35,
+                  "evidence_ref": "fixture:pending-coverage"}
+    post(client, "obligations", obligation)
+    blocked = post(client, "review-artifact", restart, 200)["raw_input"]["analysis"]["blockers"]
+    assert "TRACKED_OBLIGATIONS_UNRESOLVED" in blocked
+    post(client, "obligations", {**obligation, "id": str(uuid4()), "previous_id": obligation["id"],
+                                 "status": "CLOSED_IN_FIXTURE", "evidence_ref": "fixture:reviewed-coverage"})
+    reviewed, _ = queue_review(client, restart, reconsider=True)
+    receipt = post(client, "decisions", reviewed)
+    assert receipt["action"] == "RESTART" and not receipt["execution_authorized"]
+    with Session(engine) as db:
+        require_no_containment(db, SCOPE)
+        require_no_containment(db, MIRROR)
+
+
+def test_discovery_queue_sources_rank_and_do_not_claim_external_demand(economic_client, monkeypatch):
+    from app.models.completion_registry import KnowledgeRegistryItem, LearningFeedbackRecord, SourceRegistryItem
+    from app.models.foundry_evidence import FoundryEvidence
+    from app.models.foundry_intake import FoundryIntakeJob
+    from app.services import foundry_intake
+    from sqlalchemy.exc import OperationalError
+
+    client, engine = economic_client
+    for model in (KnowledgeRegistryItem, LearningFeedbackRecord, SourceRegistryItem, FoundryEvidence, FoundryIntakeJob):
+        model.__table__.create(engine)
+    with Session(engine) as db:
+        db.add(SourceRegistryItem(source_id="regional-buyer-sample", source_type="DEMAND_EXPORT",
+                                  canonical_name="Buyer sample fixture", data_class="synthetic",
+                                  jurisdiction="CA-MB", terminal_state="PASS", mode_allowlist_json='["practice"]',
+                                  freshness_sla_hours=72))
+        db.commit()
+    at = foundry_intake.current_time()
+    today = at.date()
+    post(client, "mandates", mandate(today))
+    post(client, "performance", performance(today))
+    post(client, "liquidity", liquidity(today))
+    post(client, "opportunities", option(today, "old-playbook", projected_annual_net=400))
+    assignment = client.post("/api/prime/pantheon/assignments", headers=OWNER, json={
+        **SCOPE, "assignment_id": str(uuid4()), "role": "ODIN", "cadence_seconds": 600, "duration_seconds": 3600,
+    })
+    assert assignment.status_code == 201, assignment.text
+    with Session(engine) as db:
+        run_assignment(db, "ODIN")  # Consume the scheduled assessment, leaving an explicit discovery wake-up.
+    evidence = {
+        **SCOPE, "evidence_id": str(uuid4()), "kind": "OTHER", "revenue_model": "RECURRING",
+        "evidence_class": "SIMULATION", "title": "Mobile tool calibration service",
+        "source_ref": "fixture:workshop survey Nov", "observed_on": today.isoformat(),
+        "expires_on": (today + timedelta(days=3)).isoformat(), "currency": "CAD",
+        "unit_price": 50, "variable_cost_per_unit": 10, "acquisition_cost_per_unit": 10,
+        "monthly_fixed_cost": 75, "monthly_units": 10, "startup_capital": 120, "test_cost": 8,
+        "rights_attestation": "AUTHORIZED_INTERNAL_RESEARCH",
+    }
+    job = {"evidence": evidence, "source_id": "regional-buyer-sample", "external_key": "CalibrationSurvey",
+           "adapter": "DEMAND_EXPORT", "buyer_segment": "Independent repair shops",
+           "sample_count": 40, "demand_count": 24}
+    url = "/api/prime/foundry/intake"
+    stale = {**evidence, "observed_on": (today - timedelta(days=5)).isoformat()}
+    assert client.post(url, headers=OWNER, json={**job, "evidence": stale}).status_code == 409
+    queued = client.post(url, headers=OWNER, json=job)
+    assert queued.status_code == 202, queued.text
+    assert client.post(url, headers=OWNER, json=job).json() == queued.json()
+    duplicate = {**evidence, "evidence_id": str(uuid4())}
+    assert client.post(url, headers=OWNER, json={**job, "evidence": duplicate,
+                                              "external_key": "calibrationsurvey"}).status_code == 409
+    original = foundry_intake.materialize
+    def unavailable(*args):
+        raise OperationalError("fixture", None, Exception())
+    monkeypatch.setattr(foundry_intake, "materialize", unavailable)
+    with Session(engine) as db:
+        state = foundry_intake.run_intake(db, now=at + timedelta(seconds=10))
+        assert state["error_code"] == "ADAPTER_RETRY_PENDING" and state["attempts"] == 1
+        assert foundry_intake.run_intake(db, now=at + timedelta(seconds=15)) == {"status": "idle"}
+    monkeypatch.setattr(foundry_intake, "materialize", original)
+    with Session(engine) as db:
+        state = foundry_intake.run_intake(db, now=at + timedelta(minutes=4))
+        assert state["status"] == "COMPLETED" and state["attempts"] == 2
+        report_id = run_assignment(db, "ODIN", now=at + timedelta(minutes=4))["report_event_id"]
+    report = client.get(f"/api/prime/pantheon/reports/{report_id}").json()
+    assert report["trigger"] == "SOURCE_DISCOVERY"
+    candidate = client.get(f"/api/prime/foundry/reports/{report_id}/candidate/{evidence['evidence_id']}")
+    assert candidate.status_code == 200, candidate.text
+    proposal = candidate.json()["proposal"]
+    assert proposal["revenue_type"] == "RECURRING"
+    assert proposal["specialist_inputs"]["discovery_demand"]["sample_demand_bp"] == 6000
+    recommendation = client.post("/api/completion/phase3/universal-opportunity/evaluate",
+                                 json={"opportunities": [proposal], "shadow_mode": True})
+    assert recommendation.status_code == 200, recommendation.text
+    post(client, "opportunities", option(today, "mobile-calibration", origin="FOUNDRY",
+                                         foundry_evidence_id=evidence["evidence_id"], demand_bp=9999))
+    result = post(client, "assessment", SCOPE, 200)["alternatives"][0]
+    assert result["opportunity_key"] == "mobile-calibration" and result["demand_bp"] == 6000
+    review, _ = queue_review(client, plan(action="REDEPLOY", alternative_key="mobile-calibration"), reconsider=True)
+    approved = post(client, "decisions", review)
+    assert approved["observed"]["alternatives"][0]["demand_evidence"]["independently_validated"] is False
+    assert approved["execution_authorized"] is False
+    with Session(engine) as db:
+        db.query(SourceRegistryItem).filter_by(source_id="regional-buyer-sample").one().active = False
+        db.commit()
+    assert client.get(f"/api/prime/foundry/reports/{report_id}/candidate/{evidence['evidence_id']}").status_code == 409
+
+
+def test_statement_continuity_quarantine_and_fixture_asset_recovery(economic_client):
+    from app.finops.models import VaultBalance
+    from app.models.treasury_reconciliation import StatementAccount, StatementEntry, StatementImport
+
+    client, engine = economic_client
+    for model in (StatementAccount, StatementEntry, StatementImport, VaultBalance):
+        model.__table__.create(engine)
+    today = datetime.now(timezone.utc).date()
+    earlier = today - timedelta(days=1)
+    with Session(engine) as db:
+        db.add(VaultBalance(vault_code="MAIN", balance=987, currency="CAD", last_source="fx_engine"))
+        db.commit()
+    root = "/api/governance/floor/treasury"
+    audit = client.get(f"{root}/legacy-vault-audit", headers=OWNER).json()
+    assert audit["quarantined"][0]["recorded_unreconciled_amount"] == "987.0"
+
+    row = {"external_ref": "opening-expense", "posted_on": earlier.isoformat(), "amount_minor": -80, "category": "EXPENSE"}
+    statement = {"id": str(uuid4()), "scope": SCOPE, "source_id": "LocalBankFixture",
+                 "account_ref": "business-a", "purpose": "BUSINESS", "currency": "CAD",
+                 "start": earlier.isoformat(), "end": earlier.isoformat(), "opening_minor": 500, "closing_minor": 420,
+                 "outstanding_liabilities_minor": 20, "expense_budget_minor": 65, "entries": [row],
+                 "basis": "LOCAL_STATEMENT_FIXTURE"}
+    url = f"{root}/statement-fixtures"
+    assert client.post(url, json=statement).status_code == 401
+    data = client.post(url, headers=OWNER, json=statement)
+    assert data.status_code == 201, data.text
+    assert data.json()["budget_variance_minor"] == -15
+    assert data.json()["actual_accessible_funds_minor"] is None
+    assert client.post(url, headers=OWNER, json=statement).json() == data.json()
+    assert client.post(url, headers=OWNER, json={**statement, "closing_minor": 421}).status_code == 422
+    future = {**statement, "id": str(uuid4()), "start": today.isoformat(), "end": today.isoformat(),
+              "opening_minor": 420, "closing_minor": 340, "entries": [{**row, "posted_on": today.isoformat()}]}
+    assert client.post(url, headers=OWNER, json=future).status_code == 409
+    assert client.post(url, headers=OWNER, json={**future, "purpose": "HOUSEHOLD"}).status_code == 409
+    home = {**statement, "id": str(uuid4()), "account_ref": "household-a", "purpose": "HOUSEHOLD"}
+    assert client.post(url, headers=OWNER, json=home).json()["protected_balance_minor"] == 420
+
+    post(client, "mandates", mandate(today))
+    software = {"asset_ref": "fixture:licensable-software", "kind": "SOFTWARE",
+                "rights": "REUSE_PERMITTED", "projected_liquidation_minor": 90, "obligations": []}
+    approval, _ = queue_review(client, plan(action="EXIT", requested_additional_minor=0, assets=[software]), reconsider=True)
+    decision = post(client, "decisions", approval)
+    entry = {"external_ref": "recovery-example", "posted_on": today.isoformat(), "amount_minor": 61,
+             "category": "ASSET_RECOVERY"}
+    fixture = {**future, "closing_minor": 481, "entries": [entry]}
+    response = client.post(url, headers=OWNER, json=fixture)
+    assert response.status_code == 201, response.text
+    recovery = {"id": str(uuid4()), "scope": SCOPE, "exit_decision_id": decision["id"],
+                "asset_ref": software["asset_ref"], "statement_id": fixture["id"], "entry_ref": entry["external_ref"]}
+    outcome = post(client, "asset-recovery-fixtures", recovery)
+    assert outcome["projected_liquidation_minor"] == 90 and outcome["observed_statement_fixture_minor"] == 61
+    assert outcome["actual_recovered_capital_minor"] is None
+    post(client, "asset-recovery-fixtures", {**recovery, "id": str(uuid4())}, 409)
+    with Session(engine) as db:
+        assert db.query(VaultBalance).one().balance == 987
+        assert db.query(RevenueLedger).count() == 0

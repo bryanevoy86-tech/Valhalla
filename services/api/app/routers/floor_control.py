@@ -1,5 +1,6 @@
 from __future__ import annotations
 from datetime import date
+from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import inspect, select
 from sqlalchemy.exc import IntegrityError
@@ -10,6 +11,8 @@ from app.core.dependencies import require_prime_control_key
 from app.loki.evidence import artifact_digest
 from app.models.completion_registry import LegacyOrchestrationEvent
 from app.services.prime_business_execution import _check_legacy, _event, _json, require_owner_mandate_key
+from app.models.treasury_reconciliation import StatementImport
+from app.services.treasury_reconciliation import StatementFixture, append_statement, payload_for, statement_ready, summary
 from app.services.wealth_scenario import WealthScenario, project_household_and_treasury
 from app.schemas.floor_control import (
     EngineUpsertIn, RevenueEventIn, RevenueEventOut,
@@ -86,3 +89,45 @@ def record_wealth_scenario(payload: WealthScenario, db: Session = Depends(get_db
         db.rollback()
         raise HTTPException(409, "Wealth scenario ID already used") from None
     return result
+
+
+@router.post("/treasury/statement-fixtures", status_code=201, dependencies=owner)
+def import_statement(payload: StatementFixture, db: Session = Depends(get_db)):
+    if not statement_ready(db):
+        raise HTTPException(503, "Statement fixture schema unavailable")
+    _check_legacy(db, **payload.scope.model_dump())
+    try:
+        result = append_statement(db, payload, date.today())
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(409, "Statement, account or transaction identity already exists") from None
+    return result
+
+
+@router.get("/treasury/statement-fixtures/{statement_id}", dependencies=owner)
+def get_statement(statement_id: UUID, db: Session = Depends(get_db)):
+    if not statement_ready(db):
+        raise HTTPException(503, "Statement fixture schema unavailable")
+    row = db.get(StatementImport, statement_id)
+    if row is None:
+        raise HTTPException(404, "Statement fixture not found")
+    request = payload_for(row)
+    _check_legacy(db, **request.scope.model_dump())
+    return {**summary(request), "sha256": row.digest}
+
+
+@router.get("/treasury/legacy-vault-audit", dependencies=owner)
+def historical_vault_audit(db: Session = Depends(get_db)):
+    """Exclude historically paper-tagged balances from the treasury evidence projection."""
+    from app.finops.models import VaultBalance
+
+    if not inspect(db.connection()).has_table(VaultBalance.__tablename__):
+        raise HTTPException(503, "Historical vault evidence unavailable")
+    rows = db.scalars(select(VaultBalance).where(VaultBalance.last_source == "fx_engine")
+                      .order_by(VaultBalance.id).limit(100))
+    quarantined = [{"vault_id": row.id, "vault_code": row.vault_code, "currency": row.currency,
+                    "recorded_unreconciled_amount": str(row.balance), "source": row.last_source,
+                    "basis": "SUSPECT_PAPER_FX_PROVENANCE"} for row in rows]
+    return {"quarantined": quarantined, "actual_accessible_funds_minor": None,
+            "basis": "READ_ONLY_PROVENANCE_AUDIT", "result_limit": 100}

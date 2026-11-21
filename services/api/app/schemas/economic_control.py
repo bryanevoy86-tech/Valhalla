@@ -12,7 +12,7 @@ Net = Annotated[int, Field(strict=True, ge=-100_000_000_000, le=100_000_000_000)
 BP = Annotated[int, Field(strict=True, ge=0, le=10000)]
 Reference = Annotated[str, Field(min_length=3, max_length=180)]
 Currency = Literal["CAD", "USD", "EUR", "GBP"]
-Advice = Literal["CONTINUE", "EXPAND", "IMPROVE", "SUSPEND", "RESTRUCTURE", "EXIT", "REDEPLOY"]
+Advice = Literal["CONTINUE", "EXPAND", "IMPROVE", "SUSPEND", "RESTRUCTURE", "EXIT", "REDEPLOY", "RESTART"]
 
 
 class Mandate(StrictModel):
@@ -127,7 +127,7 @@ class Plan(StrictModel):
     def action_fields(self):
         if (self.action == "REDEPLOY") != bool(self.alternative_key):
             raise ValueError("Redeployment alone requires a scoped alternative")
-        if self.action in {"EXIT", "SUSPEND", "CONTINUE", "RESTRUCTURE"} and self.requested_additional_minor:
+        if self.action in {"EXIT", "SUSPEND", "CONTINUE", "RESTRUCTURE", "RESTART"} and self.requested_additional_minor:
             raise ValueError("This action cannot request new exposure")
         if len({asset.asset_ref for asset in self.assets}) != len(self.assets):
             raise ValueError("Recoverable asset references must be unique")
@@ -144,3 +144,31 @@ class Containment(StrictModel):
     id: UUID
     scope: MarketScope
     rationale: Annotated[str, Field(min_length=5, max_length=750)]
+
+
+class ReservationRelease(StrictModel):
+    id: UUID
+    scope: MarketScope
+    decision_id: UUID
+    reason: Literal["CANCELLED", "EXPIRED", "PLAN_REPLACED"]
+    evidence_ref: Reference
+
+
+class Obligation(StrictModel):
+    id: UUID
+    scope: MarketScope
+    obligation_key: Reference
+    previous_id: UUID | None = None
+    due_on: date
+    amount_minor: Money
+    status: Literal["OPEN", "DISPUTED", "CLOSED_IN_FIXTURE"]
+    evidence_ref: Reference
+
+
+class AssetRecovery(StrictModel):
+    id: UUID
+    scope: MarketScope
+    exit_decision_id: UUID
+    asset_ref: Reference
+    statement_id: UUID
+    entry_ref: Reference

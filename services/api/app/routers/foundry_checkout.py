@@ -5,6 +5,7 @@ import json
 import os
 import re
 from uuid import UUID
+from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field
@@ -14,11 +15,13 @@ from sqlalchemy.orm import Session
 
 from app.core.db import get_db
 from app.core.dependencies import require_prime_control_key
-from app.models.completion_registry import LegacyInstanceWorkItem
+from app.loki.evidence import artifact_digest
+from app.models.completion_registry import LegacyInstanceWorkItem, LegacyOrchestrationEvent
 from app.models.foundry_checkout import FoundryCampaignVisit, FoundryRehearsalOrder, FoundryRehearsalPayment
 from app.models.marketing import MarketingCampaign
 from app.providers.stripe_adapter import verify_stripe_signature
-from app.services.prime_business_execution import _check_legacy, _json, action_status, require_owner_mandate_key
+from app.services.economic_control import require_no_containment
+from app.services.prime_business_execution import _check_legacy, _event, _json, action_status, require_owner_mandate_key
 from app.services.product_artifacts import load_artifact, verify_artifact
 from app.services.specialist_triggers import outcome_scope_key
 
@@ -51,6 +54,7 @@ def _listing(db, action_id):
     item = db.scalar(select(LegacyInstanceWorkItem).where(LegacyInstanceWorkItem.action_id == action_id))
     scope = {key: getattr(item, key) for key in ("legacy_instance_id", "business_id", "engine_id", "jurisdiction")}
     _check_legacy(db, **scope)
+    require_no_containment(db, scope)
     data = _json(item.payload_json, {})
     artifact = load_artifact(db, UUID(asset["artifact_id"]), lock=True)
     verify_artifact(artifact)
@@ -60,6 +64,67 @@ def _listing(db, action_id):
     return receipt, artifact, data["price_cents_cad"], scope
 
 
+COST_EVENT = "FOUNDRY_ORDER_COST_FIXTURE"
+
+
+class CostIn(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    fixture_ref: str = Field(min_length=4, max_length=80, pattern=r"^fixture:[a-zA-Z0-9_-]+$")
+    category: Literal["ACQUISITION", "PAYMENT_FEE", "FULFILLMENT", "SUPPORT"]
+    amount_minor: int = Field(strict=True, gt=0, le=100_000_000)
+
+
+def _rehearsal_costs(db, order):
+    if not inspect(db.connection()).has_table(LegacyOrchestrationEvent.__tablename__):
+        return []
+    prefix = f"FOUNDRY-COST-{order.id}-"
+    records = db.scalars(select(LegacyOrchestrationEvent).where(
+        LegacyOrchestrationEvent.event_type == COST_EVENT,
+        LegacyOrchestrationEvent.event_id.startswith(prefix),
+    ).order_by(LegacyOrchestrationEvent.id).limit(51)).all()
+    if len(records) > 50:
+        raise HTTPException(409, "Rehearsal cost count exceeds the scope limit")
+    items = []
+    for record in records:
+        payload = _json(record.payload_json, {})
+        checksum = payload.pop("sha256", None)
+        if payload.get("order_id") != str(order.id) or checksum != artifact_digest("foundry_cost", record.event_id, payload):
+            raise HTTPException(409, "Rehearsal cost evidence failed integrity")
+        items.append(payload)
+    return items
+
+
+@router.post("/orders/{order_id}/cost-fixtures", status_code=201, dependencies=owner)
+def record_cost(order_id: UUID, request: CostIn, db: Session = Depends(get_db)):
+    order = db.get(FoundryRehearsalOrder, order_id, with_for_update=True)
+    if order is None:
+        raise HTTPException(404, "Rehearsal order not found")
+    # Reconcile expense evidence against the historical order even during containment.
+    work = db.scalar(select(LegacyInstanceWorkItem).filter_by(action_id=order.action_id))
+    if work is None:
+        raise HTTPException(409, "Rehearsal order scope unavailable")
+    scope = {key: getattr(work, key) for key in ("legacy_instance_id", "business_id", "engine_id", "jurisdiction")}
+    _check_legacy(db, **scope)
+    costs = _rehearsal_costs(db, order)
+    ref = request.fixture_ref.casefold()
+    payload = {**request.model_dump(), "fixture_ref": ref, "order_id": str(order_id), "currency": "CAD"}
+    for recorded in costs:
+        if recorded["fixture_ref"] == ref:
+            if recorded != payload:
+                raise HTTPException(409, "Rehearsal cost reference already used")
+            return _view(db, order)
+    if len(costs) >= 50:
+        raise HTTPException(409, "Rehearsal cost limit reached")
+    event_id = f"FOUNDRY-COST-{order.id}-" + hashlib.sha256(ref.encode()).hexdigest()[:24]
+    payload["sha256"] = artifact_digest("foundry_cost", event_id, payload)
+    _event(db, event_id=event_id, legacy_instance_id=work.legacy_instance_id, event_type=COST_EVENT,
+           message="Private rehearsal expense fixture recorded", payload=payload)
+    db.flush()
+    result = _view(db, order)
+    db.commit()
+    return result
+
+
 def _view(db, row):
     captured, refunded = db.execute(select(
         func.coalesce(func.sum(FoundryRehearsalPayment.captured_delta), 0),
@@ -67,9 +132,14 @@ def _view(db, row):
     ).where(FoundryRehearsalPayment.order_id == row.id)).one()
     if (captured, refunded) != (row.captured_minor, row.refunded_minor):
         raise HTTPException(409, "Rehearsal journal does not reconcile")
+    costs = _rehearsal_costs(db, row)
+    expense = sum(item["amount_minor"] for item in costs)
     return {
         "order_id": row.id, "currency": "CAD", "price_minor": row.amount_minor,
         "basis": "SIGNED_LOCAL_FIXTURE", "captured_minor": captured, "refunded_minor": refunded,
+        "fixture_cost_minor": expense, "fixture_cost_count": len(costs),
+        "fixture_contribution_minor": captured - refunded - expense if costs else None,
+        "actual_profit_minor": None,
         "net_minor": captured - refunded, "internal_delivery_recorded": row.delivered_at is not None,
         "verified_commercial_revenue": False, "external_delivery_authorized": False,
     }
@@ -255,5 +325,9 @@ def campaign_summary(campaign_id: int, scope: CampaignScope, db: Session = Depen
     return {
         "campaign_id": campaign_id, "basis": "SIGNED_LOCAL_FIXTURE", "rehearsed_visits": total,
         "rehearsed_conversions": len(totals), "currency": "CAD",
-        "rehearsed_net_minor": sum(item["net_minor"] for item in totals), "verified_commercial_revenue": False,
+        "rehearsed_net_minor": sum(item["net_minor"] for item in totals),
+        "rehearsed_recorded_cost_minor": sum(item["fixture_cost_minor"] for item in totals),
+        "rehearsed_contribution_minor": (sum(item["fixture_contribution_minor"] for item in totals)
+                                         if totals and all(item["fixture_cost_count"] for item in totals) else None),
+        "actual_profit_minor": None, "verified_commercial_revenue": False,
     }

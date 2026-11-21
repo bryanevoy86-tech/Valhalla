@@ -39,6 +39,18 @@ class AcquisitionTerms(BaseModel):
         return self.purchase_price - self.financed_principal + self.closing_and_transition_cost + self.funded_working_reserve
 
 
+class DiscoveryProvenance(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    source_id: str
+    adapter: Literal["DEMAND_EXPORT", "PROCUREMENT_EXPORT"]
+    citation: str
+    external_key: str
+    job_sha256: str
+    sample_count: int
+    demand_count: int
+    buyer_segment: str
+
+
 class EvidenceIn(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
     evidence_id: UUID
@@ -46,7 +58,7 @@ class EvidenceIn(BaseModel):
     business_id: str = Field(min_length=3, max_length=120)
     engine_id: str = Field(min_length=3, max_length=80)
     jurisdiction: str = Field(min_length=2, max_length=80)
-    kind: Literal["ACQUISITION", "DIGITAL_PRODUCT", "SAAS", "SERVICE", "REAL_ESTATE"]
+    kind: Literal["ACQUISITION", "DIGITAL_PRODUCT", "SAAS", "SERVICE", "REAL_ESTATE", "OTHER"]
     evidence_class: Literal["OPERATOR_REPORTED", "SIMULATION"]
     title: str = Field(min_length=3, max_length=180)
     source_ref: str = Field(min_length=3, max_length=240)
@@ -62,6 +74,8 @@ class EvidenceIn(BaseModel):
     monthly_units: int = Field(strict=True, ge=0, le=1_000_000)
     rights_attestation: Literal["AUTHORIZED_INTERNAL_RESEARCH"]
     acquisition: AcquisitionTerms | None = None
+    revenue_model: Literal["ONE_TIME", "RECURRING", "ASSET", "SERVICE", "SUBSCRIPTION", "ACQUISITION", "OTHER"] | None = None
+    provenance: DiscoveryProvenance | None = None
 
     @model_validator(mode="after")
     def validate_dates(self):
@@ -106,7 +120,7 @@ def economics(payload: EvidenceIn) -> dict:
     return result
 
 
-def checked_evidence(row: FoundryEvidence, scope: dict, today: date) -> EvidenceIn:
+def checked_evidence(row: FoundryEvidence, scope: dict, today: date, *, db=None) -> EvidenceIn:
     if (row.scope_key != outcome_scope_key(scope) or row.revoked
             or not row.observed_on <= today <= row.expires_on
             or row.digest != artifact_digest("foundry_evidence", str(row.id), row.payload)):
@@ -115,7 +129,31 @@ def checked_evidence(row: FoundryEvidence, scope: dict, today: date) -> Evidence
     if (payload.model_dump(include=SCOPE_FIELDS) != scope or payload.observed_on != row.observed_on
             or payload.expires_on != row.expires_on or payload.source_ref != row.source_ref):
         raise HTTPException(409, "Foundry evidence metadata has changed")
+    if payload.provenance:
+        from app.services.foundry_intake import FoundryIntakeJob, Intake, intake_ready, source_for
+
+        if db is None or not intake_ready(db):
+            raise HTTPException(409, "Authorized discovery provenance unavailable")
+        job = db.get(FoundryIntakeJob, row.id)
+        if (job is None or job.status != "COMPLETED" or job.digest != payload.provenance.job_sha256
+                or job.digest != artifact_digest("foundry_intake", str(job.id), job.payload)):
+            raise HTTPException(409, "Discovery provenance failed integrity")
+        source_for(db, Intake.model_validate(job.payload), today)
+        superseding_id = db.scalar(select(FoundryEvidence.id).where(
+            FoundryEvidence.scope_key == row.scope_key, FoundryEvidence.source_ref == row.source_ref,
+            FoundryEvidence.observed_on > row.observed_on,
+        ).limit(1))
+        if superseding_id is not None:
+            raise HTTPException(409, "A newer observation supersedes this source record")
     return payload
+
+
+def demand_evidence(payload: EvidenceIn):
+    item = payload.provenance
+    if not item:
+        return None
+    return {**item.model_dump(), "sample_demand_bp": item.demand_count * 10000 // item.sample_count,
+            "independently_validated": False}
 
 
 def review_priority(role: str, metrics: dict) -> str:
@@ -146,7 +184,7 @@ def discover(db: Session, role: str, scope: dict, today: date) -> dict:
     rejected = []
     for row in rows:
         try:
-            payload = checked_evidence(row, scope, today)
+            payload = checked_evidence(row, scope, today, db=db)
         except (HTTPException, ValueError):
             rejected.append(str(row.id))
             continue
@@ -154,7 +192,7 @@ def discover(db: Session, role: str, scope: dict, today: date) -> dict:
         signals.append({
             "evidence_id": str(row.id), "sha256": row.digest, "source_ref": row.source_ref,
             "title": payload.title, "kind": payload.kind, "evidence_class": payload.evidence_class,
-            "priority": review_priority(role, metrics), "economics": metrics,
+            "priority": review_priority(role, metrics), "economics": metrics, "demand_evidence": demand_evidence(payload),
         })
     return {"foundry_signal_status": "OBSERVED" if signals else "NO_ELIGIBLE_SOURCE",
             "foundry_signals": signals, "invalid_foundry_evidence_ids": rejected}
@@ -168,13 +206,14 @@ def candidate_fields(row: FoundryEvidence, payload: EvidenceIn, report_id: str) 
         "summary": "Internal research candidate from declared source evidence and scenario economics.",
         "engine_id": payload.engine_id, "legacy": payload.legacy_instance_id, "jurisdiction": payload.jurisdiction,
         "required_capital": payload.startup_capital / 100, "estimated_test_cost": payload.test_cost / 100,
-        "revenue_type": {"ACQUISITION": "ACQUISITION", "DIGITAL_PRODUCT": "ONE_TIME", "SAAS": "SUBSCRIPTION",
-                         "SERVICE": "SERVICE", "REAL_ESTATE": "ASSET"}[payload.kind],
+        "revenue_type": payload.revenue_model or {"ACQUISITION": "ACQUISITION", "DIGITAL_PRODUCT": "ONE_TIME", "SAAS": "SUBSCRIPTION",
+                         "SERVICE": "SERVICE", "REAL_ESTATE": "ASSET", "OTHER": "OTHER"}[payload.kind],
         "simulation_fixture": payload.evidence_class == "SIMULATION",
         "specialist_inputs": {
             "business_id": payload.business_id, "pantheon_report_ids": [report_id],
             "foundry_evidence": {"id": str(row.id), "sha256": row.digest, "report_id": report_id},
             "foundry_economics": economics(payload),
+            **({"discovery_demand": demand_evidence(payload)} if payload.provenance else {}),
         },
     }
 
@@ -191,7 +230,7 @@ def require_current_candidate(db: Session, proposal: dict, scope: dict, today: d
         report_id = evidence["report_id"]
         if row is None or row.digest != evidence["sha256"] or report_id not in inputs["pantheon_report_ids"]:
             raise ValueError
-        payload = checked_evidence(row, scope, today)
+        payload = checked_evidence(row, scope, today, db=db)
         report = verified_report(db, report_id)
         if not any(signal["evidence_id"] == str(row.id) and signal["sha256"] == row.digest
                    for signal in report["observations"]["foundry_signals"]):
@@ -201,7 +240,8 @@ def require_current_candidate(db: Session, proposal: dict, scope: dict, today: d
             raise HTTPException(409, "Simulated Foundry evidence stays in shadow evaluation")
         expected_inputs = canonical.pop("specialist_inputs")
         if (any(proposal.get(key) != value for key, value in canonical.items())
-                or inputs.get("foundry_economics") != expected_inputs["foundry_economics"]):
+                or inputs.get("foundry_economics") != expected_inputs["foundry_economics"]
+                or inputs.get("discovery_demand") != expected_inputs.get("discovery_demand")):
             raise ValueError
     except (AttributeError, KeyError, TypeError, ValueError):
         raise HTTPException(409, "Foundry research requires a new source-bound candidate") from None

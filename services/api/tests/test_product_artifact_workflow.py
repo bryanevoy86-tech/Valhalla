@@ -398,6 +398,13 @@ def rehearse_checkout(client, engine, monkeypatch, owner, action_id, price, scop
     delivered = client.post(f"{root}/orders/{order_id}/delivery", headers=owner)
     assert delivered.status_code == 200, delivered.text
     assert delivered.json()["internal_delivery_recorded"]
+    expense_url = f"{root}/orders/{order_id}/cost-fixtures"
+    expense = {"fixture_ref": "fixture:fulfillment-labor", "category": "FULFILLMENT", "amount_minor": 175}
+    cost = client.post(expense_url, headers=owner, json=expense)
+    assert cost.status_code == 201, cost.text
+    assert client.post(expense_url, headers=owner, json=expense).json() == cost.json()
+    assert client.post(expense_url, headers=owner, json={**expense, "amount_minor": 100}).status_code == 409
+    assert cost.json()["fixture_contribution_minor"] == price - 175
     assert apply(refund, "evt_fixture_refund_one", price // 2).status_code == 200
     assert apply(refund, "evt_fixture_over_refund", price + 1).status_code == 409
     assert apply(refund, "evt_fixture_refund_final", price).status_code == 200
@@ -406,6 +413,8 @@ def rehearse_checkout(client, engine, monkeypatch, owner, action_id, price, scop
     assert final["net_minor"] == 0
     assert final["verified_commercial_revenue"] is False
     assert summary()["rehearsed_net_minor"] == 0
+    assert summary()["rehearsed_contribution_minor"] == -175
+    assert summary()["actual_profit_minor"] is None
     assert summary()["verified_commercial_revenue"] is False
     with Session(engine) as db:
         assert db.query(FoundryRehearsalPayment).count() == 3

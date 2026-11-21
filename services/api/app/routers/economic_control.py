@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import inspect
+from sqlalchemy import inspect, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -13,9 +13,9 @@ from app.loki.evidence import artifact_digest
 from app.loki.models import LokiReview
 from app.loki.review_service import reviewer_identity, verdict
 from app.models.economic_control import EconomicOperation, EconomicPool, EconomicRecord
-from app.schemas.economic_control import Containment, Decision, Liquidity, Mandate, MarketScope, Opportunity, Performance, Plan
+from app.schemas.economic_control import AssetRecovery, Containment, Decision, Liquidity, Mandate, MarketScope, Obligation, Opportunity, Performance, Plan, ReservationRelease
 from app.services.economic_control import (
-    ADVICE_TYPE, CONTAINMENT, assessment, load_state, lock_pool, operation_key, pool_liquidity, ready,
+    ADVICE_TYPE, CONTAINMENT, assessment, current_performance, load_state, lock_pool, operation_key, pool_liquidity, ready,
     store_record, trigger_reassessment, verified_payload,
 )
 from app.services.prime_business_execution import _check_legacy, _emergency_stop_active, require_owner_mandate_key
@@ -168,6 +168,88 @@ def contain(request: Containment, db: Session = Depends(get_db)):
     return retry(row) if row else store(db, operation, "CONTAINMENT", request)
 
 
+@router.post("/obligations", status_code=201, dependencies=owner)
+def obligation(request: Obligation, db: Session = Depends(get_db)):
+    operation, state, _ = context(db, request.scope)
+    row = existing_record(db, operation, "OBLIGATION", request)
+    if row:
+        return retry(row)
+    previous = state.obligations.get(request.obligation_key)
+    if request.previous_id != (previous.id if previous else None):
+        raise HTTPException(409, "Obligation revision must bind the current record")
+    if not previous and request.status == "CLOSED_IN_FIXTURE":
+        raise HTTPException(409, "A closed obligation requires a prior record")
+    return store(db, operation, "OBLIGATION", request, receipt_ref=request.evidence_ref)
+
+
+@router.post("/reservation-releases", status_code=201, dependencies=owner)
+def release_reservation(request: ReservationRelease, db: Session = Depends(get_db)):
+    operation, state, pool = context(db, request.scope)
+    current = db.get(EconomicRecord, request.id)
+    body = request.model_dump(mode="json")
+    if current:
+        payload = verified_payload(current)
+        if current.scope_key != operation.scope_key or current.kind != "RELEASE" or any(
+            payload.get(key) != value for key, value in body.items()
+        ):
+            raise HTTPException(409, "Release identity already used")
+        return {**payload, "sha256": current.digest}
+    amount = state.active_reservations.get(request.decision_id)
+    if not amount or pool.committed_minor < amount:
+        raise HTTPException(409, "No releasable reservation exists in this scope")
+    payload = {**body, "released_simulation_minor": amount, "external_authority": False,
+               "cumulative_budget_restored": False}
+    pool.committed_minor -= amount
+    row = store_record(db, operation, "RELEASE", payload, receipt_ref=request.evidence_ref)
+    trigger_reassessment(db, operation.scope, request.id, now().replace(tzinfo=None))
+    commit(db)
+    return {**payload, "sha256": row.digest}
+
+
+@router.post("/asset-recovery-fixtures", status_code=201, dependencies=owner)
+def record_asset_recovery(request: AssetRecovery, db: Session = Depends(get_db)):
+    from app.models.treasury_reconciliation import StatementImport
+    from app.services.treasury_reconciliation import payload_for, statement_ready
+
+    operation, state, _ = context(db, request.scope)
+    document = request.model_dump(mode="json")
+    current = db.get(EconomicRecord, request.id)
+    if current:
+        previous = verified_payload(current)
+        if current.scope_key != operation.scope_key or current.kind != "RECOVERY" or previous.get("request") != document:
+            raise HTTPException(409, "Recovery identity already used")
+        return previous
+    if any(item["request"]["exit_decision_id"] == str(request.exit_decision_id)
+           and item["request"]["asset_ref"] == request.asset_ref for item in state.recoveries):
+        raise HTTPException(409, "Asset already has a recovery fixture under this exit decision")
+    if not statement_ready(db):
+        raise HTTPException(503, "Statement fixture schema unavailable")
+    exit_decision = db.get(EconomicRecord, request.exit_decision_id)
+    statement = db.get(StatementImport, request.statement_id)
+    if exit_decision is None or exit_decision.kind != "DECISION" or exit_decision.scope_key != operation.scope_key or statement is None:
+        raise HTTPException(409, "Scoped exit decision and statement fixture are required")
+    prior = verified_payload(exit_decision)
+    asset = next((item for item in prior["asset_inventory"] if item["asset_ref"] == request.asset_ref), None)
+    document_source = payload_for(statement)
+    if prior["action"] != "EXIT" or not asset or document_source.scope.model_dump() != operation.scope or (
+        document_source.currency != operation.currency or document_source.purpose != "BUSINESS"
+    ):
+        raise HTTPException(409, "Recovery scope or asset evidence does not match the exit")
+    entry = next((item for item in document_source.entries if item.external_ref.casefold() == request.entry_ref.casefold()), None)
+    if (entry is None or entry.category != "ASSET_RECOVERY" or entry.amount_minor <= 0
+            or entry.posted_on < datetime.fromisoformat(prior["recorded_at"]).date()):
+        raise HTTPException(409, "Recovery requires a positive classified fixture posting after the exit decision")
+    payload = {"id": str(request.id), "scope": operation.scope, "request": document,
+               "projected_liquidation_minor": asset["projected_liquidation_minor"],
+               "observed_statement_fixture_minor": entry.amount_minor, "statement_sha256": statement.digest,
+               "actual_recovered_capital_minor": None, "external_authority": False}
+    receipt_key = f"recovery-fixture:{request.statement_id}:{entry.external_ref.casefold()}"
+    store_record(db, operation, "RECOVERY", payload, receipt_ref=receipt_key)
+    trigger_reassessment(db, operation.scope, request.id, now().replace(tzinfo=None))
+    commit(db)
+    return payload
+
+
 @router.post("/opportunities", status_code=201, dependencies=owner)
 def opportunity(request: Opportunity, db: Session = Depends(get_db)):
     operation, state, _ = context(db, request.scope)
@@ -180,6 +262,32 @@ def opportunity(request: Opportunity, db: Session = Depends(get_db)):
     if len(state.opportunities) >= 40 and previous is None:
         raise HTTPException(409, "Scoped comparison is full")
     return store(db, operation, "OPPORTUNITY", request)
+
+
+@router.get("/portfolio-exposure", dependencies=owner)
+def portfolio_exposure(db: Session = Depends(get_db)):
+    current = now().date()
+    pools = db.scalars(select(EconomicPool).order_by(EconomicPool.currency)).all()
+    operations = db.scalars(select(EconomicOperation).order_by(EconomicOperation.scope_key)).all()
+    totals = []
+    for pool in pools:
+        scoped = [load_state(db, operation) for operation in operations if operation.currency == pool.currency]
+        reservations = sum(state.outstanding_reservations for state in scoped)
+        if reservations != pool.committed_minor:
+            raise HTTPException(409, "Aggregate reservation counter does not reconcile")
+        recorded_exposure = sum(state.performance.outstanding_exposure for state in scoped
+                                if current_performance(state, current))
+        unknown = sum(not current_performance(state, current) for state in scoped)
+        liquidity = pool_liquidity(db, pool)
+        totals.append({
+            "currency": pool.currency, "enrolled_operations": len(scoped),
+            "outstanding_reservations_minor": reservations, "fresh_recorded_exposure_minor": recorded_exposure,
+            "operations_without_fresh_exposure": unknown,
+            "protected_liquidity_fixture_minor": liquidity.protected_pool_minor if liquidity else None,
+            "liquidity_conflict": pool.liquidity_conflict,
+        })
+    return {"basis": "RECONCILIATION_FIXTURE", "totals": totals,
+            "actual_organization_exposure_minor": None, "external_authority": False}
 
 
 @router.post("/assessment")

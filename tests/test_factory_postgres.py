@@ -397,5 +397,61 @@ class FactoryPostgresTests(unittest.TestCase):
             EconomicPool.__table__.drop(bind=self.engine)
 
 
+    def test_competing_economic_release_requests_restore_only_one_reservation(self):
+        from concurrent.futures import ThreadPoolExecutor
+        from datetime import date, timedelta
+        from uuid import uuid4
+
+        from fastapi import HTTPException
+        from app.models.economic_control import EconomicOperation, EconomicPool, EconomicRecord
+        from app.routers.economic_control import release_reservation
+        from app.schemas.economic_control import Mandate, ReservationRelease
+        from app.services.economic_control import load_state, operation_key, store_record
+
+        scope = {key: self.payload[key] for key in ("legacy_instance_id", "business_id", "engine_id", "jurisdiction")}
+        models = (EconomicPool, EconomicOperation, EconomicRecord)
+        for model in models:
+            model.__table__.create(bind=self.engine)
+        key, decision = operation_key(scope), uuid4()
+        try:
+            with self.sessions.begin() as db:
+                db.add(EconomicPool(currency="CAD", committed_minor=120))
+                operation = EconomicOperation(scope_key=key, scope=scope, currency="CAD", sequence=0)
+                db.add(operation)
+                mandate = Mandate(id=uuid4(), scope=scope, currency="CAD", max_exposure=500,
+                                  max_cumulative_loss=300, max_additional_funding=200, min_operating_reserve=50,
+                                  review_by=date.today() + timedelta(days=7), minimum_period_net=0,
+                                  continuation_criteria="Healthy account", suspension_criteria="Review risks",
+                                  exit_criteria="Preserve assets", obligations=["Account review"])
+                store_record(db, operation, "MANDATE", mandate.model_dump(mode="json"))
+                store_record(db, operation, "DECISION", {"id": str(decision), "scope": scope,
+                             "reserved_simulation_minor": 120, "action": "EXPAND"})
+            start = threading.Barrier(2)
+
+            def release():
+                identity = uuid4()
+                request = ReservationRelease(id=identity, scope=scope, decision_id=decision,
+                                             reason="CANCELLED", evidence_ref=f"fixture:{identity}")
+                start.wait(timeout=5)
+                with self.sessions() as db:
+                    try:
+                        result = release_reservation(request, db)
+                        return result["released_simulation_minor"]
+                    except HTTPException as exc:
+                        return exc.status_code
+
+            with ThreadPoolExecutor(max_workers=2) as executor:
+                jobs = [executor.submit(release) for _ in range(2)]
+                self.assertEqual(sorted(job.result(timeout=10) for job in jobs), [120, 409])
+            with self.sessions() as db:
+                state = load_state(db, db.get(EconomicOperation, key))
+                self.assertEqual(state.simulated_funding, 120)
+                self.assertEqual(state.outstanding_reservations, 0)
+                self.assertEqual(db.get(EconomicPool, "CAD").committed_minor, 0)
+        finally:
+            for model in reversed(models):
+                model.__table__.drop(bind=self.engine)
+
+
 if __name__ == "__main__":
     unittest.main()

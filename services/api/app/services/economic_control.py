@@ -8,18 +8,19 @@ from sqlalchemy import inspect, select, update
 from sqlalchemy.orm import Session
 
 from app.loki.evidence import artifact_digest
+from app.models.completion_registry import LegacyInstanceRegistryItem
 from app.models.economic_control import EconomicOperation, EconomicPool, EconomicRecord
 from app.models.foundry_evidence import FoundryEvidence
 from app.models.specialist_assignment import SpecialistAssignment
-from app.schemas.economic_control import Containment, Liquidity, Mandate, Opportunity, Performance, Plan
-from app.services.foundry_discovery import checked_evidence, economics
+from app.schemas.economic_control import Containment, Liquidity, Mandate, Obligation, Opportunity, Performance, Plan
+from app.services.foundry_discovery import checked_evidence, demand_evidence, economics
 from app.services.specialist_triggers import outcome_scope_key
 from app.services.universal_opportunity_evaluator import rank_economic_options
 
 
 ADVICE_TYPE = "economic_advice"
 REVIEW_ROLES = frozenset({"HEIMDALL", "NJORD", "NORNS", "LOKI", "TYR", "ODIN", "MIMIR"})
-RECORD_MODELS = {"MANDATE": Mandate, "PERFORMANCE": Performance, "LIQUIDITY": Liquidity, "OPPORTUNITY": Opportunity, "CONTAINMENT": Containment}
+RECORD_MODELS = {"MANDATE": Mandate, "PERFORMANCE": Performance, "LIQUIDITY": Liquidity, "OPPORTUNITY": Opportunity, "CONTAINMENT": Containment, "OBLIGATION": Obligation}
 CONTAINMENT = {"SUSPEND", "RESTRUCTURE", "EXIT"}
 
 
@@ -91,6 +92,17 @@ class State:
     opportunities: dict[str, Opportunity] = field(default_factory=dict)
     cumulative_loss: int = 0
     simulated_funding: int = 0
+    active_reservations: dict[UUID, int] = field(default_factory=dict)
+    opening_reservations: int = 0
+    obligations: dict[str, Obligation] = field(default_factory=dict)
+    containment_sequence: int = 0
+    performance_sequence: int = 0
+    recoveries: list[dict] = field(default_factory=list)
+
+    @property
+    def outstanding_reservations(self):
+        return self.opening_reservations + sum(self.active_reservations.values())
+
     exit_proposed: bool = False
     contained: bool = False
     latest_decision: dict | None = None
@@ -110,25 +122,43 @@ def load_state(db, operation):
         last = row.sequence
         if row.kind == "DECISION":
             current.latest_decision = payload
-            current.simulated_funding += payload["reserved_simulation_minor"]
+            reserved = payload["reserved_simulation_minor"]
+            current.simulated_funding += reserved
+            if reserved:
+                current.active_reservations[row.id] = reserved
             current.exit_proposed |= payload["action"] == "EXIT"
-            current.contained |= payload["action"] in {"SUSPEND", "EXIT"}
+            if payload["action"] in {"SUSPEND", "EXIT"}:
+                current.contained = True
+                current.containment_sequence = row.sequence
+            elif payload["action"] == "RESTART":
+                current.contained = False
+        elif row.kind == "RECOVERY":
+            current.recoveries.append(payload)
+        elif row.kind == "RELEASE":
+            decision_id = UUID(payload["decision_id"])
+            if current.active_reservations.pop(decision_id, None) != payload["released_simulation_minor"]:
+                raise HTTPException(409, "Reservation release does not reconcile")
         else:
             record = RECORD_MODELS[row.kind].model_validate(payload)
             if row.kind == "MANDATE":
                 if current.mandate is None:
                     current.cumulative_loss = record.opening_cumulative_loss
                     current.simulated_funding = record.opening_additional_funding
+                    current.opening_reservations = record.opening_additional_funding
                 current.mandate = record
                 current.loss_limit = record.max_cumulative_loss if current.loss_limit is None else min(current.loss_limit, record.max_cumulative_loss)
                 current.funding_limit = record.max_additional_funding if current.funding_limit is None else min(current.funding_limit, record.max_additional_funding)
             elif row.kind == "PERFORMANCE":
                 current.performance = record
+                current.performance_sequence = row.sequence
                 current.cumulative_loss += max(0, record.operating_costs - record.operating_receipts)
             elif row.kind == "CONTAINMENT":
                 current.contained = True
+                current.containment_sequence = row.sequence
             elif row.kind == "OPPORTUNITY":
                 current.opportunities[record.opportunity_key] = record
+            elif row.kind == "OBLIGATION":
+                current.obligations[record.obligation_key] = record
     if operation.sequence != last:
         raise HTTPException(409, "Economic journal head mismatch")
     return current
@@ -161,7 +191,7 @@ def usable_cash(state, pool, liquidity, today):
     reserve = state.mandate.min_operating_reserve
     # The same committed funds cannot be allocated by another venture. Protected
     # balances are informational and never included in either inequality.
-    return max(0, min(state.performance.uncommitted_local_cash - reserve - state.simulated_funding,
+    return max(0, min(state.performance.uncommitted_local_cash - reserve - state.outstanding_reservations,
                       liquidity.unrestricted_pool_minor - pool.committed_minor))
 
 
@@ -188,7 +218,7 @@ def comparison(db, state, scope, currency, available, today, *, lock_sources=Fal
             try:
                 if row is None:
                     raise HTTPException(409, "Missing Foundry source")
-                foundry = checked_evidence(row, scope, today)
+                foundry = checked_evidence(row, scope, today, db=db)
                 if foundry.currency != currency:
                     raise HTTPException(409, "Foundry currency mismatch")
                 measures = economics(foundry)
@@ -199,6 +229,10 @@ def comparison(db, state, scope, currency, available, today, *, lock_sources=Fal
                 data["projected_annual_net"] = net * 12
                 data["maximum_downside"] = max(item.maximum_downside, -12 * downside)
                 data["foundry_sha256"] = row.digest
+                demand = demand_evidence(foundry)
+                if demand:
+                    data["demand_bp"] = demand["sample_demand_bp"]
+                    data["demand_evidence"] = demand
             except (HTTPException, ValueError):
                 blockers.append("FOUNDRY_SOURCE_UNAVAILABLE")
         if data["maximum_downside"] > max(0, state.loss_limit - state.cumulative_loss):
@@ -211,9 +245,10 @@ def comparison(db, state, scope, currency, available, today, *, lock_sources=Fal
 def assessment(db, operation, state, pool, today, plan: Plan | None = None, *, lock_sources=False):
     scope, mandate = operation.scope, state.mandate
     liquidity = pool_liquidity(db, pool)
-    available = usable_cash(state, pool, liquidity, today)
+    open_obligations = [item for item in state.obligations.values() if item.status != "CLOSED_IN_FIXTURE"]
+    available = max(0, usable_cash(state, pool, liquidity, today) - sum(item.amount_minor for item in open_obligations))
     remaining_exposure = max(0, mandate.max_exposure - (state.performance.outstanding_exposure if state.performance else 0)
-                             - state.simulated_funding)
+                             - state.outstanding_reservations)
     comparison_budget = min(available, remaining_exposure, max(0, state.funding_limit - state.simulated_funding))
     ranked = comparison(db, state, scope, operation.currency, comparison_budget, today, lock_sources=lock_sources)
     blockers = []
@@ -235,8 +270,18 @@ def assessment(db, operation, state, pool, today, plan: Plan | None = None, *, l
         blockers.append("BELOW_MINIMUM_PERFORMANCE")
     if performance is not None and performance.outstanding_exposure > mandate.max_exposure:
         blockers.append("EXPOSURE_LIMIT")
-    if state.contained:
+    restarting = bool(plan and plan.action == "RESTART")
+    if any(item.status == "DISPUTED" or item.due_on <= today for item in open_obligations) or (restarting and open_obligations):
+        blockers.append("TRACKED_OBLIGATIONS_UNRESOLVED")
+    if state.contained and not restarting:
         blockers.append("OPERATION_CONTAINED")
+    if restarting:
+        if not state.contained or state.exit_proposed:
+            blockers.append("RESTART_REQUIRES_SUSPENSION_WITHOUT_EXIT")
+        if state.performance_sequence <= state.containment_sequence:
+            blockers.append("RESTART_REQUIRES_POST_CONTAINMENT_PERFORMANCE")
+        if available <= 0:
+            blockers.append("RESTART_REQUIRES_RESERVE_HEADROOM")
     if plan:
         required = plan.requested_additional_minor
         if plan.cross_business_support:
@@ -245,7 +290,7 @@ def assessment(db, operation, state, pool, today, plan: Plan | None = None, *, l
             blockers.append("PROTECTED_RESERVE_OR_UNAVAILABLE_FUNDS")
         if state.simulated_funding + required > state.funding_limit:
             blockers.append("CUMULATIVE_FUNDING_LIMIT")
-        if performance and performance.outstanding_exposure + state.simulated_funding + required > mandate.max_exposure:
+        if performance and performance.outstanding_exposure + state.outstanding_reservations + required > mandate.max_exposure:
             blockers.append("EXPOSURE_LIMIT")
         if plan.alternative_key:
             eligible = [item for item in ranked if item["eligible"]]
@@ -265,6 +310,9 @@ def assessment(db, operation, state, pool, today, plan: Plan | None = None, *, l
         "scope": scope, "currency": operation.currency, "as_of": today.isoformat(),
         "mandate_id": str(mandate.id), "operation_sequence": operation.sequence,
         "pool_committed_minor": pool.committed_minor, "period_net_minor": period_net,
+        "outstanding_reservations_minor": state.outstanding_reservations,
+        "open_obligations_minor": sum(item.amount_minor for item in open_obligations),
+        "obligation_receipt_ids": [str(item.id) for item in state.obligations.values()],
         "cumulative_loss_minor": state.cumulative_loss, "effective_loss_ceiling_minor": state.loss_limit,
         "effective_funding_limit_minor": state.funding_limit, "simulated_funding_minor": state.simulated_funding,
         "new_exposure_available_minor": available, "comparison_budget_minor": comparison_budget, "blockers": sorted(set(blockers)), "alternatives": ranked,
@@ -307,24 +355,48 @@ def specialist_economics(db, role, scope, today):
         ]
     if role == "MIMIR":
         common["last_internal_decision"] = state.latest_decision
+        common["recent_recovery_fixtures"] = state.recoveries[-5:]
         common["verified_real_world_outcome"] = False
     if role == "TYR":
+        common["tracked_open_obligations_minor"] = report["open_obligations_minor"]
         common["obligations"] = state.mandate.obligations
         common["obligations_status"] = state.performance.obligations_status if state.performance else "UNKNOWN"
     return {"economic_reassessment": common}
 
 
+def legacy_root(db, legacy_id):
+    visited = set()
+    while legacy_id and legacy_id not in visited and len(visited) < 12:
+        visited.add(legacy_id)
+        row = db.scalar(select(LegacyInstanceRegistryItem).filter_by(legacy_instance_id=legacy_id))
+        if row is None:
+            raise HTTPException(409, "Legacy lineage references an unavailable parent")
+        if not row.parent_instance_id:
+            return legacy_id
+        legacy_id = row.parent_instance_id
+    raise HTTPException(409, "Legacy lineage cannot be verified")
+
+
 def require_no_containment(db: Session, scope: dict):
-    """Existing Factory execution accepts no enrolled operation under containment."""
+    """Gate the internal Factory and fulfillment lanes across registered mirrors."""
     if not ready(db):
+        if inspect(db.connection()).has_table(EconomicOperation.__tablename__):
+            raise HTTPException(503, "Economic containment evidence unavailable")
         return
-    operation = db.get(EconomicOperation, operation_key(scope))
-    if operation is None:
+    candidates = db.scalars(select(EconomicOperation).where(
+        EconomicOperation.scope["business_id"].as_string() == scope["business_id"],
+    )).all()
+    if not candidates:
         return
-    lock_pool(db, operation.currency)
-    db.refresh(operation)
-    if operation.scope != scope:
-        raise HTTPException(409, "Economic mandate applies to this operating identity")
-    state = load_state(db, operation)
-    if state.contained or state.cumulative_loss >= state.loss_limit:
-        raise HTTPException(409, "Economic containment blocks this operation")
+    root = legacy_root(db, scope["legacy_instance_id"])
+    compatible = [operation for operation in candidates
+                  if legacy_root(db, operation.scope["legacy_instance_id"]) == root]
+    for currency in sorted({operation.currency for operation in compatible}):
+        lock_pool(db, currency)
+    for operation in compatible:
+        db.refresh(operation)
+        if operation.scope_key == operation_key(scope) and operation.scope != scope:
+            raise HTTPException(409, "Economic mandate applies to this operating identity")
+        state = load_state(db, operation)
+        if state.contained or state.cumulative_loss >= state.loss_limit:
+            raise HTTPException(409, "Economic containment blocks this operation")
