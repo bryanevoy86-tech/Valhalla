@@ -167,6 +167,57 @@ def cancel_schedule(schedule_id: UUID, db: Session = Depends(get_db)):
     return _describe(db, _lookup(db, schedule_id))
 
 
+def attach_operating_reassessment(db, payload, scope, today, outcomes, report):
+    from app.routers.foundry_checkout import scoped_checkout_learning
+    from app.services.economic_control import specialist_economics
+    from app.services.foundry_discovery import economics, require_current_candidate
+
+    opportunity = payload.opportunity
+    inputs = opportunity.specialist_inputs
+    listing = inputs.get("proposed_internal_listing")
+    artifact_id = listing.get("artifact_id") if isinstance(listing, dict) else None
+    checkout = scoped_checkout_learning(db, scope, outcomes, artifact_id=artifact_id) if isinstance(artifact_id, str) else []
+    capital = specialist_economics(db, "HEIMDALL", scope, today).get("economic_reassessment")
+    blockers = set(capital["blockers"] if capital else ())
+    source_assessment = None
+    if inputs.get("foundry_evidence") or opportunity.source == "scoped_foundry_evidence":
+        try:
+            evidence = require_current_candidate(db, opportunity.model_dump(mode="json"), scope, today, advisory_only=True)
+        except HTTPException as exc:
+            if exc.status_code != 409:
+                raise
+            blockers.add("FOUNDRY_SOURCE_NO_LONGER_CURRENT")
+        else:
+            projected = economics(evidence)
+            source_assessment = {"kind": evidence.kind, "economics": projected,
+                                 "source_ref": evidence.source_ref, "evidence_class": evidence.evidence_class}
+            acquisition = projected.get("acquisition")
+            if evidence.kind == "ACQUISITION" and acquisition is None:
+                blockers.add("ACQUISITION_TERMS_MISSING")
+            if acquisition and acquisition["stress_monthly_available_cash_after_debt_minor"] < 0:
+                blockers.add("ACQUISITION_DEBT_STRESS_SHORTFALL")
+            if projected["stress_monthly_operating_contribution_minor"] < 0:
+                blockers.add("STRESSED_OPERATING_CONTRIBUTION_NEGATIVE")
+    for row in checkout:
+        if row["status"] == "EVIDENCE_CONFLICT":
+            blockers.add("CHECKOUT_EVIDENCE_CONFLICT")
+        if row["status"] == "UNRECONCILED_FIXTURE":
+            blockers.add("CHECKOUT_FIXTURE_UNRECONCILED")
+        if (row.get("fixture_contribution_minor") or 0) < 0:
+            blockers.add("NEGATIVE_FIXTURE_CONTRIBUTION")
+    recommendation = report["recommendation"]
+    if checkout or capital or source_assessment or blockers:
+        report["operating_reassessment"] = {
+            "checkout_learning": checkout, "economic_reassessment": capital,
+            "source_assessment": source_assessment, "blockers": sorted(blockers),
+            "external_authority": False, "prior_recommendation": recommendation["heimdall_decision"],
+        }
+    if blockers:
+        report["recommendation"] = {**recommendation, "heimdall_decision": "HOLD", "best_option_right_now": None,
+                                    "abstain": True, "message": "Hold for review of the scoped operating evidence.",
+                                    "details": {"blockers": sorted(blockers)}}
+
+
 def run_due_schedule(db: Session, *, now: datetime | None = None) -> dict:
     """Run one due slot. A report and cursor advance commit as one transaction."""
     require_schedule_schema(db)
@@ -249,42 +300,7 @@ def run_due_schedule(db: Session, *, now: datetime | None = None) -> dict:
         recommendation = result["owner_recommendation"]
         report.update(status="evaluated", evaluation=result["evaluations"][0], recommendation=recommendation,
                       verified_internal_outcomes=outcomes)
-        listing = payload.opportunity.specialist_inputs.get("proposed_internal_listing")
-        artifact_id = listing.get("artifact_id") if isinstance(listing, dict) else None
-        if isinstance(artifact_id, str):
-            from app.routers.foundry_checkout import scoped_checkout_learning
-            from app.services.economic_control import specialist_economics
-            from app.services.foundry_discovery import require_current_candidate
-
-            checkout = scoped_checkout_learning(db, scope, outcomes, artifact_id=artifact_id)
-            economics = specialist_economics(db, "HEIMDALL", scope, now.date()).get("economic_reassessment")
-            blockers = []
-            if payload.opportunity.specialist_inputs.get("foundry_evidence") and not payload.opportunity.simulation_fixture:
-                try:
-                    require_current_candidate(db, payload.opportunity.model_dump(mode="json"), scope, now.date())
-                except HTTPException as exc:
-                    if exc.status_code != 409:
-                        raise
-                    blockers.append("FOUNDRY_SOURCE_NO_LONGER_CURRENT")
-            if any(row["status"] == "EVIDENCE_CONFLICT" for row in checkout):
-                blockers.append("CHECKOUT_EVIDENCE_CONFLICT")
-            if any(row["status"] == "UNRECONCILED_FIXTURE" for row in checkout):
-                blockers.append("CHECKOUT_FIXTURE_UNRECONCILED")
-            if any((row.get("fixture_contribution_minor") or 0) < 0 for row in checkout):
-                blockers.append("NEGATIVE_FIXTURE_CONTRIBUTION")
-            if economics and economics["blockers"]:
-                blockers.extend(economics["blockers"])
-            if checkout or economics or blockers:
-                report["operating_reassessment"] = {
-                    "checkout_learning": checkout, "economic_reassessment": economics,
-                    "blockers": blockers, "external_authority": False,
-                    "prior_recommendation": recommendation["heimdall_decision"],
-                }
-            if blockers:
-                report["recommendation"] = {**recommendation, "heimdall_decision": "HOLD",
-                                            "best_option_right_now": None, "abstain": True,
-                                            "message": "Hold for review of the scoped operating evidence.",
-                                            "details": {"blockers": blockers}}
+        attach_operating_reassessment(db, payload, scope, now.date(), outcomes, report)
     except (HTTPException, ValidationError) as exc:
         report.update(status="blocked", reason=exc.detail if isinstance(exc, HTTPException) else "Invalid specialist inputs")
     report = jsonable_encoder(report)

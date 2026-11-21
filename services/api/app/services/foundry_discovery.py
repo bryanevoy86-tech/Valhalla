@@ -15,7 +15,9 @@ from app.services.specialist_triggers import outcome_scope_key
 
 Cents = Annotated[int, Field(strict=True, ge=0, le=10_000_000_000)]
 SCOPE_FIELDS = {"legacy_instance_id", "business_id", "engine_id", "jurisdiction"}
-DISCOVERY_ROLES = frozenset({"ODIN", "HUGINN", "NJORD", "FREYJA", "TYR", "FORSETI"})
+DISCOVERY_ROLES = frozenset({
+    "ODIN", "HUGINN", "NJORD", "FREYJA", "TYR", "FORSETI", "NORNS", "HEIMDALL", "MIMIR", "LOKI",
+})
 
 
 class AcquisitionTerms(BaseModel):
@@ -218,7 +220,8 @@ def candidate_fields(row: FoundryEvidence, payload: EvidenceIn, report_id: str) 
     }
 
 
-def require_current_candidate(db: Session, proposal: dict, scope: dict, today: date) -> None:
+def require_current_candidate(db: Session, proposal: dict, scope: dict, today: date, *,
+                              advisory_only: bool = False) -> EvidenceIn | None:
     inputs = proposal.get("specialist_inputs", {})
     evidence = inputs.get("foundry_evidence")
     if evidence is None and proposal.get("source") != "scoped_foundry_evidence":
@@ -226,7 +229,7 @@ def require_current_candidate(db: Session, proposal: dict, scope: dict, today: d
     from app.pantheon.monitor import verified_report
 
     try:
-        row = db.get(FoundryEvidence, UUID(evidence["id"]), with_for_update=True)
+        row = db.get(FoundryEvidence, UUID(evidence["id"]), with_for_update=not advisory_only)
         report_id = evidence["report_id"]
         if row is None or row.digest != evidence["sha256"] or report_id not in inputs["pantheon_report_ids"]:
             raise ValueError
@@ -236,12 +239,13 @@ def require_current_candidate(db: Session, proposal: dict, scope: dict, today: d
                    for signal in report["observations"]["foundry_signals"]):
             raise ValueError
         canonical = candidate_fields(row, payload, report_id)
-        if canonical["simulation_fixture"]:
+        if canonical["simulation_fixture"] and not advisory_only:
             raise HTTPException(409, "Simulated Foundry evidence stays in shadow evaluation")
         expected_inputs = canonical.pop("specialist_inputs")
         if (any(proposal.get(key) != value for key, value in canonical.items())
                 or inputs.get("foundry_economics") != expected_inputs["foundry_economics"]
                 or inputs.get("discovery_demand") != expected_inputs.get("discovery_demand")):
             raise ValueError
+        return payload
     except (AttributeError, KeyError, TypeError, ValueError):
         raise HTTPException(409, "Foundry research requires a new source-bound candidate") from None

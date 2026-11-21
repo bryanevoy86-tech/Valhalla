@@ -216,6 +216,10 @@ def comparison(db, state, scope, currency, available, today, *, lock_sources=Fal
                     raise HTTPException(409, "Foundry currency mismatch")
                 measures = economics(foundry)
                 acquisition = measures.get("acquisition") or {}
+                if foundry.kind == "ACQUISITION" and not acquisition:
+                    blockers.append("ACQUISITION_TERMS_MISSING")
+                if acquisition and acquisition["stress_monthly_available_cash_after_debt_minor"] < 0:
+                    blockers.append("ACQUISITION_DEBT_STRESS_SHORTFALL")
                 net = acquisition.get("monthly_available_cash_after_debt_minor", measures["estimated_monthly_operating_contribution_minor"])
                 downside = acquisition.get("stress_monthly_available_cash_after_debt_minor", measures["stress_monthly_operating_contribution_minor"])
                 data["required_capital"] = max(foundry.startup_capital, acquisition.get("required_equity_and_reserve_minor", 0))
