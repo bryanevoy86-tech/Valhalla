@@ -25,7 +25,7 @@
       "owner_external_authorization_required": false,
       "continuation": {
         "next_implementation": "Exercise the registered routes in an authorized staging environment with migrated PostgreSQL.",
-        "existing_test_evidence": "Canonical route probe verified all 94 required methods and paths. Canonical threshold CRUD and all seven historical CI5 tuning checks pass. Disposable PostgreSQL verified the additive profile index preserves executable rule names and maintains separate profile identities across namespaces.",
+        "existing_test_evidence": "Canonical route probe verified all 94 required methods and paths. Canonical threshold CRUD and all seven historical CI5 tuning checks pass. Every tuning route rejects requests without the existing private Prime control identity. Disposable PostgreSQL verified the additive profile index preserves executable rule names and maintains separate profile identities across namespaces.",
         "owner_action": "Internal continuation is authorized under the standing development scope.",
         "required_acceptance_evidence_field": "acceptance_test"
       }
@@ -724,7 +724,7 @@
         "services/api/tests/test_foundry_discovery.py",
         "services/api/tests/test_economic_control.py"
       ],
-      "source_observation": "Scoped discovery, economic reassessment and outcome publishers feed a durable assignment backlog. Prime's shadow evaluator has a separate durable verified-outcome backlog. Owners see waiting and integrity failure counts; reports remain advisory.",
+      "source_observation": "Scoped discovery, economic reassessment and outcome publishers feed a durable assignment backlog. Prime's shadow evaluator uses its existing durable queue for independent outcome and exact-scope economic subscriptions. Owners see waiting and integrity failure counts; reports remain advisory.",
       "evidence_level": "SQLITE_INTEGRATION_TESTED",
       "production_verified": false,
       "acceptance_test": "Map historical role/authority variants without losing user intent; test controlled bridge and no unrestricted agent-to-agent tools; owner ratifies conflicting labels. Owner-confirmed 2026-11-20: prove every specialist covers all authorized relevant subsystems via scheduled and event-driven analysis, durable scoped reports to Prime, independent Loki cross-system challenges, and Prime synthesis/decision/verified execution inside existing mandates without routine owner approval; test missing/stale evidence, escalation and tenant isolation.",
@@ -735,7 +735,7 @@
       "owner_external_authorization_required": true,
       "continuation": {
         "next_implementation": "Extend substantive domain coverage and explicit contradiction handling. Prove independent Loki review of scoped evidence continuing to a governed Prime decision, verified execution and Mimir reassessment.",
-        "existing_test_evidence": "Pantheon/Prime API regressions exercise scoped queuing, deduplication, replay, stale or missing evidence, digest corruption and emergency stop. Disposable PostgreSQL proves three concurrent publishers and recovery from a rolled-back claim. The scoped acquisition fixture verifies debt stress, separately reviewed simulation, receipt reuse, revocation and reevaluation. SaaS, service and real-estate rehearsal covers shared stress rules, projection differences, simulated review and source withdrawal.",
+        "existing_test_evidence": "Pantheon/Prime API regressions exercise scoped queuing, deduplication, replay, stale or missing evidence, digest corruption and emergency stop. Disposable PostgreSQL proves concurrent publishers, recovery from a rolled-back claim, and concurrent economic wakeup deduplication with exact-scope opt-in and rollback. The scoped acquisition fixture verifies debt stress, separately reviewed simulation, receipt reuse, revocation and reevaluation. SaaS, service and real-estate rehearsal covers shared stress rules, projection differences, simulated review and source withdrawal.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
         "required_acceptance_evidence_field": "acceptance_test"
       }
@@ -1301,7 +1301,7 @@
         "services/api/tests/test_product_artifact_workflow.py",
         "services/api/tests/test_foundry_discovery.py"
       ],
-      "source_observation": "Adds reviewed restart with fresh evidence, scoped obligations, one-use reservation release, per-currency portfolio exposure, and asset recovery linked to fixture statements. PostgreSQL verifies a racing release settles once. Factory and rehearsal fulfillment re-check known related mirror containment.",
+      "source_observation": "Adds reviewed restart with fresh evidence, scoped obligations, one-use reservation release, per-currency portfolio exposure, and asset recovery linked to fixture statements. PostgreSQL verifies a racing release settles once. Factory and rehearsal fulfillment re-check known related mirror containment. An opted-in Prime schedule moves to advisory HOLD immediately after a fixture loss breaches its cumulative ceiling.",
       "evidence_level": "POSTGRES_INTEGRATION_TESTED",
       "production_verified": false,
       "acceptance_test": "Prove independent evidence and hard cumulative limits, protected reserves and aggregate exposure, version and replay integrity, scheduled and event-driven reassessment, exact Loki review, immediate containment, scope isolation, forward alternative ranking, strategic exit with rights-aware asset inventory, and Mimir learning that distinguishes simulation, zero external effects and independently reconciled outcomes.",

@@ -840,3 +840,12 @@ Local verification passed 368 canonical backend tests, 20 disposable PostgreSQL 
 ## November 21 — Committed-source Builder review
 
 Development commit `9c0ffae9f8993286caff449d9fa56eb91fbadd0c` binds review diffs to committed Git blobs from the tested HEAD. Eight materializer checks passed, including rehashed dirty-base evidence, an attempted addition over a tracked file and successful dry application of the valid patch. A separately authorized GitHub submission and sustained staging worker rehearsal remain pending.
+
+## November 21 — Automatic economic reassessment and private tuning control
+
+| Development commit | Verified development evidence |
+|---|---|
+| `fddaef721672b869b4939951605805fff31f64d2` | Prime consumed two exact-scope economic events before the next cadence slot. A fixture moved from a 50-cent positive period to a 150-cent cumulative loss and HOLD. An outcome-only schedule and an opted-in mirror received zero economic events. The emergency stop preserved both events. Replay reused the report and missing journal evidence blocked evaluation. No revenue rows were created. PostgreSQL proved concurrent deduplication and transaction rollback. |
+| `652f8e1213adf53702bc4e76aa6451281b7a6242` | All six canonical tuning routes require the existing private Prime control identity. The regression exercises unauthorized reads, writes and evaluation, then proves authorized threshold and historical profile behavior. |
+
+Local full regression passed 369 backend tests, 21 disposable PostgreSQL checks, eight Builder materializer checks and one simulated-browser voice test. The runtime route probe found 36 critical routers and 94 required routes. The source preflight validated all 50 contracts. The 53 indexed tasks and seven construction packages were preserved. All evidence is isolated development, fixture accounting, or simulation. External acceptance is tracked in the December handoff.
