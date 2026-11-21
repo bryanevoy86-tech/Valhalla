@@ -75,6 +75,27 @@ class BuilderMaterializeTests(unittest.TestCase):
         self.assertEqual(json.loads((output / "receipt.json").read_text())["review_diff_sha256"], sha(patch.read_bytes()))
         self.assertEqual(git("apply", "--check", str(patch)), "")
         self.assertEqual(git("status", "--porcelain"), "")
+        self.source.write_bytes(b"VALUE = 3\n")
+        # Rebuild every checksum around dirty bytes while leaving the advertised HEAD intact.
+        dirty_review = self.review([dict(self.row, base_sha256=sha(self.source.read_bytes()))])
+        dirty_receipt = dict(receipt, bundle_sha256=dirty_review["sha256"])
+        dirty_packet = dict(packet, review=dirty_review, bundle_sha256=dirty_review["sha256"],
+                            runner_receipt=dirty_receipt, test_receipt_sha256=sha(canonical(dirty_receipt)))
+        dirty_packet.pop("handoff_sha256")
+        dirty_packet["handoff_sha256"] = sha(canonical(dirty_packet))
+        with self.assertRaisesRegex(ValueError, "bytes differ from the tested Git base"):
+            MOD["materialize_handoff"](dirty_packet, self.base, self.output)
+        git("restore", "--", self.path)
+        committed_add = self.review([dict(self.row, mode="add", base_sha256=None)])
+        add_receipt = dict(receipt, bundle_sha256=committed_add["sha256"])
+        add_packet = dict(packet, review=committed_add, bundle_sha256=committed_add["sha256"],
+                          runner_receipt=add_receipt, test_receipt_sha256=sha(canonical(add_receipt)))
+        add_packet.pop("handoff_sha256")
+        add_packet["handoff_sha256"] = sha(canonical(add_packet))
+        self.source.unlink()
+        with self.assertRaisesRegex(ValueError, "addition already exists"):
+            MOD["materialize_handoff"](add_packet, self.base, self.output)
+        git("restore", "--", self.path)
         git("-c", "user.name=Builder Fixture", "-c", "user.email=fixture@example.invalid", "commit",
             "--allow-empty", "-qm", "moved")
         with self.assertRaises(ValueError):

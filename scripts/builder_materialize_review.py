@@ -137,6 +137,37 @@ def materialize(review: dict, base_root: Path, output_parent: Path,
         raise
 
 
+def committed_review_base(root: Path, commit: str, record: dict) -> bytes:
+    path = record["path"]
+    command = ["git", "--literal-pathspecs", "-C", str(root)]
+    entry = subprocess.run(
+        command + ["ls-tree", "-z", commit, "--", path],
+        check=True, capture_output=True, timeout=10,
+    ).stdout
+    if record["mode"] == "add":
+        if entry:
+            raise ValueError("Review addition already exists at the tested Git base")
+        return b""
+    metadata, _, name = entry.partition(b"\t")
+    mode, kind, blob = (metadata.split() + [b""] * 3)[:3]
+    if mode not in (b"100644", b"100755") or kind != b"blob" or name != path.encode() + b"\0":
+        raise ValueError("Review replacement is absent from the tested Git base")
+    object_id = blob.decode("ascii")
+    size = subprocess.run(
+        command + ["cat-file", "-s", object_id],
+        check=True, capture_output=True, timeout=10,
+    ).stdout
+    if int(size) > MAX_FILE_BYTES:
+        raise ValueError("Review comparison base exceeds byte limit")
+    data = subprocess.run(
+        command + ["cat-file", "blob", object_id],
+        check=True, capture_output=True, timeout=10,
+    ).stdout
+    if sha(data) != record["base_sha256"]:
+        raise ValueError("Review comparison bytes differ from the tested Git base")
+    return data
+
+
 def write_review_diff(output: Path, base_root: Path, packet: dict) -> None:
     receipt_path = output / "receipt.json"
     receipt = json.loads(receipt_path.read_bytes())
@@ -144,13 +175,7 @@ def write_review_diff(output: Path, base_root: Path, packet: dict) -> None:
     for record in receipt["files"]:
         path = record["path"]
         added = record["mode"] == "add"
-        target = resolve_path(path, list(DEFAULT_ALLOWED_DIRS), base_root)
-        previous = b""
-        if not added:
-            with target.open("rb") as handle:
-                previous = handle.read(MAX_FILE_BYTES + 1)
-        if (added and target.exists()) or (not added and sha(previous) != record["base_sha256"]):
-            raise ValueError("Review comparison base changed")
+        previous = committed_review_base(base_root, packet["base_commit"], record)
         change = (output / "files" / path).read_bytes()
         if sha(change) != record["content_sha256"]:
             raise ValueError("Review comparison artifact changed")
