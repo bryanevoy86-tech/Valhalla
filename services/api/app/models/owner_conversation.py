@@ -37,3 +37,20 @@ class OwnerAttachment(Base):
     data = Column(LargeBinary(), nullable=False)
     size_bytes = Column(Integer(), nullable=False)
     created_at = Column(DateTime(timezone=True), nullable=False, default=now)
+
+
+class OwnerInferenceQuota(Base):
+    __tablename__ = "prime_owner_inference_quotas"
+    day = Column(String(10), primary_key=True)
+    requests = Column(Integer(), nullable=False)
+
+
+class OwnerInferenceAttempt(Base):
+    __tablename__ = "prime_owner_inference_attempts"
+    turn_id = Column(Uuid(), primary_key=True)
+    day = Column(String(10), ForeignKey("prime_owner_inference_quotas.day"), nullable=False)
+    vendor = Column(String(20), nullable=False)
+    model = Column(String(160), nullable=False)
+    status = Column(String(20), nullable=False)
+    prompt_tokens = Column(Integer(), nullable=True)
+    completion_tokens = Column(Integer(), nullable=True)

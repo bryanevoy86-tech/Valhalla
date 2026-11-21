@@ -227,9 +227,10 @@
       "priority": "P1",
       "source_paths": [
         "services/api/app/routers/model_provider.py",
-        "app/ai/providers.py"
+        "app/ai/providers.py",
+        "services/api/app/services/owner_advisory_model.py"
       ],
-      "source_observation": "AI provider registration and adapter code exists; owner token budget and runtime inference limits unverified",
+      "source_observation": "Fixed-host advisory lane requires explicit release and provider approval, synthetic input, emergency clearance and an atomic daily reservation. Provider-reported token usage is recorded when supplied. Live activation, benchmarking and autonomous selection remain open.",
       "evidence_level": "SOURCE_INSPECTED_ONLY",
       "production_verified": false,
       "acceptance_test": "Select provider, enforce budget and data privacy, record cost, handle expired key/outage, optionally local model",

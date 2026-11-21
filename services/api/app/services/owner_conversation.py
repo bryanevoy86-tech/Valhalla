@@ -31,6 +31,7 @@ class TurnIn(BaseModel):
     turn_id: UUID
     message: str = Field(min_length=1, max_length=8000)
     attachment_ids: list[UUID] = Field(default_factory=list, max_length=8)
+    provider_data_class: Literal["PRIVATE", "SYNTHETIC"] = "PRIVATE"
 
 class UploadIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -101,7 +102,7 @@ def decode_upload(payload):
         raise HTTPException(422, "Attachment filename, bytes, checksum or declared type invalid") from None
     return data
 
-def answer(db, message, attachments, conversation_id=None):
+def answer(db, message, attachments, turn_id=None, provider_data_class="PRIVATE"):
     text = " ".join(message.casefold().strip().rstrip("?! .").split())
     # Exact allowlisted conversational queries, not substring-triggered actions.
     questions = {"status", "what's happening with valhalla today", "what is happening with valhalla today",
@@ -110,9 +111,9 @@ def answer(db, message, attachments, conversation_id=None):
     if text not in questions:
         # Only the explicitly authorized text inference lane may contact a provider.
         # Attachments are never forwarded by this path.
-        if conversation_id is not None and not attachments:
+        if turn_id is not None and not attachments:
             try:
-                advisory = advisory_reply(db, conversation_id, message)
+                advisory = advisory_reply(db, turn_id, message, provider_data_class)
             except SQLAlchemyError:
                 db.rollback()
                 raise HTTPException(503, "Advisory context unavailable") from None
@@ -187,12 +188,15 @@ def install(router):
         if existing:
             if (existing.conversation_id, existing.message, existing.attachment_ids)!=(conversation_id,message,ids):
                 raise HTTPException(409, "Turn ID already used")
+            if existing.evidence.get("requested_provider_class", "PRIVATE") != payload.provider_data_class:
+                raise HTTPException(409, "Turn classification already recorded")
             return turn_meta(existing)
         for aid in payload.attachment_ids:
             row = db.get(OwnerAttachment, aid)
             if row is None or row.conversation_id != conversation_id:
                 raise HTTPException(404, "Attachment not found in conversation")
-        reply, evidence = answer(db, message, ids, conversation_id)
+        reply, evidence = answer(db, message, ids, payload.turn_id, payload.provider_data_class)
+        evidence["requested_provider_class"] = payload.provider_data_class
         row = OwnerTurn(id=payload.turn_id, conversation_id=conversation_id,message=message,reply=reply,evidence=evidence,attachment_ids=ids)
         db.add(row)
         commit(db)

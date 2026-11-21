@@ -9,9 +9,9 @@ This map captures material historical contradictions and records the current app
 
 ### Legacy / Clone / Mirror Definitions
 - Older position: Legacy, clone, and mirror were often treated interchangeably as revenue multipliers.
-- Later position: Legacy/Clone represent production expansion; Mirror is simulation/reflection safety infrastructure.
-- Current approved doctrine: Keep clone (production) and mirror (simulation) as distinct architecture lanes.
-- Current code status: PARTIAL (documented in architecture and protocol docs; limited direct runtime mirror implementation proof in this branch).
+- Earlier branch interpretation: Legacy/Clone represented production expansion and mirrors represented simulation infrastructure. The owner superseded that interpretation.
+- Current approved doctrine: Mirrors are regional operating instances of a Legacy and retain the business identity. Clones reproduce proven business playbooks for distinct businesses. Simulation and safety replicas are separate infrastructure.
+- Current code status: The branch rehearses distinct clone and regional mirror targets in the Legacy registry. Staged regional synchronization, traffic and recovery still require runtime proof.
 - Professional review required: No.
 
 ### Trust Timing and Structure

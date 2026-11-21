@@ -31,7 +31,7 @@ This register identifies code evidence, missing integration, and the acceptance 
 | Workstream | Actual source anchors | Remaining functional proof |
 |---|---|---|
 | Five initial owner legacies | services/api/app/models/completion_registry.py; docs/HEIMDALL_DEFINITION_OF_DONE.md | Each owner-approved mandate, domain namespace, worker, durable ledger, cash-flow evidence and restrictions |
-| Clones and mirrors | docs/VALHALLA_DOCTRINE_CONFLICT_MAP.md; docs/PHASE3_INTEGRATED_ARCHITECTURE.md | Clones are live expansion; mirrors are simulation/safety. No unsupported real deployment claims |
+| Clones and mirrors | docs/VALHALLA_DOCTRINE_CONFLICT_MAP.md; docs/PHASE3_INTEGRATED_ARCHITECTURE.md | Clones reproduce proven business playbooks. Mirrors are regional operating instances of Legacies. Simulations and safety replicas are separate. |
 | Product Foundry: subordinate subscription systems only | docs/CODEX_SYSTEM_FINISH_PASSES.md; services/api/app/services/prime_business_execution.py | Actual downloadable products, customer acquisition, billing, fulfillment, refunds, tenant isolation and receipts |
 | Venture Foundry: new independent cross-industry businesses | docs/CODEX_SYSTEM_FINISH_PASSES.md; docs/PHASE3_INTEGRATED_ARCHITECTURE.md | Scheduled lawful discovery, evaluation, validation, build, operation, actual sales, Mimir feedback |
 | Real estate: wholesaling, BRRRR, rental, flip and hold, buyer matching, stay-in-home and contractors | docs/MILLION_PATH_STRATEGY_LAYER.md; services/api/app/models/deal.py | Real licensed/legal workflows, diligence, underwriting, contracts, buyer matching and verified closed outcomes |
