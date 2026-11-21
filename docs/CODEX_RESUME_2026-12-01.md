@@ -456,3 +456,7 @@ The following are staging gates for existing workstreams. Record the approved en
 ### Norns calibration by forecast horizon
 
 Use the private `GET /api/prime/norns/calibration` with `estimate_source`, `cohort` and optional `horizon_seconds`. Probability buckets report verified sample counts, mean forecasts and observed frequencies. A blank score or empty bucket list means eligible evidence is absent. Specialist reports calibrate against their assignment horizon. A late holdout marker is excluded from scoring and remains excluded from training and ordinary calibration. Genuine outcomes beyond the internal Factory fixture need separate observation.
+
+### Factory receipt contradictions
+
+TYR, LOKI, MIMIR and HEIMDALL report `factory_evidence_reconciliation`, including the checked action count, exact verified approval references and contradictions. Prime shadow reassessment includes `factory_evidence_contradictions` and holds when the current receipts disagree. Check the cited approval, artifact or Mimir receipt against canonical work. Re-run after reconciling the source records, with provenance intact. The bounded review covers the 20 most recent Factory actions in the exact scope. A cleared advisory does not authorize execution or replace independent Loki.

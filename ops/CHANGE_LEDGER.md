@@ -861,3 +861,7 @@ Development commit `308e1b1b39d2a88fc541ba950cf0da2ba062bcec` surfaces digest-ve
 ## November 21 — Norns calibration by horizon
 
 Development commit `040a7731ca1294c6de34b73c3d3153994d17d37a` adds bounded probability reliability buckets, exact horizon filtering and holdout enrollment revalidation. Fixture forecasts of 0.30 and 0.80 had observed frequencies of 0 and 1 with a combined Brier score of 0.065. A nonmatching horizon had no score. An altered, late holdout enrollment was excluded from both scoring cohorts and training. All four hosted jobs passed in [run 44958784969](https://github.com/bryanevoy86-tech/Valhalla/actions/runs/44958784969). Local executor was unavailable.
+
+## November 21 — Factory contradiction rehearsal
+
+Development commit `a622acf57be1a756d5c537b26767f7594bc213b2` compares Factory work state with exact approval, artifact and Mimir receipts. The integrated fixture altered two receipts. TYR excluded the mismatched approval, Prime recorded two blockers and HOLD, and the conflicting Mimir result was excluded. Restoring both original fixture receipts recovered the verified result and cleared the contradictions on the next advisory. All four hosted jobs passed in [run 44959014128](https://github.com/bryanevoy86-tech/Valhalla/actions/runs/44959014128).
