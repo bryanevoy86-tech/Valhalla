@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
+from app.core.dependencies import require_prime_control_key
 from app.schemas.decision_outcome import (
     DecisionOutcomeCreate,
     DecisionOutcomeOut,
@@ -22,6 +23,7 @@ from app.services.decision_outcome import (
 router = APIRouter(
     prefix="/heimdall/decisions",
     tags=["Heimdall", "Meta-Learning"],
+    dependencies=[Depends(require_prime_control_key)],
 )
 
 

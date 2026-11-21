@@ -24,6 +24,7 @@ class DealLifecycleSummary(BaseModel):
 
 class RunLifecycleActionRequest(BaseModel):
     backend_deal_id: int
+    inputs: dict = Field(default_factory=dict)
     action: str  # e.g. "run_underwriting", "match_buyers", "prepare_closing", "notify_parties", "profit_allocation"
 
 

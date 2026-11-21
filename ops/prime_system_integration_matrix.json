@@ -1,0 +1,1284 @@
+{
+  "schema_version": 1,
+  "generated_date": "2026-11-19",
+  "policy": "Source presence and focused tests are not proof of autonomous commercial operation. Never mark DONE without scope-specific end-to-end evidence. Full vision additions are source-anchored readiness contracts, not proof of implementation; conflicting doctrine requires owner ratification.",
+  "baseline_branch": "fix/fail-closed-operations-20261119",
+  "capabilities": [
+    {
+      "id": "api_wiring",
+      "priority": "P0",
+      "source_paths": [
+        "services/api/app/main.py",
+        "services/api/start.py"
+      ],
+      "source_observation": "Canonical FastAPI import registered 36 critical routers and all 91 required routes in the isolated runtime.",
+      "evidence_level": "FOCUSED_CI_TESTED",
+      "production_verified": false,
+      "acceptance_test": "Prove every mandatory router imports in a clean canonical app; no missing OpenAPI paths or silent startup success",
+      "depends_on": [
+        "auth",
+        "legacy_execution"
+      ],
+      "owner_external_authorization_required": false,
+      "continuation": {
+        "next_implementation": "Exercise the registered routes in an authorized staging environment with migrated PostgreSQL.",
+        "existing_test_evidence": "Canonical route probe verified all 91 required methods and paths.",
+        "owner_action": "Internal continuation is authorized under the standing development scope.",
+        "required_acceptance_evidence_field": "acceptance_test"
+      }
+    },
+    {
+      "id": "auth",
+      "priority": "P0",
+      "source_paths": [
+        "services/api/app/routers/auth_weweb.py",
+        "services/api/app/core/dependencies.py",
+        "services/api/app/security/token_revocation.py",
+        "services/api/app/models/auth_revocations.py",
+        "alembic/versions/20261119_persistent_auth_revocation.py"
+      ],
+      "source_observation": "WeWeb logout and refresh revocations moved from process-local memory into hashed persistent database records; owner reset now always requires configured secret. SQLite tests pass. Other auth paths and production migration unverified.",
+      "evidence_level": "SQLITE_INTEGRATION_TESTED",
+      "production_verified": false,
+      "acceptance_test": "Persistent logout/revocation and RBAC across restart; ownership and tenant-bound denies; real login/logout smoke",
+      "depends_on": [],
+      "owner_external_authorization_required": false,
+      "continuation": {
+        "next_implementation": "Verify scoped authorization, persistent revocation and fresh login on staging.",
+        "existing_test_evidence": "See SQLITE_INTEGRATION_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
+        "owner_action": "Internal continuation is authorized under the standing development scope.",
+        "required_acceptance_evidence_field": "acceptance_test"
+      }
+    },
+    {
+      "id": "runtime_governance",
+      "priority": "P0",
+      "source_paths": [
+        "services/api/app/core/runtime_flags.py",
+        "services/api/app/routers/completion_registry.py",
+        "services/api/app/core/autonomy_governor.py",
+        "docs/PRIME_AUTONOMY_SAFETY_CONTRACT.md",
+        "services/api/app/services/prime_business_execution.py",
+        "tests/test_business_factory_pilot.py"
+      ],
+      "source_observation": "One internal draft execution lane uses persisted standing owner mandates, separate grant/worker authorization, exact scope, usage/expiry and revocation checks. Isolated SQLite and PostgreSQL one-use concurrency tests passed. Other dispatch paths, continuous full-system specialist coverage and provider effects remain unverified.",
+      "evidence_level": "POSTGRES_INTEGRATION_TESTED",
+      "production_verified": false,
+      "acceptance_test": "Governance unit cases and internal SQLite Factory killswitch pass; full production acceptance requires every external adapter using trusted persisted approval/consent/budget gates, adversarial agent tests, durable circuit breakers, and real Postgres worker failure injection.",
+      "depends_on": [
+        "auth"
+      ],
+      "owner_external_authorization_required": false,
+      "continuation": {
+        "next_implementation": "Extend hard gates to remaining operating routes and rehearse recovery after governance denial.",
+        "existing_test_evidence": "See POSTGRES_INTEGRATION_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
+        "owner_action": "Internal continuation is authorized under the standing development scope.",
+        "required_acceptance_evidence_field": "acceptance_test"
+      }
+    },
+    {
+      "id": "discovery_sources",
+      "priority": "P1",
+      "source_paths": [
+        "scripts/ingest/ingest_sources.py",
+        "services/api/app/research/service.py",
+        "services/api/app/services/foundry_intake.py",
+        "services/api/tests/test_economic_control.py"
+      ],
+      "source_observation": "Durable local demand and procurement exports now accept owner-enrolled Ed25519 source signatures and enforce timestamp, replay, source rights and freshness checks. No outbound licensed feed has been activated.",
+      "evidence_level": "SQLITE_INTEGRATION_TESTED",
+      "production_verified": false,
+      "acceptance_test": "On schedule, acquire permissible fresh independent sources with attribution and dedupe; fail on revoked/expired rights",
+      "depends_on": [
+        "runtime_governance",
+        "scheduling"
+      ],
+      "owner_external_authorization_required": false,
+      "continuation": {
+        "next_implementation": "Connect one approved outbound-free staging export connector and prove licensed, fresh demand evidence.",
+        "existing_test_evidence": "test_economic_control.py exercises a valid signed source, timestamp rejection, tampering, deduplication and the scoped Odin to Prime rehearsal.",
+        "owner_action": "Internal continuation is authorized under the standing development scope.",
+        "required_acceptance_evidence_field": "acceptance_test"
+      }
+    },
+    {
+      "id": "universal_evaluator",
+      "priority": "P1",
+      "source_paths": [
+        "services/api/app/services/universal_opportunity_evaluator.py",
+        "services/api/app/routers/completion_registry.py",
+        "services/api/tests/test_completion_registry.py",
+        "services/api/tests/test_prime_control_and_decision_integrity.py"
+      ],
+      "source_observation": "Existing completion-registry suite now required in CI and passed; generic proposal rejects inconsistent margin/capital, snapshots final recommendation after risk gates, and reports Tyr/Forseti independent checks NOT_VERIFIED. Supplied candidates only; no autonomous discovery or external execution proved.",
+      "evidence_level": "FOCUSED_CI_TESTED",
+      "production_verified": false,
+      "acceptance_test": "Cross-industry cases produce repeatable evidence-locked predictions; unknown candidates yield abstention, not artificial opportunity",
+      "depends_on": [
+        "discovery_sources"
+      ],
+      "owner_external_authorization_required": false,
+      "continuation": {
+        "next_implementation": "Expand source-weighted comparative evidence and stage legally scoped evaluator dependencies.",
+        "existing_test_evidence": "See FOCUSED_CI_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
+        "owner_action": "Internal continuation is authorized under the standing development scope.",
+        "required_acceptance_evidence_field": "acceptance_test"
+      }
+    },
+    {
+      "id": "knowledge",
+      "priority": "P1",
+      "source_paths": [
+        "services/api/app/routers/completion_registry.py",
+        "docs/PHASE3_INTEGRATED_ARCHITECTURE.md"
+      ],
+      "source_observation": "Knowledge and source governance registry code exists; freshness/permission runtime propagation unverified",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "Bad/injected/stale sources blocked from live decisions; citations, correction version and expiry enforced",
+      "depends_on": [
+        "discovery_sources"
+      ],
+      "owner_external_authorization_required": false,
+      "continuation": {
+        "next_implementation": "Exercise source lifecycle revocation and conflict propagation across actual specialist consumers.",
+        "existing_test_evidence": "See SOURCE_INSPECTED_ONLY and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
+        "owner_action": "Internal continuation is authorized under the standing development scope.",
+        "required_acceptance_evidence_field": "acceptance_test"
+      }
+    },
+    {
+      "id": "learning_mimir",
+      "priority": "P1",
+      "source_paths": [
+        "services/api/app/services/heimdall_outcomes.py",
+        "services/api/app/routers/decision_outcome.py",
+        "services/api/app/routers/completion_registry.py",
+        "services/api/tests/test_prime_control_and_decision_integrity.py",
+        "services/api/app/services/owner_memory.py",
+        "services/api/app/services/owner_specialist_context.py"
+      ],
+      "source_observation": "Existing exact scoped evidence remains intact. Owner decisions can carry purpose, rationale and scoped dependencies, and recent differing statements under the same topic trigger a review flag. Provider-backed learning and semantic contradiction analysis remain open.",
+      "evidence_level": "SQLITE_INTEGRATION_TESTED",
+      "production_verified": false,
+      "acceptance_test": "Record actual verified outcomes in PostgreSQL and prove replay correction without holdout leakage",
+      "depends_on": [
+        "universal_evaluator",
+        "legacy_execution"
+      ],
+      "owner_external_authorization_required": false,
+      "continuation": {
+        "next_implementation": "Connect reviewed outcomes across scopes and compare evidence against new claims and proposed actions.",
+        "existing_test_evidence": "test_owner_conversation.py exercises rationale, visible dependencies, owner scope and repeated-topic conflict recall.",
+        "owner_action": "Internal continuation is authorized under the standing development scope.",
+        "required_acceptance_evidence_field": "acceptance_test"
+      }
+    },
+    {
+      "id": "legacy_instances",
+      "priority": "P0",
+      "source_paths": [
+        "services/api/app/routers/completion_registry.py",
+        "services/api/app/models/completion_registry.py"
+      ],
+      "source_observation": "Legacy provisioning, policy sync, multi-instance work-assignment records exist",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "Two isolated legacies may not see or steal each other's tasks; identity/policy and failover tests pass",
+      "depends_on": [
+        "auth",
+        "runtime_governance"
+      ],
+      "owner_external_authorization_required": false,
+      "continuation": {
+        "next_implementation": "Enroll startup Legacies and independently verify namespaces, scope isolation and runtime recovery.",
+        "existing_test_evidence": "See SOURCE_INSPECTED_ONLY and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
+        "owner_action": "Internal continuation is authorized under the standing development scope.",
+        "required_acceptance_evidence_field": "acceptance_test"
+      }
+    },
+    {
+      "id": "legacy_execution",
+      "priority": "P0",
+      "source_paths": [
+        "services/api/app/services/prime_business_execution.py",
+        "services/api/app/routers/prime_business_factory.py",
+        "tests/test_factory_postgres.py",
+        "tests/test_business_factory_pilot.py"
+      ],
+      "source_observation": "Single internal listing-draft lane and verified database receipts work in SQLite and disposable PostgreSQL. A finite, expiring, revocable standing internal-draft mandate passed SQLite tests and a real PostgreSQL two-worker one-use cap test. No provider execution, crash recovery or autonomous revenue proved. Internal lane now reconciles concurrent submissions, skips waiting/blocked entries, and passes PostgreSQL injected rollback and lost commit acknowledgement tests. Not generalized process-kill/provider recovery.",
+      "evidence_level": "POSTGRES_INTEGRATION_TESTED",
+      "production_verified": false,
+      "acceptance_test": "Real PostgreSQL task lifecycle survives restarts and duplicates; every completed status has independently verified receipt",
+      "depends_on": [
+        "legacy_instances",
+        "schema_and_migrations"
+      ],
+      "owner_external_authorization_required": false,
+      "continuation": {
+        "next_implementation": "Exercise dispatch and verified outcomes on the first authorized operating adapter.",
+        "existing_test_evidence": "See POSTGRES_INTEGRATION_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
+        "owner_action": "Internal continuation is authorized under the standing development scope.",
+        "required_acceptance_evidence_field": "acceptance_test"
+      }
+    },
+    {
+      "id": "schema_and_migrations",
+      "priority": "P0",
+      "source_paths": [
+        "alembic/versions/20261119_factory_legacy_work_schema.py",
+        "alembic/env.py",
+        "alembic/versions/20261119_persistent_auth_revocation.py",
+        "alembic/versions/20261123_owner_disposition.py"
+      ],
+      "source_observation": "Prepared additive Factory and JWT revocation migrations; both upgraded and reran idempotently on disposable PostgreSQL with preexisting data preserved. Not complete historical chain or Render staging migration.",
+      "evidence_level": "POSTGRES_INTEGRATION_TESTED",
+      "production_verified": false,
+      "acceptance_test": "Rehearse upgrade and no-data-loss on disposable PostgreSQL; verify exact prod DB, heads and release rollback",
+      "depends_on": [
+        "api_wiring"
+      ],
+      "owner_external_authorization_required": false,
+      "continuation": {
+        "next_implementation": "Rehearse the full deployment migration at staging scale and check restoration from backup.",
+        "existing_test_evidence": "PostgreSQL migration chain preserved prior attachments and required content or a tombstone, with inconsistent states rejected.",
+        "owner_action": "Internal continuation is authorized under the standing development scope.",
+        "required_acceptance_evidence_field": "acceptance_test"
+      }
+    },
+    {
+      "id": "scheduling",
+      "priority": "P0",
+      "source_paths": [
+        "services/api/tools/cron/daily_email_ping.py",
+        "services/api/tools/cron/business_factory_tick.py",
+        "services/api/tools/cron/business_factory_worker.py",
+        "services/api/tools/cron/specialist_schedule_worker.py",
+        "services/api/app/routers/prime_specialist_schedules.py",
+        "services/api/app/pantheon/monitor.py",
+        "services/api/tests/test_pantheon_assignments.py"
+      ],
+      "source_observation": "Isolated advisory specialist cadence writes a scoped report and advances due time in one transaction. PostgreSQL tests demonstrate concurrent workers cannot both take the same due row. No Render activation, independent agent scheduling, or general provider leases.",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "Approved task executes on schedule, with exact host/credential controls; logs show durable receipt and no double issue",
+      "depends_on": [
+        "legacy_execution"
+      ],
+      "owner_external_authorization_required": false,
+      "continuation": {
+        "next_implementation": "Prove missed and expired work recovery during a sustained multi-worker staging run. Address the single pending trigger slot when multiple independent events arrive.",
+        "existing_test_evidence": "test_pantheon_assignments.py replays an interrupted scope from persisted state, discards a verified duplicate, and records the missed schedule slot.",
+        "owner_action": "Internal continuation is authorized under the standing development scope.",
+        "required_acceptance_evidence_field": "acceptance_test"
+      }
+    },
+    {
+      "id": "builder_code",
+      "priority": "P0",
+      "source_paths": [
+        "scripts/builder_assignment_worker.py",
+        "services/api/app/routers/builder.py",
+        "services/api/app/core/builder_path_policy.py",
+        "tests/test_builder_review_boundary.py",
+        "scripts/builder_materialize_review.py",
+        "tests/test_builder_materialize_review.py",
+        "scripts/builder_test_review.py",
+        "tests/test_builder_offline_runner.py",
+        "services/api/tests/test_builder_assignments.py"
+      ],
+      "source_observation": "Existing snapshot-bound isolated test assignments now persist a bounded lease recovery counter and surface exhaustion without accepting a missing or stale receipt. Reviewed GitHub submission and general candidate generation remain pending.",
+      "evidence_level": "SQLITE_INTEGRATION_TESTED",
+      "production_verified": false,
+      "acceptance_test": "Prove authorized durable development assignments, snapshot-bound artifact export, isolated fresh checkout and actual regression/security tests, scoped PR review and staged release. No API mutation of running source or unrestricted pushes.",
+      "depends_on": [
+        "auth",
+        "runtime_governance"
+      ],
+      "owner_external_authorization_required": false,
+      "continuation": {
+        "next_implementation": "Package review-ready candidates for GitHub with a separately authorized submission identity.",
+        "existing_test_evidence": "test_builder_assignments.py exercises lease reclaims, exhaustion, terminal status and stale receipt handling.",
+        "owner_action": "Internal continuation is authorized under the standing development scope.",
+        "required_acceptance_evidence_field": "acceptance_test"
+      }
+    },
+    {
+      "id": "ai_providers",
+      "priority": "P1",
+      "source_paths": [
+        "services/api/app/routers/provider_pricing.py",
+        "services/api/app/routers/specialist_probes.py",
+        "services/api/app/routers/model_provider.py",
+        "app/ai/providers.py",
+        "services/api/app/services/owner_advisory_model.py",
+        "services/api/app/routers/provider_evidence.py",
+        "services/api/tests/test_provider_evidence.py"
+      ],
+      "source_observation": "Dated owner-attested quotes, role benchmark evidence, exact synthetic usage reconciliation and a budget-ranked staging candidate are recorded. Loki candidates exclude the active Prime model. External catalog discovery, provider billing and live suitability are pending.",
+      "evidence_level": "SQLITE_INTEGRATION_TESTED",
+      "production_verified": false,
+      "acceptance_test": "Select provider, enforce budget and data privacy, record cost, handle expired key/outage, optionally local model",
+      "depends_on": [
+        "runtime_governance"
+      ],
+      "owner_external_authorization_required": false,
+      "continuation": {
+        "next_implementation": "Exercise scoped benchmark, cost and quota enforcement with approved staging transport.",
+        "existing_test_evidence": "See SQLITE_INTEGRATION_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
+        "owner_action": "Internal continuation is authorized under the standing development scope.",
+        "required_acceptance_evidence_field": "acceptance_test"
+      }
+    },
+    {
+      "id": "marketing",
+      "priority": "P0",
+      "source_paths": [
+        "services/api/app/routers/foundry_checkout.py",
+        "services/api/app/routes/marketing.py",
+        "services/api/app/routers/marketing.py",
+        "services/api/app/services/marketing_service.py"
+      ],
+      "source_observation": "Private simulation traces scoped visits through signed checkout capture and refunds and tests conversion attribution. Live publishing, audience consent and paid-order attribution are pending.",
+      "evidence_level": "SQLITE_INTEGRATION_TESTED",
+      "production_verified": false,
+      "acceptance_test": "True platform authenticated publish and provider receipt, lawful scheduling/consent, click attribution to paid order",
+      "depends_on": [
+        "auth",
+        "media",
+        "commerce"
+      ],
+      "owner_external_authorization_required": true,
+      "continuation": {
+        "next_implementation": "Verify consent, targeting and demand using an approved channel and independently sourced attribution.",
+        "existing_test_evidence": "See SQLITE_INTEGRATION_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
+        "owner_action": "Separate owner authorization applies before external execution or staging activation.",
+        "required_acceptance_evidence_field": "acceptance_test"
+      }
+    },
+    {
+      "id": "media",
+      "priority": "P1",
+      "source_paths": [
+        "services/api/app/routers/media_engine.py",
+        "services/api/app/services/media_engine.py"
+      ],
+      "source_observation": "Media channel/content records exist; false published status blocked; no real video/social publisher integrated",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "Produce final legal asset, publish with provider confirmation, match URL and verified account, update audit history",
+      "depends_on": [
+        "auth"
+      ],
+      "owner_external_authorization_required": true,
+      "continuation": {
+        "next_implementation": "Bind reviewed content to an independently verified authorized publishing receipt.",
+        "existing_test_evidence": "See SOURCE_INSPECTED_ONLY and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
+        "owner_action": "Separate owner authorization applies before external execution or staging activation.",
+        "required_acceptance_evidence_field": "acceptance_test"
+      }
+    },
+    {
+      "id": "subscription_saas",
+      "priority": "P1",
+      "source_paths": [
+        "services/api/tests/test_saas_tenant_entitlements.py",
+        "services/api/app/routers/saas_access.py",
+        "services/api/app/models/marketing.py"
+      ],
+      "source_observation": "Prime and owner authorization protect administrative mutations. Internal revocable WeWeb trial access binds account, tenant, plan, expiry and permitted module. Paid entitlements and tenant-bound engine data paths are pending.",
+      "evidence_level": "SQLITE_INTEGRATION_TESTED",
+      "production_verified": false,
+      "acceptance_test": "Real checkout subscription grants scoped rights, renewal/payment failure revokes, subscriptions isolated from Prime",
+      "depends_on": [
+        "auth",
+        "finance_webhooks"
+      ],
+      "owner_external_authorization_required": true,
+      "continuation": {
+        "next_implementation": "Prove tenant scoping, billing events, entitlements, activation and revocation in the chosen modules.",
+        "existing_test_evidence": "See SQLITE_INTEGRATION_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
+        "owner_action": "Separate owner authorization applies before external execution or staging activation.",
+        "required_acceptance_evidence_field": "acceptance_test"
+      }
+    },
+    {
+      "id": "commerce",
+      "priority": "P0",
+      "source_paths": [
+        "services/api/app/routers/foundry_checkout.py",
+        "services/api/app/routers/prime_business_factory.py",
+        "services/api/app/models/media_engine.py"
+      ],
+      "source_observation": "Existing checkout rehearsals now bind exact listing evidence at capture, gate capture on emergency and containment, and allow refunds during an emergency stop. Settlement is a fixture comparison and actual profit remains unknown.",
+      "evidence_level": "SQLITE_INTEGRATION_TESTED",
+      "production_verified": false,
+      "acceptance_test": "Real approved listing/checkout/delivery/refund, buyer rights and content-hash verified, receipt tied to business",
+      "depends_on": [
+        "legacy_execution",
+        "finance_webhooks"
+      ],
+      "owner_external_authorization_required": true,
+      "continuation": {
+        "next_implementation": "Run the first authorized storefront lifecycle with support, costs and independently matched settlement receipts.",
+        "existing_test_evidence": "test_product_artifact_workflow.py exercises capture blocking and continued fixture refund during emergency stop.",
+        "owner_action": "Separate owner authorization applies before external execution or staging activation.",
+        "required_acceptance_evidence_field": "acceptance_test"
+      }
+    },
+    {
+      "id": "finance_webhooks",
+      "priority": "P0",
+      "source_paths": [
+        "services/api/app/models/foundry_checkout.py",
+        "services/api/app/providers/stripe_adapter.py",
+        "services/api/app/webhooks/stripe.py",
+        "services/api/tests/test_product_artifact_workflow.py"
+      ],
+      "source_observation": "Signed local capture and refund deltas can reconcile with unique scoped statement-fixture entries. Mismatches show the exact difference and cannot attach a settlement receipt. Live payment and bank settlement remain pending.",
+      "evidence_level": "SQLITE_INTEGRATION_TESTED",
+      "production_verified": false,
+      "acceptance_test": "Signed timestamped webhooks idempotently persist, settle, reverse, reconcile Stripe/Payhip events; provider receipt",
+      "depends_on": [
+        "auth",
+        "schema_and_migrations"
+      ],
+      "owner_external_authorization_required": true,
+      "continuation": {
+        "next_implementation": "Verify one authorized payment-provider sandbox event stream and independently sourced bank settlement evidence.",
+        "existing_test_evidence": "test_product_artifact_workflow.py exercises exact matches, difference reporting and bound-receipt replay in an integrated checkout.",
+        "owner_action": "Separate owner authorization applies before external execution or staging activation.",
+        "required_acceptance_evidence_field": "acceptance_test"
+      }
+    },
+    {
+      "id": "payouts_and_funds",
+      "priority": "P0",
+      "source_paths": [
+        "services/api/app/integrations/stripe/payouts.py",
+        "services/api/app/core/runtime_flags.py"
+      ],
+      "source_observation": "Old Stripe payout returned generated fake IDs; new code blocks unimplemented live provider action",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "No transfer without owner limit; provider payout id and settlement reconciled; no fabricated in_transit state",
+      "depends_on": [
+        "finance_webhooks",
+        "runtime_governance"
+      ],
+      "owner_external_authorization_required": true,
+      "continuation": {
+        "next_implementation": "Prepare verified settlement adapters and owner-mandate validation before any payout.",
+        "existing_test_evidence": "See SOURCE_INSPECTED_ONLY and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
+        "owner_action": "Separate owner authorization applies before external execution or staging activation.",
+        "required_acceptance_evidence_field": "acceptance_test"
+      }
+    },
+    {
+      "id": "contracts_legal",
+      "priority": "P1",
+      "source_paths": [
+        "services/api/app/routers/contracts.py",
+        "services/api/app/models/contracts.py"
+      ],
+      "source_observation": "Contract template and document routes exist; actual external signature/legal approvals unproven",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "Jurisdiction and licensed review gates; provider envelope true signed-event receipt and revocation evidence",
+      "depends_on": [
+        "auth",
+        "runtime_governance"
+      ],
+      "owner_external_authorization_required": true,
+      "continuation": {
+        "next_implementation": "Prepare provider contracts and professional review intake before execution.",
+        "existing_test_evidence": "See SOURCE_INSPECTED_ONLY and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
+        "owner_action": "Separate owner authorization applies before external execution or staging activation.",
+        "required_acceptance_evidence_field": "acceptance_test"
+      }
+    },
+    {
+      "id": "real_estate_execution",
+      "priority": "P1",
+      "source_paths": [
+        "services/api/app/routers/execution.py",
+        "services/api/app/routers/heimdall.py",
+        "services/api/tests/test_system_integrity.py",
+        "services/api/tests/test_flow_full_pipeline.py",
+        "services/api/tests/test_fake_live_operating_day.py"
+      ],
+      "source_observation": "SQLite regressions cover audited deal stages, transactional intake, explicit deal-to-brief linkage, underwriting freezes and a controlled operating-day rehearsal. External closing, payment and market-specific outcomes remain unverified",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "Intake-to-deal-to-contract-to-payment simulation then lawful real deal using canonical work lifecycle",
+      "depends_on": [
+        "legacy_execution",
+        "universal_evaluator"
+      ],
+      "owner_external_authorization_required": false,
+      "continuation": {
+        "next_implementation": "Exercise a complete legally scoped practice transaction and documented approvals.",
+        "existing_test_evidence": "See SOURCE_INSPECTED_ONLY and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
+        "owner_action": "Internal continuation is authorized under the standing development scope.",
+        "required_acceptance_evidence_field": "acceptance_test"
+      }
+    },
+    {
+      "id": "notifications",
+      "priority": "P1",
+      "source_paths": [
+        "services/api/app/workers/outbox_dispatcher.py",
+        "services/api/app/core/dependencies.py"
+      ],
+      "source_observation": "Reference dispatcher can no longer record unsent messages dispatched; actual provider pathway must be identified",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "Owner-authorized email/SMS external receipts with opt-out, retry, replay protection and consent logs",
+      "depends_on": [
+        "auth",
+        "legacy_execution"
+      ],
+      "owner_external_authorization_required": false,
+      "continuation": {
+        "next_implementation": "Build a durable non-delivery staging outbox and verify an independently authorized delivery receipt.",
+        "existing_test_evidence": "See SOURCE_INSPECTED_ONLY and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
+        "owner_action": "Internal continuation is authorized under the standing development scope.",
+        "required_acceptance_evidence_field": "acceptance_test"
+      }
+    },
+    {
+      "id": "operations_observability",
+      "priority": "P0",
+      "source_paths": [
+        "services/api/app/heimdall/readiness.py",
+        "services/api/app/main.py",
+        "services/api/app/cron/daily_ops.py",
+        "services/api/app/routers/system_self_check.py",
+        "services/api/tests/test_system_self_check.py",
+        "services/api/app/services/owner_operating_brief.py"
+      ],
+      "source_observation": "Owner briefings expose recorded discovery failures and Builder lease health. The private driving summary provides reduced read-only attention counts. Continuous external monitoring and notification transport remain open.",
+      "evidence_level": "SQLITE_INTEGRATION_TESTED",
+      "production_verified": false,
+      "acceptance_test": "Red/green live status based on DB/worker/provider receipts; alert on stalled jobs, missing routers and invalid migrations",
+      "depends_on": [
+        "api_wiring",
+        "legacy_execution"
+      ],
+      "owner_external_authorization_required": false,
+      "continuation": {
+        "next_implementation": "Verify worker recovery and alerts in a controlled always-on staging run.",
+        "existing_test_evidence": "Owner integration tests exercise local and driving briefing contracts. Pantheon assignment tests show verified missed cadence records in briefing evidence.",
+        "owner_action": "Internal continuation is authorized under the standing development scope.",
+        "required_acceptance_evidence_field": "acceptance_test"
+      }
+    },
+    {
+      "id": "weweb_frontend",
+      "priority": "P1",
+      "source_paths": [
+        "services/api/app/routers/auth_weweb.py",
+        "docs/CURRENT_SYSTEM_TRUTH.md",
+        "services/api/tests/test_saas_tenant_entitlements.py",
+        "services/api/app/routers/owner_weweb.py"
+      ],
+      "source_observation": "A revocable owner JWT reads and writes the canonical JARVIS conversation and local upload/extraction lane without a browser Prime key. Restricted extract content is hidden from history, and driving mode provides short read-only briefings.",
+      "evidence_level": "SQLITE_INTEGRATION_TESTED",
+      "production_verified": false,
+      "acceptance_test": "Owner login, real dashboard, approval controls, data updates and session expiry tested in WeWeb against deployment",
+      "depends_on": [
+        "auth",
+        "api_wiring"
+      ],
+      "owner_external_authorization_required": true,
+      "continuation": {
+        "next_implementation": "Connect and rehearse the actual WeWeb UI, visible approval routing and persistent session UX.",
+        "existing_test_evidence": "test_saas_tenant_entitlements.py verifies owner-only conversation, attachment metadata, upload/extract, no-store, subscriber denial and revocation.",
+        "owner_action": "Separate owner authorization applies before external execution or staging activation.",
+        "required_acceptance_evidence_field": "acceptance_test"
+      }
+    },
+    {
+      "id": "ci_release",
+      "priority": "P0",
+      "source_paths": [
+        ".github/workflows/critical-controls-ci.yml",
+        ".github/workflows/disable-ci.yml",
+        "scripts/prime_runtime_route_probe.py",
+        "services/api/requirements.txt"
+      ],
+      "source_observation": "CI run 44748568129 passed 190 targeted tests including full existing completion-registry suite, 13 critical router and 15 route contracts, original five Gods, private Prime controls, SQLite and PostgreSQL. Broad historical pytest collection still reports two known errors. No production release.",
+      "evidence_level": "FOCUSED_CI_TESTED",
+      "production_verified": false,
+      "acceptance_test": "Canonical app starts cleanly; all core safety and workflow tests + prod-like Postgres integration; reviewed release/rollback evidence",
+      "depends_on": [
+        "api_wiring",
+        "schema_and_migrations"
+      ],
+      "owner_external_authorization_required": false,
+      "continuation": {
+        "next_implementation": "Verify staging artifacts, backup and rollback gates on a reviewed release candidate.",
+        "existing_test_evidence": "See FOCUSED_CI_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
+        "owner_action": "Internal continuation is authorized under the standing development scope.",
+        "required_acceptance_evidence_field": "acceptance_test"
+      }
+    },
+    {
+      "id": "prime_private_owner",
+      "priority": "P0",
+      "source_paths": [
+        "services/api/app/services/attachment_parser.py",
+        "services/api/app/services/owner_attachment_extraction.py",
+        "services/api/app/services/owner_conversation.py",
+        "docs/HEIMDALL_DEFINITION_OF_DONE.md",
+        "docs/PHASE3_INTEGRATED_ARCHITECTURE.md",
+        "services/api/app/core/dependencies.py",
+        "services/api/tests/test_prime_control_and_decision_integrity.py",
+        "services/api/tests/test_owner_conversation.py",
+        "services/api/app/routers/owner_weweb.py",
+        "alembic/versions/20261123_owner_disposition.py"
+      ],
+      "source_observation": "Owner-only WeWeb writes are local-only, and existing separate mandates control retention. Expired bytes are unavailable through normal downloads and extracts and cached conversation extracts are redacted on read. Physical deletion and retention enforcement outside these surfaces remain open.",
+      "evidence_level": "SQLITE_INTEGRATION_TESTED",
+      "production_verified": false,
+      "acceptance_test": "Prove no subscriber/clone/tenant can access owner Prime; trace trust and approvals across API, worker, UI, DB and provider adapters.",
+      "depends_on": [
+        "auth",
+        "runtime_governance"
+      ],
+      "owner_external_authorization_required": true,
+      "continuation": {
+        "next_implementation": "Add bounded authorized expiry handling and validate backup retention and restore behavior, then verify environment-level access.",
+        "existing_test_evidence": "test_owner_conversation.py verifies elapsed retention blocks reads, disposition purges active bytes and extracts, and retries, digest conflicts and reused IDs fail safely.",
+        "owner_action": "Separate owner authorization applies before external execution or staging activation.",
+        "required_acceptance_evidence_field": "acceptance_test"
+      }
+    },
+    {
+      "id": "pantheon_five_evaluators",
+      "priority": "P0",
+      "source_paths": [
+        "PANTHEON_SUMMARY.md",
+        "GOVERNANCE_SYSTEM.md",
+        "services/api/app/routers/governance_orchestrator.py",
+        "services/api/app/routers/governance_loki.py",
+        "services/api/app/routers/governance_tyr.py",
+        "services/api/app/main.py",
+        "services/api/tests/test_governance_orchestrator.py",
+        "services/api/tests/test_prime_control_and_decision_integrity.py"
+      ],
+      "source_observation": "All five original specialist evaluators now call directly from the original governance orchestrator, without recursive TestClient requests. Focused tests verify Tyr hard-stop and advisory-only partial coverage. Expanded continuous cross-system Gods and real dispatch gating remain unproven.",
+      "evidence_level": "FOCUSED_CI_TESTED",
+      "production_verified": false,
+      "acceptance_test": "Prove all five independent checks and disagreements reach a real dispatch gate, including legal/ethical hard stops, no forged approvals and reproducible audit.",
+      "depends_on": [
+        "api_wiring",
+        "runtime_governance"
+      ],
+      "owner_external_authorization_required": false,
+      "continuation": {
+        "next_implementation": "Exercise independent outcomes and merge observations through the canonical decision path.",
+        "existing_test_evidence": "See FOCUSED_CI_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
+        "owner_action": "Internal continuation is authorized under the standing development scope.",
+        "required_acceptance_evidence_field": "acceptance_test"
+      }
+    },
+    {
+      "id": "pantheon_expanded_bridge",
+      "priority": "P0",
+      "source_paths": [
+        "services/api/app/routers/foundry_discovery.py",
+        "services/api/app/pantheon/monitor.py",
+        "docs/UNIVERSAL_OPPORTUNITY_PIPELINE.md",
+        "docs/PANTHEON_CALIBRATION_PROTOCOL.md",
+        "services/api/app/services/universal_opportunity_evaluator.py",
+        "ops/VALHALLA_FULL_VISION_TRACEABILITY.md",
+        "docs/PHASE3_INTEGRATED_ARCHITECTURE.md",
+        "services/api/tests/test_pantheon_assignments.py"
+      ],
+      "source_observation": "Six existing specialists now produce role-specific Foundry signals from assigned scope and date-bound opportunity evidence. Prime and Factory enforce the cited source. Broader authorized adapters and external model use are pending.",
+      "evidence_level": "SQLITE_INTEGRATION_TESTED",
+      "production_verified": false,
+      "acceptance_test": "Map historical role/authority variants without losing user intent; test controlled bridge and no unrestricted agent-to-agent tools; owner ratifies conflicting labels. Owner-confirmed 2026-11-20: prove every specialist covers all authorized relevant subsystems via scheduled and event-driven analysis, durable scoped reports to Prime, independent Loki cross-system challenges, and Prime synthesis/decision/verified execution inside existing mandates without routine owner approval; test missing/stale evidence, escalation and tenant isolation.",
+      "depends_on": [
+        "pantheon_five_evaluators",
+        "learning_mimir"
+      ],
+      "owner_external_authorization_required": true,
+      "continuation": {
+        "next_implementation": "Add domain-specific research and evidence retrieval for remaining specialist scope.",
+        "existing_test_evidence": "test_pantheon_assignments.py covers scope-specific receipts, verified outcomes, missed work, duplicate evidence, digest corruption and emergency stop.",
+        "owner_action": "Separate owner authorization applies before external execution or staging activation.",
+        "required_acceptance_evidence_field": "acceptance_test"
+      }
+    },
+    {
+      "id": "norns_probability_calibration",
+      "priority": "P1",
+      "source_paths": [
+        "services/api/app/pantheon/forecasts.py",
+        "docs/PANTHEON_CALIBRATION_PROTOCOL.md",
+        "docs/UNIVERSAL_OPPORTUNITY_PIPELINE.md",
+        "services/api/app/routers/norns_forecasts.py",
+        "services/api/tests/test_norns_forecasts.py"
+      ],
+      "source_observation": "Prospective holdout enrolment persists before resolution or deadline. Holdouts stay outside baseline training and ordinary calibration. Evaluation separates holdouts and ordinary observations by estimate source.",
+      "evidence_level": "SQLITE_INTEGRATION_TESTED",
+      "production_verified": false,
+      "acceptance_test": "Quantify calibration and regret on holdout real outcomes; stop claiming precise first-revenue odds from synthetic scores.",
+      "depends_on": [
+        "universal_evaluator",
+        "learning_mimir"
+      ],
+      "owner_external_authorization_required": false,
+      "continuation": {
+        "next_implementation": "Collect genuine eligible outcome samples and publish measured calibration by cohort.",
+        "existing_test_evidence": "See SQLITE_INTEGRATION_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
+        "owner_action": "Internal continuation is authorized under the standing development scope.",
+        "required_acceptance_evidence_field": "acceptance_test"
+      }
+    },
+    {
+      "id": "owner_commander_voice",
+      "priority": "P1",
+      "source_paths": [
+        "docs/UNIVERSAL_OPPORTUNITY_PIPELINE.md",
+        "docs/HEIMDALL_DEFINITION_OF_DONE.md",
+        "services/api/app/routers/auth_weweb.py"
+      ],
+      "source_observation": "A private driving briefing returns a short read-only summary with emergency state and attention counts. Speech capture, playback, handset validation and voice authorization remain unverified.",
+      "evidence_level": "SQLITE_INTEGRATION_TESTED",
+      "production_verified": false,
+      "acceptance_test": "Prove authentic owner briefing, dissent, Norns odds, A/B/C/Override with recorded decisions, secure voice/mobile controls and fallback behavior.",
+      "depends_on": [
+        "auth",
+        "weweb_frontend",
+        "pantheon_five_evaluators"
+      ],
+      "owner_external_authorization_required": true,
+      "continuation": {
+        "next_implementation": "Implement speech input/output and independently verify safe driving controls and their non-authority.",
+        "existing_test_evidence": "test_saas_tenant_entitlements.py verifies the authenticated read-only driving briefing, including the emergency-stop state. Verified missed cadence counts are included in its attention summary.",
+        "owner_action": "Separate owner authorization applies before external execution or staging activation.",
+        "required_acceptance_evidence_field": "acceptance_test"
+      }
+    },
+    {
+      "id": "five_initial_legacies",
+      "priority": "P0",
+      "source_paths": [
+        "services/api/app/models/completion_registry.py",
+        "docs/HEIMDALL_DEFINITION_OF_DONE.md"
+      ],
+      "source_observation": "Legacy registry and internal work path exist; five independent profitable operations unproven.",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "Prove five owner-selected mandates with tenant isolation, durable worker, lawful external acts, separately reconciled revenue and cash controls.",
+      "depends_on": [
+        "legacy_execution",
+        "auth",
+        "commerce"
+      ],
+      "owner_external_authorization_required": true,
+      "continuation": {
+        "next_implementation": "Prove each planned startup Legacy can operate under its own scope and reconciled economics.",
+        "existing_test_evidence": "See SOURCE_INSPECTED_ONLY and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
+        "owner_action": "Separate owner authorization applies before external execution or staging activation.",
+        "required_acceptance_evidence_field": "acceptance_test"
+      }
+    },
+    {
+      "id": "clones_vs_mirrors",
+      "priority": "P1",
+      "source_paths": [
+        "docs/VALHALLA_DOCTRINE_CONFLICT_MAP.md",
+        "docs/PHASE3_INTEGRATED_ARCHITECTURE.md",
+        "services/api/app/routers/legacy_playbooks.py",
+        "services/api/tests/test_legacy_playbooks.py"
+      ],
+      "source_observation": "Owner-authorized registry rehearsal creates distinct business clone and regional mirror receipts, separate namespaces and inactive target rows. Staged runtime separation and live scaling remain open.",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "Verify no mirror has external authority; governed clone lifecycle, real business identity, permissions, budget and data separation.",
+      "depends_on": [
+        "legacy_instances",
+        "runtime_governance"
+      ],
+      "owner_external_authorization_required": true,
+      "continuation": {
+        "next_implementation": "Test clones and mirrors with staged independent runtimes and shared governance.",
+        "existing_test_evidence": "See SOURCE_INSPECTED_ONLY and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
+        "owner_action": "Separate owner authorization applies before external execution or staging activation.",
+        "required_acceptance_evidence_field": "acceptance_test"
+      }
+    },
+    {
+      "id": "product_foundry_subscriptions",
+      "priority": "P1",
+      "source_paths": [
+        "services/api/app/routers/foundry_checkout.py",
+        "docs/CODEX_SYSTEM_FINISH_PASSES.md",
+        "services/api/app/services/prime_business_execution.py",
+        "services/api/app/routers/product_artifacts.py",
+        "services/api/tests/test_product_artifact_workflow.py"
+      ],
+      "source_observation": "The verified internal listing reaches signed local checkout, delivery, attribution and refunds. Trial module entitlements are tenant-bound. Storefront, paid licenses, settlement and renewal are pending.",
+      "evidence_level": "SQLITE_INTEGRATION_TESTED",
+      "production_verified": false,
+      "acceptance_test": "Complete approved subordinate product package, storefront, real checkout/provider receipt, delivery, refund/chargeback, ledger and customer subscription lifecycle.",
+      "depends_on": [
+        "commerce",
+        "subscription_saas",
+        "legacy_execution"
+      ],
+      "owner_external_authorization_required": true,
+      "continuation": {
+        "next_implementation": "Complete the authorized storefront, entitlements, refunds and repeatable fulfillment path.",
+        "existing_test_evidence": "See SQLITE_INTEGRATION_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
+        "owner_action": "Separate owner authorization applies before external execution or staging activation.",
+        "required_acceptance_evidence_field": "acceptance_test"
+      }
+    },
+    {
+      "id": "independent_venture_foundry",
+      "priority": "P1",
+      "source_paths": [
+        "services/api/app/routers/foundry_discovery.py",
+        "docs/CODEX_SYSTEM_FINISH_PASSES.md",
+        "docs/PHASE3_INTEGRATED_ARCHITECTURE.md",
+        "services/api/app/models/foundry_intake.py"
+      ],
+      "source_observation": "A source-backed unfamiliar business can reach scoped Pantheon analysis, Universal Evaluator shadow recommendation, comparative capital ranking and independent review. Commercial operation and measured demand remain pending.",
+      "evidence_level": "SQLITE_INTEGRATION_TESTED",
+      "production_verified": false,
+      "acceptance_test": "Scheduled discovery and evidence validation, owner-bounded creation of a new lawful venture, live sales and repeatable outcome learning.",
+      "depends_on": [
+        "discovery_sources",
+        "universal_evaluator",
+        "learning_mimir",
+        "legacy_execution"
+      ],
+      "owner_external_authorization_required": true,
+      "continuation": {
+        "next_implementation": "Prove independently sourced demand and exercise one authority-bound startup candidate.",
+        "existing_test_evidence": "See SQLITE_INTEGRATION_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
+        "owner_action": "Separate owner authorization applies before external execution or staging activation.",
+        "required_acceptance_evidence_field": "acceptance_test"
+      }
+    },
+    {
+      "id": "real_estate_portfolio_legs",
+      "priority": "P1",
+      "source_paths": [
+        "docs/MILLION_PATH_STRATEGY_LAYER.md",
+        "services/api/app/models/deal.py"
+      ],
+      "source_observation": "Real estate strategy models cover wholesaling, flipping, hold and related categories; external closings unverified.",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "Real licensed/legal deal source→underwriting→buyer→contract→closing→settlement with real receipts; replay and privacy controls.",
+      "depends_on": [
+        "real_estate_execution",
+        "contracts_legal"
+      ],
+      "owner_external_authorization_required": true,
+      "continuation": {
+        "next_implementation": "Complete remaining portfolio rehearsals with grounded jurisdiction and comparable evidence.",
+        "existing_test_evidence": "See SOURCE_INSPECTED_ONLY and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
+        "owner_action": "Separate owner authorization applies before external execution or staging activation.",
+        "required_acceptance_evidence_field": "acceptance_test"
+      }
+    },
+    {
+      "id": "treasury_banking_controls",
+      "priority": "P0",
+      "source_paths": [
+        "services/api/tests/test_floor_currency.py",
+        "capital/banking/executor.py",
+        "services/api/app/routers/banking_structure_planner.py",
+        "services/api/app/services/wealth_scenario.py",
+        "services/api/app/services/treasury_reconciliation.py",
+        "services/api/app/routers/foundry_checkout.py"
+      ],
+      "source_observation": "Statement fixtures reconcile segregated balances and unique transaction references. A signed checkout delta can be matched once to an exact business statement fixture. Historical quarantined FX records and actual bank verification remain separate.",
+      "evidence_level": "SQLITE_INTEGRATION_TESTED",
+      "production_verified": false,
+      "acceptance_test": "Prove every actual transfer requires owner intent, cap, whitelisted accounts, durable idempotency and a bank settlement receipt; no fake success.",
+      "depends_on": [
+        "finance_webhooks",
+        "runtime_governance"
+      ],
+      "owner_external_authorization_required": true,
+      "continuation": {
+        "next_implementation": "Match independently supplied statements and liabilities with payment and accounting sandbox evidence.",
+        "existing_test_evidence": "test_economic_control.py covers segregated fixture statements and historical vault flags. Product artifact rehearsal adds fixture settlement.",
+        "owner_action": "Separate owner authorization applies before external execution or staging activation.",
+        "required_acceptance_evidence_field": "acceptance_test"
+      }
+    },
+    {
+      "id": "infinite_banking_insurance",
+      "priority": "P1",
+      "source_paths": [
+        "services/api/app/models/whole_life_policy.py",
+        "services/api/app/api/api_v1/endpoints/whole_life_policies.py",
+        "services/api/app/routers/banking_structure_planner.py"
+      ],
+      "source_observation": "Whole-life policy records exist, not a real participating-policy premium/cash-value loan model; no insurer/bank transfer proof.",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "Model actual policy illustration, fees, premiums, loan balance and interest, tax/legal/contract details, adverse scenarios; owner and licensed review before any loan.",
+      "depends_on": [
+        "treasury_banking_controls",
+        "tax_opinions_legal"
+      ],
+      "owner_external_authorization_required": true,
+      "continuation": {
+        "next_implementation": "Build a sourced scenario and obtain the required insurance and professional review.",
+        "existing_test_evidence": "See SOURCE_INSPECTED_ONLY and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
+        "owner_action": "Separate owner authorization applies before external execution or staging activation.",
+        "required_acceptance_evidence_field": "acceptance_test"
+      }
+    },
+    {
+      "id": "estate_and_master_trusts",
+      "priority": "P1",
+      "source_paths": [
+        "services/api/app/models/trust.py",
+        "services/api/app/models/protection_stack.py",
+        "legal/TRUST_RESIDENCY_OVERVIEW.md"
+      ],
+      "source_observation": "Legal trust concepts and entity records are present, not actual trust formation. Historic Panama-first vs Canadian-first source conflict unresolved.",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "Trace trustee, protector, beneficiaries, assets and succession; compare structures under cross-border professional advice and preserve owner-approved choice. No auto filings.",
+      "depends_on": [
+        "tax_opinions_legal",
+        "runtime_governance"
+      ],
+      "owner_external_authorization_required": true,
+      "continuation": {
+        "next_implementation": "Prepare competing trust options with lawful jurisdiction-specific professional reviews.",
+        "existing_test_evidence": "See SOURCE_INSPECTED_ONLY and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
+        "owner_action": "Separate owner authorization applies before external execution or staging activation.",
+        "required_acceptance_evidence_field": "acceptance_test"
+      }
+    },
+    {
+      "id": "canada_exit_strategy",
+      "priority": "P1",
+      "source_paths": [
+        "legal/TRUST_RESIDENCY_OVERVIEW.md",
+        "docs/VALHALLA_DOCTRINE_CONFLICT_MAP.md",
+        "services/api/app/models/bahamas_plan.py"
+      ],
+      "source_observation": "International residency and departure concepts are advisory documents; legal/tax outcomes and exact timing unverified.",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "Produce evidence-backed Canada personal/corporate departure scenarios, tax residence tests, continuing ties, immigration, family requirements, legal opinions and actionable owner choices.",
+      "depends_on": [
+        "estate_and_master_trusts",
+        "tax_opinions_legal"
+      ],
+      "owner_external_authorization_required": true,
+      "continuation": {
+        "next_implementation": "Prepare evidence and professional questions on departure timing and obligations.",
+        "existing_test_evidence": "See SOURCE_INSPECTED_ONLY and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
+        "owner_action": "Separate owner authorization applies before external execution or staging activation.",
+        "required_acceptance_evidence_field": "acceptance_test"
+      }
+    },
+    {
+      "id": "global_residency_options",
+      "priority": "P1",
+      "source_paths": [
+        "services/api/app/models/bahamas_plan.py",
+        "services/api/app/models/trust_status.py",
+        "legal/TRUST_RESIDENCY_OVERVIEW.md"
+      ],
+      "source_observation": "Panama/Bahamas and future jurisdictions appear in models/plans. No immigration status or lawful tax residency independently proven.",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "Compare owner-approved country options, rights, real costs, residency/tax reporting and professional validation with no invented approval status.",
+      "depends_on": [
+        "canada_exit_strategy"
+      ],
+      "owner_external_authorization_required": true,
+      "continuation": {
+        "next_implementation": "Collect official jurisdiction requirements and independent eligibility review when requested.",
+        "existing_test_evidence": "See SOURCE_INSPECTED_ONLY and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
+        "owner_action": "Separate owner authorization applies before external execution or staging activation.",
+        "required_acceptance_evidence_field": "acceptance_test"
+      }
+    },
+    {
+      "id": "tax_opinions_legal",
+      "priority": "P0",
+      "source_paths": [
+        "services/api/app/models/tax_interpretations.py",
+        "legal/TRUST_RESIDENCY_OVERVIEW.md",
+        "services/api/app/routers/governance_tyr.py"
+      ],
+      "source_observation": "Jurisdictional tax opinion schema and legal gate exist; legal and regulatory execution not verified.",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "Require source, date, jurisdiction, legal signoff and preserved opinion files; prohibit AI-led filing, fraud, tax evasion and unsupported tax treatments.",
+      "depends_on": [
+        "auth",
+        "runtime_governance"
+      ],
+      "owner_external_authorization_required": true,
+      "continuation": {
+        "next_implementation": "Route a complete scoped fact packet for qualified review before reliance.",
+        "existing_test_evidence": "See SOURCE_INSPECTED_ONLY and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
+        "owner_action": "Separate owner authorization applies before external execution or staging activation.",
+        "required_acceptance_evidence_field": "acceptance_test"
+      }
+    },
+    {
+      "id": "reinvestment_funfund_policy",
+      "priority": "P1",
+      "source_paths": [
+        "valhalla_hand_off/ACCOUNTING_PACKAGE/01_fund_separation.md",
+        "services/api/app/models/funfund_routing.py",
+        "valhalla_hand_off/EIA_PACKAGE/03_risk_controls.md",
+        "services/api/app/services/wealth_scenario.py"
+      ],
+      "source_observation": "Owner-private scenarios track reserve and compensation before modelling a 90/10 allocation of remaining surplus, with a supplied cap and first-year Fun Fund withdrawal deferred. This isolated planning assumption never posts a transfer, withdrawal or verified income.",
+      "evidence_level": "SQLITE_INTEGRATION_TESTED",
+      "production_verified": false,
+      "acceptance_test": "Verify owner-private cap schedule, taxes, cash reserves, net profit definition, allocation ledger, no unauthorized extraction and documented exceptions.",
+      "depends_on": [
+        "treasury_banking_controls",
+        "commerce"
+      ],
+      "owner_external_authorization_required": true,
+      "continuation": {
+        "next_implementation": "Link reviewed allocation policy to separately reconciled compensation, reserves and withdrawals.",
+        "existing_test_evidence": "See SQLITE_INTEGRATION_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
+        "owner_action": "Separate owner authorization applies before external execution or staging activation.",
+        "required_acceptance_evidence_field": "acceptance_test"
+      }
+    },
+    {
+      "id": "family_payroll_succession",
+      "priority": "P2",
+      "source_paths": [
+        "_archive/legacy_pre_canonicalization/backend_system/app/core_gov/family_payroll/store.py",
+        "services/api/app/models/protection_stack.py"
+      ],
+      "source_observation": "Archived family payroll source exists; not current operational payroll evidence.",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "Keep private lawful employment/payroll/succession only with genuine service, privacy, remuneration evidence, professional filings and owner signoff.",
+      "depends_on": [
+        "estate_and_master_trusts",
+        "tax_opinions_legal"
+      ],
+      "owner_external_authorization_required": true,
+      "continuation": {
+        "next_implementation": "Confirm roles, purpose, documentation and professional payroll review.",
+        "existing_test_evidence": "See SOURCE_INSPECTED_ONLY and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
+        "owner_action": "Separate owner authorization applies before external execution or staging activation.",
+        "required_acceptance_evidence_field": "acceptance_test"
+      }
+    },
+    {
+      "id": "bahamas_resort_growth",
+      "priority": "P2",
+      "source_paths": [
+        "services/api/app/models/bahamas_vault.py",
+        "services/api/app/routers/resort.py"
+      ],
+      "source_observation": "Resort/vault models exist; live property control, bookings and income have no independently verified receipts.",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "Legal ownership, hospitality licensing, bookings, operations, receipts, tax rules and owner-approved capital gates.",
+      "depends_on": [
+        "global_residency_options",
+        "legacy_execution"
+      ],
+      "owner_external_authorization_required": true,
+      "continuation": {
+        "next_implementation": "Defer property and hospitality execution pending evidence-backed viability and owner approval.",
+        "existing_test_evidence": "See SOURCE_INSPECTED_ONLY and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
+        "owner_action": "Separate owner authorization applies before external execution or staging activation.",
+        "required_acceptance_evidence_field": "acceptance_test"
+      }
+    },
+    {
+      "id": "shield_blackice_protection",
+      "priority": "P1",
+      "source_paths": [
+        "services/api/app/models/protection_stack.py",
+        "services/api/app/routers/blackice.py",
+        "docs/VALHALLA_DOCTRINE_CONFLICT_MAP.md"
+      ],
+      "source_observation": "Black Ice/Shield models and code exist; later doctrine explicitly requires gated validation.",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "Prove operational fail-safe, exception alerts, containment, no unauthorized surveillance, legal boundaries and rollback during real faults.",
+      "depends_on": [
+        "runtime_governance",
+        "operations_observability"
+      ],
+      "owner_external_authorization_required": true,
+      "continuation": {
+        "next_implementation": "Rehearse threat-specific protection and emergency recovery in controlled operating scope.",
+        "existing_test_evidence": "See SOURCE_INSPECTED_ONLY and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
+        "owner_action": "Separate owner authorization applies before external execution or staging activation.",
+        "required_acceptance_evidence_field": "acceptance_test"
+      }
+    },
+    {
+      "id": "recruitment_and_va",
+      "priority": "P2",
+      "source_paths": [
+        "services/api/app/routers/pro_alignment_engine.py",
+        "docs/HEIMDALL_DEFINITION_OF_DONE.md"
+      ],
+      "source_observation": "Professional alignment code exists; historical employee/cognitive tasks not certified as valid assessment.",
+      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "production_verified": false,
+      "acceptance_test": "Use job-related exercises, structured interviews, privacy, equal access and accountable owner hiring review; no presumed personality prediction.",
+      "depends_on": [
+        "auth",
+        "runtime_governance"
+      ],
+      "owner_external_authorization_required": true,
+      "continuation": {
+        "next_implementation": "Build scoped delegation acceptance and privacy checks with human hiring review.",
+        "existing_test_evidence": "See SOURCE_INSPECTED_ONLY and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
+        "owner_action": "Separate owner authorization applies before external execution or staging activation.",
+        "required_acceptance_evidence_field": "acceptance_test"
+      }
+    },
+    {
+      "id": "loki_independent_challenger",
+      "priority": "P0",
+      "source_paths": [
+        "services/api/app/routers/provider_evidence.py",
+        "services/api/tools/cron/loki_analyst_worker.py",
+        "docs/LOKI_INDEPENDENT_CHALLENGER_CONTRACT.md",
+        "services/api/app/routers/governance_loki.py",
+        "services/api/app/ai/agents/loki.py",
+        "services/api/app/core/loki_engine.py",
+        "services/api/app/routers/loki.py",
+        "services/api/app/routers/loki_worker.py",
+        "services/api/tests/test_loki_independent_receipt.py",
+        "services/api/app/services/universal_opportunity_evaluator.py",
+        "services/api/tests/test_loki_audit_fail_closed.py",
+        "services/api/tests/test_prime_control_and_decision_integrity.py"
+      ],
+      "source_observation": "Independent Loki receipts and reconsideration remain required for reviewed specialist material. Staging advice excludes the active Prime model across providers. A separate real model and transport proof remain pending.",
+      "evidence_level": "SQLITE_INTEGRATION_TESTED",
+      "production_verified": false,
+      "acceptance_test": "Independently audit immutable Heimdall proposals with contrary evidence and sourced objection ledger, prove re-audit after changes, equal-standing owner dissent, lawful professional escalation, and mandatory fail-closed high-risk dispatch; realistic adversarial cases and reviewer outage tested in Postgres/staging. Prove proactive cross-system coverage, reports to Prime, immutable independent dissent and recorded Prime response. Owner receives exceptions rather than approving every routine decision.",
+      "depends_on": [
+        "pantheon_five_evaluators",
+        "runtime_governance",
+        "learning_mimir",
+        "auth"
+      ],
+      "owner_external_authorization_required": true,
+      "continuation": {
+        "next_implementation": "Validate separate model credentials and review exact owner-authorized staged challenges.",
+        "existing_test_evidence": "See SQLITE_INTEGRATION_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
+        "owner_action": "Separate owner authorization applies before external execution or staging activation.",
+        "required_acceptance_evidence_field": "acceptance_test"
+      }
+    },
+    {
+      "id": "investment_and_trading_intelligence",
+      "priority": "P1",
+      "source_paths": [
+        "services/api/app/routers/market_intelligence.py",
+        "services/api/app/services/market_replay.py",
+        "services/api/app/routers/norns_market.py",
+        "services/api/tests/test_market_intelligence.py"
+      ],
+      "source_observation": "Owner-private licensed-practice intake records scoped stock, ETF, bond and macro batches. Decimal paper replay includes execution costs, benchmark comparisons, drawdown and concentration. Scoped Pantheon reports, independent Loki review, separately sourced Norns samples and Mimir paper receipt recall are exercised with fixtures. Provider truth and actual investment results remain unverified.",
+      "evidence_level": "SQLITE_INTEGRATION_TESTED",
+      "production_verified": false,
+      "acceptance_test": "Prove authorized, provenance-bound stock, ETF, bond, dividend, policy and capital-flow research, portfolio risk, no-lookahead historical replay with realistic costs and benchmark comparison, durable paper accounting, independent Loki challenge, prospective Norns calibration and Mimir outcome lineage, owner alerts and advisor-only governance.",
+      "depends_on": [
+        "treasury_banking_controls",
+        "pantheon_expanded_bridge",
+        "loki_independent_challenger",
+        "norns_probability_calibration",
+        "learning_mimir",
+        "prime_private_owner"
+      ],
+      "owner_external_authorization_required": true,
+      "continuation": {
+        "next_implementation": "Source licensed market evidence and independently measure advisory outcomes.",
+        "existing_test_evidence": "See SQLITE_INTEGRATION_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
+        "owner_action": "Separate owner authorization applies before external execution or staging activation.",
+        "required_acceptance_evidence_field": "acceptance_test"
+      }
+    },
+    {
+      "id": "currency_arbitrage_and_fx_intelligence",
+      "priority": "P1",
+      "source_paths": [
+        "services/api/app/arbitrage/service.py",
+        "services/api/app/routers/market_intelligence.py",
+        "services/api/app/services/market_replay.py",
+        "services/api/tests/test_market_intelligence.py"
+      ],
+      "source_observation": "Bounded Decimal quote replay compares direct conversion, cross-venue loops and triangles under bid, ask, freshness, depth, fees and cumulative settlement constraints. Partial and failed fills retain residual currency positions and do not write revenue or treasury. The old FX metrics job now computes virtual equity separately from the treasury vault.",
+      "evidence_level": "SQLITE_INTEGRATION_TESTED",
+      "production_verified": false,
+      "acceptance_test": "Prove source-entitled timestamped bid and ask inputs, independent quote and liquidity validation, deterministic cross-venue and triangular replay with costs and settlement risk, partial and failed fills reconciled by currency, exposure limits, emergency stop and regional scope isolation. Treasury recommendations remain advisor-only with no leverage, external orders or transfers.",
+      "depends_on": [
+        "treasury_banking_controls",
+        "clones_vs_mirrors",
+        "pantheon_expanded_bridge",
+        "loki_independent_challenger",
+        "learning_mimir",
+        "runtime_governance"
+      ],
+      "owner_external_authorization_required": true,
+      "continuation": {
+        "next_implementation": "Verify licensed quotes, venue delays, reconciliation and FX advisory calibration.",
+        "existing_test_evidence": "See SQLITE_INTEGRATION_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
+        "owner_action": "Separate owner authorization applies before external execution or staging activation.",
+        "required_acceptance_evidence_field": "acceptance_test"
+      }
+    },
+    {
+      "id": "dynamic_capital_allocation_loss_containment_and_strategic_redeployment",
+      "priority": "P0",
+      "source_paths": [
+        "engines/ENGINE_REGISTRY.md",
+        "services/api/app/routers/economic_control.py",
+        "services/api/app/services/economic_control.py",
+        "services/api/app/services/universal_opportunity_evaluator.py",
+        "services/api/app/loki/analyst.py",
+        "services/api/tests/test_economic_control.py",
+        "tests/test_factory_postgres.py"
+      ],
+      "source_observation": "Adds reviewed restart with fresh evidence, scoped obligations, one-use reservation release, per-currency portfolio exposure, and asset recovery linked to fixture statements. PostgreSQL verifies a racing release settles once. Factory and rehearsal fulfillment re-check known related mirror containment.",
+      "evidence_level": "POSTGRES_INTEGRATION_TESTED",
+      "production_verified": false,
+      "acceptance_test": "Prove independent evidence and hard cumulative limits, protected reserves and aggregate exposure, version and replay integrity, scheduled and event-driven reassessment, exact Loki review, immediate containment, scope isolation, forward alternative ranking, strategic exit with rights-aware asset inventory, and Mimir learning that distinguishes simulation, zero external effects and independently reconciled outcomes.",
+      "depends_on": [
+        "independent_venture_foundry",
+        "universal_evaluator",
+        "treasury_banking_controls",
+        "runtime_governance",
+        "loki_independent_challenger",
+        "pantheon_expanded_bridge",
+        "learning_mimir"
+      ],
+      "owner_external_authorization_required": true,
+      "continuation": {
+        "next_implementation": "Extend containment to every authorized execution lane and reconcile independently supplied reserves and liabilities.",
+        "existing_test_evidence": "See POSTGRES_INTEGRATION_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
+        "owner_action": "Separate owner authorization applies before external execution or staging activation.",
+        "required_acceptance_evidence_field": "acceptance_test"
+      }
+    }
+  ],
+  "current_task_index": "docs/CODEX_RESUME_2026-12-01.md#current-workstream-index-and-startup-order"
+}

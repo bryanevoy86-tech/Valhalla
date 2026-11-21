@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
+from app.core.dependencies import require_builder_key
 from app.schemas.media_engine import (
     MediaChannelCreate,
     MediaChannelUpdate,
@@ -30,7 +31,7 @@ from app.services.media_engine import (
     list_publish_for_content,
 )
 
-router = APIRouter(prefix="/media", tags=["Media"])
+router = APIRouter(prefix="/media", tags=["Media"], dependencies=[Depends(require_builder_key)])
 
 
 @router.post("/channels", response_model=MediaChannelOut)

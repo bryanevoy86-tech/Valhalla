@@ -8,6 +8,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
+from app.core.dependencies import require_prime_control_key
+from app.leads.models import Lead
+from app.services.deal_context import latest_offer, linked_brief
 from app.core.geo import infer_province_market
 from app.models.deal import Deal
 from app.models.match import Buyer, DealBrief
@@ -24,6 +27,7 @@ from app.services.kpi import emit_kpi
 router = APIRouter(
     prefix="/flow",
     tags=["Flow", "Notifications"],
+    dependencies=[Depends(require_prime_control_key)],
 )
 
 
@@ -42,13 +46,7 @@ def _get_deal_and_brief(
             detail=f"Deal with id {backend_deal_id} not found.",
         )
 
-    deal_brief: Optional[DealBrief] = (
-        db.query(DealBrief)
-        .filter(DealBrief.id == backend_deal_id)
-        .first()
-    )
-
-    return deal, deal_brief
+    return deal, linked_brief(db, backend_deal_id)
 
 
 def _build_seller_notification(
@@ -56,11 +54,11 @@ def _build_seller_notification(
     deal: Deal,
     deal_brief: Optional[DealBrief],
 ) -> SellerNotification:
-    lead_obj = getattr(deal, "lead", None)
+    lead_obj = db.get(Lead, deal.lead_id)
 
-    to_email = getattr(lead_obj, "email", None) if lead_obj else None
-    to_phone = getattr(lead_obj, "phone", None) if lead_obj else None
-    seller_name = getattr(lead_obj, "name", "there") if lead_obj else "there"
+    to_email = lead_obj.lead_email if lead_obj else None
+    to_phone = lead_obj.lead_phone if lead_obj else None
+    seller_name = lead_obj.lead_name if lead_obj else "there"
 
     # --- Infer province/market for policy context ---
     province = None
@@ -75,7 +73,7 @@ def _build_seller_notification(
         try:
             province, market = infer_province_market(region, None)
             if province and property_type:
-                liq_score = liquidity_score(db, province, market or "ALL", property_type)
+                liq_score = liquidity_score(db, province, market or "ALL", property_type, create=False)
         except Exception:
             # Non-blocking: geo inference or liquidity fetch failed
             pass
@@ -98,7 +96,8 @@ def _build_seller_notification(
             f"We're reviewing your {property_type or 'property'} in {region or 'your area'}."
         )
 
-    price = getattr(deal, "offer", None) or getattr(deal, "price", None)
+    offer = latest_offer(db, deal.id)
+    price = offer.offer_price if offer else None
     if price is not None:
         body_lines.append(
             f"Right now, we're working off a working number around ${price:,.0f}, "
@@ -132,9 +131,9 @@ def _build_seller_notification(
         meta={
             "lead_id": str(lead_obj.id) if lead_obj else "",
             "deal_id": str(deal.id),
-            "province": province,
-            "market": market,
-            "liquidity_score": liq_score,
+            **({"province": province} if province else {}),
+            **({"market": market} if market else {}),
+            **({"liquidity_score": str(liq_score["score"])} if liq_score else {}),
         },
     )
 
@@ -160,7 +159,7 @@ def _build_buyer_notifications(
     try:
         province, market = infer_province_market(region, None)
         if province and property_type:
-            liq_score = liquidity_score(db, province, market or "ALL", property_type)
+            liq_score = liquidity_score(db, province, market or "ALL", property_type, create=False)
     except Exception:
         # Non-blocking: geo/liquidity fetch failed
         pass
@@ -234,9 +233,9 @@ def _build_buyer_notifications(
                 meta={
                     "deal_id": str(deal.id),
                     "deal_brief_id": str(deal_brief.id),
-                    "province": province,
-                    "market": market,
-                    "liquidity_score": liq_score,
+                    **({"province": province} if province else {}),
+                    **({"market": market} if market else {}),
+                    **({"liquidity_score": str(liq_score["score"])} if liq_score else {}),
                 },
             )
         )
@@ -260,6 +259,12 @@ def notify_deal_parties(
     payload: NotifyDealPartiesRequest,
     db: Session = Depends(get_db),
 ) -> NotifyDealPartiesResponse:
+    result = prepare_deal_notifications(payload, db)
+    db.commit()
+    return result
+
+
+def prepare_deal_notifications(payload: NotifyDealPartiesRequest, db: Session) -> NotifyDealPartiesResponse:
     deal, deal_brief = _get_deal_and_brief(db, payload.backend_deal_id)
 
     seller_notification: Optional[SellerNotification] = None
@@ -283,9 +288,10 @@ def notify_deal_parties(
         success=True,
         actor="system",
         correlation_id=corr_id,
+        commit=False,
         detail={
             "deal_id": deal.id,
-            "seller_notified": seller_notification is not None,
+            "seller_preview_prepared": seller_notification is not None,
             "buyer_count": len(buyer_notifications),
         },
     )

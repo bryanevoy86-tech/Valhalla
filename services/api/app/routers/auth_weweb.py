@@ -11,7 +11,7 @@ import time
 import hmac
 import os
 import uuid
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Literal, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel
@@ -53,8 +53,7 @@ class UserResponse(BaseModel):
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/weweb/login", auto_error=False)
 
-# Process-local revocation list for explicit logout/refresh token retirement.
-_REVOKED_JTI: set[str] = set()
+from app.security.token_revocation import is_access_token_revoked, revoke_access_token
 
 
 def _auth_runtime():
@@ -107,8 +106,21 @@ def get_current_user(
             detail="Invalid token payload",
         )
 
-    jti = payload.get("jti")
-    if jti and jti in _REVOKED_JTI:
+    try:
+        revoked = is_access_token_revoked(db, payload)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token identity or expiry",
+        ) from None
+    except Exception as exc:
+        # A missing revocation table or unavailable database must never turn
+        # a previously revoked bearer token back into a valid token.
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Persistent session revocation unavailable",
+        ) from exc
+    if revoked:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token has been revoked",
@@ -232,10 +244,18 @@ def refresh_token(
             detail="User not found",
         )
 
-    # Revoke current token identifier and issue a new token.
-    old_jti = current_user.get("jti")
-    if old_jti:
-        _REVOKED_JTI.add(str(old_jti))
+    # Persist revocation BEFORE returning a replacement token. Any failure
+    # must block refresh so the old token never reappears valid on restart.
+    try:
+        revoke_access_token(db, current_user)
+        db.commit()
+    except ValueError:
+        raise HTTPException(status_code=401, detail="Invalid token identity or expiry") from None
+    except Exception as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=503, detail="Could not persist refresh-token revocation"
+        ) from exc
 
     token = _issue_access_token(auth_runtime, user)
 
@@ -257,11 +277,19 @@ def refresh_token(
 @router.post("/logout")
 def logout(
     current_user: Dict[str, Any] = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ) -> Dict[str, Any]:
-    """Explicitly revoke current token identifier for this process runtime."""
-    jti = current_user.get("jti")
-    if jti:
-        _REVOKED_JTI.add(str(jti))
+    """Explicitly and durably revoke access token before confirming logout."""
+    try:
+        revoke_access_token(db, current_user)
+        db.commit()
+    except ValueError:
+        raise HTTPException(status_code=401, detail="Invalid token identity or expiry") from None
+    except Exception as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=503, detail="Could not persist token revocation"
+        ) from exc
     return {"ok": True, "message": "Logged out"}
 
 
@@ -325,7 +353,7 @@ def admin_reset_password(
     Security: 
     - Reads VALHALLA_OWNER_EMAIL from env
     - Reads VALHALLA_OWNER_PASSWORD from env  
-    - Requires X-Setup-Token header matching VALHALLA_SETUP_TOKEN (if set)
+    - Requires X-Setup-Token header matching a MANDATORY VALHALLA_SETUP_TOKEN
     - Never returns password or hash
     
     This is a fallback if pre-deploy command fails.
@@ -340,15 +368,21 @@ def admin_reset_password(
             detail="Owner reset not enabled",
         )
     
-    # If setup token is configured, require it
-    setup_token = os.getenv("VALHALLA_SETUP_TOKEN")
-    if setup_token:
-        provided_token = request.headers.get("X-Setup-Token", "")
-        if not hmac.compare_digest(provided_token or "", setup_token):
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid setup token",
-            )
+    # This is a credential-reset endpoint. The setup secret must ALWAYS
+    # exist and match, even when the reset feature flag is enabled.
+    # Otherwise a mistyped/omitted secret allows anonymous resets.
+    setup_token = (os.getenv("VALHALLA_SETUP_TOKEN") or "").strip()
+    if not setup_token:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Owner reset secret is not configured",
+        )
+    provided_token = request.headers.get("X-Setup-Token", "")
+    if not provided_token or not hmac.compare_digest(provided_token, setup_token):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid setup token",
+        )
     
     # Read credentials from env
     email = (os.getenv("VALHALLA_OWNER_EMAIL") or "").strip()
@@ -407,3 +441,62 @@ def admin_reset_password(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to reset password",
         ) from e
+
+
+def require_owner_session(
+    current_user: Dict[str, Any] = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    subject_id = current_user["user_id"]
+    profile = (db.query(UserProfile).join(AccountSettings, AccountSettings.user_id == UserProfile.user_id)
+               .filter(UserProfile.user_id == subject_id, AccountSettings.account_locked.is_(False)).one_or_none()
+               if type(subject_id) is int else None)
+    if profile is None or profile.email != current_user.get("sub") or not _is_configured_owner(profile.email):
+        raise HTTPException(403, "Configured owner session required")
+
+
+def private_owner_response(content, *, status_code=200):
+    from fastapi.encoders import jsonable_encoder
+    from fastapi.responses import JSONResponse
+
+    return JSONResponse(content=jsonable_encoder(content), status_code=status_code,
+                        headers={"Cache-Control": "no-store", "Vary": "Authorization"})
+
+
+@router.get("/owner-briefing", dependencies=[Depends(require_owner_session)])
+def owner_briefing(mode: Literal["standard", "driving"] = "standard", db: Session = Depends(get_db)):
+    """Expose a read-only owner projection over the existing revocable session."""
+    from app.services.owner_conversation import answer
+
+    reply, evidence = answer(db, "briefing", [])
+    if mode == "driving":
+        operating = evidence["operating_evidence"]
+        stop_active = evidence["integrity"]["fail_safe_state"]["active"]
+        attention = {
+            "integrity": len(evidence["integrity"]["anomaly_detection"]["signals"]),
+            "economic": len(operating["latest_economic_alerts"]),
+            "independent_reviews": len(operating["loki"]["latest_outstanding"]),
+            "discovery": len(operating["foundry_intake_health"].get("recent_job_errors", [])),
+            "builder": operating["builder_lease_health"].get("lease_exhausted", 0),
+            "specialist_cadence": len(operating["specialist_cadence_alerts"]),
+        }
+        spoken = ("Emergency stop is active. " if stop_active else "") + (
+            "There are items to review when parked." if any(attention.values()) else "No sampled items need attention."
+        )
+        return private_owner_response({"reply": spoken, "attention": attention, "emergency_stop": stop_active,
+                                       "mode": mode, "execution_authorized": False})
+    return private_owner_response({"reply": reply, "evidence": evidence, "execution_authorized": False})
+
+
+@router.get("/owner-conversations", dependencies=[Depends(require_owner_session)])
+def owner_conversations(limit: int = 20, db: Session = Depends(get_db)):
+    from app.services.owner_conversation import conversation_summaries
+
+    return private_owner_response(conversation_summaries(db, limit))
+
+
+@router.get("/owner-conversations/{conversation_id}/turns", dependencies=[Depends(require_owner_session)])
+def owner_conversation_history(conversation_id: uuid.UUID, limit: int = 50, db: Session = Depends(get_db)):
+    from app.services.owner_conversation import conversation_history
+
+    return private_owner_response(conversation_history(db, conversation_id, limit))

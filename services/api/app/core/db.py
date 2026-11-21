@@ -1,26 +1,20 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, sessionmaker, scoped_session
-from sqlalchemy.pool import StaticPool
 from .settings import settings
 import logging
 
 logger = logging.getLogger("valhalla.db")
 
-# Try to create the DB engine using the configured DATABASE_URL. If this fails
-# (for example, psycopg/libpq isn't available in the test/dev environment),
-# fall back to an in-memory SQLite engine so the app can import and tests can run.
+# Database initialization MUST fail if its driver or URL is invalid.
+# An implicit SQLite replacement would make the system appear operational
+# while silently writing ephemeral business data to an empty database.
 try:
     engine = create_engine(settings.database_url, pool_pre_ping=True)
-except Exception as e:  # pragma: no cover - runtime fallback
-    logger.warning("Could not create engine for %s: %s. Falling back to sqlite in-memory.", settings.database_url, e)
-    # Use StaticPool so the in-memory SQLite database is shared across
-    # connections. This is important for tests that create tables at import
-    # time and then use sessions which open new connections.
-    engine = create_engine(
-        "sqlite:///:memory:",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
+except Exception as exc:
+    logger.error("Configured database engine could not be initialized (%s)", type(exc).__name__)
+    raise RuntimeError(
+        "Database engine initialization failed; refusing in-memory fallback"
+    ) from exc
 
 SessionLocal = scoped_session(sessionmaker(bind=engine, autoflush=False, autocommit=False))
 
@@ -108,8 +102,9 @@ def verify_schema_initialized():
             logger.info(f"✅ Schema initialized: {count} migration(s) applied")
             
     except RuntimeError:
-        raise  # Re-raise our custom errors
-    except Exception as e:
-        logger.warning(
-            f"⚠️  Schema validation skipped (in-memory SQLite or connection error): {e}"
-        )
+        raise
+    except Exception as exc:
+        # Returning success when a network/credential error occurs would let
+        # the API run without the business ledger it expects.
+        logger.error("Database schema verification failed (%s)", type(exc).__name__)
+        raise RuntimeError("Database schema verification could not complete") from exc

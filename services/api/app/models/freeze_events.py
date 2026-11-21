@@ -3,7 +3,8 @@ Freeze Events Model - Tracks deal freeze events and closing milestones
 """
 
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, DateTime, Boolean
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, JSON
+from sqlalchemy.orm import synonym
 from app.models.base import Base
 
 
@@ -22,5 +23,11 @@ class FreezeEvent(Base):
     is_completed = Column(Boolean, default=False)
     
     notes = Column(String, nullable=True)
+    source = synonym("event_name")
+    resolved_at = synonym("completed_at")
+    severity = Column(String, nullable=True)
+    reason = Column(String, nullable=True)
+    payload = Column(JSON, nullable=True)
+    resolved_by = Column(String, nullable=True)
     
     created_at = Column(DateTime, default=datetime.utcnow)

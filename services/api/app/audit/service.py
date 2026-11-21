@@ -3,7 +3,7 @@ from app.audit.models import AuditEvent
 from app.audit.schemas import AuditEventCreate
 
 
-def log_event(db: Session, payload: AuditEventCreate) -> AuditEvent:
+def log_event(db: Session, payload: AuditEventCreate, *, commit: bool = True) -> AuditEvent:
     """Log an audit event to the database.
     
     Extracts only the fields that map to DB columns.
@@ -22,8 +22,9 @@ def log_event(db: Session, payload: AuditEventCreate) -> AuditEvent:
     
     event = AuditEvent(**event_data)
     db.add(event)
-    db.commit()
-    db.refresh(event)
+    if commit:
+        db.commit()
+        db.refresh(event)
     return event
 
 

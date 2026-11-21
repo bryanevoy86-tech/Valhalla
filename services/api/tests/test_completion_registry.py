@@ -10,6 +10,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.core.db import get_db
+from app.core.dependencies import require_prime_control_key
 from app.models.completion_registry import (
     DatasetRegistryItem,
     EngineRegistryItem,
@@ -31,6 +32,9 @@ from app.models.completion_registry import (
     ScoringRegistryItem,
     TemplateRegistryItem,
 )
+from app.god.models import GodReviewCase, GodReviewEvent
+from app.models.god_verdicts import GodVerdict
+from app.models.governance_decision import GovernanceDecision
 from app.routers.completion_registry import router
 
 
@@ -62,6 +66,9 @@ def _build_client() -> TestClient:
     LegacyOrchestrationEvent.__table__.create(bind=engine, checkfirst=True)
     LegacyInstanceWorkItem.__table__.create(bind=engine, checkfirst=True)
 
+    for model in (GodReviewCase, GodReviewEvent, GodVerdict, GovernanceDecision):
+        model.__table__.create(bind=engine, checkfirst=True)
+
     app = FastAPI()
     app.include_router(router)
 
@@ -73,6 +80,9 @@ def _build_client() -> TestClient:
             db.close()
 
     app.dependency_overrides[get_db] = override_get_db
+    # Isolated functional tests use a test-only dependency override.
+    # Real HTTP authentication is tested separately without overrides.
+    app.dependency_overrides[require_prime_control_key] = lambda: True
     return TestClient(app)
 
 
@@ -3078,7 +3088,7 @@ def test_phase3_mimir_linkage_and_outcome_feedback_contract_are_present():
     domain = client.post(
         "/api/completion/learning/domains",
         json={
-            "domain_id": "P3-MIMIR-DOMAIN",
+            "domain_id": "ops_automation",
             "canonical_name": "Phase3 Mimir Domain",
             "status": "active",
             "terminal_state": "BUILT_TESTED_FEATURE_GATED",
@@ -3090,7 +3100,7 @@ def test_phase3_mimir_linkage_and_outcome_feedback_contract_are_present():
         "/api/completion/learning/curricula",
         json={
             "curriculum_id": "CUR-P3-MIMIR",
-            "domain_id": "P3-MIMIR-DOMAIN",
+            "domain_id": "ops_automation",
             "title": "Phase3 Mimir Curriculum",
             "version": "v1",
             "learning_objectives": ["link outcomes to decision evidence"],
@@ -3109,10 +3119,11 @@ def test_phase3_mimir_linkage_and_outcome_feedback_contract_are_present():
         json={
             "feedback_id": "FB-P3-MIMIR-001",
             "feedback_type": "operational_result",
-            "domain": "P3-MIMIR-DOMAIN",
+            "domain": "ops_automation",
             "curriculum_id": "CUR-P3-MIMIR",
             "learning_id": "LP-P3-MIMIR",
             "outcome_class": "SHADOW_OUTCOME",
+            "business_scope": "Legacy",
             "operational_score": 0.3,
             "high_impact": True,
             "notes": "Recurring failure mode: insufficient reserve runway",

@@ -1,6 +1,7 @@
 """PACK 87: Marketing Automation Engine - Service"""
 
 from sqlalchemy.orm import Session
+from fastapi import HTTPException
 
 from app.models.marketing import MarketingCampaign, SocialPost
 from app.schemas.marketing import MarketingCampaignCreate, SocialPostCreate
@@ -50,6 +51,8 @@ def delete_campaign(db: Session, campaign_id: int) -> bool:
 
 # Social post operations
 def create_post(db: Session, post: SocialPostCreate) -> SocialPost:
+    if post.status == "published":
+        raise HTTPException(status_code=409, detail="SOCIAL_PUBLICATION_REQUIRES_PROVIDER_RECEIPT")
     db_post = SocialPost(
         platform=post.platform,
         content_payload=post.content_payload,
@@ -76,6 +79,8 @@ def update_post(db: Session, post_id: int, post: SocialPostCreate) -> SocialPost
     db_post = get_post(db, post_id)
     if not db_post:
         return None
+    if post.status == "published":
+        raise HTTPException(status_code=409, detail="SOCIAL_PUBLICATION_REQUIRES_PROVIDER_RECEIPT")
     db_post.platform = post.platform
     db_post.content_payload = post.content_payload
     db_post.status = post.status

@@ -4,10 +4,11 @@ Exposes HTTP endpoints for configuring Heimdall Ultra Mode.
 Mounted at: /heimdall/ultra
 """
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Body, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from app.db import get_db
+from app.core.db import get_db
+from app.core.dependencies import require_prime_control_key
 from app.schemas.heimdall_ultra import UltraConfigOut, UltraConfigUpdate
 from app.services.heimdall_ultra import (
     get_ultra_config,
@@ -18,7 +19,10 @@ from app.services.heimdall_ultra import (
     set_priority_matrix,
 )
 
-router = APIRouter(prefix="/heimdall/ultra", tags=["Heimdall Ultra Mode"])
+router = APIRouter(
+    prefix="/heimdall/ultra", tags=["Heimdall Ultra Mode"],
+    dependencies=[Depends(require_prime_control_key)],
+)
 
 
 @router.get("/", response_model=UltraConfigOut)
@@ -55,12 +59,12 @@ def set_initiative(level: str, db: Session = Depends(get_db)):
 
 
 @router.post("/escalation", response_model=UltraConfigOut)
-def update_escalation(chain: dict, db: Session = Depends(get_db)):
+def update_escalation(chain: dict[str, str], db: Session = Depends(get_db)):
     """Update escalation routing chain."""
     return set_escalation_chain(db, chain)
 
 
 @router.post("/priorities", response_model=UltraConfigOut)
-def update_priorities(priorities: list, db: Session = Depends(get_db)):
+def update_priorities(priorities: list[str] = Body(...), db: Session = Depends(get_db)):
     """Update priority decision matrix."""
     return set_priority_matrix(db, priorities)

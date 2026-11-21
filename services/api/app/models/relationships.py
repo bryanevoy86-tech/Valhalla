@@ -22,7 +22,7 @@ class RelationshipProfile(Base):
     notes = Column(Text, nullable=True)
 
     events = relationship(
-        "TrustEventLog",
+        lambda: TrustEventLog,
         back_populates="profile",
         cascade="all, delete-orphan",
     )
@@ -39,4 +39,4 @@ class TrustEventLog(Base):
     notes = Column(Text, nullable=True)
     visible = Column(Boolean, default=True)
 
-    profile = relationship("RelationshipProfile", back_populates="events")
+    profile = relationship(RelationshipProfile, back_populates="events")

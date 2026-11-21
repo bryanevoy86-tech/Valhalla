@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+from threading import Lock
 from typing import Any, Dict
 
-from fastapi import APIRouter, HTTPException, Path, status
+from fastapi import APIRouter, Depends, HTTPException, Path, status
 
+from app.core.dependencies import require_prime_control_key
 from app.routers.governance_king import KING_POLICY
 from app.routers.governance_queen import QUEEN_POLICY
 from app.routers.governance_odin import ODIN_POLICY
@@ -31,6 +33,20 @@ _POLICY_REGISTRY: Dict[str, Dict[str, Any]] = {
     "loki": {"obj": LOKI_POLICY, "type": LokiPolicy},
     "tyr": {"obj": TYR_POLICY, "type": TyrPolicy},
 }
+
+
+_policy_write_lock = Lock()
+
+
+def _merge_policy(current: dict, patch: dict) -> dict:
+    merged = current.copy()
+    for key, value in patch.items():
+        if key not in current:
+            raise ValueError(f"Unknown policy field: {key}")
+        if isinstance(current[key], dict) and isinstance(value, dict):
+            value = _merge_policy(current[key], value)
+        merged[key] = value
+    return merged
 
 
 @router.get(
@@ -72,6 +88,7 @@ def get_policy_for_god(
 
 @router.patch(
     "/policies/{god}",
+    dependencies=[Depends(require_prime_control_key)],
     status_code=status.HTTP_200_OK,
     summary="Patch/update policy for a specific god",
     description=(
@@ -98,19 +115,11 @@ def update_policy_for_god(
     policy_obj = entry["obj"]
     policy_type = entry["type"]
 
-    # Convert existing policy to dict, apply patch, then validate
-    current_data = policy_obj.model_dump()
-    merged = {**current_data, **patch}
-
-    try:
-        updated_policy = policy_type.model_validate(merged)
-    except Exception as exc:  # pydantic.ValidationError or others
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"Invalid policy patch for {god}: {exc}",
-        )
-
-    # Update the in-memory object in-place
-    policy_obj.__dict__.update(updated_policy.__dict__)
-
-    return policy_obj
+    with _policy_write_lock:
+        try:
+            merged = _merge_policy(policy_obj.model_dump(), patch)
+            updated_policy = policy_type.model_validate(merged)
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=f"Invalid policy patch for {god}: {exc}") from exc
+        policy_obj.__dict__ = updated_policy.__dict__.copy()
+        return updated_policy

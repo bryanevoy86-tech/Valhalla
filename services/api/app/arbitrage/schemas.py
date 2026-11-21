@@ -1,4 +1,5 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from typing import Literal
 from typing import Optional
 
 
@@ -18,13 +19,14 @@ class FXRuleResponse(FXRuleCreate):
 
 class FXOrderCreate(BaseModel):
     pair: str
-    side: str  # buy|sell
-    size: float
-    entry_px: float
+    side: Literal["buy", "sell"]
+    size: float = Field(gt=0, le=1_000_000, allow_inf_nan=False)
+    entry_px: float = Field(gt=0, le=100_000, allow_inf_nan=False)
     meta: Optional[dict] = None
 
 
 class FXOrderResponse(FXOrderCreate):
+    basis: Literal["LEGACY_PAPER_BOOK"] = "LEGACY_PAPER_BOOK"
     id: int
     status: str
     exit_px: Optional[float] = None
@@ -34,10 +36,11 @@ class FXOrderResponse(FXOrderCreate):
 
 
 class FXCloseRequest(BaseModel):
-    exit_px: float
+    exit_px: float = Field(gt=0, le=100_000, allow_inf_nan=False)
 
 
 class FXMetricResponse(BaseModel):
+    basis: Literal["LEGACY_PAPER_BOOK"] = "LEGACY_PAPER_BOOK"
     id: int
     equity: float
     peak_equity: float

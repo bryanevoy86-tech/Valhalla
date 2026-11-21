@@ -94,6 +94,8 @@ class ContractPipeline:
         parties: List[PartyIn],
         sign_provider: SignProvider,
         actor: Optional[str],
+        *,
+        commit: bool = True,
     ) -> Contract:
         tpl = self.db.query(ContractTemplate).filter(ContractTemplate.code == template_code).one_or_none()
         if not tpl:
@@ -128,7 +130,8 @@ class ContractPipeline:
                 )
             )
         self._event(c.id, "CONTRACT_CREATED", actor, {"template_code": template_code})
-        self.db.commit()
+        if commit:
+            self.db.commit()
         return c
 
     def change_state(
@@ -199,7 +202,9 @@ class ContractPipeline:
         actor: Optional[str],
     ) -> ContractEnvelope:
         guard_contract_send("wholesaling")
-        c = self.db.query(Contract).filter(Contract.id == contract_id).one()
+        c = self.db.query(Contract).filter(Contract.id == contract_id).with_for_update().one()
+        if c.sign_provider != SignProvider.SANDBOX or os.getenv("SIGN_PROVIDER", "sandbox").strip().lower() != "sandbox":
+            raise ValueError("External signature provider is not configured")
         if c.state != ContractState.APPROVED_FOR_SIGNATURE:
             raise ValueError(f"Contract must be APPROVED_FOR_SIGNATURE to send. Current={c.state}")
 
@@ -215,7 +220,6 @@ class ContractPipeline:
                 raise ValueError(f"Missing email for signer: {p.name} ({p.role})")
             recipients.append(ProviderRecipient(name=p.name, email=p.email, role=str(p.role.value)))
 
-        sandbox_mode = os.getenv("SANDBOX", "1").lower() in {"1", "true", "yes", "on"}
 
         result = self.provider.create_and_send_envelope(
             contract_id=contract_id,
@@ -223,7 +227,7 @@ class ContractPipeline:
             message=message,
             pdf_bytes=pdf,
             recipients=recipients,
-            sandbox=sandbox_mode,
+            sandbox=True,
         )
 
         env = ContractEnvelope(
@@ -244,7 +248,7 @@ class ContractPipeline:
 
         self._event(
             c.id,
-            "ENVELOPE_SENT",
+            "ENVELOPE_QUEUED_SANDBOX",
             actor,
             {
                 "envelope_id": env.id,

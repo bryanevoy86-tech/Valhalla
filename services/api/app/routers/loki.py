@@ -1,22 +1,26 @@
 """Loki AI review FastAPI router for artifact analysis and compliance checks."""
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
-from app.loki.models import LokiFinding, LokiReview, LokiReviewStatus, LokiResultSeverity
+from app.core.dependencies import require_prime_control_key
+from app.loki.review_service import artifact_digest, record_reconsideration, reviewer_identity, verdict
+from app.services.prime_business_execution import require_owner_mandate_key
+from app.loki.models import LokiFinding, LokiReview, LokiReviewStatus
 from app.loki.schemas import (
     LokiFindingRead,
     LokiReviewCreate,
     LokiReviewListItem,
     LokiReviewRead,
     LokiVerdict,
+    OwnerReconsiderationIn,
 )
 from app.core.loki_engine import engine as counter_engine
 from app.schemas.loki_analysis import (
@@ -24,42 +28,7 @@ from app.schemas.loki_analysis import (
     LokiAnalysisResponse,
 )
 
-router = APIRouter(prefix="/loki", tags=["Loki Reviews"])
-
-
-# --- Internal helper ---------------------------------------------------------
-
-
-def _stub_loki_analysis(review: LokiReview, db: Session) -> LokiReview:
-    """
-    Temporary stub analysis so the API works now.
-    Real Loki AI logic gets wired in later.
-    """
-    # Very simple behavior:
-    # - mark as COMPLETED
-    # - set severity=warn
-    # - add a generic finding to show the pipe works
-
-    review.status = LokiReviewStatus.COMPLETED
-    review.result_severity = LokiResultSeverity.WARN
-    review.summary = "Loki stub analysis ran. Replace with real AI logic."
-
-    # example finding
-    finding = LokiFinding(
-        review=review,
-        category="stub",
-        severity="low",
-        message="This is a placeholder Loki finding. Implement real checks.",
-        suggested_fix="Wire Loki to the AI analysis pipeline.",
-        tags={"example": True},
-    )
-    db.add(finding)
-    review.updated_at = datetime.utcnow()
-    db.flush()
-    return review
-
-
-# --- Endpoints ---------------------------------------------------------------
+router = APIRouter(prefix="/loki", tags=["Loki Reviews"], dependencies=[Depends(require_prime_control_key)])
 
 
 @router.post(
@@ -71,27 +40,34 @@ def create_loki_review(
     payload: LokiReviewCreate,
     db: Session = Depends(get_db),
 ) -> LokiReviewRead:
-    """Create a new Loki review for artifact analysis."""
+    """Queue a versioned artifact for the independent worker."""
+    reviewer_identity()
+    digest = artifact_digest(payload.artifact_type, payload.heimdall_reference_id, payload.raw_input)
+    previous = db.query(LokiReview).filter_by(artifact_sha256=digest).one_or_none()
+    if previous is not None:
+        return previous
     review = LokiReview(
-        input_source=payload.input_source,
-        artifact_type=payload.artifact_type,
-        risk_profile=payload.risk_profile,
-        status=LokiReviewStatus.QUEUED,
-        heimdall_reference_id=payload.heimdall_reference_id,
-        human_reference_id=payload.human_reference_id,
-        raw_input=payload.raw_input,
+        artifact_type=payload.artifact_type, input_source=payload.input_source,
+        risk_profile=payload.risk_profile, raw_input=payload.raw_input,
+        heimdall_reference_id=payload.heimdall_reference_id, human_reference_id=payload.human_reference_id,
+        status=LokiReviewStatus.QUEUED, artifact_sha256=digest,
     )
     db.add(review)
-    db.flush()
-    db.refresh(review)
-
-    # For now, we run the stub analysis inline.
-    # Later you can replace this with a background job.
-    _stub_loki_analysis(review, db)
-    db.commit()
-    db.refresh(review)
-
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        previous = db.query(LokiReview).filter_by(artifact_sha256=digest).one_or_none()
+        if previous is None:
+            raise
+        return previous
     return review
+
+
+@router.post("/reviews/{review_id}/reconsider", dependencies=[Depends(require_owner_mandate_key)])
+def reconsider_review(review_id: UUID, payload: OwnerReconsiderationIn, db: Session = Depends(get_db)):
+    result = record_reconsideration(db, review_id, payload)
+    return {"review_id": result.review_id, "disposition": result.disposition, "artifact_sha256": result.artifact_sha256}
 
 
 @router.get(
@@ -188,25 +164,13 @@ def get_loki_verdict(
     if not review:
         raise HTTPException(status_code=404, detail="Loki review not found")
 
-    # Basic verdict logic for now.
-    severity = review.result_severity or LokiResultSeverity.WARN
-    ok_to_proceed = severity == LokiResultSeverity.OK
-    requires_human = severity in (LokiResultSeverity.WARN, LokiResultSeverity.CRITICAL)
-
-    headline = review.summary or "Loki review completed."
-
-    key_risks: list[str] = []
-    for f in review.findings or []:
-        if f.severity in ("high", "critical"):
-            key_risks.append(f.message)
-
-    return LokiVerdict(
-        result_severity=severity,
-        headline=headline,
-        ok_to_proceed=ok_to_proceed,
-        requires_human_review=requires_human,
-        key_risks=key_risks,
-    )
+    if review.status != LokiReviewStatus.COMPLETED:
+        raise HTTPException(status_code=409, detail="LOKI_AUDIT_NOT_COMPLETE")
+    try:
+        reviewer_identity()
+    except HTTPException:
+        raise HTTPException(status_code=503, detail="LOKI_VERIFIED_VERDICT_PROVIDER_NOT_CONNECTED") from None
+    return verdict(db, review)
 
 
 @router.post(

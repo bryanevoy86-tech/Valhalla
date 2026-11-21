@@ -4,14 +4,15 @@ Render helper for contracts: Jinja2 template -> text -> PDF (via ReportLab).
 
 import io
 from typing import Dict, Any
-from jinja2 import Environment, BaseLoader
+from jinja2 import BaseLoader, StrictUndefined
+from jinja2.sandbox import SandboxedEnvironment
 from reportlab.lib.pagesizes import LETTER
 from reportlab.pdfgen import canvas
 from reportlab.lib.units import inch
 
 
 def render_text(template_str: str, data: Dict[str, Any]) -> str:
-    env = Environment(loader=BaseLoader(), autoescape=False, trim_blocks=True, lstrip_blocks=True)
+    env = SandboxedEnvironment(loader=BaseLoader(), undefined=StrictUndefined, autoescape=False, trim_blocks=True, lstrip_blocks=True)
     tmpl = env.from_string(template_str)
     return tmpl.render(**data)
 

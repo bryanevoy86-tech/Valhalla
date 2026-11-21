@@ -4,7 +4,14 @@ Comprehensive test suite for Ultra Mode configuration.
 """
 
 import pytest
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
+from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
+from sqlalchemy.pool import StaticPool
+
+from app.core.db import get_db
+from app.routes.heimdall_ultra import router
 
 from app.models.heimdall_ultra import HeimdallUltraConfig
 from app.services.heimdall_ultra import (
@@ -16,6 +23,33 @@ from app.services.heimdall_ultra import (
     set_priority_matrix,
 )
 from app.schemas.heimdall_ultra import UltraConfigUpdate
+
+
+@pytest.fixture
+def db():
+    engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
+    HeimdallUltraConfig.__table__.create(engine)
+    try:
+        with Session(engine) as session:
+            yield session
+    finally:
+        engine.dispose()
+
+
+@pytest.fixture
+def client(db, monkeypatch):
+    api = FastAPI()
+    api.include_router(router)
+    api.dependency_overrides[get_db] = lambda: db
+    monkeypatch.setenv("VALHALLA_PRIME_CONTROL_KEY", "isolated-ultra-test-key")
+    with TestClient(api, headers={"X-Prime-Control-Key": "isolated-ultra-test-key"}) as client:
+        yield client
+
+
+def test_ultra_settings_require_private_prime_key(client):
+    assert client.get("/heimdall/ultra/", headers={"X-Prime-Control-Key": "wrong"}).status_code == 401
+    assert client.post("/heimdall/ultra/enable", headers={"X-Prime-Control-Key": "wrong"}).status_code == 401
+    assert client.get("/heimdall/ultra/").json()["enabled"] is False
 
 
 class TestHeimdallUltraService:
