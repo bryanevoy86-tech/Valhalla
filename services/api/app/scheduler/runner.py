@@ -47,8 +47,11 @@ async def run_jobs_once() -> None:
         try:
             from app.arbitrage.service import bootstrap_safe_rules, evaluate_and_record_metrics
 
-            bootstrap_safe_rules(db)
-            evaluate_and_record_metrics(db)
+            from app.services.prime_business_execution import _emergency_stop_active
+
+            if not _emergency_stop_active(db):
+                bootstrap_safe_rules(db)
+                evaluate_and_record_metrics(db)
         except Exception:
             db.rollback()
             logger.exception("Arbitrage maintenance step failed")

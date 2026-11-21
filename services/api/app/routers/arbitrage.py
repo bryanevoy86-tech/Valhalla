@@ -3,6 +3,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
+from app.core.dependencies import require_prime_control_key
+from app.services.prime_business_execution import _emergency_stop_active, require_owner_mandate_key
 from app.arbitrage.schemas import (
     FXRuleCreate,
     FXRuleResponse,
@@ -22,10 +24,18 @@ from app.arbitrage.service import (
 )
 
 
-router = APIRouter(prefix="/arbitrage", tags=["arbitrage"])
+router = APIRouter(prefix="/arbitrage", tags=["arbitrage"], dependencies=[Depends(require_prime_control_key)])
 
 
-@router.post("/rules", response_model=FXRuleResponse)
+def require_paper_write(db: Session = Depends(get_db), _: None = Depends(require_owner_mandate_key)):
+    if _emergency_stop_active(db):
+        raise HTTPException(503, "Paper FX paused by emergency stop")
+
+
+paper_write = [Depends(require_paper_write)]
+
+
+@router.post("/rules", response_model=FXRuleResponse, dependencies=paper_write)
 def new_rule(payload: FXRuleCreate, db: Session = Depends(get_db)):
     return create_rule(db, payload)
 
@@ -35,7 +45,7 @@ def rules(db: Session = Depends(get_db)):
     return list_rules(db)
 
 
-@router.post("/orders", response_model=FXOrderResponse)
+@router.post("/orders", response_model=FXOrderResponse, dependencies=paper_write)
 def new_order(payload: FXOrderCreate, db: Session = Depends(get_db)):
     return place_order(db, payload)
 
@@ -45,20 +55,20 @@ def orders(status: Optional[str] = None, db: Session = Depends(get_db)):
     return list_orders(db, status)
 
 
-@router.post("/orders/{order_id}/close", response_model=FXOrderResponse)
+@router.post("/orders/{order_id}/close", response_model=FXOrderResponse, dependencies=paper_write)
 def close(order_id: int, body: FXCloseRequest, db: Session = Depends(get_db)):
     o = close_order(db, order_id, body.exit_px)
     if not o:
-        raise HTTPException(status_code=404, detail="Order not found")
+        raise HTTPException(status_code=409, detail="Paper order is missing or already settled at a different price")
     return o
 
 
-@router.post("/metrics/eval", response_model=FXMetricResponse)
+@router.post("/metrics/eval", response_model=FXMetricResponse, dependencies=paper_write)
 def eval_metrics(db: Session = Depends(get_db)):
     return evaluate_and_record_metrics(db)
 
 
-@router.post("/rules/bootstrap")
+@router.post("/rules/bootstrap", dependencies=paper_write)
 def bootstrap(db: Session = Depends(get_db)):
     bootstrap_safe_rules(db)
     return {"ok": True}

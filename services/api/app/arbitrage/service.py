@@ -3,11 +3,10 @@ from datetime import datetime, timezone
 from typing import List, Optional, Tuple
 from app.arbitrage.models import FXRule, FXOrder, FXMetric
 from app.arbitrage.schemas import FXRuleCreate, FXOrderCreate
-from app.finops.schemas import VaultBalanceUpsert
-from app.finops.service import upsert_vault, list_vaults
+from math import isfinite
 
 
-SAFE_VAULT = "MAIN"  # sync book equity to MAIN vault
+PAPER_STARTING_CAPITAL = 100_000.0
 
 
 def create_rule(db: Session, payload: FXRuleCreate) -> FXRule:
@@ -38,9 +37,11 @@ def list_orders(db: Session, status: Optional[str] = None) -> List[FXOrder]:
 
 
 def close_order(db: Session, order_id: int, exit_px: float) -> Optional[FXOrder]:
-    o = db.get(FXOrder, order_id)
-    if not o:
+    o = db.get(FXOrder, order_id, with_for_update=True)
+    if not o or o.status not in {"open", "closed"}:
         return None
+    if o.status == "closed":
+        return o if o.exit_px == exit_px else None
     o.exit_px = exit_px
     o.status = "closed"
     o.closed_at = datetime.now(timezone.utc)
@@ -50,49 +51,35 @@ def close_order(db: Session, order_id: int, exit_px: float) -> Optional[FXOrder]
 
 
 def _compute_book_equity(db: Session) -> Tuple[float, float]:
-    """Return (equity, realized_pnl). Unrealized omitted for simplicity."""
+    """Recompute virtual equity from paper orders and a fixed virtual baseline."""
     closed = db.query(FXOrder).filter(FXOrder.status == "closed").all()
     realized = 0.0
-    for o in closed:
-        pnl_per_unit = (
-            (o.exit_px - o.entry_px) if o.side == "buy" else (o.entry_px - o.exit_px)  # type: ignore[operator]
-        )
-        realized += pnl_per_unit * o.size
-    # Assume base equity is last vault MAIN balance (if any)
-    vaults = list_vaults(db)
-    base = 0.0
-    for v in vaults:
-        if v.vault_code == SAFE_VAULT:
-            base = v.balance
-            break
-    equity = base + realized
-    return equity, realized
+    for order in closed:
+        values = (order.entry_px, order.exit_px, order.size)
+        if order.side not in {"buy", "sell"} or any(
+            value is None or not isfinite(value) or not 0 < value <= 1_000_000 for value in values
+        ):
+            continue
+        difference = order.exit_px - order.entry_px
+        realized += difference * order.size * (1 if order.side == "buy" else -1)
+    return PAPER_STARTING_CAPITAL + realized, realized
 
 
 def _get_last_metric(db: Session) -> Optional[FXMetric]:
-    return db.query(FXMetric).order_by(FXMetric.id.desc()).first()
+    return db.query(FXMetric).filter(FXMetric.note.in_(("paper_only", "paper_freeze_triggered"))).order_by(
+        FXMetric.id.desc(),
+    ).first()
 
 
 def evaluate_and_record_metrics(db: Session) -> FXMetric:
     equity, _ = _compute_book_equity(db)
     last = _get_last_metric(db)
-    peak = max(equity, last.peak_equity if last else equity)
-    dd = 0.0 if peak <= 0 else max(0.0, (peak - equity) / peak * 100.0)
-    metric = FXMetric(equity=equity, peak_equity=peak, drawdown_pct=dd, note="auto")
+    peak = max(equity, last.peak_equity if last else PAPER_STARTING_CAPITAL)
+    drawdown = max(0.0, (peak - equity) / peak * 100.0)
+    metric = FXMetric(equity=equity, peak_equity=peak, drawdown_pct=drawdown, note="paper_only")
     db.add(metric)
     db.commit()
     db.refresh(metric)
-
-    # Sync vault with current equity (book value) — source "fx_engine"
-    upsert_vault(
-        db,
-        payload=VaultBalanceUpsert(
-            vault_code=SAFE_VAULT,
-            currency="CAD",
-            balance=equity,
-            last_source="fx_engine",
-        ),
-    )
 
     # Enforce freeze if rules require it
     enforce_freeze_rules(db, metric)
@@ -110,7 +97,7 @@ def enforce_freeze_rules(db: Session, metric: FXMetric):
     max_dd = float(rules.get("max_drawdown_pct", 2.0))
     if metric.drawdown_pct >= max_dd:
         # Practical "freeze": mark a vault note by reducing exposure => here we just add a cautionary note.
-        metric.note = f"freeze_triggered_dd_{metric.drawdown_pct:.2f}%"
+        metric.note = "paper_freeze_triggered"
         db.commit()
         # In a real engine, you would: cancel open orders, reduce positions, halt new orders, alert, etc.
 
