@@ -19,7 +19,7 @@ from app.services.system_self_check import run_system_self_check
 from app.services.owner_advisory_model import advisory_reply
 from app.services.owner_attachment_extraction import extract_local, extraction_receipt, verified_attachment
 from app.services.owner_memory import MemoryIn, memory_receipt, prepare_entry, recall_entries
-from app.services.owner_specialist_context import specialist_context
+from app.services.owner_specialist_context import prime_decision_context, specialist_context
 
 MAX_BYTES = 5 * 1024 * 1024
 MAX_BODY = 7 * 1024 * 1024
@@ -36,6 +36,7 @@ class TurnIn(BaseModel):
     attachment_ids: list[UUID] = Field(default_factory=list, max_length=8)
     provider_data_class: Literal["PRIVATE", "SYNTHETIC"] = "PRIVATE"
     specialist_schedule_id: UUID | None = None
+    prime_decision_id: UUID | None = None
 
 class UploadIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -188,6 +189,8 @@ def install(router):
         ids = [str(x) for x in payload.attachment_ids]
         if not message or len(set(ids)) != len(ids):
             raise HTTPException(422, "Blank message or duplicate attachment")
+        if payload.prime_decision_id and payload.specialist_schedule_id:
+            raise HTTPException(422, "Specify one report or decision reference per turn")
         existing = db.get(OwnerTurn, payload.turn_id)
         if existing:
             if (existing.conversation_id, existing.message, existing.attachment_ids)!=(conversation_id,message,ids):
@@ -198,13 +201,25 @@ def install(router):
                 str(payload.specialist_schedule_id) if payload.specialist_schedule_id else None
             ):
                 raise HTTPException(409, "Turn specialist reference already recorded")
+            if existing.evidence.get("requested_prime_decision_id") != (
+                str(payload.prime_decision_id) if payload.prime_decision_id else None
+            ):
+                raise HTTPException(409, "Turn Prime decision reference already recorded")
             return turn_meta(existing)
         for aid in payload.attachment_ids:
             row = db.get(OwnerAttachment, aid)
             if row is None or row.conversation_id != conversation_id:
                 raise HTTPException(404, "Attachment not found in conversation")
         normalized = " ".join(message.casefold().rstrip("?! .").split())
-        if payload.specialist_schedule_id:
+        if payload.prime_decision_id:
+            evidence = prime_decision_context(db, payload.prime_decision_id)
+            evidence.update(source="persisted_prime_decision", model_connected=False)
+            reply = (
+                f"Recorded Prime recommendation: {evidence['heimdall_decision'] or 'none'}. "
+                f"Loki reconsideration: {evidence['independent_loki']['reconsideration_status']}. "
+                "This recommendation grants no execution authority."
+            )
+        elif payload.specialist_schedule_id:
             evidence = specialist_context(db, payload.specialist_schedule_id)
             evidence.update(source="persisted_specialist_receipt", model_connected=False)
             reply = (
@@ -229,6 +244,7 @@ def install(router):
         else:
             reply, evidence = answer(db, message, ids, payload.turn_id, payload.provider_data_class)
         evidence["requested_specialist_schedule_id"] = str(payload.specialist_schedule_id) if payload.specialist_schedule_id else None
+        evidence["requested_prime_decision_id"] = str(payload.prime_decision_id) if payload.prime_decision_id else None
         evidence["requested_provider_class"] = payload.provider_data_class
         row = OwnerTurn(id=payload.turn_id, conversation_id=conversation_id,message=message,reply=reply,evidence=evidence,attachment_ids=ids)
         db.add(row)

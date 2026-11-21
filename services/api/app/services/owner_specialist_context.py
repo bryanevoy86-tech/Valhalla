@@ -36,3 +36,39 @@ def specialist_context(db: Session, schedule_id: UUID) -> dict:
         ],
         "independent_loki_cleared": False, "execution_authorized": False,
     }
+
+
+def prime_decision_context(db: Session, decision_id: UUID) -> dict:
+    from app.loki.models import LokiReview
+    from app.loki.review_service import verdict
+    from app.models.god_verdicts import GodVerdict
+
+    snapshot = db.get(GodVerdict, decision_id)
+    if snapshot is None or snapshot.trigger != "phase3_universal_opportunity":
+        raise HTTPException(404, "Prime decision snapshot not found")
+    metadata = snapshot.metadata_json
+    if not isinstance(metadata, dict) or metadata.get("shadow_mode") is not False:
+        raise HTTPException(409, "This snapshot lacks a live reviewed recommendation")
+    try:
+        linked = metadata["owner_approval_envelope"]["independent_loki"]
+        review = db.get(LokiReview, UUID(linked["review_id"]))
+        if review is None or review.heimdall_reference_id != metadata.get("opportunity_id"):
+            raise ValueError
+        independent = verdict(db, review)
+        if independent.artifact_sha256 != linked["artifact_sha256"]:
+            raise ValueError
+    except (KeyError, TypeError, ValueError, AttributeError):
+        raise HTTPException(409, "Prime decision and independent evidence do not match") from None
+
+    return {
+        "prime_decision_id": str(decision_id),
+        "opportunity_id": metadata.get("opportunity_id"),
+        "heimdall_decision": (snapshot.heimdall_recommendation or {}).get("decision"),
+        "independent_loki": {
+            "review_id": str(review.id), "proposal_sha256": independent.artifact_sha256,
+            "ok_to_proceed": independent.ok_to_proceed, "reconsideration_status": independent.reconsideration_status,
+            "findings": independent.key_risks,
+        },
+        "evidence_class": "REVIEWED_INTERNAL_RECOMMENDATION",
+        "execution_authorized": False,
+    }

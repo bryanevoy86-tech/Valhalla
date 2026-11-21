@@ -187,6 +187,21 @@ def test_advisory_is_quota_bound_synthetic_only_and_never_falls_back(client, mon
     assert [message["role"] for message in request["messages"]] == ["system", "user"]
     assert request["messages"][-1]["content"] == "Synthetic arithmetic example"
     assert "tools" not in request
+    retained_turn = uuid4()
+    gen = client.app.dependency_overrides[get_db]()
+    db = next(gen)
+    try:
+        bucket = db.query(OwnerInferenceQuota).one()
+        db.add(OwnerInferenceAttempt(turn_id=retained_turn, day=bucket.day,
+                                     vendor=vendor, model="fixture-model", status="reserved"))
+        db.commit()
+    finally:
+        gen.close()
+    retained = client.post(turns, headers=HEADERS, json={
+        "turn_id": str(retained_turn), "message": "Interrupted fixture", "provider_data_class": "SYNTHETIC",
+    })
+    assert retained.status_code == 409
+    assert len(calls) == 1
     assert send("Provider rate limited", "SYNTHETIC")["response_mode"] == "DETERMINISTIC_READ_ONLY"
     assert send("Quota exhausted", "SYNTHETIC")["response_mode"] == "DETERMINISTIC_READ_ONLY"
     assert len(calls) == 2

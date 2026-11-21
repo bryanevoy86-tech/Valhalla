@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 import os
 
 import httpx
+from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert as postgres_insert
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
@@ -26,8 +27,10 @@ PROVIDERS = {
 
 def reserve_attempt(db, turn_id, vendor, model, limit):
     dialect = db.get_bind().dialect.name
-    if dialect not in {"postgresql", "sqlite"} or db.get(OwnerInferenceAttempt, turn_id) is not None:
+    if dialect not in {"postgresql", "sqlite"}:
         return None
+    if db.get(OwnerInferenceAttempt, turn_id) is not None:
+        raise HTTPException(409, "An advisory attempt already exists for this turn")
     day = datetime.now(timezone.utc).date().isoformat()
     insert = postgres_insert if dialect == "postgresql" else sqlite_insert
     quota = insert(OwnerInferenceQuota).values(day=day, requests=1)
@@ -46,7 +49,7 @@ def reserve_attempt(db, turn_id, vendor, model, limit):
     except IntegrityError:
         # A concurrent replay must undo its quota increment and make no call.
         db.rollback()
-        return None
+        raise HTTPException(409, "An advisory attempt already exists for this turn") from None
     return attempt
 
 

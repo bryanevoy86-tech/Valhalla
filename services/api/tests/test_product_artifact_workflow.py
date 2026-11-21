@@ -14,6 +14,7 @@ from app.models.completion_registry import (
     KnowledgeRegistryItem, LearningFeedbackRecord, LegacyInstanceRegistryItem, LegacyInstanceWorkItem, LegacyOrchestrationEvent,
 )
 from app.models.media_engine import MediaContent
+from app.models.owner_conversation import OwnerConversation, OwnerTurn
 from app.models.product_artifact import ProductArtifact
 from app.models.prime_specialist_schedule import PrimeSpecialistSchedule
 from app.routers.prime_specialist_schedules import _utc_now, run_due_schedule
@@ -118,7 +119,7 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
             **dict.fromkeys(("churn_risk", "technical_build_effort", "hosting_api_cost", "support_burden"), 0.05),
         },
     }
-    for model in (KnowledgeRegistryItem, LearningFeedbackRecord, PrimeSpecialistSchedule):
+    for model in (KnowledgeRegistryItem, LearningFeedbackRecord, PrimeSpecialistSchedule, OwnerConversation, OwnerTurn):
         model.__table__.create(engine)
     schedule_root = "/api/prime/specialist-schedules"
     schedule_id = str(uuid4())
@@ -137,6 +138,19 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
     for _ in range(2):
         with Session(engine) as db:
             assert run_due_schedule(db, now=slot_time)["status"] == "evaluated"
+    cid = str(uuid4())
+    threads = "/api/jarvis/conversations"
+    assert client.post(threads, json={"conversation_id": cid, "title": "Private operating rehearsal"}).status_code == 201
+    turns = f"{threads}/{cid}/turns"
+
+    def owner_turn(message, **context):
+        result = client.post(turns, json={"turn_id": str(uuid4()), "message": message, **context})
+        assert result.status_code == 201, result.text
+        return result.json()
+
+    first = owner_turn("Review the product specialist report", specialist_schedule_id=schedule_id)
+    assert first["evidence"]["evidence_class"] == "INTERNAL_ADVISORY"
+    assert first["evidence"]["verified_internal_outcome_ids"] == []
     next_cadence = client.get(f"{schedule_root}/{schedule_id}").json()["next_due_at"]
     unrelated_advice = client.get(f"{schedule_root}/{other_schedule_id}").json()["latest_report"]
 
@@ -180,6 +194,10 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
     assert advice["final_decision"] in {"proceed", "research_more"}, advice["final_decision"]
     assert advice["capital_risk_exit_analysis"]["hard_decision_rule_pass"], advice["hard_gate_evaluation"]
     listing["prime_verdict_id"] = advice["persistence"]["god_verdict_id"]
+    decision_turn = owner_turn("Show the independently reviewed recommendation", prime_decision_id=listing["prime_verdict_id"])
+    assert decision_turn["evidence"]["independent_loki"]["review_id"] == review_id
+    assert decision_turn["evidence"]["independent_loki"]["reconsideration_status"] == "accept_risk"
+    assert decision_turn["execution_authorized"] is False
     different_price = client.post(f"{FACTORY}/listing-drafts", headers=admin, json={
         **listing, "price_cents_cad": listing["price_cents_cad"] + 1,
     })
@@ -219,6 +237,9 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
     assert report["trigger_outcome_event_id"] == report["verified_internal_outcomes"][0]["outcome_event_id"]
     assert report["verified_internal_outcomes"][0]["prime_decision"]["verdict_id"] == listing["prime_verdict_id"]
     assert report["verified_internal_outcomes"][0]["sales_verified"] is False
+    follow_up = owner_turn("What did we learn after the internal draft?", specialist_schedule_id=schedule_id)
+    assert follow_up["evidence"]["verified_internal_outcome_ids"] == [report["trigger_outcome_event_id"]]
+    assert len(client.get(turns).json()) == 3
     assert client.get(f"{schedule_root}/{other_schedule_id}").json()["latest_report"] == unrelated_advice
     with Session(engine) as db:
         assert run_due_schedule(db, now=slot_time + timedelta(seconds=1)) == {"status": "idle"}

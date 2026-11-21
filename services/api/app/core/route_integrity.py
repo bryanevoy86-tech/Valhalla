@@ -18,6 +18,7 @@ REQUIRED_ROUTER_NAMES = frozenset({
     "product_artifacts",        # owner-attested internal asset staging
     "legacy_playbooks",       # internal clone and mirror rehearsals
     "prime_business_factory", # durable owned execution lane
+    "provider_evidence",        # private synthetic suitability evidence
     "norns_forecasts",          # timestamped observable forecasts
     "prime_specialist_schedules",  # durable owner-authorized shadow cadence
     "builder",                # controlled software building

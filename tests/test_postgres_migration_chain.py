@@ -45,6 +45,12 @@ LOKI_RECEIPTS = load("alembic/versions/20261120_loki_review_receipts.py")
 SPECIALIST = load("alembic/versions/20261120_specialist_schedules.py")
 PRODUCT = load("alembic/versions/20261120_product_artifacts.py")
 SPECIALIST_TRIGGERS = load("alembic/versions/20261120_specialist_triggers.py")
+OWNER_CHAT = load("alembic/versions/20261120_owner_conversation.py")
+INFERENCE = load("alembic/versions/20261121_owner_inference_limits.py")
+OWNER_MEMORY = load("alembic/versions/20261121_owner_memory.py")
+EXTRACTIONS = load("alembic/versions/20261121_owner_extractions.py")
+NORNS = load("alembic/versions/20261121_norns_forecasts.py")
+PROVIDER_EVIDENCE = load("alembic/versions/20261121_provider_evidence.py")
 
 
 @unittest.skipUnless(url, "Disposable PostgreSQL database not supplied")
@@ -268,6 +274,47 @@ class PostgresMigrationChainTests(unittest.TestCase):
                         "SELECT data FROM product_artifacts WHERE jurisdiction='CA-MB'"
                     )).scalar_one()
                     self.assertEqual(bytes(recovered), asset["data"])
+                finally:
+                    transaction.rollback()
+        finally:
+            engine.dispose()
+
+
+    def test_package_one_migrations_preserve_thread_and_enforce_usage_forecast_constraints(self):
+        engine = create_engine(url, pool_pre_ping=True)
+        try:
+            with engine.connect() as connection:
+                transaction = connection.begin()
+                try:
+                    operations = Operations(MigrationContext.configure(connection))
+                    with patch.object(OWNER_CHAT, "op", operations):
+                        OWNER_CHAT.upgrade()
+                    connection.execute(text("""
+                        INSERT INTO prime_owner_conversations (id, title, created_at)
+                        VALUES ('00000000-0000-0000-0000-000000000001', 'prior thread', now())
+                    """))
+                    for module in (INFERENCE, OWNER_MEMORY, EXTRACTIONS, NORNS, PROVIDER_EVIDENCE):
+                        with patch.object(module, "op", operations):
+                            module.upgrade()
+                    expected = {
+                        "prime_owner_inference_quotas", "prime_owner_inference_attempts", "prime_owner_memory_entries",
+                        "prime_owner_attachment_extractions", "prime_norns_forecasts", "prime_provider_evidence",
+                    }
+                    self.assertTrue(expected <= set(inspect(connection).get_table_names()))
+                    self.assertEqual(connection.execute(text("SELECT title FROM prime_owner_conversations")).scalar_one(), "prior thread")
+                    reserve = text("""
+                        INSERT INTO prime_owner_inference_quotas(day, requests) VALUES ('2026-11-21', 1)
+                        ON CONFLICT (day) DO UPDATE SET requests = prime_owner_inference_quotas.requests + 1
+                        WHERE prime_owner_inference_quotas.requests < 2 RETURNING requests
+                    """)
+                    self.assertEqual(connection.execute(reserve).scalar_one(), 1)
+                    self.assertEqual(connection.execute(reserve).scalar_one(), 2)
+                    self.assertIsNone(connection.execute(reserve).scalar_one_or_none())
+                    with self.assertRaises(IntegrityError), connection.begin_nested():
+                        connection.execute(text("""
+                            INSERT INTO prime_norns_forecasts (id, action_id, probability_bp, issued_at, deadline_at)
+                            VALUES ('00000000-0000-0000-0000-000000000002', 'draft', 10001, now(), now())
+                        """))
                 finally:
                     transaction.rollback()
         finally:
