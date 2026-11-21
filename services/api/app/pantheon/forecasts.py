@@ -13,12 +13,16 @@ from app.services.prime_business_execution import ACTION_TYPE, _json, _receipt_i
 SOURCE = "SCOPED_HISTORICAL_RATE"
 
 
-def outcome_matches_receipt(db: Session, forecast, work, now) -> bool:
+def outcome_matches_receipt(db: Session, forecast, work, now, *, enrolled_at=None) -> bool:
     """Recompute an internal deadline result from current Factory receipts."""
     if (work is None or _json(work.payload_json, {}).get("action_type") != ACTION_TYPE
             or forecast.observed_outcome not in (0, 1) or forecast.resolved_at is None
             or not forecast.issued_at < forecast.deadline_at
             or not forecast.issued_at <= forecast.resolved_at <= now):
+        return False
+    if enrolled_at is not None and not forecast.issued_at <= enrolled_at < min(
+        forecast.deadline_at, forecast.resolved_at
+    ):
         return False
     evidence_id = _receipt_id(forecast.action_id)
     negative_id = f"FACTORY_DEADLINE_NO_RECEIPT:{forecast.action_id}"
@@ -41,7 +45,7 @@ def outcome_matches_receipt(db: Session, forecast, work, now) -> bool:
         verified_at = verified_at.astimezone(timezone.utc).replace(tzinfo=None)
     except (KeyError, TypeError, ValueError):
         return False
-    if not forecast.issued_at <= verified_at <= now:
+    if not forecast.issued_at <= verified_at <= now or (enrolled_at is not None and verified_at <= enrolled_at):
         return False
     if forecast.evidence_ref == negative_id:
         # A legitimate completion that arrived after the negative was recorded does not rewrite history.
@@ -49,25 +53,56 @@ def outcome_matches_receipt(db: Session, forecast, work, now) -> bool:
     return verified_at <= forecast.resolved_at and forecast.observed_outcome == int(verified_at <= forecast.deadline_at)
 
 
-def calibration_measurements(db: Session, now, *, scope=None, estimate_source=None, cohort="ORDINARY") -> dict:
+def calibration_measurements(
+    db: Session, now, *, scope=None, estimate_source=None, cohort="ORDINARY", horizon_seconds=None,
+) -> dict:
     forecast, work = NornsForecast, LegacyInstanceWorkItem
-    holdout = exists(select(NornsHoldout.forecast_id).where(NornsHoldout.forecast_id == forecast.id))
-    rows = select(forecast, work).outerjoin(work, work.action_id == forecast.action_id).where(
-        forecast.observed_outcome.is_not(None), holdout if cohort == "HOLDOUT" else ~holdout,
+    holdout = NornsHoldout
+    rows = select(forecast, work, holdout.enrolled_at).outerjoin(
+        work, work.action_id == forecast.action_id,
+    ).outerjoin(
+        holdout, holdout.forecast_id == forecast.id,
+    ).where(
+        forecast.observed_outcome.is_not(None),
+        holdout.forecast_id.is_not(None) if cohort == "HOLDOUT" else holdout.forecast_id.is_(None),
     )
     if scope is not None:
         rows = rows.where(*(getattr(work, key) == value for key, value in scope.items()))
     if estimate_source is not None:
         rows = rows.where(forecast.estimate_source == estimate_source)
+    horizon = timedelta(seconds=horizon_seconds) if horizon_seconds is not None else None
+    buckets = [[0, 0, 0] for _ in range(10)]
     count = excluded = squared_error = 0
-    for estimate, action in db.execute(rows.execution_options(yield_per=100)):
-        if not outcome_matches_receipt(db, estimate, action, now):
+    for estimate, action, enrollment in db.execute(rows.execution_options(yield_per=100)):
+        if horizon is not None and estimate.deadline_at - estimate.issued_at != horizon:
+            continue
+        if not outcome_matches_receipt(db, estimate, action, now, enrolled_at=enrollment):
             excluded += 1
             continue
         count += 1
-        squared_error += (estimate.probability_bp - 10000 * estimate.observed_outcome) ** 2
-    return {"resolved_sample_count": count, "evidence_excluded_count": excluded,
-            "brier_score": round(squared_error / count / 100_000_000, 6) if count else None}
+        probability = estimate.probability_bp
+        outcome = estimate.observed_outcome
+        squared_error += (probability - 10000 * outcome) ** 2
+        bucket = buckets[min(probability // 1000, 9)]
+        bucket[0] += 1
+        bucket[1] += probability
+        bucket[2] += outcome
+    return {
+        "horizon_seconds": horizon_seconds,
+        "resolved_sample_count": count,
+        "evidence_excluded_count": excluded,
+        "brier_score": round(squared_error / count / 100_000_000, 6) if count else None,
+        "probability_buckets": [
+            {
+                "lower_bp": index * 1000,
+                "upper_bp": (index + 1) * 1000 - 1 if index < 9 else 10000,
+                "resolved_sample_count": total,
+                "mean_probability": round(probabilities / total / 10000, 6),
+                "observed_frequency": round(positives / total, 6),
+            }
+            for index, (total, probabilities, positives) in enumerate(buckets) if total
+        ],
+    }
 
 
 def issue_scoped_estimate(db: Session, scope: dict, now, horizon_seconds: int) -> dict:

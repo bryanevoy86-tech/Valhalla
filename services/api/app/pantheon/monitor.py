@@ -60,7 +60,7 @@ def observations(db: Session, lens: str, scope: dict, outcomes: list[dict], now,
             return {"evidence_status": "FORECAST_SCHEMA_UNAVAILABLE"}
         if "estimate_source" not in {item["name"] for item in schema.get_columns(NornsForecast.__tablename__)}:
             return {"evidence_status": "FORECAST_SCHEMA_UNAVAILABLE"}
-        return {**calibration_measurements(db, now, scope=scope),
+        return {**calibration_measurements(db, now, scope=scope, horizon_seconds=cadence),
                 "score_cohort": "ORDINARY_INTERNAL_ESTIMATE_SOURCES",
                 "target": "VERIFIED_INTERNAL_ARTIFACT_BY_DEADLINE",
                 **issue_scoped_estimate(db, scope, now, cadence)}

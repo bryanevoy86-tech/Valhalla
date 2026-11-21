@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 from uuid import UUID
 from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import inspect, select
 from sqlalchemy.exc import IntegrityError
@@ -166,8 +166,10 @@ def enroll_holdout(forecast_id: UUID, db: Session = Depends(get_db)):
 
 @router.get("/calibration")
 def calibration(estimate_source: Literal["OWNER_ESTIMATE", "SCOPED_HISTORICAL_RATE"] = "OWNER_ESTIMATE",
-                cohort: Literal["ORDINARY", "HOLDOUT"] = "ORDINARY", db: Session = Depends(get_db)):
-    result = calibration_measurements(db, _now(), estimate_source=estimate_source, cohort=cohort)
+                cohort: Literal["ORDINARY", "HOLDOUT"] = "ORDINARY",
+                horizon_seconds: int | None = Query(None, ge=30, le=2592000), db: Session = Depends(get_db)):
+    result = calibration_measurements(db, _now(), estimate_source=estimate_source, cohort=cohort,
+                                      horizon_seconds=horizon_seconds)
     return {
         "target": "VERIFIED_INTERNAL_ARTIFACT_BY_DEADLINE", "estimate_source": estimate_source, "cohort": cohort,
         **result, "accuracy_claim": "OBSERVED_INTERNAL_SAMPLE" if result["resolved_sample_count"] else "INSUFFICIENT_EVIDENCE",

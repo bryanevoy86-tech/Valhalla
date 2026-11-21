@@ -82,6 +82,18 @@ def test_norns_requires_pre_execution_forecast_and_scores_only_observed_outcomes
     assert stats["resolved_sample_count"] == 2
     assert stats["brier_score"] == 0.065
     assert stats["accuracy_claim"] == "OBSERVED_INTERNAL_SAMPLE"
+    assert stats["probability_buckets"] == [
+        {"lower_bp": 3000, "upper_bp": 3999, "resolved_sample_count": 1,
+         "mean_probability": 0.3, "observed_frequency": 0.0},
+        {"lower_bp": 8000, "upper_bp": 8999, "resolved_sample_count": 1,
+         "mean_probability": 0.8, "observed_frequency": 1.0},
+    ]
+    matching = client.get(f"{base}/calibration", params={"horizon_seconds": 120}).json()
+    assert matching["horizon_seconds"] == 120
+    assert matching["probability_buckets"] == stats["probability_buckets"]
+    unmatched = client.get(f"{base}/calibration", params={"horizon_seconds": 60}).json()
+    assert unmatched["brier_score"] is None and unmatched["probability_buckets"] == []
+    assert client.get(f"{base}/calibration", params={"horizon_seconds": 29}).status_code == 422
 
     third = forecast(queue("another-missed-deadline"), 4000)
     assert client.post(forecasts, headers=owner, json=third).status_code == 201
@@ -99,6 +111,7 @@ def test_norns_requires_pre_execution_forecast_and_scores_only_observed_outcomes
         report_id = run_assignment(db, "NORNS", now=later + timedelta(seconds=1))["report_event_id"]
     report = client.get(f"/api/prime/pantheon/reports/{report_id}").json()["observations"]
     assert report["forecast_status"] == "ISSUED"
+    assert report["horizon_seconds"] == 120
     assert report["action_id"] == candidate
     assert report["probability"] == 0.4
     estimate_id = report["forecast_id"]
@@ -145,3 +158,14 @@ def test_norns_requires_pre_execution_forecast_and_scores_only_observed_outcomes
     assert excluded["training_count"] == 2
     assert excluded["evidence_excluded_count"] == 1
     assert client.get(f"{base}/calibration", params={**query, "cohort": "HOLDOUT"}).json()["brier_score"] == 0.16
+
+    # A holdout marker altered after prospective enrollment must not enter either cohort.
+    with Session(engine) as db:
+        saved = db.get(NornsForecast, UUID(estimate_id))
+        marker = db.get(NornsHoldout, UUID(estimate_id))
+        marker.enrolled_at = saved.deadline_at
+        db.commit()
+    invalid = client.get(f"{base}/calibration", params={**query, "cohort": "HOLDOUT"}).json()
+    assert invalid["resolved_sample_count"] == 0 and invalid["evidence_excluded_count"] == 1
+    assert invalid["probability_buckets"] == [] and invalid["brier_score"] is None
+    assert client.get(f"{base}/calibration", params=query).json()["resolved_sample_count"] == 0
