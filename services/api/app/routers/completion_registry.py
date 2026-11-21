@@ -4726,6 +4726,16 @@ def compare_scenario_result(execution_id: str, db: Session = Depends(get_db)):
 @router.post("/knowledge/retrieve", response_model=KnowledgeRetrieveOut)
 def retrieve_knowledge(payload: KnowledgeRetrieveIn, db: Session = Depends(get_db)):
     _ensure_registry_tables(db)
+    return _retrieve_knowledge(payload, db)
+
+
+def _retrieve_knowledge(payload: KnowledgeRetrieveIn, db: Session, *, scope_owner_sources: bool = False):
+    if scope_owner_sources:
+        from sqlalchemy import inspect
+
+        schema = inspect(db.connection())
+        if any(not schema.has_table(table) for table in (KnowledgeRegistryItem.__tablename__, SourceRegistryItem.__tablename__)):
+            raise HTTPException(503, "Private knowledge registry schema unavailable")
     mode = _normalize_mode(payload.mode)
 
     q = db.query(KnowledgeRegistryItem).filter(KnowledgeRegistryItem.excluded.is_(False))
@@ -4743,9 +4753,32 @@ def retrieve_knowledge(payload: KnowledgeRetrieveIn, db: Session = Depends(get_d
     grouped_titles: dict[str, list[dict[str, Any]]] = {}
     high_impact = str(payload.risk_level or "").strip().lower() in {"high", "critical"}
 
+    today = datetime.now(timezone.utc).date()
     for row in rows:
+        if row.superseded_by or (row.expires_date and row.expires_date < today) or (
+            row.effective_date and row.effective_date > today
+        ):
+            blocked_sources.append({"source_id": row.source, "reason": "Knowledge version is no longer current"})
+            continue
+        if _permission_or_license_blocked(row.permission_status, row.license_status):
+            blocked_sources.append({"source_id": row.source, "reason": "Knowledge use is restricted"})
+            continue
         source = db.query(SourceRegistryItem).filter(SourceRegistryItem.source_id == row.source).first()
+        if scope_owner_sources:
+            allowed_systems = _loads(row.allowed_systems_json, [])
+            if (
+                source is None or not source.active
+                or not isinstance(allowed_systems, list)
+                or not {str(name).strip().lower() for name in allowed_systems} & {"heimdall", "heimdall_prime", "prime"}
+                or (row.jurisdiction and row.jurisdiction != payload.jurisdiction)
+                or (source.jurisdiction and source.jurisdiction != payload.jurisdiction)
+            ):
+                blocked_sources.append({"source_id": row.source, "reason": "Knowledge is outside the owner briefing scope"})
+                continue
         if source is not None:
+            if not source.active or _permission_or_license_blocked(source.permission_status, source.license_status):
+                blocked_sources.append({"source_id": row.source, "reason": "Registered source is inactive or restricted"})
+                continue
             allowlist_raw = _loads(source.mode_allowlist_json, [])
             if allowlist_raw:
                 allowed_modes = {m for m in (_normalize_mode(v) for v in allowlist_raw)}
@@ -4797,6 +4830,13 @@ def retrieve_knowledge(payload: KnowledgeRetrieveIn, db: Session = Depends(get_d
             "source_trust_rank": _source_trust_rank(row.source_type),
             "source_type": row.source_type,
         }
+        if scope_owner_sources:
+            entry["source_data_class"] = source.data_class
+            if (str(source.data_class or "").lower() != "live" or freshness != "fresh"
+                    or row.review_date > today or source.terminal_state != "ACTIVE_AND_VERIFIED"
+                    or row.terminal_state != "ACTIVE_AND_VERIFIED"):
+                assumptions.append(entry)
+                continue
         quality_ok = (row.quality_score or 0) >= 0.7 and effective_confidence >= 0.7
         reviewed_ok = str(row.review_status or "").lower() in {"approved", "verified"}
         citation_ok = bool((row.citation_ref or "").strip())

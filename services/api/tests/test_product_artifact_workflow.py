@@ -11,7 +11,7 @@ from app.loki.models import LokiFinding, LokiIndependentReceipt, LokiReconsidera
 from app.models.god_verdicts import GodVerdict
 from app.models.governance_decision import GovernanceDecision
 from app.models.completion_registry import (
-    KnowledgeRegistryItem, LearningFeedbackRecord, LegacyInstanceRegistryItem, LegacyInstanceWorkItem, LegacyOrchestrationEvent,
+    KnowledgeRegistryItem, LearningFeedbackRecord, LegacyInstanceRegistryItem, LegacyInstanceWorkItem, LegacyOrchestrationEvent, SourceRegistryItem,
 )
 from app.models.media_engine import MediaContent
 from app.models.owner_conversation import OwnerConversation, OwnerTurn
@@ -119,7 +119,7 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
             **dict.fromkeys(("churn_risk", "technical_build_effort", "hosting_api_cost", "support_burden"), 0.05),
         },
     }
-    for model in (KnowledgeRegistryItem, LearningFeedbackRecord, PrimeSpecialistSchedule, OwnerConversation, OwnerTurn):
+    for model in (KnowledgeRegistryItem, SourceRegistryItem, LearningFeedbackRecord, PrimeSpecialistSchedule, OwnerConversation, OwnerTurn):
         model.__table__.create(engine)
     schedule_root = "/api/prime/specialist-schedules"
     schedule_id = str(uuid4())
@@ -148,6 +148,20 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
         assert result.status_code == 201, result.text
         return result.json()
 
+    with Session(engine) as db:
+        db.add(SourceRegistryItem(
+            source_id="rehearsal-source", canonical_name="Isolated source fixture", source_type="government",
+            data_class="live", jurisdiction=scope["jurisdiction"], terminal_state="ACTIVE_AND_VERIFIED",
+        ))
+        db.add(KnowledgeRegistryItem(
+            item_id="rehearsal-publisher-policy", source="rehearsal-source", title="Workshop permission reference",
+            source_type="government", jurisdiction=scope["jurisdiction"], terminal_state="ACTIVE_AND_VERIFIED",
+            review_status="approved", review_date=_utc_now().date(), allowed_systems_json='["Heimdall"]',
+            citation_ref="fixture:internal-workshop-rights", quality_score=0.95, confidence_score=0.95,
+        ))
+        db.commit()
+    research = owner_turn("Find the source for this review", knowledge_domain="Workshop", knowledge_jurisdiction=scope["jurisdiction"])
+    assert research["evidence"]["knowledge"]["facts"][0]["item_id"] == "rehearsal-publisher-policy"
     first = owner_turn("Review the product specialist report", specialist_schedule_id=schedule_id)
     assert first["evidence"]["evidence_class"] == "INTERNAL_ADVISORY"
     assert first["evidence"]["verified_internal_outcome_ids"] == []
@@ -239,7 +253,7 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
     assert report["verified_internal_outcomes"][0]["sales_verified"] is False
     follow_up = owner_turn("What did we learn after the internal draft?", specialist_schedule_id=schedule_id)
     assert follow_up["evidence"]["verified_internal_outcome_ids"] == [report["trigger_outcome_event_id"]]
-    assert len(client.get(turns).json()) == 3
+    assert len(client.get(turns).json()) == 4
     assert client.get(f"{schedule_root}/{other_schedule_id}").json()["latest_report"] == unrelated_advice
     with Session(engine) as db:
         assert run_due_schedule(db, now=slot_time + timedelta(seconds=1)) == {"status": "idle"}

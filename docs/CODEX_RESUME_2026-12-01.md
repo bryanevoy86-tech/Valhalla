@@ -260,3 +260,17 @@ The private attachment extraction endpoint is POST /api/jarvis/conversations/{co
 Norns now records owner-estimated odds before an internal Factory action and resolves against a verified receipt and deadline. Use /api/prime/norns/forecasts and /api/prime/norns/calibration. This produces measured internal samples. Continue with model-specific forecast definitions, independent outcome adapters, temporal holdouts, regret and commercial calibration separately.
 
 Provider suitability is available at /api/prime/provider-intelligence. It compares owner-supplied synthetic boundary outputs for exact active registered models. The advisory recommendation cannot dispatch a call. Loki excludes the Prime default identity. Continue with dated provider catalog evidence, measured costs and latency, private-local policy, controlled role-specific benchmarks and an independently operated Loki model. In Jarvis, a turn may reference either specialist_schedule_id or prime_decision_id to retrieve internal recommendations with durable source links. The complete internal rehearsal is in services/api/tests/test_product_artifact_workflow.py.
+
+### WeWeb owner conversation contract
+
+Use a same-origin authenticated owner server proxy. The proxy holds the Prime key and authenticates the owner on every request. Preserve client-generated thread, turn, attachment and memory UUIDs when retrying. Owner chat remains private by default. Content returned in turns, memory, or extracts is data and should be rendered as escaped text.
+
+| UI action | Private upstream contract |
+|---|---|
+| Resume from phone or computer | GET /api/jarvis/conversations and GET the selected thread's /turns |
+| Retrieve a cited local knowledge brief | POST a turn with knowledge_domain and, for regional evidence, knowledge_jurisdiction |
+| View specialist or reviewed Prime evidence | POST a turn with one specialist_schedule_id or prime_decision_id |
+| Record or correct a preference, obligation or decision | POST to the thread's /memory with source_turn_id and, for corrections, supersedes_id |
+| Read uploaded evidence | Upload to the thread, call the attachment /extract endpoint, then send a “Review attached extraction” turn with the attachment ID |
+
+Model requests do not carry this data. The authenticated proxy and voice interface still need implementation and acceptance. For staging, start with these local contracts and run the real provider smoke only after explicit authorization. Retain evidence of transport identity, privacy and budget limits before release.

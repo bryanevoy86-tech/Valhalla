@@ -37,6 +37,8 @@ class TurnIn(BaseModel):
     provider_data_class: Literal["PRIVATE", "SYNTHETIC"] = "PRIVATE"
     specialist_schedule_id: UUID | None = None
     prime_decision_id: UUID | None = None
+    knowledge_domain: str | None = Field(default=None, min_length=2, max_length=80, pattern=r"^[A-Za-z0-9 .-]+$")
+    knowledge_jurisdiction: str | None = Field(default=None, max_length=80, pattern=r"^[A-Z0-9-]+$")
 
 class UploadIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -189,8 +191,12 @@ def install(router):
         ids = [str(x) for x in payload.attachment_ids]
         if not message or len(set(ids)) != len(ids):
             raise HTTPException(422, "Blank message or duplicate attachment")
-        if payload.prime_decision_id and payload.specialist_schedule_id:
-            raise HTTPException(422, "Specify one report or decision reference per turn")
+        if sum(reference is not None for reference in (
+            payload.prime_decision_id, payload.specialist_schedule_id, payload.knowledge_domain,
+        )) > 1 or (payload.knowledge_jurisdiction and not payload.knowledge_domain):
+            raise HTTPException(422, "Specify one scoped evidence reference per turn")
+        knowledge_scope = ({"domain": payload.knowledge_domain, "jurisdiction": payload.knowledge_jurisdiction}
+                           if payload.knowledge_domain else None)
         existing = db.get(OwnerTurn, payload.turn_id)
         if existing:
             if (existing.conversation_id, existing.message, existing.attachment_ids)!=(conversation_id,message,ids):
@@ -205,6 +211,8 @@ def install(router):
                 str(payload.prime_decision_id) if payload.prime_decision_id else None
             ):
                 raise HTTPException(409, "Turn Prime decision reference already recorded")
+            if existing.evidence.get("requested_knowledge_scope") != knowledge_scope:
+                raise HTTPException(409, "Turn knowledge scope already recorded")
             return turn_meta(existing)
         for aid in payload.attachment_ids:
             row = db.get(OwnerAttachment, aid)
@@ -227,6 +235,20 @@ def install(router):
                 f"Recorded recommendation: {evidence['heimdall_decision'] or 'none'}. "
                 "This report is advisory and grants no execution authority."
             )
+        elif knowledge_scope:
+            from app.routers.completion_registry import KnowledgeRetrieveIn, _retrieve_knowledge
+
+            request = KnowledgeRetrieveIn(
+                question=message, domain=knowledge_scope["domain"], jurisdiction=knowledge_scope["jurisdiction"],
+                mode="practice", risk_level="high",
+            )
+            knowledge = _retrieve_knowledge(request, db, scope_owner_sources=True).model_dump(mode="json")
+            evidence = {"source": "scoped_mimir_knowledge", "knowledge": knowledge, "model_connected": False}
+            reply = (
+                f"Mimir found {len(knowledge['facts'])} reviewed registry entries and "
+                f"{len(knowledge['assumptions'])} uncertain entries in this scope. "
+                + ("The evidence requires human review." if knowledge["human_review_required"] else "Source references are attached.")
+            )
         elif normalized in {"review attached extraction", "review attached extractions"} and payload.attachment_ids:
             receipts = []
             for attachment_id in payload.attachment_ids:
@@ -245,6 +267,7 @@ def install(router):
             reply, evidence = answer(db, message, ids, payload.turn_id, payload.provider_data_class)
         evidence["requested_specialist_schedule_id"] = str(payload.specialist_schedule_id) if payload.specialist_schedule_id else None
         evidence["requested_prime_decision_id"] = str(payload.prime_decision_id) if payload.prime_decision_id else None
+        evidence["requested_knowledge_scope"] = knowledge_scope
         evidence["requested_provider_class"] = payload.provider_data_class
         row = OwnerTurn(id=payload.turn_id, conversation_id=conversation_id,message=message,reply=reply,evidence=evidence,attachment_ids=ids)
         db.add(row)

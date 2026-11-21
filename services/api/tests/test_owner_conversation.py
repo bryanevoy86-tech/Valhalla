@@ -13,7 +13,7 @@ from sqlalchemy.pool import StaticPool
 from app.core.db import get_db
 from app.models.model_provider import ModelProvider
 from app.models.owner_conversation import OwnerConversation, OwnerAttachment, OwnerTurn, OwnerInferenceAttempt, OwnerInferenceQuota, OwnerMemoryEntry, OwnerAttachmentExtraction
-from app.models.completion_registry import LearningTaskQueueItem, LegacyOrchestrationEvent
+from app.models.completion_registry import LearningTaskQueueItem, LegacyOrchestrationEvent, KnowledgeRegistryItem, SourceRegistryItem
 from app.models.go_live_state import GoLiveState
 from app.models.prime_specialist_schedule import PrimeSpecialistSchedule
 from app.routers.jarvis import router
@@ -27,7 +27,7 @@ def client(monkeypatch):
     monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "true")
     monkeypatch.delenv("VALHALLA_OWNER_CHAT_INFERENCE_ENABLED", raising=False)
     engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
-    for model in (OwnerConversation, OwnerTurn, OwnerAttachment, LearningTaskQueueItem, GoLiveState, PrimeSpecialistSchedule, ModelProvider, OwnerInferenceQuota, OwnerInferenceAttempt, OwnerMemoryEntry, OwnerAttachmentExtraction, LegacyOrchestrationEvent):
+    for model in (OwnerConversation, OwnerTurn, OwnerAttachment, LearningTaskQueueItem, GoLiveState, PrimeSpecialistSchedule, ModelProvider, OwnerInferenceQuota, OwnerInferenceAttempt, OwnerMemoryEntry, OwnerAttachmentExtraction, LegacyOrchestrationEvent, KnowledgeRegistryItem, SourceRegistryItem):
         model.__table__.create(engine)
     with Session(engine) as db:
         db.add(GoLiveState(id=1, go_live_enabled=False, kill_switch_engaged=True))
@@ -377,3 +377,54 @@ def test_attachment_extraction_persists_private_source_and_keeps_instruction_ine
     assert turn["evidence"]["extractions"][0]["sent_to_provider"] is False
     assert turn["execution_authorized"] is False
     assert turn["external_effects"] == 0
+
+
+def test_mimir_owner_turn_scopes_registered_sources_and_escalates_conflict(client):
+    from datetime import date, timedelta
+
+    cid = create(client)
+    gen = client.app.dependency_overrides[get_db]()
+    db = next(gen)
+    today = date.today()
+    try:
+        for code, confidence, source_class, jurisdiction, systems, expiration in (
+            ("a", 0.99, "live", "CA-MB", '["Heimdall"]', None),
+            ("b", 0.75, "live", "CA-MB", '["Heimdall"]', None),
+            ("synthetic", 0.99, "synthetic", "CA-MB", '["Heimdall"]', None),
+            ("current", 0.99, "live", "CA-MB", '["Heimdall"]', None),
+            ("other", 0.99, "live", "CA-ON", '["Heimdall"]', None),
+            ("other-god", 0.99, "live", "CA-MB", '["Odin"]', None),
+            ("expired", 0.99, "live", "CA-MB", '["Heimdall"]', today - timedelta(days=1)),
+        ):
+            title = "Scheduling evidence" if code in {"a", "b"} else f"Scheduling {code}"
+            db.add(SourceRegistryItem(
+                source_id=code, canonical_name=code, source_type="government", data_class=source_class,
+                jurisdiction=jurisdiction, terminal_state="ACTIVE_AND_VERIFIED",
+            ))
+            db.add(KnowledgeRegistryItem(
+                item_id=f"note-{code}", source=code, source_type="government", title=title,
+                jurisdiction=jurisdiction, terminal_state="ACTIVE_AND_VERIFIED", review_status="approved",
+                review_date=today, expires_date=expiration, allowed_systems_json=systems,
+                citation_ref=f"fixture:review:{code}", quality_score=0.95, confidence_score=confidence,
+            ))
+        db.commit()
+    finally:
+        gen.close()
+
+    turns = f"{BASE}/{cid}/turns"
+    request = {"turn_id": str(uuid4()), "message": "Show evidence for the next briefing",
+               "knowledge_domain": "Scheduling", "knowledge_jurisdiction": "CA-MB",
+               "provider_data_class": "SYNTHETIC"}
+    result = client.post(turns, headers=HEADERS, json=request)
+    assert result.status_code == 201, result.text
+    turn = result.json()
+    evidence = turn["evidence"]["knowledge"]
+    assert evidence["human_review_required"] is True
+    assert [item["item_id"] for item in evidence["facts"]] == ["note-current"]
+    assert evidence["facts"][0]["citation_ref"] == "fixture:review:current"
+    assert {item["item_id"] for item in evidence["assumptions"]} == {"note-a", "note-b", "note-synthetic"}
+    assert "contradiction detected" in str(evidence["blocked_sources"])
+    assert "Knowledge version is no longer current" in str(evidence["blocked_sources"])
+    assert turn["response_mode"] == "DETERMINISTIC_READ_ONLY"
+    assert turn["execution_authorized"] is False
+    assert client.post(turns, headers=HEADERS, json={**request, "knowledge_jurisdiction": "CA-ON"}).status_code == 409

@@ -120,7 +120,7 @@
         "services/api/app/services/owner_memory.py",
         "services/api/app/services/owner_specialist_context.py"
       ],
-      "source_observation": "Scoped simulated feedback now restricted by engine, legacy and jurisdiction; missing scores not counted as failures; Factory transactions record verified internal artifact outcomes for scoped advisory retrieval and recheck their sources. Shadow, replay and commercial results remain distinct. Owner conversation retrieves separate, sourced owner memory and specialist receipts. Provider-linked learning and the older local JSON path remain open.",
+      "source_observation": "Scoped simulated feedback now restricted by engine, legacy and jurisdiction; missing scores not counted as failures; Factory transactions record verified internal artifact outcomes for scoped advisory retrieval and recheck their sources. Shadow, replay and commercial results remain distinct. Owner conversation retrieves separate owner memory, exact specialist and Prime receipts, and registered jurisdiction-scoped knowledge with provenance and conflict escalation. Provider-linked learning and the older local JSON path remain open.",
       "evidence_level": "SQLITE_INTEGRATION_TESTED",
       "production_verified": false,
       "acceptance_test": "Record actual verified outcomes in PostgreSQL and prove replay correction without holdout leakage",
