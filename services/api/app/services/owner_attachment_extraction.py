@@ -13,7 +13,7 @@ from app.services.owner_attachment_review import restore_hold_active
 
 
 def verified_attachment(db: Session, conversation_id, attachment_id, *, lock=False) -> OwnerAttachment:
-    if restore_hold_active():
+    if restore_hold_active(db):
         raise HTTPException(503, "Attachment access paused for restore reconciliation")
     row = db.get(OwnerAttachment, attachment_id, with_for_update=lock)
     if row is None or row.conversation_id != conversation_id:

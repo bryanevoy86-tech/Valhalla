@@ -702,3 +702,41 @@ def test_restore_hold_stays_closed_until_digest_bound_manual_reconciliation(clie
     assert client.get(f"{url}/download", headers=HEADERS).status_code == 410
     assert client.post(f"{url}/extract", headers=HEADERS).status_code == 410
     assert marker.decode() not in client.get(turns, headers=HEADERS).text
+
+
+def test_independent_restore_manifest_blocks_old_boot_until_receipts_match(client, monkeypatch, tmp_path):
+    import hashlib
+    import json
+
+    monkeypatch.setenv("VALHALLA_OWNER_MANDATE_KEY", "fixture-manifest-recovery")
+    owner = {**HEADERS, "X-Owner-Mandate-Key": "fixture-manifest-recovery"}
+    cid = create(client)
+    body = asset(b"separate receipt fixture", "text/plain", "restore.txt")
+    root = f"{BASE}/{cid}/attachments"
+    url = f"{root}/{body['attachment_id']}"
+    assert client.post(root, headers=HEADERS, json=body).status_code == 201
+    assert client.post(f"{url}/extract", headers=HEADERS).status_code == 200
+
+    # Deploy-time state lives outside the restored database and requires no manual access hold.
+    monkeypatch.setenv("VALHALLA_OWNER_ATTACHMENT_RESTORE_REQUIRED", "1")
+    assert client.get(f"{url}/download", headers=HEADERS).status_code == 503
+    receipt = {"attachment_id": body["attachment_id"], "conversation_id": cid,
+               "source_sha256": body["sha256"], "reason": "OWNER_REQUEST"}
+    manifest = tmp_path / "separate-receipts.json"
+    raw = json.dumps({"schema_version": 1, "receipts": [receipt]}).encode()
+    manifest.write_bytes(raw)
+    monkeypatch.setenv("VALHALLA_OWNER_ATTACHMENT_RESTORE_MANIFEST", str(manifest))
+    monkeypatch.setenv("VALHALLA_OWNER_ATTACHMENT_RESTORE_MANIFEST_SHA256", hashlib.sha256(raw).hexdigest())
+    assert client.get(root, headers=HEADERS).status_code == 503
+
+    replay = {"source_sha256": body["sha256"], "reason": "OWNER_REQUEST"}
+    assert client.request("DELETE", url, headers=owner, json=replay).status_code == 200
+    assert client.get(root, headers=HEADERS).status_code == 200
+    assert client.get(f"{url}/download", headers=HEADERS).status_code == 410
+    assert client.post(f"{url}/extract", headers=HEADERS).status_code == 410
+
+    manifest.write_bytes(raw + b" ")
+    assert client.get(root, headers=HEADERS).status_code == 503
+    manifest.write_bytes(raw)
+    monkeypatch.setenv("VALHALLA_OWNER_ATTACHMENT_RESTORE_HOLD", "1")
+    assert client.get(root, headers=HEADERS).status_code == 503

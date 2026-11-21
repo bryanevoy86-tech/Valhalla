@@ -104,6 +104,7 @@ MANDATORY_ENDPOINTS = {
     "builder_assignment": ("POST", "/builder/assignments"),
     "builder_candidate_prepare": ("POST", "/builder/assignments/prepare"),
     "builder_assignment_claim": ("POST", "/builder/assignments/claim"),
+    "builder_review_handoff": ("POST", "/builder/assignments/{assignment_id}/review-handoff"),
     "system_readiness": ("GET", "/readyz"),
     "pantheon_king": ("POST", "/api/governance/king/evaluate"),
     "pantheon_queen": ("POST", "/api/governance/queen/evaluate"),

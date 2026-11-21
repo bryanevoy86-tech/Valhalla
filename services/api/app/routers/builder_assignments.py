@@ -6,6 +6,7 @@ from typing import Literal
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import inspect, or_, select
 from sqlalchemy.exc import IntegrityError
@@ -222,3 +223,45 @@ def read(assignment_id: UUID, db: Session = Depends(get_db)):
     if row is None:
         raise HTTPException(404, "Builder assignment not found")
     return view(row)
+
+
+class HandoffIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    expected_base_commit: str = Field(pattern=r"^[a-f0-9]{40}$")
+    expected_bundle_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+
+
+@router.post("/{assignment_id}/review-handoff",
+             dependencies=[Depends(require_prime_control_key), Depends(require_owner_mandate_key)])
+def review_handoff(assignment_id: UUID, payload: HandoffIn, db: Session = Depends(get_db)):
+    if _emergency_stop_active(db):
+        raise HTTPException(503, "Builder review handoff paused")
+    row = db.get(BuilderAssignment, assignment_id)
+    if row is None:
+        raise HTTPException(404, "Builder assignment not found")
+    task = db.get(BuilderTask, row.task_id)
+    if task is None or task.status != "review_ready" or row.status != "review_ready" or row.receipt is None:
+        raise HTTPException(409, "A current passing assignment is required")
+    bundle, _ = _review_bundle(task)
+    if (payload.expected_base_commit, payload.expected_bundle_sha256, bundle["sha256"]) != (
+        row.base_commit, row.bundle_sha256, row.bundle_sha256,
+    ):
+        raise HTTPException(409, "Expected review snapshot differs from the assignment")
+    try:
+        tested = TestReceipt.model_validate(row.receipt)
+    except ValueError:
+        raise HTTPException(409, "Recorded runner receipt is invalid") from None
+    if (tested.status, tested.exit_code, tested.base_commit, tested.bundle_sha256, tested.image_id, tested.lease_id) != (
+        "suite_exited_zero", 0, row.base_commit, row.bundle_sha256, row.image_id, row.lease_id,
+    ):
+        raise HTTPException(409, "Recorded runner receipt differs from the reviewed snapshot")
+    handoff = {
+        "assignment_id": str(row.id), "base_commit": row.base_commit, "bundle_sha256": row.bundle_sha256,
+        "test_receipt_sha256": _sha(_canonical(row.receipt)),
+        "review": {**bundle, "status": "review_ready", "source_modified": False,
+                   "tests_verified": False, "deployed": False},
+        "runner_receipt": row.receipt,
+        "submission_state": "PREPARED_FOR_OWNER_REVIEW", "github_write_authorized": False, "release_authorized": False,
+    }
+    return JSONResponse({**handoff, "handoff_sha256": _sha(_canonical(handoff))},
+                        headers={"Cache-Control": "no-store"})

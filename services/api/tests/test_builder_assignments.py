@@ -38,6 +38,10 @@ def test_scoped_builder_lease_survives_restart_and_submits_review_receipt(deal_c
     assigned = client.post(root, headers=owner, json=request)
     assert assigned.status_code == 201, assigned.text
     assert client.post(f"{root}/claim", headers=author).status_code == 401
+    handoff = f"{root}/{request['assignment_id']}/review-handoff"
+    expected = {"expected_base_commit": request["base_commit"], "expected_bundle_sha256": assigned.json()["bundle_sha256"]}
+    assert client.post(handoff, headers=runner_key, json=expected).status_code == 401
+    assert client.post(handoff, headers=owner, json=expected).status_code == 409
     first = client.post(f"{root}/claim", headers=runner_key).json()
     assert first["status"] == "leased"
     assert client.post(f"{root}/claim", headers=runner_key).json()["status"] == "idle"
@@ -71,6 +75,18 @@ def test_scoped_builder_lease_survives_restart_and_submits_review_receipt(deal_c
     assert client.post(f"{root}/{request['assignment_id']}/receipt", headers=runner_key, json=record["receipt"]).json() == record
     assert client.post(f"{root}/claim", headers=runner_key).json()["status"] == "idle"
     assert not (tmp_path / path).exists()
+    assert client.post(handoff, headers=owner, json={**expected, "expected_base_commit": "c" * 40}).status_code == 409
+    prepared = client.post(handoff, headers=owner, json=expected)
+    assert prepared.status_code == 200, prepared.text
+    assert prepared.headers["cache-control"] == "no-store"
+    packet = prepared.json()
+    digest = packet.pop("handoff_sha256")
+    assert digest == sha256(builder._canonical(packet)).hexdigest()
+    assert packet["test_receipt_sha256"] == sha256(builder._canonical(record["receipt"])).hexdigest()
+    assert packet["github_write_authorized"] is False and packet["release_authorized"] is False
+    assert packet["review"]["bundle"]["files"][0]["content"] == "VALUE = 2\n"
+    monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "true")
+    assert client.post(handoff, headers=owner, json=expected).status_code == 503
 
 
 def test_owner_prepares_snapshot_candidate_for_existing_runner(deal_client, tmp_path, monkeypatch):

@@ -10,7 +10,7 @@ from app.services.prime_business_execution import _emergency_stop_active
 
 
 def expire_due_attachment(db: Session) -> dict:
-    if _emergency_stop_active(db) or restore_hold_active():
+    if _emergency_stop_active(db) or restore_hold_active(db):
         return {"status": "blocked"}
     schema = inspect(db.connection())
     if not all(schema.has_table(table.__tablename__) for table in (OwnerAttachment, OwnerAttachmentReview)):

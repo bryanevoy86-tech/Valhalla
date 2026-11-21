@@ -331,7 +331,7 @@ def submit_turn(conversation_id: UUID, payload: TurnIn, db: Session, *, local_on
 
 
 def store_attachment(conversation_id: UUID, payload: UploadIn, db: Session):
-    if restore_hold_active():
+    if restore_hold_active(db):
         raise HTTPException(503, "Attachment access paused for restore reconciliation")
     thread(db, conversation_id)
     data = decode_upload(payload)
@@ -348,7 +348,7 @@ def store_attachment(conversation_id: UUID, payload: UploadIn, db: Session):
 
 
 def attachment_summaries(conversation_id: UUID, limit: int, db: Session):
-    if restore_hold_active():
+    if restore_hold_active(db):
         raise HTTPException(503, "Attachment access paused for restore reconciliation")
     thread(db, conversation_id)
     query = select(OwnerAttachment).options(defer(OwnerAttachment.data)).where(

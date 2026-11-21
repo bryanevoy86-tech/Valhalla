@@ -1,15 +1,20 @@
 """Append owner dispositions without treating uploaded claims as verified."""
 from datetime import date, datetime, timedelta, timezone
+from hashlib import sha256
+from hmac import compare_digest
+from pathlib import Path
 import os
+import re
 from typing import Literal
 from uuid import UUID
 
 from fastapi import HTTPException
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy import func, inspect, select
+from sqlalchemy import exists, func, inspect, select
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
-from app.models.owner_conversation import OwnerAttachment, OwnerAttachmentReview
+from app.models.owner_conversation import OwnerAttachment, OwnerAttachmentExtraction, OwnerAttachmentReview
 
 
 class ReviewIn(BaseModel):
@@ -21,8 +26,61 @@ class ReviewIn(BaseModel):
     reason: str = Field(min_length=1, max_length=1400)
 
 
-def restore_hold_active() -> bool:
-    return os.getenv("VALHALLA_OWNER_ATTACHMENT_RESTORE_HOLD", "").strip().lower() not in {"", "0", "false", "off"}
+class DispositionReceipt(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    attachment_id: UUID
+    conversation_id: UUID
+    source_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    reason: Literal["OWNER_REQUEST", "RETENTION_EXPIRED"]
+
+
+class DispositionManifest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    schema_version: Literal[1]
+    receipts: list[DispositionReceipt] = Field(max_length=1000)
+
+
+def restore_hold_active(db: Session) -> bool:
+    disabled = {"", "0", "false", "off"}
+    def flag(name: str) -> bool:
+        return os.getenv(name, "").strip().lower() not in disabled
+
+    if flag("VALHALLA_OWNER_ATTACHMENT_RESTORE_HOLD"):
+        return True
+    path = os.getenv("VALHALLA_OWNER_ATTACHMENT_RESTORE_MANIFEST", "").strip()
+    expected = os.getenv("VALHALLA_OWNER_ATTACHMENT_RESTORE_MANIFEST_SHA256", "").strip()
+    required = flag("VALHALLA_OWNER_ATTACHMENT_RESTORE_REQUIRED")
+    if not (required or path or expected):
+        return False
+    if not path or not re.fullmatch(r"[a-f0-9]{64}", expected):
+        return True
+    try:
+        with Path(path).open("rb") as source:
+            raw = source.read(1_000_001)
+        if len(raw) > 1_000_000 or not compare_digest(sha256(raw).hexdigest(), expected):
+            return True
+        manifest = DispositionManifest.model_validate_json(raw)
+        indexed = {receipt.attachment_id: receipt for receipt in manifest.receipts}
+        if len(indexed) != len(manifest.receipts):
+            return True
+        if not indexed:
+            return False
+        attachment, extraction = OwnerAttachment, OwnerAttachmentExtraction
+        # A failed readiness probe must leave the caller's transaction usable for redacted reads.
+        with db.begin_nested():
+            rows = db.execute(select(attachment.id, attachment.conversation_id, attachment.sha256,
+                                     attachment.deletion_reason).where(
+                attachment.id.in_(indexed), attachment.deleted_at.is_not(None), attachment.data.is_(None),
+                ~exists(select(extraction.attachment_id).where(extraction.attachment_id == attachment.id)),
+            )).all()
+        return len(rows) != len(indexed) or any(
+            (row.conversation_id, row.sha256) != (indexed[row.id].conversation_id, indexed[row.id].source_sha256)
+            or (row.deletion_reason != indexed[row.id].reason
+                and not (indexed[row.id].reason == "RETENTION_EXPIRED" and row.deletion_reason == "OWNER_REQUEST"))
+            for row in rows
+        )
+    except (OSError, ValueError, SQLAlchemyError):
+        return True
 
 
 def latest_review(db: Session, attachment: OwnerAttachment):
@@ -55,7 +113,7 @@ def retention_expired(decision):
 
 
 def attachment_use_blocked(db: Session, attachment: OwnerAttachment) -> bool:
-    if restore_hold_active():
+    if restore_hold_active(db):
         return True
     decision = latest_review(db, attachment)
     return decision is not None and (
