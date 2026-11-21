@@ -38,10 +38,12 @@ def list_orders(db: Session, status: Optional[str] = None) -> List[FXOrder]:
 
 def close_order(db: Session, order_id: int, exit_px: float) -> Optional[FXOrder]:
     o = db.get(FXOrder, order_id, with_for_update=True)
-    if not o or o.status not in {"open", "closed"}:
+    if o is None:
         return None
-    if o.status == "closed":
-        return o if o.exit_px == exit_px else None
+    if o.status == "closed" and o.exit_px == exit_px:
+        return o
+    if o.status != "open":
+        raise ValueError("Paper order cannot be closed at a different price or state")
     o.exit_px = exit_px
     o.status = "closed"
     o.closed_at = datetime.now(timezone.utc)

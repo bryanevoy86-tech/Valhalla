@@ -341,6 +341,26 @@ class PostgresMigrationChainTests(unittest.TestCase):
                             INSERT INTO prime_norns_forecasts (id, action_id, probability_bp, issued_at, deadline_at)
                             VALUES ('00000000-0000-0000-0000-000000000002', 'draft', 10001, now(), now())
                         """))
+                    market_forecast = text("""
+                        INSERT INTO prime_norns_market_forecasts
+                            (id, scope_key, target_key, evidence_class, probability_bp, issued_at, payload, digest)
+                        VALUES (CAST(:id AS uuid), 'private-scope', 'unique-market-target', 'SIMULATION', :probability,
+                                now(), '{"request":{"cohort":"HOLDOUT"}}', 'digest')
+                    """)
+                    with self.assertRaises(IntegrityError), connection.begin_nested():
+                        connection.execute(market_forecast, {
+                            "id": "00000000-0000-0000-0000-000000000003", "probability": 10001,
+                        })
+                    connection.execute(market_forecast, {
+                        "id": "00000000-0000-0000-0000-000000000003", "probability": 6000,
+                    })
+                    self.assertEqual(connection.execute(text("""
+                        SELECT payload -> 'request' ->> 'cohort' FROM prime_norns_market_forecasts
+                    """)).scalar_one(), "HOLDOUT")
+                    with self.assertRaises(IntegrityError), connection.begin_nested():
+                        connection.execute(market_forecast, {
+                            "id": "00000000-0000-0000-0000-000000000004", "probability": 5000,
+                        })
                 finally:
                     transaction.rollback()
         finally:

@@ -207,6 +207,7 @@ def test_legacy_paper_metric_never_compounds_into_treasury(deal_client, monkeypa
     assert created.status_code == 200, created.text
     order_id = created.json()["id"]
     assert created.json()["basis"] == "LEGACY_PAPER_BOOK"
+    assert client.post("/arbitrage/orders/999999/close", headers=OWNER, json={"exit_px": 1.3}).status_code == 404
     assert client.post(f"/arbitrage/orders/{order_id}/close", headers=OWNER, json={"exit_px": 1.3}).status_code == 200
     assert client.post(f"/arbitrage/orders/{order_id}/close", headers=OWNER, json={"exit_px": 1.4}).status_code == 409
     for _ in range(2):

@@ -57,9 +57,12 @@ def orders(status: Optional[str] = None, db: Session = Depends(get_db)):
 
 @router.post("/orders/{order_id}/close", response_model=FXOrderResponse, dependencies=paper_write)
 def close(order_id: int, body: FXCloseRequest, db: Session = Depends(get_db)):
-    o = close_order(db, order_id, body.exit_px)
-    if not o:
-        raise HTTPException(status_code=409, detail="Paper order is missing or already settled at a different price")
+    try:
+        o = close_order(db, order_id, body.exit_px)
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from None
+    if o is None:
+        raise HTTPException(status_code=404, detail="Order not found")
     return o
 
 
