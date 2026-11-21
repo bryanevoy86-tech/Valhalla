@@ -49,6 +49,8 @@ MANDATORY_ENDPOINTS = {
     "product_artifact_stage": ("POST", "/api/business-factory/product-artifacts"),
     "product_artifact_read": ("GET", "/api/business-factory/product-artifacts/{artifact_id}/download"),
     "factory_execution": ("POST", "/api/business-factory/actions/run-once"),
+    "legacy_playbook_rehearsal": ("POST", "/api/prime/legacy-playbooks"),
+    "legacy_playbook_receipt": ("GET", "/api/prime/legacy-playbooks/{target_id}"),
     "specialist_schedule_create": ("POST", "/api/prime/specialist-schedules"),
     "specialist_schedule_status": ("GET", "/api/prime/specialist-schedules/{schedule_id}"),
     "specialist_schedule_report": ("GET", "/api/prime/specialist-schedules/{schedule_id}/reports/{report_event_id}"),

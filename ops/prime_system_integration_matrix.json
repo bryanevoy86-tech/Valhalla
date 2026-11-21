@@ -571,9 +571,11 @@
       "priority": "P1",
       "source_paths": [
         "docs/VALHALLA_DOCTRINE_CONFLICT_MAP.md",
-        "docs/PHASE3_INTEGRATED_ARCHITECTURE.md"
+        "docs/PHASE3_INTEGRATED_ARCHITECTURE.md",
+        "services/api/app/routers/legacy_playbooks.py",
+        "services/api/tests/test_legacy_playbooks.py"
       ],
-      "source_observation": "Historical doctrine clarifies production clones versus simulation mirrors; full runtime scaling not verified.",
+      "source_observation": "Owner-authorized registry rehearsal creates distinct business clone and regional mirror receipts, separate namespaces and inactive target rows. Staged runtime separation and live scaling remain open.",
       "evidence_level": "SOURCE_INSPECTED_ONLY",
       "production_verified": false,
       "acceptance_test": "Verify no mirror has external authority; governed clone lifecycle, real business identity, permissions, budget and data separation.",
