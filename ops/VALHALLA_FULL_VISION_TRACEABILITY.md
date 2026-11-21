@@ -118,3 +118,25 @@ Heimdall Prime is the sole central operational decision-maker and coordinator. H
 Acceptance: maintain a responsibility-to-subsystem coverage map with authorized inputs and report schemas; demonstrate proactive event-driven AND scheduled analysis (not only a manually called API); preserve independent version-bound Loki dissent and Heimdall's recorded response; show cross-business specialist reporting, owner-private access boundaries, delegated routine execution without repeated owner prompts, escalation outside mandates, and reconciled outcomes feeding Mimir. Test failures, stale evidence, missing specialist review, tenant isolation, rate/cost controls and restart recovery. Exact historical names and overlapping specialty assignments still require source reconciliation; do not invent new agents or treat a role list as proof of deployment.
 
 Status: owner-confirmed architecture requirement only; no new worker, schedule, provider integration, or production deployment is certified by this clarification.
+
+## Package 7 — Investment, trading and FX intelligence
+
+Package 7 adds two workstreams to the existing six construction packages. Scope, sources, reports and forecasts remain under the existing Legacy registry and Pantheon. The working register keeps tasks 01–50 and adds tasks 51–52.
+
+| Workstream | Task | Implemented and rehearsed | Deferred acceptance |
+|---|---:|---|---|
+| 48. Investment and Trading Intelligence | 51 | Owner-authorized source records for stocks, ETFs, bonds, dividends and macro research. Dated daily bars, moving averages and source-reported fundamentals feed deterministic, long-only replay. Marked exposure, estimated costs, benchmark-relative results, drawdowns, volatility and zero-risk-free per-observation Sharpe are reported. Scoped Pantheon reports, Loki review, Norns source-pinned thresholds and Mimir paper receipts are integrated. | Licensed feed operation, corporate actions, broader independent forecasts, evidence reconciliation with actual broker statements, and qualified review of suitability. Advisor-only, with securities transactions executed separately by humans. |
+| 49. Currency Arbitrage and FX Intelligence | 52 | Timestamped bid and ask quote batches, depth, fees, slippage, expiry and cumulative settlement constraints. Direct treasury conversion comparison, cross-venue loops and triangle replay. Interrupted paths expose residual holdings by currency. Regional mirror scope, exposure cap and emergency stop were exercised. Legacy paper metrics no longer write back to the operational vault. | Venue-specific live quote and settlement verification, prefunding and transfer cost evidence, real multi-currency bank reconciliation and broader independent FX forecasting. No leverage, orders or transfers. |
+
+Historical evidence was reviewed in the archived FX engine, the distinct SKU arbitrage scanner, the historical paper FX order/book and scheduler, and the global Holdings service. The SKU scanner remains an inventory opportunity tool. Global Holdings estimates remain an existing inventory view and are not used as securities or settlement statements. The new market batch store supplies the price, clock, provenance and scope data the paper book lacked. The historical MAIN vault balance needs separate reconciliation against statements because removing the writer does not identify previous paper contamination.
+
+| Pantheon or owner surface | Package 7 integration |
+|---|---|
+| Njord and Odin | Scoped venue freshness, settlement bounds, security observations and sourced research |
+| Tyr, Forseti, Fenrir and Loki | Rights, scope, replay limitations, and independently bound material objections |
+| Huginn and Muninn | Source observations and replay lineage within their assigned scope |
+| Norns | Threshold and outcome source pinned before the target day. Scored holdout and ordinary samples are separated from one another and by evidence class. |
+| Mimir | Integrity-checked replay receipts as internal simulation experience |
+| Heimdall Prime | Existing scoped reports plus private briefing alerts. No brokerage, execution or provider authority. |
+
+Package 3 shares the existing treasury floor. A private household and treasury scenario models expenditure versus budget, reserve funding, planned compensation, and the 90/10 split of remaining scenario cash. First-year withdrawal is deferred and later modeled withdrawals use an explicit scenario cap. Household inputs are entered through the private API. Trusts, insurance, residency and registration continue through their dedicated workstreams and appropriate professional review.

@@ -11,7 +11,7 @@
         "services/api/app/main.py",
         "services/api/start.py"
       ],
-      "source_observation": "Canonical FastAPI import registered 32 critical routers and all 71 required routes on the isolated regression runtime.",
+      "source_observation": "Canonical FastAPI import registered 34 critical routers and 76 required routes on the isolated regression runtime.",
       "evidence_level": "FOCUSED_CI_TESTED",
       "production_verified": false,
       "acceptance_test": "Prove every mandatory router imports in a clean canonical app; no missing OpenAPI paths or silent startup success",
@@ -669,9 +669,10 @@
       "source_paths": [
         "services/api/tests/test_floor_currency.py",
         "capital/banking/executor.py",
-        "services/api/app/routers/banking_structure_planner.py"
+        "services/api/app/routers/banking_structure_planner.py",
+        "services/api/app/services/wealth_scenario.py"
       ],
-      "source_observation": "Private treasury floor projections use exact month and currency boundaries and label existing ledger amounts unreconciled. Bank statements, transfers and settlement controls are pending.",
+      "source_observation": "Treasury floor projections partition the unreconciled ledger by month and currency. Private household scenarios model reserves, planned compensation and allocatable surplus in one currency. Historical paper FX no longer mutates the MAIN vault. Bank statement and transfer proof are pending.",
       "evidence_level": "SQLITE_INTEGRATION_TESTED",
       "production_verified": false,
       "acceptance_test": "Prove every actual transfer requires owner intent, cap, whitelisted accounts, durable idempotency and a bank settlement receipt; no fake success.",
@@ -776,10 +777,11 @@
       "source_paths": [
         "valhalla_hand_off/ACCOUNTING_PACKAGE/01_fund_separation.md",
         "services/api/app/models/funfund_routing.py",
-        "valhalla_hand_off/EIA_PACKAGE/03_risk_controls.md"
+        "valhalla_hand_off/EIA_PACKAGE/03_risk_controls.md",
+        "services/api/app/services/wealth_scenario.py"
       ],
-      "source_observation": "90/10 intent documented in handoff, with Fun Fund routing field; personalized timing/caps not all represented in current ledger.",
-      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "source_observation": "Owner-private scenarios track reserve and compensation before modelling a 90/10 allocation of remaining surplus, with a supplied cap and first-year Fun Fund withdrawal deferred. This isolated planning assumption never posts a transfer, withdrawal or verified income.",
+      "evidence_level": "SQLITE_INTEGRATION_TESTED",
       "production_verified": false,
       "acceptance_test": "Verify owner-private cap schedule, taxes, cash reserves, net profit definition, allocation ledger, no unauthorized extraction and documented exceptions.",
       "depends_on": [
@@ -883,6 +885,52 @@
         "runtime_governance",
         "learning_mimir",
         "auth"
+      ],
+      "owner_external_authorization_required": true
+    },
+    {
+      "id": "investment_and_trading_intelligence",
+      "priority": "P1",
+      "source_paths": [
+        "services/api/app/routers/market_intelligence.py",
+        "services/api/app/services/market_replay.py",
+        "services/api/app/routers/norns_market.py",
+        "services/api/tests/test_market_intelligence.py"
+      ],
+      "source_observation": "Owner-private licensed-practice intake records scoped stock, ETF, bond and macro batches. Decimal paper replay includes execution costs, benchmark comparisons, drawdown and concentration. Scoped Pantheon reports, independent Loki review, separately sourced Norns samples and Mimir paper receipt recall are exercised with fixtures. Provider truth and actual investment results remain unverified.",
+      "evidence_level": "SQLITE_INTEGRATION_TESTED",
+      "production_verified": false,
+      "acceptance_test": "Prove authorized, provenance-bound stock, ETF, bond, dividend, policy and capital-flow research, portfolio risk, no-lookahead historical replay with realistic costs and benchmark comparison, durable paper accounting, independent Loki challenge, prospective Norns calibration and Mimir outcome lineage, owner alerts and advisor-only governance.",
+      "depends_on": [
+        "treasury_banking_controls",
+        "pantheon_expanded_bridge",
+        "loki_independent_challenger",
+        "norns_probability_calibration",
+        "learning_mimir",
+        "prime_private_owner"
+      ],
+      "owner_external_authorization_required": true
+    },
+    {
+      "id": "currency_arbitrage_and_fx_intelligence",
+      "priority": "P1",
+      "source_paths": [
+        "services/api/app/arbitrage/service.py",
+        "services/api/app/routers/market_intelligence.py",
+        "services/api/app/services/market_replay.py",
+        "services/api/tests/test_market_intelligence.py"
+      ],
+      "source_observation": "Bounded Decimal quote replay compares direct conversion, cross-venue loops and triangles under bid, ask, freshness, depth, fees and cumulative settlement constraints. Partial and failed fills retain residual currency positions and do not write revenue or treasury. The old FX metrics job now computes virtual equity separately from the treasury vault.",
+      "evidence_level": "SQLITE_INTEGRATION_TESTED",
+      "production_verified": false,
+      "acceptance_test": "Prove source-entitled timestamped bid and ask inputs, independent quote and liquidity validation, deterministic cross-venue and triangular replay with costs and settlement risk, partial and failed fills reconciled by currency, exposure limits, emergency stop and regional scope isolation. Treasury recommendations remain advisor-only with no leverage, external orders or transfers.",
+      "depends_on": [
+        "treasury_banking_controls",
+        "clones_vs_mirrors",
+        "pantheon_expanded_bridge",
+        "loki_independent_challenger",
+        "learning_mimir",
+        "runtime_governance"
       ],
       "owner_external_authorization_required": true
     }

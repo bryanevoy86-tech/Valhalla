@@ -14,9 +14,9 @@ DO NOT restart the project, regenerate completed packs, or treat API presence as
 - Definition of done: docs/HEIMDALL_DEFINITION_OF_DONE.md
 - Existing architecture: docs/PHASE3_INTEGRATED_ARCHITECTURE.md and docs/UNIVERSAL_OPPORTUNITY_PIPELINE.md
 
-## Reconstructed 50-task register
+## Reconstructed task register and Package 7 additions
 
-This working register maps three cross-workstream integration tasks and all 47 owner workstreams to the existing acceptance matrix. The numbers are reconstructed from available requirements. Each workstream retains its existing source anchors, dependencies, and acceptance criteria. Code presence and local tests do not confer external authority.
+This working register maps three cross-workstream integration tasks and all 47 owner workstreams to the existing acceptance matrix. The numbers are reconstructed from available requirements. Each workstream retains its existing source anchors, dependencies, and acceptance criteria. Code presence and local tests do not confer external authority. The original entries 01–50 remain intact. Entries 51–52 map to acceptance workstreams 48 and 49.
 
 | Task | Deliverable or workstream ID | Priority |
 |---|---|---|
@@ -70,6 +70,8 @@ This working register maps three cross-workstream integration tasks and all 47 o
 | 48 | `shield_blackice_protection` | P1 |
 | 49 | `recruitment_and_va` | P2 |
 | 50 | `loki_independent_challenger` | P0 |
+| 51 | `investment_and_trading_intelligence` (workstream 48, Package 7) | P1 |
+| 52 | `currency_arbitrage_and_fx_intelligence` (workstream 49, Package 7) | P1 |
 
 ### Safely retrieve current work
 
@@ -298,3 +300,14 @@ Read the corresponding change-ledger entry and the updated integration matrix be
 | Builder | `POST /builder/assignments/prepare` takes a bounded, owner-authorized single literal replacement against an exact source hash, Git base and pinned runner image. It queues the existing isolated test worker and records the candidate without writing the worktree. Autonomous selection and authoring of broader work, plus reviewed GitHub submission, remain open. |
 | Package 2 | Keep local checkout, attribution and refund fixtures separate from the commercial ledger. Continue independent acquisition underwriting, real-estate operations, actual SaaS engine tenant isolation, licensed checkout and settlement, paid entitlement renewal, and consent-bound attribution. Live commercial verification requires separate authorization. |
 | Package 3 | The private floor view now separates unreconciled amounts by month and currency. Continue household obligations, verified treasury reconciliation and internal reinvestment/Fun Funds modelling. Infinite banking, trusts and Canada exit remain separate planning workstreams. |
+
+## Package 7 continuation — Investment, trading and FX
+
+- Keep research and execution separate. The market API has no brokerage, bank or provider executor. The old /arbitrage order and metrics paths are owner-protected paper bookkeeping. Audit historical vault values with independent statements before relying on them.
+- Under `/api/prime/market`, register exact-scope batches via `POST /evidence`. The Source Registry must allow practice and the owner must attest internal rights. Operator-reported evidence needs a registered live-class source. This designation does not certify the underlying report. `GET /evidence/{id}/research` reads the instrument, macro or quote evidence. Revoke a stale or erroneous record by ID.
+- `POST /replays/investment` supports whole-unit buy-and-hold and previous-close moving-average signals at the next supplied open using split-free, aligned daily bars. The declared costs apply to both portfolio and benchmark. It returns marked values and per-observation statistics. No annualized risk or actual fill claim is made.
+- `POST /replays/fx` compares direct conversions and models sequential two-leg or three-leg loops, including failure and a bounded partial fill. Results are per-currency paper postings and include residual exposure. The controls assume successive quote validity after each prior settlement and no leverage. Provider transfer charges and prefunded parallel fills are outside this replay.
+- Norns market forecasts use `/api/prime/norns/market`. A forecast pins one future UTC date, a threshold and a different registered outcome source. Competing closes block resolution. Calibration excludes revoked evidence and reports separate holdout and evidence-class metrics.
+- The floor's `POST /api/governance/floor/wealth/scenarios` models household budget and expenditure, operating reserves, planned owner compensation, and the 90/10 split of remaining scenario cash. It neither adds revenue nor transfers funds. Treat the reserve-and-compensation ordering and supplied cap as explicit scenario assumptions.
+- Next work includes authorized source connectors with independently dated reference data, currency and securities lifecycle cases, explicit FX outcome calibration, reconciled market and bank records, independent model-backed Loki staging, and advice review with licensed professionals where applicable. Continue the Foundry, property, commercial tenant, Builder, attachment, voice, trust, insurance and residency work recorded above.
+- Package 7's source and replay implementation is `8deacf179d33df5a5beb0ddc8ed44615045455c7`. The paper-vault correction is `c063ada8b1102618a42f29fd16314099cc74f64f`. Acquisition downside modelling is `04edcb978abdd94d83245a41b47ec6ebc70cff0f`. Its optional Foundry inputs cover acquisition cost, financed principal, transition cost, reserves, and debt service. The scoped Njord worker identifies stress-case cash shortfalls and does not approve financing.
