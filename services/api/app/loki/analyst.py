@@ -49,6 +49,14 @@ def challenge(item: dict) -> IndependentReviewIn:
             findings.append(_finding("missing_evidence", "observations", "The specialist did not produce observable evidence."))
         if proposal.get("external_authority") is not False:
             findings.append(_finding("scope_excess", "external_authority", "An advisory report claims execution authority.", critical=True))
+        market = sources.get("market_intelligence") if isinstance(sources, dict) else None
+        if market is not None:
+            findings.append(_finding(
+                "market_simulation", "observations/market_intelligence",
+                "Check quote freshness, settlement sequencing, execution costs and source rights independently. "
+                "A paper receipt does not establish executable liquidity or operator authority.",
+                critical=market.get("external_execution_authorized") is not False,
+            ))
         findings.append(_finding(
             "evidence_reassessment", "observations",
             "Reassess the specialist's scoped observations before relying on them for a material action.",

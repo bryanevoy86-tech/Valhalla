@@ -28,6 +28,8 @@ REQUIRED_ROUTER_NAMES = frozenset({
     "builder_assignments",      # isolated worker leasing and receipts
     "marketing",              # marketing registry
     "media_engine",           # content records
+    "norns_market",             # source-pinned prospective market thresholds
+    "market_intelligence",     # governed investment and FX paper research
     "foundry_discovery",       # source-bound research candidates
     "foundry_checkout",        # isolated signed fixture journal
     "saas_entitlements",       # subscriber identity and tenant boundaries

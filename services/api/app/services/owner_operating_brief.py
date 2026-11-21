@@ -17,6 +17,7 @@ def operating_evidence(db: Session) -> dict:
     schema = inspect(db.connection())
     report_items = []
     invalid_reports = []
+    market_alerts = []
     if schema.has_table(LegacyOrchestrationEvent.__tablename__):
         ids = db.scalars(select(LegacyOrchestrationEvent.event_id).filter_by(
             event_type=REPORT_EVENT,
@@ -27,6 +28,11 @@ def operating_evidence(db: Session) -> dict:
             except HTTPException:
                 invalid_reports.append(event_id)
                 continue
+            market = report.get("observations", {}).get("market_intelligence")
+            if market and market["alerts"]:
+                market_alerts.append({"report_id": event_id, "observed_at": report["observed_at"],
+                                      "scope": report["scope"], "alerts": market["alerts"],
+                                      "basis": "SCOPED_SPECIALIST_RESEARCH"})
             report_items.append({key: report[key] for key in (
                 "report_event_id", "report_sha256", "role", "scope", "status", "observed_at",
             )})
@@ -74,5 +80,5 @@ def operating_evidence(db: Session) -> dict:
             {"currency": currency, "entries": count, "recorded_gross": str(amount)} for currency, count, amount in totals
         ])
     return {"latest_specialist_reports": report_items, "invalid_specialist_report_ids": invalid_reports,
-            "loki": loki, "latest_integrity_alerts": alerts, "financials": financials,
+            "loki": loki, "latest_integrity_alerts": alerts, "latest_market_alerts": market_alerts, "financials": financials,
             "verified_cash_balance": None}

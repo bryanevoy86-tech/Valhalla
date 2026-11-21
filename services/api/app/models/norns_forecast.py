@@ -28,3 +28,22 @@ class NornsHoldout(Base):
 
     forecast_id = Column(Uuid(), ForeignKey("prime_norns_forecasts.id"), primary_key=True)
     enrolled_at = Column(DateTime(), nullable=False)
+
+
+class NornsMarketForecast(Base):
+    """Prospective market thresholds scored against a pinned second source."""
+    __tablename__ = "prime_norns_market_forecasts"
+    __table_args__ = (
+        CheckConstraint("probability_bp BETWEEN 0 AND 10000", name="ck_market_forecast_probability"),
+        CheckConstraint("observed_outcome IS NULL OR observed_outcome IN (0, 1)", name="ck_market_forecast_outcome"),
+    )
+    id = Column(Uuid(), primary_key=True)
+    scope_key = Column(String(64), nullable=False, index=True)
+    target_key = Column(String(64), nullable=False, unique=True)
+    evidence_class = Column(String(20), nullable=False)
+    probability_bp = Column(Integer(), nullable=False)
+    issued_at = Column(DateTime(timezone=True), nullable=False)
+    payload = Column(JSON(), nullable=False)
+    digest = Column(String(64), nullable=False)
+    observed_outcome = Column(Integer())
+    settlement = Column(JSON())

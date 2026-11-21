@@ -1,11 +1,16 @@
 from __future__ import annotations
 from datetime import date
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import inspect, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
 from app.core.dependencies import require_prime_control_key
-from app.services.prime_business_execution import require_owner_mandate_key
+from app.loki.evidence import artifact_digest
+from app.models.completion_registry import LegacyOrchestrationEvent
+from app.services.prime_business_execution import _check_legacy, _event, _json, require_owner_mandate_key
+from app.services.wealth_scenario import WealthScenario, project_household_and_treasury
 from app.schemas.floor_control import (
     EngineUpsertIn, RevenueEventIn, RevenueEventOut,
     TargetUpsertIn, TrajectoryStatusOut
@@ -52,3 +57,32 @@ def trajectory_month(
 ):
     data = evaluate_month(db, month=month, engine_code=engine_code)
     return TrajectoryStatusOut(**data)
+
+
+@router.post("/wealth/scenarios", status_code=201, dependencies=owner)
+def record_wealth_scenario(payload: WealthScenario, db: Session = Depends(get_db)):
+    scope = payload.scope.model_dump()
+    if not inspect(db.connection()).has_table(LegacyOrchestrationEvent.__tablename__):
+        raise HTTPException(503, "Wealth scenario storage unavailable")
+    _check_legacy(db, **scope)
+    params = payload.model_dump(mode="json")
+    event_id = f"WEALTH-SCENARIO-{payload.scenario_id}"
+    event_type = "WEALTH_SCENARIO_RECORDED"
+    event = db.scalar(select(LegacyOrchestrationEvent).filter_by(event_id=event_id, event_type=event_type))
+    if event:
+        recorded = _json(event.payload_json, {})
+        recorded_sha = recorded.pop("sha256", None)
+        if (event.legacy_instance_id != scope["legacy_instance_id"] or recorded.get("request") != params
+                or recorded_sha != artifact_digest("wealth_scenario", event_id, recorded)):
+            raise HTTPException(409, "Wealth scenario ID or integrity mismatch")
+        return {**recorded, "sha256": recorded_sha}
+    result = {"request": params, "result": project_household_and_treasury(payload)}
+    result["sha256"] = artifact_digest("wealth_scenario", event_id, result)
+    _event(db, event_id=event_id, legacy_instance_id=scope["legacy_instance_id"], event_type=event_type,
+           message="Owner-private household and treasury scenario recorded", payload=result)
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(409, "Wealth scenario ID already used") from None
+    return result

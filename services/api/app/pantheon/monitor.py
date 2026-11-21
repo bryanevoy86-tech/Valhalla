@@ -14,6 +14,7 @@ from app.models.specialist_assignment import SpecialistAssignment
 from app.pantheon.roles import LENSES
 from app.pantheon.forecasts import issue_scoped_estimate
 from app.services.foundry_discovery import DISCOVERY_ROLES, discover
+from app.services.market_intelligence import market_observations
 from app.services.prime_business_execution import (
     _approval_id, _check_legacy, _emergency_stop_active, _event, verified_internal_outcomes,
 )
@@ -118,6 +119,7 @@ def run_assignment(db: Session, role: str, *, now=None) -> dict:
         facts = observations(db, LENSES[role], assignment.scope, outcomes, now, assignment.cadence_seconds)
         if role in DISCOVERY_ROLES:
             facts.update(discover(db, role, assignment.scope, now.date()))
+        facts.update(market_observations(db, role, assignment.scope, now))
         report.update(status="observed", observations=facts)
     except HTTPException as exc:
         report.update(status="blocked", reason=exc.detail)
