@@ -75,26 +75,25 @@ def upsert_target(db: Session, payload: dict) -> TrajectoryTarget:
 def evaluate_month(db: Session, *, month: date, engine_code: str = "SYSTEM"):
     m0 = month_start(month)
 
-    q = db.query(
-        func.coalesce(func.sum(RevenueLedger.gross_amount), 0),
-        func.coalesce(func.sum(RevenueLedger.fun_fund_amount), 0),
-    ).filter(func.date_trunc("month", RevenueLedger.as_of_date) == m0)
-
-    if engine_code != "SYSTEM":
-        q = q.filter(RevenueLedger.engine_code == engine_code)
-
-    gross, fun = q.first()
-    actual_gross = float(gross)
-    actual_fun = float(fun)
-
     target = (
         db.query(TrajectoryTarget)
         .filter(TrajectoryTarget.engine_code == engine_code, TrajectoryTarget.month == m0)
         .first()
     )
+    currency = target.currency if target else "USD"
+    next_month = date(m0.year + (m0.month == 12), m0.month % 12 + 1, 1)
+    q = db.query(
+        func.coalesce(func.sum(RevenueLedger.gross_amount), 0),
+        func.coalesce(func.sum(RevenueLedger.fun_fund_amount), 0),
+    ).filter(RevenueLedger.as_of_date >= m0, RevenueLedger.as_of_date < next_month,
+             RevenueLedger.currency == currency)
+    if engine_code != "SYSTEM":
+        q = q.filter(RevenueLedger.engine_code == engine_code)
+
+    gross, fun = q.one()
+    actual_gross, actual_fun = float(gross), float(fun)
     target_gross = float(target.min_gross) if target else 0.0
     target_fun = float(target.min_fun_fund) if target else 0.0
-    currency = target.currency if target else "USD"
 
     gross_delta = actual_gross - target_gross
     fun_delta = actual_fun - target_fun
@@ -110,6 +109,8 @@ def evaluate_month(db: Session, *, month: date, engine_code: str = "SYSTEM"):
         "month": m0,
         "currency": currency,
         "actual_gross": actual_gross,
+        "basis": "RECORDED_UNRECONCILED_LEDGER",
+        "verified_commercial_revenue": False,
         "target_gross": target_gross,
         "gross_delta": gross_delta,
         "actual_fun_fund": actual_fun,

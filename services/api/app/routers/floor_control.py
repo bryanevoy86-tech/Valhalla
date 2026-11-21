@@ -4,19 +4,23 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
+from app.core.dependencies import require_prime_control_key
+from app.services.prime_business_execution import require_owner_mandate_key
 from app.schemas.floor_control import (
     EngineUpsertIn, RevenueEventIn, RevenueEventOut,
     TargetUpsertIn, TrajectoryStatusOut
 )
 from app.services.floor_control import upsert_engine, record_revenue, upsert_target, evaluate_month
 
-router = APIRouter(prefix="/api/governance/floor", tags=["Governance", "Floor Control"])
+router = APIRouter(prefix="/api/governance/floor", tags=["Governance", "Floor Control"],
+                   dependencies=[Depends(require_prime_control_key)])
+owner = [Depends(require_owner_mandate_key)]
 
-@router.post("/engines/upsert")
+@router.post("/engines/upsert", dependencies=owner)
 def engines_upsert(body: EngineUpsertIn, db: Session = Depends(get_db)):
     return upsert_engine(db, body.model_dump())
 
-@router.post("/revenue/record", response_model=RevenueEventOut)
+@router.post("/revenue/record", response_model=RevenueEventOut, dependencies=owner)
 def revenue_record(body: RevenueEventIn, db: Session = Depends(get_db)):
     row = record_revenue(
         db,
@@ -36,7 +40,7 @@ def revenue_record(body: RevenueEventIn, db: Session = Depends(get_db)):
         as_of_date=row.as_of_date,
     )
 
-@router.post("/targets/upsert")
+@router.post("/targets/upsert", dependencies=owner)
 def targets_upsert(body: TargetUpsertIn, db: Session = Depends(get_db)):
     return upsert_target(db, body.model_dump())
 

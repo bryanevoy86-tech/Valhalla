@@ -35,7 +35,7 @@ def verify_stripe_signature(
             entries.setdefault(key, []).append(value)
     times = entries.get("t", [])
     signatures = entries.get("v1", [])
-    if len(times) != 1 or not signatures or not times[0].isdigit():
+    if len(times) != 1 or not signatures or not (times[0].isascii() and times[0].isdigit() and len(times[0]) <= 20):
         return False
     timestamp = int(times[0])
     current = int(time.time()) if now is None else now

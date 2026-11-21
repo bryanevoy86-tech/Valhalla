@@ -6,6 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.pool import StaticPool
 
 from app.main import app
 from app.core.db import get_db
@@ -15,7 +16,7 @@ from app.models.base import Base
 @pytest.fixture
 def db():
     """In-memory SQLite database for testing"""
-    engine = create_engine("sqlite:///:memory:")
+    engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
     Base.metadata.create_all(engine)
     TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     db = TestingSessionLocal()
@@ -24,12 +25,14 @@ def db():
 
 
 @pytest.fixture
-def client(db: Session):
+def client(db: Session, monkeypatch):
+    monkeypatch.setenv("VALHALLA_PRIME_CONTROL_KEY", "legacy-saas-admin-test")
+    monkeypatch.setenv("VALHALLA_OWNER_MANDATE_KEY", "legacy-saas-owner-test")
     """FastAPI test client with in-memory database"""
     def override_get_db():
         yield db
     app.dependency_overrides[get_db] = override_get_db
-    yield TestClient(app)
+    yield TestClient(app, headers={"X-Prime-Control-Key": "legacy-saas-admin-test", "X-Owner-Mandate-Key": "legacy-saas-owner-test"})
     app.dependency_overrides.clear()
 
 

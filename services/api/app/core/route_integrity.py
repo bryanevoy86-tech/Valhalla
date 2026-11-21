@@ -27,6 +27,10 @@ REQUIRED_ROUTER_NAMES = frozenset({
     "builder_assignments",      # isolated worker leasing and receipts
     "marketing",              # marketing registry
     "media_engine",           # content records
+    "foundry_discovery",       # source-bound research candidates
+    "foundry_checkout",        # isolated signed fixture journal
+    "saas_entitlements",       # subscriber identity and tenant boundaries
+    "floor_control",           # private currency-scoped operator ledger
     "saas_access",            # subordinate subscription access
     "governance_king",        # original valuation/mission evaluator
     "governance_queen",       # sustainability/owner wellbeing evaluator

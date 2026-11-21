@@ -14,6 +14,7 @@ from app.models.completion_registry import (
     KnowledgeRegistryItem, LearningFeedbackRecord, LearningTaskQueueItem, LegacyInstanceRegistryItem, LegacyInstanceWorkItem, LegacyOrchestrationEvent, SourceRegistryItem,
 )
 from app.models.media_engine import MediaContent
+from app.models.foundry_checkout import FoundryRehearsalOrder, FoundryRehearsalPayment
 from app.models.audit_log import AuditLog
 from app.models.go_live_state import GoLiveState
 from app.models.revenue_ledger import RevenueLedger
@@ -274,6 +275,7 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
         assert json.loads(listing_record.body)["product_asset"]["sha256"] == checksum
         assert json.loads(listing_record.body)["purchase_url"] is None
     assert client.get(f"{FACTORY}/actions/{action_id}", headers=admin).json()["internal_artifact_verified"]
+    rehearse_checkout(client, engine, monkeypatch, owner, action_id, listing["price_cents_cad"])
 
     with Session(engine) as db:
         triggered = run_due_schedule(db, now=slot_time + timedelta(seconds=1))
@@ -331,3 +333,57 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
         verified = json.loads(learned.payload_json)
         assert verified["product_asset"]["sha256"] == checksum
         assert verified["prime_decision"]["proposal_sha256"] == artifact["artifact_sha256"]
+
+
+def rehearse_checkout(client, engine, monkeypatch, owner, action_id, price):
+    import hmac
+    import time
+
+    for model in (FoundryRehearsalOrder, FoundryRehearsalPayment):
+        model.__table__.create(engine)
+    secret = "fixture-test-secret"
+    monkeypatch.setenv("VALHALLA_FOUNDRY_FIXTURE_SECRET", secret)
+    root = "/api/prime/foundry/rehearsal"
+    order_id = str(uuid4())
+    payment = "pi_fixture_verified_order"
+    payload = {"order_id": order_id, "action_id": action_id, "payment_reference": payment}
+    assert client.post(f"{root}/orders", json=payload).status_code == 401
+    created = client.post(f"{root}/orders", headers=owner, json=payload)
+    assert created.status_code == 201, created.text
+    assert created.json()["price_minor"] == price
+    assert client.post(f"{root}/orders/{order_id}/delivery", headers=owner).status_code == 409
+
+    def apply(kind, event_id, amount, *, live=False, valid=True):
+        if kind == "payment_intent.succeeded":
+            data = {"id": payment, "amount_received": amount}
+        else:
+            data = {"payment_intent": payment, "amount_refunded": amount}
+        data["currency"] = "cad"
+        body = json.dumps({"type": kind, "livemode": live, "id": event_id, "data": {"object": data}}).encode()
+        timestamp = str(int(time.time()))
+        digest = hmac.new(secret.encode(), timestamp.encode() + b"." + body, hashlib.sha256).hexdigest()
+        headers = {"Stripe-Signature": f"t={timestamp},v1={digest if valid else '0' * 64}"}
+        return client.post(f"{root}/payment-fixtures", content=body, headers=headers)
+
+    capture = "payment_intent.succeeded"
+    refund = "charge.refunded"
+    assert apply(refund, "evt_fixture_early_refund", 1).status_code == 409
+    assert apply(capture, "evt_fixture_capture", price, live=True).status_code == 422
+    assert apply(capture, "evt_fixture_capture", price, valid=False).status_code == 400
+    assert apply(capture, "evt_fixture_capture", price + 5).status_code == 409
+    paid = apply(capture, "evt_fixture_capture", price)
+    assert paid.status_code == 200, paid.text
+    assert apply(capture, "evt_fixture_capture", price).json() == paid.json()
+    assert apply(capture, "evt_fixture_capture", price + 5).status_code == 409
+    delivered = client.post(f"{root}/orders/{order_id}/delivery", headers=owner)
+    assert delivered.status_code == 200, delivered.text
+    assert delivered.json()["internal_delivery_recorded"]
+    assert apply(refund, "evt_fixture_refund_one", price // 2).status_code == 200
+    assert apply(refund, "evt_fixture_over_refund", price + 1).status_code == 409
+    assert apply(refund, "evt_fixture_refund_final", price).status_code == 200
+    final = client.get(f"{root}/orders/{order_id}").json()
+    assert final["captured_minor"] == final["refunded_minor"] == price
+    assert final["net_minor"] == 0
+    assert final["verified_commercial_revenue"] is False
+    with Session(engine) as db:
+        assert db.query(FoundryRehearsalPayment).count() == 3
