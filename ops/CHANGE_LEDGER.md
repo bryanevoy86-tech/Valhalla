@@ -819,3 +819,12 @@ All changes remain on the draft branch. Local verification passed 330 backend te
 | `b84859152322149fc0573d256b349088f2e49a44` | Owner notification projection respects revocable sessions, uses stable receipt references and performs no transport work. The template bridge records failed attempts without sent timestamps or delivered recipients. Builder rejects a changed HEAD and altered handoffs. The device-local voice adapter passed the simulated-browser contract test. |
 
 Local acceptance passed 334 canonical backend tests, 19 disposable PostgreSQL checks, eight Builder materializer checks and one Node voice check. The route probe verified 36 critical routers and 94 required routes. An additional legacy notification suite under `services/api/app/tests` could not collect because its inherited fixture imports tuning models absent at the baseline. The canonical notification test exercised the changed dispatch route and stored receipt directly. GitHub Actions verifies the final draft branch tree. Authorized provider, preview and physical-device acceptance remains pending.
+
+## November 21 — Recovered regression contracts and outcome integrity
+
+| Development commit | Local acceptance evidence |
+|---|---|
+| `f62b8e74fd6b9a2dcde37296528fbe31ee537fd8` | Recovered 26 historical notification tests in canonical CI, fixed disabled-on-create preferences, isolated the supplemental fixture from the configured database, and exercised the current tuning rules CRUD and threshold contract. |
+| `e61c34caa2354198b58fc95fa0c0913102a24b46` | Norns rejected a stored contradiction on read and replay. Calibration excluded one label, prospective training dropped from three valid records to two and correctly abstained, and the holdout score stayed at 0.16. The Builder handoff generated a SHA-256 review diff that passed Git's dry application check without editing the worktree. |
+
+Local verification passed 361 canonical backend tests, 19 disposable PostgreSQL checks, eight Builder materializer checks and one simulated-browser voice check. The route probe verified 36 critical routers and 94 required routes. Seven separately exercised CI5 profile/constraint tests now run but fail on the retired endpoints. Historic models existed in predecessor trees; the canonical threshold CRUD and all recovered notification cases pass. The supplemental source and expectations remain preserved. See the December handoff for owner-controlled rollout, review and external verification boundaries.

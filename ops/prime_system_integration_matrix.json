@@ -9,7 +9,8 @@
       "priority": "P0",
       "source_paths": [
         "services/api/app/main.py",
-        "services/api/start.py"
+        "services/api/start.py",
+        "services/api/tests/test_tuning_rule_contract.py"
       ],
       "source_observation": "Canonical FastAPI import registered 36 critical routers and all 94 required routes in the isolated runtime.",
       "evidence_level": "FOCUSED_CI_TESTED",
@@ -22,7 +23,7 @@
       "owner_external_authorization_required": false,
       "continuation": {
         "next_implementation": "Exercise the registered routes in an authorized staging environment with migrated PostgreSQL.",
-        "existing_test_evidence": "Canonical route probe verified all 94 required methods and paths.",
+        "existing_test_evidence": "Canonical route probe verified all 94 required methods and paths. Canonical tuning rule creation, list, update, threshold evaluation and delete pass after fixing the stale route dependency.",
         "owner_action": "Internal continuation is authorized under the standing development scope.",
         "required_acceptance_evidence_field": "acceptance_test"
       }
@@ -305,7 +306,7 @@
       "owner_external_authorization_required": false,
       "continuation": {
         "next_implementation": "Package review-ready candidates for GitHub with a separately authorized submission identity.",
-        "existing_test_evidence": "test_builder_assignments.py exercises lease reclaims, exhaustion, terminal status and stale receipt handling. The exact passing snapshot yields an owner-only, checksummed review packet. Recovery, wrong review input and emergency stop are exercised. Offline review materialization refuses a changed Git HEAD or mismatched receipt.",
+        "existing_test_evidence": "test_builder_assignments.py exercises lease reclaims, exhaustion, terminal status and stale receipt handling. The exact passing snapshot yields an owner-only, checksummed review packet. Recovery, wrong review input and emergency stop are exercised. Offline review materialization refuses a changed Git HEAD or mismatched receipt. The existing materializer emits a checksummed, Git-checked review diff against the exact passing handoff base.",
         "owner_action": "Internal continuation is authorized under the standing development scope.",
         "required_acceptance_evidence_field": "acceptance_test"
       }
@@ -540,7 +541,8 @@
       "source_paths": [
         "services/api/app/workers/outbox_dispatcher.py",
         "services/api/app/core/dependencies.py",
-        "services/api/tests/test_notification_receipts.py"
+        "services/api/tests/test_notification_receipts.py",
+        "services/api/tests/test_notification_bridge.py"
       ],
       "source_observation": "Reference dispatcher can no longer record unsent messages dispatched; actual provider pathway must be identified",
       "evidence_level": "SOURCE_INSPECTED_ONLY",
@@ -553,7 +555,7 @@
       "owner_external_authorization_required": false,
       "continuation": {
         "next_implementation": "Build a durable non-delivery staging outbox and verify an independently authorized delivery receipt.",
-        "existing_test_evidence": "See SOURCE_INSPECTED_ONLY and source observations above, with exact releases in ops/CHANGE_LEDGER.md. Owner attention references are revocable and private; an unconfigured transport cannot produce a delivery receipt.",
+        "existing_test_evidence": "See SOURCE_INSPECTED_ONLY and source observations above, with exact releases in ops/CHANGE_LEDGER.md. Owner attention references are revocable and private; an unconfigured transport cannot produce a delivery receipt. Twenty-six restored historical bridge, channel and orchestrator tests run in canonical CI. Explicitly disabled preferences do not create dispatch attempts.",
         "owner_action": "Internal continuation is authorized under the standing development scope.",
         "required_acceptance_evidence_field": "acceptance_test"
       }
@@ -758,7 +760,7 @@
       "owner_external_authorization_required": false,
       "continuation": {
         "next_implementation": "Collect genuine eligible outcome samples and publish measured calibration by cohort.",
-        "existing_test_evidence": "See SQLITE_INTEGRATION_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md. Product Foundry continuous fixture links signed discovery, independent challenge, scoped execution, outcome, retained losses and a subsequent HOLD with contradiction evidence.",
+        "existing_test_evidence": "See SQLITE_INTEGRATION_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md. Product Foundry continuous fixture links signed discovery, independent challenge, scoped execution, outcome, retained losses and a subsequent HOLD with contradiction evidence. Calibration and prospective training verify the original Factory proof and exclude conflicting stored labels. Holdout isolation remains covered.",
         "owner_action": "Internal continuation is authorized under the standing development scope.",
         "required_acceptance_evidence_field": "acceptance_test"
       }
