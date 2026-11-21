@@ -613,6 +613,15 @@ def _execute_locked_draft(db: Session, item: LegacyInstanceWorkItem) -> dict | N
     except HTTPException as exc:
         return {"status": "blocked", "action_id": item.action_id,
                 "reason": str(exc.detail), "verified": False}
+    from app.services.economic_control import require_no_containment
+
+    try:
+        require_no_containment(db, {
+            "legacy_instance_id": item.legacy_instance_id, "business_id": item.business_id,
+            "engine_id": item.engine_id, "jurisdiction": item.jurisdiction,
+        })
+    except HTTPException as exc:
+        return {"status": "blocked", "action_id": item.action_id, "reason": str(exc.detail), "verified": False}
     if "product_asset" in payload:
         try:
             ref = payload["product_asset"]

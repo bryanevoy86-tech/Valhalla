@@ -15,6 +15,7 @@ from app.pantheon.roles import LENSES
 from app.pantheon.forecasts import issue_scoped_estimate
 from app.services.foundry_discovery import DISCOVERY_ROLES, discover
 from app.services.market_intelligence import market_observations
+from app.services.economic_control import ready as economic_ready, specialist_economics, verify_trigger
 from app.services.prime_business_execution import (
     _approval_id, _check_legacy, _emergency_stop_active, _event, verified_internal_outcomes,
 )
@@ -103,23 +104,27 @@ def run_assignment(db: Session, role: str, *, now=None) -> dict:
         return {"status": "idle"}
     event = assignment.pending_event_id
     due = assignment.next_due_at <= now
+    economic_event = bool(event and event.startswith("ECON-"))
     material = f"{assignment.id}/{event or assignment.next_due_at.isoformat()}"
     event_id = "GOD-" + hashlib.sha256(material.encode()).hexdigest()
     report = {
         "report_event_id": event_id, "assignment_id": str(assignment.id), "role": role,
         "lens": LENSES[role], "scope": assignment.scope, "observed_at": now.isoformat() + "Z",
-        "trigger": "VERIFIED_OUTCOME" if event else "CADENCE", "trigger_event_id": event,
+        "trigger": "ECONOMIC_REASSESSMENT" if economic_event else "VERIFIED_OUTCOME" if event else "CADENCE", "trigger_event_id": event,
         "model_used": False, "external_authority": False, "independent_review_authority": False,
     }
     try:
         _check_legacy(db, **assignment.scope)
         outcomes = verified_internal_outcomes(db, **assignment.scope)
-        if event and not any(item["outcome_event_id"] == event for item in outcomes):
+        if economic_event and (not economic_ready(db) or not verify_trigger(db, assignment.scope, event)):
+            raise HTTPException(409, "Economic evidence trigger could not be revalidated")
+        if event and not economic_event and not any(item["outcome_event_id"] == event for item in outcomes):
             raise HTTPException(409, "Trigger receipt could not be revalidated")
         facts = observations(db, LENSES[role], assignment.scope, outcomes, now, assignment.cadence_seconds)
         if role in DISCOVERY_ROLES:
             facts.update(discover(db, role, assignment.scope, now.date()))
         facts.update(market_observations(db, role, assignment.scope, now))
+        facts.update(specialist_economics(db, role, assignment.scope, now.date()))
         report.update(status="observed", observations=facts)
     except HTTPException as exc:
         report.update(status="blocked", reason=exc.detail)

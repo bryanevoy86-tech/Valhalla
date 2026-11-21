@@ -43,6 +43,20 @@ def challenge(item: dict) -> IndependentReviewIn:
             "source_verification_required", "specialist_inputs",
             "Local coherence checks do not verify underlying source evidence. Reconsider the provenance and any material assumptions.",
         ))
+    elif kind == "economic_advice":
+        plan, evidence = proposal["plan"], proposal["analysis"]
+        checks = set(evidence["blockers"])
+        if plan["past_spend_minor"]:
+            findings.append(_finding("sunk_cost", "plan/past_spend_minor",
+                                     "Past expenditure is not evidence for renewing funding. Reassess future cash and recovery."))
+        if checks and plan["action"] not in {"SUSPEND", "RESTRUCTURE", "EXIT"}:
+            findings.append(_finding("loss_limit_bypass", "analysis/blockers",
+                                     "The proposed path conflicts with current capital or obligations constraints.", critical=True))
+        if plan["cross_business_support"] or proposal["execution_authorized"] is not False:
+            findings.append(_finding("authority", "plan/cross_business_support",
+                                     "Cross-business support is beyond this private planning mandate.", critical=True))
+        findings.append(_finding("reconcile_forward_case", "analysis",
+                                 "Review forward alternatives, continuity of cash and obligations, and asset recovery assumptions."))
     elif kind == "pantheon_report":
         sources = proposal.get("observations")
         if not isinstance(sources, dict) or proposal.get("status") != "observed":

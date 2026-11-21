@@ -368,6 +368,34 @@ class FactoryPostgresTests(unittest.TestCase):
             self.assertEqual(db.query(MediaContent).count(), 1)
             self.assertEqual(db.query(LegacyInstanceWorkItem).filter_by(status="completed").count(), 1)
 
+    def test_economic_pool_serializes_competing_reservations_by_currency(self):
+        from concurrent.futures import ThreadPoolExecutor
+        from app.models.economic_control import EconomicPool
+        from app.services.economic_control import lock_pool
+
+        EconomicPool.__table__.create(bind=self.engine)
+        try:
+            with self.sessions.begin() as db:
+                db.add(EconomicPool(currency="CAD"))
+            start = threading.Barrier(2)
+
+            def reserve():
+                start.wait(timeout=5)
+                with self.sessions.begin() as db:
+                    pool = lock_pool(db, "CAD")
+                    if pool.committed_minor + 120 > 170:
+                        return False
+                    pool.committed_minor += 120
+                    return True
+
+            with ThreadPoolExecutor(max_workers=2) as executor:
+                results = [executor.submit(reserve) for _ in range(2)]
+                self.assertEqual(sorted(job.result(timeout=10) for job in results), [False, True])
+            with self.sessions() as db:
+                self.assertEqual(db.get(EconomicPool, "CAD").committed_minor, 120)
+        finally:
+            EconomicPool.__table__.drop(bind=self.engine)
+
 
 if __name__ == "__main__":
     unittest.main()

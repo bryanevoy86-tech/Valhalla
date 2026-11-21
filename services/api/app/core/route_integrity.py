@@ -29,6 +29,7 @@ REQUIRED_ROUTER_NAMES = frozenset({
     "marketing",              # marketing registry
     "media_engine",           # content records
     "norns_market",             # source-pinned prospective market thresholds
+    "economic_control",         # scoped capital rehearsal and containment
     "market_intelligence",     # governed investment and FX paper research
     "foundry_discovery",       # source-bound research candidates
     "foundry_checkout",        # isolated signed fixture journal

@@ -867,3 +867,36 @@ def best_option_or_abstain(ranked: list[dict[str, Any]]) -> dict[str, Any]:
             "lower_dimensions": [k for k, v in second["normalized_dimensions"].items() if v < top["normalized_dimensions"].get(k, 0.0)][:5],
         },
     }
+
+
+def rank_economic_options(options: list[dict], available_minor: int) -> list[dict]:
+    """Deterministic forward comparison of same-currency research scenarios."""
+    ranked = []
+    for option in options:
+        cost = option["required_capital"]
+        downside = option["maximum_downside"]
+        net = option["projected_annual_net"]
+        delay = option["time_to_revenue_days"]
+        demand = option["demand_bp"]
+        independence = option["operational_independence_bp"]
+        uncertainty = option["uncertainty_bp"]
+        usable_days = max(0, 365 - delay)
+        adjusted_net = min(0, net) + max(0, net) * usable_days * demand * (10000 - uncertainty) // (365 * 10000**2)
+        # A labor-dependent option ties up more of the declared capital than one that can operate independently.
+        dependency_bp = max(10000 - independence, option["human_hours_weekly"] * 10000 // 168)
+        capital_charge = (cost * dependency_bp + downside * uncertainty) // 10000
+        blocked = list(option["blockers"])
+        if cost > available_minor:
+            blocked.append("UNAVAILABLE_CAPITAL")
+        if adjusted_net - capital_charge <= 0:
+            blocked.append("NONPOSITIVE_FORWARD_VALUE")
+        ranked.append({
+            **option, "blockers": blocked, "eligible": not blocked,
+            "adjusted_forward_value_minor": adjusted_net - capital_charge,
+        })
+    ranked.sort(key=lambda item: (not item["eligible"], -item["adjusted_forward_value_minor"], item["opportunity_key"]))
+    eligible = [item for item in ranked if item["eligible"]]
+    best_value = eligible[0]["adjusted_forward_value_minor"] if eligible else None
+    for item in ranked:
+        item["foregone_best_alternative_minor"] = max(0, best_value - item["adjusted_forward_value_minor"]) if best_value is not None else None
+    return ranked
