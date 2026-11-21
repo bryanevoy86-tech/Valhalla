@@ -116,7 +116,10 @@ def recommend(role: Role, data_class: Literal["SYNTHETIC", "PRIVATE"] = "PRIVATE
     candidates = []
     if data_class == "SYNTHETIC":
         active = db.scalars(select(ModelProvider).where(ModelProvider.active.is_(True))).all()
-        prime_identities = {identity(row) for row in active if row.default_for_heimdall}
+        prime_models = {
+            provider_identity[1].casefold() for row in active
+            if row.default_for_heimdall and (provider_identity := identity(row)) is not None
+        }
         seen = set()
         evidence = db.scalars(select(ProviderEvidence).where(
             ProviderEvidence.role == role, ProviderEvidence.suite_version == SUITE_VERSION,
@@ -127,7 +130,7 @@ def recommend(role: Role, data_class: Literal["SYNTHETIC", "PRIVATE"] = "PRIVATE
             if current is None or current != (run.vendor, run.model) or current in seen:
                 continue
             seen.add(current)
-            if role == "LOKI" and current in prime_identities:
+            if role == "LOKI" and current[1].casefold() in prime_models:
                 continue
             if any(run.fixture_results.get(key) is not True for key in SUITE):
                 continue

@@ -6,7 +6,7 @@ from sqlalchemy import exists, select
 from sqlalchemy.orm import Session
 
 from app.models.completion_registry import LegacyInstanceWorkItem, LegacyOrchestrationEvent
-from app.models.norns_forecast import NornsForecast
+from app.models.norns_forecast import NornsForecast, NornsHoldout
 from app.services.prime_business_execution import ACTION_TYPE, _json, _receipt_id, action_status
 
 
@@ -19,6 +19,7 @@ def issue_scoped_estimate(db: Session, scope: dict, now, horizon_seconds: int) -
     horizon = timedelta(seconds=horizon_seconds)
     history = db.scalars(select(forecast).join(work, work.action_id == forecast.action_id).where(
         *filters, forecast.observed_outcome.is_not(None), forecast.resolved_at < now,
+        ~exists(select(NornsHoldout.forecast_id).where(NornsHoldout.forecast_id == forecast.id)),
     ).order_by(forecast.resolved_at.desc(), forecast.id).limit(100)).all()
     sample = []
     for past in history:

@@ -441,3 +441,25 @@ def admin_reset_password(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to reset password",
         ) from e
+
+
+@router.get("/owner-briefing")
+def owner_briefing(
+    current_user: Dict[str, Any] = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Expose one read-only owner projection over the existing revocable session."""
+    from fastapi.responses import JSONResponse
+    from app.services.owner_conversation import answer
+
+    subject_id = current_user["user_id"]
+    profile = (db.query(UserProfile).join(AccountSettings, AccountSettings.user_id == UserProfile.user_id)
+               .filter(UserProfile.user_id == subject_id, AccountSettings.account_locked.is_(False)).one_or_none()
+               if type(subject_id) is int else None)
+    if profile is None or profile.email != current_user.get("sub") or not _is_configured_owner(profile.email):
+        raise HTTPException(403, "Configured owner session required")
+    reply, evidence = answer(db, "briefing", [])
+    return JSONResponse(
+        content={"reply": reply, "evidence": evidence, "execution_authorized": False},
+        headers={"Cache-Control": "no-store", "Vary": "Authorization"},
+    )

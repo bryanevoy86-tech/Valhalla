@@ -4,12 +4,12 @@ import hashlib
 import json
 
 from fastapi import HTTPException
-from sqlalchemy import func, inspect, or_, select
+from sqlalchemy import exists, func, inspect, or_, select
 from sqlalchemy.orm import Session
 
 from app.loki.review_service import artifact_digest
 from app.models.completion_registry import EngineRegistryItem, LegacyInstanceWorkItem, LegacyOrchestrationEvent
-from app.models.norns_forecast import NornsForecast
+from app.models.norns_forecast import NornsForecast, NornsHoldout
 from app.models.specialist_assignment import SpecialistAssignment
 from app.pantheon.roles import LENSES
 from app.pantheon.forecasts import issue_scoped_estimate
@@ -52,7 +52,7 @@ def observations(db: Session, lens: str, scope: dict, outcomes: list[dict], now,
         }
     if lens == "forecast_outcomes":
         schema = inspect(db.connection())
-        if not schema.has_table(NornsForecast.__tablename__):
+        if any(not schema.has_table(model.__tablename__) for model in (NornsForecast, NornsHoldout)):
             return {"evidence_status": "FORECAST_SCHEMA_UNAVAILABLE"}
         if "estimate_source" not in {item["name"] for item in schema.get_columns(NornsForecast.__tablename__)}:
             return {"evidence_status": "FORECAST_SCHEMA_UNAVAILABLE"}
@@ -60,10 +60,11 @@ def observations(db: Session, lens: str, scope: dict, outcomes: list[dict], now,
         diff = forecast.probability_bp - 10000 * forecast.observed_outcome
         count, squared_error = db.execute(select(func.count(), func.avg(diff * diff)).select_from(forecast).join(
             work, work.action_id == forecast.action_id,
-        ).where(*scope_filter, forecast.observed_outcome.is_not(None))).one()
+        ).where(*scope_filter, forecast.observed_outcome.is_not(None),
+                ~exists(select(NornsHoldout.forecast_id).where(NornsHoldout.forecast_id == forecast.id)))).one()
         return {"resolved_sample_count": count,
                 "brier_score": round(float(squared_error) / 100_000_000, 6) if count else None,
-                "score_cohort": "MIXED_INTERNAL_ESTIMATE_SOURCES",
+                "score_cohort": "ORDINARY_INTERNAL_ESTIMATE_SOURCES",
                 "target": "VERIFIED_INTERNAL_ARTIFACT_BY_DEADLINE",
                 **issue_scoped_estimate(db, scope, now, cadence)}
 

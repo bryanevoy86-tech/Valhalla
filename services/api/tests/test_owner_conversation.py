@@ -487,3 +487,30 @@ def test_owner_review_can_quarantine_an_extract_without_erasing_provenance(clien
     assert client.get(f"{url}/review", headers=HEADERS).json()["review_id"] == accepted.json()["review_id"]
     assert client.post(f"{url}/extract", headers=HEADERS).json() == initial.json()
     assert client.post(f"{BASE}/{cid}/turns", headers=HEADERS, json=turn).status_code == 201
+
+
+def test_private_scanned_pdf_reuses_attachment_ocr_receipt(client):
+    from io import BytesIO
+    from pathlib import Path
+
+    from PIL import Image, ImageDraw, ImageFont
+
+    img = Image.new("RGB", (820, 220), "white")
+    ImageDraw.Draw(img).text((24, 30), "VALHALLA SCAN", fill="black", font=ImageFont.load_default(size=52))
+    pdf = BytesIO()
+    img.save(pdf, format="PDF")
+    attachment = asset(pdf.getvalue(), "application/pdf", "scan.pdf")
+    cid = create(client)
+    root = f"{BASE}/{cid}/attachments"
+    assert client.post(root, headers=HEADERS, json=attachment).status_code == 201
+    result = client.post(f"{root}/{attachment['attachment_id']}/extract", headers=HEADERS)
+    assert result.status_code == 200, result.text
+    receipt = result.json()
+    assert receipt["source_sha256"] == attachment["sha256"]
+    assert receipt["sent_to_provider"] is False
+    if all(Path(f"/usr/bin/{tool}").is_file() for tool in ("pdftoppm", "tesseract")):
+        assert receipt["ocr_pages"] == [1], receipt
+        assert receipt["sections"][0]["locator"] == "page 1 OCR"
+        assert "VALHALLA SCAN" in receipt["sections"][0]["text"]
+    else:
+        assert receipt["ocr_status"] == "UNAVAILABLE"

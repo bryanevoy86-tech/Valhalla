@@ -131,3 +131,43 @@ def test_specialist_stage_probe_is_metered_fixed_synthetic_and_independently_con
     assert failed.json()["result"] == "unavailable"
     assert client.post(f"{root}/stage-probes", json={**probe, "probe_id": str(uuid4())}, headers=owner).status_code == 429
     assert len(calls) == 2
+
+    from datetime import datetime, timedelta, timezone
+    from app.models.provider_pricing import ProviderPriceQuote, ProviderUsageReconciliation
+
+    for model in (ProviderPriceQuote, ProviderUsageReconciliation):
+        model.__table__.create(engine)
+    today = datetime.now(timezone.utc).date()
+    quote = {
+        "quote_id": str(uuid4()), "provider_id": challenger_id, "source_url": "https://console.groq.com/docs/fixture-pricing",
+        "observed_on": today.isoformat(), "effective_on": today.isoformat(),
+        "expires_on": (today + timedelta(days=10)).isoformat(), "currency": "USD",
+        "input_minor_per_million": 100, "output_minor_per_million": 200,
+    }
+    assert client.post(f"{root}/price-quotes", headers=owner, json={**quote, "source_url": "https://console.groq.com@foreign.invalid/"}).status_code == 422
+    recorded = client.post(f"{root}/price-quotes", headers=owner, json=quote)
+    assert recorded.status_code == 201, recorded.text
+    assert recorded.json()["basis"] == "OWNER_RECORDED_PRICE_SOURCE"
+    assert client.get(f"{root}/price-quotes", params={"provider_id": challenger_id}).json() == [recorded.json()]
+    usage = f"{root}/stage-probes/{probe['probe_id']}"
+    cost = client.get(f"{usage}/cost", params={"quote_id": quote["quote_id"]})
+    assert cost.status_code == 200, cost.text
+    assert cost.json()["estimated_microminor"] == 4400
+    statement = {"quote_id": quote["quote_id"], "statement_ref": "fixture:statement-one", "reported_microminor": 4520}
+    reconciled = client.post(f"{usage}/reconcile", headers=owner, json=statement)
+    assert reconciled.status_code == 201, reconciled.text
+    assert reconciled.json()["variance_microminor"] == 120
+    assert reconciled.json()["billing_provider_verified"] is False
+    assert client.post(f"{usage}/reconcile", headers=owner, json=statement).json() == reconciled.json()
+    assert client.post(f"{usage}/reconcile", headers=owner, json={**statement, "reported_microminor": 5000}).status_code == 409
+
+    routing = {"role": "LOKI", "data_class": "SYNTHETIC", "currency": "USD",
+               "input_token_limit": 42, "output_token_limit": 64, "max_microminor": 18000}
+    selected = client.post(f"{root}/select-staging-candidate", headers=owner, json=routing)
+    assert selected.status_code == 200, selected.text
+    assert selected.json()["candidate"]["provider_id"] == challenger_id
+    assert selected.json()["candidate"]["estimated_max_microminor"] == 17000
+    assert selected.json()["provider_call_authorized"] is False
+    unaffordable = client.post(f"{root}/select-staging-candidate", headers=owner, json={**routing, "max_microminor": 16999})
+    assert unaffordable.json()["candidate"] is None
+    assert len(calls) == 2

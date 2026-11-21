@@ -4,6 +4,9 @@ from uuid import uuid4
 from sqlalchemy.orm import Session
 
 from app.models.auth_revocations import RevokedAccessToken
+from app.models.completion_registry import LearningTaskQueueItem
+from app.models.go_live_state import GoLiveState
+from app.models.prime_specialist_schedule import PrimeSpecialistSchedule
 from app.models.saas_access import SaaSPlan, SaaSPlanModule, SaaSTenantEntitlement, Subscription
 from app.routers.auth_weweb import _auth_runtime, _issue_access_token
 from app.users.models import AccountSettings, UserProfile
@@ -46,6 +49,21 @@ def test_trial_is_bound_to_authenticated_subscriber_and_tenant(deal_client, monk
     assert issued.json()["payment_verified"] is False
     assert client.post(root, headers=owner, json=trial).json() == issued.json()
 
+    monkeypatch.setenv("VALHALLA_OWNER_EMAIL", "one@example.invalid")
+    for model in (LearningTaskQueueItem, GoLiveState, PrimeSpecialistSchedule):
+        model.__table__.create(engine)
+    with Session(engine) as db:
+        db.add(GoLiveState(id=1, go_live_enabled=False, kill_switch_engaged=True))
+        db.commit()
+    briefing = "/api/weweb/owner-briefing"
+    assert client.get(briefing).status_code == 401
+    assert client.get(briefing, headers=outsider).status_code == 403
+    owned = client.get(briefing, headers={**bearer, "X-Prime-Control-Key": "not-used"})
+    assert owned.status_code == 200, owned.text
+    assert owned.headers["cache-control"] == "no-store"
+    assert owned.json()["execution_authorized"] is False
+    assert owned.json()["evidence"]["integrity"]["fail_safe_state"]["active"] is True
+
     access = f"{root}/{trial['tenant_id']}/access/wholesale_engine"
     assert client.get(access).status_code == 401
     assert client.get(access, headers=outsider).status_code == 404
@@ -56,3 +74,4 @@ def test_trial_is_bound_to_authenticated_subscriber_and_tenant(deal_client, monk
     assert client.get(access, headers=bearer).status_code == 404
     assert client.post("/api/weweb/logout", headers=bearer).status_code == 200
     assert client.get(access, headers=bearer).status_code == 401
+    assert client.get(briefing, headers=bearer).status_code == 401

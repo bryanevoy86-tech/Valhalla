@@ -20,6 +20,7 @@ REQUIRED_ROUTER_NAMES = frozenset({
     "legacy_playbooks",       # internal clone and mirror rehearsals
     "prime_business_factory", # durable owned execution lane
     "specialist_probes",       # gated synthetic specialist transport
+    "provider_pricing",         # dated comparison and usage reconciliation
     "provider_evidence",        # private synthetic suitability evidence
     "norns_forecasts",          # timestamped observable forecasts
     "prime_specialist_schedules",  # durable owner-authorized shadow cadence

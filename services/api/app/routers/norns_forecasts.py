@@ -5,19 +5,20 @@ from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy import func, inspect, select
+from sqlalchemy import exists, func, inspect, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
 from app.core.dependencies import require_prime_control_key
 from app.models.completion_registry import LegacyInstanceWorkItem, LegacyOrchestrationEvent
-from app.models.norns_forecast import NornsForecast
+from app.models.norns_forecast import NornsForecast, NornsHoldout
 from app.services.prime_business_execution import ACTION_TYPE, _json, _receipt_id, action_status, require_owner_mandate_key
 
 
 def require_forecast_schema(db: Session = Depends(get_db)):
-    if not inspect(db.connection()).has_table(NornsForecast.__tablename__):
+    schema = inspect(db.connection())
+    if any(not schema.has_table(model.__tablename__) for model in (NornsForecast, NornsHoldout)):
         raise HTTPException(503, "Norns forecast schema not ready")
 
 
@@ -135,15 +136,38 @@ def resolve_forecast(forecast_id: UUID, db: Session = Depends(get_db)):
     return _explain(forecast)
 
 
+@router.post("/forecasts/{forecast_id}/holdout", status_code=201, dependencies=[Depends(require_owner_mandate_key)])
+def enroll_holdout(forecast_id: UUID, db: Session = Depends(get_db)):
+    forecast = db.get(NornsForecast, forecast_id, with_for_update=True)
+    if forecast is None:
+        raise HTTPException(404, "Forecast not found")
+    existing = db.get(NornsHoldout, forecast.id)
+    if existing is not None:
+        return {"forecast_id": forecast.id, "cohort": "HOLDOUT", "enrolled_at": existing.enrolled_at}
+    item = _lock_work(db, forecast.action_id)
+    now = _now()
+    if (forecast.observed_outcome is not None or not forecast.issued_at <= now < forecast.deadline_at
+            or item.status != "queued" or db.scalar(select(LegacyOrchestrationEvent.id).where(
+                LegacyOrchestrationEvent.event_id == _receipt_id(item.action_id),
+            )) is not None):
+        raise HTTPException(409, "Holdout enrollment must precede observable execution and deadline")
+    row = NornsHoldout(forecast_id=forecast.id, enrolled_at=now)
+    db.add(row)
+    db.commit()
+    return {"forecast_id": forecast.id, "cohort": "HOLDOUT", "enrolled_at": row.enrolled_at}
+
+
 @router.get("/calibration")
 def calibration(estimate_source: Literal["OWNER_ESTIMATE", "SCOPED_HISTORICAL_RATE"] = "OWNER_ESTIMATE",
-                db: Session = Depends(get_db)):
+                cohort: Literal["ORDINARY", "HOLDOUT"] = "ORDINARY", db: Session = Depends(get_db)):
     diff = NornsForecast.probability_bp - 10000 * NornsForecast.observed_outcome
+    holdout = exists(select(NornsHoldout.forecast_id).where(NornsHoldout.forecast_id == NornsForecast.id))
     count, squared_error = db.execute(select(func.count(), func.avg(diff * diff)).where(
         NornsForecast.observed_outcome.is_not(None), NornsForecast.estimate_source == estimate_source,
+        holdout if cohort == "HOLDOUT" else ~holdout,
     )).one()
     return {
-        "target": "VERIFIED_INTERNAL_ARTIFACT_BY_DEADLINE", "estimate_source": estimate_source,
+        "target": "VERIFIED_INTERNAL_ARTIFACT_BY_DEADLINE", "estimate_source": estimate_source, "cohort": cohort,
         "resolved_sample_count": count, "brier_score": round(float(squared_error) / 100_000_000, 6) if count else None,
         "accuracy_claim": "OBSERVED_INTERNAL_SAMPLE" if count else "INSUFFICIENT_EVIDENCE",
     }

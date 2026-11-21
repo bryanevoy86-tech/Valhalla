@@ -6,6 +6,7 @@ import resource
 import subprocess
 import sys
 from pathlib import Path
+from time import monotonic
 from xml.etree import ElementTree as ET
 from zipfile import ZipFile
 
@@ -86,6 +87,45 @@ def office(data, mime):
         return bounded(sections, "XLSX", worksheet_count=len(sheet_names), formulas_evaluated=False)
 
 
+def ocr_pixels(data, timeout):
+    binary = Path("/usr/bin/tesseract")
+    if not binary.is_file():
+        return None
+    try:
+        result = subprocess.run(
+            [str(binary), "stdin", "stdout", "-l", "eng", "--psm", "6"],
+            input=data, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+            env={"OMP_THREAD_LIMIT": "1"}, timeout=timeout, check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if result.returncode != 0 or len(result.stdout) > 100_000:
+        return None
+    return result.stdout.decode("utf-8", errors="replace").strip()
+
+
+def scanned_page_text(data, page, deadline):
+    renderer = Path("/usr/bin/pdftoppm")
+    if not renderer.is_file() or not Path("/usr/bin/tesseract").is_file():
+        return None
+    budget = deadline - monotonic()
+    if budget <= 0:
+        return None
+    try:
+        rendered = subprocess.run(
+            [str(renderer), "-f", str(page), "-l", str(page), "-singlefile", "-scale-to", "1400",
+             "-gray", "-png", "-"],
+            input=data, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, timeout=min(2, budget),
+            env={}, check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if rendered.returncode != 0 or not 0 < len(rendered.stdout) <= 3_500_000:
+        return None
+    budget = deadline - monotonic()
+    return ocr_pixels(rendered.stdout, min(3, budget)) if budget > 0 else None
+
+
 def image_text(data, mime):
     from PIL import Image
 
@@ -109,17 +149,9 @@ def image_text(data, mime):
         sanitized = Image.frombytes("L", grayscale.size, grayscale.tobytes())
         png = BytesIO()
         sanitized.save(png, format="PNG")
-    try:
-        result = subprocess.run(
-            [str(binary), "stdin", "stdout", "-l", "eng", "--psm", "6"],
-            input=png.getvalue(), stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
-            env={"OMP_THREAD_LIMIT": "1"}, timeout=4, check=False,
-        )
-    except (OSError, subprocess.TimeoutExpired):
+    text = ocr_pixels(png.getvalue(), 4)
+    if text is None:
         return bounded([], kind, **info, ocr_performed=False, ocr_status="UNAVAILABLE")
-    if result.returncode != 0 or len(result.stdout) > 100_000:
-        return bounded([], kind, **info, ocr_performed=False, ocr_status="UNAVAILABLE")
-    text = result.stdout.decode("utf-8", errors="replace").strip()
     return bounded([("image OCR", text)] if text else [], kind, **info, ocr_performed=True,
                    ocr_status="EXTRACTED" if text else "NO_TEXT")
 
@@ -137,8 +169,21 @@ def parse(data, mime):
         count = len(reader.pages)
         sections = [(f"page {i + 1}", reader.pages[i].extract_text() or "")
                     for i in range(min(count, MAX_SECTIONS))]
-        result = bounded(sections, "PDF", page_count=count, ocr_performed=False)
-        result["bounded_output"] |= count > MAX_SECTIONS
+        blank_pages = [index for index, (_, text) in enumerate(sections) if not text.strip()]
+        deadline = monotonic() + 4.5
+        ocr_pages = []
+        for index in blank_pages[:2]:
+            text = scanned_page_text(data, index + 1, deadline)
+            if text is not None:
+                sections[index] = (f"page {index + 1} OCR", text)
+                ocr_pages.append(index + 1)
+        status = "NOT_NEEDED"
+        if blank_pages:
+            status = ("UNAVAILABLE" if not ocr_pages else
+                      "COMPLETE" if len(ocr_pages) == len(blank_pages) and count <= MAX_SECTIONS else "PARTIAL")
+        result = bounded(sections, "PDF", page_count=count, ocr_performed=bool(ocr_pages),
+                         ocr_status=status, ocr_pages=ocr_pages)
+        result["bounded_output"] |= count > MAX_SECTIONS or len(blank_pages) > len(ocr_pages)
         return result
     if mime in {"image/png", "image/jpeg"}:
         return image_text(data, mime)
