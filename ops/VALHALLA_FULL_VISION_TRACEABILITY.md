@@ -140,3 +140,16 @@ Historical evidence was reviewed in the archived FX engine, the distinct SKU arb
 | Heimdall Prime | Existing scoped reports plus private briefing alerts. No brokerage, execution or provider authority. |
 
 Package 3 shares the existing treasury floor. A private household and treasury scenario models expenditure versus budget, reserve funding, planned compensation, and the 90/10 split of remaining scenario cash. First-year withdrawal is deferred and later modeled withdrawals use an explicit scenario cap. Household inputs are entered through the private API. Trusts, insurance, residency and registration continue through their dedicated workstreams and appropriate professional review.
+
+## Workstream 50 — Dynamic Capital Allocation, Loss Containment and Strategic Redeployment
+
+The owner confirmed that Valhalla is an objective-driven operating platform. Historical wealth engines remain optional strategies. Prime can recommend ending a venture and preserving capital, software, lawful knowledge, and infrastructure to pursue a better opportunity. This applies across the existing packages, including advisor-only investment and FX. The original 49 acceptance criteria and 52 task entries are retained.
+
+| Area | Implemented and rehearsed | Remaining acceptance |
+|---|---|---|
+| Universal economic intake | Existing engine and strategic catalogs are recoverable. Versioned operating, historical, discovery, and Foundry evidence ranks within a Legacy, business, engine, jurisdiction, and currency. | Independently curated evidence and authorized aggregate comparisons across operating owners |
+| Hard capital controls | Opening history, lifetime funding and loss, equity exposure, operating reserves, deadline and obligations. Portfolio availability uses a separate per-currency unrestricted fixture pool. Conflicting same-day liquidity blocks decisions. A narrowed or renewed mandate retains cumulative loss. | Independently reconciled statement and liability adapters, explicit authority for any legitimate relaxation, enterprise operating integrations |
+| Reassessment | Existing scheduled Pantheon workers consume exact economic events and retain domain-specific views for Njord, Norns, Loki, Tyr, Odin, Mimir and Prime. Loki queues immutable advice with sunk-cost, loss-limit and authority findings. Owner reconsideration does not override a hard blocker. | Independent model-backed review, broader always-on coverage and verified recovery forecasting |
+| Exit and redeployment | Owner containment halts enrolled Factory draft execution. Reviewed private advice records exit and reusable assets without liquidating them. A healthy scope reserves simulated resources for its stronger alternative. Mimir and owner briefings show internal rehearsal evidence. | Independent asset rights and liquidation verification, post-containment recovery approval, active release or replacement of real allocations |
+
+No bank, securities, FX, insurance, liquidation, or external contract action is authorized by these controls. An inventory value is a projection. The simulated journal has no real receipts or payments. Existing advisor-only investment authority is preserved.

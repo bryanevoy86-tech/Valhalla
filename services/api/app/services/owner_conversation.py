@@ -155,6 +155,9 @@ def answer(db, message, attachments, turn_id=None, provider_data_class="PRIVATE"
     reply += f" Recent verified specialist receipts: {len(operating['latest_specialist_reports'])}."
     if operating["loki"]["available"]:
         reply += f" Loki reviews queued: {operating['loki']['queued_count']}. Recent unresolved or unverified reviews: {len(operating['loki']['latest_outstanding'])}."
+    economic = operating["latest_economic_alerts"]
+    if economic:
+        reply += f" Recent specialist reports flagged economic restrictions in {len(economic)} operating scope(s)."
     if operating["financials"]["available"]:
         reply += " Recorded unreconciled revenue entries are attached by currency."
     if signals:

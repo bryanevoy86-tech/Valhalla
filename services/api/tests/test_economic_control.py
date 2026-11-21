@@ -16,6 +16,7 @@ from app.models.specialist_assignment import SpecialistAssignment
 from app.pantheon.monitor import run_assignment
 from app.routers import economic_control
 from app.services.economic_control import require_no_containment
+from app.services.owner_operating_brief import operating_evidence
 
 ROOT = "/api/prime/economy"
 OWNER = {"X-Owner-Mandate-Key": "economy-isolated-owner"}
@@ -181,6 +182,8 @@ def test_redeploy_then_contain_and_preserve_reusable_assets(economic_client, mon
         event = run_assignment(db, "MIMIR")["report_event_id"]
         assert db.query(RevenueLedger).count() == 0
         assert db.get(EconomicPool, "CAD").committed_minor == 120
+        [alert] = operating_evidence(db)["latest_economic_alerts"]
+        assert alert["scope"] == SCOPE and alert["suggested_action"] == "EXIT"
         with pytest.raises(HTTPException, match="Economic containment"):
             require_no_containment(db, SCOPE)
     obs = client.get(f"/api/prime/pantheon/reports/{event}").json()

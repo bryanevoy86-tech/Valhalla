@@ -11,7 +11,7 @@
         "services/api/app/main.py",
         "services/api/start.py"
       ],
-      "source_observation": "Canonical FastAPI import registered 34 critical routers and 76 required routes on the isolated regression runtime.",
+      "source_observation": "Canonical FastAPI import registered 35 critical routers and all 80 required routes on the isolated regression runtime.",
       "evidence_level": "FOCUSED_CI_TESTED",
       "production_verified": false,
       "acceptance_test": "Prove every mandatory router imports in a clean canonical app; no missing OpenAPI paths or silent startup success",
@@ -931,6 +931,33 @@
         "loki_independent_challenger",
         "learning_mimir",
         "runtime_governance"
+      ],
+      "owner_external_authorization_required": true
+    },
+    {
+      "id": "dynamic_capital_allocation_loss_containment_and_strategic_redeployment",
+      "priority": "P0",
+      "source_paths": [
+        "engines/ENGINE_REGISTRY.md",
+        "services/api/app/routers/economic_control.py",
+        "services/api/app/services/economic_control.py",
+        "services/api/app/services/universal_opportunity_evaluator.py",
+        "services/api/app/loki/analyst.py",
+        "services/api/tests/test_economic_control.py",
+        "tests/test_factory_postgres.py"
+      ],
+      "source_observation": "A private economic journal binds opening history, review deadlines, immutable evidence, progressive containment, scope, currency and simulation reservations. Foundry evidence and a forward ranking feed Prime and Pantheon. Independent Loki reviews exact material artifacts. Disposable PostgreSQL verified that competing reservations cannot claim the same funds. Actual bank, legal and insurance evidence and live capital execution remain outside this branch's authority.",
+      "evidence_level": "POSTGRES_INTEGRATION_TESTED",
+      "production_verified": false,
+      "acceptance_test": "Prove independent evidence and hard cumulative limits, protected reserves and aggregate exposure, version and replay integrity, scheduled and event-driven reassessment, exact Loki review, immediate containment, scope isolation, forward alternative ranking, strategic exit with rights-aware asset inventory, and Mimir learning that distinguishes simulation, zero external effects and independently reconciled outcomes.",
+      "depends_on": [
+        "independent_venture_foundry",
+        "universal_evaluator",
+        "treasury_banking_controls",
+        "runtime_governance",
+        "loki_independent_challenger",
+        "pantheon_expanded_bridge",
+        "learning_mimir"
       ],
       "owner_external_authorization_required": true
     }

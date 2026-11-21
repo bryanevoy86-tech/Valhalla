@@ -19,6 +19,7 @@ def operating_evidence(db: Session) -> dict:
     invalid_reports = []
     market_alerts = []
     economic_alerts = []
+    reviewed_economic_scopes = set()
     if schema.has_table(LegacyOrchestrationEvent.__tablename__):
         ids = db.scalars(select(LegacyOrchestrationEvent.event_id).filter_by(
             event_type=REPORT_EVENT,
@@ -30,10 +31,14 @@ def operating_evidence(db: Session) -> dict:
                 invalid_reports.append(event_id)
                 continue
             economic = report.get("observations", {}).get("economic_reassessment")
-            if economic and economic["blockers"]:
-                economic_alerts.append({"report_id": event_id, "scope": report["scope"],
-                                        "basis": economic["basis"], "blockers": economic["blockers"],
-                                        "suggested_action": economic["suggested_action"]})
+            scope_key = tuple(sorted(report["scope"].items())) if economic else None
+            if economic and scope_key not in reviewed_economic_scopes:
+                reviewed_economic_scopes.add(scope_key)
+                if economic["blockers"]:
+                    economic_alerts.append({"report_id": event_id, "scope": report["scope"],
+                                            "basis": economic["basis"], "blockers": economic["blockers"],
+                                            "observed_at": report["observed_at"],
+                                            "suggested_action": economic["suggested_action"]})
             market = report.get("observations", {}).get("market_intelligence")
             if market and market["alerts"]:
                 market_alerts.append({"report_id": event_id, "observed_at": report["observed_at"],

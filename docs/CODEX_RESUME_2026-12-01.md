@@ -14,9 +14,9 @@ DO NOT restart the project, regenerate completed packs, or treat API presence as
 - Definition of done: docs/HEIMDALL_DEFINITION_OF_DONE.md
 - Existing architecture: docs/PHASE3_INTEGRATED_ARCHITECTURE.md and docs/UNIVERSAL_OPPORTUNITY_PIPELINE.md
 
-## Reconstructed task register and Package 7 additions
+## Reconstructed task register and later workstreams
 
-This working register maps three cross-workstream integration tasks and all 47 owner workstreams to the existing acceptance matrix. The numbers are reconstructed from available requirements. Each workstream retains its existing source anchors, dependencies, and acceptance criteria. Code presence and local tests do not confer external authority. The original entries 01–50 remain intact. Entries 51–52 map to acceptance workstreams 48 and 49.
+This working register maps three cross-workstream integration tasks and all 47 owner workstreams to the existing acceptance matrix. The numbers are reconstructed from available requirements. Each workstream retains its existing source anchors, dependencies, and acceptance criteria. Code presence and local tests do not confer external authority. The original entries 01–50 remain intact. Entries 51–53 map to acceptance workstreams 48–50.
 
 | Task | Deliverable or workstream ID | Priority |
 |---|---|---|
@@ -72,6 +72,7 @@ This working register maps three cross-workstream integration tasks and all 47 o
 | 50 | `loki_independent_challenger` | P0 |
 | 51 | `investment_and_trading_intelligence` (workstream 48, Package 7) | P1 |
 | 52 | `currency_arbitrage_and_fx_intelligence` (workstream 49, Package 7) | P1 |
+| 53 | `dynamic_capital_allocation_loss_containment_and_strategic_redeployment` (workstream 50) | P0 |
 
 ### Safely retrieve current work
 
@@ -311,3 +312,9 @@ Read the corresponding change-ledger entry and the updated integration matrix be
 - The floor's `POST /api/governance/floor/wealth/scenarios` models household budget and expenditure, operating reserves, planned owner compensation, and the 90/10 split of remaining scenario cash. It neither adds revenue nor transfers funds. Treat the reserve-and-compensation ordering and supplied cap as explicit scenario assumptions.
 - Next work includes authorized source connectors with independently dated reference data, currency and securities lifecycle cases, explicit FX outcome calibration, reconciled market and bank records, independent model-backed Loki staging, and advice review with licensed professionals where applicable. Continue the Foundry, property, commercial tenant, Builder, attachment, voice, trust, insurance and residency work recorded above.
 - Package 7's source and replay implementation is `8deacf179d33df5a5beb0ddc8ed44615045455c7`. The paper-vault correction is `c063ada8b1102618a42f29fd16314099cc74f64f`. Acquisition downside modelling is `04edcb978abdd94d83245a41b47ec6ebc70cff0f`. Its optional Foundry inputs cover acquisition cost, financed principal, transition cost, reserves, and debt service. The scoped Njord worker identifies stress-case cash shortfalls and does not approve financing.
+
+## Universal economic control and strategic redeployment
+
+Code checkpoint `ba302311e6d5c17c46e61bc2df662ffa5a34cb04`. Read the change ledger and `engines/ENGINE_REGISTRY.md`. Under `/api/prime/economy`, enroll scoped mandates, then enter dated performance and per-currency liquidity fixtures and registered opportunities. Amendments must bind the previous mandate. Opening history and cumulative loss persist, reserves remain protected and the budget counter serializes competing allocation rehearsals. Review an exact `/review-artifact` through the existing Loki API and independent worker with `--artifact-type economic_advice`, then record the reviewed outcome at `/decisions`. The independent worker uses the existing separate reviewer authority.
+
+Use `/containment` to protect an enrolled Factory lane immediately. No endpoint allocates actual funds or automatically resumes a contained operation. Future integration needs independent bank and obligations reconciliation, reviewed winding-down and recovery case lifecycle, scoped cash release rules, full portfolio coverage, and internal priority tradeoffs with each Legacy. Preserve advisor-only investment authority and continue the private WeWeb, voice, notifications, Builder, SaaS, real estate, and regulated planning workstream backlog.
