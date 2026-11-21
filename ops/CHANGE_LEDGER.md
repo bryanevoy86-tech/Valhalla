@@ -810,3 +810,12 @@ The complete local backend suite passed 329 tests. The disposable PostgreSQL sui
 | `8d19313c0f61858845e4208c7ce7303e1a95ed8f` | Builder verifies the requested base, candidate and runner receipt, then returns a private checksummed packet. The restore gate stays closed until a trusted external digest, manifest and reconciled tombstones agree. A disposable older PostgreSQL restore returned 503 before replay, 410 after replay, and 503 after manifest tampering. |
 
 All changes remain on the draft branch. Local verification passed 330 backend tests and 19 disposable PostgreSQL checks. The canonical app imported 36 critical routers and verified 93 required routes. No acquisition, provider, live delivery or deployed restore occurred. The December handoff records external staging requirements and setup steps.
+
+## November 21 — Shared venture controls and owner preview preparation
+
+| Development commit | Verified development evidence |
+|---|---|
+| `d56c60cee0ac63efb60f81abd7b8c4cb731d9b01` | SaaS, service and real-estate scenarios shared stress checks and projection-difference reporting. Each adverse case had a 50-cent stressed monthly shortfall and was blocked. Each viable case had a 250-cent stressed contribution and recorded a 120-cent simulated reservation after independent review. Withdrawal of a viable source triggered HOLD. No revenue ledger rows resulted. |
+| `b84859152322149fc0573d256b349088f2e49a44` | Owner notification projection respects revocable sessions, uses stable receipt references and performs no transport work. The template bridge records failed attempts without sent timestamps or delivered recipients. Builder rejects a changed HEAD and altered handoffs. The device-local voice adapter passed the simulated-browser contract test. |
+
+Local acceptance passed 334 canonical backend tests, 19 disposable PostgreSQL checks, eight Builder materializer checks and one Node voice check. The route probe verified 36 critical routers and 94 required routes. An additional legacy notification suite under `services/api/app/tests` could not collect because its inherited fixture imports tuning models absent at the baseline. The canonical notification test exercised the changed dispatch route and stored receipt directly. GitHub Actions verifies the final draft branch tree. Authorized provider, preview and physical-device acceptance remains pending.

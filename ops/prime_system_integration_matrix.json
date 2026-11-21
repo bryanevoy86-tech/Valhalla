@@ -11,7 +11,7 @@
         "services/api/app/main.py",
         "services/api/start.py"
       ],
-      "source_observation": "Canonical FastAPI import registered 36 critical routers and all 93 required routes in the isolated runtime.",
+      "source_observation": "Canonical FastAPI import registered 36 critical routers and all 94 required routes in the isolated runtime.",
       "evidence_level": "FOCUSED_CI_TESTED",
       "production_verified": false,
       "acceptance_test": "Prove every mandatory router imports in a clean canonical app; no missing OpenAPI paths or silent startup success",
@@ -22,7 +22,7 @@
       "owner_external_authorization_required": false,
       "continuation": {
         "next_implementation": "Exercise the registered routes in an authorized staging environment with migrated PostgreSQL.",
-        "existing_test_evidence": "Canonical route probe verified all 93 required methods and paths.",
+        "existing_test_evidence": "Canonical route probe verified all 94 required methods and paths.",
         "owner_action": "Internal continuation is authorized under the standing development scope.",
         "required_acceptance_evidence_field": "acceptance_test"
       }
@@ -111,7 +111,8 @@
         "services/api/tests/test_completion_registry.py",
         "services/api/tests/test_prime_control_and_decision_integrity.py",
         "services/api/tests/test_product_artifact_workflow.py",
-        "services/api/tests/test_foundry_discovery.py"
+        "services/api/tests/test_foundry_discovery.py",
+        "services/api/tests/test_economic_control.py"
       ],
       "source_observation": "Existing completion-registry suite now required in CI and passed; generic proposal rejects inconsistent margin/capital, snapshots final recommendation after risk gates, and reports Tyr/Forseti independent checks NOT_VERIFIED. Supplied candidates only; no autonomous discovery or external execution proved.",
       "evidence_level": "FOCUSED_CI_TESTED",
@@ -123,7 +124,7 @@
       "owner_external_authorization_required": false,
       "continuation": {
         "next_implementation": "Expand source-weighted comparative evidence and stage legally scoped evaluator dependencies.",
-        "existing_test_evidence": "See FOCUSED_CI_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md. Product Foundry continuous fixture links signed discovery, independent challenge, scoped execution, outcome, retained losses and a subsequent HOLD with contradiction evidence. The scoped acquisition fixture verifies debt stress, separately reviewed simulation, receipt reuse, revocation and reevaluation.",
+        "existing_test_evidence": "See FOCUSED_CI_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md. Product Foundry continuous fixture links signed discovery, independent challenge, scoped execution, outcome, retained losses and a subsequent HOLD with contradiction evidence. The scoped acquisition fixture verifies debt stress, separately reviewed simulation, receipt reuse, revocation and reevaluation. SaaS, service and real-estate rehearsal covers shared stress rules, projection differences, simulated review and source withdrawal.",
         "owner_action": "Internal continuation is authorized under the standing development scope.",
         "required_acceptance_evidence_field": "acceptance_test"
       }
@@ -304,7 +305,7 @@
       "owner_external_authorization_required": false,
       "continuation": {
         "next_implementation": "Package review-ready candidates for GitHub with a separately authorized submission identity.",
-        "existing_test_evidence": "test_builder_assignments.py exercises lease reclaims, exhaustion, terminal status and stale receipt handling. The exact passing snapshot yields an owner-only, checksummed review packet. Recovery, wrong review input and emergency stop are exercised.",
+        "existing_test_evidence": "test_builder_assignments.py exercises lease reclaims, exhaustion, terminal status and stale receipt handling. The exact passing snapshot yields an owner-only, checksummed review packet. Recovery, wrong review input and emergency stop are exercised. Offline review materialization refuses a changed Git HEAD or mismatched receipt.",
         "owner_action": "Internal continuation is authorized under the standing development scope.",
         "required_acceptance_evidence_field": "acceptance_test"
       }
@@ -390,7 +391,8 @@
       "source_paths": [
         "services/api/tests/test_saas_tenant_entitlements.py",
         "services/api/app/routers/saas_access.py",
-        "services/api/app/models/marketing.py"
+        "services/api/app/models/marketing.py",
+        "services/api/tests/test_economic_control.py"
       ],
       "source_observation": "Prime and owner authorization protect administrative mutations. Internal revocable WeWeb trial access binds account, tenant, plan, expiry and permitted module. Paid entitlements and tenant-bound engine data paths are pending.",
       "evidence_level": "SQLITE_INTEGRATION_TESTED",
@@ -403,7 +405,7 @@
       "owner_external_authorization_required": true,
       "continuation": {
         "next_implementation": "Prove tenant scoping, billing events, entitlements, activation and revocation in the chosen modules.",
-        "existing_test_evidence": "See SQLITE_INTEGRATION_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
+        "existing_test_evidence": "See SQLITE_INTEGRATION_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md. SaaS, service and real-estate rehearsal covers shared stress rules, projection differences, simulated review and source withdrawal.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
         "required_acceptance_evidence_field": "acceptance_test"
       }
@@ -537,7 +539,8 @@
       "priority": "P1",
       "source_paths": [
         "services/api/app/workers/outbox_dispatcher.py",
-        "services/api/app/core/dependencies.py"
+        "services/api/app/core/dependencies.py",
+        "services/api/tests/test_notification_receipts.py"
       ],
       "source_observation": "Reference dispatcher can no longer record unsent messages dispatched; actual provider pathway must be identified",
       "evidence_level": "SOURCE_INSPECTED_ONLY",
@@ -550,7 +553,7 @@
       "owner_external_authorization_required": false,
       "continuation": {
         "next_implementation": "Build a durable non-delivery staging outbox and verify an independently authorized delivery receipt.",
-        "existing_test_evidence": "See SOURCE_INSPECTED_ONLY and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
+        "existing_test_evidence": "See SOURCE_INSPECTED_ONLY and source observations above, with exact releases in ops/CHANGE_LEDGER.md. Owner attention references are revocable and private; an unconfigured transport cannot produce a delivery receipt.",
         "owner_action": "Internal continuation is authorized under the standing development scope.",
         "required_acceptance_evidence_field": "acceptance_test"
       }
@@ -590,7 +593,8 @@
         "docs/CURRENT_SYSTEM_TRUTH.md",
         "services/api/tests/test_saas_tenant_entitlements.py",
         "services/api/app/routers/owner_weweb.py",
-        "services/api/app/services/owner_startup.py"
+        "services/api/app/services/owner_startup.py",
+        "web/weweb-datasources/owner_attention.collection.json"
       ],
       "source_observation": "The private owner routes support JARVIS and attachment access gating. Driving mode includes specialist backlog integrity failures as an attention count.",
       "evidence_level": "SQLITE_INTEGRATION_TESTED",
@@ -603,7 +607,7 @@
       "owner_external_authorization_required": true,
       "continuation": {
         "next_implementation": "Wire the exact owner-preview routes in the December handoff. Verify status handling and device-local speech with a separately authorized preview project and test device.",
-        "existing_test_evidence": "Owner API and tenant regressions verify JWT isolation, disposition metadata, restore-hold blocking, no-store and revoked sessions. Private owner startup comparison separates dated public fees, quote and estimate classes, unknowns, activation, reserves and runway.",
+        "existing_test_evidence": "Owner API and tenant regressions verify JWT isolation, disposition metadata, restore-hold blocking, no-store and revoked sessions. Private owner startup comparison separates dated public fees, quote and estimate classes, unknowns, activation, reserves and runway. The owner attention and driving briefing datasource is prepared for the authorized preview.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
         "required_acceptance_evidence_field": "acceptance_test"
       }
@@ -713,7 +717,8 @@
         "services/api/app/services/specialist_triggers.py",
         "alembic/versions/20261123_specialist_backlog.py",
         "tests/test_factory_postgres.py",
-        "services/api/tests/test_foundry_discovery.py"
+        "services/api/tests/test_foundry_discovery.py",
+        "services/api/tests/test_economic_control.py"
       ],
       "source_observation": "Scoped discovery, economic reassessment and outcome publishers feed a durable assignment backlog. Prime's shadow evaluator has a separate durable verified-outcome backlog. Owners see waiting and integrity failure counts; reports remain advisory.",
       "evidence_level": "SQLITE_INTEGRATION_TESTED",
@@ -726,7 +731,7 @@
       "owner_external_authorization_required": true,
       "continuation": {
         "next_implementation": "Extend substantive domain coverage and explicit contradiction handling. Prove independent Loki review of scoped evidence continuing to a governed Prime decision, verified execution and Mimir reassessment.",
-        "existing_test_evidence": "Pantheon/Prime API regressions exercise scoped queuing, deduplication, replay, stale or missing evidence, digest corruption and emergency stop. Disposable PostgreSQL proves three concurrent publishers and recovery from a rolled-back claim. The scoped acquisition fixture verifies debt stress, separately reviewed simulation, receipt reuse, revocation and reevaluation.",
+        "existing_test_evidence": "Pantheon/Prime API regressions exercise scoped queuing, deduplication, replay, stale or missing evidence, digest corruption and emergency stop. Disposable PostgreSQL proves three concurrent publishers and recovery from a rolled-back claim. The scoped acquisition fixture verifies debt stress, separately reviewed simulation, receipt reuse, revocation and reevaluation. SaaS, service and real-estate rehearsal covers shared stress rules, projection differences, simulated review and source withdrawal.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
         "required_acceptance_evidence_field": "acceptance_test"
       }
@@ -764,7 +769,8 @@
       "source_paths": [
         "docs/UNIVERSAL_OPPORTUNITY_PIPELINE.md",
         "docs/HEIMDALL_DEFINITION_OF_DONE.md",
-        "services/api/app/routers/auth_weweb.py"
+        "services/api/app/routers/auth_weweb.py",
+        "web/weweb-widgets/owner-driving-voice.test.mjs"
       ],
       "source_observation": "A private driving briefing returns a short read-only summary with emergency state and attention counts. Speech capture, playback, handset validation and voice authorization remain unverified.",
       "evidence_level": "SQLITE_INTEGRATION_TESTED",
@@ -778,7 +784,7 @@
       "owner_external_authorization_required": true,
       "continuation": {
         "next_implementation": "Implement speech input/output and independently verify safe driving controls and their non-authority.",
-        "existing_test_evidence": "test_saas_tenant_entitlements.py verifies the authenticated read-only driving briefing, including the emergency-stop state. Verified missed cadence counts are included in its attention summary.",
+        "existing_test_evidence": "test_saas_tenant_entitlements.py verifies the authenticated read-only driving briefing, including the emergency-stop state. Verified missed cadence counts are included in its attention summary. Local browser selection tests enforce consent, device-local speech and text fallback.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
         "required_acceptance_evidence_field": "acceptance_test"
       }
@@ -867,7 +873,8 @@
         "docs/CODEX_SYSTEM_FINISH_PASSES.md",
         "docs/PHASE3_INTEGRATED_ARCHITECTURE.md",
         "services/api/app/models/foundry_intake.py",
-        "services/api/tests/test_foundry_discovery.py"
+        "services/api/tests/test_foundry_discovery.py",
+        "services/api/tests/test_economic_control.py"
       ],
       "source_observation": "A source-backed unfamiliar business can reach scoped Pantheon analysis, Universal Evaluator shadow recommendation, comparative capital ranking and independent review. Commercial operation and measured demand remain pending.",
       "evidence_level": "SQLITE_INTEGRATION_TESTED",
@@ -882,7 +889,7 @@
       "owner_external_authorization_required": true,
       "continuation": {
         "next_implementation": "Prove independently sourced demand and exercise one authority-bound startup candidate.",
-        "existing_test_evidence": "See SQLITE_INTEGRATION_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md. The scoped acquisition fixture verifies debt stress, separately reviewed simulation, receipt reuse, revocation and reevaluation.",
+        "existing_test_evidence": "See SQLITE_INTEGRATION_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md. The scoped acquisition fixture verifies debt stress, separately reviewed simulation, receipt reuse, revocation and reevaluation. SaaS, service and real-estate rehearsal covers shared stress rules, projection differences, simulated review and source withdrawal.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
         "required_acceptance_evidence_field": "acceptance_test"
       }
@@ -892,7 +899,8 @@
       "priority": "P1",
       "source_paths": [
         "docs/MILLION_PATH_STRATEGY_LAYER.md",
-        "services/api/app/models/deal.py"
+        "services/api/app/models/deal.py",
+        "services/api/tests/test_economic_control.py"
       ],
       "source_observation": "Real estate strategy models cover wholesaling, flipping, hold and related categories; external closings unverified.",
       "evidence_level": "SOURCE_INSPECTED_ONLY",
@@ -905,7 +913,7 @@
       "owner_external_authorization_required": true,
       "continuation": {
         "next_implementation": "Complete remaining portfolio rehearsals with grounded jurisdiction and comparable evidence.",
-        "existing_test_evidence": "See SOURCE_INSPECTED_ONLY and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
+        "existing_test_evidence": "See SOURCE_INSPECTED_ONLY and source observations above, with exact releases in ops/CHANGE_LEDGER.md. SaaS, service and real-estate rehearsal covers shared stress rules, projection differences, simulated review and source withdrawal.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
         "required_acceptance_evidence_field": "acceptance_test"
       }
@@ -1305,7 +1313,7 @@
       "owner_external_authorization_required": true,
       "continuation": {
         "next_implementation": "Extend containment to every authorized execution lane and reconcile independently supplied reserves and liabilities.",
-        "existing_test_evidence": "See POSTGRES_INTEGRATION_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md. Product Foundry continuous fixture links signed discovery, independent challenge, scoped execution, outcome, retained losses and a subsequent HOLD with contradiction evidence. The scoped acquisition fixture verifies debt stress, separately reviewed simulation, receipt reuse, revocation and reevaluation.",
+        "existing_test_evidence": "See POSTGRES_INTEGRATION_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md. Product Foundry continuous fixture links signed discovery, independent challenge, scoped execution, outcome, retained losses and a subsequent HOLD with contradiction evidence. The scoped acquisition fixture verifies debt stress, separately reviewed simulation, receipt reuse, revocation and reevaluation. SaaS, service and real-estate rehearsal covers shared stress rules, projection differences, simulated review and source withdrawal.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
         "required_acceptance_evidence_field": "acceptance_test"
       }
