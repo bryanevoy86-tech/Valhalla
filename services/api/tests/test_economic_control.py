@@ -508,3 +508,93 @@ def test_statement_continuity_quarantine_and_fixture_asset_recovery(economic_cli
     with Session(engine) as db:
         assert db.query(VaultBalance).one().balance == 987
         assert db.query(RevenueLedger).count() == 0
+
+
+@pytest.mark.parametrize("kind", ["SAAS", "SERVICE", "REAL_ESTATE"])
+def test_venture_rehearsal_shares_stress_gates_and_rechecks_withdrawn_sources(economic_client, kind):
+    from app.models.completion_registry import KnowledgeRegistryItem, LearningFeedbackRecord
+    from app.models.foundry_evidence import FoundryEvidence
+    from app.models.media_engine import MediaContent
+    from app.models.prime_specialist_schedule import PrimeScheduleTrigger, PrimeSpecialistSchedule
+    from app.pantheon.monitor import utc_now
+    from app.routers.prime_specialist_schedules import run_due_schedule
+
+    client, engine = economic_client
+    for model in (FoundryEvidence, MediaContent, KnowledgeRegistryItem, LearningFeedbackRecord,
+                  PrimeSpecialistSchedule, PrimeScheduleTrigger):
+        model.__table__.create(engine)
+    today = utc_now().date()
+    post(client, "mandates", mandate(today, max_cumulative_loss=5000))
+    post(client, "performance", performance(today))
+    post(client, "liquidity", liquidity(today))
+    root = "/api/prime/foundry"
+    requests = {}
+    for key, units in (("adverse-case", 8), ("viable-case", 14)):
+        source = {
+            **SCOPE, "evidence_id": str(uuid4()), "kind": kind, "evidence_class": "SIMULATION",
+            "title": f"{kind} {key} internal evidence", "source_ref": f"fixture:{key}",
+            "observed_on": today.isoformat(), "expires_on": (today + timedelta(days=2)).isoformat(),
+            "currency": "CAD", "unit_price": 100, "variable_cost_per_unit": 25, "acquisition_cost_per_unit": 0,
+            "monthly_fixed_cost": 500, "monthly_units": units, "startup_capital": 120, "test_cost": 10,
+            "rights_attestation": "AUTHORIZED_INTERNAL_RESEARCH",
+        }
+        stored = client.post(f"{root}/evidence", headers=OWNER, json=source)
+        assert stored.status_code == 201, stored.text
+        requests[key] = source
+        post(client, "opportunities", option(today, key, origin="FOUNDRY", foundry_evidence_id=source["evidence_id"]))
+    report_ids = {}
+    for role in ("NORNS", "LOKI"):
+        response = client.post("/api/prime/pantheon/assignments", headers=OWNER, json={
+            **SCOPE, "assignment_id": str(uuid4()), "role": role, "cadence_seconds": 300, "duration_seconds": 1800,
+        })
+        assert response.status_code == 201, response.text
+        with Session(engine) as db:
+            report_ids[role] = run_assignment(db, role)["report_event_id"]
+
+    schedule_root = "/api/prime/specialist-schedules"
+    schedules = {}
+    for key, source in requests.items():
+        candidate = client.get(f"{root}/reports/{report_ids['NORNS']}/candidate/{source['evidence_id']}")
+        assert candidate.status_code == 200, candidate.text
+        proposal = candidate.json()["proposal"]
+        schedule_id = str(uuid4())
+        prepared = client.post(schedule_root, headers=OWNER, json={
+            "schedule_id": schedule_id, "business_id": SCOPE["business_id"], "opportunity": proposal,
+            "cadence_seconds": 300, "duration_seconds": 1800,
+        })
+        assert prepared.status_code == 201, prepared.text
+        schedules[key] = schedule_id
+    at = utc_now() + timedelta(seconds=1)
+    with Session(engine) as db:
+        assert [run_due_schedule(db, now=at)["status"] for _ in schedules] == ["evaluated", "evaluated"]
+    adverse = client.get(f"{schedule_root}/{schedules['adverse-case']}").json()["latest_report"]
+    viable = client.get(f"{schedule_root}/{schedules['viable-case']}").json()["latest_report"]
+    assert adverse["recommendation"]["heimdall_decision"] == "HOLD"
+    assert adverse["operating_reassessment"]["blockers"] == ["STRESSED_OPERATING_CONTRIBUTION_NEGATIVE"]
+    assert viable["operating_reassessment"]["blockers"] == []
+    assert viable["operating_reassessment"]["source_assessment"]["economics"]["verified_revenue_minor"] is None
+    assessment = post(client, "assessment", SCOPE, 200)
+    ranked = {item["opportunity_key"]: item for item in assessment["alternatives"]}
+    assert ranked["adverse-case"]["foundry_economics"]["stress_monthly_operating_contribution_minor"] == -50
+    assert "STRESSED_OPERATING_CONTRIBUTION_NEGATIVE" in ranked["adverse-case"]["blockers"]
+    assert {"field": "projected_annual_net", "declared_minor": 1800, "used_minor": 1200} in ranked["adverse-case"]["projection_differences"]
+    assert ranked["viable-case"]["foundry_economics"]["stress_monthly_operating_contribution_minor"] == 250
+    assert assessment["best_eligible_alternative_key"] == "viable-case"
+
+    denied, _ = queue_review(client, plan(action="REDEPLOY", alternative_key="adverse-case"), reconsider=False)
+    denial = post(client, "decisions", denied, 409)
+    assert "REDEPLOYMENT_ALTERNATIVE_UNJUSTIFIED" in denial["detail"]["blockers"]
+    reviewed, _ = queue_review(client, plan(action="REDEPLOY", alternative_key="viable-case"), reconsider=True)
+    accepted = post(client, "decisions", reviewed)
+    assert accepted["reserved_simulation_minor"] == 120 and accepted["execution_authorized"] is False
+
+    viable_id = requests["viable-case"]["evidence_id"]
+    assert client.delete(f"{root}/evidence/{viable_id}", headers=OWNER).status_code == 200
+    with Session(engine) as db:
+        assert [run_due_schedule(db, now=at + timedelta(seconds=301))["status"] for _ in schedules] == ["evaluated", "evaluated"]
+    updated = client.get(f"{schedule_root}/{schedules['viable-case']}").json()["latest_report"]
+    assert updated["recommendation"]["heimdall_decision"] == "HOLD"
+    assert "FOUNDRY_SOURCE_NO_LONGER_CURRENT" in updated["operating_reassessment"]["blockers"]
+    assert post(client, "assessment", SCOPE, 200)["best_eligible_alternative_key"] is None
+    with Session(engine) as db:
+        assert db.query(RevenueLedger).count() == 0

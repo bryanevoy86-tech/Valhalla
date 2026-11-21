@@ -170,7 +170,7 @@ def cancel_schedule(schedule_id: UUID, db: Session = Depends(get_db)):
 def attach_operating_reassessment(db, payload, scope, today, outcomes, report):
     from app.routers.foundry_checkout import scoped_checkout_learning
     from app.services.economic_control import specialist_economics
-    from app.services.foundry_discovery import economics, require_current_candidate
+    from app.services.foundry_discovery import economic_blockers, economics, require_current_candidate
 
     opportunity = payload.opportunity
     inputs = opportunity.specialist_inputs
@@ -191,13 +191,7 @@ def attach_operating_reassessment(db, payload, scope, today, outcomes, report):
             projected = economics(evidence)
             source_assessment = {"kind": evidence.kind, "economics": projected,
                                  "source_ref": evidence.source_ref, "evidence_class": evidence.evidence_class}
-            acquisition = projected.get("acquisition")
-            if evidence.kind == "ACQUISITION" and acquisition is None:
-                blockers.add("ACQUISITION_TERMS_MISSING")
-            if acquisition and acquisition["stress_monthly_available_cash_after_debt_minor"] < 0:
-                blockers.add("ACQUISITION_DEBT_STRESS_SHORTFALL")
-            if projected["stress_monthly_operating_contribution_minor"] < 0:
-                blockers.add("STRESSED_OPERATING_CONTRIBUTION_NEGATIVE")
+            blockers.update(economic_blockers(evidence.kind, projected))
     for row in checkout:
         if row["status"] == "EVIDENCE_CONFLICT":
             blockers.add("CHECKOUT_EVIDENCE_CONFLICT")

@@ -12,7 +12,7 @@ from app.models.completion_registry import LegacyInstanceRegistryItem
 from app.models.economic_control import EconomicOperation, EconomicPool, EconomicRecord
 from app.models.foundry_evidence import FoundryEvidence
 from app.schemas.economic_control import Containment, Liquidity, Mandate, Obligation, Opportunity, Performance, Plan
-from app.services.foundry_discovery import checked_evidence, demand_evidence, economics
+from app.services.foundry_discovery import checked_evidence, demand_evidence, economic_blockers, economics
 from app.services.specialist_triggers import enqueue_research, outcome_scope_key
 from app.services.universal_opportunity_evaluator import rank_economic_options
 
@@ -216,15 +216,20 @@ def comparison(db, state, scope, currency, available, today, *, lock_sources=Fal
                     raise HTTPException(409, "Foundry currency mismatch")
                 measures = economics(foundry)
                 acquisition = measures.get("acquisition") or {}
-                if foundry.kind == "ACQUISITION" and not acquisition:
-                    blockers.append("ACQUISITION_TERMS_MISSING")
-                if acquisition and acquisition["stress_monthly_available_cash_after_debt_minor"] < 0:
-                    blockers.append("ACQUISITION_DEBT_STRESS_SHORTFALL")
+                blockers.extend(economic_blockers(foundry.kind, measures))
+                data["foundry_economics"] = measures
                 net = acquisition.get("monthly_available_cash_after_debt_minor", measures["estimated_monthly_operating_contribution_minor"])
                 downside = acquisition.get("stress_monthly_available_cash_after_debt_minor", measures["stress_monthly_operating_contribution_minor"])
-                data["required_capital"] = max(foundry.startup_capital, acquisition.get("required_equity_and_reserve_minor", 0))
-                data["projected_annual_net"] = net * 12
-                data["maximum_downside"] = max(item.maximum_downside, -12 * downside)
+                assessed = {
+                    "required_capital": max(foundry.startup_capital, acquisition.get("required_equity_and_reserve_minor", 0)),
+                    "projected_annual_net": net * 12,
+                    "maximum_downside": max(item.maximum_downside, -12 * downside),
+                }
+                data["projection_differences"] = [
+                    {"field": field, "declared_minor": data[field], "used_minor": amount}
+                    for field, amount in assessed.items() if data[field] != amount
+                ]
+                data.update(assessed)
                 data["foundry_sha256"] = row.digest
                 demand = demand_evidence(foundry)
                 if demand:

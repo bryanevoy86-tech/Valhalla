@@ -122,6 +122,19 @@ def economics(payload: EvidenceIn) -> dict:
     return result
 
 
+def economic_blockers(kind: str, measures: dict) -> list[str]:
+    """Use the same declared-economics constraints in advisory and simulated allocation."""
+    blockers = []
+    acquisition = measures.get("acquisition")
+    if kind == "ACQUISITION" and not acquisition:
+        blockers.append("ACQUISITION_TERMS_MISSING")
+    if acquisition and acquisition["stress_monthly_available_cash_after_debt_minor"] < 0:
+        blockers.append("ACQUISITION_DEBT_STRESS_SHORTFALL")
+    if measures["stress_monthly_operating_contribution_minor"] < 0:
+        blockers.append("STRESSED_OPERATING_CONTRIBUTION_NEGATIVE")
+    return blockers
+
+
 def checked_evidence(row: FoundryEvidence, scope: dict, today: date, *, db=None) -> EvidenceIn:
     if (row.scope_key != outcome_scope_key(scope) or row.revoked
             or not row.observed_on <= today <= row.expires_on
@@ -161,6 +174,12 @@ def demand_evidence(payload: EvidenceIn):
 def review_priority(role: str, metrics: dict) -> str:
     if role in {"TYR", "FORSETI", "HUGINN"}:
         return "VERIFY_SOURCE_AND_RIGHTS"
+    if role == "NORNS":
+        return "COMPARE_BASE_AND_STRESS_ASSUMPTIONS"
+    if role == "MIMIR":
+        return "PRESERVE_SOURCE_AND_COMPARE_OPERATING_OUTCOMES"
+    if role == "LOKI":
+        return "CHALLENGE_DEMAND_AND_COST_ASSUMPTIONS"
     if role == "FREYJA":
         return "VALIDATE_DEMAND_AND_ACQUISITION_COST"
     acquisition = metrics.get("acquisition")
