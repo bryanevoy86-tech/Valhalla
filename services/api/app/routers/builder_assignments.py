@@ -14,9 +14,10 @@ from sqlalchemy.orm import Session
 from app.core.db import get_db
 from app.core.dependencies import require_prime_control_key
 from app.core.settings import settings
-from app.models.builder import BuilderTask
+from app.models.builder import BuilderEvent, BuilderTask
 from app.models.builder_assignment import BuilderAssignment
-from app.routers.builder import _review_bundle
+from app.routers.builder import MAX_BATCH_BYTES, _canonical, _prepare_files, _read_base, _review_bundle, _sha
+from app.schemas.builder import FileSpec
 from app.services.prime_business_execution import _emergency_stop_active, require_owner_mandate_key
 
 
@@ -46,6 +47,18 @@ class AssignmentIn(BaseModel):
     task_id: int = Field(gt=0)
     base_commit: str = Field(pattern=r"^[a-f0-9]{40}$")
     image_id: str = Field(pattern=r"^sha256:[a-f0-9]{64}$")
+
+
+class CandidateIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    assignment_id: UUID
+    base_commit: str = Field(pattern=r"^[a-f0-9]{40}$")
+    image_id: str = Field(pattern=r"^sha256:[a-f0-9]{64}$")
+    title: str = Field(min_length=3, max_length=140)
+    path: str = Field(min_length=1, max_length=200)
+    source_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    before: str = Field(min_length=1, max_length=8192)
+    after: str = Field(max_length=8192)
 
 
 class TestReceipt(BaseModel):
@@ -90,6 +103,50 @@ def assign(payload: AssignmentIn, db: Session = Depends(get_db)):
     )
     db.add(row)
     try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(409, "Assignment ID already used") from None
+    return view(row)
+
+
+@router.post("/prepare", status_code=201, dependencies=[Depends(require_prime_control_key), Depends(require_owner_mandate_key)])
+def prepare(payload: CandidateIn, db: Session = Depends(get_db)):
+    """Generate one scoped source candidate and queue the existing runner atomically."""
+    if _emergency_stop_active(db):
+        raise HTTPException(503, "Builder assignment preparation paused")
+    request_hash = _sha(_canonical(payload.model_dump(mode="json")))
+    existing = db.get(BuilderAssignment, payload.assignment_id)
+    if existing:
+        prior_task = db.get(BuilderTask, existing.task_id)
+        if prior_task is None or prior_task.plan != f"literal-replacement:{request_hash}":
+            raise HTTPException(409, "Assignment ID already used")
+        return view(existing)
+    old, source_hash = _read_base(payload.path)
+    match = old.find(payload.before)
+    if source_hash != payload.source_sha256 or match == -1 or old.find(payload.before, match + 1) != -1:
+        raise HTTPException(409, "Expected source hash and a single matching edit are required")
+    records, _ = _prepare_files([
+        FileSpec(path=payload.path, mode="replace", content=old.replace(payload.before, payload.after, 1)),
+    ])
+    if records[0]["base_sha256"] != source_hash:
+        raise HTTPException(409, "Source changed during preparation")
+    task = BuilderTask(title=payload.title, scope=records[0]["path"], status="review_ready",
+                       plan=f"literal-replacement:{request_hash}", diff_summary="One snapshot-verified prepared file")
+    db.add(task)
+    try:
+        db.flush()
+        bundle = {"version": 2, "task_id": task.id, "files": records}
+        encoded = _canonical(bundle)
+        if len(encoded) > 2 * MAX_BATCH_BYTES:
+            raise HTTPException(413, "Encoded Builder bundle exceeds limit")
+        digest = _sha(encoded)
+        task.payload_json = _canonical({"bundle": bundle, "sha256": digest}).decode("utf-8")
+        row = BuilderAssignment(id=payload.assignment_id, task_id=task.id, base_commit=payload.base_commit,
+                                image_id=payload.image_id, bundle_sha256=digest, status="queued", created_at=now())
+        db.add(row)
+        db.add(BuilderEvent(kind="review_ready", msg="Authorized literal replacement prepared",
+                            meta_json=_canonical({"task_id": task.id, "sha256": digest}).decode("utf-8")))
         db.commit()
     except IntegrityError:
         db.rollback()

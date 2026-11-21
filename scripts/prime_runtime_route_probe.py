@@ -81,6 +81,7 @@ MANDATORY_ENDPOINTS = {
     "saas_plan_registry": ("GET", "/saas/plans"),
     "builder": ("GET", "/builder/tasks"),
     "builder_assignment": ("POST", "/builder/assignments"),
+    "builder_candidate_prepare": ("POST", "/builder/assignments/prepare"),
     "builder_assignment_claim": ("POST", "/builder/assignments/claim"),
     "system_readiness": ("GET", "/readyz"),
     "pantheon_king": ("POST", "/api/governance/king/evaluate"),

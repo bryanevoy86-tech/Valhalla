@@ -1,4 +1,5 @@
 from datetime import timedelta
+from hashlib import sha256
 from pathlib import Path
 import runpy
 from uuid import uuid4
@@ -70,3 +71,41 @@ def test_scoped_builder_lease_survives_restart_and_submits_review_receipt(deal_c
     assert client.post(f"{root}/{request['assignment_id']}/receipt", headers=runner_key, json=record["receipt"]).json() == record
     assert client.post(f"{root}/claim", headers=runner_key).json()["status"] == "idle"
     assert not (tmp_path / path).exists()
+
+
+def test_owner_prepares_snapshot_candidate_for_existing_runner(deal_client, tmp_path, monkeypatch):
+    client, engine = deal_client
+    for model in (BuilderEvent, BuilderTask, BuilderAssignment):
+        model.__table__.create(engine)
+    monkeypatch.setattr(builder, "_REPO_ROOT", tmp_path)
+    monkeypatch.setenv("VALHALLA_OWNER_MANDATE_KEY", "fixture-preparation-owner")
+    monkeypatch.setenv("VALHALLA_BUILDER_RUNNER_KEY", "fixture-preparation-runner")
+    monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "false")
+    owner = {"X-Owner-Mandate-Key": "fixture-preparation-owner"}
+    runner = {"X-Builder-Runner-Key": "fixture-preparation-runner"}
+    path = "services/api/app/routers/scoped_fixture.py"
+    target = tmp_path / path
+    target.parent.mkdir(parents=True)
+    original = b"VALUE = 1\n"
+    target.write_bytes(original)
+    endpoint = "/builder/assignments/prepare"
+    request = {
+        "assignment_id": str(uuid4()), "base_commit": "a" * 40, "image_id": "sha256:" + "b" * 64,
+        "title": "Fix fixture value", "path": path, "source_sha256": sha256(original).hexdigest(),
+        "before": "VALUE = 1", "after": "VALUE = 2",
+    }
+    assert client.post(endpoint, headers=runner, json=request).status_code == 401
+    assert client.post(endpoint, headers=owner, json={**request, "source_sha256": "0" * 64}).status_code == 409
+    assert client.post(endpoint, headers=owner, json={**request, "path": "../outside.py"}).status_code == 400
+    monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "true")
+    assert client.post(endpoint, headers=owner, json=request).status_code == 503
+    monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "false")
+    prepared = client.post(endpoint, headers=owner, json=request)
+    assert prepared.status_code == 201, prepared.text
+    assert client.post(endpoint, headers=owner, json=request).json() == prepared.json()
+    assert client.post(endpoint, headers=owner, json={**request, "after": "VALUE = 3"}).status_code == 409
+    lease = client.post("/builder/assignments/claim", headers=runner).json()
+    assert lease["review"]["bundle"]["files"][0]["content"] == "VALUE = 2\n"
+    assert lease["review"]["sha256"] == prepared.json()["bundle_sha256"]
+    assert target.read_bytes() == original
+    assert lease["review"]["deployed"] is False
