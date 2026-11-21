@@ -10,11 +10,12 @@ from app.loki.review_service import verdict
 from app.models.audit_log import AuditLog
 from app.models.completion_registry import LegacyOrchestrationEvent
 from app.models.builder_assignment import BuilderAssignment
-from app.models.prime_specialist_schedule import PrimeScheduleTrigger
+from app.models.prime_specialist_schedule import PrimeScheduleTrigger, PrimeSpecialistSchedule
 from app.models.specialist_assignment import SpecialistTrigger
 from app.models.foundry_intake import FoundryIntakeJob
 from app.models.revenue_ledger import RevenueLedger
 from app.pantheon.monitor import REPORT_EVENT, verified_report
+from app.services.owner_specialist_context import specialist_context
 
 
 def operating_evidence(db: Session) -> dict:
@@ -56,6 +57,32 @@ def operating_evidence(db: Session) -> dict:
             report_items.append({key: report[key] for key in (
                 "report_event_id", "report_sha256", "role", "scope", "status", "observed_at",
             )})
+
+    prime_alerts, invalid_prime_reports = [], []
+    if all(schema.has_table(model.__tablename__) for model in (PrimeSpecialistSchedule, LegacyOrchestrationEvent)):
+        schedule = PrimeSpecialistSchedule
+        event = LegacyOrchestrationEvent
+        latest = db.execute(select(schedule.id, schedule.last_report_event_id).outerjoin(
+            event, event.event_id == schedule.last_report_event_id,
+        ).where(
+            schedule.state == "active", schedule.last_report_event_id.is_not(None),
+            schedule.expires_at > datetime.now(timezone.utc).replace(tzinfo=None),
+        ).order_by(event.created_at.desc().nulls_last(), schedule.id).limit(10))
+        for schedule_id, event_id in latest:
+            try:
+                advisory = specialist_context(db, schedule_id, require_digest=True)
+            except HTTPException:
+                invalid_prime_reports.append({"schedule_id": str(schedule_id), "report_event_id": event_id})
+                continue
+            if advisory["status"] == "blocked" or advisory["heimdall_decision"] == "HOLD":
+                reassessment = advisory["operating_reassessment"] or {}
+                prime_alerts.append({
+                    **{key: advisory[key] for key in (
+                        "report_event_id", "schedule_id", "scope", "observed_at", "trigger",
+                        "status", "heimdall_decision", "evidence_class", "execution_authorized",
+                    )},
+                    "blockers": reassessment.get("blockers", []),
+                })
 
     loki = {"available": False, "queued_count": None, "latest_outstanding": []}
     if all(schema.has_table(model.__tablename__) for model in (
@@ -127,6 +154,7 @@ def operating_evidence(db: Session) -> dict:
             research_queue[lane] = {"queued": counts.pop(None, 0), "failed": sum(counts.values())}
     return {"specialist_queue": research_queue, "latest_specialist_reports": report_items, "invalid_specialist_report_ids": invalid_reports,
             "specialist_cadence_alerts": cadence_alerts, "loki": loki, "latest_integrity_alerts": alerts, "latest_market_alerts": market_alerts, "latest_economic_alerts": economic_alerts, "financials": financials,
+            "latest_prime_advisory_alerts": prime_alerts, "invalid_prime_report_refs": invalid_prime_reports,
             "verified_cash_balance": None, "foundry_intake_health": discovery, "builder_lease_health": builder}
 
 
@@ -135,7 +163,9 @@ def owner_attention(db: Session) -> dict:
     evidence = operating_evidence(db)
     ordered_sources = (
         ("integrity", "audit_id", evidence["latest_integrity_alerts"]),
+        ("prime_integrity", "report_event_id", evidence["invalid_prime_report_refs"]),
         ("review", "review_id", evidence["loki"]["latest_outstanding"]),
+        ("prime_advisory", "report_event_id", evidence["latest_prime_advisory_alerts"]),
         ("economic", "report_id", evidence["latest_economic_alerts"]),
         ("discovery", "job_id", evidence["foundry_intake_health"].get("recent_job_errors", [])),
         ("schedule", "report_id", evidence["specialist_cadence_alerts"]),

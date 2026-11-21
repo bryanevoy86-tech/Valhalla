@@ -10,7 +10,7 @@ from app.models.completion_registry import LegacyOrchestrationEvent
 from app.models.prime_specialist_schedule import PrimeSpecialistSchedule
 
 
-def specialist_context(db: Session, schedule_id: UUID) -> dict:
+def specialist_context(db: Session, schedule_id: UUID, *, require_digest: bool = False) -> dict:
     schedule = db.get(PrimeSpecialistSchedule, schedule_id)
     if schedule is None or not schedule.last_report_event_id:
         raise HTTPException(404, "No specialist report has been recorded for that schedule")
@@ -27,7 +27,7 @@ def specialist_context(db: Session, schedule_id: UUID) -> dict:
     from app.routers.prime_specialist_schedules import shadow_report_digest
 
     digest = report.get("report_sha256")
-    if ("operating_reassessment" in report or digest) and digest != shadow_report_digest(event.event_id, report):
+    if (require_digest or "operating_reassessment" in report or digest) and digest != shadow_report_digest(event.event_id, report):
         raise HTTPException(409, "Specialist report failed integrity checks")
     recommendation = report.get("recommendation") or {}
     return {

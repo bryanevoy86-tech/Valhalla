@@ -184,6 +184,10 @@ def answer(db, message, attachments, turn_id=None, provider_data_class="PRIVATE"
         reply += f" Recent specialist reports covering missed schedule slots: {len(operating['specialist_cadence_alerts'])}."
     if operating["loki"]["available"]:
         reply += f" Loki reviews queued: {operating['loki']['queued_count']}. Recent unresolved or unverified reviews: {len(operating['loki']['latest_outstanding'])}."
+    advisory = operating["latest_prime_advisory_alerts"]
+    unverified = operating["invalid_prime_report_refs"]
+    if advisory or unverified:
+        reply += f" Active Prime advisories needing attention: {len(advisory)}. Unverified Prime receipts: {len(unverified)}."
     economic = operating["latest_economic_alerts"]
     if economic:
         reply += f" Recent specialist reports flagged economic restrictions in {len(economic)} operating scope(s)."

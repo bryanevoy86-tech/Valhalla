@@ -16,7 +16,7 @@ from app.models.specialist_assignment import SpecialistAssignment, SpecialistTri
 from app.pantheon.monitor import run_assignment
 from app.routers import economic_control
 from app.services.economic_control import require_no_containment
-from app.services.owner_operating_brief import operating_evidence
+from app.services.owner_operating_brief import operating_evidence, owner_attention
 
 ROOT = "/api/prime/economy"
 OWNER = {"X-Owner-Mandate-Key": "economy-isolated-owner"}
@@ -616,6 +616,24 @@ def test_venture_rehearsal_shares_stress_gates_and_rechecks_withdrawn_sources(ec
     assert post(client, "assessment", SCOPE, 200)["best_eligible_alternative_key"] is None
     with Session(engine) as db:
         assert db.query(RevenueLedger).count() == 0
+        report_id = updated["report_event_id"]
+        evidence = operating_evidence(db)
+        alert = next(item for item in evidence["latest_prime_advisory_alerts"] if item["report_event_id"] == report_id)
+        assert alert["trigger"] == "FOUNDRY_SOURCE_WITHDRAWN"
+        assert alert["blockers"] == ["FOUNDRY_SOURCE_NO_LONGER_CURRENT"]
+        assert alert["execution_authorized"] is False
+        attention = owner_attention(db)
+        assert attention["delivery_attempted"] is False
+        assert f"prime_advisory:{report_id}" in {entry["notification_id"] for entry in attention["entries"]}
+        receipt = db.query(LegacyOrchestrationEvent).filter_by(event_id=report_id).one()
+        payload = json.loads(receipt.payload_json)
+        payload.pop("report_sha256")
+        receipt.payload_json = json.dumps(payload)
+        db.commit()
+        attention = {entry["notification_id"] for entry in owner_attention(db)["entries"]}
+        assert f"prime_advisory:{report_id}" not in attention
+        assert f"prime_integrity:{report_id}" in attention
+
 
 
 def test_prime_reassesses_queued_economic_evidence_without_waiting_for_cadence(economic_client, monkeypatch):

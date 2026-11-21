@@ -475,6 +475,8 @@ def owner_briefing(mode: Literal["standard", "driving"] = "standard", db: Sessio
         attention = {
             "integrity": len(evidence["integrity"]["anomaly_detection"]["signals"]),
             "economic": len(operating["latest_economic_alerts"]),
+            "prime_advisory": len(operating["latest_prime_advisory_alerts"]),
+            "prime_integrity": len(operating["invalid_prime_report_refs"]),
             "independent_reviews": len(operating["loki"]["latest_outstanding"]),
             "discovery": len(operating["foundry_intake_health"].get("recent_job_errors", [])),
             "builder": operating["builder_lease_health"].get("lease_exhausted", 0),

@@ -1,11 +1,12 @@
 from datetime import datetime, timedelta, timezone
+import json
 from uuid import uuid4
 
 from sqlalchemy.orm import Session
 
 from app.models.auth_revocations import RevokedAccessToken
 from app.models.audit_log import AuditLog
-from app.models.completion_registry import LearningTaskQueueItem
+from app.models.completion_registry import LearningTaskQueueItem, LegacyOrchestrationEvent
 from app.models.go_live_state import GoLiveState
 from app.models.prime_specialist_schedule import PrimeScheduleTrigger, PrimeSpecialistSchedule
 from app.models.saas_access import SaaSPlan, SaaSPlanModule, SaaSTenantEntitlement, Subscription
@@ -96,10 +97,27 @@ def test_trial_is_bound_to_authenticated_subscriber_and_tenant(deal_client, monk
 
     from app.models.owner_conversation import OwnerAttachment, OwnerAttachmentExtraction, OwnerConversation, OwnerTurn
 
-    for model in (LearningTaskQueueItem, GoLiveState, PrimeSpecialistSchedule, PrimeScheduleTrigger, OwnerConversation, OwnerTurn, OwnerAttachment, OwnerAttachmentExtraction):
+    from app.routers.prime_specialist_schedules import REPORT_EVENT, shadow_report_digest
+
+    for model in (LearningTaskQueueItem, LegacyOrchestrationEvent, GoLiveState, PrimeSpecialistSchedule,
+                  PrimeScheduleTrigger, OwnerConversation, OwnerTurn, OwnerAttachment, OwnerAttachmentExtraction):
         model.__table__.create(engine)
     thread_id = uuid4()
+    schedule_id, report_id = uuid4(), "PRIME-owner-fixture"
+    instant = datetime.now(timezone.utc).replace(tzinfo=None)
+    advisory = {
+        "schedule_id": str(schedule_id), "report_event_id": report_id, "status": "blocked",
+        "scope": {"legacy_instance_id": "test-legacy"}, "trigger": "FOUNDRY_SOURCE_WITHDRAWN",
+        "reason": "Private source details", "observed_at": instant.isoformat(),
+    }
+    advisory["report_sha256"] = shadow_report_digest(report_id, advisory)
     with Session(engine) as db:
+        db.add(PrimeSpecialistSchedule(id=schedule_id, request={}, state="active", cadence_seconds=300,
+                                     next_due_at=instant, expires_at=instant + timedelta(hours=1),
+                                     last_report_event_id=report_id))
+        db.add(LegacyOrchestrationEvent(event_id=report_id, legacy_instance_id="test-legacy",
+                                        event_type=REPORT_EVENT, message="Private test receipt",
+                                        payload_json=json.dumps(advisory)))
         db.add(OwnerConversation(id=thread_id, title="Private fixture conversation"))
         db.add(OwnerTurn(id=uuid4(), conversation_id=thread_id, message="What is blocked?",
                          reply="The simulation is waiting for review.", evidence={"source": "fixture"}, attachment_ids=[]))
@@ -113,6 +131,8 @@ def test_trial_is_bound_to_authenticated_subscriber_and_tenant(deal_client, monk
     assert owned.headers["cache-control"] == "no-store"
     assert owned.json()["execution_authorized"] is False
     assert owned.json()["evidence"]["integrity"]["fail_safe_state"]["active"] is True
+    [prime_alert] = owned.json()["evidence"]["operating_evidence"]["latest_prime_advisory_alerts"]
+    assert prime_alert["report_event_id"] == report_id and prime_alert["execution_authorized"] is False
     with Session(engine) as db:
         item = AuditLog(event_type="integrity_alert", event_source="fixture-check", message="Private evidence details")
         db.add(item)
@@ -124,13 +144,18 @@ def test_trial_is_bound_to_authenticated_subscriber_and_tenant(deal_client, monk
     notice = client.get(attention, headers=bearer)
     assert notice.status_code == 200 and notice.headers["cache-control"] == "no-store"
     assert notice.json()["entries"] == [{"notification_id": f"integrity:{alert_id}", "category": "integrity",
-                                         "reference": str(alert_id)}]
+                                         "reference": str(alert_id)},
+                                        {"notification_id": f"prime_advisory:{report_id}", "category": "prime_advisory",
+                                         "reference": report_id}]
     assert notice.json()["delivery_attempted"] is False
     assert "Private evidence details" not in notice.text
     assert client.get(attention, headers=bearer).json() == notice.json()
     driving = client.get(briefing, params={"mode": "driving"}, headers=bearer)
     assert driving.status_code == 200 and driving.json()["emergency_stop"] is True
+    assert driving.json()["attention"]["prime_advisory"] == 1
+    assert driving.json()["attention"]["prime_integrity"] == 0
     assert "evidence" not in driving.json() and driving.json()["execution_authorized"] is False
+    assert "Private source details" not in driving.text and "test-legacy" not in driving.text
 
     threads = "/api/weweb/owner-conversations"
     history = f"{threads}/{thread_id}/turns"
