@@ -39,7 +39,7 @@ def test_notification_channel_list(client):
             "target": "https://security.example.com/alerts",
         },
     )
-    
+
     r = client.get("/system/notify/channels")
     assert r.status_code == 200
     body = r.json()
@@ -58,7 +58,7 @@ def test_enqueue_notification(client):
             "target": "test@example.com",
         },
     ).json()
-    
+
     # Enqueue notification
     s = client.post(
         "/system/notify/",
