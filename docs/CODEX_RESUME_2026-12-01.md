@@ -460,3 +460,7 @@ Use the private `GET /api/prime/norns/calibration` with `estimate_source`, `coho
 ### Factory receipt contradictions
 
 TYR, LOKI, MIMIR and HEIMDALL report `factory_evidence_reconciliation`, including the checked action count, exact verified approval references and contradictions. Prime shadow reassessment includes `factory_evidence_contradictions` and holds when the current receipts disagree. Check the cited approval, artifact or Mimir receipt against canonical work. Re-run after reconciling the source records, with provenance intact. The bounded review covers the 20 most recent Factory actions in the exact scope. A cleared advisory does not authorize execution or replace independent Loki.
+
+### Governed Builder multi-file preparation
+
+Use the existing private `POST /builder/assignments/prepare` with an owner mandate, Prime control credential, exact base commit and pinned image. The single-file request remains supported. For a coordinated candidate, pass `edits`, each with `path`, `source_sha256`, unique `before` and explicit `after`. Rejected input leaves no persisted assignment. An accepted candidate produces one hashed review bundle and one runner lease. Existing review and release controls still apply. Use the later isolated runner to apply the exact artifact to a clean checkout.

@@ -865,3 +865,7 @@ Development commit `040a7731ca1294c6de34b73c3d3153994d17d37a` adds bounded proba
 ## November 21 — Factory contradiction rehearsal
 
 Development commit `a622acf57be1a756d5c537b26767f7594bc213b2` compares Factory work state with exact approval, artifact and Mimir receipts. The integrated fixture altered two receipts. TYR excluded the mismatched approval, Prime recorded two blockers and HOLD, and the conflicting Mimir result was excluded. Restoring both original fixture receipts recovered the verified result and cleared the contradictions on the next advisory. All four hosted jobs passed in [run 44959014128](https://github.com/bryanevoy86-tech/Valhalla/actions/runs/44959014128).
+
+## November 21 — Governed Builder multi-file candidates
+
+Development commit `54114dd42ed1f123e1815f0b7ad0c6dc6a5e3a46` extends the existing prepare route with a bounded group of owner-authorized literal replacements. The test rejects missing authority, stale inputs and duplicate targets, checks that a failed group creates no rows, then claims one combined bundle and verifies both source files stayed intact. All four hosted jobs passed in [run 44959214232](https://github.com/bryanevoy86-tech/Valhalla/actions/runs/44959214232).
