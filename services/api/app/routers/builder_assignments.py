@@ -17,7 +17,7 @@ from app.core.dependencies import require_prime_control_key
 from app.core.settings import settings
 from app.models.builder import BuilderEvent, BuilderTask
 from app.models.builder_assignment import BuilderAssignment
-from app.routers.builder import MAX_BATCH_BYTES, _canonical, _prepare_files, _read_base, _review_bundle, _sha
+from app.routers.builder import MAX_BATCH_BYTES, MAX_BATCH_FILES, _canonical, _prepare_files, _read_base, _review_bundle, _sha
 from app.schemas.builder import FileSpec
 from app.services.prime_business_execution import _emergency_stop_active, require_owner_mandate_key
 
@@ -54,16 +54,28 @@ class AssignmentIn(BaseModel):
     image_id: str = Field(pattern=r"^sha256:[a-f0-9]{64}$")
 
 
-class CandidateIn(BaseModel):
+class CandidateRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     assignment_id: UUID
     base_commit: str = Field(pattern=r"^[a-f0-9]{40}$")
     image_id: str = Field(pattern=r"^sha256:[a-f0-9]{64}$")
     title: str = Field(min_length=3, max_length=140)
+
+
+class CandidateEdit(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     path: str = Field(min_length=1, max_length=200)
     source_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
     before: str = Field(min_length=1, max_length=8192)
     after: str = Field(max_length=8192)
+
+
+class CandidateIn(CandidateRequest, CandidateEdit):
+    """The existing single-file request."""
+
+
+class BatchCandidateIn(CandidateRequest):
+    edits: list[CandidateEdit] = Field(min_length=1, max_length=MAX_BATCH_FILES)
 
 
 class TestReceipt(BaseModel):
@@ -116,8 +128,8 @@ def assign(payload: AssignmentIn, db: Session = Depends(get_db)):
 
 
 @router.post("/prepare", status_code=201, dependencies=[Depends(require_prime_control_key), Depends(require_owner_mandate_key)])
-def prepare(payload: CandidateIn, db: Session = Depends(get_db)):
-    """Generate one scoped source candidate and queue the existing runner atomically."""
+def prepare(payload: CandidateIn | BatchCandidateIn, db: Session = Depends(get_db)):
+    """Generate a snapshot-bound repair candidate and queue the existing runner atomically."""
     if _emergency_stop_active(db):
         raise HTTPException(503, "Builder assignment preparation paused")
     request_hash = _sha(_canonical(payload.model_dump(mode="json")))
@@ -127,17 +139,21 @@ def prepare(payload: CandidateIn, db: Session = Depends(get_db)):
         if prior_task is None or prior_task.plan != f"literal-replacement:{request_hash}":
             raise HTTPException(409, "Assignment ID already used")
         return view(existing)
-    old, source_hash = _read_base(payload.path)
-    match = old.find(payload.before)
-    if source_hash != payload.source_sha256 or match == -1 or old.find(payload.before, match + 1) != -1:
-        raise HTTPException(409, "Expected source hash and a single matching edit are required")
-    records, _ = _prepare_files([
-        FileSpec(path=payload.path, mode="replace", content=old.replace(payload.before, payload.after, 1)),
-    ])
-    if records[0]["base_sha256"] != source_hash:
+    edits = payload.edits if isinstance(payload, BatchCandidateIn) else [payload]
+    files = []
+    for edit in edits:
+        old, source_hash = _read_base(edit.path)
+        match = old.find(edit.before)
+        if source_hash != edit.source_sha256 or match == -1 or old.find(edit.before, match + 1) != -1:
+            raise HTTPException(409, "Expected source hash and a single matching edit are required")
+        files.append(FileSpec(path=edit.path, mode="replace", content=old.replace(edit.before, edit.after, 1)))
+    records, _ = _prepare_files(files)
+    if any(record["base_sha256"] != edit.source_sha256 for record, edit in zip(records, edits, strict=True)):
         raise HTTPException(409, "Source changed during preparation")
-    task = BuilderTask(title=payload.title, scope=records[0]["path"], status="review_ready",
-                       plan=f"literal-replacement:{request_hash}", diff_summary="One snapshot-verified prepared file")
+    count = len(records)
+    scope = records[0]["path"] if count == 1 else f"{count} snapshot-bound files"
+    task = BuilderTask(title=payload.title, scope=scope, status="review_ready",
+                       plan=f"literal-replacement:{request_hash}", diff_summary=f"{count} snapshot-verified prepared file(s)")
     db.add(task)
     try:
         db.flush()
@@ -150,8 +166,8 @@ def prepare(payload: CandidateIn, db: Session = Depends(get_db)):
         row = BuilderAssignment(id=payload.assignment_id, task_id=task.id, base_commit=payload.base_commit,
                                 image_id=payload.image_id, bundle_sha256=digest, status="queued", created_at=now())
         db.add(row)
-        db.add(BuilderEvent(kind="review_ready", msg="Authorized literal replacement prepared",
-                            meta_json=_canonical({"task_id": task.id, "sha256": digest}).decode("utf-8")))
+        db.add(BuilderEvent(kind="review_ready", msg="Authorized literal repair candidate prepared",
+                            meta_json=_canonical({"task_id": task.id, "sha256": digest, "file_count": count}).decode("utf-8")))
         db.commit()
     except IntegrityError:
         db.rollback()

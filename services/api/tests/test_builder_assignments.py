@@ -4,6 +4,8 @@ from pathlib import Path
 import runpy
 from uuid import uuid4
 
+from sqlalchemy.orm import Session
+
 from app.core.settings import settings
 from app.models.builder import BuilderEvent, BuilderTask
 from app.models.builder_assignment import BuilderAssignment
@@ -139,3 +141,47 @@ def test_owner_prepares_snapshot_candidate_for_existing_runner(deal_client, tmp_
     assert exhausted["status"] == "lease_exhausted" and exhausted["receipt"] is None
     assert exhausted["claim_count"] == 3 and exhausted["release_authorized"] is False
     assert client.post("/builder/assignments/claim", headers=runner).json()["status"] == "idle"
+
+
+def test_owner_prepares_atomic_multifile_builder_candidate(deal_client, tmp_path, monkeypatch):
+    client, engine = deal_client
+    for model in (BuilderEvent, BuilderTask, BuilderAssignment):
+        model.__table__.create(engine)
+    monkeypatch.setattr(builder, "_REPO_ROOT", tmp_path)
+    monkeypatch.setenv("VALHALLA_OWNER_MANDATE_KEY", "fixture-multifile-owner")
+    monkeypatch.setenv("VALHALLA_BUILDER_RUNNER_KEY", "fixture-multifile-runner")
+    monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "false")
+    owner = {"X-Owner-Mandate-Key": "fixture-multifile-owner"}
+    runner = {"X-Builder-Runner-Key": "fixture-multifile-runner"}
+    edits = []
+    for name, before, after in (("consumer", "VALUE = 1", "VALUE = 2"), ("contract", "EXPECTED = 1", "EXPECTED = 2")):
+        path = f"services/api/app/routers/{name}.py"
+        target = tmp_path / path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        source = (before + "\n").encode()
+        target.write_bytes(source)
+        edits.append({"path": path, "source_sha256": sha256(source).hexdigest(), "before": before, "after": after})
+    request = {
+        "assignment_id": str(uuid4()), "base_commit": "a" * 40, "image_id": "sha256:" + "b" * 64,
+        "title": "Update consumer and contract together", "edits": edits,
+    }
+    endpoint = "/builder/assignments/prepare"
+    assert client.post(endpoint, headers=runner, json=request).status_code == 401
+    stale = {**request, "edits": [edits[0], {**edits[1], "source_sha256": "0" * 64}]}
+    assert client.post(endpoint, headers=owner, json=stale).status_code == 409
+    assert client.post(endpoint, headers=owner, json={**request, "edits": [edits[0], edits[0]]}).status_code == 422
+    with Session(engine) as db:
+        assert db.query(BuilderTask).count() == 0 and db.query(BuilderAssignment).count() == 0
+        assert db.query(BuilderEvent).count() == 0
+    prepared = client.post(endpoint, headers=owner, json=request)
+    assert prepared.status_code == 201, prepared.text
+    assert client.post(endpoint, headers=owner, json=request).json() == prepared.json()
+    assert client.post(endpoint, headers=owner, json={**request, "edits": list(reversed(edits))}).status_code == 409
+    lease = client.post("/builder/assignments/claim", headers=runner).json()
+    assert lease["release_authorized"] is False and lease["review"]["deployed"] is False
+    assert lease["review"]["sha256"] == prepared.json()["bundle_sha256"]
+    for record, edit in zip(lease["review"]["bundle"]["files"], edits, strict=True):
+        assert record["path"] == edit["path"]
+        assert record["base_sha256"] == edit["source_sha256"]
+        assert record["content"] == edit["after"] + "\n"
+        assert (tmp_path / edit["path"]).read_text() == edit["before"] + "\n"
