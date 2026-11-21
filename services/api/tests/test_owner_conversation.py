@@ -671,3 +671,34 @@ def test_retention_worker_applies_latest_deadline_and_restore_hold_hides_old_ext
     assert tick() == "idle"
     assert client.get(f"{url}/download", headers=HEADERS).status_code == 410
     assert "Old snapshot confidential extract" not in client.get(turns, headers=HEADERS).text
+
+
+def test_restore_hold_stays_closed_until_digest_bound_manual_reconciliation(client, monkeypatch):
+    """Model an older snapshot where the attachment exists but its later tombstone is absent."""
+    monkeypatch.setenv("VALHALLA_OWNER_MANDATE_KEY", "fixture-recovery-authority")
+    owner = {**HEADERS, "X-Owner-Mandate-Key": "fixture-recovery-authority"}
+    cid = create(client)
+    marker = b"pre-disposition snapshot bytes"
+    body = asset(marker, "text/plain", "snapshot.txt")
+    root = f"{BASE}/{cid}/attachments"
+    url = f"{root}/{body['attachment_id']}"
+    assert client.post(root, headers=HEADERS, json=body).status_code == 201
+    assert client.post(f"{url}/extract", headers=HEADERS).status_code == 200
+    turns = f"{BASE}/{cid}/turns"
+    turn = {"turn_id": str(uuid4()), "message": "Review attached extraction", "attachment_ids": [body["attachment_id"]]}
+    assert marker.decode() in client.post(turns, headers=HEADERS, json=turn).text
+
+    monkeypatch.setenv("VALHALLA_OWNER_ATTACHMENT_RESTORE_HOLD", "1")
+    replay = {"source_sha256": body["sha256"], "reason": "OWNER_REQUEST"}
+    assert client.request("DELETE", url, headers=HEADERS, json=replay).status_code == 401
+    assert client.request("DELETE", url, headers=owner, json={**replay, "source_sha256": "0" * 64}).status_code == 409
+    assert client.get(f"{url}/download", headers=HEADERS).status_code == 503
+    assert marker.decode() not in client.get(turns, headers=HEADERS).text
+
+    reconciled = client.request("DELETE", url, headers=owner, json=replay)
+    assert reconciled.status_code == 200 and reconciled.json()["state"] == "DELETED"
+    assert client.request("DELETE", url, headers=owner, json=replay).json() == reconciled.json()
+    monkeypatch.delenv("VALHALLA_OWNER_ATTACHMENT_RESTORE_HOLD")
+    assert client.get(f"{url}/download", headers=HEADERS).status_code == 410
+    assert client.post(f"{url}/extract", headers=HEADERS).status_code == 410
+    assert marker.decode() not in client.get(turns, headers=HEADERS).text

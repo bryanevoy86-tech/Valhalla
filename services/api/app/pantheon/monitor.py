@@ -182,6 +182,12 @@ def run_assignment(db: Session, role: str, *, now=None) -> dict:
         if role in DISCOVERY_ROLES:
             facts.update(discover(db, role, assignment.scope, now.date()))
         facts.update(market_observations(db, role, assignment.scope, now))
+        if role in {"MIMIR", "NJORD", "HEIMDALL"}:
+            from app.routers.foundry_checkout import scoped_checkout_learning
+
+            checkout = scoped_checkout_learning(db, assignment.scope, outcomes)
+            if checkout:
+                facts["checkout_learning"] = checkout
         facts.update(specialist_economics(db, role, assignment.scope, now.date()))
         report.update(status="observed", observations=facts)
     except HTTPException as exc:

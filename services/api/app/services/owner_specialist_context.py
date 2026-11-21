@@ -24,6 +24,11 @@ def specialist_context(db: Session, schedule_id: UUID) -> dict:
             raise ValueError
     except (ValueError, TypeError, AttributeError):
         raise HTTPException(409, "Specialist receipt does not match the schedule") from None
+    from app.routers.prime_specialist_schedules import shadow_report_digest
+
+    digest = report.get("report_sha256")
+    if ("operating_reassessment" in report or digest) and digest != shadow_report_digest(event.event_id, report):
+        raise HTTPException(409, "Specialist report failed integrity checks")
     recommendation = report.get("recommendation") or {}
     return {
         "evidence_class": "INTERNAL_ADVISORY",
@@ -31,6 +36,7 @@ def specialist_context(db: Session, schedule_id: UUID) -> dict:
         "scope": report.get("scope"), "status": report.get("status"),
         "observed_at": report.get("observed_at"), "trigger": report.get("trigger"),
         "heimdall_decision": recommendation.get("heimdall_decision"),
+        "operating_reassessment": report.get("operating_reassessment"),
         "verified_internal_outcome_ids": [
             entry["outcome_event_id"] for entry in report.get("verified_internal_outcomes", [])
         ],

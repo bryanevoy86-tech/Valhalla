@@ -1,7 +1,7 @@
 import base64
 import hashlib
 import json
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from uuid import UUID, uuid4
 
 from sqlalchemy.orm import Session
@@ -128,6 +128,91 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
     }
     for model in (KnowledgeRegistryItem, SourceRegistryItem, LearningFeedbackRecord, PrimeSpecialistSchedule, PrimeScheduleTrigger, OwnerConversation, OwnerTurn, SpecialistAssignment, SpecialistTrigger):
         model.__table__.create(engine)
+    from app.models.economic_control import EconomicOperation, EconomicPool, EconomicRecord
+    from app.models.foundry_evidence import FoundryEvidence
+    from app.models.foundry_intake import FoundryIntakeJob
+    from app.services import foundry_intake
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+
+    for model in (FoundryEvidence, FoundryIntakeJob, EconomicPool, EconomicOperation, EconomicRecord):
+        model.__table__.create(engine)
+
+    at = foundry_intake.current_time()
+    today = at.date()
+    previous_day = today - timedelta(days=1)
+    economy = "/api/prime/economy"
+
+    def economic(path, body, expected=201):
+        response = client.post(f"{economy}/{path}", json=body, headers=owner)
+        assert response.status_code == expected, response.text
+        return response.json()
+
+    with Session(engine) as db:
+        db.add(EconomicPool(currency="CAD"))
+        db.add(SourceRegistryItem(source_id="workshop-demand-fixture", source_type="DEMAND_EXPORT",
+                                  canonical_name="Isolated signed workshop survey", data_class="live",
+                                  jurisdiction=scope["jurisdiction"], terminal_state="PASS",
+                                  mode_allowlist_json='["practice"]', freshness_sla_hours=72))
+        db.commit()
+
+    def enroll(role):
+        response = client.post("/api/prime/pantheon/assignments", headers=owner, json={
+            **scope, "assignment_id": str(uuid4()), "role": role, "cadence_seconds": 600, "duration_seconds": 7200,
+        })
+        assert response.status_code == 201, response.text
+
+    enroll("ODIN")
+    key = Ed25519PrivateKey.generate()
+    intake = "/api/prime/foundry/intake"
+    source = "workshop-demand-fixture"
+    assert client.put(f"{intake}/sources/{source}/signing-key", headers=owner, json={
+        "public_key_hex": key.public_key().public_bytes_raw().hex(),
+    }).status_code == 200
+    evidence_id = str(uuid4())
+    export = {
+        "source_id": source, "external_key": "workshop-survey", "adapter": "DEMAND_EXPORT",
+        "buyer_segment": "Practice workshop operators", "sample_count": 20, "demand_count": 15,
+        "source_signed_at": at.isoformat() + "Z",
+        "evidence": {**scope, "evidence_id": evidence_id, "kind": "DIGITAL_PRODUCT",
+                     "evidence_class": "OPERATOR_REPORTED", "title": listing["title"], "source_ref": "fixture:survey",
+                     "observed_on": today.isoformat(), "expires_on": (today + timedelta(days=2)).isoformat(),
+                     "currency": "CAD", "unit_price": 2500, "variable_cost_per_unit": 175,
+                     "acquisition_cost_per_unit": 0, "monthly_fixed_cost": 0, "monthly_units": 4,
+                     "startup_capital": 500, "test_cost": 100,
+                     "rights_attestation": "AUTHORIZED_INTERNAL_RESEARCH"},
+    }
+    export["source_signature"] = key.sign(foundry_intake.source_signature_message(export)).hex()
+    received = client.post(intake, json=export, headers=owner)
+    assert received.status_code == 202, received.text
+    with Session(engine) as db:
+        tick = foundry_intake.current_time()
+        assert foundry_intake.run_intake(db, now=tick)["status"] == "COMPLETED"
+        specialist_report_id = run_assignment(db, "ODIN", now=tick)["report_event_id"]
+    source_report = client.get(f"/api/prime/pantheon/reports/{specialist_report_id}").json()
+    assert source_report["trigger"] == "SOURCE_DISCOVERY"
+    candidate = client.get(f"/api/prime/foundry/reports/{specialist_report_id}/candidate/{evidence_id}")
+    assert candidate.status_code == 200, candidate.text
+    grounded = candidate.json()["proposal"]
+    proposal = {**proposal, **grounded, "persist_decision": True,
+                "specialist_inputs": {**proposal["specialist_inputs"], **grounded["specialist_inputs"]}}
+    assert proposal["specialist_inputs"]["discovery_demand"]["sample_demand_bp"] == 7500
+
+    capital_mandate = {"id": str(uuid4()), "scope": scope, "currency": "CAD", "max_exposure": 5000,
+               "max_cumulative_loss": 175, "max_additional_funding": 1000, "min_operating_reserve": 200,
+               "review_by": (today + timedelta(days=10)).isoformat(), "minimum_period_net": 0,
+               "continuation_criteria": "Preserve positive fixture unit economics.",
+               "suspension_criteria": "Contain at the fixture loss limit.",
+               "exit_criteria": "Archive failed demand experiments.", "obligations": ["Review fixture receipts"]}
+    economic("mandates", capital_mandate)
+    performance = {"id": str(uuid4()), "scope": scope, "start": previous_day.isoformat(),
+                   "end": previous_day.isoformat(), "operating_receipts": 200, "operating_costs": 50,
+                   "outstanding_exposure": 0, "uncommitted_local_cash": 2000,
+                   "receipt_ref": "fixture:prior-workshop-evidence", "obligations_status": "SATISFIED",
+                   "evidence_class": "RECONCILIATION_FIXTURE"}
+    economic("performance", performance)
+    economic("liquidity", {"id": str(uuid4()), "scope": scope, "receipt_ref": "fixture:startup-capital",
+                           "as_of": today.isoformat(), "unrestricted_pool_minor": 2000,
+                           "protected_pool_minor": 8000, "evidence_class": "RECONCILIATION_FIXTURE"})
     schedule_root = "/api/prime/specialist-schedules"
     schedule_id = str(uuid4())
     other_schedule_id = str(uuid4())
@@ -178,13 +263,7 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
     assert client.post(f"{FACTORY}/listing-drafts", headers=admin, json={
         **listing, "prime_verdict_id": str(uuid4()),
     }).status_code == 409
-    assignment_id = str(uuid4())
-    enrolled = client.post("/api/prime/pantheon/assignments", json={
-        **scope, "assignment_id": assignment_id, "role": "MIMIR", "cadence_seconds": 600, "duration_seconds": 1200,
-    }, headers=owner)
-    assert enrolled.status_code == 201, enrolled.text
-    with Session(engine) as db:
-        specialist_report_id = run_assignment(db, "MIMIR")["report_event_id"]
+    enroll("MIMIR")
     challenged = client.post(f"/api/prime/pantheon/reports/{specialist_report_id}/challenge")
     assert challenged.status_code == 201, challenged.text
     report_review = challenged.json()
@@ -263,6 +342,17 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
     })
     assert assigned.status_code == 200, assigned.text
     action_id = assigned.json()["action_id"]
+    from app.models.norns_forecast import NornsForecast, NornsHoldout
+
+    for model in (NornsForecast, NornsHoldout):
+        model.__table__.create(engine)
+    forecast_id = str(uuid4())
+    forecast = client.post("/api/prime/norns/forecasts", headers=owner, json={
+        "forecast_id": forecast_id, "action_id": action_id, "probability_bp": 8000, "horizon_seconds": 120,
+    })
+    assert forecast.status_code == 201, forecast.text
+    approved_capital = economic("assessment", scope, 200)
+    assert approved_capital["period_net_minor"] == 150 and approved_capital["new_exposure_available_minor"] >= 500
     executed = client.post(f"{FACTORY}/actions/run-once", headers=admin).json()
     assert executed["status"] == "completed"
     assert executed["receipt"]["sales_verified"] is False
@@ -276,7 +366,36 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
         assert json.loads(listing_record.body)["product_asset"]["sha256"] == checksum
         assert json.loads(listing_record.body)["purchase_url"] is None
     assert client.get(f"{FACTORY}/actions/{action_id}", headers=admin).json()["internal_artifact_verified"]
-    rehearse_checkout(client, engine, monkeypatch, owner, action_id, listing["price_cents_cad"], scope)
+    resolved = client.post(f"/api/prime/norns/forecasts/{forecast_id}/resolve")
+    assert resolved.status_code == 200, resolved.text
+    assert resolved.json()["observed_outcome"] == 1
+    assert resolved.json()["evidence_ref"].startswith("BF-RECEIPT-")
+    closed_order = rehearse_checkout(client, engine, monkeypatch, owner, action_id, listing["price_cents_cad"], scope)
+    pending_id = submit_and_approve({**listing, "request_key": "workshop-listing-02"})
+    with Session(engine) as db:
+        advanced = run_assignment(db, "ODIN")
+        assert advanced["report_event_id"] != specialist_report_id
+    stale = client.post(f"{FACTORY}/actions/run-once", headers=admin).json()
+    assert stale["action_id"] == pending_id and "stale" in stale["reason"]
+    with Session(engine) as db:
+        db.get(ProductArtifact, UUID(asset_id)).data = b"Bad storage bytes"
+        db.commit()
+    assert client.get(download_url, headers=owner).status_code == 409
+    blocked = client.post(f"{FACTORY}/actions/run-once", headers=admin).json()
+    assert blocked["action_id"] == pending_id
+    assert blocked["reason"] == "Internal product artifact integrity mismatch"
+    with Session(engine) as db:
+        db.get(ProductArtifact, UUID(asset_id)).data = content
+        db.commit()
+
+    adverse = {**performance, "id": str(uuid4()), "start": today.isoformat(), "end": today.isoformat(),
+               "operating_receipts": closed_order["net_minor"], "operating_costs": closed_order["fixture_cost_minor"],
+               "receipt_ref": f"fixture:checkout-{closed_order['order_id']}"}
+    economic("performance", adverse)
+    economic("mandates", {**capital_mandate, "id": str(uuid4()), "previous_id": capital_mandate["id"]})
+    after = economic("assessment", scope, 200)
+    assert after["period_net_minor"] == -175 and after["cumulative_loss_minor"] == 175
+    assert after["suggested_action"] == "EXIT"
 
     with Session(engine) as db:
         triggered = run_due_schedule(db, now=slot_time + timedelta(seconds=1))
@@ -288,7 +407,17 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
     assert report["trigger_outcome_event_id"] == report["verified_internal_outcomes"][0]["outcome_event_id"]
     assert report["verified_internal_outcomes"][0]["prime_decision"]["verdict_id"] == listing["prime_verdict_id"]
     assert report["verified_internal_outcomes"][0]["sales_verified"] is False
+    reassessment = report["operating_reassessment"]
+    [learning] = reassessment["checkout_learning"]
+    assert learning["status"] == "MATCHED_FIXTURE" and learning["fixture_contribution_minor"] == -175
+    assert len(learning["matched_fixture_payment_ids"]) == 3
+    assert reassessment["economic_reassessment"]["cumulative_loss_minor"] == 175
+    assert {"NEGATIVE_FIXTURE_CONTRIBUTION", "CUMULATIVE_LOSS_LIMIT"} <= set(reassessment["blockers"])
+    assert report["recommendation"]["heimdall_decision"] == "HOLD"
+    assert first["evidence"]["heimdall_decision"] != report["recommendation"]["heimdall_decision"]
+    assert report["recommendation"]["abstain"]
     follow_up = owner_turn("What did we learn after the internal draft?", specialist_schedule_id=schedule_id)
+    assert follow_up["evidence"]["operating_reassessment"] == reassessment
     assert follow_up["evidence"]["verified_internal_outcome_ids"] == [report["trigger_outcome_event_id"]]
     assert len(client.get(turns).json()) == 4
     for model in (LearningTaskQueueItem, RevenueLedger, GoLiveState):
@@ -308,32 +437,48 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
     with Session(engine) as db:
         assert run_due_schedule(db, now=slot_time + timedelta(seconds=1)) == {"status": "idle"}
 
-    pending_id = submit_and_approve({**listing, "request_key": "workshop-listing-02"})
-    with Session(engine) as db:
-        updated_specialist = run_assignment(db, "MIMIR")
-        assert updated_specialist["report_event_id"] != specialist_report_id
-    stale = client.post(f"{FACTORY}/actions/run-once", headers=admin).json()
-    assert stale["action_id"] == pending_id
-    assert "stale" in stale["reason"]
-    with Session(engine) as db:
-        db.get(ProductArtifact, UUID(asset_id)).data = b"Bad storage bytes"
-        db.commit()
-    assert client.get(download_url, headers=owner).status_code == 409
-    blocked = client.post(f"{FACTORY}/actions/run-once", headers=admin).json()
-    assert blocked["action_id"] == pending_id
-    assert blocked["reason"] == "Internal product artifact integrity mismatch"
+    contained = client.post(f"{FACTORY}/actions/run-once", headers=admin).json()
+    assert contained["action_id"] == pending_id
+    assert "containment" in contained["reason"].lower()
 
-    assert client.delete(f"{ASSETS}/{asset_id}", headers=admin).status_code == 401
-    assert client.delete(f"{ASSETS}/{asset_id}", headers=owner).json()["revoked"]
-    revoked_run = client.post(f"{FACTORY}/actions/run-once", headers=admin).json()
-    assert revoked_run["action_id"] == pending_id
-    assert revoked_run["reason"] == "Internal product artifact revoked"
+    from app.routers import norns_forecasts
+
+    denied_forecast = str(uuid4())
+    forecast = client.post("/api/prime/norns/forecasts", headers=owner, json={
+        "forecast_id": denied_forecast, "action_id": pending_id, "probability_bp": 3000, "horizon_seconds": 120,
+    })
+    assert forecast.status_code == 201, forecast.text
+    later = norns_forecasts._now() + timedelta(minutes=3)
+    monkeypatch.setattr(norns_forecasts, "_now", lambda: later)
+    no_artifact = client.post(f"/api/prime/norns/forecasts/{denied_forecast}/resolve")
+    assert no_artifact.status_code == 200, no_artifact.text
+    assert no_artifact.json()["observed_outcome"] == 0
+    assert client.get("/api/prime/norns/calibration").json()["brier_score"] == 0.065
+    with Session(engine) as db:
+        recent_mimir = run_assignment(db, "MIMIR")["report_event_id"]
+    learned_response = client.get(f"/api/prime/pantheon/reports/{recent_mimir}").json()
+    assert learned_response["observations"]["checkout_learning"][0]["fixture_contribution_minor"] == -175
+    assert learned_response["observations"]["economic_reassessment"]["cumulative_loss_minor"] == 175
+    next_tick = datetime.fromisoformat(next_cadence).replace(tzinfo=None) + timedelta(seconds=1)
+    with Session(engine) as db:
+        settlement = db.get(FoundryFixtureSettlement, "evt_fixture_capture")
+        settlement.amount_minor += 1
+        db.commit()
+        assert run_due_schedule(db, now=next_tick)["status"] == "evaluated"
+    contradicted = client.get(f"{schedule_root}/{schedule_id}").json()["latest_report"]
+    assert "CHECKOUT_EVIDENCE_CONFLICT" in contradicted["operating_reassessment"]["blockers"]
+    assert contradicted["operating_reassessment"]["economic_reassessment"]["cumulative_loss_minor"] == 175
+    assert contradicted["recommendation"]["heimdall_decision"] == "HOLD"
+    assert client.get(f"{schedule_root}/{schedule_id}/reports/{report['report_event_id']}").json() == report
     with Session(engine) as db:
         assert db.query(MediaContent).count() == 1
         learned = db.query(LegacyOrchestrationEvent).filter_by(event_type="MIMIR_INTERNAL_ARTIFACT_VERIFIED").one()
         verified = json.loads(learned.payload_json)
         assert verified["product_asset"]["sha256"] == checksum
         assert verified["prime_decision"]["proposal_sha256"] == artifact["artifact_sha256"]
+    assert client.delete(f"{ASSETS}/{asset_id}", headers=admin).status_code == 401
+    assert client.delete(f"{ASSETS}/{asset_id}", headers=owner).json()["revoked"]
+    assert client.get(download_url, headers=owner).status_code == 409
 
 
 def rehearse_checkout(client, engine, monkeypatch, owner, action_id, price, scope):
@@ -431,6 +576,7 @@ def rehearse_checkout(client, engine, monkeypatch, owner, action_id, price, scop
         {"external_ref": "wrong-amount", "amount_minor": price + 1},
         {"external_ref": "capture-1", "amount_minor": price},
         {"external_ref": "refund-1", "amount_minor": -(price // 2)},
+        {"external_ref": "refund-2", "amount_minor": -(price - price // 2)},
     ]
     statement = {"id": statement_id, "scope": scope, "source_id": "fixture:checkout-bank",
                  "account_ref": "fixture:payment-account", "purpose": "BUSINESS", "currency": "CAD",
@@ -455,5 +601,10 @@ def rehearse_checkout(client, engine, monkeypatch, owner, action_id, price, scop
         **link, "entry_ref": "refund-1", "payment_event_id": "evt_fixture_refund_one",
     }).json()["status"] == "MATCHED_FIXTURE"
 
+    assert client.post(endpoint, headers=owner, json={
+        **link, "entry_ref": "refund-2", "payment_event_id": "evt_fixture_refund_final",
+    }).json()["status"] == "MATCHED_FIXTURE"
+
     with Session(engine) as db:
         assert db.query(FoundryRehearsalPayment).count() == 3
+    return final

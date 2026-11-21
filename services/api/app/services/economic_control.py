@@ -335,7 +335,7 @@ def specialist_economics(db, role, scope, today):
         "LOKI": ("cumulative_loss_minor", "effective_loss_ceiling_minor", "effective_funding_limit_minor"),
         "TYR": ("last_performance_id",),
         "ODIN": ("alternatives",),
-        "HEIMDALL": ("period_net_minor", "alternatives", "new_exposure_available_minor"),
+        "HEIMDALL": ("period_net_minor", "alternatives", "new_exposure_available_minor", "cumulative_loss_minor", "last_performance_id"),
         "MIMIR": ("last_performance_id", "cumulative_loss_minor"),
     }
     common.update({key: report[key] for key in role_fields[role]})

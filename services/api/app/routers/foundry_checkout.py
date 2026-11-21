@@ -398,3 +398,61 @@ def reconcile_settlement(order_id: UUID, request: SettlementIn, db: Session = De
             db.rollback()
             raise HTTPException(409, "Statement posting or signed payment already reconciled") from None
     return {**detail, "status": "MATCHED_FIXTURE"}
+
+
+def scoped_checkout_learning(db: Session, scope: dict, outcomes: list[dict], *, artifact_id=None) -> list[dict]:
+    """Re-read checkout fixtures tied to a verified scoped listing outcome."""
+    inspector = inspect(db.connection())
+    if not outcomes or any(not inspector.has_table(model.__tablename__) for model in (
+        FoundryRehearsalOrder, FoundryRehearsalPayment, FoundryFixtureSettlement, StatementImport, StatementEntry,
+    )):
+        return []
+    by_action = {item["action_id"]: item for item in outcomes if item.get("product_asset")
+                 and (artifact_id is None or item["product_asset"]["artifact_id"] == artifact_id)}
+    if not by_action:
+        return []
+    orders = db.scalars(select(FoundryRehearsalOrder).where(
+        FoundryRehearsalOrder.action_id.in_(by_action),
+    ).order_by(FoundryRehearsalOrder.id).limit(20)).all()
+    observations = []
+    for order in orders:
+        outcome = by_action[order.action_id]
+        asset = outcome["product_asset"]
+        reference = {"order_id": str(order.id), "outcome_event_id": outcome["outcome_event_id"],
+                     "basis": "LOCAL_CHECKOUT_REHEARSAL", "verified_commercial_revenue": False}
+        try:
+            if (order.listing_sha256, str(order.artifact_id), order.artifact_sha256) != (
+                outcome["artifact_sha256"], asset["artifact_id"], asset["sha256"],
+            ):
+                raise HTTPException(409, "Checkout listing differs from verified outcome")
+            view = _view(db, order)
+            payments = db.scalars(select(FoundryRehearsalPayment).where(
+                FoundryRehearsalPayment.order_id == order.id,
+            ).order_by(FoundryRehearsalPayment.event_id).limit(101)).all()
+            if len(payments) > 100:
+                raise HTTPException(409, "Checkout payment history exceeds advisory limit")
+            matched, pending = [], []
+            for payment in payments:
+                settlement = db.get(FoundryFixtureSettlement, payment.event_id)
+                if settlement is None:
+                    pending.append(payment.event_id)
+                    continue
+                statement = db.get(StatementImport, settlement.statement_id)
+                indexed = db.get(StatementEntry, settlement.statement_entry_key)
+                if (statement is None or indexed is None or indexed.statement_id != statement.id
+                        or settlement.statement_sha256 != statement.digest or settlement.payment_sha256 != payment.sha256
+                        or settlement.amount_minor != payment.captured_delta - payment.refunded_delta):
+                    raise HTTPException(409, "Checkout settlement linkage failed integrity")
+                document = payload_for(statement)
+                if (document.scope.model_dump() != scope or document.purpose != "BUSINESS" or document.currency != "CAD"
+                        or not any(entry.category == "TRANSFER" and entry.amount_minor == settlement.amount_minor
+                                   and artifact_digest("statement_transaction", statement.account_key,
+                                                       entry.external_ref.casefold()) == indexed.key
+                                   for entry in document.entries)):
+                    raise HTTPException(409, "Checkout settlement no longer matches the statement fixture")
+                matched.append(payment.event_id)
+            observations.append({**view, **reference, "matched_fixture_payment_ids": matched, "unmatched_fixture_payment_ids": pending,
+                                 "status": "MATCHED_FIXTURE" if matched and not pending else "UNRECONCILED_FIXTURE"})
+        except HTTPException:
+            observations.append({**reference, "status": "EVIDENCE_CONFLICT"})
+    return observations
