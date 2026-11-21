@@ -44,3 +44,19 @@ class TuningRuleList(BaseModel):
     """Paginated list of tuning rules."""
     total: int
     items: List[TuningRuleOut]
+
+
+class ProfileSettings(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    aggression: int = Field(50, ge=0, le=100)
+    risk_tolerance: int = Field(50, ge=0, le=100)
+    safety_bias: int = Field(70, ge=0, le=100)
+    growth_bias: int = Field(70, ge=0, le=100)
+    stability_bias: int = Field(60, ge=0, le=100)
+    weights: Optional[Dict[str, Any]] = None
+
+
+class ProfileConstraintSettings(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    profile_id: int = Field(gt=0, strict=True)
+    rules: Optional[Dict[str, Any]] = None

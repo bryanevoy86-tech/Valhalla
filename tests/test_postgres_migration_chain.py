@@ -57,6 +57,7 @@ PROBES = load("alembic/versions/20261121_specialist_probes.py")
 BUILDER_ASSIGNMENTS = load("alembic/versions/20261121_builder_assignments.py")
 NORNS_HISTORY = load("alembic/versions/20261121_norns_scoped_history.py")
 SPECIALIST_BACKLOG = load("alembic/versions/20261123_specialist_backlog.py")
+TUNING_PROFILE = load("alembic/versions/20261123_tuning_profile_identity.py")
 OWNER_DISPOSITION = load("alembic/versions/20261123_owner_disposition.py")
 BUILDER_LEASE_CAP = load("alembic/versions/20261123_builder_lease_cap.py")
 FIXTURE_SETTLEMENT = load("alembic/versions/20261123_fixture_settlement.py")
@@ -114,6 +115,43 @@ class PostgresMigrationChainTests(unittest.TestCase):
         # The dedicated Postgres service is discarded after this job.
         # Never drop a DB simply because this schema test completed.
 
+
+    def test_tuning_profile_identity_preserves_legacy_rule_names(self):
+        engine = create_engine(url)
+        try:
+            with engine.begin() as conn:
+                conn.execute(text("""
+                    CREATE TEMP TABLE tuning_rules (
+                        id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+                        tenant_id TEXT NOT NULL, name TEXT NOT NULL,
+                        rule_type TEXT NOT NULL, config JSON NOT NULL DEFAULT '{}'
+                    )
+                """))
+                conn.execute(text("""
+                    INSERT INTO tuning_rules (tenant_id, name, rule_type)
+                    VALUES ('owner-a', 'balanced', 'threshold'), ('owner-a', 'balanced', 'toggle')
+                """))
+                operations = Operations(MigrationContext.configure(conn))
+                with patch.object(TUNING_PROFILE.op, "create_index", side_effect=operations.create_index):
+                    TUNING_PROFILE.upgrade()
+                upsert = text("""
+                    INSERT INTO tuning_rules (tenant_id, name, rule_type, config)
+                    VALUES (:tenant, 'balanced', 'profile', CAST(:config AS JSON))
+                    ON CONFLICT (tenant_id, name) WHERE rule_type = 'profile'
+                    DO UPDATE SET config = excluded.config
+                    RETURNING id
+                """)
+                first = conn.execute(upsert, {"tenant": "owner-a", "config": "{}"}).scalar_one()
+                updated = conn.execute(upsert, {"tenant": "owner-a", "config": '{"aggression": 60}'}).scalar_one()
+                other = conn.execute(upsert, {"tenant": "owner-b", "config": "{}"}).scalar_one()
+                self.assertEqual(first, updated)
+                self.assertNotEqual(other, first)
+                self.assertEqual(conn.execute(text("SELECT count(*) FROM tuning_rules")).scalar_one(), 4)
+                self.assertEqual(conn.execute(text(
+                    "SELECT config->>'aggression' FROM tuning_rules WHERE id=:id"
+                ), {"id": first}).scalar_one(), "60")
+        finally:
+            engine.dispose()
 
     def test_deal_brief_link_migration_preserves_existing_rows_and_rejects_wrong_links(self):
         engine = create_engine(url, pool_pre_ping=True)

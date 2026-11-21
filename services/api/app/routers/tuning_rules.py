@@ -41,13 +41,18 @@ def create_rule(
 @router.get("", response_model=TuningRuleList)
 def list_rules(
     active_only: bool = Query(False),
+    rule_type: str | None = None,
+    profile_id: int | None = Query(None, gt=0),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
     db: Session = Depends(get_db),
     tenant_id: str = Depends(get_tenant_id),
 ):
     """List tuning rules for the tenant."""
-    items, total = service.list_rules(db, tenant_id, active_only=active_only, skip=skip, limit=limit)
+    items, total = service.list_rules(
+        db, tenant_id, active_only=active_only, skip=skip, limit=limit,
+        rule_type=rule_type, profile_id=profile_id,
+    )
     return TuningRuleList(total=total, items=items)
 
 
@@ -55,9 +60,10 @@ def list_rules(
 def get_rule(
     rule_id: int,
     db: Session = Depends(get_db),
+    tenant_id: str = Depends(get_tenant_id),
 ):
     """Get a specific tuning rule."""
-    rule = service.get_rule(db, rule_id)
+    rule = service.get_rule(db, tenant_id, rule_id)
     if not rule:
         raise HTTPException(status_code=404, detail="Rule not found")
     return rule
@@ -68,9 +74,10 @@ def update_rule(
     rule_id: int,
     payload: TuningRuleUpdate,
     db: Session = Depends(get_db),
+    tenant_id: str = Depends(get_tenant_id),
 ):
     """Update a tuning rule."""
-    rule = service.update_rule(db, rule_id, payload)
+    rule = service.update_rule(db, tenant_id, rule_id, payload)
     if not rule:
         raise HTTPException(status_code=404, detail="Rule not found")
     return rule
@@ -90,19 +97,10 @@ def evaluate_rules(
 def delete_rule(
     rule_id: int,
     db: Session = Depends(get_db),
+    tenant_id: str = Depends(get_tenant_id),
 ):
     """Delete a tuning rule."""
-    success = service.delete_rule(db, rule_id)
+    success = service.delete_rule(db, tenant_id, rule_id)
     if not success:
         raise HTTPException(status_code=404, detail="Rule not found")
     return None
-
-
-# COMMENTED OUT: Incomplete second router section
-# Missing schemas: TuningProfileOut, TuningProfileIn, TuningProfileList,
-#                 TuningConstraintOut, TuningConstraintIn, TuningConstraintList
-# Missing functions: upsert_profile, list_profiles, add_constraint, list_constraints_for_profile
-# Preserved primary router functionality for tuning rules above.
-#
-# router = APIRouter(prefix="/intelligence/tuning", tags=["Intelligence", "Tuning"])
-# ... additional endpoints removed - see git history ...

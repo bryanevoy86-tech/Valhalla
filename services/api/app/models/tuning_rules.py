@@ -4,7 +4,7 @@ Decision thresholds and tuning rules for strategic decisions.
 """
 
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, DateTime, JSON, Boolean, Index
+from sqlalchemy import Column, Integer, String, DateTime, JSON, Boolean, Index, text
 
 from app.models.base import Base
 
@@ -50,6 +50,8 @@ class TuningRule(Base):
     
     __table_args__ = (
         Index("idx_tenant_rule", "tenant_id", "name"),
+        Index("uq_tuning_profile_name", "tenant_id", "name", unique=True,
+              postgresql_where=text("rule_type = 'profile'"), sqlite_where=text("rule_type = 'profile'")),
         Index("idx_active_rules", "tenant_id", "active"),
     )
     
