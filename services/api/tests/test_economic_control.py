@@ -598,3 +598,84 @@ def test_venture_rehearsal_shares_stress_gates_and_rechecks_withdrawn_sources(ec
     assert post(client, "assessment", SCOPE, 200)["best_eligible_alternative_key"] is None
     with Session(engine) as db:
         assert db.query(RevenueLedger).count() == 0
+
+
+def test_prime_reassesses_queued_economic_evidence_without_waiting_for_cadence(economic_client, monkeypatch):
+    from app.models.completion_registry import KnowledgeRegistryItem, LearningFeedbackRecord
+    from app.models.media_engine import MediaContent
+    from app.models.prime_specialist_schedule import PrimeScheduleTrigger, PrimeSpecialistSchedule
+    from app.routers.prime_specialist_schedules import _utc_now, run_due_schedule
+    from app.services.economic_control import trigger_reassessment
+
+    client, engine = economic_client
+    for model in (MediaContent, KnowledgeRegistryItem, LearningFeedbackRecord,
+                  PrimeSpecialistSchedule, PrimeScheduleTrigger):
+        model.__table__.create(engine)
+    now = _utc_now()
+    today = now.date()
+    post(client, "mandates", mandate(today))
+    post(client, "performance", performance(today - timedelta(days=1)))
+    post(client, "liquidity", liquidity(today))
+    root = "/api/prime/specialist-schedules"
+
+    def schedule(scope, *, economic):
+        schedule_id = str(uuid4())
+        response = client.post(root, headers=OWNER, json={
+            "schedule_id": schedule_id, "business_id": scope["business_id"],
+            "cadence_seconds": 300, "duration_seconds": 1800,
+            "on_economic_reassessment": economic, "on_verified_outcome": not economic,
+            "opportunity": {
+                "opportunity_id": "prime-economic-rehearsal", "engine_id": scope["engine_id"],
+                "legacy": scope["legacy_instance_id"], "jurisdiction": scope["jurisdiction"],
+                "title": "Economic trigger rehearsal", "summary": "Internal simulation and fixture evidence.",
+            },
+        })
+        assert response.status_code == 201, response.text
+        return f"{root}/{schedule_id}", response.json()
+
+    scoped, _ = schedule(SCOPE, economic=True)
+    outcome_only, _ = schedule(SCOPE, economic=False)
+    mirror, _ = schedule(MIRROR, economic=True)
+    at = now + timedelta(seconds=3)
+    with Session(engine) as db:
+        assert [run_due_schedule(db, now=at)["status"] for _ in range(3)] == ["evaluated"] * 3
+    before = client.get(scoped).json()
+    assert before["latest_report"]["operating_reassessment"]["economic_reassessment"]["period_net_minor"] == 50
+
+    loss = performance(today, operating_receipts=20, operating_costs=170)
+    receipt = post(client, "performance", loss)
+    assert post(client, "performance", loss) == receipt
+    containment = {"id": str(uuid4()), "scope": SCOPE,
+                   "rationale": "Pause this fixture after the cumulative loss breach."}
+    post(client, "containment", containment)
+    assert client.get(scoped).json()["queued_economic_count"] == 2
+    assert client.get(outcome_only).json()["queued_economic_count"] == 0
+    assert client.get(mirror).json()["queued_economic_count"] == 0
+    monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "true")
+    with Session(engine) as db:
+        assert run_due_schedule(db, now=at) == {"status": "blocked", "emergency_stop": True}
+    assert client.get(scoped).json()["queued_economic_count"] == 2
+    monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "false")
+    with Session(engine) as db:
+        assert [run_due_schedule(db, now=at)["status"] for _ in range(2)] == ["evaluated"] * 2
+        assert run_due_schedule(db, now=at) == {"status": "idle"}
+        trigger_reassessment(db, SCOPE, UUID(loss["id"]), now)
+        db.commit()
+        assert run_due_schedule(db, now=at)["status"] == "replayed"
+        trigger_reassessment(db, SCOPE, uuid4(), now)
+        db.commit()
+        assert run_due_schedule(db, now=at)["status"] == "blocked"
+        assert db.query(RevenueLedger).count() == 0
+
+    blocked = client.get(scoped).json()
+    assert blocked["next_due_at"] == before["next_due_at"]
+    assert blocked["latest_report"]["reason"] == "Economic trigger evidence failed revalidation"
+    assert blocked["latest_report"]["trigger"] == "ECONOMIC_REASSESSMENT"
+    with Session(engine) as db:
+        rows = db.query(LegacyOrchestrationEvent).filter_by(event_type="PRIME_SPECIALIST_SHADOW_REPORT").all()
+    reports = [json.loads(row.payload_json) for row in rows]
+    loss_report = next(report for report in reports if report.get("trigger_economic_event_id") == f"ECON-{loss['id']}")
+    assert loss_report["trigger_outcome_event_id"] is None
+    assert loss_report["effect"] == "ADVISORY_ONLY"
+    assert loss_report["recommendation"]["heimdall_decision"] == "HOLD"
+    assert loss_report["operating_reassessment"]["economic_reassessment"]["cumulative_loss_minor"] == 150

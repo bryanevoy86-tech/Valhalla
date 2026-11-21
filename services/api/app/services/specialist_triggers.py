@@ -17,18 +17,23 @@ def outcome_scope_key(scope: dict) -> str:
     return hashlib.sha256(json.dumps(scope, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
 
 
-def publish_verified_outcome(db: Session, scope: dict, event_id: str) -> None:
+def enqueue_prime(db: Session, scope_key: str, event_id: str, now: datetime, *, subscription: str) -> None:
     schedule = PrimeSpecialistSchedule
     inspector = inspect(db.connection())
-    now = datetime.now(timezone.utc).replace(tzinfo=None)
-    scope_key = outcome_scope_key(scope)
     if inspector.has_table(schedule.__tablename__):
         columns = {column["name"] for column in inspector.get_columns(schedule.__tablename__)}
         if {"outcome_scope_key", "pending_outcome_event_id"} <= columns:
             targets = select(schedule.id, literal(event_id), literal(now)).where(
                 schedule.outcome_scope_key == scope_key, schedule.state == "active", schedule.expires_at > now,
+                schedule.request[subscription].as_boolean().is_(True),
             )
             store_triggers(db, PrimeScheduleTrigger, "schedule_id", targets)
+
+
+def publish_verified_outcome(db: Session, scope: dict, event_id: str) -> None:
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    scope_key = outcome_scope_key(scope)
+    enqueue_prime(db, scope_key, event_id, now, subscription="on_verified_outcome")
     enqueue_research(db, scope_key, event_id, now)
 
 

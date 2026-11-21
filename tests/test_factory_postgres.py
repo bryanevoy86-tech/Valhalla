@@ -36,8 +36,9 @@ from app.core.db import get_db  # noqa: E402
 from app.models.completion_registry import (  # noqa: E402
     LegacyInstanceRegistryItem, LegacyInstanceWorkItem, LegacyOrchestrationEvent,
 )
+from app.models.prime_specialist_schedule import PrimeScheduleTrigger, PrimeSpecialistSchedule  # noqa: E402
 from app.models.specialist_assignment import SpecialistAssignment, SpecialistTrigger  # noqa: E402
-from app.services.specialist_triggers import enqueue_research, outcome_scope_key  # noqa: E402
+from app.services.specialist_triggers import enqueue_prime, enqueue_research, outcome_scope_key  # noqa: E402
 from app.models.media_engine import MediaContent  # noqa: E402
 from app.routers.prime_business_factory import router  # noqa: E402
 from app.services.prime_business_execution import run_one_approved_draft  # noqa: E402
@@ -52,6 +53,8 @@ TABLES = [
     MediaContent,
     SpecialistAssignment,
     SpecialistTrigger,
+    PrimeSpecialistSchedule,
+    PrimeScheduleTrigger,
 ]
 
 
@@ -92,6 +95,41 @@ class FactoryPostgresTests(unittest.TestCase):
                 SpecialistTrigger.assignment_id == assignment_id,
             ))
             self.assertEqual(set(remaining), events)
+
+    def test_prime_economic_wakeups_are_scoped_idempotent_and_transaction_bound(self):
+        from concurrent.futures import ThreadPoolExecutor
+
+        scope_key = outcome_scope_key({"legacy_instance_id": "target"})
+        mirror_key = outcome_scope_key({"legacy_instance_id": "other"})
+        target, other, mirror = uuid4(), uuid4(), uuid4()
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        with self.sessions.begin() as db:
+            for schedule_id, key, subscription in (
+                (target, scope_key, "on_economic_reassessment"),
+                (other, scope_key, "on_verified_outcome"),
+                (mirror, mirror_key, "on_economic_reassessment"),
+            ):
+                db.add(PrimeSpecialistSchedule(
+                    id=schedule_id, request={subscription: True}, cadence_seconds=300,
+                    next_due_at=now, expires_at=now + timedelta(hours=1),
+                    state="active", outcome_scope_key=key,
+                ))
+
+        barrier = threading.Barrier(3)
+
+        def send(event):
+            with self.sessions.begin() as db:
+                barrier.wait(timeout=5)
+                enqueue_prime(db, scope_key, event, now, subscription="on_economic_reassessment")
+
+        with ThreadPoolExecutor(max_workers=3) as executor:
+            list(executor.map(send, ("ECON-one", "ECON-one", "ECON-two"), timeout=10))
+        with self.sessions() as interrupted:
+            enqueue_prime(interrupted, scope_key, "ECON-rollback", now, subscription="on_economic_reassessment")
+            interrupted.rollback()
+        with self.sessions() as db:
+            actual = db.execute(select(PrimeScheduleTrigger.schedule_id, PrimeScheduleTrigger.event_id)).all()
+            self.assertEqual(set(actual), {(target, "ECON-one"), (target, "ECON-two")})
 
     def setUp(self):
         self._prior = os.environ.get("VALHALLA_FACTORY_KEY")

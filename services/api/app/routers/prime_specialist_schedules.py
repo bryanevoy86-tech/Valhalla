@@ -56,6 +56,7 @@ class ScheduleIn(BaseModel):
     cadence_seconds: int = Field(ge=300, le=86400, strict=True)
     duration_seconds: int = Field(ge=300, le=2592000, strict=True)
     on_verified_outcome: bool = False
+    on_economic_reassessment: bool = False
 
 
 def _utc_now() -> datetime:
@@ -97,18 +98,23 @@ def shadow_report_digest(event_id: str, report: dict) -> str:
 
 def _describe(db: Session, row: PrimeSpecialistSchedule) -> dict:
     report = _report(db, row.id, row.last_report_event_id) if row.last_report_event_id else None
-    counts = dict(db.execute(select(PrimeScheduleTrigger.failure_code, func.count()).where(
+    economic = PrimeScheduleTrigger.event_id.startswith("ECON-")
+    queued = db.execute(select(economic, PrimeScheduleTrigger.failure_code, func.count()).where(
         PrimeScheduleTrigger.schedule_id == row.id,
-    ).group_by(PrimeScheduleTrigger.failure_code)).all())
+    ).group_by(economic, PrimeScheduleTrigger.failure_code)).all()
+    counts = {(is_economic, code): count for is_economic, code, count in queued}
     return {
         "schedule_id": row.id,
-        "queued_outcome_count": counts.pop(None, 0) + int(row.pending_outcome_event_id is not None),
-        "failed_outcome_counts": counts,
+        "queued_outcome_count": counts.pop((False, None), 0) + int(row.pending_outcome_event_id is not None),
+        "queued_economic_count": counts.pop((True, None), 0),
+        "failed_outcome_counts": {code: count for (is_economic, code), count in counts.items() if not is_economic},
+        "failed_economic_counts": {code: count for (is_economic, code), count in counts.items() if is_economic},
         "state": "expired" if row.state == "active" and row.expires_at <= _utc_now() else row.state,
         "next_due_at": row.next_due_at.replace(tzinfo=timezone.utc),
         "expires_at": row.expires_at.replace(tzinfo=timezone.utc),
         "latest_report": report,
-        "on_verified_outcome": row.outcome_scope_key is not None,
+        "on_verified_outcome": row.request.get("on_verified_outcome", False),
+        "on_economic_reassessment": row.request.get("on_economic_reassessment", False),
     }
 
 
@@ -133,7 +139,7 @@ def create_schedule(payload: ScheduleIn, db: Session = Depends(get_db)):
     row = PrimeSpecialistSchedule(
         id=payload.schedule_id, request=request, cadence_seconds=payload.cadence_seconds,
         next_due_at=now, expires_at=now + timedelta(seconds=payload.duration_seconds), state="active",
-        outcome_scope_key=outcome_scope_key(_scope(normalized)) if payload.on_verified_outcome else None,
+        outcome_scope_key=outcome_scope_key(_scope(normalized)) if (payload.on_verified_outcome or payload.on_economic_reassessment) else None,
     )
     db.add(row)
     try:
@@ -141,7 +147,7 @@ def create_schedule(payload: ScheduleIn, db: Session = Depends(get_db)):
     except IntegrityError:
         db.rollback()
         row = _lookup(db, payload.schedule_id)
-        if {"on_verified_outcome": False, **row.request} != request:
+        if {"on_verified_outcome": False, "on_economic_reassessment": False, **row.request} != request:
             raise HTTPException(status_code=409, detail="Schedule ID already has a different mandate")
     return _describe(db, row)
 
@@ -243,14 +249,17 @@ def run_due_schedule(db: Session, *, now: datetime | None = None) -> dict:
     queued = db.scalar(select(PrimeScheduleTrigger).where(
         PrimeScheduleTrigger.schedule_id == row.id, PrimeScheduleTrigger.failure_code.is_(None),
     ).order_by(PrimeScheduleTrigger.queued_at, PrimeScheduleTrigger.event_id).limit(1)) if legacy_outcome is None else None
-    outcome_id = legacy_outcome or (queued.event_id if queued is not None else None)
+    event_id = legacy_outcome or (queued.event_id if queued is not None else None)
+    economic_id = event_id if queued is not None and event_id.startswith("ECON-") else None
+    outcome_id = None if economic_id else event_id
+    trigger_field = "trigger_economic_event_id" if economic_id else "trigger_outcome_event_id"
     elapsed_slots = (now - row.next_due_at) // timedelta(seconds=row.cadence_seconds) if timed else 0
     slot = row.next_due_at.replace(tzinfo=timezone.utc).isoformat() if timed else None
-    occurrence = outcome_id or slot
+    occurrence = event_id or slot
     report_id = "SPECIALIST-" + hashlib.sha256(f"{row.id}/{occurrence}".encode()).hexdigest()
     payload = ScheduleIn.model_validate(row.request)
     scope = _scope(payload)
-    if outcome_id:
+    if event_id:
         existing = db.scalar(select(LegacyOrchestrationEvent).where(
             LegacyOrchestrationEvent.event_id == report_id,
         ))
@@ -262,7 +271,7 @@ def run_due_schedule(db: Session, *, now: datetime | None = None) -> dict:
             if (existing.event_type != REPORT_EVENT or existing.legacy_instance_id != scope["legacy_instance_id"]
                     or not isinstance(previous, dict) or previous.get("scope") != scope
                     or previous.get("schedule_id") != str(row.id)
-                    or previous.get("trigger_outcome_event_id") != outcome_id
+                    or previous.get(trigger_field) != event_id
                     or previous.get("report_sha256") != shadow_report_digest(report_id, previous)):
                 if queued is None:
                     raise HTTPException(409, "Prior specialist outcome report failed integrity checks")
@@ -283,8 +292,16 @@ def run_due_schedule(db: Session, *, now: datetime | None = None) -> dict:
         "trigger": "VERIFIED_OUTCOME" if outcome_id else "CADENCE",
         "trigger_outcome_event_id": outcome_id,
     }
+    if economic_id:
+        report.update(trigger="ECONOMIC_REASSESSMENT", trigger_economic_event_id=economic_id)
     try:
         _check_legacy(db, **scope)
+        if economic_id:
+            from app.services.economic_control import ready as economic_ready, verify_trigger
+
+            if (not payload.on_economic_reassessment or not economic_ready(db)
+                    or not verify_trigger(db, scope, economic_id)):
+                raise HTTPException(409, "Economic trigger evidence failed revalidation")
         outcomes = verified_internal_outcomes(db, **scope)
         if outcome_id and not any(item["outcome_event_id"] == outcome_id for item in outcomes):
             raise HTTPException(status_code=409, detail="Trigger outcome evidence failed revalidation")

@@ -13,7 +13,7 @@ from app.models.economic_control import EconomicOperation, EconomicPool, Economi
 from app.models.foundry_evidence import FoundryEvidence
 from app.schemas.economic_control import Containment, Liquidity, Mandate, Obligation, Opportunity, Performance, Plan
 from app.services.foundry_discovery import checked_evidence, demand_evidence, economic_blockers, economics
-from app.services.specialist_triggers import enqueue_research, outcome_scope_key
+from app.services.specialist_triggers import enqueue_prime, enqueue_research, outcome_scope_key
 from app.services.universal_opportunity_evaluator import rank_economic_options
 
 
@@ -65,7 +65,10 @@ def store_record(db, operation, kind, payload, *, receipt_ref=None):
 
 
 def trigger_reassessment(db, scope, record_id, at):
-    enqueue_research(db, outcome_scope_key(scope), f"ECON-{record_id}", at, roles=REVIEW_ROLES)
+    scope_key = outcome_scope_key(scope)
+    event_id = f"ECON-{record_id}"
+    enqueue_research(db, scope_key, event_id, at, roles=REVIEW_ROLES)
+    enqueue_prime(db, scope_key, event_id, at, subscription="on_economic_reassessment")
 
 
 def verify_trigger(db, scope, event):
