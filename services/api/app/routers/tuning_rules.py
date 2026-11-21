@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
+from app.core.dependencies import require_prime_control_key
 from app.schemas.tuning_rules import (
     TuningRuleCreate,
     TuningRuleUpdate,
@@ -20,6 +21,7 @@ from app.services import tuning_rules as service
 router = APIRouter(
     prefix="/api/v1/tuning/rules",
     tags=["Strategic Engine", "Tuning"],
+    dependencies=[Depends(require_prime_control_key)],
 )
 
 
