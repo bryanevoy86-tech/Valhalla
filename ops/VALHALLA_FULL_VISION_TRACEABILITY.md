@@ -180,3 +180,7 @@ Valhalla retains all 50 acceptance criteria, 53 development tasks and seven cons
 ### Scoped queues and owner retention continuation
 
 Both the independent Pantheon role worker and Prime shadow scheduling now persist distinct pending evidence references. The attachment worker reuses owner dispositions and has a restore hold for backup reconciliation. The seven construction packages and their underlying acceptance contracts are preserved. Approval for external providers, commercial actions and production scheduling remains separate. The startup and restoration steps are in the current December handoff.
+
+### Owner startup and continuing reassessment
+
+The private owner startup calculator reuses the existing WeWeb owner identity. Registration and professional decisions remain owner-gated. The integrated Product Foundry rehearsal links signed discovery, role-specific evidence, independent review, forecast verification, scoped internal execution, fixture reconciliation, retained losses and a subsequent recommendation. The existing contracts and December activation gates remain authoritative.

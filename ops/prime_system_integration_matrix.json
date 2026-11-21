@@ -11,7 +11,7 @@
         "services/api/app/main.py",
         "services/api/start.py"
       ],
-      "source_observation": "Canonical FastAPI import registered 36 critical routers and all 91 required routes in the isolated runtime.",
+      "source_observation": "Canonical FastAPI import registered 36 critical routers and all 92 required routes in the isolated runtime.",
       "evidence_level": "FOCUSED_CI_TESTED",
       "production_verified": false,
       "acceptance_test": "Prove every mandatory router imports in a clean canonical app; no missing OpenAPI paths or silent startup success",
@@ -22,7 +22,7 @@
       "owner_external_authorization_required": false,
       "continuation": {
         "next_implementation": "Exercise the registered routes in an authorized staging environment with migrated PostgreSQL.",
-        "existing_test_evidence": "Canonical route probe verified all 91 required methods and paths.",
+        "existing_test_evidence": "Canonical route probe verified all 92 required methods and paths.",
         "owner_action": "Internal continuation is authorized under the standing development scope.",
         "required_acceptance_evidence_field": "acceptance_test"
       }
@@ -83,7 +83,8 @@
         "scripts/ingest/ingest_sources.py",
         "services/api/app/research/service.py",
         "services/api/app/services/foundry_intake.py",
-        "services/api/tests/test_economic_control.py"
+        "services/api/tests/test_economic_control.py",
+        "services/api/tests/test_product_artifact_workflow.py"
       ],
       "source_observation": "Durable local demand and procurement exports now accept owner-enrolled Ed25519 source signatures and enforce timestamp, replay, source rights and freshness checks. No outbound licensed feed has been activated.",
       "evidence_level": "SQLITE_INTEGRATION_TESTED",
@@ -96,7 +97,7 @@
       "owner_external_authorization_required": false,
       "continuation": {
         "next_implementation": "Connect one approved outbound-free staging export connector and prove licensed, fresh demand evidence.",
-        "existing_test_evidence": "test_economic_control.py exercises a valid signed source, timestamp rejection, tampering, deduplication and the scoped Odin to Prime rehearsal.",
+        "existing_test_evidence": "test_economic_control.py exercises a valid signed source, timestamp rejection, tampering, deduplication and the scoped Odin to Prime rehearsal. Product Foundry continuous fixture links signed discovery, independent challenge, scoped execution, outcome, retained losses and a subsequent HOLD with contradiction evidence.",
         "owner_action": "Internal continuation is authorized under the standing development scope.",
         "required_acceptance_evidence_field": "acceptance_test"
       }
@@ -108,7 +109,8 @@
         "services/api/app/services/universal_opportunity_evaluator.py",
         "services/api/app/routers/completion_registry.py",
         "services/api/tests/test_completion_registry.py",
-        "services/api/tests/test_prime_control_and_decision_integrity.py"
+        "services/api/tests/test_prime_control_and_decision_integrity.py",
+        "services/api/tests/test_product_artifact_workflow.py"
       ],
       "source_observation": "Existing completion-registry suite now required in CI and passed; generic proposal rejects inconsistent margin/capital, snapshots final recommendation after risk gates, and reports Tyr/Forseti independent checks NOT_VERIFIED. Supplied candidates only; no autonomous discovery or external execution proved.",
       "evidence_level": "FOCUSED_CI_TESTED",
@@ -120,7 +122,7 @@
       "owner_external_authorization_required": false,
       "continuation": {
         "next_implementation": "Expand source-weighted comparative evidence and stage legally scoped evaluator dependencies.",
-        "existing_test_evidence": "See FOCUSED_CI_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
+        "existing_test_evidence": "See FOCUSED_CI_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md. Product Foundry continuous fixture links signed discovery, independent challenge, scoped execution, outcome, retained losses and a subsequent HOLD with contradiction evidence.",
         "owner_action": "Internal continuation is authorized under the standing development scope.",
         "required_acceptance_evidence_field": "acceptance_test"
       }
@@ -156,7 +158,8 @@
         "services/api/app/routers/completion_registry.py",
         "services/api/tests/test_prime_control_and_decision_integrity.py",
         "services/api/app/services/owner_memory.py",
-        "services/api/app/services/owner_specialist_context.py"
+        "services/api/app/services/owner_specialist_context.py",
+        "services/api/tests/test_product_artifact_workflow.py"
       ],
       "source_observation": "Existing exact scoped evidence remains intact. Owner decisions can carry purpose, rationale and scoped dependencies, and recent differing statements under the same topic trigger a review flag. Provider-backed learning and semantic contradiction analysis remain open.",
       "evidence_level": "SQLITE_INTEGRATION_TESTED",
@@ -169,7 +172,7 @@
       "owner_external_authorization_required": false,
       "continuation": {
         "next_implementation": "Connect reviewed outcomes across scopes and compare evidence against new claims and proposed actions.",
-        "existing_test_evidence": "test_owner_conversation.py exercises rationale, visible dependencies, owner scope and repeated-topic conflict recall.",
+        "existing_test_evidence": "test_owner_conversation.py exercises rationale, visible dependencies, owner scope and repeated-topic conflict recall. Product Foundry continuous fixture links signed discovery, independent challenge, scoped execution, outcome, retained losses and a subsequent HOLD with contradiction evidence.",
         "owner_action": "Internal continuation is authorized under the standing development scope.",
         "required_acceptance_evidence_field": "acceptance_test"
       }
@@ -408,7 +411,8 @@
       "source_paths": [
         "services/api/app/routers/foundry_checkout.py",
         "services/api/app/routers/prime_business_factory.py",
-        "services/api/app/models/media_engine.py"
+        "services/api/app/models/media_engine.py",
+        "services/api/tests/test_product_artifact_workflow.py"
       ],
       "source_observation": "Existing checkout rehearsals now bind exact listing evidence at capture, gate capture on emergency and containment, and allow refunds during an emergency stop. Settlement is a fixture comparison and actual profit remains unknown.",
       "evidence_level": "SQLITE_INTEGRATION_TESTED",
@@ -421,7 +425,7 @@
       "owner_external_authorization_required": true,
       "continuation": {
         "next_implementation": "Run the first authorized storefront lifecycle with support, costs and independently matched settlement receipts.",
-        "existing_test_evidence": "test_product_artifact_workflow.py exercises capture blocking and continued fixture refund during emergency stop.",
+        "existing_test_evidence": "test_product_artifact_workflow.py exercises capture blocking and continued fixture refund during emergency stop. Product Foundry continuous fixture links signed discovery, independent challenge, scoped execution, outcome, retained losses and a subsequent HOLD with contradiction evidence.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
         "required_acceptance_evidence_field": "acceptance_test"
       }
@@ -479,7 +483,9 @@
       "priority": "P1",
       "source_paths": [
         "services/api/app/routers/contracts.py",
-        "services/api/app/models/contracts.py"
+        "services/api/app/models/contracts.py",
+        "services/api/app/services/owner_startup.py",
+        "services/api/tests/test_saas_tenant_entitlements.py"
       ],
       "source_observation": "Contract template and document routes exist; actual external signature/legal approvals unproven",
       "evidence_level": "SOURCE_INSPECTED_ONLY",
@@ -492,7 +498,7 @@
       "owner_external_authorization_required": true,
       "continuation": {
         "next_implementation": "Prepare provider contracts and professional review intake before execution.",
-        "existing_test_evidence": "See SOURCE_INSPECTED_ONLY and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
+        "existing_test_evidence": "See SOURCE_INSPECTED_ONLY and source observations above, with exact releases in ops/CHANGE_LEDGER.md. Private owner startup comparison separates dated public fees, quote and estimate classes, unknowns, activation, reserves and runway.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
         "required_acceptance_evidence_field": "acceptance_test"
       }
@@ -580,7 +586,8 @@
         "services/api/app/routers/auth_weweb.py",
         "docs/CURRENT_SYSTEM_TRUTH.md",
         "services/api/tests/test_saas_tenant_entitlements.py",
-        "services/api/app/routers/owner_weweb.py"
+        "services/api/app/routers/owner_weweb.py",
+        "services/api/app/services/owner_startup.py"
       ],
       "source_observation": "The private owner routes support JARVIS and attachment access gating. Driving mode includes specialist backlog integrity failures as an attention count.",
       "evidence_level": "SQLITE_INTEGRATION_TESTED",
@@ -593,7 +600,7 @@
       "owner_external_authorization_required": true,
       "continuation": {
         "next_implementation": "Wire the exact owner-preview routes in the December handoff. Verify status handling and device-local speech with a separately authorized preview project and test device.",
-        "existing_test_evidence": "Owner API and tenant regressions verify JWT isolation, disposition metadata, restore-hold blocking, no-store and revoked sessions.",
+        "existing_test_evidence": "Owner API and tenant regressions verify JWT isolation, disposition metadata, restore-hold blocking, no-store and revoked sessions. Private owner startup comparison separates dated public fees, quote and estimate classes, unknowns, activation, reserves and runway.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
         "required_acceptance_evidence_field": "acceptance_test"
       }
@@ -638,7 +645,9 @@
         "services/api/app/routers/owner_weweb.py",
         "alembic/versions/20261123_owner_disposition.py",
         "services/api/app/services/owner_attachment_retention.py",
-        "services/api/tools/cron/owner_attachment_retention_worker.py"
+        "services/api/tools/cron/owner_attachment_retention_worker.py",
+        "services/api/app/services/owner_startup.py",
+        "services/api/tests/test_saas_tenant_entitlements.py"
       ],
       "source_observation": "An opt-in PostgreSQL worker expires owner-reviewed attachment bytes and stored extracts. Restore hold blocks attachment disclosure while a backup is reconciled.",
       "evidence_level": "SQLITE_INTEGRATION_TESTED",
@@ -651,7 +660,7 @@
       "owner_external_authorization_required": true,
       "continuation": {
         "next_implementation": "Prove staging quarantine and post-snapshot deletion reconciliation with independently retained disposition receipts before clearing the restore hold.",
-        "existing_test_evidence": "Owner API verifies latest inclusive UTC deadline, restore hold, emergency stop, expiry, idempotent reruns and redacted extracts. Disposable PostgreSQL logical backup rehearsal checked pre- and post-expiry restores.",
+        "existing_test_evidence": "Owner API verifies latest inclusive UTC deadline, restore hold, emergency stop, expiry, idempotent reruns and redacted extracts. Disposable PostgreSQL logical backup rehearsal checked pre- and post-expiry restores. Private owner startup comparison separates dated public fees, quote and estimate classes, unknowns, activation, reserves and runway. Restore tests reconcile an older attachment state under the hold before allowing access checks to resume.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
         "required_acceptance_evidence_field": "acceptance_test"
       }
@@ -725,7 +734,8 @@
         "docs/PANTHEON_CALIBRATION_PROTOCOL.md",
         "docs/UNIVERSAL_OPPORTUNITY_PIPELINE.md",
         "services/api/app/routers/norns_forecasts.py",
-        "services/api/tests/test_norns_forecasts.py"
+        "services/api/tests/test_norns_forecasts.py",
+        "services/api/tests/test_product_artifact_workflow.py"
       ],
       "source_observation": "Prospective holdout enrolment persists before resolution or deadline. Holdouts stay outside baseline training and ordinary calibration. Evaluation separates holdouts and ordinary observations by estimate source.",
       "evidence_level": "SQLITE_INTEGRATION_TESTED",
@@ -738,7 +748,7 @@
       "owner_external_authorization_required": false,
       "continuation": {
         "next_implementation": "Collect genuine eligible outcome samples and publish measured calibration by cohort.",
-        "existing_test_evidence": "See SQLITE_INTEGRATION_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
+        "existing_test_evidence": "See SQLITE_INTEGRATION_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md. Product Foundry continuous fixture links signed discovery, independent challenge, scoped execution, outcome, retained losses and a subsequent HOLD with contradiction evidence.",
         "owner_action": "Internal continuation is authorized under the standing development scope.",
         "required_acceptance_evidence_field": "acceptance_test"
       }
@@ -839,7 +849,7 @@
       "owner_external_authorization_required": true,
       "continuation": {
         "next_implementation": "Complete the authorized storefront, entitlements, refunds and repeatable fulfillment path.",
-        "existing_test_evidence": "See SQLITE_INTEGRATION_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
+        "existing_test_evidence": "See SQLITE_INTEGRATION_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md. Product Foundry continuous fixture links signed discovery, independent challenge, scoped execution, outcome, retained losses and a subsequent HOLD with contradiction evidence.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
         "required_acceptance_evidence_field": "acceptance_test"
       }
@@ -903,7 +913,9 @@
         "services/api/app/routers/banking_structure_planner.py",
         "services/api/app/services/wealth_scenario.py",
         "services/api/app/services/treasury_reconciliation.py",
-        "services/api/app/routers/foundry_checkout.py"
+        "services/api/app/routers/foundry_checkout.py",
+        "services/api/app/services/owner_startup.py",
+        "services/api/tests/test_saas_tenant_entitlements.py"
       ],
       "source_observation": "Statement fixtures reconcile segregated balances and unique transaction references. A signed checkout delta can be matched once to an exact business statement fixture. Historical quarantined FX records and actual bank verification remain separate.",
       "evidence_level": "SQLITE_INTEGRATION_TESTED",
@@ -916,7 +928,7 @@
       "owner_external_authorization_required": true,
       "continuation": {
         "next_implementation": "Match independently supplied statements and liabilities with payment and accounting sandbox evidence.",
-        "existing_test_evidence": "test_economic_control.py covers segregated fixture statements and historical vault flags. Product artifact rehearsal adds fixture settlement.",
+        "existing_test_evidence": "test_economic_control.py covers segregated fixture statements and historical vault flags. Product artifact rehearsal adds fixture settlement. Private owner startup comparison separates dated public fees, quote and estimate classes, unknowns, activation, reserves and runway.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
         "required_acceptance_evidence_field": "acceptance_test"
       }
@@ -975,7 +987,9 @@
       "source_paths": [
         "legal/TRUST_RESIDENCY_OVERVIEW.md",
         "docs/VALHALLA_DOCTRINE_CONFLICT_MAP.md",
-        "services/api/app/models/bahamas_plan.py"
+        "services/api/app/models/bahamas_plan.py",
+        "services/api/app/services/owner_startup.py",
+        "services/api/tests/test_saas_tenant_entitlements.py"
       ],
       "source_observation": "International residency and departure concepts are advisory documents; legal/tax outcomes and exact timing unverified.",
       "evidence_level": "SOURCE_INSPECTED_ONLY",
@@ -988,7 +1002,7 @@
       "owner_external_authorization_required": true,
       "continuation": {
         "next_implementation": "Prepare evidence and professional questions on departure timing and obligations.",
-        "existing_test_evidence": "See SOURCE_INSPECTED_ONLY and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
+        "existing_test_evidence": "See SOURCE_INSPECTED_ONLY and source observations above, with exact releases in ops/CHANGE_LEDGER.md. Private owner startup comparison separates dated public fees, quote and estimate classes, unknowns, activation, reserves and runway.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
         "required_acceptance_evidence_field": "acceptance_test"
       }
@@ -1022,7 +1036,9 @@
       "source_paths": [
         "services/api/app/models/tax_interpretations.py",
         "legal/TRUST_RESIDENCY_OVERVIEW.md",
-        "services/api/app/routers/governance_tyr.py"
+        "services/api/app/routers/governance_tyr.py",
+        "services/api/app/services/owner_startup.py",
+        "services/api/tests/test_saas_tenant_entitlements.py"
       ],
       "source_observation": "Jurisdictional tax opinion schema and legal gate exist; legal and regulatory execution not verified.",
       "evidence_level": "SOURCE_INSPECTED_ONLY",
@@ -1035,7 +1051,7 @@
       "owner_external_authorization_required": true,
       "continuation": {
         "next_implementation": "Route a complete scoped fact packet for qualified review before reliance.",
-        "existing_test_evidence": "See SOURCE_INSPECTED_ONLY and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
+        "existing_test_evidence": "See SOURCE_INSPECTED_ONLY and source observations above, with exact releases in ops/CHANGE_LEDGER.md. Private owner startup comparison separates dated public fees, quote and estimate classes, unknowns, activation, reserves and runway.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
         "required_acceptance_evidence_field": "acceptance_test"
       }
@@ -1173,7 +1189,8 @@
         "services/api/tests/test_loki_independent_receipt.py",
         "services/api/app/services/universal_opportunity_evaluator.py",
         "services/api/tests/test_loki_audit_fail_closed.py",
-        "services/api/tests/test_prime_control_and_decision_integrity.py"
+        "services/api/tests/test_prime_control_and_decision_integrity.py",
+        "services/api/tests/test_product_artifact_workflow.py"
       ],
       "source_observation": "Independent Loki receipts and reconsideration remain required for reviewed specialist material. Staging advice excludes the active Prime model across providers. A separate real model and transport proof remain pending.",
       "evidence_level": "SQLITE_INTEGRATION_TESTED",
@@ -1188,7 +1205,7 @@
       "owner_external_authorization_required": true,
       "continuation": {
         "next_implementation": "Validate separate model credentials and review exact owner-authorized staged challenges.",
-        "existing_test_evidence": "See SQLITE_INTEGRATION_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
+        "existing_test_evidence": "See SQLITE_INTEGRATION_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md. Product Foundry continuous fixture links signed discovery, independent challenge, scoped execution, outcome, retained losses and a subsequent HOLD with contradiction evidence.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
         "required_acceptance_evidence_field": "acceptance_test"
       }
@@ -1261,7 +1278,8 @@
         "services/api/app/services/universal_opportunity_evaluator.py",
         "services/api/app/loki/analyst.py",
         "services/api/tests/test_economic_control.py",
-        "tests/test_factory_postgres.py"
+        "tests/test_factory_postgres.py",
+        "services/api/tests/test_product_artifact_workflow.py"
       ],
       "source_observation": "Adds reviewed restart with fresh evidence, scoped obligations, one-use reservation release, per-currency portfolio exposure, and asset recovery linked to fixture statements. PostgreSQL verifies a racing release settles once. Factory and rehearsal fulfillment re-check known related mirror containment.",
       "evidence_level": "POSTGRES_INTEGRATION_TESTED",
@@ -1279,7 +1297,7 @@
       "owner_external_authorization_required": true,
       "continuation": {
         "next_implementation": "Extend containment to every authorized execution lane and reconcile independently supplied reserves and liabilities.",
-        "existing_test_evidence": "See POSTGRES_INTEGRATION_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
+        "existing_test_evidence": "See POSTGRES_INTEGRATION_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md. Product Foundry continuous fixture links signed discovery, independent challenge, scoped execution, outcome, retained losses and a subsequent HOLD with contradiction evidence.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
         "required_acceptance_evidence_field": "acceptance_test"
       }

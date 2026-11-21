@@ -792,3 +792,12 @@ GitHub Actions run [44939488595](https://github.com/bryanevoy86-tech/Valhalla/ac
 | `025f69aa280b531a4a2a4d6ad4d6638b991577dc` | 328 backend tests and 19 required disposable PostgreSQL checks passed locally. The extra scoped PostgreSQL rehearsal ran two concurrent expiry workers and restored a pre-expiry and post-expiry logical dump. The earlier restore's configured hold hid old material and the later restore preserved deleted content tombstones. |
 
 Distinct wake-ups now survive simultaneous source activity and interrupted claims. A replay never consumes an unrelated cadence slot. Parked and driving briefings expose failure signals. New owner retention work stays in the same private attachment lane. The December handoff records the staging opt-in flags, restore hold, authoritative-receipt reconciliation and precise WeWeb wiring. External verification requires the owner-selected environments and permissions. The PR workflow records required CI for the continuation head.
+
+## November 21 — Private startup comparison and continuous operating rehearsal
+
+| Development commit | Local acceptance evidence |
+|---|---|
+| `76c5985f400516423779e040529c162b4a255872` | Owner bearer, subscriber denial, session revocation, no-store response, three route comparisons, no private input persistence, incremental CAD costs and stale/missing fee controls. |
+| `9ad23c7a091f52955e11b542e388e0e399cbac97` | Signed discovery through reviewed execution, Norns resolution, Mimir outcome, and changed Prime recommendation. The positive fixture period was followed by a fully refunded period and a 175-cent cumulative loss. Loss history survived mandate revision. Contradictory settlement evidence and the containment gate prevented progression. Older-snapshot disclosure checks stayed closed until digest-bound reconciliation. |
+
+The complete local backend suite passed 329 tests. The disposable PostgreSQL suite passed 19 checks. The canonical app imported 36 critical routers and answered the manifest for 92 required paths. Existing 50 acceptance criteria, 53 indexed tasks and seven packages were preserved. Fixture figures represent disposable test inputs. The public fee evidence date and official source links are recorded in the startup response and December handoff. All provider, filing, preview and staged commercial activity remains subject to approval. GitHub Actions verifies the final draft branch tree.
