@@ -801,3 +801,12 @@ Distinct wake-ups now survive simultaneous source activity and interrupted claim
 | `9ad23c7a091f52955e11b542e388e0e399cbac97` | Signed discovery through reviewed execution, Norns resolution, Mimir outcome, and changed Prime recommendation. The positive fixture period was followed by a fully refunded period and a 175-cent cumulative loss. Loss history survived mandate revision. Contradictory settlement evidence and the containment gate prevented progression. Older-snapshot disclosure checks stayed closed until digest-bound reconciliation. |
 
 The complete local backend suite passed 329 tests. The disposable PostgreSQL suite passed 19 checks. The canonical app imported 36 critical routers and answered the manifest for 92 required paths. Existing 50 acceptance criteria, 53 indexed tasks and seven packages were preserved. Fixture figures represent disposable test inputs. The public fee evidence date and official source links are recorded in the startup response and December handoff. All provider, filing, preview and staged commercial activity remains subject to approval. GitHub Actions verifies the final draft branch tree.
+
+## November 21 — Acquisition reassessment, Builder handoff and restore guard
+
+| Development commit | Internal acceptance evidence |
+|---|---|
+| `15a02c39c260bd931a509b353d40d1ea48cf1aec` | NJORD findings feed Prime and capital comparisons. An acquisition with a 5,000-cent stressed monthly shortfall was rejected even after challenge. A viable fixture reserved 450,000 simulated cents under independent review. Mimir retained the receipt. Source revocation removed eligibility and held the next advisory report. |
+| `8d19313c0f61858845e4208c7ce7303e1a95ed8f` | Builder verifies the requested base, candidate and runner receipt, then returns a private checksummed packet. The restore gate stays closed until a trusted external digest, manifest and reconciled tombstones agree. A disposable older PostgreSQL restore returned 503 before replay, 410 after replay, and 503 after manifest tampering. |
+
+All changes remain on the draft branch. Local verification passed 330 backend tests and 19 disposable PostgreSQL checks. The canonical app imported 36 critical routers and verified 93 required routes. No acquisition, provider, live delivery or deployed restore occurred. The December handoff records external staging requirements and setup steps.
