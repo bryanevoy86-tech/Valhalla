@@ -13,7 +13,7 @@ from app.models.norns_forecast import NornsForecast, NornsHoldout
 from app.models.specialist_assignment import SpecialistAssignment, SpecialistTrigger
 from app.pantheon.roles import LENSES
 from app.pantheon.forecasts import calibration_measurements, issue_scoped_estimate
-from app.services.foundry_discovery import DISCOVERY_ROLES, discover
+from app.services.foundry_discovery import DISCOVERY_ROLES, WITHDRAWAL_PREFIX, discover, verify_withdrawal
 from app.services.foundry_intake import verify_intake_trigger
 from app.services.market_intelligence import market_observations
 from app.services.economic_control import ready as economic_ready, specialist_economics, verify_trigger
@@ -118,7 +118,9 @@ def run_assignment(db: Session, role: str, *, now=None) -> dict:
     due = assignment.next_due_at <= now
     economic_event = bool(event and event.startswith("ECON-"))
     discovery_event = bool(event and event.startswith("DISCOVERY-"))
-    trigger_type = ("ECONOMIC_REASSESSMENT" if economic_event else "SOURCE_DISCOVERY" if discovery_event
+    withdrawal_event = bool(event and event.startswith(WITHDRAWAL_PREFIX))
+    trigger_type = ("FOUNDRY_SOURCE_WITHDRAWN" if withdrawal_event else
+                    "ECONOMIC_REASSESSMENT" if economic_event else "SOURCE_DISCOVERY" if discovery_event
                     else "VERIFIED_OUTCOME" if event else "CADENCE")
     material = f"{assignment.id}/{event or assignment.next_due_at.isoformat()}"
     event_id = "GOD-" + hashlib.sha256(material.encode()).hexdigest()
@@ -169,7 +171,11 @@ def run_assignment(db: Session, role: str, *, now=None) -> dict:
             raise HTTPException(409, "Economic evidence trigger could not be revalidated")
         if discovery_event and not verify_intake_trigger(db, event, assignment.scope, now.date()):
             raise HTTPException(409, "Discovery evidence trigger could not be revalidated")
-        if event and not (economic_event or discovery_event) and not any(item["outcome_event_id"] == event for item in outcomes):
+        if withdrawal_event and not verify_withdrawal(db, assignment.scope, event):
+            raise HTTPException(409, "Foundry source withdrawal could not be revalidated")
+        if event and not (withdrawal_event or economic_event or discovery_event) and not any(
+            item["outcome_event_id"] == event for item in outcomes
+        ):
             raise HTTPException(409, "Trigger receipt could not be revalidated")
         facts = observations(db, LENSES[role], assignment.scope, outcomes, now, assignment.cadence_seconds)
         if role in DISCOVERY_ROLES:

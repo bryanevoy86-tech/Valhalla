@@ -135,6 +135,30 @@ def economic_blockers(kind: str, measures: dict) -> list[str]:
     return blockers
 
 
+WITHDRAWAL_PREFIX = "WITHDRAWN-"
+
+
+def withdrawal_trigger(row: FoundryEvidence) -> str:
+    return f"{WITHDRAWAL_PREFIX}{row.id}-{row.digest[:24]}"
+
+
+def verify_withdrawal(db: Session, scope: dict, event: str) -> bool:
+    if not event.startswith(WITHDRAWAL_PREFIX) or not inspect(db.connection()).has_table(FoundryEvidence.__tablename__):
+        return False
+    try:
+        evidence_id = UUID(event.removeprefix(WITHDRAWAL_PREFIX).rsplit("-", 1)[0])
+    except ValueError:
+        return False
+    row = db.get(FoundryEvidence, evidence_id)
+    return bool(
+        row is not None and row.revoked and row.scope_key == outcome_scope_key(scope)
+        and isinstance(row.payload, dict)
+        and all(row.payload.get(key) == scope.get(key) for key in SCOPE_FIELDS)
+        and row.digest == artifact_digest("foundry_evidence", str(row.id), row.payload)
+        and event == withdrawal_trigger(row)
+    )
+
+
 def checked_evidence(row: FoundryEvidence, scope: dict, today: date, *, db=None) -> EvidenceIn:
     if (row.scope_key != outcome_scope_key(scope) or row.revoked
             or not row.observed_on <= today <= row.expires_on

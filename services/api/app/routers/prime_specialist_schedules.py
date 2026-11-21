@@ -26,6 +26,7 @@ from app.services.prime_business_execution import (
     verified_internal_outcomes,
 )
 
+from app.services.foundry_discovery import WITHDRAWAL_PREFIX, verify_withdrawal
 from app.services.specialist_triggers import outcome_scope_key
 
 
@@ -98,7 +99,8 @@ def shadow_report_digest(event_id: str, report: dict) -> str:
 
 def _describe(db: Session, row: PrimeSpecialistSchedule) -> dict:
     report = _report(db, row.id, row.last_report_event_id) if row.last_report_event_id else None
-    economic = PrimeScheduleTrigger.event_id.startswith("ECON-")
+    economic = or_(PrimeScheduleTrigger.event_id.startswith("ECON-"),
+                   PrimeScheduleTrigger.event_id.startswith(WITHDRAWAL_PREFIX))
     queued = db.execute(select(economic, PrimeScheduleTrigger.failure_code, func.count()).where(
         PrimeScheduleTrigger.schedule_id == row.id,
     ).group_by(economic, PrimeScheduleTrigger.failure_code)).all()
@@ -251,8 +253,10 @@ def run_due_schedule(db: Session, *, now: datetime | None = None) -> dict:
     ).order_by(PrimeScheduleTrigger.queued_at, PrimeScheduleTrigger.event_id).limit(1)) if legacy_outcome is None else None
     event_id = legacy_outcome or (queued.event_id if queued is not None else None)
     economic_id = event_id if queued is not None and event_id.startswith("ECON-") else None
-    outcome_id = None if economic_id else event_id
-    trigger_field = "trigger_economic_event_id" if economic_id else "trigger_outcome_event_id"
+    withdrawal_id = event_id if queued is not None and event_id.startswith(WITHDRAWAL_PREFIX) else None
+    outcome_id = None if (economic_id or withdrawal_id) else event_id
+    trigger_field = ("trigger_source_withdrawal_id" if withdrawal_id else
+                     "trigger_economic_event_id" if economic_id else "trigger_outcome_event_id")
     elapsed_slots = (now - row.next_due_at) // timedelta(seconds=row.cadence_seconds) if timed else 0
     slot = row.next_due_at.replace(tzinfo=timezone.utc).isoformat() if timed else None
     occurrence = event_id or slot
@@ -294,8 +298,12 @@ def run_due_schedule(db: Session, *, now: datetime | None = None) -> dict:
     }
     if economic_id:
         report.update(trigger="ECONOMIC_REASSESSMENT", trigger_economic_event_id=economic_id)
+    if withdrawal_id:
+        report.update(trigger="FOUNDRY_SOURCE_WITHDRAWN", trigger_source_withdrawal_id=withdrawal_id)
     try:
         _check_legacy(db, **scope)
+        if withdrawal_id and (not payload.on_economic_reassessment or not verify_withdrawal(db, scope, withdrawal_id)):
+            raise HTTPException(409, "Foundry source withdrawal could not be revalidated")
         if economic_id:
             from app.services.economic_control import ready as economic_ready, verify_trigger
 

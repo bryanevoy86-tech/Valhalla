@@ -561,6 +561,7 @@ def test_venture_rehearsal_shares_stress_gates_and_rechecks_withdrawn_sources(ec
         prepared = client.post(schedule_root, headers=OWNER, json={
             "schedule_id": schedule_id, "business_id": SCOPE["business_id"], "opportunity": proposal,
             "cadence_seconds": 300, "duration_seconds": 1800,
+            "on_economic_reassessment": key == "viable-case",
         })
         assert prepared.status_code == 201, prepared.text
         schedules[key] = schedule_id
@@ -588,11 +589,28 @@ def test_venture_rehearsal_shares_stress_gates_and_rechecks_withdrawn_sources(ec
     accepted = post(client, "decisions", reviewed)
     assert accepted["reserved_simulation_minor"] == 120 and accepted["execution_authorized"] is False
 
-    viable_id = requests["viable-case"]["evidence_id"]
-    assert client.delete(f"{root}/evidence/{viable_id}", headers=OWNER).status_code == 200
     with Session(engine) as db:
-        assert [run_due_schedule(db, now=at + timedelta(seconds=301))["status"] for _ in schedules] == ["evaluated", "evaluated"]
+        assert run_due_schedule(db, now=at)["status"] == "evaluated"  # Consume the reviewed reservation.
+    viable_id = requests["viable-case"]["evidence_id"]
+    for _ in range(2):
+        assert client.delete(f"{root}/evidence/{viable_id}", headers=OWNER).status_code == 200
+    assert client.get(f"{schedule_root}/{schedules['viable-case']}").json()["queued_economic_count"] == 1
+    assert client.get(f"{schedule_root}/{schedules['adverse-case']}").json()["queued_economic_count"] == 0
+    with Session(engine) as db:
+        assert run_due_schedule(db, now=at)["status"] == "evaluated"
+        assert run_due_schedule(db, now=at)["status"] == "idle"
+        god_reports = [run_assignment(db, "NORNS", now=at) for _ in range(2)]
+        assert [report["status"] for report in god_reports] == ["observed", "observed"]
+        norns = [db.query(LegacyOrchestrationEvent).filter_by(event_id=report["report_event_id"]).one()
+                 for report in god_reports]
+        assert {json.loads(row.payload_json)["trigger"] for row in norns} == {
+            "FOUNDRY_SOURCE_WITHDRAWN", "ECONOMIC_REASSESSMENT",
+        }
+
     updated = client.get(f"{schedule_root}/{schedules['viable-case']}").json()["latest_report"]
+    assert updated["trigger"] == "FOUNDRY_SOURCE_WITHDRAWN"
+    assert updated["trigger_source_withdrawal_id"].startswith(f"WITHDRAWN-{viable_id}-")
+    assert updated["scheduled_for"] is None
     assert updated["recommendation"]["heimdall_decision"] == "HOLD"
     assert "FOUNDRY_SOURCE_NO_LONGER_CURRENT" in updated["operating_reassessment"]["blockers"]
     assert post(client, "assessment", SCOPE, 200)["best_eligible_alternative_key"] is None

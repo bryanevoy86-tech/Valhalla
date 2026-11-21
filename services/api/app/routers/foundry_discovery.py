@@ -14,10 +14,12 @@ from app.loki.evidence import artifact_digest
 from app.models.completion_registry import SourceRegistryItem
 from app.models.foundry_evidence import FoundryEvidence
 from app.pantheon.monitor import verified_report
-from app.services.foundry_discovery import EvidenceIn, SCOPE_FIELDS, candidate_fields, checked_evidence
+from app.services.foundry_discovery import (
+    DISCOVERY_ROLES, EvidenceIn, SCOPE_FIELDS, candidate_fields, checked_evidence, withdrawal_trigger,
+)
 from app.services.foundry_intake import FoundryIntakeJob, Intake, current_time, intake_ready, job_view, key_for, source_for
 from app.services.prime_business_execution import _check_legacy, require_owner_mandate_key
-from app.services.specialist_triggers import outcome_scope_key
+from app.services.specialist_triggers import enqueue_prime, enqueue_research, outcome_scope_key
 
 
 def schema(db: Session = Depends(get_db)):
@@ -63,8 +65,13 @@ def revoke_evidence(evidence_id: UUID, db: Session = Depends(get_db)):
     row = db.get(FoundryEvidence, evidence_id, with_for_update=True)
     if row is None:
         raise HTTPException(404, "Foundry evidence not found")
-    row.revoked = True
-    db.commit()
+    if not row.revoked:
+        row.revoked = True
+        at = current_time().replace(tzinfo=None)
+        event = withdrawal_trigger(row)
+        enqueue_research(db, row.scope_key, event, at, roles=DISCOVERY_ROLES)
+        enqueue_prime(db, row.scope_key, event, at, subscription="on_economic_reassessment")
+        db.commit()
     return {"evidence_id": row.id, "revoked": True}
 
 
