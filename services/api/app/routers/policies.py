@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.core.db import get_db
+from app.core.dependencies import require_prime_control_key
 from app.policies.schemas import (
     ClonePolicyIn,
     ClonePolicyOut,
@@ -10,9 +11,9 @@ from app.policies.schemas import (
     EvaluateResult,
 )
 from app.policies.models import ClonePolicy, MirrorPolicy, PolicyGateMetric
-from app.policies.service import evaluate_clone, evaluate_mirror, log_event, touch_last_trigger
+from app.policies.service import evaluate_clone, evaluate_mirror, log_event
 
-router = APIRouter(prefix="/policies", tags=["policies"])
+router = APIRouter(prefix="/policies", tags=["policies"], dependencies=[Depends(require_prime_control_key)])
 
 
 @router.get("/clone", response_model=ClonePolicyOut)
@@ -47,12 +48,10 @@ def post_clone_evaluate(snap: GateSnapshot, db: Session = Depends(get_db)):
 @router.post("/clone/trigger", response_model=EvaluateResult)
 def post_clone_trigger(snap: GateSnapshot, db: Session = Depends(get_db)):
     allow, reason = evaluate_clone(db, snap.model_dump())
-    log_event(db, "clone", allow, reason, snap.model_dump())
-    if not allow:
-        return EvaluateResult(allow=False, reason=reason)
-    # TODO: call orchestrator from Pack 42 to spin new Legacy
-    touch_last_trigger(db, "clone")
-    return EvaluateResult(allow=True, reason="Clone orchestration dispatched.")
+    if allow:
+        reason = "Clone orchestration is unavailable. Policy thresholds passed, but no dispatcher is configured."
+    log_event(db, "clone", False, reason, snap.model_dump())
+    return EvaluateResult(allow=False, reason=reason)
 
 
 @router.get("/mirror", response_model=MirrorPolicyOut)
@@ -87,9 +86,7 @@ def post_mirror_evaluate(snap: GateSnapshot, db: Session = Depends(get_db)):
 @router.post("/mirror/trigger", response_model=EvaluateResult)
 def post_mirror_trigger(snap: GateSnapshot, db: Session = Depends(get_db)):
     allow, reason = evaluate_mirror(db, snap.model_dump())
-    log_event(db, "mirror", allow, reason, snap.model_dump())
-    if not allow:
-        return EvaluateResult(allow=False, reason=reason)
-    # TODO: dispatch mirror deployment (traffic split)
-    touch_last_trigger(db, "mirror")
-    return EvaluateResult(allow=True, reason="Mirror orchestration dispatched.")
+    if allow:
+        reason = "Mirror orchestration is unavailable. Policy thresholds passed, but no dispatcher is configured."
+    log_event(db, "mirror", False, reason, snap.model_dump())
+    return EvaluateResult(allow=False, reason=reason)
