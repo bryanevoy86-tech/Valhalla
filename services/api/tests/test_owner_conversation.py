@@ -552,9 +552,12 @@ def test_retention_deadline_restricts_download_and_redacts_historical_extracts(c
         "reason": "Allow local reading through the explicit date.", "retain_until": today.isoformat(),
     })
     assert recorded.status_code == 201, recorded.text
+    metadata = client.get(root, headers=HEADERS).json()[0]
+    assert metadata["state"] == "ACCEPT_LOCAL" and metadata["retain_until"] == today.isoformat()
     deletion = {"source_sha256": body["sha256"], "reason": "RETENTION_EXPIRED"}
     assert client.request("DELETE", url, headers=owner, json=deletion).status_code == 409
     monkeypatch.setattr(owner_attachment_review, "retention_day", lambda: today + timedelta(days=1))
+    assert client.get(root, headers=HEADERS).json()[0]["state"] == "RETENTION_EXPIRED"
     assert client.get(f"{url}/download", headers=HEADERS).status_code == 409
     assert client.post(f"{url}/extract", headers=HEADERS).status_code == 409
     history = client.get(turns, headers=HEADERS)
@@ -562,6 +565,7 @@ def test_retention_deadline_restricts_download_and_redacts_historical_extracts(c
     assert history.json()[0]["evidence"]["extractions"][0]["state"] == "RESTRICTED"
     assert "Private retention marker" not in client.post(turns, headers=HEADERS, json=turn).text
     assert client.request("DELETE", url, headers=owner, json=deletion).json()["state"] == "DELETED"
+    assert client.get(root, headers=HEADERS).json()[0]["state"] == "DELETED"
     assert client.get(f"{url}/download", headers=HEADERS).status_code == 410
 
 

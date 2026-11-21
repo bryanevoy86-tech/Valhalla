@@ -18,7 +18,7 @@ from app.models.go_live_state import GoLiveState
 from app.services.system_self_check import run_system_self_check
 from app.services.owner_advisory_model import advisory_reply
 from app.services.owner_attachment_extraction import extract_local, extraction_receipt, verified_attachment
-from app.services.owner_attachment_review import ReviewIn, attachment_use_blocked, latest_review, require_local_use, retention_expired, review_receipt, save_review
+from app.services.owner_attachment_review import ReviewIn, attachment_use_blocked, latest_review, latest_reviews, require_local_use, retention_expired, review_receipt, save_review
 from app.services.prime_business_execution import require_owner_mandate_key
 from app.services.owner_memory import MemoryIn, decision_context_recall, memory_receipt, prepare_entry, recall_entries
 from app.services.owner_operating_brief import operating_evidence
@@ -350,7 +350,21 @@ def attachment_summaries(conversation_id: UUID, limit: int, db: Session):
     query = select(OwnerAttachment).options(defer(OwnerAttachment.data)).where(
         OwnerAttachment.conversation_id == conversation_id,
     ).order_by(OwnerAttachment.created_at.desc(), OwnerAttachment.id).limit(max(1, min(limit, 100)))
-    return [meta(row) for row in db.scalars(query)]
+    attachments = db.scalars(query).all()
+    reviews = latest_reviews(db, [row.id for row in attachments if row.deleted_at is None])
+    summaries = []
+    for row in attachments:
+        summary = meta(row)
+        review = reviews.get(row.id)
+        if review is not None:
+            state = review.disposition
+            if review.source_sha256 != row.sha256:
+                state = "REVIEW_UNVERIFIED"
+            elif retention_expired(review):
+                state = "RETENTION_EXPIRED"
+            summary.update(state=state, retain_until=review.retain_until)
+        summaries.append(summary)
+    return summaries
 
 
 def delete_attachment(conversation_id: UUID, attachment_id: UUID, payload: DeleteAttachmentIn, db: Session):

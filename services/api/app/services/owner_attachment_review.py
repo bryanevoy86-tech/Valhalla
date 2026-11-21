@@ -5,7 +5,7 @@ from uuid import UUID
 
 from fastapi import HTTPException
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy import inspect, select
+from sqlalchemy import func, inspect, select
 from sqlalchemy.orm import Session
 
 from app.models.owner_conversation import OwnerAttachment, OwnerAttachmentReview
@@ -26,6 +26,19 @@ def latest_review(db: Session, attachment: OwnerAttachment):
         return None
     return db.scalar(select(table).where(table.attachment_id == attachment.id)
                      .order_by(table.created_at.desc(), table.id.desc()).limit(1))
+
+
+def latest_reviews(db: Session, attachment_ids: list[UUID]) -> dict[UUID, OwnerAttachmentReview]:
+    table = OwnerAttachmentReview
+    if not attachment_ids or not inspect(db.connection()).has_table(table.__tablename__):
+        return {}
+    ranked = select(
+        table.id, func.row_number().over(
+            partition_by=table.attachment_id, order_by=(table.created_at.desc(), table.id.desc()),
+        ).label("position"),
+    ).where(table.attachment_id.in_(attachment_ids)).subquery()
+    rows = db.scalars(select(table).join(ranked, ranked.c.id == table.id).where(ranked.c.position == 1))
+    return {row.attachment_id: row for row in rows}
 
 
 def retention_day():
