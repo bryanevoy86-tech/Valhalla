@@ -158,6 +158,10 @@ def answer(db, message, attachments, turn_id=None, provider_data_class="PRIVATE"
     economic = operating["latest_economic_alerts"]
     if economic:
         reply += f" Recent specialist reports flagged economic restrictions in {len(economic)} operating scope(s)."
+    intake = operating["foundry_intake_health"]
+    if intake["available"]:
+        pending = intake["counts_by_state"].get("QUEUED", 0)
+        reply += f" Discovery intake has {pending} queued job(s). Scoped health evidence is attached."
     if operating["financials"]["available"]:
         reply += " Recorded unreconciled revenue entries are attached by currency."
     if signals:
@@ -169,6 +173,20 @@ def answer(db, message, attachments, turn_id=None, provider_data_class="PRIVATE"
                    "active_advisory_schedules": schedules, "schedules_with_report_reference": reports,
                    "operating_evidence": operating,
                    "model_connected": False}
+
+def conversation_summaries(db: Session, limit: int):
+    rows = db.scalars(select(OwnerConversation).order_by(OwnerConversation.created_at.desc(), OwnerConversation.id)
+                      .limit(max(1, min(limit, 100)))).all()
+    return [thread_meta(row) for row in rows]
+
+
+def conversation_history(db: Session, conversation_id: UUID, limit: int):
+    thread(db, conversation_id)
+    rows = db.scalars(select(OwnerTurn).where(OwnerTurn.conversation_id == conversation_id)
+                      .order_by(OwnerTurn.created_at.desc(), OwnerTurn.id.desc())
+                      .limit(max(1, min(limit, 100)))).all()
+    return [turn_meta(row) for row in reversed(rows)]
+
 
 def install(router):
     @router.post("/conversations", status_code=201)
@@ -188,14 +206,11 @@ def install(router):
 
     @router.get("/conversations")
     def list_threads(limit: int = 20, db: Session = Depends(get_db)):
-        rows = db.scalars(select(OwnerConversation).order_by(OwnerConversation.created_at.desc(), OwnerConversation.id).limit(max(1,min(limit,100)))).all()
-        return [thread_meta(row) for row in rows]
+        return conversation_summaries(db, limit)
 
     @router.get("/conversations/{conversation_id}/turns")
     def history(conversation_id: UUID, limit: int = 50, db: Session = Depends(get_db)):
-        thread(db, conversation_id)
-        rows = db.scalars(select(OwnerTurn).where(OwnerTurn.conversation_id==conversation_id).order_by(OwnerTurn.created_at.desc(),OwnerTurn.id.desc()).limit(max(1,min(limit,100)))).all()
-        return [turn_meta(row) for row in reversed(rows)]
+        return conversation_history(db, conversation_id, limit)
 
     @router.post("/conversations/{conversation_id}/turns", status_code=201)
     def send(conversation_id: UUID, payload: TurnIn, db: Session = Depends(get_db)):

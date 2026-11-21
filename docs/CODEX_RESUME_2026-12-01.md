@@ -4,6 +4,10 @@ Planned resumption: when local Codex usage allowance refreshes, expected Decembe
 
 DO NOT restart the project, regenerate completed packs, or treat API presence as operating business evidence.
 
+## Start here — current continuation
+
+Use the current head of draft PR #4 and confirm the latest required CI run. Earlier checkpoints below are historic records. The operating routes below supersede older instructions to implement the initial economic containment/recovery, local discovery intake, and owner briefing/history lanes. There are 50 acceptance contracts, 53 task entries and seven construction packages.
+
 ## Repository and change control
 
 - GitHub: https://github.com/bryanevoy86-tech/Valhalla
@@ -318,3 +322,13 @@ Read the corresponding change-ledger entry and the updated integration matrix be
 Code checkpoint `ba302311e6d5c17c46e61bc2df662ffa5a34cb04`. Read the change ledger and `engines/ENGINE_REGISTRY.md`. Under `/api/prime/economy`, enroll scoped mandates, then enter dated performance and per-currency liquidity fixtures and registered opportunities. Amendments must bind the previous mandate. Opening history and cumulative loss persist, reserves remain protected and the budget counter serializes competing allocation rehearsals. Review an exact `/review-artifact` through the existing Loki API and independent worker with `--artifact-type economic_advice`, then record the reviewed outcome at `/decisions`. The independent worker uses the existing separate reviewer authority.
 
 Use `/containment` to protect an enrolled Factory lane immediately. No endpoint allocates actual funds or automatically resumes a contained operation. Future integration needs independent bank and obligations reconciliation, reviewed winding-down and recovery case lifecycle, scoped cash release rules, full portfolio coverage, and internal priority tradeoffs with each Legacy. Preserve advisor-only investment authority and continue the private WeWeb, voice, notifications, Builder, SaaS, real estate, and regulated planning workstream backlog.
+
+## Startup operating integration — current operating paths
+
+1. Register approved practice sources typed `DEMAND_EXPORT` or `PROCUREMENT_EXPORT` and scoped specialist assignments. Submit owner-authorized exports at `POST /api/prime/foundry/intake`. The opt-in `foundry_discovery_worker.py` uses the existing PostgreSQL worker controls and the explicit `VALHALLA_FOUNDRY_DISCOVERY_WORKER_ENABLED` flag. Inspect durable jobs by ID. Recheck source rights and freshness when generating a candidate from the scoped report. Losing source authorization invalidates that candidate.
+2. Use the existing economic registry for ranking. A reviewed `RESTART` binds the exact current assessment and cannot increase exposure. Late, disputed, or open tracked obligations can block restart. Cancel an unneeded simulated reservation via `/reservation-releases`. Lifetime funded totals and losses stay in force. `/portfolio-exposure` returns per-currency aggregates and missing evidence counts.
+3. Use private floor statement fixtures to reconcile period continuity and bank-like transaction references. Keep household and operating reserve accounts separate. The legacy vault audit projects suspect paper FX amounts separately. Exit recovery fixtures require a classified statement entry and preserve projected versus observed fixture amounts. Existing wealth scenarios remain the path for reserve, compensation and Fun Fund projections.
+4. Rehearse signed Product Foundry checkout, delivery and refunds, then attach `/orders/{id}/cost-fixtures`. Contribution covers the recorded fixture costs. Real profit remains unknown.
+5. WeWeb owner JWTs read `/api/weweb/owner-conversations` and scoped turn history. The existing owner briefing shows durable discovery state and errors. The browser receives no Prime key.
+
+Startup-critical next work includes independently authorized market-source connectors, enrollment and controls for the actual startup paths, complete purchase-to-settlement rehearsals with real receipt formats, independent bank reconciliation, full authenticated WeWeb interaction and retention, 24/7 staging soak, and audit-ready professional preparation. Keep live inference, spending, external commerce, banking, trading and deployment separately authorized. Continue the wider owner vision in its existing workstreams.

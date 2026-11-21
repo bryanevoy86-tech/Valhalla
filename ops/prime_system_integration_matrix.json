@@ -11,7 +11,7 @@
         "services/api/app/main.py",
         "services/api/start.py"
       ],
-      "source_observation": "Canonical FastAPI import registered 35 critical routers and all 80 required routes on the isolated regression runtime.",
+      "source_observation": "Canonical FastAPI import registered 35 critical routers and all 86 required routes in the isolated runtime.",
       "evidence_level": "FOCUSED_CI_TESTED",
       "production_verified": false,
       "acceptance_test": "Prove every mandatory router imports in a clean canonical app; no missing OpenAPI paths or silent startup success",
@@ -63,9 +63,10 @@
       "priority": "P1",
       "source_paths": [
         "scripts/ingest/ingest_sources.py",
-        "services/api/app/research/service.py"
+        "services/api/app/research/service.py",
+        "services/api/app/services/foundry_intake.py"
       ],
-      "source_observation": "Web/RSS ingestion code exists; research service also has process-local source registry",
+      "source_observation": "Owner-authorized local demand and procurement exports run through a durable Foundry queue using scoped source rights, freshness windows, deduplication and bounded retries. Licensed external feed operation and independently measured demand remain pending.",
       "evidence_level": "SOURCE_INSPECTED_ONLY",
       "production_verified": false,
       "acceptance_test": "On schedule, acquire permissible fresh independent sources with attribution and dedupe; fail on revoked/expired rights",
@@ -308,7 +309,7 @@
         "services/api/app/routers/prime_business_factory.py",
         "services/api/app/models/media_engine.py"
       ],
-      "source_observation": "An internal verified artifact reaches signed fixture capture, refunds, delivery and campaign conversion with scoped rights, matching price and bytes. Connected storefront and authentic transactions are pending.",
+      "source_observation": "Signed checkout, internal delivery and refunds now reconcile recorded order and campaign cost fixtures. Reports expose fixture contribution and leave actual profit unknown. Live storefront and payment settlement require separate authorization.",
       "evidence_level": "SQLITE_INTEGRATION_TESTED",
       "production_verified": false,
       "acceptance_test": "Real approved listing/checkout/delivery/refund, buyer rights and content-hash verified, receipt tied to business",
@@ -434,7 +435,7 @@
         "services/api/app/routers/auth_weweb.py",
         "docs/CURRENT_SYSTEM_TRUTH.md"
       ],
-      "source_observation": "A revocable owner bearer route exposes the private briefing without a browser Prime key. The frontend conversation proxy and voice integration are pending.",
+      "source_observation": "The configured owner can read private briefings, conversation lists and turn history through revocable WeWeb sessions with no-store responses. Sending on WeWeb, notification delivery, and voice remain pending.",
       "evidence_level": "SQLITE_INTEGRATION_TESTED",
       "production_verified": false,
       "acceptance_test": "Owner login, real dashboard, approval controls, data updates and session expiry tested in WeWeb against deployment",
@@ -632,9 +633,10 @@
       "source_paths": [
         "services/api/app/routers/foundry_discovery.py",
         "docs/CODEX_SYSTEM_FINISH_PASSES.md",
-        "docs/PHASE3_INTEGRATED_ARCHITECTURE.md"
+        "docs/PHASE3_INTEGRATED_ARCHITECTURE.md",
+        "services/api/app/models/foundry_intake.py"
       ],
-      "source_observation": "Scoped acquisition, product, SaaS, service and real estate leads feed existing specialist assignments and produce shadow Prime candidates with unit economics and sensitivity. Source freshness and revocation are checked before affected execution.",
+      "source_observation": "A source-backed unfamiliar business can reach scoped Pantheon analysis, Universal Evaluator shadow recommendation, comparative capital ranking and independent review. Commercial operation and measured demand remain pending.",
       "evidence_level": "SQLITE_INTEGRATION_TESTED",
       "production_verified": false,
       "acceptance_test": "Scheduled discovery and evidence validation, owner-bounded creation of a new lawful venture, live sales and repeatable outcome learning.",
@@ -670,9 +672,10 @@
         "services/api/tests/test_floor_currency.py",
         "capital/banking/executor.py",
         "services/api/app/routers/banking_structure_planner.py",
-        "services/api/app/services/wealth_scenario.py"
+        "services/api/app/services/wealth_scenario.py",
+        "services/api/app/services/treasury_reconciliation.py"
       ],
-      "source_observation": "Treasury floor projections partition the unreconciled ledger by month and currency. Private household scenarios model reserves, planned compensation and allocatable surplus in one currency. Historical paper FX no longer mutates the MAIN vault. Bank statement and transfer proof are pending.",
+      "source_observation": "Statement fixtures reconcile opening and closing balances, deduplicate transactions, bind an account to one scope, currency and purpose, and report liabilities and budget variance. Paper-tagged historical vault amounts appear in a separate read-only quarantine projection. No real balances were verified.",
       "evidence_level": "SQLITE_INTEGRATION_TESTED",
       "production_verified": false,
       "acceptance_test": "Prove every actual transfer requires owner intent, cap, whitelisted accounts, durable idempotency and a bank settlement receipt; no fake success.",
@@ -946,7 +949,7 @@
         "services/api/tests/test_economic_control.py",
         "tests/test_factory_postgres.py"
       ],
-      "source_observation": "A private economic journal binds opening history, review deadlines, immutable evidence, progressive containment, scope, currency and simulation reservations. Foundry evidence and a forward ranking feed Prime and Pantheon. Independent Loki reviews exact material artifacts. Disposable PostgreSQL verified that competing reservations cannot claim the same funds. Actual bank, legal and insurance evidence and live capital execution remain outside this branch's authority.",
+      "source_observation": "Adds reviewed restart with fresh evidence, scoped obligations, one-use reservation release, per-currency portfolio exposure, and asset recovery linked to fixture statements. PostgreSQL verifies a racing release settles once. Factory and rehearsal fulfillment re-check known related mirror containment.",
       "evidence_level": "POSTGRES_INTEGRATION_TESTED",
       "production_verified": false,
       "acceptance_test": "Prove independent evidence and hard cumulative limits, protected reserves and aggregate exposure, version and replay integrity, scheduled and event-driven reassessment, exact Loki review, immediate containment, scope isolation, forward alternative ranking, strategic exit with rights-aware asset inventory, and Mimir learning that distinguishes simulation, zero external effects and independently reconciled outcomes.",

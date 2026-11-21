@@ -153,3 +153,15 @@ The owner confirmed that Valhalla is an objective-driven operating platform. His
 | Exit and redeployment | Owner containment halts enrolled Factory draft execution. Reviewed private advice records exit and reusable assets without liquidating them. A healthy scope reserves simulated resources for its stronger alternative. Mimir and owner briefings show internal rehearsal evidence. | Independent asset rights and liquidation verification, post-containment recovery approval, active release or replacement of real allocations |
 
 No bank, securities, FX, insurance, liquidation, or external contract action is authorized by these controls. An inventory value is a projection. The simulated journal has no real receipts or payments. Existing advisor-only investment authority is preserved.
+
+## Startup operating paths — November 21, 2026
+
+| Path | Internal evidence | Remaining production acceptance |
+|---|---|---|
+| Discovery to recommendation | Licensed-scope local export, resumable job, source deduplication, event-triggered Odin report, source-bound economic comparison, independent Loki review and simulated Prime decision | Independently curated source connectors, external demand proof, broader specialist domains |
+| Containment to recovery | Reviewed restart requires post-containment evidence and resolved tracked obligations. One-use release preserves lifetime limits and PostgreSQL serialized competing requests. Related registered mirror Factory and rehearsal fulfillment paths share the containment check. | Organization-wide enrollment and enforcement for other execution paths, independently reconciled reserves and liabilities, tested authorized live restart |
+| Statement and recovery fixtures | Reconciled opening and closing amounts, purpose isolation, duplicate detection, liabilities, budget variance, and source-linked exit recovery. Submitted recovery observations remain fixtures. Historical FX-tagged vaults appear in quarantine reports without data deletion. | Independent statements, historical attribution beyond the surviving source tags, actual recovery verification and bank settlement |
+| Product economics | Signed checkout and refunds, internal fulfillment, campaign attribution and declared expense fixtures produce a reconciled recorded contribution subtotal | Licensed payments, provider settlement, cost completeness, verified profits, field-tested marketing and tenant workflows |
+| Owner and operations | Owner-private discovery counters and last-known job errors, job retry state, authenticated conversation list and turns, revocation checks | Always-on staging proof, push notifications, attachments retention policy and voice |
+
+The seven existing construction packages and the 50 workstreams remain in force. Synthetic samples, simulated reservations and internally exercised routes carry no commercial, investment, or funds-movement authority.

@@ -50,9 +50,15 @@ def test_trial_is_bound_to_authenticated_subscriber_and_tenant(deal_client, monk
     assert client.post(root, headers=owner, json=trial).json() == issued.json()
 
     monkeypatch.setenv("VALHALLA_OWNER_EMAIL", "one@example.invalid")
-    for model in (LearningTaskQueueItem, GoLiveState, PrimeSpecialistSchedule):
+    from app.models.owner_conversation import OwnerConversation, OwnerTurn
+
+    for model in (LearningTaskQueueItem, GoLiveState, PrimeSpecialistSchedule, OwnerConversation, OwnerTurn):
         model.__table__.create(engine)
+    thread_id = uuid4()
     with Session(engine) as db:
+        db.add(OwnerConversation(id=thread_id, title="Private fixture conversation"))
+        db.add(OwnerTurn(id=uuid4(), conversation_id=thread_id, message="What is blocked?",
+                         reply="The simulation is waiting for review.", evidence={"source": "fixture"}, attachment_ids=[]))
         db.add(GoLiveState(id=1, go_live_enabled=False, kill_switch_engaged=True))
         db.commit()
     briefing = "/api/weweb/owner-briefing"
@@ -63,6 +69,14 @@ def test_trial_is_bound_to_authenticated_subscriber_and_tenant(deal_client, monk
     assert owned.headers["cache-control"] == "no-store"
     assert owned.json()["execution_authorized"] is False
     assert owned.json()["evidence"]["integrity"]["fail_safe_state"]["active"] is True
+
+    threads = "/api/weweb/owner-conversations"
+    history = f"{threads}/{thread_id}/turns"
+    assert client.get(threads, headers=outsider).status_code == 403
+    assert client.get(threads, headers=bearer).json()[0]["conversation_id"] == str(thread_id)
+    turn = client.get(history, headers=bearer)
+    assert turn.headers["cache-control"] == "no-store"
+    assert turn.json()[0]["evidence"]["source"] == "fixture"
 
     access = f"{root}/{trial['tenant_id']}/access/wholesale_engine"
     assert client.get(access).status_code == 401
@@ -75,3 +89,4 @@ def test_trial_is_bound_to_authenticated_subscriber_and_tenant(deal_client, monk
     assert client.post("/api/weweb/logout", headers=bearer).status_code == 200
     assert client.get(access, headers=bearer).status_code == 401
     assert client.get(briefing, headers=bearer).status_code == 401
+    assert client.get(history, headers=bearer).status_code == 401

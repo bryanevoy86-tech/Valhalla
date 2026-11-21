@@ -9,6 +9,7 @@ from app.loki.models import LokiFinding, LokiIndependentReceipt, LokiReconsidera
 from app.loki.review_service import verdict
 from app.models.audit_log import AuditLog
 from app.models.completion_registry import LegacyOrchestrationEvent
+from app.models.foundry_intake import FoundryIntakeJob
 from app.models.revenue_ledger import RevenueLedger
 from app.pantheon.monitor import REPORT_EVENT, verified_report
 
@@ -90,6 +91,16 @@ def operating_evidence(db: Session) -> dict:
         financials.update(since=since.isoformat(), totals_by_currency=[
             {"currency": currency, "entries": count, "recorded_gross": str(amount)} for currency, count, amount in totals
         ])
+    discovery = {"available": False}
+    if schema.has_table(FoundryIntakeJob.__tablename__):
+        job = FoundryIntakeJob
+        counts = dict(db.execute(select(job.status, func.count()).group_by(job.status)).all())
+        latest_errors = db.scalars(select(job).where(job.error_code.is_not(None))
+                                 .order_by(job.next_attempt_at.desc(), job.id).limit(5))
+        discovery = {"available": True, "counts_by_state": counts,
+                     "recent_job_errors": [{"job_id": str(row.id), "status": row.status, "code": row.error_code}
+                                           for row in latest_errors],
+                     "production_worker_verified": False}
     return {"latest_specialist_reports": report_items, "invalid_specialist_report_ids": invalid_reports,
             "loki": loki, "latest_integrity_alerts": alerts, "latest_market_alerts": market_alerts, "latest_economic_alerts": economic_alerts, "financials": financials,
-            "verified_cash_balance": None}
+            "verified_cash_balance": None, "foundry_intake_health": discovery}

@@ -443,23 +443,44 @@ def admin_reset_password(
         ) from e
 
 
-@router.get("/owner-briefing")
-def owner_briefing(
+def require_owner_session(
     current_user: Dict[str, Any] = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Expose one read-only owner projection over the existing revocable session."""
-    from fastapi.responses import JSONResponse
-    from app.services.owner_conversation import answer
-
     subject_id = current_user["user_id"]
     profile = (db.query(UserProfile).join(AccountSettings, AccountSettings.user_id == UserProfile.user_id)
                .filter(UserProfile.user_id == subject_id, AccountSettings.account_locked.is_(False)).one_or_none()
                if type(subject_id) is int else None)
     if profile is None or profile.email != current_user.get("sub") or not _is_configured_owner(profile.email):
         raise HTTPException(403, "Configured owner session required")
+
+
+def private_owner_response(content):
+    from fastapi.encoders import jsonable_encoder
+    from fastapi.responses import JSONResponse
+
+    return JSONResponse(content=jsonable_encoder(content),
+                        headers={"Cache-Control": "no-store", "Vary": "Authorization"})
+
+
+@router.get("/owner-briefing", dependencies=[Depends(require_owner_session)])
+def owner_briefing(db: Session = Depends(get_db)):
+    """Expose a read-only owner projection over the existing revocable session."""
+    from app.services.owner_conversation import answer
+
     reply, evidence = answer(db, "briefing", [])
-    return JSONResponse(
-        content={"reply": reply, "evidence": evidence, "execution_authorized": False},
-        headers={"Cache-Control": "no-store", "Vary": "Authorization"},
-    )
+    return private_owner_response({"reply": reply, "evidence": evidence, "execution_authorized": False})
+
+
+@router.get("/owner-conversations", dependencies=[Depends(require_owner_session)])
+def owner_conversations(limit: int = 20, db: Session = Depends(get_db)):
+    from app.services.owner_conversation import conversation_summaries
+
+    return private_owner_response(conversation_summaries(db, limit))
+
+
+@router.get("/owner-conversations/{conversation_id}/turns", dependencies=[Depends(require_owner_session)])
+def owner_conversation_history(conversation_id: uuid.UUID, limit: int = 50, db: Session = Depends(get_db)):
+    from app.services.owner_conversation import conversation_history
+
+    return private_owner_response(conversation_history(db, conversation_id, limit))
