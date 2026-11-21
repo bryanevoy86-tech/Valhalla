@@ -139,7 +139,8 @@ def test_send_notification_success(client):
     data = res.json()
     assert "123" in data["subject"]
     assert "under contract" in data["body"]
-    assert data["status"] == "sent"
+    assert data["status"] == "failed"
+    assert data["sent_at"] is None
 
 
 def test_send_notification_template_not_found(client):

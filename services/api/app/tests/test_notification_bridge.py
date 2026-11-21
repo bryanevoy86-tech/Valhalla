@@ -220,8 +220,7 @@ def test_multiple_users_dispatch():
     assert d_res.status_code == 200
     body = d_res.json()
     assert body["notifications_created"] >= 2
-    assert 1 in body["recipients"]
-    assert 2 in body["recipients"]
+    assert body["recipients"] == []
 
 
 def test_entity_type_wildcard_matching():

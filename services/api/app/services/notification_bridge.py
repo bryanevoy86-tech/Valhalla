@@ -116,9 +116,9 @@ def dispatch_notifications_for_event(
                     "description": event.description or "",
                 },
             )
-            send_notification(db, req)
+            attempt = send_notification(db, req)
             total_notifications += 1
-            if uid not in recipients_notified:
+            if attempt.status == "sent" and uid not in recipients_notified:
                 recipients_notified.append(uid)
 
     return BridgeDispatchResult(

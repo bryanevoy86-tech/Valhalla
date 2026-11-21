@@ -11,8 +11,10 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
+import re
 import runpy
 import shutil
+import subprocess
 import tempfile
 from typing import Any
 
@@ -134,20 +136,53 @@ def materialize(review: dict, base_root: Path, output_parent: Path,
         raise
 
 
+def materialize_handoff(packet: dict, base_root: Path, output_parent: Path) -> Path:
+    """Check the owner packet and committed base before producing review artifacts."""
+    if not isinstance(packet, dict):
+        raise ValueError("Builder handoff packet must be an object")
+    content = {key: value for key, value in packet.items() if key != "handoff_sha256"}
+    review, receipt = packet.get("review"), packet.get("runner_receipt")
+    base_commit, bundle_sha = packet.get("base_commit"), packet.get("bundle_sha256")
+    if (sha(canonical(content)) != packet.get("handoff_sha256")
+            or packet.get("submission_state") != "PREPARED_FOR_OWNER_REVIEW"
+            or any(packet.get(key) is not False for key in ("github_write_authorized", "release_authorized"))
+            or not isinstance(review, dict) or not isinstance(receipt, dict)
+            or not isinstance(base_commit, str) or not re.fullmatch("[a-f0-9]{40}", base_commit)
+            or sha(canonical(receipt)) != packet.get("test_receipt_sha256")
+            or (receipt.get("base_commit"), receipt.get("bundle_sha256"), review.get("sha256"))
+               != (base_commit, bundle_sha, bundle_sha)
+            or receipt.get("status") != "suite_exited_zero" or type(receipt.get("exit_code")) is not int
+            or receipt["exit_code"] != 0 or receipt.get("suite") != "services/api/tests"
+            or any(receipt.get(key) is not False for key in ("source_modified", "committed", "deployed", "release_authorized"))):
+        raise ValueError("Builder review or runner receipt failed the handoff checks")
+    expected_root = base_root.resolve(strict=True)
+    result = subprocess.run(
+        ["git", "-C", str(expected_root), "rev-parse", "--show-toplevel", "HEAD"],
+        check=True, capture_output=True, text=True, timeout=10,
+    ).stdout.splitlines()
+    if len(result) != 2 or Path(result[0]).resolve() != expected_root or result[1] != base_commit:
+        raise ValueError("Review checkout differs from the tested Git base")
+    return materialize(review, expected_root, output_parent)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--review", required=True, type=Path)
+    source = parser.add_mutually_exclusive_group(required=True)
+    source.add_argument("--review", type=Path)
+    source.add_argument("--review-handoff", type=Path)
     parser.add_argument("--base-root", required=True, type=Path)
     parser.add_argument("--output-parent", required=True, type=Path)
     args = parser.parse_args()
     try:
-        if args.review.stat().st_size > MAX_ENVELOPE_BYTES:
+        path = args.review_handoff or args.review
+        limit = MAX_ENVELOPE_BYTES + (4096 if args.review_handoff else 0)
+        with path.open("rb") as source_file:
+            raw = source_file.read(limit + 1)
+        if len(raw) > limit:
             raise ValueError("review envelope too large")
-        raw = args.review.read_bytes()
-        if len(raw) > MAX_ENVELOPE_BYTES:
-            raise ValueError("review envelope too large")
-        output = materialize(json.loads(raw), args.base_root, args.output_parent)
-    except (OSError, ValueError, TypeError, SyntaxError) as exc:
+        create = materialize_handoff if args.review_handoff else materialize
+        output = create(json.loads(raw), args.base_root, args.output_parent)
+    except (OSError, ValueError, TypeError, SyntaxError, subprocess.SubprocessError) as exc:
         # Do not print generated code or potentially sensitive file contents.
         parser.exit(2, f"Builder materialization refused: {type(exc).__name__}\n")
     print(output)

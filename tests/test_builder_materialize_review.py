@@ -4,6 +4,7 @@ import copy
 import json
 from pathlib import Path
 import runpy
+import subprocess
 import tempfile
 import unittest
 
@@ -47,6 +48,34 @@ class BuilderMaterializeTests(unittest.TestCase):
             self.assertFalse(receipt[flag])
         other = materialize(review, self.base, self.output)
         self.assertNotEqual(other, out)
+
+    def test_handoff_binds_exact_git_base_and_passing_receipt(self):
+        def git(*args):
+            return subprocess.check_output(["git", "-C", str(self.base), *args], text=True, stderr=subprocess.DEVNULL).strip()
+
+        git("init", "-q")
+        git("add", ".")
+        git("-c", "user.name=Builder Fixture", "-c", "user.email=fixture@example.invalid", "commit", "-qm", "base")
+        base = git("rev-parse", "HEAD")
+        review = self.review()
+        receipt = {"base_commit": base, "bundle_sha256": review["sha256"], "status": "suite_exited_zero",
+                   "suite": "services/api/tests", "exit_code": 0, "source_modified": False,
+                   "committed": False, "deployed": False, "release_authorized": False}
+        packet = {"base_commit": base, "bundle_sha256": review["sha256"], "review": review,
+                  "runner_receipt": receipt, "test_receipt_sha256": sha(canonical(receipt)),
+                  "submission_state": "PREPARED_FOR_OWNER_REVIEW", "github_write_authorized": False,
+                  "release_authorized": False}
+        packet["handoff_sha256"] = sha(canonical(packet))
+        with self.assertRaises(ValueError):
+            MOD["materialize_handoff"]({**packet, "test_receipt_sha256": "0" * 64}, self.base, self.output)
+        output = MOD["materialize_handoff"](packet, self.base, self.output)
+        self.assertEqual((output / "files" / self.path).read_bytes(), b"VALUE = 2\n")
+        git("-c", "user.name=Builder Fixture", "-c", "user.email=fixture@example.invalid", "commit",
+            "--allow-empty", "-qm", "moved")
+        with self.assertRaises(ValueError):
+            MOD["materialize_handoff"](packet, self.base, self.output)
+        self.assertEqual(self.source.read_bytes(), b"VALUE = 1\n")
+        self.assertEqual(list(self.output.iterdir()), [output])
 
     def test_stale_base_rejects_entire_batch(self):
         self.source.write_bytes(b"VALUE = 3\n")

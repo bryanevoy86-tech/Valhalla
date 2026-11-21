@@ -4,6 +4,7 @@ from uuid import uuid4
 from sqlalchemy.orm import Session
 
 from app.models.auth_revocations import RevokedAccessToken
+from app.models.audit_log import AuditLog
 from app.models.completion_registry import LearningTaskQueueItem
 from app.models.go_live_state import GoLiveState
 from app.models.prime_specialist_schedule import PrimeScheduleTrigger, PrimeSpecialistSchedule
@@ -112,6 +113,21 @@ def test_trial_is_bound_to_authenticated_subscriber_and_tenant(deal_client, monk
     assert owned.headers["cache-control"] == "no-store"
     assert owned.json()["execution_authorized"] is False
     assert owned.json()["evidence"]["integrity"]["fail_safe_state"]["active"] is True
+    with Session(engine) as db:
+        item = AuditLog(event_type="integrity_alert", event_source="fixture-check", message="Private evidence details")
+        db.add(item)
+        db.commit()
+        alert_id = item.id
+    attention = "/api/weweb/owner-attention"
+    assert client.get(attention).status_code == 401
+    assert client.get(attention, headers=outsider).status_code == 403
+    notice = client.get(attention, headers=bearer)
+    assert notice.status_code == 200 and notice.headers["cache-control"] == "no-store"
+    assert notice.json()["entries"] == [{"notification_id": f"integrity:{alert_id}", "category": "integrity",
+                                         "reference": str(alert_id)}]
+    assert notice.json()["delivery_attempted"] is False
+    assert "Private evidence details" not in notice.text
+    assert client.get(attention, headers=bearer).json() == notice.json()
     driving = client.get(briefing, params={"mode": "driving"}, headers=bearer)
     assert driving.status_code == 200 and driving.json()["emergency_stop"] is True
     assert "evidence" not in driving.json() and driving.json()["execution_authorized"] is False
@@ -169,6 +185,7 @@ def test_trial_is_bound_to_authenticated_subscriber_and_tenant(deal_client, monk
     assert client.delete(f"{root}/{trial['entitlement_id']}", headers=owner).json()["revoked"]
     assert client.get(access, headers=bearer).status_code == 404
     assert client.post("/api/weweb/logout", headers=bearer).status_code == 200
+    assert client.get(attention, headers=bearer).status_code == 401
     assert client.get(access, headers=bearer).status_code == 401
     assert client.get(briefing, headers=bearer).status_code == 401
     assert client.post(path, headers=bearer, json=plan).status_code == 401

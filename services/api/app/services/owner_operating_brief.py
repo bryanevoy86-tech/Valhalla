@@ -128,3 +128,21 @@ def operating_evidence(db: Session) -> dict:
     return {"specialist_queue": research_queue, "latest_specialist_reports": report_items, "invalid_specialist_report_ids": invalid_reports,
             "specialist_cadence_alerts": cadence_alerts, "loki": loki, "latest_integrity_alerts": alerts, "latest_market_alerts": market_alerts, "latest_economic_alerts": economic_alerts, "financials": financials,
             "verified_cash_balance": None, "foundry_intake_health": discovery, "builder_lease_health": builder}
+
+
+def owner_attention(db: Session) -> dict:
+    """Project stable owner inbox entries from existing operational receipts."""
+    evidence = operating_evidence(db)
+    ordered_sources = (
+        ("integrity", "audit_id", evidence["latest_integrity_alerts"]),
+        ("review", "review_id", evidence["loki"]["latest_outstanding"]),
+        ("economic", "report_id", evidence["latest_economic_alerts"]),
+        ("discovery", "job_id", evidence["foundry_intake_health"].get("recent_job_errors", [])),
+        ("schedule", "report_id", evidence["specialist_cadence_alerts"]),
+    )
+    entries = []
+    for category, key, rows in ordered_sources:
+        entries.extend({"notification_id": f"{category}:{row[key]}", "category": category, "reference": str(row[key])}
+                       for row in rows)
+    return {"entries": entries, "view": "PRIVATE_IN_APP", "delivery_attempted": False,
+            "execution_authorized": False}

@@ -45,3 +45,10 @@ def owner_list_attachments(conversation_id: UUID, limit: int = 50, db: Session =
 @router.post("/owner-startup/compare")
 def startup_comparison(payload: StartupPlanIn):
     return private_owner_response(prepare_startup(payload))
+
+
+@router.get("/owner-attention")
+def attention_inbox(db: Session = Depends(get_db)):
+    from app.services.owner_operating_brief import owner_attention
+
+    return private_owner_response(owner_attention(db))
