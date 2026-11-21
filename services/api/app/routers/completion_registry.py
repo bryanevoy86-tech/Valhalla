@@ -2695,7 +2695,17 @@ def _require_independent_review(db: Session, opportunity: UniversalOpportunityIn
             "message": "Independent Loki findings require reconsideration",
             "verdict": decision.model_dump(mode="json"),
         })
-    return {"review_id": str(review_id), **decision.model_dump(mode="json")}
+    result = {"review_id": str(review_id), **decision.model_dump(mode="json")}
+    if "pantheon_report_ids" in opportunity.specialist_inputs:
+        from app.loki.specialist_review import require_reviewed_reports
+
+        result["reviewed_specialist_reports"] = require_reviewed_reports(
+            db, opportunity.specialist_inputs["pantheon_report_ids"], {
+                "legacy_instance_id": opportunity.legacy, "jurisdiction": opportunity.jurisdiction,
+                "engine_id": opportunity.engine_id, "business_id": opportunity.specialist_inputs.get("business_id"),
+            },
+        )
+    return result
 
 
 @router.post("/phase3/universal-opportunity/evaluate")

@@ -1,8 +1,6 @@
 """Independent reviewer receipts and the policy for reconsidering findings."""
 
-import hashlib
 import hmac
-import json
 import os
 from uuid import UUID
 
@@ -10,6 +8,7 @@ from fastapi import Header, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.settings import settings
+from app.loki.evidence import artifact_digest
 from app.loki.models import (
     LokiFinding,
     LokiIndependentReceipt,
@@ -43,17 +42,29 @@ def require_loki_reviewer(provided: str | None = Header(None, alias="X-Loki-Revi
     return name
 
 
-def artifact_digest(artifact_type: str, reference: str | None, content: dict) -> str:
-    wrapped = {"artifact_type": artifact_type, "reference": reference, "content": content}
-    try:
-        canonical = json.dumps(wrapped, sort_keys=True, ensure_ascii=False, separators=(",", ":"), allow_nan=False)
-    except (TypeError, ValueError):
-        raise HTTPException(status_code=422, detail="Artifact must be canonical JSON") from None
-    return hashlib.sha256(canonical.encode()).hexdigest()
-
-
 def review_digest(review: LokiReview) -> str:
     return artifact_digest(review.artifact_type, review.heimdall_reference_id, review.raw_input)
+
+
+def result_digest(review: LokiReview, receipt: LokiIndependentReceipt, findings: list[LokiFinding]) -> str:
+    records = [
+        {"id": str(item.id), "category": item.category, "severity": item.severity,
+         "message": item.message, "suggested_fix": item.suggested_fix, "tags": item.tags}
+        for item in sorted(findings, key=lambda item: str(item.id))
+    ]
+    return artifact_digest("loki_result", str(review.id), {
+        "proposal_sha256": receipt.artifact_sha256, "reviewer_id": receipt.reviewer_id,
+        "analysis_ref": receipt.analysis_ref, "summary": review.summary, "severity": review.result_severity,
+        "findings": records,
+    })
+
+
+def require_result_integrity(review: LokiReview, receipt: LokiIndependentReceipt) -> None:
+    # Historical receipts predate the result digest. Newly issued receipts bind their findings.
+    if receipt.result_sha256 is not None and not hmac.compare_digest(
+        receipt.result_sha256, result_digest(review, receipt, review.findings),
+    ):
+        raise HTTPException(409, "Loki findings no longer match the published receipt")
 
 
 def publish_receipt(db: Session, review_id: UUID, reviewer: str, payload: IndependentReviewIn) -> LokiIndependentReceipt:
@@ -64,12 +75,15 @@ def publish_receipt(db: Session, review_id: UUID, reviewer: str, payload: Indepe
         raise HTTPException(status_code=409, detail="Review is no longer queued")
     if review.artifact_sha256 != payload.artifact_sha256 or not hmac.compare_digest(review_digest(review), payload.artifact_sha256):
         raise HTTPException(status_code=409, detail="Review artifact changed")
-    for finding in payload.findings:
-        db.add(LokiFinding(
+    findings = [
+        LokiFinding(
             review_id=review.id, category=finding.category, severity=finding.severity,
             message=finding.message, suggested_fix=finding.suggested_fix,
             tags={"material": finding.material or finding.severity == "critical", "evidence_ref": finding.evidence_ref},
-        ))
+        )
+        for finding in payload.findings
+    ]
+    db.add_all(findings)
     receipt = LokiIndependentReceipt(
         review_id=review.id, artifact_sha256=payload.artifact_sha256,
         reviewer_id=reviewer, analysis_ref=payload.analysis_ref,
@@ -80,6 +94,8 @@ def publish_receipt(db: Session, review_id: UUID, reviewer: str, payload: Indepe
         "warn" if payload.findings else "ok"
     )
     review.status = LokiReviewStatus.COMPLETED
+    db.flush()
+    receipt.result_sha256 = result_digest(review, receipt, findings)
     db.commit()
     return receipt
 
@@ -95,6 +111,7 @@ def record_reconsideration(db: Session, review_id: UUID, payload: OwnerReconside
     review = db.get(LokiReview, review_id)
     if receipt.artifact_sha256 != review_digest(review) or receipt.artifact_sha256 != payload.artifact_sha256:
         raise HTTPException(status_code=409, detail="Reconsideration must match the reviewed artifact")
+    require_result_integrity(review, receipt)
     if payload.material_finding_ids != _material(review) or not payload.reason.strip():
         raise HTTPException(status_code=422, detail="Address every material finding and record a reason")
     if payload.disposition == "accept_risk" and review.result_severity == "critical":
@@ -117,6 +134,7 @@ def verdict(db: Session, review: LokiReview) -> LokiVerdict:
     receipt = db.get(LokiIndependentReceipt, review.id)
     if receipt is None or receipt.artifact_sha256 != review.artifact_sha256 or receipt.artifact_sha256 != review_digest(review):
         raise HTTPException(status_code=503, detail="LOKI_VERIFIED_VERDICT_PROVIDER_NOT_CONNECTED")
+    require_result_integrity(review, receipt)
     decision = db.get(LokiReconsideration, review.id)
     material = _material(review)
     accepted = bool(

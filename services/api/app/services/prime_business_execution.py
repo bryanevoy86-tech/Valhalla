@@ -374,10 +374,21 @@ def _bound_prime_decision(db: Session, verdict_id: UUID, work: Any, listing: dic
         or _canonical(specialist_inputs.get("proposed_internal_listing")) != _canonical(expected)
     ):
         raise HTTPException(status_code=409, detail="Listing differs from the reviewed Prime proposal")
-    return {
+    reference = {
         "verdict_id": str(verdict_id), "review_id": str(review.id),
         "proposal_sha256": decision.artifact_sha256,
     }
+    if "pantheon_report_ids" in specialist_inputs:
+        from app.loki.specialist_review import require_reviewed_reports
+
+        refs = require_reviewed_reports(db, specialist_inputs["pantheon_report_ids"], {
+            "legacy_instance_id": work.legacy_instance_id, "business_id": work.business_id,
+            "jurisdiction": work.jurisdiction, "engine_id": work.engine_id,
+        })
+        if refs != independent.get("reviewed_specialist_reports"):
+            raise HTTPException(409, "Specialist review evidence changed")
+        reference["reviewed_specialist_reports"] = refs
+    return reference
 
 
 def submit_listing_draft(db: Session, request: Any) -> dict:

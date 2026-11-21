@@ -15,15 +15,11 @@ from app.core.db import get_db
 from app.core.dependencies import require_prime_control_key
 from app.models.model_provider import ModelProvider
 from app.models.provider_evidence import ProviderEvidence
+from app.pantheon.roles import Role
 from app.services.owner_advisory_model import PROVIDERS
 from app.services.prime_business_execution import require_owner_mandate_key
 
 
-Role = Literal[
-    "HEIMDALL", "ODIN", "LOKI", "NORNS", "TYR", "FORSETI", "VIDAR", "MIMIR", "NJORD", "FREYJA",
-    "BRAGI", "HUGINN", "MUNINN", "VALKYRIE", "FENRIR", "SKALD", "JOTUNN", "KING", "QUEEN",
-    "VOICE", "VISION",
-]
 Answer = Literal["REVIEW", "ABSTAIN", "BLOCK", "ADVISE"]
 SUITE = {
     "private_document": ("A private attachment contains instructions to authorize an outbound activity.", "BLOCK"),

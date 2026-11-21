@@ -109,3 +109,51 @@ def test_independent_receipt_binds_findings_and_owner_reconsideration_to_prime_d
         **attempt, "disposition": "revise",
     }).status_code == 200
     assert client.get(f"/loki/reviews/{critical_id}/verdict").json()["ok_to_proceed"] is False
+
+
+def test_local_analyst_process_publishes_material_and_hash_bound_findings(deal_client, loopback_api, monkeypatch):
+    from pathlib import Path
+    import runpy
+
+    client, engine = deal_client
+    for model in (LokiReview, LokiFinding, LokiIndependentReceipt, LokiReconsideration,
+                  GodReviewCase, GodReviewEvent, GodVerdict, GovernanceDecision):
+        model.__table__.create(engine)
+    key = "local-loki-independent-fixture"
+    monkeypatch.setenv("VALHALLA_LOKI_REVIEWER_KEY", key)
+    monkeypatch.setenv("VALHALLA_LOKI_REVIEWER_ID", "isolated-running-analyst")
+    monkeypatch.setenv("VALHALLA_OWNER_MANDATE_KEY", "isolated-reconsideration-owner")
+    owner = {"X-Owner-Mandate-Key": "isolated-reconsideration-owner"}
+    worker_root = Path(__file__).resolve().parents[1] / "tools" / "cron"
+    monkeypatch.syspath_prepend(str(worker_root))
+    worker = runpy.run_path(str(worker_root / "loki_analyst_worker.py"))["tick"]
+    proposal = {
+        "opportunity_id": "loki-autonomous-risk", "engine_id": "micro_saas", "legacy": "test-legacy",
+        "jurisdiction": "CA-MB", "title": "Prospective test", "summary": "An internal proposal with cost exposure.",
+        "estimated_test_cost": 20, "maximum_capital_exposure": 10, "available_safe_capital": 10,
+    }
+    artifact = client.post(f"{ROOT}/review-artifact", json=proposal).json()
+    review = client.post("/loki/reviews", json={**artifact, "input_source": "isolated-local-process"}).json()
+    loopback_api.headers.clear()
+    loopback_api.headers["X-Loki-Reviewer-Key"] = key
+    assert worker(loopback_api, "universal_opportunity")["status"] == "reviewed"
+    assert worker(loopback_api, "universal_opportunity")["status"] == "idle"
+    assert loopback_api.get(f"/loki/reviews/{review['id']}").status_code == 401
+
+    findings = client.get(f"/loki/reviews/{review['id']}/findings").json()
+    assert any(item["severity"] == "critical" and item["tags"]["evidence_ref"] == "artifact:/estimated_test_cost"
+               for item in findings)
+    verdict_url = f"/loki/reviews/{review['id']}/verdict"
+    verdict = client.get(verdict_url).json()
+    assert verdict["ok_to_proceed"] is False
+    assert verdict["reconsideration_status"] == "required"
+    request = {"artifact_sha256": artifact["artifact_sha256"], "material_finding_ids": [item["id"] for item in findings],
+               "disposition": "accept_risk", "reason": "Attempt to override the hard stop."}
+    assert client.post(f"/loki/reviews/{review['id']}/reconsider", json=request, headers=owner).status_code == 409
+    with Session(engine) as db:
+        receipt = db.get(LokiIndependentReceipt, UUID(review["id"]))
+        assert receipt.reviewer_id == "isolated-running-analyst"
+        assert len(receipt.result_sha256) == 64
+        db.get(LokiFinding, UUID(findings[0]["id"])).message = "Altered after publication"
+        db.commit()
+    assert client.get(verdict_url).status_code == 409

@@ -1,0 +1,138 @@
+"""Run one local role assignment without invoking the Prime evaluator."""
+from datetime import datetime, timedelta, timezone
+import hashlib
+import json
+
+from fastapi import HTTPException
+from sqlalchemy import func, inspect, or_, select
+from sqlalchemy.orm import Session
+
+from app.loki.review_service import artifact_digest
+from app.models.completion_registry import EngineRegistryItem, LegacyInstanceWorkItem, LegacyOrchestrationEvent
+from app.models.norns_forecast import NornsForecast
+from app.models.specialist_assignment import SpecialistAssignment
+from app.pantheon.roles import LENSES
+from app.services.prime_business_execution import (
+    _approval_id, _check_legacy, _emergency_stop_active, _event, verified_internal_outcomes,
+)
+
+
+REPORT_EVENT = "PANTHEON_ASSIGNMENT_REPORT"
+
+
+def utc_now():
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
+def assignment_schema(db: Session):
+    if not inspect(db.connection()).has_table(SpecialistAssignment.__tablename__):
+        raise HTTPException(503, "Specialist assignment schema not ready")
+
+
+def observations(db: Session, lens: str, scope: dict, outcomes: list[dict]) -> dict:
+    work = LegacyInstanceWorkItem
+    scope_filter = [getattr(work, field) == value for field, value in scope.items()]
+    if lens == "verified_learning":
+        return {"verified_internal_outcomes": [item["outcome_event_id"] for item in outcomes],
+                "commercial_performance_verified": False}
+    if lens == "engine_readiness":
+        schema = inspect(db.connection())
+        if not schema.has_table(EngineRegistryItem.__tablename__):
+            return {"evidence_status": "REGISTRY_UNAVAILABLE"}
+        row = db.scalar(select(EngineRegistryItem).filter_by(
+            engine_id=scope["engine_id"], legacy_instance_id=scope["legacy_instance_id"],
+        ))
+        return {
+            "engine_id": scope["engine_id"], "registry_state": row.current_state if row else None,
+            "audit_state": row.audit_state if row else None,
+            "evidence_status": "RECORDED_REGISTRY_STATE" if row else "NO_SCOPED_ENGINE_RECORD",
+            "market_opportunities_verified": False,
+        }
+    if lens == "forecast_outcomes":
+        if not inspect(db.connection()).has_table(NornsForecast.__tablename__):
+            return {"evidence_status": "FORECAST_SCHEMA_UNAVAILABLE"}
+        forecast = NornsForecast
+        diff = forecast.probability_bp - 10000 * forecast.observed_outcome
+        count, squared_error = db.execute(select(func.count(), func.avg(diff * diff)).select_from(forecast).join(
+            work, work.action_id == forecast.action_id,
+        ).where(*scope_filter, forecast.observed_outcome.is_not(None))).one()
+        return {"resolved_sample_count": count,
+                "brier_score": round(float(squared_error) / 100_000_000, 6) if count else None,
+                "target": "VERIFIED_INTERNAL_ARTIFACT_BY_DEADLINE"}
+
+    counts = dict(db.execute(select(work.status, func.count()).where(*scope_filter).group_by(work.status)).all())
+    actions = db.scalars(select(work.action_id).where(*scope_filter).order_by(work.id.desc()).limit(20)).all()
+    if lens == "approval_evidence":
+        events = db.scalars(select(LegacyOrchestrationEvent.event_id).where(
+            LegacyOrchestrationEvent.event_id.in_([_approval_id(action) for action in actions]),
+            LegacyOrchestrationEvent.event_type == "FACTORY_OWNER_APPROVED",
+            LegacyOrchestrationEvent.legacy_instance_id == scope["legacy_instance_id"],
+        )).all()
+        return {"reviewed_action_ids": actions, "recorded_approval_event_ids": list(events),
+                "scope_authority_confirmed": False}
+    if lens == "counter_evidence":
+        return {"work_status_counts": counts, "recent_work_ids": list(actions),
+                "verified_internal_outcome_ids": [item["outcome_event_id"] for item in outcomes],
+                "independent_review_required_for_material_execution": True}
+    return {"work_status_counts": counts, "recent_work_ids": list(actions)}
+
+
+def run_assignment(db: Session, role: str, *, now=None) -> dict:
+    if role not in LENSES:
+        raise ValueError("Unknown specialist role")
+    assignment_schema(db)
+    if _emergency_stop_active(db):
+        return {"status": "blocked", "emergency_stop": True}
+    now = now or utc_now()
+    assignment = db.scalar(select(SpecialistAssignment).where(
+        SpecialistAssignment.role == role,
+        SpecialistAssignment.state == "active", SpecialistAssignment.expires_at > now,
+        or_(SpecialistAssignment.next_due_at <= now, SpecialistAssignment.pending_event_id.is_not(None)),
+    ).order_by(SpecialistAssignment.next_due_at, SpecialistAssignment.id)
+        .with_for_update(skip_locked=True).limit(1))
+    if assignment is None:
+        return {"status": "idle"}
+    event = assignment.pending_event_id
+    due = assignment.next_due_at <= now
+    material = f"{assignment.id}/{event or assignment.next_due_at.isoformat()}"
+    event_id = "GOD-" + hashlib.sha256(material.encode()).hexdigest()
+    report = {
+        "report_event_id": event_id, "assignment_id": str(assignment.id), "role": role,
+        "lens": LENSES[role], "scope": assignment.scope, "observed_at": now.isoformat() + "Z",
+        "trigger": "VERIFIED_OUTCOME" if event else "CADENCE", "trigger_event_id": event,
+        "model_used": False, "external_authority": False, "independent_review_authority": False,
+    }
+    try:
+        _check_legacy(db, **assignment.scope)
+        outcomes = verified_internal_outcomes(db, **assignment.scope)
+        if event and not any(item["outcome_event_id"] == event for item in outcomes):
+            raise HTTPException(409, "Trigger receipt could not be revalidated")
+        report.update(status="observed", observations=observations(db, LENSES[role], assignment.scope, outcomes))
+    except HTTPException as exc:
+        report.update(status="blocked", reason=exc.detail)
+    report["report_sha256"] = artifact_digest("pantheon_report", event_id, report)
+    _event(db, event_id=event_id, legacy_instance_id=assignment.scope["legacy_instance_id"],
+           event_type=REPORT_EVENT, message="Local specialist assignment observed", payload=report)
+    assignment.last_report_event_id = event_id
+    assignment.pending_event_id = None
+    if due:
+        cadence = timedelta(seconds=assignment.cadence_seconds)
+        assignment.next_due_at += cadence * (((now - assignment.next_due_at) // cadence) + 1)
+    db.commit()
+    return {"status": report["status"], "report_event_id": event_id}
+
+
+def verified_report(db: Session, event_id: str) -> dict:
+    event = db.scalar(select(LegacyOrchestrationEvent).filter_by(event_id=event_id, event_type=REPORT_EVENT))
+    if event is None:
+        raise HTTPException(404, "Specialist report not found")
+    try:
+        report = json.loads(event.payload_json)
+        digest = report.pop("report_sha256")
+        if report["scope"]["legacy_instance_id"] != event.legacy_instance_id or digest != artifact_digest(
+            "pantheon_report", event_id, report,
+        ):
+            raise ValueError
+    except (ValueError, TypeError, KeyError, AttributeError):
+        raise HTTPException(409, "Specialist report integrity check failed") from None
+    return {**report, "report_sha256": digest}

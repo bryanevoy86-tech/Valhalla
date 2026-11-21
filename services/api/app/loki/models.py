@@ -112,6 +112,7 @@ class LokiIndependentReceipt(Base):
     artifact_sha256 = Column(String(64), nullable=False)
     reviewer_id = Column(String(100), nullable=False)
     analysis_ref = Column(String(200), nullable=False)
+    result_sha256 = Column(String(64), nullable=True)
     created_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
 
 
