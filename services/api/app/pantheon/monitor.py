@@ -2,6 +2,7 @@
 from datetime import datetime, timedelta, timezone
 import hashlib
 import json
+from uuid import UUID
 
 from fastapi import HTTPException
 from sqlalchemy import func, inspect, or_, select
@@ -12,7 +13,7 @@ from app.models.completion_registry import EngineRegistryItem, LegacyInstanceWor
 from app.models.norns_forecast import NornsForecast, NornsHoldout
 from app.models.specialist_assignment import SpecialistAssignment, SpecialistTrigger
 from app.pantheon.roles import LENSES
-from app.pantheon.forecasts import calibration_measurements, issue_scoped_estimate
+from app.pantheon.forecasts import calibration_measurements, issue_scoped_estimate, sweep_scoped_outcomes
 from app.services.foundry_discovery import DISCOVERY_ROLES, WITHDRAWAL_PREFIX, discover, verify_withdrawal
 from app.services.foundry_intake import verify_intake_trigger
 from app.services.market_intelligence import market_observations
@@ -35,7 +36,7 @@ def assignment_schema(db: Session):
         raise HTTPException(503, "Specialist assignment schema not ready")
 
 
-def observations(db: Session, lens: str, scope: dict, outcomes: list[dict], now, cadence: int) -> dict:
+def observations(db: Session, lens: str, scope: dict, outcomes: list[dict], now, cadence: int, *, forecast_after=None) -> dict:
     work = LegacyInstanceWorkItem
     scope_filter = [getattr(work, field) == value for field, value in scope.items()]
     if lens == "verified_learning":
@@ -60,7 +61,9 @@ def observations(db: Session, lens: str, scope: dict, outcomes: list[dict], now,
             return {"evidence_status": "FORECAST_SCHEMA_UNAVAILABLE"}
         if "estimate_source" not in {item["name"] for item in schema.get_columns(NornsForecast.__tablename__)}:
             return {"evidence_status": "FORECAST_SCHEMA_UNAVAILABLE"}
+        sweep = sweep_scoped_outcomes(db, scope, now, after=forecast_after)
         return {**calibration_measurements(db, now, scope=scope, horizon_seconds=cadence),
+                "outcome_resolution": sweep,
                 "score_cohort": "ORDINARY_INTERNAL_ESTIMATE_SOURCES",
                 "target": "VERIFIED_INTERNAL_ARTIFACT_BY_DEADLINE",
                 **issue_scoped_estimate(db, scope, now, cadence)}
@@ -177,7 +180,20 @@ def run_assignment(db: Session, role: str, *, now=None) -> dict:
             item["outcome_event_id"] == event for item in outcomes
         ):
             raise HTTPException(409, "Trigger receipt could not be revalidated")
-        facts = observations(db, LENSES[role], assignment.scope, outcomes, now, assignment.cadence_seconds)
+        forecast_after = None
+        if role == "NORNS" and assignment.last_report_event_id:
+            try:
+                prior = verified_report(db, assignment.last_report_event_id)
+                if (prior.get("assignment_id"), prior.get("role"), prior.get("scope")) == (
+                    str(assignment.id), role, assignment.scope,
+                ):
+                    cursor = prior.get("observations", {}).get("outcome_resolution", {}).get("next_after")
+                    forecast_after = UUID(cursor) if cursor else None
+            except (HTTPException, ValueError, TypeError, AttributeError):
+                # An untrusted cursor can only restart the scan.
+                pass
+        facts = observations(db, LENSES[role], assignment.scope, outcomes, now, assignment.cadence_seconds,
+                             forecast_after=forecast_after)
         if role in DISCOVERY_ROLES:
             facts.update(discover(db, role, assignment.scope, now.date()))
         facts.update(market_observations(db, role, assignment.scope, now))

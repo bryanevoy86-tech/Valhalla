@@ -13,8 +13,8 @@ from app.core.db import get_db
 from app.core.dependencies import require_prime_control_key
 from app.models.completion_registry import LegacyInstanceWorkItem, LegacyOrchestrationEvent
 from app.models.norns_forecast import NornsForecast, NornsHoldout
-from app.pantheon.forecasts import calibration_measurements, outcome_matches_receipt
-from app.services.prime_business_execution import ACTION_TYPE, _json, _receipt_id, action_status, require_owner_mandate_key
+from app.pantheon.forecasts import calibration_measurements, outcome_matches_receipt, resolve_factory_outcome
+from app.services.prime_business_execution import ACTION_TYPE, _json, _receipt_id, require_owner_mandate_key
 
 
 def require_forecast_schema(db: Session = Depends(get_db)):
@@ -116,29 +116,7 @@ def resolve_forecast(forecast_id: UUID, db: Session = Depends(get_db)):
         if not outcome_matches_receipt(db, forecast, item, now):
             raise HTTPException(409, "Recorded outcome no longer matches Factory evidence")
         return _explain(forecast)
-    result = action_status(db, forecast.action_id)
-    if result["internal_artifact_verified"]:
-        try:
-            at = datetime.fromisoformat(result["receipt"]["verified_at"])
-            if at.tzinfo is None:
-                raise ValueError
-            at = at.astimezone(timezone.utc).replace(tzinfo=None)
-            if not forecast.issued_at <= at <= now:
-                raise ValueError
-        except (KeyError, TypeError, ValueError):
-            raise HTTPException(409, "Verified receipt timing is unavailable") from None
-        forecast.observed_outcome = int(at <= forecast.deadline_at)
-        forecast.evidence_ref = _receipt_id(forecast.action_id)
-    elif item.status == "completed" or db.scalar(select(LegacyOrchestrationEvent.id).where(
-        LegacyOrchestrationEvent.event_id == _receipt_id(forecast.action_id),
-    )) is not None:
-        raise HTTPException(409, "Existing Factory evidence is unverified")
-    elif now >= forecast.deadline_at:
-        forecast.observed_outcome = 0
-        forecast.evidence_ref = f"FACTORY_DEADLINE_NO_RECEIPT:{forecast.action_id}"
-    else:
-        raise HTTPException(409, "Forecast remains pending")
-    forecast.resolved_at = now
+    resolve_factory_outcome(db, forecast, item, now)
     db.commit()
     return _explain(forecast)
 

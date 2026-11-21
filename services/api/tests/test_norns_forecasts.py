@@ -156,6 +156,7 @@ def test_norns_requires_pre_execution_forecast_and_scores_only_observed_outcomes
     excluded = client.get(f"/api/prime/pantheon/reports/{exclusion_id}").json()["observations"]
     assert excluded["forecast_status"] == "INSUFFICIENT_SCOPED_HISTORY"
     assert excluded["training_count"] == 2
+    assert excluded["outcome_resolution"]["resolved_ids"] == [newer["forecast_id"]]
     assert excluded["evidence_excluded_count"] == 1
     assert client.get(f"{base}/calibration", params={**query, "cohort": "HOLDOUT"}).json()["brier_score"] == 0.16
 
@@ -169,3 +170,27 @@ def test_norns_requires_pre_execution_forecast_and_scores_only_observed_outcomes
     assert invalid["resolved_sample_count"] == 0 and invalid["evidence_excluded_count"] == 1
     assert invalid["probability_buckets"] == [] and invalid["brier_score"] is None
     assert client.get(f"{base}/calibration", params=query).json()["resolved_sample_count"] == 0
+
+    # A receipt with contradictory evidence is left pending for review.
+    corrupt = forecast(queue("auto-resolve-conflicting-receipt"), 4500)
+    assert client.post(forecasts, headers=owner, json=corrupt).status_code == 201
+    with Session(engine) as db:
+        db.add(LegacyOrchestrationEvent(
+            event_id=f"BF-RECEIPT-{corrupt['action_id']}", legacy_instance_id="cal-legacy",
+            event_type="FACTORY_ARTIFACT_VERIFIED", message="Intentionally invalid fixture", payload_json="{}",
+        ))
+        db.commit()
+        auto_at = later + timedelta(minutes=11)
+        result = run_assignment(db, "NORNS", now=auto_at)
+        assert run_assignment(db, "NORNS", now=auto_at) == {"status": "idle"}
+    auto_report = client.get(f"/api/prime/pantheon/reports/{result['report_event_id']}").json()["observations"]
+    assert auto_report["outcome_resolution"] == {
+        "resolved_ids": [], "unverified_ids": [corrupt["forecast_id"]],
+        "deferred_count": 0, "next_after": None,
+    }
+    monkeypatch.setattr(norns_forecasts, "_now", lambda: auto_at)
+    saved = client.get(f"{forecasts}/{newer['forecast_id']}").json()
+    assert saved["observed_outcome"] == 0
+    assert client.post(f"{forecasts}/{newer['forecast_id']}/resolve").json() == saved
+    assert client.get(f"{forecasts}/{corrupt['forecast_id']}").json()["observed_outcome"] is None
+    assert client.get(f"{base}/calibration", params=query).json()["brier_score"] == 0.16

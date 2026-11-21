@@ -1,8 +1,9 @@
 """Issue prospective, scope-specific baseline estimates from observed receipts."""
 from datetime import datetime, timedelta, timezone
-from uuid import uuid4
+from uuid import UUID, uuid4
 
-from sqlalchemy import exists, select
+from fastapi import HTTPException
+from sqlalchemy import exists, or_, select
 from sqlalchemy.orm import Session
 
 from app.models.completion_registry import LegacyInstanceWorkItem, LegacyOrchestrationEvent
@@ -11,6 +12,78 @@ from app.services.prime_business_execution import ACTION_TYPE, _json, _receipt_i
 
 
 SOURCE = "SCOPED_HISTORICAL_RATE"
+
+
+def resolve_factory_outcome(db: Session, forecast, item, now) -> None:
+    """Label an unresolved forecast with the forecast and work rows locked."""
+    if not forecast.issued_at <= now or not forecast.issued_at < forecast.deadline_at:
+        raise HTTPException(409, "Forecast timing is invalid")
+    payload = _json(item.payload_json, {})
+    if not isinstance(payload, dict) or payload.get("action_type") != ACTION_TYPE:
+        raise HTTPException(409, "Internal Factory action evidence is unverified")
+    result = action_status(db, forecast.action_id)
+    if result["internal_artifact_verified"]:
+        try:
+            at = datetime.fromisoformat(result["receipt"]["verified_at"])
+            if at.tzinfo is None:
+                raise ValueError
+            at = at.astimezone(timezone.utc).replace(tzinfo=None)
+            if not forecast.issued_at <= at <= now:
+                raise ValueError
+        except (KeyError, TypeError, ValueError):
+            raise HTTPException(409, "Verified receipt timing is unavailable") from None
+        forecast.observed_outcome = int(at <= forecast.deadline_at)
+        forecast.evidence_ref = _receipt_id(forecast.action_id)
+    elif item.status == "completed" or db.scalar(select(LegacyOrchestrationEvent.id).where(
+        LegacyOrchestrationEvent.event_id == _receipt_id(forecast.action_id),
+    )) is not None:
+        raise HTTPException(409, "Existing Factory evidence is unverified")
+    elif now >= forecast.deadline_at:
+        forecast.observed_outcome = 0
+        forecast.evidence_ref = f"FACTORY_DEADLINE_NO_RECEIPT:{forecast.action_id}"
+    else:
+        raise HTTPException(409, "Forecast remains pending")
+    forecast.resolved_at = now
+
+
+def sweep_scoped_outcomes(db: Session, scope: dict, now, *, after: UUID | None = None) -> dict:
+    """Review one page in the existing Norns assignment transaction."""
+    forecast, work = NornsForecast, LegacyInstanceWorkItem
+    window = 20
+    receipt = exists(select(LegacyOrchestrationEvent.id).where(
+        LegacyOrchestrationEvent.event_id == "BF-RECEIPT-" + forecast.action_id,
+    ))
+    query = select(forecast.id).join(work, work.action_id == forecast.action_id).where(
+        *(getattr(work, key) == value for key, value in scope.items()),
+        forecast.resolved_at.is_(None),
+        or_(forecast.deadline_at <= now, receipt, work.status == "completed"),
+    )
+    if after is not None:
+        query = query.where(forecast.id > after)
+    ids = db.scalars(query.order_by(forecast.id).limit(window + 1)).all()
+    findings = {"resolved_ids": [], "unverified_ids": [], "deferred_count": 0,
+                "next_after": str(ids[window - 1]) if len(ids) > window else None}
+    for forecast_id in ids[:window]:
+        estimate = db.scalar(select(forecast).filter_by(id=forecast_id, resolved_at=None)
+                             .with_for_update(skip_locked=True))
+        if estimate is None:
+            findings["deferred_count"] += 1
+            continue
+        item = db.scalar(select(work).filter_by(action_id=estimate.action_id, **scope)
+                         .with_for_update(skip_locked=True))
+        if item is None:
+            findings["deferred_count"] += 1
+            continue
+        try:
+            resolve_factory_outcome(db, estimate, item, now)
+        except HTTPException as exc:
+            if exc.status_code != 409:
+                raise
+            findings["unverified_ids"].append(str(forecast_id))
+        else:
+            findings["resolved_ids"].append(str(forecast_id))
+    db.flush()
+    return findings
 
 
 def outcome_matches_receipt(db: Session, forecast, work, now, *, enrolled_at=None) -> bool:

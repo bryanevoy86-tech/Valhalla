@@ -40,6 +40,8 @@ from app.models.prime_specialist_schedule import PrimeScheduleTrigger, PrimeSpec
 from app.models.specialist_assignment import SpecialistAssignment, SpecialistTrigger  # noqa: E402
 from app.services.specialist_triggers import enqueue_prime, enqueue_research, outcome_scope_key  # noqa: E402
 from app.models.media_engine import MediaContent  # noqa: E402
+from app.models.norns_forecast import NornsForecast  # noqa: E402
+from app.pantheon.forecasts import sweep_scoped_outcomes  # noqa: E402
 from app.routers.prime_business_factory import router  # noqa: E402
 from app.services.prime_business_execution import run_one_approved_draft  # noqa: E402
 
@@ -55,6 +57,7 @@ TABLES = [
     SpecialistTrigger,
     PrimeSpecialistSchedule,
     PrimeScheduleTrigger,
+    NornsForecast,
 ]
 
 
@@ -210,6 +213,28 @@ class FactoryPostgresTests(unittest.TestCase):
         )
         self.assertEqual(approval.status_code, 200, approval.text)
         return action_id
+
+    def test_norns_sweep_recovers_from_rolled_back_claim_and_is_scope_bound(self):
+        action = self.queue_and_approve()
+        scope = {key: self.payload[key] for key in ("legacy_instance_id", "business_id", "engine_id", "jurisdiction")}
+        at = datetime.now(timezone.utc).replace(tzinfo=None)
+        forecast_id = uuid4()
+        with self.sessions.begin() as db:
+            db.add(NornsForecast(id=forecast_id, action_id=action, probability_bp=4000,
+                                 issued_at=at - timedelta(minutes=2), deadline_at=at - timedelta(minutes=1)))
+        with self.sessions() as interrupted, self.sessions() as worker:
+            self.assertEqual(sweep_scoped_outcomes(interrupted, scope, at)["resolved_ids"], [str(forecast_id)])
+            self.assertEqual(sweep_scoped_outcomes(worker, scope, at)["deferred_count"], 1)
+            worker.rollback()
+            interrupted.rollback()
+        with self.sessions.begin() as worker:
+            self.assertEqual(sweep_scoped_outcomes(worker, {**scope, "jurisdiction": "CA-ON"}, at)["resolved_ids"], [])
+            self.assertEqual(sweep_scoped_outcomes(worker, scope, at)["resolved_ids"], [str(forecast_id)])
+        with self.sessions() as worker:
+            self.assertEqual(sweep_scoped_outcomes(worker, scope, at)["resolved_ids"], [])
+            label = worker.get(NornsForecast, forecast_id)
+            self.assertEqual(label.observed_outcome, 0)
+            self.assertEqual(label.evidence_ref, f"FACTORY_DEADLINE_NO_RECEIPT:{action}")
 
     def test_real_postgres_task_is_persistent_and_verifiable_on_new_session(self):
         action_id = self.queue_and_approve()
