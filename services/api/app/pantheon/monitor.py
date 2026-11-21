@@ -13,6 +13,7 @@ from app.models.norns_forecast import NornsForecast
 from app.models.specialist_assignment import SpecialistAssignment
 from app.pantheon.roles import LENSES
 from app.pantheon.forecasts import issue_scoped_estimate
+from app.services.foundry_discovery import DISCOVERY_ROLES, discover
 from app.services.prime_business_execution import (
     _approval_id, _check_legacy, _emergency_stop_active, _event, verified_internal_outcomes,
 )
@@ -113,7 +114,10 @@ def run_assignment(db: Session, role: str, *, now=None) -> dict:
         outcomes = verified_internal_outcomes(db, **assignment.scope)
         if event and not any(item["outcome_event_id"] == event for item in outcomes):
             raise HTTPException(409, "Trigger receipt could not be revalidated")
-        report.update(status="observed", observations=observations(db, LENSES[role], assignment.scope, outcomes, now, assignment.cadence_seconds))
+        facts = observations(db, LENSES[role], assignment.scope, outcomes, now, assignment.cadence_seconds)
+        if role in DISCOVERY_ROLES:
+            facts.update(discover(db, role, assignment.scope, now.date()))
+        report.update(status="observed", observations=facts)
     except HTTPException as exc:
         report.update(status="blocked", reason=exc.detail)
     report["report_sha256"] = artifact_digest("pantheon_report", event_id, report)

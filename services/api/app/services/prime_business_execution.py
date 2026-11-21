@@ -374,6 +374,12 @@ def _bound_prime_decision(db: Session, verdict_id: UUID, work: Any, listing: dic
         or _canonical(specialist_inputs.get("proposed_internal_listing")) != _canonical(expected)
     ):
         raise HTTPException(status_code=409, detail="Listing differs from the reviewed Prime proposal")
+    from app.services.foundry_discovery import require_current_candidate
+
+    require_current_candidate(db, proposal, {
+        "legacy_instance_id": work.legacy_instance_id, "jurisdiction": work.jurisdiction,
+        "engine_id": work.engine_id, "business_id": work.business_id,
+    }, datetime.now(timezone.utc).date())
     reference = {
         "verdict_id": str(verdict_id), "review_id": str(review.id),
         "proposal_sha256": decision.artifact_sha256,

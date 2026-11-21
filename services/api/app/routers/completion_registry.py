@@ -2696,6 +2696,12 @@ def _require_independent_review(db: Session, opportunity: UniversalOpportunityIn
             "verdict": decision.model_dump(mode="json"),
         })
     result = {"review_id": str(review_id), **decision.model_dump(mode="json")}
+    from app.services.foundry_discovery import require_current_candidate
+
+    require_current_candidate(db, _loki_artifact(opportunity), {
+        "legacy_instance_id": opportunity.legacy, "jurisdiction": opportunity.jurisdiction,
+        "engine_id": opportunity.engine_id, "business_id": opportunity.specialist_inputs.get("business_id"),
+    }, datetime.now(timezone.utc).date())
     if "pantheon_report_ids" in opportunity.specialist_inputs:
         from app.loki.specialist_review import require_reviewed_reports
 
