@@ -900,3 +900,8 @@ Development commit `e4362ebb48284e6a9357229f3452efd8a0b98c13` produces a review 
 ## November 21 — Verified Mimir claims in Prime proposals
 
 Development commit `0f2220d74753e634420ef63e81aee562f63eca5e` checks cited outcome evidence in the exact scope before evaluation or persistence. The rehearsal verifies a valid historical artifact beyond the recent window and rejects claims of a commercial sale, a mismatched jurisdiction, historical replay intake and damaged proof. Governed Factory work also rechecks the claims in the independently reviewed decision. The full local backend passed 373 tests.
+
+
+## November 21 — Specialists and independent review receive checkout contradictions
+
+Development commit `aa5d755c4ab62a38bdf49c18b08718aef7da7f51` extends Factory reconciliation to the existing approval, counter-evidence and learning lenses. Forseti, Loki and Tyr also receive the scoped checkout observations. The integrated fixture changed one settlement amount. Forseti changed from matched to conflict and the independent local reviewer identified the critical evidence discrepancy. The full local backend passed 373 tests.

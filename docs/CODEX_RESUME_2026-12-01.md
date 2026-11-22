@@ -493,3 +493,8 @@ An owner can request `refresh_owner_attention_collection` at the existing privat
 ### Mimir claims in a subsequent Prime proposal
 
 An authorized proposal can cite up to ten scoped `mimir_outcome_claims` in its specialist inputs. Each claim carries the exact outcome event, artifact SHA-256 and whether sales were verified. The Factory source always classifies this proof as internal artifact evidence. A contradiction, damaged receipt or another jurisdiction blocks evaluation. Replay excludes current claims. A governed internal draft rechecks the evidence bound to the independent review before execution.
+
+
+### Specialist and independent checkout contradiction review
+
+Approval, contradiction and verified-learning roles use the same scoped Factory receipt reconciliation. Forseti, Loki and Tyr can inspect checkout fixtures. The independent reviewer raises critical findings when checkout settlement or Factory source receipts conflict, while preserving the distinct reviewer identity and existing review workflow. A matched fixture remains internal evidence.
