@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { playDrivingBrief, stopDrivingBrief } from "./owner-driving-voice.mjs";
+import { dictateOwnerDraft, playDrivingBrief, stopDrivingBrief } from "./owner-driving-voice.mjs";
 
 test("owner playback requires consent, a read-only driving brief and a device-local voice", () => {
   const events = [];
@@ -30,4 +30,52 @@ test("owner playback requires consent, a read-only driving brief and a device-lo
   assert.equal(events[1].text, brief.reply);
   stopDrivingBrief(browser);
   assert.equal(events.at(-1), "cancel");
+});
+
+test("parked dictation requires explicit consent and a preinstalled local recognizer", async () => {
+  const events = [];
+  let available = "downloadable";
+  class SpeechRecognition {
+    processLocally = false;
+    static async available(options) {
+      events.push(options);
+      return available;
+    }
+    start() {
+      events.push({ startedLocally: this.processLocally, continuous: this.continuous });
+      const result = Object.assign([{ transcript: "  Draft text only.  " }], { isFinal: true });
+      this.onresult({ results: [result] });
+    }
+  }
+  const browser = { SpeechRecognition };
+  const options = { mode: "parked", consent: true, browser };
+  assert.equal((await dictateOwnerDraft({ ...options, mode: "driving" })).status, "parked_only");
+  assert.equal((await dictateOwnerDraft({ ...options, consent: false })).status, "consent_required");
+  assert.deepEqual(events, []);
+  assert.equal((await dictateOwnerDraft(options)).status, "text_only");
+  assert.deepEqual(events, [{ langs: ["en-CA"], processLocally: true }]);
+  available = "available";
+  assert.deepEqual(await dictateOwnerDraft(options), { status: "draft_ready", text: "Draft text only." });
+  assert.deepEqual(events.at(-1), { startedLocally: true, continuous: false });
+});
+
+test("logout or navigation cancels pending dictation without returning a transcript", async () => {
+  let capture;
+  class SpeechRecognition {
+    processLocally = false;
+    static async available() { return "available"; }
+    start() { capture = this; }
+    abort() { this.aborted = true; }
+  }
+  const controller = new AbortController();
+  const pending = dictateOwnerDraft({
+    mode: "parked", consent: true, browser: { SpeechRecognition }, signal: controller.signal,
+  });
+  await Promise.resolve();
+  await Promise.resolve();
+  assert.ok(capture);
+  controller.abort();
+  assert.equal((await pending).status, "cancelled");
+  assert.ok(capture.aborted);
+  assert.equal(capture.onresult, null);
 });
