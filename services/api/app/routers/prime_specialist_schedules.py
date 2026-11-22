@@ -314,7 +314,7 @@ def run_due_schedule(db: Session, *, now: datetime | None = None) -> dict:
             if (not payload.on_economic_reassessment or not economic_ready(db)
                     or not verify_trigger(db, scope, economic_id)):
                 raise HTTPException(409, "Economic trigger evidence failed revalidation")
-        outcomes = verified_internal_outcomes(db, **scope)
+        outcomes = verified_internal_outcomes(db, **scope, trigger_event_id=outcome_id)
         if outcome_id and not any(item["outcome_event_id"] == outcome_id for item in outcomes):
             raise HTTPException(status_code=409, detail="Trigger outcome evidence failed revalidation")
         result = evaluate_universal_opportunities(UniversalOpportunityBatchIn(

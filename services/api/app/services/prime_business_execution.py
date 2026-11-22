@@ -840,34 +840,48 @@ def action_status(db: Session, action_id: str) -> dict:
 
 
 
+def _verified_mimir_outcome(db: Session, item: LegacyInstanceWorkItem, event: LegacyOrchestrationEvent) -> dict | None:
+    if (event.event_id != _mimir_outcome_id(item.action_id) or event.event_type != MIMIR_OUTCOME_EVENT
+            or event.legacy_instance_id != item.legacy_instance_id):
+        return None
+    current = action_status(db, item.action_id)
+    if not current["internal_artifact_verified"] or not isinstance(current["receipt"].get("verified_at"), str):
+        return None
+    expected = _mimir_outcome(item, current["receipt"])
+    if _json(event.payload_json, {}) == expected:
+        return {"outcome_event_id": event.event_id, **expected}
+    return None
+
+
 def verified_internal_outcomes(
-    db: Session, *, legacy_instance_id: str, business_id: str, engine_id: str, jurisdiction: str, limit: int = 20,
+    db: Session, *, legacy_instance_id: str, business_id: str, engine_id: str, jurisdiction: str,
+    limit: int = 20, trigger_event_id: str | None = None,
 ) -> list[dict]:
-    """Project durable facts only after re-reading their scoped source receipt."""
-    items = (
-        db.query(LegacyInstanceWorkItem)
-        .filter_by(
-            status="completed", legacy_instance_id=legacy_instance_id,
-            business_id=business_id, engine_id=engine_id, jurisdiction=jurisdiction,
-        )
-        .order_by(LegacyInstanceWorkItem.updated_at.desc(), LegacyInstanceWorkItem.id.desc())
-        .limit(limit)
-        .all()
+    """Return recent verified context and verify an older exact trigger when supplied."""
+    completed = db.query(LegacyInstanceWorkItem).filter_by(
+        status="completed", legacy_instance_id=legacy_instance_id, business_id=business_id,
+        engine_id=engine_id, jurisdiction=jurisdiction,
     )
+    events = db.query(LegacyOrchestrationEvent).filter_by(
+        event_type=MIMIR_OUTCOME_EVENT, legacy_instance_id=legacy_instance_id,
+    )
+    items = completed.order_by(LegacyInstanceWorkItem.updated_at.desc(), LegacyInstanceWorkItem.id.desc()).limit(limit)
     outcomes = []
     for item in items:
-        event_id = _mimir_outcome_id(item.action_id)
-        event = db.query(LegacyOrchestrationEvent).filter_by(
-            event_id=event_id, event_type=MIMIR_OUTCOME_EVENT, legacy_instance_id=legacy_instance_id,
-        ).one_or_none()
-        if event is None:
-            continue
-        current = action_status(db, item.action_id)
-        if not current["internal_artifact_verified"] or not isinstance(current["receipt"].get("verified_at"), str):
-            continue
-        expected = _mimir_outcome(item, current["receipt"])
-        if _json(event.payload_json, {}) == expected:
-            outcomes.append({"outcome_event_id": event_id, **expected})
+        event = events.filter_by(event_id=_mimir_outcome_id(item.action_id)).one_or_none()
+        if event is not None:
+            proof = _verified_mimir_outcome(db, item, event)
+            if proof is not None:
+                outcomes.append(proof)
+    if trigger_event_id and not any(row["outcome_event_id"] == trigger_event_id for row in outcomes):
+        event = events.filter_by(event_id=trigger_event_id).one_or_none()
+        payload = _json(event.payload_json, {}) if event is not None else None
+        action_id = payload.get("action_id") if isinstance(payload, dict) else None
+        if isinstance(action_id, str) and _mimir_outcome_id(action_id) == trigger_event_id:
+            action = completed.filter_by(action_id=action_id).one_or_none()
+            proof = _verified_mimir_outcome(db, action, event) if action is not None else None
+            if proof is not None:
+                outcomes.insert(0, proof)
     return outcomes
 
 

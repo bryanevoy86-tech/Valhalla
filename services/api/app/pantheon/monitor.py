@@ -169,15 +169,16 @@ def run_assignment(db: Session, role: str, *, now=None) -> dict:
     }
     try:
         _check_legacy(db, **assignment.scope)
-        outcomes = verified_internal_outcomes(db, **assignment.scope)
+        outcome_trigger = event if not (withdrawal_event or economic_event or discovery_event) else None
+        outcomes = verified_internal_outcomes(db, **assignment.scope, trigger_event_id=outcome_trigger)
         if economic_event and (not economic_ready(db) or not verify_trigger(db, assignment.scope, event)):
             raise HTTPException(409, "Economic evidence trigger could not be revalidated")
         if discovery_event and not verify_intake_trigger(db, event, assignment.scope, now.date()):
             raise HTTPException(409, "Discovery evidence trigger could not be revalidated")
         if withdrawal_event and not verify_withdrawal(db, assignment.scope, event):
             raise HTTPException(409, "Foundry source withdrawal could not be revalidated")
-        if event and not (withdrawal_event or economic_event or discovery_event) and not any(
-            item["outcome_event_id"] == event for item in outcomes
+        if outcome_trigger and not any(
+            item["outcome_event_id"] == outcome_trigger for item in outcomes
         ):
             raise HTTPException(409, "Trigger receipt could not be revalidated")
         forecast_after = None

@@ -213,3 +213,78 @@ def test_workers_run_independent_role_and_scope_cadences_and_recheck_factory_out
     assert client.delete(f"{root}/assignments/{correct}", headers=owner).json()["state"] == "revoked"
     monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "true")
     assert tick("MIMIR") == {"status": "blocked", "emergency_stop": True}
+
+
+def test_queued_mimir_outcome_older_than_recent_window_reaches_prime(deal_client, monkeypatch):
+    from app.services.prime_business_execution import verified_internal_outcomes
+    from app.services.specialist_triggers import publish_verified_outcome
+
+    client, engine = deal_client
+    owner = {"X-Owner-Mandate-Key": "older-outcome-owner", "X-Business-Factory-Key": "older-outcome-factory"}
+    monkeypatch.setenv("VALHALLA_OWNER_MANDATE_KEY", owner["X-Owner-Mandate-Key"])
+    monkeypatch.setenv("VALHALLA_FACTORY_KEY", owner["X-Business-Factory-Key"])
+    monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "false")
+    for model in (LegacyInstanceRegistryItem, LegacyInstanceWorkItem, LegacyOrchestrationEvent, MediaContent,
+                  SpecialistAssignment, SpecialistTrigger, PrimeSpecialistSchedule, PrimeScheduleTrigger,
+                  KnowledgeRegistryItem, LearningFeedbackRecord):
+        model.__table__.create(engine)
+    scope = {"legacy_instance_id": "archive-legacy", "business_id": "archive-lab",
+             "jurisdiction": "CA-MB", "engine_id": "micro_saas"}
+    with Session(engine) as db:
+        db.add(LegacyInstanceRegistryItem(
+            legacy_instance_id="archive-legacy", display_name="Artifact archive", status="PASS",
+            synchronization_status="SYNCED", engines_json='["micro_saas"]',
+            assigned_businesses_json='["archive-lab"]', assigned_jurisdictions_json='["CA-MB"]',
+            local_knowledge_context_json=json.dumps(scope),
+        ))
+        db.commit()
+
+    factory = "/api/business-factory"
+    actions = []
+    for index in range(21):
+        queued = client.post(f"{factory}/listing-drafts", headers=owner, json={
+            **scope, "industry": "digital goods", "product_id": "archive-fixture",
+            "title": "Historical internal draft", "description": "A scoped internal fixture used to verify delayed outcome consumption.",
+            "price_cents_cad": 500, "request_key": f"historical-outcome-{index}",
+        })
+        assert queued.status_code == 200, queued.text
+        action = queued.json()["action_id"]
+        assert client.post(f"{factory}/actions/{action}/approve", headers=owner,
+                           json={"confirmation": "APPROVE_INTERNAL_DRAFT"}).status_code == 200
+        executed = client.post(f"{factory}/actions/run-once", headers=owner)
+        assert executed.json()["status"] == "completed"
+        actions.append(action)
+
+    old_event = _mimir_outcome_id(actions[0])
+    schedule_id = str(uuid4())
+    schedules = "/api/prime/specialist-schedules"
+    assert client.post(schedules, headers=owner, json={
+        "schedule_id": schedule_id, "business_id": scope["business_id"],
+        "cadence_seconds": 300, "duration_seconds": 1800, "on_verified_outcome": True,
+        "opportunity": {"opportunity_id": "historical-proof", "engine_id": scope["engine_id"],
+                        "legacy": scope["legacy_instance_id"], "jurisdiction": scope["jurisdiction"],
+                        "title": "Historical proof review", "summary": "Verified internal evidence."},
+    }).status_code == 201
+    pantheon = "/api/prime/pantheon"
+    assert client.post(f"{pantheon}/assignments", headers=owner, json={
+        **scope, "assignment_id": str(uuid4()), "role": "MIMIR",
+        "cadence_seconds": 300, "duration_seconds": 1800,
+    }).status_code == 201
+
+    at = utc_now() + timedelta(seconds=2)
+    with Session(engine) as db:
+        assert old_event not in {row["outcome_event_id"] for row in verified_internal_outcomes(db, **scope)}
+        foreign = {**scope, "jurisdiction": "CA-ON"}
+        assert verified_internal_outcomes(db, **foreign, trigger_event_id=old_event) == []
+        publish_verified_outcome(db, scope, old_event)
+        db.commit()
+        prime = run_due_schedule(db, now=at)
+        mimir = run_assignment(db, "MIMIR", now=at)
+        assert prime["status"] == "evaluated"
+        assert mimir["status"] == "observed"
+    report = client.get(f"{schedules}/{schedule_id}/reports/{prime['report_event_id']}").json()
+    assert report["trigger_outcome_event_id"] == old_event
+    assert report["verified_internal_outcomes"][0]["outcome_event_id"] == old_event
+    assert len(report["verified_internal_outcomes"]) == 21
+    observation = client.get(f"{pantheon}/reports/{mimir['report_event_id']}").json()
+    assert old_event in observation["observations"]["verified_internal_outcomes"]
