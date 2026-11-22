@@ -483,3 +483,8 @@ A queued outcome outside the recent 20-work context window can still inform Prim
 ### Legacy failover and treasury dates
 
 Legacy failover reports `containment_paused` when either the failed scope or the recovery scope is contained or its containment evidence is unavailable. The paused action stays with its original Legacy. Unaffected eligible work can still be reassigned. Treasury statement fixture date validation uses UTC, consistent with economic records. The UTC change does not make fixture balances live.
+
+
+### Builder owner briefing repair recipe
+
+An owner can request `refresh_owner_attention_collection` at the existing private `POST /builder/assignments/prepare` with the exact source digest, base commit and pinned runner image. Builder generates the canonical GET-only, zero-cache collection from the fixed owner attention and briefing requirements after verifying the routes are registered. It returns a candidate through the unchanged review lease. An approved private WeWeb preview is still required to verify the collection on a real browser account and device.

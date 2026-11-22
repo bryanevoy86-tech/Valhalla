@@ -890,3 +890,8 @@ Development commit `7baaaa64363506ce8b876dce35cac26174861ae7` revalidates an exa
 ## November 21 — Legacy failover containment and treasury UTC date
 
 Development commit `e53dc8607308d6e57ffd1a8b94e745d21a9f1c9a` prevents Legacy failover from moving contained work through a recovery instance. The fixture holds work with a restriction at either end and reassigns an unrelated eligible task. Treasury fixture ingestion now uses the UTC business date, including when the host is still on the previous calendar day. Both focused cases passed after the full batch run of 372 backend tests and 22 disposable PostgreSQL checks.
+
+
+## November 21 — Governed Builder owner briefing repair
+
+Development commit `e4362ebb48284e6a9357229f3452efd8a0b98c13` produces a review candidate for the private owner attention collection from a named recipe and the exact source digest. The isolated fixture supplied no edits, corrected stale cache configuration and recovered both briefing views, then claimed one immutable review bundle without changing the checked-out file. Local combined regression passed 373 backend tests, 22 disposable PostgreSQL checks, eight Builder materializer checks and one simulated-browser voice test. The runtime probe verified 36 critical routers and 94 required routes.
