@@ -1,10 +1,14 @@
 """Read bounded private briefing evidence without dispatching workers."""
 from datetime import date, datetime, timedelta, timezone
+import hashlib
+import json
 
 from fastapi import HTTPException
 from sqlalchemy import func, inspect, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.loki.evidence import artifact_digest
 from app.loki.models import LokiFinding, LokiIndependentReceipt, LokiReconsideration, LokiReview, LokiReviewStatus
 from app.loki.review_service import verdict
 from app.models.audit_log import AuditLog
@@ -175,4 +179,55 @@ def owner_attention(db: Session) -> dict:
         entries.extend({"notification_id": f"{category}:{row[key]}", "category": category, "reference": str(row[key])}
                        for row in rows)
     return {"entries": entries, "view": "PRIVATE_IN_APP", "delivery_attempted": False,
+            "execution_authorized": False}
+
+ATTENTION_ACK_TYPE = "OWNER_ATTENTION_ACKNOWLEDGED"
+
+
+def _attention_ack_identity(owner_id: int, notification_id: str) -> tuple[str, dict]:
+    payload = {"owner_id": owner_id, "notification_id": notification_id}
+    prepared = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+    event_id = "OWNER-ACK-" + hashlib.sha256(prepared).hexdigest()
+    return event_id, {**payload, "sha256": artifact_digest(ATTENTION_ACK_TYPE, event_id, payload)}
+
+
+def _valid_attention_ack(row, payload: dict) -> bool:
+    try:
+        return (row.event_type == ATTENTION_ACK_TYPE and row.legacy_instance_id is None
+                and json.loads(row.payload_json or "null") == payload)
+    except (TypeError, ValueError):
+        return False
+
+
+def owner_attention_with_acknowledgments(db: Session, owner_id: int) -> dict:
+    result = owner_attention(db)
+    expected = dict(_attention_ack_identity(owner_id, entry["notification_id"]) for entry in result["entries"])
+    acknowledged = []
+    if expected and inspect(db.connection()).has_table(LegacyOrchestrationEvent.__tablename__):
+        rows = db.scalars(select(LegacyOrchestrationEvent).where(LegacyOrchestrationEvent.event_id.in_(expected)))
+        acknowledged = sorted(expected[row.event_id]["notification_id"] for row in rows
+                              if _valid_attention_ack(row, expected[row.event_id]))
+    return {**result, "acknowledged_ids": acknowledged}
+
+
+def acknowledge_owner_attention(db: Session, owner_id: int, notification_id: str) -> dict:
+    if not inspect(db.connection()).has_table(LegacyOrchestrationEvent.__tablename__):
+        raise HTTPException(503, "Owner attention receipts unavailable")
+    event_id, payload = _attention_ack_identity(owner_id, notification_id)
+    event = db.scalar(select(LegacyOrchestrationEvent).filter_by(event_id=event_id))
+    if event is None:
+        if not any(entry["notification_id"] == notification_id for entry in owner_attention(db)["entries"]):
+            raise HTTPException(404, "Owner attention item not found")
+        db.add(LegacyOrchestrationEvent(
+            event_id=event_id, event_type=ATTENTION_ACK_TYPE, message="Owner acknowledged an in-app attention item",
+            payload_json=json.dumps(payload),
+        ))
+        try:
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+        event = db.scalar(select(LegacyOrchestrationEvent).filter_by(event_id=event_id))
+    if event is None or not _valid_attention_ack(event, payload):
+        raise HTTPException(409, "Owner attention receipt failed integrity checks")
+    return {"notification_id": notification_id, "acknowledged": True, "delivery_attempted": False,
             "execution_authorized": False}

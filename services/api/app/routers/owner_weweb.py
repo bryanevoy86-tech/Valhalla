@@ -2,6 +2,7 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
@@ -47,8 +48,21 @@ def startup_comparison(payload: StartupPlanIn):
     return private_owner_response(prepare_startup(payload))
 
 
-@router.get("/owner-attention")
-def attention_inbox(db: Session = Depends(get_db)):
-    from app.services.owner_operating_brief import owner_attention
+class AttentionAcknowledgmentIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    notification_id: str = Field(min_length=3, max_length=128)
 
-    return private_owner_response(owner_attention(db))
+
+@router.get("/owner-attention")
+def attention_inbox(db: Session = Depends(get_db), owner_id: int = Depends(require_owner_session)):
+    from app.services.owner_operating_brief import owner_attention_with_acknowledgments
+
+    return private_owner_response(owner_attention_with_acknowledgments(db, owner_id))
+
+
+@router.post("/owner-attention/acknowledge")
+def attention_acknowledge(payload: AttentionAcknowledgmentIn, db: Session = Depends(get_db),
+                          owner_id: int = Depends(require_owner_session)):
+    from app.services.owner_operating_brief import acknowledge_owner_attention
+
+    return private_owner_response(acknowledge_owner_attention(db, owner_id, payload.notification_id))

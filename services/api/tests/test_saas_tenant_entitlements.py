@@ -150,6 +150,19 @@ def test_trial_is_bound_to_authenticated_subscriber_and_tenant(deal_client, monk
     assert notice.json()["delivery_attempted"] is False
     assert "Private evidence details" not in notice.text
     assert client.get(attention, headers=bearer).json() == notice.json()
+    assert notice.json()["acknowledged_ids"] == []
+    acknowledge = f"{attention}/acknowledge"
+    item_id = f"prime_advisory:{report_id}"
+    assert client.post(acknowledge, headers=outsider, json={"notification_id": item_id}).status_code == 403
+    assert client.post(acknowledge, headers=bearer, json={"notification_id": "review:missing"}).status_code == 404
+    ack = client.post(acknowledge, headers=bearer, json={"notification_id": item_id})
+    assert ack.status_code == 200 and ack.headers["cache-control"] == "no-store"
+    assert ack.json()["acknowledged"] and ack.json()["delivery_attempted"] is False
+    assert client.post(acknowledge, headers=bearer, json={"notification_id": item_id}).json() == ack.json()
+    assert client.get(attention, headers=bearer).json()["acknowledged_ids"] == [item_id]
+    with Session(engine) as db:
+        receipt = db.query(LegacyOrchestrationEvent).filter_by(event_type="OWNER_ATTENTION_ACKNOWLEDGED").one()
+        assert item_id in receipt.payload_json and "Private source details" not in receipt.payload_json
     driving = client.get(briefing, params={"mode": "driving"}, headers=bearer)
     assert driving.status_code == 200 and driving.json()["emergency_stop"] is True
     assert driving.json()["attention"]["prime_advisory"] == 1

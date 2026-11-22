@@ -49,6 +49,7 @@ MANDATORY_ENDPOINTS = {
     "treasury_trajectory": ("GET", "/api/governance/floor/trajectory/month"),
     "weweb_owner_briefing": ("GET", "/api/weweb/owner-briefing"),
     "weweb_owner_attention": ("GET", "/api/weweb/owner-attention"),
+    "weweb_owner_attention_ack": ("POST", "/api/weweb/owner-attention/acknowledge"),
     "weweb_owner_startup": ("POST", "/api/weweb/owner-startup/compare"),
     "provider_prices": ("POST", "/api/prime/provider-intelligence/price-quotes"),
     "provider_staging_selection": ("POST", "/api/prime/provider-intelligence/select-staging-candidate"),

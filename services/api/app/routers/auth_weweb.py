@@ -453,6 +453,7 @@ def require_owner_session(
                if type(subject_id) is int else None)
     if profile is None or profile.email != current_user.get("sub") or not _is_configured_owner(profile.email):
         raise HTTPException(403, "Configured owner session required")
+    return subject_id
 
 
 def private_owner_response(content, *, status_code=200):
