@@ -885,3 +885,8 @@ Development commit `be03ebbe709f1e3944503f68a0f5f5dd60d6f32a` resolves scoped Fa
 ## November 21 — Delayed Mimir evidence reuse
 
 Development commit `7baaaa64363506ce8b876dce35cac26174861ae7` revalidates an exact queued Mimir outcome even after it falls outside the recent outcome window. With 21 real internal draft fixtures, both Prime and Mimir consumed the oldest receipt, and a different jurisdiction could not reuse it. The UTC local run passed 371 canonical backend tests. A default-timezone run exposed an unrelated local-day check in treasury fixture ingestion, addressed in the following batch.
+
+
+## November 21 — Legacy failover containment and treasury UTC date
+
+Development commit `e53dc8607308d6e57ffd1a8b94e745d21a9f1c9a` prevents Legacy failover from moving contained work through a recovery instance. The fixture holds work with a restriction at either end and reassigns an unrelated eligible task. Treasury fixture ingestion now uses the UTC business date, including when the host is still on the previous calendar day. Both focused cases passed after the full batch run of 372 backend tests and 22 disposable PostgreSQL checks.

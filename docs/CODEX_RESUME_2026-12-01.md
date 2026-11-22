@@ -478,3 +478,8 @@ The existing owner-scoped NORNS assignment scans up to 20 eligible forecasts per
 ### Delayed Mimir outcome reuse
 
 A queued outcome outside the recent 20-work context window can still inform Prime and Pantheon. The worker revalidates the specific event, completed action, artifact and exact scope. Replay retains ordinary duplicate handling. Backlog commissioning should delay delivery beyond the display window, verify the original receipt still appears, and confirm another jurisdiction cannot cite it as local evidence.
+
+
+### Legacy failover and treasury dates
+
+Legacy failover reports `containment_paused` when either the failed scope or the recovery scope is contained or its containment evidence is unavailable. The paused action stays with its original Legacy. Unaffected eligible work can still be reassigned. Treasury statement fixture date validation uses UTC, consistent with economic records. The UTC change does not make fixture balances live.
