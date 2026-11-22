@@ -920,3 +920,16 @@ Development commit `58a557beb14cc53d874cd1489cefe6ffbbbce145` adds a fixed metri
 ## November 21 — Reviewed history in the private owner decision view
 
 Development commit `10f03df3e84294237c314302dce92d95f8218bbd` makes the private decision view revalidate and surface the exact Mimir claims bound to the independently reviewed proposal. The integrated test persists a follow-up decision, retrieves the verified historical evidence privately, confirms containment still blocks new work and then damages the historical receipt. Both the fresh owner view and Factory admission reject the stale evidence. Final local full regression passed 374 backend tests. The previous combined checkpoint passed all four hosted gates in run 44973042999.
+
+
+## November 21 — Private owner receipts, parked voice and treasury evidence
+
+- `718938bb02eab3b3059a2e315f75f09a7683b337` persists idempotent owner attention acknowledgments in the existing orchestration journal. The private route fixture verifies no-store responses, owner scope, unknown-item refusal and single-receipt retry.
+- `2b27bb6ec386d7f263da28cc666c0320e9b7dbc4` adds parked, consented device-local dictation as editable draft text and covers text fallback and cancellation in simulated browser tests.
+- `3b5549a2b45524d989886920ff8cf9ce653dfea3` verifies structured Mimir claims against the exact business statement fixture, digest and amount. Prime rejects the wrong scope, altered balance and assertions about accessible funds.
+- `f93bab457242b57307a23167c84fd821c65bbf51` applies the shared economic hold to fresh Legacy work admission. The focused end-to-end test confirms that denied assignment creates no work and existing failover behavior is preserved.
+- `c2630de978d98db74efef63eeddf7f02ba6881ad` provides scoped business statement heads to Njord, Forseti, Mimir and Heimdall. An altered head caused an evidence conflict and a critical independent Loki finding. Household records were excluded from the business projection.
+
+The matrix records the remaining work in five fields for all 50 criteria. Scheduling and private acknowledgment gained verified evidence classifications for those specific slices. Production verification stays at zero. All 53 tasks and seven packages are preserved.
+
+Local complete regression passed 374 backend tests, 22 disposable PostgreSQL checks, eight Builder materializer checks and three simulated-browser voice checks. The route probe verified 36 critical routers and 95 required routes. The proof used isolated fixtures.

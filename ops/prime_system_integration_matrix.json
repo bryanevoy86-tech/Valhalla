@@ -14,7 +14,7 @@
         "services/api/tests/test_tuning_profile_compatibility.py",
         "alembic/versions/20261123_tuning_profile_identity.py"
       ],
-      "source_observation": "Canonical FastAPI import registered 36 critical routers and all 94 required routes in the isolated runtime.",
+      "source_observation": "Canonical FastAPI import registered 36 critical routers and all 95 required routes in the isolated runtime.",
       "evidence_level": "FOCUSED_CI_TESTED",
       "production_verified": false,
       "acceptance_test": "Prove every mandatory router imports in a clean canonical app; no missing OpenAPI paths or silent startup success",
@@ -25,9 +25,16 @@
       "owner_external_authorization_required": false,
       "continuation": {
         "next_implementation": "Exercise the registered routes in an authorized staging environment with migrated PostgreSQL.",
-        "existing_test_evidence": "Canonical route probe verified all 94 required methods and paths. Canonical threshold CRUD and all seven historical CI5 tuning checks pass. Every tuning route rejects requests without the existing private Prime control identity. Disposable PostgreSQL verified the additive profile index preserves executable rule names and maintains separate profile identities across namespaces.",
+        "existing_test_evidence": "Canonical route probe verified all 95 required methods and paths. Canonical threshold CRUD and all seven historical CI5 tuning checks pass. Every tuning route rejects requests without the existing private Prime control identity. Disposable PostgreSQL verified the additive profile index preserves executable rule names and maintains separate profile identities across namespaces.",
         "owner_action": "Internal continuation is authorized under the standing development scope.",
-        "required_acceptance_evidence_field": "acceptance_test"
+        "required_acceptance_evidence_field": "acceptance_test",
+        "remaining": {
+          "internal_coding": null,
+          "insufficient_test_evidence": "Add registered-route behavior coverage where only import routing is proven.",
+          "external_commissioning": "Run the route probe with migrated staging PostgreSQL.",
+          "owner_or_professional_action": "Approve the staging runtime.",
+          "conditional_expansion": null
+        }
       }
     },
     {
@@ -50,7 +57,14 @@
         "next_implementation": "Verify scoped authorization, persistent revocation and fresh login on staging.",
         "existing_test_evidence": "See SQLITE_INTEGRATION_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
         "owner_action": "Internal continuation is authorized under the standing development scope.",
-        "required_acceptance_evidence_field": "acceptance_test"
+        "required_acceptance_evidence_field": "acceptance_test",
+        "remaining": {
+          "internal_coding": null,
+          "insufficient_test_evidence": "Test every private write lane and role isolation with actual revocation.",
+          "external_commissioning": "Exercise fresh login, revocation and owner bypass-denial in staging.",
+          "owner_or_professional_action": "Approve test accounts and credential rotation.",
+          "conditional_expansion": null
+        }
       }
     },
     {
@@ -76,7 +90,14 @@
         "next_implementation": "Extend hard gates to remaining operating routes and rehearse recovery after governance denial.",
         "existing_test_evidence": "See POSTGRES_INTEGRATION_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
         "owner_action": "Internal continuation is authorized under the standing development scope.",
-        "required_acceptance_evidence_field": "acceptance_test"
+        "required_acceptance_evidence_field": "acceptance_test",
+        "remaining": {
+          "internal_coding": "Apply hard gates to remaining operational workers and dispatch lanes.",
+          "insufficient_test_evidence": "Exercise denial, rollback and emergency recovery on each path.",
+          "external_commissioning": "Rehearse long-running governance recovery.",
+          "owner_or_professional_action": "Authorize scoped worker activation.",
+          "conditional_expansion": null
+        }
       }
     },
     {
@@ -102,7 +123,14 @@
         "next_implementation": "Connect one approved outbound-free staging export connector and prove licensed, fresh demand evidence.",
         "existing_test_evidence": "test_economic_control.py exercises a valid signed source, timestamp rejection, tampering, deduplication and the scoped Odin to Prime rehearsal. Product Foundry continuous fixture links signed discovery, independent challenge, scoped execution, outcome, retained losses and a subsequent HOLD with contradiction evidence.",
         "owner_action": "Internal continuation is authorized under the standing development scope.",
-        "required_acceptance_evidence_field": "acceptance_test"
+        "required_acceptance_evidence_field": "acceptance_test",
+        "remaining": {
+          "internal_coding": "Extend independent comparison across licensed source types.",
+          "insufficient_test_evidence": "Verify expiry, rights and low-sample coverage for each connector.",
+          "external_commissioning": "Use an approved outbound-free staging export.",
+          "owner_or_professional_action": "Approve source rights and data scope.",
+          "conditional_expansion": "Scale connector coverage after proven demand."
+        }
       }
     },
     {
@@ -129,7 +157,14 @@
         "next_implementation": "Expand source-weighted comparative evidence and stage legally scoped evaluator dependencies.",
         "existing_test_evidence": "See FOCUSED_CI_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md. Product Foundry continuous fixture links signed discovery, independent challenge, scoped execution, outcome, retained losses and a subsequent HOLD with contradiction evidence. The scoped acquisition fixture verifies debt stress, separately reviewed simulation, receipt reuse, revocation and reevaluation. SaaS, service and real-estate rehearsal covers shared stress rules, projection differences and simulated review. A repeated withdrawal queues one digest-bound event for opted-in Prime schedules and participating specialists. Prime switches to HOLD before cadence and the source is excluded from allocation.",
         "owner_action": "Internal continuation is authorized under the standing development scope.",
-        "required_acceptance_evidence_field": "acceptance_test"
+        "required_acceptance_evidence_field": "acceptance_test",
+        "remaining": {
+          "internal_coding": "Extend source-weighted comparisons and typed claims beyond current artifacts and statements.",
+          "insufficient_test_evidence": "Compare decisions across supported engines and missing or contradictory evidence.",
+          "external_commissioning": "Validate with externally sourced scoped evidence.",
+          "owner_or_professional_action": "Approve permitted inputs and test limits.",
+          "conditional_expansion": null
+        }
       }
     },
     {
@@ -151,7 +186,14 @@
         "next_implementation": "Exercise source lifecycle revocation and conflict propagation across actual specialist consumers.",
         "existing_test_evidence": "See SOURCE_INSPECTED_ONLY and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
         "owner_action": "Internal continuation is authorized under the standing development scope.",
-        "required_acceptance_evidence_field": "acceptance_test"
+        "required_acceptance_evidence_field": "acceptance_test",
+        "remaining": {
+          "internal_coding": "Propagate source lifecycle changes through each actual consumer.",
+          "insufficient_test_evidence": "Verify freshness, revocation and contradiction with independent sources.",
+          "external_commissioning": "Re-read licensed staged sources.",
+          "owner_or_professional_action": "Approve sources and evidence rights.",
+          "conditional_expansion": null
+        }
       }
     },
     {
@@ -165,7 +207,8 @@
         "services/api/app/services/owner_memory.py",
         "services/api/app/services/owner_specialist_context.py",
         "services/api/tests/test_product_artifact_workflow.py",
-        "services/api/tests/test_foundry_discovery.py"
+        "services/api/tests/test_foundry_discovery.py",
+        "services/api/app/services/treasury_reconciliation.py"
       ],
       "source_observation": "Existing exact scoped evidence remains intact. Owner decisions can carry purpose, rationale and scoped dependencies, and recent differing statements under the same topic trigger a review flag. Provider-backed learning and semantic contradiction analysis remain open.",
       "evidence_level": "SQLITE_INTEGRATION_TESTED",
@@ -178,9 +221,16 @@
       "owner_external_authorization_required": false,
       "continuation": {
         "next_implementation": "Extend structured claim verification to other evidence classes and rehearse backlog recovery in staging.",
-        "existing_test_evidence": "Factory reconciliation verifies Mimir outcome receipts against current scoped artifacts. Prime and Mimir can revalidate the exact delayed trigger beyond the recent 20-outcome window. Prime compares structured outcome claims with the exact current proof before allowing them into a decision. The private owner decision view and the Factory boundary revalidate a persisted claim before presenting or consuming it. The integrated rehearsal detects an altered learning receipt and recovers after restoring the original evidence. test_owner_conversation.py exercises rationale, visible dependencies, owner scope and repeated-topic conflict recall. Product Foundry continuous fixture links signed discovery, independent challenge, scoped execution, outcome, retained losses and a subsequent HOLD with contradiction evidence. The scoped acquisition fixture verifies debt stress, separately reviewed simulation, receipt reuse, revocation and reevaluation.",
+        "existing_test_evidence": "Factory reconciliation verifies Mimir outcome receipts against current scoped artifacts. Prime and Mimir can revalidate the exact delayed trigger beyond the recent 20-outcome window. Prime compares structured outcome claims with the exact current proof before allowing them into a decision. The private owner decision view and the Factory boundary revalidate a persisted claim before presenting or consuming it. The integrated rehearsal detects an altered learning receipt and recovers after restoring the original evidence. test_owner_conversation.py exercises rationale, visible dependencies, owner scope and repeated-topic conflict recall. Product Foundry continuous fixture links signed discovery, independent challenge, scoped execution, outcome, retained losses and a subsequent HOLD with contradiction evidence. The scoped acquisition fixture verifies debt stress, separately reviewed simulation, receipt reuse, revocation and reevaluation. Prime can verify scoped treasury statement fixture claims against current statement balance and digest. They provide zero proof of actual accessible funds.",
         "owner_action": "Internal continuation is authorized under the standing development scope.",
-        "required_acceptance_evidence_field": "acceptance_test"
+        "required_acceptance_evidence_field": "acceptance_test",
+        "remaining": {
+          "internal_coding": "Extend structured claim verification to other evidence classes.",
+          "insufficient_test_evidence": "Exercise damaged, superseded and delayed proof per class.",
+          "external_commissioning": "Rehearse backlog recovery and independent outcome lineage.",
+          "owner_or_professional_action": "Authorize commissioned evidence scope.",
+          "conditional_expansion": null
+        }
       }
     },
     {
@@ -203,7 +253,14 @@
         "next_implementation": "Enroll startup Legacies and independently verify namespaces, scope isolation and runtime recovery.",
         "existing_test_evidence": "See SOURCE_INSPECTED_ONLY and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
         "owner_action": "Internal continuation is authorized under the standing development scope.",
-        "required_acceptance_evidence_field": "acceptance_test"
+        "required_acceptance_evidence_field": "acceptance_test",
+        "remaining": {
+          "internal_coding": "Finish any missing scoped enrollment and runtime recovery paths identified by integration.",
+          "insufficient_test_evidence": "Prove isolation and namespace recovery across multiple registered Legacies.",
+          "external_commissioning": "Commission the approved Legacy workers.",
+          "owner_or_professional_action": "Select initial mandates and jurisdictions.",
+          "conditional_expansion": "Additional regions follow viable operation."
+        }
       }
     },
     {
@@ -228,7 +285,14 @@
         "next_implementation": "Exercise dispatch and verified outcomes on the first authorized operating adapter.",
         "existing_test_evidence": "See POSTGRES_INTEGRATION_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
         "owner_action": "Internal continuation is authorized under the standing development scope.",
-        "required_acceptance_evidence_field": "acceptance_test"
+        "required_acceptance_evidence_field": "acceptance_test",
+        "remaining": {
+          "internal_coding": "Extend execution proof and independent receipts to approved operating adapters.",
+          "insufficient_test_evidence": "Exercise each new adapter and emergency hold.",
+          "external_commissioning": "Commission first authorized operating lane.",
+          "owner_or_professional_action": "Approve adapter and authority limits.",
+          "conditional_expansion": null
+        }
       }
     },
     {
@@ -252,7 +316,14 @@
         "next_implementation": "Rehearse the full deployment migration at staging scale and check restoration from backup.",
         "existing_test_evidence": "PostgreSQL migration chain preserved prior attachments and required content or a tombstone, with inconsistent states rejected.",
         "owner_action": "Internal continuation is authorized under the standing development scope.",
-        "required_acceptance_evidence_field": "acceptance_test"
+        "required_acceptance_evidence_field": "acceptance_test",
+        "remaining": {
+          "internal_coding": null,
+          "insufficient_test_evidence": "Exercise complete chain and backup restoration with representative data.",
+          "external_commissioning": "Run full migration and restore drill in staging.",
+          "owner_or_professional_action": "Approve disposable staging and backup policy.",
+          "conditional_expansion": null
+        }
       }
     },
     {
@@ -265,10 +336,14 @@
         "services/api/tools/cron/specialist_schedule_worker.py",
         "services/api/app/routers/prime_specialist_schedules.py",
         "services/api/app/pantheon/monitor.py",
-        "services/api/tests/test_pantheon_assignments.py"
+        "services/api/tests/test_pantheon_assignments.py",
+        "services/api/app/services/specialist_triggers.py",
+        "alembic/versions/20261123_specialist_backlog.py",
+        "tests/test_factory_postgres.py",
+        "tests/test_postgres_migration_chain.py"
       ],
-      "source_observation": "Isolated advisory specialist cadence writes a scoped report and advances due time in one transaction. PostgreSQL tests demonstrate concurrent workers cannot both take the same due row. No Render activation, independent agent scheduling, or general provider leases.",
-      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "source_observation": "Durable Prime and Pantheon event queues deduplicate independent triggers and preserve transactional worker recovery. Legacy pending columns remain a transition reader.",
+      "evidence_level": "POSTGRES_INTEGRATION_TESTED",
       "production_verified": false,
       "acceptance_test": "Approved task executes on schedule, with exact host/credential controls; logs show durable receipt and no double issue",
       "depends_on": [
@@ -276,10 +351,17 @@
       ],
       "owner_external_authorization_required": false,
       "continuation": {
-        "next_implementation": "Prove missed and expired work recovery during a sustained multi-worker staging run. Address the single pending trigger slot when multiple independent events arrive.",
-        "existing_test_evidence": "test_pantheon_assignments.py replays an interrupted scope from persisted state, discards a verified duplicate, and records the missed schedule slot.",
+        "next_implementation": "Rehearse sustained authorized staging workers, missed work, expiry and restart recovery.",
+        "existing_test_evidence": "Disposable PostgreSQL verifies the migration, exclusive due work, simultaneous specialist sources, rollback and idempotent Prime wakeups. Canonical API fixtures cover missed work, independent trigger queues and replay.",
         "owner_action": "Internal continuation is authorized under the standing development scope.",
-        "required_acceptance_evidence_field": "acceptance_test"
+        "required_acceptance_evidence_field": "acceptance_test",
+        "remaining": {
+          "internal_coding": null,
+          "insufficient_test_evidence": "Rehearse long outage, expiry and restart under sustained multirole workload.",
+          "external_commissioning": "Run authorized persistent workers with real host and credentials.",
+          "owner_or_professional_action": "Approve staging workers and run window.",
+          "conditional_expansion": null
+        }
       }
     },
     {
@@ -310,7 +392,14 @@
         "next_implementation": "Package review-ready candidates for GitHub with a separately authorized submission identity.",
         "existing_test_evidence": "test_builder_assignments.py exercises lease reclaims, exhaustion, terminal status and stale receipt handling. The exact passing snapshot yields an owner-only, checksummed review packet. Recovery, wrong review input and emergency stop are exercised. Offline review materialization refuses a changed Git HEAD or mismatched receipt. An owner-authorized preparation can now group bounded file replacements into one pinned lease. Builder can generate the private owner-briefing collection from its named recipe after checking the source digest and registered GET routes. A second governed recipe repairs the metrics collection using the same review lease and its existing telemetry cache policy. Stale or duplicate targets leave no task or receipt. The materializer uses committed Git blobs for its checksummed diff and refuses dirty replacement bytes or additions already tracked at the passing base. A valid diff passes git apply --check in a disposable repository.",
         "owner_action": "Internal continuation is authorized under the standing development scope.",
-        "required_acceptance_evidence_field": "acceptance_test"
+        "required_acceptance_evidence_field": "acceptance_test",
+        "remaining": {
+          "internal_coding": "Extend governed recipes and package the review-ready submission path.",
+          "insufficient_test_evidence": "Verify failure, stale base and review handoff for each recipe.",
+          "external_commissioning": "Commission a distinct runner and submission identity.",
+          "owner_or_professional_action": "Approve exact repository, branch, reviewer and write scope.",
+          "conditional_expansion": null
+        }
       }
     },
     {
@@ -337,7 +426,14 @@
         "next_implementation": "Exercise scoped benchmark, cost and quota enforcement with approved staging transport.",
         "existing_test_evidence": "See SQLITE_INTEGRATION_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
         "owner_action": "Internal continuation is authorized under the standing development scope.",
-        "required_acceptance_evidence_field": "acceptance_test"
+        "required_acceptance_evidence_field": "acceptance_test",
+        "remaining": {
+          "internal_coding": "Complete cross-role provider evidence and quota coverage where missing.",
+          "insufficient_test_evidence": "Exercise quota, failure, independent identity and receipt verification.",
+          "external_commissioning": "Run individually authorized synthetic staging requests.",
+          "owner_or_professional_action": "Approve endpoint, model scope and limits.",
+          "conditional_expansion": "Provider expansion follows funded quotas."
+        }
       }
     },
     {
@@ -363,7 +459,14 @@
         "next_implementation": "Verify consent, targeting and demand using an approved channel and independently sourced attribution.",
         "existing_test_evidence": "See SQLITE_INTEGRATION_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
-        "required_acceptance_evidence_field": "acceptance_test"
+        "required_acceptance_evidence_field": "acceptance_test",
+        "remaining": {
+          "internal_coding": "Extend consent- and scope-bound rehearsal paths.",
+          "insufficient_test_evidence": "Prove deduplication, suppression and attribution recovery.",
+          "external_commissioning": "Verify one approved channel with independently sourced attribution.",
+          "owner_or_professional_action": "Approve channel, recipients and consent basis.",
+          "conditional_expansion": "Paid campaigns require separate budget."
+        }
       }
     },
     {
@@ -385,7 +488,14 @@
         "next_implementation": "Bind reviewed content to an independently verified authorized publishing receipt.",
         "existing_test_evidence": "See SOURCE_INSPECTED_ONLY and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
-        "required_acceptance_evidence_field": "acceptance_test"
+        "required_acceptance_evidence_field": "acceptance_test",
+        "remaining": {
+          "internal_coding": "Bind reviewed content to exact publishing intent and returned receipt.",
+          "insufficient_test_evidence": "Test denied, replayed and withdrawn publication evidence.",
+          "external_commissioning": "Verify one authorized provider sandbox receipt.",
+          "owner_or_professional_action": "Approve rights, destination and publication scope.",
+          "conditional_expansion": null
+        }
       }
     },
     {
@@ -410,7 +520,14 @@
         "next_implementation": "Prove tenant scoping, billing events, entitlements, activation and revocation in the chosen modules.",
         "existing_test_evidence": "See SQLITE_INTEGRATION_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md. SaaS, service and real-estate rehearsal covers shared stress rules, projection differences and simulated review. A repeated withdrawal queues one digest-bound event for opted-in Prime schedules and participating specialists. Prime switches to HOLD before cadence and the source is excluded from allocation.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
-        "required_acceptance_evidence_field": "acceptance_test"
+        "required_acceptance_evidence_field": "acceptance_test",
+        "remaining": {
+          "internal_coding": "Finish module-specific entitlement renewal and revocation gaps.",
+          "insufficient_test_evidence": "Prove billing event replay and tenant isolation for chosen modules.",
+          "external_commissioning": "Verify approved sandbox billing events.",
+          "owner_or_professional_action": "Select modules and approved merchant sandbox.",
+          "conditional_expansion": "Paid rollout follows operating approval."
+        }
       }
     },
     {
@@ -435,7 +552,14 @@
         "next_implementation": "Run the first authorized storefront lifecycle with support, costs and independently matched settlement receipts.",
         "existing_test_evidence": "test_product_artifact_workflow.py exercises capture blocking and continued fixture refund during emergency stop. Product Foundry continuous fixture links signed discovery, independent challenge, scoped execution, outcome, retained losses and a subsequent HOLD with contradiction evidence.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
-        "required_acceptance_evidence_field": "acceptance_test"
+        "required_acceptance_evidence_field": "acceptance_test",
+        "remaining": {
+          "internal_coding": "Finish repeatable product fulfillment and exception handling.",
+          "insufficient_test_evidence": "Exercise refunds, disputed costs and independently matched settlements.",
+          "external_commissioning": "Run approved storefront lifecycle in staging.",
+          "owner_or_professional_action": "Approve listings, rights, support and merchant scope.",
+          "conditional_expansion": "Real sales follow commercial approval."
+        }
       }
     },
     {
@@ -460,7 +584,14 @@
         "next_implementation": "Verify one authorized payment-provider sandbox event stream and independently sourced bank settlement evidence.",
         "existing_test_evidence": "test_product_artifact_workflow.py exercises exact matches, difference reporting and bound-receipt replay in an integrated checkout.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
-        "required_acceptance_evidence_field": "acceptance_test"
+        "required_acceptance_evidence_field": "acceptance_test",
+        "remaining": {
+          "internal_coding": null,
+          "insufficient_test_evidence": "Extend provider-specific event and settlement reconciliation evidence.",
+          "external_commissioning": "Verify named sandbox event stream and separately sourced settlement.",
+          "owner_or_professional_action": "Approve sandbox credentials, callbacks and side effects.",
+          "conditional_expansion": null
+        }
       }
     },
     {
@@ -483,7 +614,14 @@
         "next_implementation": "Prepare verified settlement adapters and owner-mandate validation before any payout.",
         "existing_test_evidence": "See SOURCE_INSPECTED_ONLY and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
-        "required_acceptance_evidence_field": "acceptance_test"
+        "required_acceptance_evidence_field": "acceptance_test",
+        "remaining": {
+          "internal_coding": "Complete verified settlement adapters and owner-mandate validation.",
+          "insufficient_test_evidence": "Test denial, mismatched receipts and duplicate payout intents.",
+          "external_commissioning": "Commission approved sandbox with reusable receipt proof.",
+          "owner_or_professional_action": "Approve provider and allowed authority.",
+          "conditional_expansion": "Live payouts require reconciled funds and distinct consent."
+        }
       }
     },
     {
@@ -508,7 +646,14 @@
         "next_implementation": "Prepare provider contracts and professional review intake before execution.",
         "existing_test_evidence": "See SOURCE_INSPECTED_ONLY and source observations above, with exact releases in ops/CHANGE_LEDGER.md. Private owner startup comparison separates dated public fees, quote and estimate classes, unknowns, activation, reserves and runway.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
-        "required_acceptance_evidence_field": "acceptance_test"
+        "required_acceptance_evidence_field": "acceptance_test",
+        "remaining": {
+          "internal_coding": "Finish scoped review intake and bind approved terms to internal drafts.",
+          "insufficient_test_evidence": "Exercise unsigned, wrong-party and superseded terms.",
+          "external_commissioning": "Verify approved signing sandbox receipts.",
+          "owner_or_professional_action": "Licensed counsel reviews actual terms and filings.",
+          "conditional_expansion": "Live agreements need separate approval."
+        }
       }
     },
     {
@@ -534,7 +679,14 @@
         "next_implementation": "Exercise a complete legally scoped practice transaction and documented approvals.",
         "existing_test_evidence": "See SOURCE_INSPECTED_ONLY and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
         "owner_action": "Internal continuation is authorized under the standing development scope.",
-        "required_acceptance_evidence_field": "acceptance_test"
+        "required_acceptance_evidence_field": "acceptance_test",
+        "remaining": {
+          "internal_coding": "Complete legally scoped practice stages and exact evidence linkage.",
+          "insufficient_test_evidence": "Exercise approvals, adverse outcomes and jurisdiction denials.",
+          "external_commissioning": "Run authorized provider sandbox where selected.",
+          "owner_or_professional_action": "Owner and qualified professionals confirm jurisdiction and transaction boundaries.",
+          "conditional_expansion": "Acquisition requires viability, capital and approval."
+        }
       }
     },
     {
@@ -544,10 +696,12 @@
         "services/api/app/workers/outbox_dispatcher.py",
         "services/api/app/core/dependencies.py",
         "services/api/tests/test_notification_receipts.py",
-        "services/api/tests/test_notification_bridge.py"
+        "services/api/tests/test_notification_bridge.py",
+        "services/api/app/services/owner_operating_brief.py",
+        "services/api/tests/test_saas_tenant_entitlements.py"
       ],
-      "source_observation": "Reference dispatcher can no longer record unsent messages dispatched; actual provider pathway must be identified",
-      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "source_observation": "Owner-only attention acknowledgments persist as separate receipts. An unconfigured dispatcher leaves delivery unverified.",
+      "evidence_level": "SQLITE_INTEGRATION_TESTED",
       "production_verified": false,
       "acceptance_test": "Owner-authorized email/SMS external receipts with opt-out, retry, replay protection and consent logs",
       "depends_on": [
@@ -556,10 +710,17 @@
       ],
       "owner_external_authorization_required": false,
       "continuation": {
-        "next_implementation": "Build a durable non-delivery staging outbox and verify an independently authorized delivery receipt.",
-        "existing_test_evidence": "See SOURCE_INSPECTED_ONLY and source observations above, with exact releases in ops/CHANGE_LEDGER.md. Owner attention references are revocable and private; an unconfigured transport cannot produce a delivery receipt. Twenty-six restored historical bridge, channel and orchestrator tests run in canonical CI. Explicitly disabled preferences do not create dispatch attempts.",
+        "next_implementation": "Complete governed consent, external-intent staging and retry, then verify an independently authorized delivery receipt.",
+        "existing_test_evidence": "See SOURCE_INSPECTED_ONLY and source observations above, with exact releases in ops/CHANGE_LEDGER.md. Owner attention references are revocable and private; an unconfigured transport cannot produce a delivery receipt. Private acknowledgment was verified for owner-only access, persistent readback, unknown-ID refusal and retry without a duplicate event. Twenty-six restored historical bridge, channel and orchestrator tests run in canonical CI. Explicitly disabled preferences do not create dispatch attempts.",
         "owner_action": "Internal continuation is authorized under the standing development scope.",
-        "required_acceptance_evidence_field": "acceptance_test"
+        "required_acceptance_evidence_field": "acceptance_test",
+        "remaining": {
+          "internal_coding": "Complete governed external-intent staging, consent and retry workflow.",
+          "insufficient_test_evidence": "Private acknowledgment is tested. Exercise concurrent outbox replay, opt-out and provider outage.",
+          "external_commissioning": "Verify independently authorized provider receipt.",
+          "owner_or_professional_action": "Approve sender, recipients, channel and cost.",
+          "conditional_expansion": null
+        }
       }
     },
     {
@@ -586,7 +747,14 @@
         "next_implementation": "Verify worker recovery and alerts in a controlled always-on staging run.",
         "existing_test_evidence": "Owner integration tests exercise local and driving briefing contracts. Pantheon assignment tests show verified missed cadence records in briefing evidence.",
         "owner_action": "Internal continuation is authorized under the standing development scope.",
-        "required_acceptance_evidence_field": "acceptance_test"
+        "required_acceptance_evidence_field": "acceptance_test",
+        "remaining": {
+          "internal_coding": null,
+          "insufficient_test_evidence": "Prove sustained restart, alert continuity and exact repair receipts.",
+          "external_commissioning": "Commission controlled always-on staging observation.",
+          "owner_or_professional_action": "Approve runtime and monitoring scope.",
+          "conditional_expansion": null
+        }
       }
     },
     {
@@ -613,7 +781,14 @@
         "next_implementation": "Wire the exact owner-preview routes in the December handoff. Verify status handling and device-local speech with a separately authorized preview project and test device.",
         "existing_test_evidence": "Owner API and tenant regressions verify JWT isolation, disposition metadata, restore-hold blocking, no-store and revoked sessions. Private owner startup comparison separates dated public fees, quote and estimate classes, unknowns, activation, reserves and runway. The owner attention and driving briefing datasource is prepared for the authorized preview.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
-        "required_acceptance_evidence_field": "acceptance_test"
+        "required_acceptance_evidence_field": "acceptance_test",
+        "remaining": {
+          "internal_coding": "Bind new acknowledgment and parked draft actions in the owner preview.",
+          "insufficient_test_evidence": "Exercise revocation, protected state and device outcomes end to end.",
+          "external_commissioning": "Test approved private preview and device.",
+          "owner_or_professional_action": "Approve preview access and local speech consent.",
+          "conditional_expansion": null
+        }
       }
     },
     {
@@ -638,7 +813,14 @@
         "next_implementation": "Verify staging artifacts, backup and rollback gates on a reviewed release candidate.",
         "existing_test_evidence": "See FOCUSED_CI_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
         "owner_action": "Internal continuation is authorized under the standing development scope.",
-        "required_acceptance_evidence_field": "acceptance_test"
+        "required_acceptance_evidence_field": "acceptance_test",
+        "remaining": {
+          "internal_coding": null,
+          "insufficient_test_evidence": "Run reviewed candidate through backup and rollback gates.",
+          "external_commissioning": "Verify staging build and rollback receipts.",
+          "owner_or_professional_action": "Approve staging release candidate and window.",
+          "conditional_expansion": null
+        }
       }
     },
     {
@@ -674,7 +856,14 @@
         "next_implementation": "Prove staging quarantine and post-snapshot deletion reconciliation with independently retained disposition receipts before clearing the restore hold.",
         "existing_test_evidence": "Owner API verifies latest inclusive UTC deadline, restore hold, emergency stop, expiry, idempotent reruns and redacted extracts. Disposable PostgreSQL logical backup rehearsal checked pre- and post-expiry restores. Private owner startup comparison separates dated public fees, quote and estimate classes, unknowns, activation, reserves and runway. Restore tests reconcile an older attachment state under the hold before allowing access checks to resume. An externally pinned disposition manifest closes older snapshots until owner reconciliation, and remains closed on manifest tampering.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
-        "required_acceptance_evidence_field": "acceptance_test"
+        "required_acceptance_evidence_field": "acceptance_test",
+        "remaining": {
+          "internal_coding": "Complete remaining scoped attachment-analysis coverage where approved.",
+          "insufficient_test_evidence": "Prove restore quarantine, independent disposition receipts and revocation.",
+          "external_commissioning": "Verify authorized private staging backup recovery.",
+          "owner_or_professional_action": "Approve retention and test restore scope.",
+          "conditional_expansion": null
+        }
       }
     },
     {
@@ -703,7 +892,14 @@
         "next_implementation": "Exercise independent outcomes and merge observations through the canonical decision path.",
         "existing_test_evidence": "See FOCUSED_CI_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
         "owner_action": "Internal continuation is authorized under the standing development scope.",
-        "required_acceptance_evidence_field": "acceptance_test"
+        "required_acceptance_evidence_field": "acceptance_test",
+        "remaining": {
+          "internal_coding": "Connect independent disagreements through each canonical decision gate.",
+          "insufficient_test_evidence": "Exercise all five roles with material conflict, refusal and reproducible audit.",
+          "external_commissioning": "Prove governed dispatch in authorized staging.",
+          "owner_or_professional_action": "Approve scoped worker and reviewer identity.",
+          "conditional_expansion": null
+        }
       }
     },
     {
@@ -735,9 +931,16 @@
       "owner_external_authorization_required": true,
       "continuation": {
         "next_implementation": "Extend substantive domain coverage and explicit contradiction handling. Prove independent Loki review of scoped evidence continuing to a governed Prime decision, verified execution and Mimir reassessment.",
-        "existing_test_evidence": "Approval, contradiction and verified-learning specialists reconcile recent Factory receipts. Forseti, Loki and Tyr can inspect exact checkout fixture evidence. The independent local challenger reports critical contradictions. Prime holds on scoped contradictions. Pantheon/Prime API regressions exercise scoped queuing, deduplication, replay, stale or missing evidence, digest corruption and emergency stop. Disposable PostgreSQL proves concurrent publishers, recovery from a rolled-back claim, and concurrent economic wakeup deduplication with exact-scope opt-in and rollback. The scoped acquisition fixture verifies debt stress, separately reviewed simulation, receipt reuse, revocation and reevaluation. SaaS, service and real-estate rehearsal covers shared stress rules, projection differences and simulated review. A repeated withdrawal queues one digest-bound event for opted-in Prime schedules and participating specialists. Prime switches to HOLD before cadence and the source is excluded from allocation.",
+        "existing_test_evidence": "Approval, contradiction and verified-learning specialists reconcile recent Factory receipts. Forseti, Loki and Tyr can inspect exact checkout fixture evidence. Njord, Forseti, Mimir and Heimdall also inspect scoped business treasury fixture heads. The independent local challenger reports critical contradictions. The integration fixture removed a statement head and verified Njord and independent Loki surfaced the conflict without treating the balance as available cash. Prime holds on scoped contradictions. Pantheon/Prime API regressions exercise scoped queuing, deduplication, replay, stale or missing evidence, digest corruption and emergency stop. Disposable PostgreSQL proves concurrent publishers, recovery from a rolled-back claim, and concurrent economic wakeup deduplication with exact-scope opt-in and rollback. The scoped acquisition fixture verifies debt stress, separately reviewed simulation, receipt reuse, revocation and reevaluation. SaaS, service and real-estate rehearsal covers shared stress rules, projection differences and simulated review. A repeated withdrawal queues one digest-bound event for opted-in Prime schedules and participating specialists. Prime switches to HOLD before cadence and the source is excluded from allocation.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
-        "required_acceptance_evidence_field": "acceptance_test"
+        "required_acceptance_evidence_field": "acceptance_test",
+        "remaining": {
+          "internal_coding": "Extend domain coverage outside Factory, checkout and current evidence lenses.",
+          "insufficient_test_evidence": "Exercise missing evidence, tenant isolation and end-to-end independent review for each domain.",
+          "external_commissioning": "Verify separate model and worker behavior in approved staging.",
+          "owner_or_professional_action": "Ratify role conflicts and authorize specifically scoped operation.",
+          "conditional_expansion": null
+        }
       }
     },
     {
@@ -764,7 +967,14 @@
         "next_implementation": "Verify sustained worker operation in authorized staging and collect eligible observed outcomes beyond the internal fixture.",
         "existing_test_evidence": "See SQLITE_INTEGRATION_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md. Product Foundry continuous fixture links signed discovery, independent challenge, scoped execution, outcome, retained losses and a subsequent HOLD with contradiction evidence. Calibration and prospective training verify original Factory proof. Scoped Norns reports use the assignment horizon. The private API offers an exact horizon filter, predicted versus observed frequency buckets, and rejection of late holdout enrollment. Existing scoped Norns ticks resolve eligible Factory outcomes in a bounded scan. PostgreSQL demonstrates lock deferral, rollback recovery and scope isolation.",
         "owner_action": "Internal continuation is authorized under the standing development scope.",
-        "required_acceptance_evidence_field": "acceptance_test"
+        "required_acceptance_evidence_field": "acceptance_test",
+        "remaining": {
+          "internal_coding": null,
+          "insufficient_test_evidence": "Measure sustained recovery and calibrate against genuine independently observed outcomes.",
+          "external_commissioning": "Commission scoped Norns worker and controlled outcome stream.",
+          "owner_or_professional_action": "Approve worker and outcome data scope.",
+          "conditional_expansion": null
+        }
       }
     },
     {
@@ -776,7 +986,7 @@
         "services/api/app/routers/auth_weweb.py",
         "web/weweb-widgets/owner-driving-voice.test.mjs"
       ],
-      "source_observation": "A private driving briefing returns a short read-only summary with emergency state and attention counts. Speech capture, playback, handset validation and voice authorization remain unverified.",
+      "source_observation": "Read-only driving playback and parked device-local dictation have simulated-browser coverage. A transcript is an editable draft.",
       "evidence_level": "SQLITE_INTEGRATION_TESTED",
       "production_verified": false,
       "acceptance_test": "Prove authentic owner briefing, dissent, Norns odds, A/B/C/Override with recorded decisions, secure voice/mobile controls and fallback behavior.",
@@ -787,10 +997,17 @@
       ],
       "owner_external_authorization_required": true,
       "continuation": {
-        "next_implementation": "Implement speech input/output and independently verify safe driving controls and their non-authority.",
-        "existing_test_evidence": "test_saas_tenant_entitlements.py verifies the authenticated read-only driving briefing, including the emergency-stop state. Verified missed cadence counts are included in its attention summary. Local browser selection tests enforce consent, device-local speech and text fallback.",
+        "next_implementation": "Bind parked dictation and decision-option review in the owner preview, then verify on approved devices.",
+        "existing_test_evidence": "test_saas_tenant_entitlements.py verifies the authenticated read-only driving briefing, including the emergency-stop state. Verified missed cadence counts are included in its attention summary. Local browser selection tests enforce consent, device-local speech and text fallback. Simulated dictation covers preinstalled local processing, consent, text-only fallback and cancellation.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
-        "required_acceptance_evidence_field": "acceptance_test"
+        "required_acceptance_evidence_field": "acceptance_test",
+        "remaining": {
+          "internal_coding": "Bind parked dictation and finish owner decision-option interactions in the preview.",
+          "insufficient_test_evidence": "Simulated capture and playback passed. Exercise handset fallback, revocation and review of a transcript.",
+          "external_commissioning": "Verify approved physical devices and preview app.",
+          "owner_or_professional_action": "Approve test device and grant per-session microphone consent.",
+          "conditional_expansion": null
+        }
       }
     },
     {
@@ -814,7 +1031,14 @@
         "next_implementation": "Prove each planned startup Legacy can operate under its own scope and reconciled economics.",
         "existing_test_evidence": "See SOURCE_INSPECTED_ONLY and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
-        "required_acceptance_evidence_field": "acceptance_test"
+        "required_acceptance_evidence_field": "acceptance_test",
+        "remaining": {
+          "internal_coding": "Complete remaining mandate-specific onboarding and proof paths.",
+          "insufficient_test_evidence": "Demonstrate five separate scopes, worker receipts and economics.",
+          "external_commissioning": "Commission each approved Legacy independently.",
+          "owner_or_professional_action": "Select five startup mandates and legal authority.",
+          "conditional_expansion": "Expansion follows viable units."
+        }
       }
     },
     {
@@ -839,7 +1063,14 @@
         "next_implementation": "Test clones and mirrors with staged independent runtimes and shared governance.",
         "existing_test_evidence": "See SOURCE_INSPECTED_ONLY and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
-        "required_acceptance_evidence_field": "acceptance_test"
+        "required_acceptance_evidence_field": "acceptance_test",
+        "remaining": {
+          "internal_coding": "Close uncovered capability and isolation gaps in the existing rehearsal.",
+          "insufficient_test_evidence": "Exercise repeatable clone and regional mirror recovery on independent hosts.",
+          "external_commissioning": "Commission staged runtimes with shared governance.",
+          "owner_or_professional_action": "Approve selected territories and processing scopes.",
+          "conditional_expansion": "Replication follows proven playbooks."
+        }
       }
     },
     {
@@ -866,7 +1097,14 @@
         "next_implementation": "Complete the authorized storefront, entitlements, refunds and repeatable fulfillment path.",
         "existing_test_evidence": "See SQLITE_INTEGRATION_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md. Product Foundry continuous fixture links signed discovery, independent challenge, scoped execution, outcome, retained losses and a subsequent HOLD with contradiction evidence.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
-        "required_acceptance_evidence_field": "acceptance_test"
+        "required_acceptance_evidence_field": "acceptance_test",
+        "remaining": {
+          "internal_coding": "Complete supported entitlement and repeatable delivery flows.",
+          "insufficient_test_evidence": "Prove refunds, support and multi-tenant fulfillment continuity.",
+          "external_commissioning": "Commission approved storefront and subscription sandbox.",
+          "owner_or_professional_action": "Approve rights, product, merchant scope and launch gates.",
+          "conditional_expansion": "Scale from viable subscription economics."
+        }
       }
     },
     {
@@ -895,7 +1133,14 @@
         "next_implementation": "Prove independently sourced demand and exercise one authority-bound startup candidate.",
         "existing_test_evidence": "See SQLITE_INTEGRATION_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md. The scoped acquisition fixture verifies debt stress, separately reviewed simulation, receipt reuse, revocation and reevaluation. SaaS, service and real-estate rehearsal covers shared stress rules, projection differences and simulated review. A repeated withdrawal queues one digest-bound event for opted-in Prime schedules and participating specialists. Prime switches to HOLD before cadence and the source is excluded from allocation.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
-        "required_acceptance_evidence_field": "acceptance_test"
+        "required_acceptance_evidence_field": "acceptance_test",
+        "remaining": {
+          "internal_coding": "Extend independently sourced demand selection and governed pilot preparation.",
+          "insufficient_test_evidence": "Exercise authority-bound pilot and contradictory demand evidence.",
+          "external_commissioning": "Stage approved proof for one selected candidate.",
+          "owner_or_professional_action": "Approve pilot, source rights and scope.",
+          "conditional_expansion": "Expand only when a better justified opportunity appears."
+        }
       }
     },
     {
@@ -919,7 +1164,14 @@
         "next_implementation": "Complete remaining portfolio rehearsals with grounded jurisdiction and comparable evidence.",
         "existing_test_evidence": "See SOURCE_INSPECTED_ONLY and source observations above, with exact releases in ops/CHANGE_LEDGER.md. SaaS, service and real-estate rehearsal covers shared stress rules, projection differences and simulated review. A repeated withdrawal queues one digest-bound event for opted-in Prime schedules and participating specialists. Prime switches to HOLD before cadence and the source is excluded from allocation.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
-        "required_acceptance_evidence_field": "acceptance_test"
+        "required_acceptance_evidence_field": "acceptance_test",
+        "remaining": {
+          "internal_coding": "Complete remaining distinct portfolio-branch rehearsals.",
+          "insufficient_test_evidence": "Ground comparable, cost and recovery evidence in each jurisdiction.",
+          "external_commissioning": "Stage authorized data and practice transaction.",
+          "owner_or_professional_action": "Select target jurisdiction and qualified reviewers.",
+          "conditional_expansion": "Asset purchases depend on capital and viability."
+        }
       }
     },
     {
@@ -948,7 +1200,14 @@
         "next_implementation": "Match independently supplied statements and liabilities with payment and accounting sandbox evidence.",
         "existing_test_evidence": "test_economic_control.py covers segregated fixture statements and historical vault flags. Product artifact rehearsal adds fixture settlement. Private owner startup comparison separates dated public fees, quote and estimate classes, unknowns, activation, reserves and runway.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
-        "required_acceptance_evidence_field": "acceptance_test"
+        "required_acceptance_evidence_field": "acceptance_test",
+        "remaining": {
+          "internal_coding": "Extend governed cash release and liability linkage beyond fixture statements.",
+          "insufficient_test_evidence": "Prove reconciliation using independent readback and reversal edge cases.",
+          "external_commissioning": "Connect approved banking and accounting sandboxes.",
+          "owner_or_professional_action": "Approve read-only scope and professional integration.",
+          "conditional_expansion": "Actual allocations depend on reconciled funds."
+        }
       }
     },
     {
@@ -972,7 +1231,14 @@
         "next_implementation": "Build a sourced scenario and obtain the required insurance and professional review.",
         "existing_test_evidence": "See SOURCE_INSPECTED_ONLY and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
-        "required_acceptance_evidence_field": "acceptance_test"
+        "required_acceptance_evidence_field": "acceptance_test",
+        "remaining": {
+          "internal_coding": "Prepare the existing source-backed scenario and compare alternatives.",
+          "insufficient_test_evidence": "Test assumptions, fees and stress against sourced illustrations.",
+          "external_commissioning": "Obtain independently supplied policy illustrations.",
+          "owner_or_professional_action": "Insurance professional and owner review suitability and approve any policy.",
+          "conditional_expansion": "Funding depends on viability and available capital."
+        }
       }
     },
     {
@@ -996,7 +1262,14 @@
         "next_implementation": "Prepare competing trust options with lawful jurisdiction-specific professional reviews.",
         "existing_test_evidence": "See SOURCE_INSPECTED_ONLY and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
-        "required_acceptance_evidence_field": "acceptance_test"
+        "required_acceptance_evidence_field": "acceptance_test",
+        "remaining": {
+          "internal_coding": "Prepare comparative fact packet and jurisdiction requirements.",
+          "insufficient_test_evidence": "Check assumptions and contradictions against independent professional input.",
+          "external_commissioning": "Verify approved document workflow using fixtures.",
+          "owner_or_professional_action": "Licensed counsel validates trust structure and owner approves changes.",
+          "conditional_expansion": "Asset transfer and settlement require separate authorization and viable funding."
+        }
       }
     },
     {
@@ -1022,7 +1295,14 @@
         "next_implementation": "Prepare evidence and professional questions on departure timing and obligations.",
         "existing_test_evidence": "See SOURCE_INSPECTED_ONLY and source observations above, with exact releases in ops/CHANGE_LEDGER.md. Private owner startup comparison separates dated public fees, quote and estimate classes, unknowns, activation, reserves and runway.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
-        "required_acceptance_evidence_field": "acceptance_test"
+        "required_acceptance_evidence_field": "acceptance_test",
+        "remaining": {
+          "internal_coding": "Build scoped timing, residency and obligations evidence packet.",
+          "insufficient_test_evidence": "Test conflicting residence and obligation assumptions with independent evidence.",
+          "external_commissioning": "Obtain authorized official records if required.",
+          "owner_or_professional_action": "Owner and qualified advisers decide departure timing and tax duties.",
+          "conditional_expansion": "Execution is conditional on personal and business readiness."
+        }
       }
     },
     {
@@ -1045,7 +1325,14 @@
         "next_implementation": "Collect official jurisdiction requirements and independent eligibility review when requested.",
         "existing_test_evidence": "See SOURCE_INSPECTED_ONLY and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
-        "required_acceptance_evidence_field": "acceptance_test"
+        "required_acceptance_evidence_field": "acceptance_test",
+        "remaining": {
+          "internal_coding": "Structure jurisdiction and eligibility evidence for requested options.",
+          "insufficient_test_evidence": "Verify current official requirements and independent eligibility.",
+          "external_commissioning": "Collect authorized records and validate applicable official processes.",
+          "owner_or_professional_action": "Owner chooses jurisdictions and qualified professional reviews eligibility.",
+          "conditional_expansion": "Pursue options when mobility plan and financing justify them."
+        }
       }
     },
     {
@@ -1071,7 +1358,14 @@
         "next_implementation": "Route a complete scoped fact packet for qualified review before reliance.",
         "existing_test_evidence": "See SOURCE_INSPECTED_ONLY and source observations above, with exact releases in ops/CHANGE_LEDGER.md. Private owner startup comparison separates dated public fees, quote and estimate classes, unknowns, activation, reserves and runway.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
-        "required_acceptance_evidence_field": "acceptance_test"
+        "required_acceptance_evidence_field": "acceptance_test",
+        "remaining": {
+          "internal_coding": "Complete scoped fact and question intake for qualified reviewers.",
+          "insufficient_test_evidence": "Verify scope, provenance and reliance limits of completed reviews.",
+          "external_commissioning": "Commission approved private review process.",
+          "owner_or_professional_action": "Licensed tax and legal professionals issue opinions before reliance.",
+          "conditional_expansion": null
+        }
       }
     },
     {
@@ -1096,7 +1390,14 @@
         "next_implementation": "Link reviewed allocation policy to separately reconciled compensation, reserves and withdrawals.",
         "existing_test_evidence": "See SQLITE_INTEGRATION_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
-        "required_acceptance_evidence_field": "acceptance_test"
+        "required_acceptance_evidence_field": "acceptance_test",
+        "remaining": {
+          "internal_coding": "Link reviewed allocations to exact reconciled cash and obligations.",
+          "insufficient_test_evidence": "Prove reserve, payroll, cap and withdrawal edge cases with independent records.",
+          "external_commissioning": "Exercise approved treasury and accounting sandbox.",
+          "owner_or_professional_action": "Approve policy parameters and real withdrawal authority.",
+          "conditional_expansion": "Withdrawals depend on reconciled funds and applicable policy."
+        }
       }
     },
     {
@@ -1119,7 +1420,14 @@
         "next_implementation": "Confirm roles, purpose, documentation and professional payroll review.",
         "existing_test_evidence": "See SOURCE_INSPECTED_ONLY and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
-        "required_acceptance_evidence_field": "acceptance_test"
+        "required_acceptance_evidence_field": "acceptance_test",
+        "remaining": {
+          "internal_coding": "Complete scoped role and succession documentation flows.",
+          "insufficient_test_evidence": "Test authority, payroll and handover evidence.",
+          "external_commissioning": "Verify approved payroll workflow if commissioned.",
+          "owner_or_professional_action": "Owner confirms roles, qualified advisers approve payroll and succession documents.",
+          "conditional_expansion": "Hiring and payouts depend on sustainable operating funds."
+        }
       }
     },
     {
@@ -1142,7 +1450,14 @@
         "next_implementation": "Defer property and hospitality execution pending evidence-backed viability and owner approval.",
         "existing_test_evidence": "See SOURCE_INSPECTED_ONLY and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
-        "required_acceptance_evidence_field": "acceptance_test"
+        "required_acceptance_evidence_field": "acceptance_test",
+        "remaining": {
+          "internal_coding": null,
+          "insufficient_test_evidence": null,
+          "external_commissioning": null,
+          "owner_or_professional_action": "Owner selects and authorizes a viable acquisition only after evidence and advice.",
+          "conditional_expansion": "Property and hospitality work depends on viability, sufficient capital and professional approval."
+        }
       }
     },
     {
@@ -1166,7 +1481,14 @@
         "next_implementation": "Rehearse threat-specific protection and emergency recovery in controlled operating scope.",
         "existing_test_evidence": "See SOURCE_INSPECTED_ONLY and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
-        "required_acceptance_evidence_field": "acceptance_test"
+        "required_acceptance_evidence_field": "acceptance_test",
+        "remaining": {
+          "internal_coding": "Extend defensive safeguards for the remaining scoped failures.",
+          "insufficient_test_evidence": "Rehearse restoration, containment and locked access with durable proof.",
+          "external_commissioning": "Commission a controlled recovery exercise.",
+          "owner_or_professional_action": "Approve environment, incident authority and recovery boundaries.",
+          "conditional_expansion": null
+        }
       }
     },
     {
@@ -1189,7 +1511,14 @@
         "next_implementation": "Build scoped delegation acceptance and privacy checks with human hiring review.",
         "existing_test_evidence": "See SOURCE_INSPECTED_ONLY and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
-        "required_acceptance_evidence_field": "acceptance_test"
+        "required_acceptance_evidence_field": "acceptance_test",
+        "remaining": {
+          "internal_coding": "Build scoped delegation acceptance and privacy checks.",
+          "insufficient_test_evidence": "Verify human review, revocation and least-privilege work access.",
+          "external_commissioning": "Exercise approved personnel workflow where selected.",
+          "owner_or_professional_action": "Owner approves hiring and qualified review where needed.",
+          "conditional_expansion": "Hiring follows operating workload and capital."
+        }
       }
     },
     {
@@ -1226,7 +1555,14 @@
         "next_implementation": "Validate separate model credentials and review exact owner-authorized staged challenges.",
         "existing_test_evidence": "See SQLITE_INTEGRATION_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md. Product Foundry continuous fixture links signed discovery, independent challenge, scoped execution, outcome, retained losses and a subsequent HOLD with contradiction evidence. The scoped acquisition fixture verifies debt stress, separately reviewed simulation, receipt reuse, revocation and reevaluation.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
-        "required_acceptance_evidence_field": "acceptance_test"
+        "required_acceptance_evidence_field": "acceptance_test",
+        "remaining": {
+          "internal_coding": "Extend domain-specific contradiction checks with provenance.",
+          "insufficient_test_evidence": "Exercise exact artifact review and disagreement isolation for new domains.",
+          "external_commissioning": "Validate distinct credentials and approved staged model challenges.",
+          "owner_or_professional_action": "Approve model scope, independent identity and data class.",
+          "conditional_expansion": null
+        }
       }
     },
     {
@@ -1255,7 +1591,14 @@
         "next_implementation": "Source licensed market evidence and independently measure advisory outcomes.",
         "existing_test_evidence": "See SQLITE_INTEGRATION_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
-        "required_acceptance_evidence_field": "acceptance_test"
+        "required_acceptance_evidence_field": "acceptance_test",
+        "remaining": {
+          "internal_coding": "Extend advisory outcome and exposure evidence beyond current replay.",
+          "insufficient_test_evidence": "Measure calibration on independent eligible evidence.",
+          "external_commissioning": "Verify licensed market sources read-only.",
+          "owner_or_professional_action": "Approve data rights and advisor scope.",
+          "conditional_expansion": "Transactions or increased exposure require separate authority."
+        }
       }
     },
     {
@@ -1284,7 +1627,14 @@
         "next_implementation": "Verify licensed quotes, venue delays, reconciliation and FX advisory calibration.",
         "existing_test_evidence": "See SQLITE_INTEGRATION_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
-        "required_acceptance_evidence_field": "acceptance_test"
+        "required_acceptance_evidence_field": "acceptance_test",
+        "remaining": {
+          "internal_coding": "Extend settlement delay and reconciliation coverage for approved venues.",
+          "insufficient_test_evidence": "Measure independent calibration and compare against paper replay.",
+          "external_commissioning": "Verify read-only licensed quotes, venue delays and real reconciliation evidence.",
+          "owner_or_professional_action": "Approve provider access and data terms.",
+          "conditional_expansion": "Live FX, transfers and risk increases require separate authority."
+        }
       }
     },
     {
@@ -1301,7 +1651,7 @@
         "services/api/tests/test_product_artifact_workflow.py",
         "services/api/tests/test_foundry_discovery.py"
       ],
-      "source_observation": "Adds reviewed restart with fresh evidence, scoped obligations, one-use reservation release, per-currency portfolio exposure, and asset recovery linked to fixture statements. PostgreSQL verifies a racing release settles once. Factory queue admission, execution, new per-action approval, standing draft mandates and rehearsal fulfillment re-check known related mirror containment. Legacy failover also checks both the failed and recovery scopes before moving work. Reading queued state and revoking authority remain available after a hold. An opted-in Prime schedule moves to advisory HOLD immediately after a fixture loss breaches its cumulative ceiling.",
+      "source_observation": "Adds reviewed restart with fresh evidence, scoped obligations, one-use reservation release, per-currency portfolio exposure, and asset recovery linked to fixture statements. PostgreSQL verifies a racing release settles once. Factory queue admission, execution, new per-action approval, standing draft mandates and rehearsal fulfillment re-check known related mirror containment. Fresh Legacy queue admission checks containment, and failover checks both the failed and recovery scopes before moving work. Reading queued state and revoking authority remain available after a hold. An opted-in Prime schedule moves to advisory HOLD immediately after a fixture loss breaches its cumulative ceiling.",
       "evidence_level": "POSTGRES_INTEGRATION_TESTED",
       "production_verified": false,
       "acceptance_test": "Prove independent evidence and hard cumulative limits, protected reserves and aggregate exposure, version and replay integrity, scheduled and event-driven reassessment, exact Loki review, immediate containment, scope isolation, forward alternative ranking, strategic exit with rights-aware asset inventory, and Mimir learning that distinguishes simulation, zero external effects and independently reconciled outcomes.",
@@ -1319,7 +1669,14 @@
         "next_implementation": "Extend containment to every authorized execution lane and reconcile independently supplied reserves and liabilities.",
         "existing_test_evidence": "See POSTGRES_INTEGRATION_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md. Product Foundry continuous fixture links signed discovery, independent challenge, scoped execution, outcome, retained losses and a subsequent HOLD with contradiction evidence. The scoped acquisition fixture verifies debt stress, separately reviewed simulation, receipt reuse, revocation and reevaluation. SaaS, service and real-estate rehearsal covers shared stress rules, projection differences and simulated review. A repeated withdrawal queues one digest-bound event for opted-in Prime schedules and participating specialists. Prime switches to HOLD before cadence and the source is excluded from allocation.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
-        "required_acceptance_evidence_field": "acceptance_test"
+        "required_acceptance_evidence_field": "acceptance_test",
+        "remaining": {
+          "internal_coding": "Extend containment to remaining authorized execution and funding paths.",
+          "insufficient_test_evidence": "Exercise staggered loss, restart and reserve evidence across lanes.",
+          "external_commissioning": "Reconcile independently supplied liabilities and reserves in approved staging.",
+          "owner_or_professional_action": "Approve scoped funding, review obligations and any release.",
+          "conditional_expansion": "Expansion follows demonstrated economics and capital availability."
+        }
       }
     }
   ],
