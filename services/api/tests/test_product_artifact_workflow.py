@@ -642,6 +642,19 @@ def rehearse_checkout(client, engine, monkeypatch, owner, action_id, price, scop
     assert held.status_code == 200, held.text
     assert held.json()["fulfillment_exception"]["status"] == "HELD"
     assert held.json()["owner_followup_required"] is True
+    from app.loki.analyst import challenge
+    from app.loki.evidence import artifact_digest
+    from app.services.checkout_operating_signals import checkout_operating_blockers
+
+    held_observation = {**held.json(), "status": "UNRECONCILED_FIXTURE"}
+    assert "CHECKOUT_FULFILLMENT_HELD" in checkout_operating_blockers([held_observation])
+    review_ref = "checkout-hold-fixture"
+    report = {"status": "observed", "external_authority": False,
+              "observations": {"checkout_learning": [held_observation]}}
+    held_review = challenge({"artifact_type": "pantheon_report", "reference": review_ref, "raw_input": report,
+                             "artifact_sha256": artifact_digest("pantheon_report", review_ref, report)})
+    assert any(item.category == "checkout_review_pending" and item.severity == "critical"
+               for item in held_review.findings)
     assert client.post(f"{root}/orders/{order_id}/delivery", headers=owner).status_code == 409
     release = {"event_id": str(uuid4()), "action": "RELEASE_FOR_RETRY", "reason": "Internal artifact reviewed and ready."}
     assert client.post(exception, headers=owner, json=release).status_code == 409
@@ -668,6 +681,8 @@ def rehearse_checkout(client, engine, monkeypatch, owner, action_id, price, scop
     assert partial.status_code == 200
     assert partial.json()["checkout_state"] == "PARTIALLY_REFUNDED"
     assert partial.json()["owner_followup_required"] is True
+    partial_observation = {**partial.json(), "status": "UNRECONCILED_FIXTURE"}
+    assert "CHECKOUT_REFUND_REVIEW_REQUIRED" in checkout_operating_blockers([partial_observation])
     assert apply(refund, "evt_fixture_refund_one", price // 2).json() == partial.json()
     assert apply(refund, "evt_fixture_duplicate_total", price // 2).status_code == 409
     assert apply(refund, "evt_fixture_over_refund", price + 1).status_code == 409

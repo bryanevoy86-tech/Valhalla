@@ -177,6 +177,7 @@ def cancel_schedule(schedule_id: UUID, db: Session = Depends(get_db)):
 
 def attach_operating_reassessment(db, payload, scope, today, outcomes, report):
     from app.routers.foundry_checkout import scoped_checkout_learning
+    from app.services.checkout_operating_signals import checkout_operating_blockers
     from app.services.treasury_reconciliation import observe_statement_heads
     from app.services.economic_control import specialist_economics
     from app.services.foundry_discovery import economic_blockers, economics, require_current_candidate
@@ -185,7 +186,7 @@ def attach_operating_reassessment(db, payload, scope, today, outcomes, report):
     inputs = opportunity.specialist_inputs
     listing = inputs.get("proposed_internal_listing")
     artifact_id = listing.get("artifact_id") if isinstance(listing, dict) else None
-    checkout = scoped_checkout_learning(db, scope, outcomes, artifact_id=artifact_id) if isinstance(artifact_id, str) else []
+    checkout = scoped_checkout_learning(db, scope, outcomes, artifact_id=artifact_id if isinstance(artifact_id, str) else None)
     capital = specialist_economics(db, "HEIMDALL", scope, today).get("economic_reassessment")
     blockers = set(capital["blockers"] if capital else ())
     source_assessment = None
@@ -201,13 +202,7 @@ def attach_operating_reassessment(db, payload, scope, today, outcomes, report):
             source_assessment = {"kind": evidence.kind, "economics": projected,
                                  "source_ref": evidence.source_ref, "evidence_class": evidence.evidence_class}
             blockers.update(economic_blockers(evidence.kind, projected))
-    for row in checkout:
-        if row["status"] == "EVIDENCE_CONFLICT":
-            blockers.add("CHECKOUT_EVIDENCE_CONFLICT")
-        if row["status"] == "UNRECONCILED_FIXTURE":
-            blockers.add("CHECKOUT_FIXTURE_UNRECONCILED")
-        if (row.get("fixture_contribution_minor") or 0) < 0:
-            blockers.add("NEGATIVE_FIXTURE_CONTRIBUTION")
+    blockers.update(checkout_operating_blockers(checkout))
     factory_findings = scoped_factory_findings(db, scope, outcomes)["contradictions"]
     blockers.update(item["code"] for item in factory_findings)
     treasury = observe_statement_heads(db, scope)
