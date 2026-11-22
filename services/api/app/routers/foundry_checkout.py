@@ -22,6 +22,7 @@ from app.models.foundry_checkout import FoundryCampaignVisit, FoundryFixtureSett
 from app.models.treasury_reconciliation import StatementEntry, StatementImport
 from app.models.marketing import MarketingCampaign
 from app.providers.stripe_adapter import verify_stripe_signature
+from app.services.acquisition_rehearsal import AcquisitionPlanIn, EVENT_TYPE as ACQUISITION_PLAN_EVENT, make_plan, plan_reference, read_plan, settled_campaign
 from app.services.economic_control import require_no_containment
 from app.services.prime_business_execution import _check_legacy, _emergency_stop_active, _event, _json, action_status, require_owner_mandate_key
 from app.services.product_artifacts import load_artifact, verify_artifact
@@ -480,7 +481,7 @@ def record_campaign_visit(payload: VisitIn, db: Session = Depends(get_db)):
     _attribution_schema(db)
     scope = payload.model_dump(exclude={"visit_id", "campaign_id"})
     _check_legacy(db, **scope)
-    if db.get(MarketingCampaign, payload.campaign_id) is None:
+    if db.get(MarketingCampaign, payload.campaign_id, with_for_update=True) is None:
         raise HTTPException(404, "Campaign record not found")
     key = outcome_scope_key(scope)
     visit = db.get(FoundryCampaignVisit, payload.visit_id)
@@ -488,6 +489,12 @@ def record_campaign_visit(payload: VisitIn, db: Session = Depends(get_db)):
         if (visit.campaign_id, visit.scope_key) != (payload.campaign_id, key):
             raise HTTPException(409, "Visit ID already used")
     else:
+        plan = read_plan(db, payload.campaign_id, scope)
+        if plan is not None:
+            recorded = AcquisitionPlanIn.model_validate(plan["request"])
+            current = make_plan(db, payload.campaign_id, recorded, datetime.now(timezone.utc).date())
+            if plan["demand_sha256"] != current["demand_sha256"]:
+                raise HTTPException(409, "Campaign demand evidence has changed")
         db.add(FoundryCampaignVisit(id=payload.visit_id, campaign_id=payload.campaign_id, scope_key=key))
         try:
             db.commit()
@@ -495,6 +502,46 @@ def record_campaign_visit(payload: VisitIn, db: Session = Depends(get_db)):
             db.rollback()
             raise HTTPException(409, "Visit ID already used") from None
     return {"visit_id": payload.visit_id, "campaign_id": payload.campaign_id, "basis": "REHEARSED_VISIT"}
+
+
+@router.post("/campaigns/{campaign_id}/acquisition-plan", status_code=201, dependencies=owner)
+def record_acquisition_plan(campaign_id: int, payload: AcquisitionPlanIn, db: Session = Depends(get_db)):
+    _attribution_schema(db)
+    if not inspect(db.connection()).has_table(LegacyOrchestrationEvent.__tablename__):
+        raise HTTPException(503, "Campaign plan journal unavailable")
+    scope = payload.scope.model_dump()
+    _check_legacy(db, **scope)
+    if _emergency_stop_active(db):
+        raise HTTPException(503, "Campaign planning paused by emergency stop")
+    require_no_containment(db, scope)
+    if db.get(MarketingCampaign, campaign_id, with_for_update=True) is None:
+        raise HTTPException(404, "Campaign record not found")
+    result = make_plan(db, campaign_id, payload, datetime.now(timezone.utc).date())
+    ref = plan_reference(campaign_id)
+    result["sha256"] = artifact_digest("acquisition_fixture_plan", ref, result)
+    prior = read_plan(db, campaign_id, scope)
+    if prior is not None:
+        if prior != result:
+            raise HTTPException(409, "Campaign already has a different acquisition plan")
+        return prior
+    if db.scalar(select(FoundryCampaignVisit.id).filter_by(campaign_id=campaign_id).limit(1)) is not None:
+        raise HTTPException(409, "Register an acquisition plan before its first visit")
+    _event(db, event_id=ref, legacy_instance_id=scope["legacy_instance_id"], event_type=ACQUISITION_PLAN_EVENT,
+           message="Demand-backed acquisition rehearsal planned", payload=result)
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(409, "Concurrent campaign plan already recorded") from None
+    return result
+
+
+@router.post("/campaigns/{campaign_id}/settled-review")
+def settled_acquisition_review(campaign_id: int, scope: CampaignScope, db: Session = Depends(get_db)):
+    _attribution_schema(db)
+    values = scope.model_dump()
+    _check_legacy(db, **values)
+    return settled_campaign(db, campaign_id, values)
 
 
 @router.post("/campaigns/{campaign_id}/summary")

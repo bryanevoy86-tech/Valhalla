@@ -64,7 +64,7 @@ This register identifies code evidence, missing integration, and the acceptance 
 - Owner authority on major strategic changes, legal/trust decisions, capital movement, regulated work and consequential deployments.
 - Independent adversarial and ethical checks; no direct unrestricted specialist-to-specialist communications.
 - First-year/transition cash-flow and lawful-benefits constraints belong in protected owner configuration, not this public-capable repository.
-- Owner-selected permanent 90/10 rule, private Fun Fund schedules/caps and exception approvals must be in an auditable ledger, not a hard-coded percentage without tax/expense checks.
+- The current owner policy uses a dynamic personal allocation recommendation and protected capital waterfall. Keep the former 90/10 rule, first-year deferral and proposed 80/20 as historical policy evidence. Actual exceptions, approvals and payment classifications require separate authority.
 - Source provenance, source licensing, calibrated probability, replay isolation, honest shadow vs live distinction, real customer and bank receipts.
 - Safe multi-instance workers, independent provider adapters, backups, rollback, change ledgers and zero phantom completions.
 - Personal and business household/residency details must be private and encrypted; no family account information in GitHub documentation.
@@ -139,7 +139,7 @@ Historical evidence was reviewed in the archived FX engine, the distinct SKU arb
 | Mimir | Integrity-checked replay receipts as internal simulation experience |
 | Heimdall Prime | Existing scoped reports plus private briefing alerts. No brokerage, execution or provider authority. |
 
-Package 3 shares the existing treasury floor. A private household and treasury scenario models expenditure versus budget, reserve funding, planned compensation, and the 90/10 split of remaining scenario cash. First-year withdrawal is deferred and later modeled withdrawals use an explicit scenario cap. Household inputs are entered through the private API. Trusts, insurance, residency and registration continue through their dedicated workstreams and appropriate professional review.
+Package 3 shares the existing treasury floor. The private treasury uses configurable personal allocation recommendations after liabilities, tax and operating reserve protections. Historical scenarios retain the 90/10 and first-year deferral contract for audit and replay. Household inputs are entered through the private API. Trusts, insurance, residency and registration continue through their dedicated workstreams and appropriate professional review.
 
 ## Workstream 50 — Dynamic Capital Allocation, Loss Containment and Strategic Redeployment
 

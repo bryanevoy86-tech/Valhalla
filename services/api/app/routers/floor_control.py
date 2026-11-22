@@ -13,7 +13,7 @@ from app.models.completion_registry import LegacyOrchestrationEvent
 from app.services.prime_business_execution import _check_legacy, _event, _json, require_owner_mandate_key
 from app.models.treasury_reconciliation import StatementImport
 from app.services.treasury_reconciliation import StatementFixture, append_statement, payload_for, statement_ready, summary
-from app.services.wealth_scenario import WealthScenario, project_household_and_treasury
+from app.services.wealth_scenario import PersonalAllocationIn, WealthScenario, project_household_and_treasury, recommend_personal_allocation
 from app.schemas.floor_control import (
     EngineUpsertIn, RevenueEventIn, RevenueEventOut,
     TargetUpsertIn, TrajectoryStatusOut
@@ -88,6 +88,30 @@ def record_wealth_scenario(payload: WealthScenario, db: Session = Depends(get_db
     except IntegrityError:
         db.rollback()
         raise HTTPException(409, "Wealth scenario ID already used") from None
+    return result
+
+
+@router.post("/wealth/personal-allocation-receipts", status_code=201, dependencies=owner)
+def record_personal_allocation(payload: PersonalAllocationIn, db: Session = Depends(get_db)):
+    result = recommend_personal_allocation(db, payload, datetime.now(timezone.utc).date())
+    event_id = "PERSONAL-ALLOCATION-" + result["sha256"]
+    if not inspect(db.connection()).has_table(LegacyOrchestrationEvent.__tablename__):
+        raise HTTPException(503, "Allocation receipt journal unavailable")
+    prior = db.scalar(select(LegacyOrchestrationEvent).filter_by(event_id=event_id))
+    event_type = "PERSONAL_ALLOCATION_FIXTURE_REVIEWED"
+    receipt = {"inputs": payload.model_dump(mode="json"), "recommendation": result}
+    if prior is not None:
+        if (prior.legacy_instance_id != payload.scope.legacy_instance_id or prior.event_type != event_type
+                or _json(prior.payload_json, {}) != receipt):
+            raise HTTPException(409, "Allocation receipt integrity mismatch")
+        return result
+    _event(db, event_id=event_id, legacy_instance_id=payload.scope.legacy_instance_id,
+           event_type=event_type, message="Private recommendation fixture recorded", payload=receipt)
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(409, "Allocation receipt already exists. Retry the exact recommendation.") from None
     return result
 
 

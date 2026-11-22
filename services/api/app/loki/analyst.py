@@ -73,6 +73,17 @@ def challenge(item: dict) -> IndependentReviewIn:
                 critical=market.get("external_execution_authorized") is not False,
             ))
         if isinstance(sources, dict):
+            acquisition = sources.get("acquisition_rehearsal")
+            if isinstance(acquisition, list) and any(
+                isinstance(item, dict) and (item.get("basis") == "EVIDENCE_HOLD"
+                                            or item.get("verified_commercial_revenue") is not False
+                                            or item.get("external_action_authorized") is not False)
+                for item in acquisition
+            ):
+                findings.append(_finding(
+                    "acquisition_evidence_conflict", "observations/acquisition_rehearsal",
+                    "Review attribution and settlement integrity before relying on this campaign.", critical=True,
+                ))
             checkout = sources.get("checkout_learning")
             checkout_blockers = checkout_operating_blockers(checkout) if isinstance(checkout, list) else set()
             if "CHECKOUT_EVIDENCE_CONFLICT" in checkout_blockers:

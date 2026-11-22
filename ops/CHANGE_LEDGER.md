@@ -1025,3 +1025,8 @@ The acceptance matrix retains 13 P0 and 39 total criteria requiring internal cod
 - The private Legacy operating view ships with the owner-only no-store API projection and a saved WeWeb action validated using isolated fixtures. The view preserves separate business, household and protected reserve reporting. The snapshot, panel and workflow identifiers are in the December handoff.
 
 - Provider-tagged subscriptions no longer activate or grant access from a submitted reference or previously stored active status. The tenant rehearsal checks pending, refused activation, access refusal and cancellation. Signed provider-to-order, ledger, settlement and entitlement reconciliation is still internal work. The existing finance webhook criterion now explicitly records that code gap.
+
+## November 22 — Owner capital policy and startup acquisition
+
+- Added a scoped recommendation and review receipt for the proposed configurable CAD dynamic personal policy. Protected cash and checkout-linked evidence remain fixture-only; personal essentials and emergency reserves share one recommendation. Historical fixed-policy records retain their replay semantics.
+- The Product Foundry rehearsal now plans acquisition from current sourced demand before the first attributed visit, compares reconciled captures and positive-net orders, and derives a fixture pause recommendation from settled negative contribution. Added private preview contracts and made the acquisition fixture available to scoped specialist research.

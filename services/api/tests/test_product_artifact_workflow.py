@@ -196,6 +196,21 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
     proposal = {**proposal, **grounded, "persist_decision": True,
                 "specialist_inputs": {**proposal["specialist_inputs"], **grounded["specialist_inputs"]}}
     assert proposal["specialist_inputs"]["discovery_demand"]["sample_demand_bp"] == 7500
+    for model in (MarketingCampaign, FoundryRehearsalOrder, FoundryRehearsalPayment, FoundryCampaignVisit):
+        model.__table__.create(engine)
+    with Session(engine) as db:
+        db.add(MarketingCampaign(id=1, name="Private rehearsal", strategy_payload="{}"))
+        db.commit()
+    acquisition = "/api/prime/foundry/rehearsal/campaigns/1"
+    plan = {"scope": scope, "demand_evidence_id": evidence_id, "channel": "DIRECT_OPT_IN",
+            "experiment_budget_minor": 100, "stop_after_visits": 2}
+    assert client.post(f"{acquisition}/acquisition-plan", json=plan).status_code == 401
+    assert client.post(f"{acquisition}/acquisition-plan", headers=owner,
+                       json={**plan, "experiment_budget_minor": 101}).status_code == 409
+    planned = client.post(f"{acquisition}/acquisition-plan", headers=owner, json=plan)
+    assert planned.status_code == 201, planned.text
+    assert planned.json()["target_buyer_segment"] == "Practice workshop operators"
+    assert planned.json()["spend_authorized"] is False
 
     capital_mandate = {"id": str(uuid4()), "scope": scope, "currency": "CAD", "max_exposure": 5000,
                "max_cumulative_loss": 175, "max_additional_funding": 1000, "min_operating_reserve": 200,
@@ -384,6 +399,12 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
     assert resolved.json()["observed_outcome"] == 1
     assert resolved.json()["evidence_ref"].startswith("BF-RECEIPT-")
     closed_order = rehearse_checkout(client, engine, monkeypatch, owner, action_id, listing["price_cents_cad"], scope)
+    acquisition_review = client.post(f"{acquisition}/settled-review", json=scope)
+    assert acquisition_review.status_code == 200, acquisition_review.text
+    review = acquisition_review.json()
+    assert review["settled_conversion_bp"] == 5000 and review["retained_net_order_conversion_bp"] == 0
+    assert review["contribution_minor"] == -175 and review["recommendation"] == "RECOMMEND_PAUSE"
+    assert review["plan_sha256"] == planned.json()["sha256"] and not review["verified_commercial_revenue"]
     pending_id = submit_and_approve({**listing, "request_key": "workshop-listing-02"})
     with Session(engine) as db:
         advanced = run_assignment(db, "ODIN")
@@ -497,6 +518,7 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
     with Session(engine) as db:
         recent_mimir = run_assignment(db, "MIMIR")["report_event_id"]
     learned_response = client.get(f"/api/prime/pantheon/reports/{recent_mimir}").json()
+    assert learned_response["observations"]["acquisition_rehearsal"][0]["sha256"] == review["sha256"]
     assert learned_response["observations"]["checkout_learning"][0]["fixture_contribution_minor"] == -175
     assert learned_response["observations"]["economic_reassessment"]["cumulative_loss_minor"] == 175
     next_tick = datetime.fromisoformat(next_cadence).replace(tzinfo=None) + timedelta(seconds=1)
@@ -641,14 +663,9 @@ def rehearse_checkout(client, engine, monkeypatch, owner, action_id, price, scop
     import hmac
     import time
 
-    for model in (MarketingCampaign, FoundryRehearsalOrder, FoundryRehearsalPayment, FoundryCampaignVisit):
-        model.__table__.create(engine)
     secret = "fixture-test-secret"
     monkeypatch.setenv("VALHALLA_FOUNDRY_FIXTURE_SECRET", secret)
     root = "/api/prime/foundry/rehearsal"
-    with Session(engine) as db:
-        db.add(MarketingCampaign(id=1, name="Private rehearsal", strategy_payload="{}"))
-        db.commit()
     visit_ids = [str(uuid4()), str(uuid4())]
     assert client.post(f"{root}/campaign-visits", json={**scope, "campaign_id": 1, "visit_id": visit_ids[0]}).status_code == 401
     for visit_id in visit_ids:

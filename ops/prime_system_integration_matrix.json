@@ -448,7 +448,7 @@
         "services/api/app/routers/marketing.py",
         "services/api/app/services/marketing_service.py"
       ],
-      "source_observation": "Private simulation traces scoped visits through signed checkout capture and refunds and tests conversion attribution. Live publishing, audience consent and paid-order attribution are pending.",
+      "source_observation": "Private simulation binds a demand-backed plan before campaign visits and reconciles the attributed capture, refunds, delivery, costs and settlement. Roles can read the settled fixture and recommend pausing. Live publishing, audience consent and verified paid-order attribution are pending.",
       "evidence_level": "SQLITE_INTEGRATION_TESTED",
       "production_verified": false,
       "acceptance_test": "True platform authenticated publish and provider receipt, lawful scheduling/consent, click attribution to paid order",
@@ -1394,7 +1394,7 @@
         "valhalla_hand_off/EIA_PACKAGE/03_risk_controls.md",
         "services/api/app/services/wealth_scenario.py"
       ],
-      "source_observation": "Owner-private scenarios track reserve and compensation before modelling a 90/10 allocation of remaining surplus, with a supplied cap and first-year Fun Fund withdrawal deferred. This isolated planning assumption never posts a transfer, withdrawal or verified income.",
+      "source_observation": "The dynamic policy is the current recommendation model. It reconciles monthly CAD checkout-linked performance and a scoped statement fixture, applies owner-configured anchors and protections, and produces a private review receipt. The former 90/10 and first-year deferred model remains a historical scenario contract.",
       "evidence_level": "SQLITE_INTEGRATION_TESTED",
       "production_verified": false,
       "acceptance_test": "Verify owner-private cap schedule, taxes, cash reserves, net profit definition, allocation ledger, no unauthorized extraction and documented exceptions.",

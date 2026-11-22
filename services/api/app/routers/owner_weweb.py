@@ -16,6 +16,7 @@ from app.schemas.market_intelligence import MarketScope
 from app.services.owner_specialist_context import pantheon_report_index, prime_decision_context, specialist_context
 from app.services.prime_business_execution import require_owner_mandate_key
 from app.services.owner_startup import StartupPlanIn, prepare_startup
+from app.services.wealth_scenario import PersonalAllocationIn, recommend_personal_allocation
 from app.services.owner_conversation import (
     ThreadIn, TurnIn, UploadIn, attachment_summaries, bounded_upload, create_conversation, local_extraction,
     store_attachment, submit_turn,
@@ -54,6 +55,26 @@ def owner_list_attachments(conversation_id: UUID, limit: int = 50, db: Session =
 @router.post("/owner-startup/compare")
 def startup_comparison(payload: StartupPlanIn):
     return private_owner_response(prepare_startup(payload))
+
+
+@router.post("/owner-personal-allocation")
+def owner_personal_allocation(payload: PersonalAllocationIn, db: Session = Depends(get_db)):
+    from datetime import datetime, timezone
+
+    return private_owner_response(recommend_personal_allocation(db, payload, datetime.now(timezone.utc).date()))
+
+
+@router.post("/owner-acquisition/{campaign_id}/settled-review")
+def owner_acquisition_review(campaign_id: int, payload: MarketScope, db: Session = Depends(get_db)):
+    from app.routers.foundry_checkout import _attribution_schema, schema
+    from app.services.acquisition_rehearsal import settled_campaign
+    from app.services.prime_business_execution import _check_legacy
+
+    schema(db)
+    _attribution_schema(db)
+    scope = payload.model_dump()
+    _check_legacy(db, **scope)
+    return private_owner_response(settled_campaign(db, campaign_id, scope))
 
 
 @router.post("/owner-operating-scope")
