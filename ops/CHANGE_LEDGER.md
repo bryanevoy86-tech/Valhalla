@@ -1030,3 +1030,6 @@ The acceptance matrix retains 13 P0 and 39 total criteria requiring internal cod
 
 - Added a scoped recommendation and review receipt for the proposed configurable CAD dynamic personal policy. Protected cash and checkout-linked evidence remain fixture-only; personal essentials and emergency reserves share one recommendation. Historical fixed-policy records retain their replay semantics.
 - The Product Foundry rehearsal now plans acquisition from current sourced demand before the first attributed visit, compares reconciled captures and positive-net orders, and derives a fixture pause recommendation from settled negative contribution. Added private preview contracts and made the acquisition fixture available to scoped specialist research.
+
+- Commit `ffb631b9616f7b742426f8e447be7a25c475b2b5` passed all four hosted jobs in run 45060746495. The integrated campaign fixture used two visits and one reconciled capture, ending with zero positive-net orders and negative CAD 1.75 in settled order contribution. It recommended pausing without external action.
+- Added both private WeWeb previews with editor snapshot and exact workflow readback. Added a closed-month allocation API rehearsal and the local independent Loki review artifact, including bounds, authority and evidence mutation checks.

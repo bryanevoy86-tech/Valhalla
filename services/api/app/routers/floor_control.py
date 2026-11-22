@@ -91,6 +91,15 @@ def record_wealth_scenario(payload: WealthScenario, db: Session = Depends(get_db
     return result
 
 
+@router.post("/wealth/personal-allocation-review-artifact", dependencies=owner)
+def review_personal_allocation(payload: PersonalAllocationIn, db: Session = Depends(get_db)):
+    recommendation = recommend_personal_allocation(db, payload, datetime.now(timezone.utc).date())
+    identity = recommendation["sha256"]
+    return {"artifact_type": "personal_allocation", "input_source": "wealth-allocation-rehearsal",
+            "heimdall_reference_id": identity, "raw_input": recommendation,
+            "artifact_sha256": artifact_digest("personal_allocation", identity, recommendation)}
+
+
 @router.post("/wealth/personal-allocation-receipts", status_code=201, dependencies=owner)
 def record_personal_allocation(payload: PersonalAllocationIn, db: Session = Depends(get_db)):
     result = recommend_personal_allocation(db, payload, datetime.now(timezone.utc).date())

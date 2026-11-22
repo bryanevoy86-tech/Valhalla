@@ -58,6 +58,28 @@ def challenge(item: dict) -> IndependentReviewIn:
                                      "Cross-business support is beyond this private planning mandate.", critical=True))
         findings.append(_finding("reconcile_forward_case", "analysis",
                                  "Review forward alternatives, continuity of cash and obligations, and asset recovery assumptions."))
+    elif kind == "personal_allocation":
+        eligible = _number(proposal, "eligible_distributable_profit_minor")
+        personal = _number(proposal, "recommended_personal_minor")
+        cash = _number(proposal, "fixture_cash_headroom_minor")
+        profit = _number(proposal, "fixture_period_profit_after_tax_reserve_minor")
+        breakdown = proposal.get("personal_breakdown")
+        if not isinstance(breakdown, dict):
+            breakdown = {}
+        parts = [_number(breakdown, key) for key in ("essentials_minor", "reserve_minor", "remaining_personal_minor")]
+        if (not all(type(value) is int and value >= 0 for value in [eligible, personal, cash, profit, *parts])
+                or not personal <= eligible <= min(cash, profit) or sum(parts) != personal
+                or (proposal.get("blockers") and eligible)):
+            findings.append(_finding("allocation_capital_conflict", "eligible_distributable_profit_minor",
+                                     "The allocation does not reconcile to protected cash, profit and household limits.",
+                                     critical=True))
+        if (proposal.get("basis") != "RECONCILIATION_FIXTURE" or proposal.get("funds_movement_authorized") is not False
+                or proposal.get("standing_mandate_approved") is not False
+                or proposal.get("actual_accessible_funds_minor") is not None):
+            findings.append(_finding("allocation_authority_conflict", "funds_movement_authorized",
+                                     "Fixture evidence cannot authorize a personal payment.", critical=True))
+        findings.append(_finding("allocation_review_required", "business_protections_minor",
+                                 "Independently reconcile cash, liabilities, tax reserve and the applicable payment classification."))
     elif kind == "pantheon_report":
         sources = proposal.get("observations")
         if not isinstance(sources, dict) or proposal.get("status") != "observed":

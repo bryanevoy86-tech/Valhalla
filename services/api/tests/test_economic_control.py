@@ -951,3 +951,70 @@ def test_business_hold_blocks_alternate_currency_reservation_and_dispatch(econom
     post(client, "obligations", {"id": str(uuid4()), "scope": MIRROR, "obligation_key": "held-invoice",
                                  "due_on": today.isoformat(), "status": "OPEN", "amount_minor": 3,
                                  "evidence_ref": "fixture:held-invoice"})
+
+
+def test_personal_allocation_binds_closed_month_cash_and_protects_obligations(economic_client, monkeypatch):
+    from app.models.treasury_reconciliation import StatementAccount, StatementEntry, StatementImport
+    from app.routers import floor_control, foundry_checkout
+
+    client, engine = economic_client
+    for model in (StatementAccount, StatementEntry, StatementImport):
+        model.__table__.create(engine)
+    clock = datetime(2026, 11, 2, tzinfo=timezone.utc)
+
+    class FixtureDateTime(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return clock if tz is not None else clock.replace(tzinfo=None)
+
+    monkeypatch.setattr(floor_control, "datetime", FixtureDateTime)
+    monkeypatch.setattr(economic_control, "now", lambda: clock)
+    today = clock.date()
+    post(client, "mandates", mandate(today, min_operating_reserve=300000))
+    post(client, "liquidity", liquidity(today, unrestricted_pool_minor=3_000_000))
+    start, end = "2026-10-01", "2026-10-31"
+    statement_id, order_id = str(uuid4()), str(uuid4())
+    statement = {"id": statement_id, "scope": SCOPE, "source_id": "fixture:monthly",
+                 "account_ref": "business-current", "purpose": "BUSINESS", "currency": "CAD",
+                 "start": start, "end": end, "opening_minor": 1_800_000, "closing_minor": 3_000_000,
+                 "outstanding_liabilities_minor": 100000, "expense_budget_minor": 0,
+                 "entries": [{"external_ref": "capture", "posted_on": end, "category": "TRANSFER",
+                              "amount_minor": 1_200_000}], "basis": "LOCAL_STATEMENT_FIXTURE"}
+    response = client.post("/api/governance/floor/treasury/statement-fixtures", headers=OWNER, json=statement)
+    assert response.status_code == 201, response.text
+    checkout = {"order_id": order_id, "net_minor": 1_200_000, "fixture_cost_minor": 50000,
+                "currency": "CAD", "sha256": "a" * 64, "settlements": [{"posted_on": end, "statement_id": statement_id}]}
+    monkeypatch.setattr(foundry_checkout, "closed_checkout_proof", lambda *args, **kwargs: checkout)
+    post(client, "performance", performance(
+        today, start=start, end=end, operating_receipts=1_200_000, operating_costs=50000,
+        receipt_ref=f"checkout-fixture:{order_id}", checkout_order_id=order_id, checkout_sha256=checkout["sha256"],
+    ))
+    request = {"scope": SCOPE, "statement_id": statement_id, "essential_household_minor": 350000,
+               "personal_reserve_target_minor": 100000, "personal_reserve_balance_minor": 0,
+               "operating_reserve_minor": 200000, "corporate_tax_reserve_minor": 150000}
+    path = "/api/governance/floor/wealth/personal-allocation-receipts"
+    assert client.post(path, json=request).status_code == 401
+    issued = client.post(path, headers=OWNER, json=request)
+    assert issued.status_code == 201, issued.text
+    result = issued.json()
+    assert result["recommended_personal_minor"] == 400000
+    assert result["business_protections_minor"] == 550020
+    assert result["personal_breakdown"] == {"essentials_minor":350000, "reserve_minor":50000, "remaining_personal_minor":0}
+    assert result["actual_accessible_funds_minor"] is None and not result["funds_movement_authorized"]
+    assert client.post(path, headers=OWNER, json=request).json() == result
+    review = client.post(path.replace("receipts", "review-artifact"), headers=OWNER, json=request).json()
+    review_input = {"artifact_type": review["artifact_type"], "reference": review["heimdall_reference_id"],
+                    "raw_input": review["raw_input"], "artifact_sha256": review["artifact_sha256"]}
+    assert {finding.category for finding in challenge(review_input).findings} == {"allocation_review_required"}
+    from app.loki.evidence import artifact_digest
+
+    modified = {**review_input["raw_input"], "funds_movement_authorized": True, "recommended_personal_minor": 1100000}
+    review_input["raw_input"] = modified
+    review_input["artifact_sha256"] = artifact_digest("personal_allocation", review_input["reference"], modified)
+    assert {"allocation_authority_conflict", "allocation_capital_conflict"} <= {
+        finding.category for finding in challenge(review_input).findings if finding.severity == "critical"
+    }
+    held = client.post(path, headers=OWNER, json={**request, "additional_obligations_minor":3_000_000}).json()
+    assert held["recommended_personal_minor"] == 0 and held["contingency_review_recommended"]
+    checkout["sha256"] = "b" * 64
+    assert client.post(path, headers=OWNER, json=request).status_code == 409

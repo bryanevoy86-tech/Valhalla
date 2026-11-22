@@ -34,7 +34,8 @@ def tick(client: httpx.Client, kind: str) -> dict:
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--artifact-type", default="universal_opportunity", choices=("universal_opportunity", "pantheon_report", "economic_advice"))
+    parser.add_argument("--artifact-type", default="universal_opportunity",
+                        choices=("universal_opportunity", "pantheon_report", "economic_advice", "personal_allocation"))
     parser.add_argument("--once", action="store_true")
     parser.add_argument("--poll-seconds", type=int, default=15, choices=range(5, 301), metavar="5–300")
     args = parser.parse_args()

@@ -70,6 +70,7 @@ MANDATORY_ENDPOINTS = {
     "weweb_owner_operating_scope": ("POST", "/api/weweb/owner-operating-scope"),
     "weweb_owner_personal_allocation": ("POST", "/api/weweb/owner-personal-allocation"),
     "personal_allocation_receipt": ("POST", "/api/governance/floor/wealth/personal-allocation-receipts"),
+    "personal_allocation_independent_review": ("POST", "/api/governance/floor/wealth/personal-allocation-review-artifact"),
     "provider_prices": ("POST", "/api/prime/provider-intelligence/price-quotes"),
     "provider_staging_selection": ("POST", "/api/prime/provider-intelligence/select-staging-candidate"),
     "norns_holdout": ("POST", "/api/prime/norns/forecasts/{forecast_id}/holdout"),
