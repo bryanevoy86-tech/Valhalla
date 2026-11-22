@@ -1,6 +1,7 @@
 """Bind material specialist evidence to separately reviewed versions."""
 import re
-from datetime import datetime
+from datetime import datetime, timezone
+from uuid import UUID
 
 from fastapi import HTTPException
 from sqlalchemy import select
@@ -10,8 +11,7 @@ from sqlalchemy.orm import Session
 from app.loki.models import LokiReview, LokiReviewStatus
 from app.loki.review_service import verdict
 from app.models.specialist_assignment import SpecialistAssignment
-from app.pantheon.monitor import utc_now, verified_report
-from uuid import UUID
+from app.pantheon.monitor import report_matches_assignment, utc_now, verified_report
 
 
 def enqueue_report(db: Session, event_id: str) -> LokiReview:
@@ -44,12 +44,18 @@ def require_reviewed_reports(db: Session, ids, scope: dict) -> list[dict]:
     verified = []
     for event_id in sorted(ids):
         report = verified_report(db, event_id)
-        assignment = db.get(SpecialistAssignment, UUID(report["assignment_id"]), with_for_update=True)
-        observed = datetime.fromisoformat(report["observed_at"]).replace(tzinfo=None)
+        try:
+            assignment_id = UUID(report["assignment_id"])
+            observed = datetime.fromisoformat(report["observed_at"])
+            if observed.utcoffset() is None:
+                raise ValueError
+            observed = observed.astimezone(timezone.utc).replace(tzinfo=None)
+        except (ValueError, TypeError, KeyError, AttributeError):
+            raise HTTPException(409, "Specialist report has invalid assignment or time evidence") from None
+        assignment = db.get(SpecialistAssignment, assignment_id, with_for_update=True)
         now = utc_now()
-        if (report["scope"] != scope or report["status"] != "observed"
-                or assignment is None or assignment.state != "active" or assignment.expires_at <= now
-                or assignment.last_report_event_id != event_id
+        if (not report_matches_assignment(assignment, report) or report["scope"] != scope
+                or report.get("status") != "observed" or assignment.state != "active" or assignment.expires_at <= now
                 or not 0 <= (now - observed).total_seconds() <= 2 * assignment.cadence_seconds):
             raise HTTPException(409, "Specialist report is stale, revoked or outside decision scope")
         review = db.scalar(select(LokiReview).filter_by(

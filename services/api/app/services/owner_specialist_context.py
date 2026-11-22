@@ -49,7 +49,7 @@ def specialist_context(db: Session, schedule_id: UUID, *, require_digest: bool =
 def pantheon_report_index(db: Session, role: Role | None, after: UUID | None, limit: int) -> dict:
     from app.loki.models import LokiReview, LokiReviewStatus
     from app.loki.review_service import verdict
-    from app.pantheon.monitor import utc_now, verified_report
+    from app.pantheon.monitor import report_matches_assignment, utc_now, verified_report
 
     query = select(SpecialistAssignment).where(SpecialistAssignment.last_report_event_id.is_not(None))
     if role is not None:
@@ -63,9 +63,7 @@ def pantheon_report_index(db: Session, role: Role | None, after: UUID | None, li
         reference = {"assignment_id": str(assignment.id), "role": assignment.role}
         try:
             report = verified_report(db, assignment.last_report_event_id)
-            if (report["report_event_id"], report["assignment_id"], report["role"], report["scope"]) != (
-                assignment.last_report_event_id, str(assignment.id), assignment.role, assignment.scope,
-            ):
+            if not report_matches_assignment(assignment, report):
                 raise ValueError
             review = db.scalar(select(LokiReview).options(lazyload(LokiReview.findings)).filter_by(
                 artifact_type="pantheon_report", artifact_sha256=report["report_sha256"],
@@ -119,22 +117,30 @@ def prime_decision_context(db: Session, decision_id: UUID) -> dict:
     except (KeyError, TypeError, ValueError, AttributeError):
         raise HTTPException(409, "Prime decision and independent evidence do not match") from None
 
-    checked_mimir = {}
+    checked = {}
     proposal = review.raw_input
-    inputs = proposal.get("specialist_inputs", {}) if isinstance(proposal, dict) else {}
-    if isinstance(inputs, dict) and "mimir_outcome_claims" in inputs:
+    inputs = proposal.get("specialist_inputs", {}) if isinstance(proposal, dict) else None
+    if not isinstance(inputs, dict):
+        raise HTTPException(409, "Reviewed proposal has invalid specialist inputs")
+    scope = {"legacy_instance_id": proposal.get("legacy"), "business_id": inputs.get("business_id"),
+             "engine_id": proposal.get("engine_id"), "jurisdiction": proposal.get("jurisdiction")}
+    if "mimir_outcome_claims" in inputs:
         from app.services.prime_business_execution import verify_mimir_claims
 
-        evidence = verify_mimir_claims(db, {
-            "legacy_instance_id": proposal.get("legacy"), "business_id": inputs.get("business_id"),
-            "engine_id": proposal.get("engine_id"), "jurisdiction": proposal.get("jurisdiction"),
-        }, inputs["mimir_outcome_claims"])
+        evidence = verify_mimir_claims(db, scope, inputs["mimir_outcome_claims"])
         if evidence != linked.get("reviewed_mimir_outcomes"):
             raise HTTPException(409, "Mimir evidence differs from the reviewed decision")
-        checked_mimir["reviewed_mimir_outcomes"] = evidence
+        checked["reviewed_mimir_outcomes"] = evidence
+    if "pantheon_report_ids" in inputs:
+        from app.loki.specialist_review import require_reviewed_reports
+
+        evidence = require_reviewed_reports(db, inputs["pantheon_report_ids"], scope)
+        if evidence != linked.get("reviewed_specialist_reports"):
+            raise HTTPException(409, "Specialist evidence differs from the reviewed decision")
+        checked["reviewed_specialist_reports"] = evidence
 
     return {
-        **checked_mimir,
+        **checked,
         "prime_decision_id": str(decision_id),
         "opportunity_id": metadata.get("opportunity_id"),
         "heimdall_decision": (snapshot.heimdall_recommendation or {}).get("decision"),

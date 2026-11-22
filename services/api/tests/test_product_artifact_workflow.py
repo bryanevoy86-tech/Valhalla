@@ -326,6 +326,19 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
     assert decision_turn["evidence"]["independent_loki"]["review_id"] == review_id
     assert decision_turn["evidence"]["independent_loki"]["reconsideration_status"] == "accept_risk"
     assert decision_turn["execution_authorized"] is False
+    assert decision_turn["evidence"]["reviewed_specialist_reports"] == advice["independent_loki"]["reviewed_specialist_reports"]
+    assignment_id = UUID(source_report["assignment_id"])
+    with Session(engine) as db:
+        db.get(SpecialistAssignment, assignment_id).scope = {**scope, "jurisdiction": "CA-ON"}
+        db.commit()
+    rejected = evaluate()
+    assert rejected.status_code == 409 and "outside decision scope" in rejected.json()["detail"]
+    stale_context = client.post(turns, json={"turn_id": str(uuid4()), "message": "Check specialist authority",
+                                             "prime_decision_id": listing["prime_verdict_id"]})
+    assert stale_context.status_code == 409 and "outside decision scope" in stale_context.json()["detail"]
+    with Session(engine) as db:
+        db.get(SpecialistAssignment, assignment_id).scope = scope
+        db.commit()
     different_price = client.post(f"{FACTORY}/listing-drafts", headers=admin, json={
         **listing, "price_cents_cad": listing["price_cents_cad"] + 1,
     })

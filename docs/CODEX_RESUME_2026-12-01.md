@@ -616,3 +616,24 @@ The owner reviews the exact attachment in the selected conversation. Staging rec
 Commission with approved staging API HTTPS origin and WeWeb preview CORS, migrated conversation, review, extraction, disposition and orchestration journal storage, server-side owner identity and mandate configuration, and an operator approved for this workflow. Use owner, subscriber and revoked sessions and disposable attachments to verify stale digest, stale review, review acceptance/rejection, authorized disposition and exact readback. Exercise genuine Prime and specialist fixtures with matching Loki and Mimir evidence before a browser acceptance claim. Broader Pantheon views and dynamic operating domains remain internal work.
 
 Verification at `cab6a1bf714f3b4859770ce6180986e27d69f314` passed all four hosted jobs in run 45050002801. The isolated suites covered exact editor script execution and local transport contracts. Next internal work is the private startup comparison interface, broader specialist evidence, voice and operating views, plus remaining mandate-specific adapters, dispatch/settlement gates and Builder readback. Actual staging preview and physical-device acceptance remain separate.
+
+### November 22 — Startup planner and scoped specialist report index
+
+Primary WeWeb Home page `05ce39c3-5a5f-4e26-892b-3aa82fff3051` gained two owner-only panels. Editor snapshot `a21a20e8-fcf4-489e-9044-2c4c1a75d477` preceded this work.
+
+| Editor resource | ID | Contract |
+|---|---|---|
+| Private startup planner | `7a41906c-a17a-4b05-a283-74df9bb6e434` | Named or numbered corporation, Manitoba operations scope and owner-selected international comparison |
+| Compare workflow | `8f542e20-f080-4e63-bdb2-e820f662a7d9` | POST `/api/weweb/owner-startup/compare` |
+| Clear planning workflow | `0f4f2a97-9378-4ec7-9650-5cd4094936ec` | Resets transient planning inputs and results |
+| Startup result state | `58a87b3d-fe80-47b8-bc4d-edc5afdd0549` | Same-session only, no local storage or navigation persistence |
+| Private Pantheon report index | `b6039f5e-a0db-4eb3-9754-a6f7805d6683` | Latest verified receipt per specialist assignment |
+| Load reports | `7c98edc5-9903-4eb8-8daa-71eeeb42c153` | GET `/api/weweb/owner-pantheon/reports?role={role}`, role optional |
+| Next report page | `cff32121-7c8c-4b05-a806-d991628a187c` | Same endpoint plus returned `after` cursor and same role filter |
+| Pantheon result state | `f04087fc-5b76-4e96-9959-b04a6d813cb1` | Same-session only, no local storage or navigation persistence |
+
+The startup planner can run with the three scenario inputs alone. Optional structured details use the existing `StartupPlanIn` request. Paste only its optional keys. For a synthetic budget use `{"startup_cash_available_minor":50000,"costs":[{"key":"fixture-service","label":"Example setup","cadence":"ACTIVATION","basis":"OWNER_ESTIMATE","amount_minor":12000}]}`. To exercise the draft review view, include `professional_review` entries with `route`, `topic`, `facts` and `questions`. Each fact needs `label`, `statement`, `source_reference` and ISO `observed_on`. The workflow clears entered details after submission. The result separates activation from operating costs and reserves, identifies unpriced items, and assigns no filing or professional reliance authority.
+
+For Pantheon, the scope, current assignment, report identity and digest must agree. Missing or inconsistent evidence appears as an integrity hold without raw payload. A matching independent review can be queued, running, failed, completed or on integrity hold. Findings appear only from a verified completed review. Prime review and Factory execution revalidate the cited report against the latest role, scope, freshness and independent verdict. Private Prime decision inspection rechecks the same report references.
+
+Editor readback verified four workflow graphs and isolated script execution covered the three network actions. Commission using the already designated blank preview-origin variable `2861b009-a06b-436a-9d54-a95ec08e44cc` and authorized staging CORS. Verify owner/subscriber/revoked sessions, mobile layout, the real clear action, startup quote evidence classes, draft packet display, empty and paginated specialist results, completed separate Loki findings and invalid receipt behavior. Use synthetic costs and facts. Any professional opinion or authorized reliance still follows the separately governed signed process. No configuration or publication was performed.

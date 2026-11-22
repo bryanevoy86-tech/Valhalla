@@ -235,10 +235,15 @@ def verified_report(db: Session, event_id: str) -> dict:
     try:
         report = json.loads(event.payload_json)
         digest = report.pop("report_sha256")
-        if report["scope"]["legacy_instance_id"] != event.legacy_instance_id or digest != artifact_digest(
-            "pantheon_report", event_id, report,
-        ):
+        if (report["report_event_id"] != event_id or report["scope"]["legacy_instance_id"] != event.legacy_instance_id
+                or digest != artifact_digest("pantheon_report", event_id, report)):
             raise ValueError
     except (ValueError, TypeError, KeyError, AttributeError):
         raise HTTPException(409, "Specialist report integrity check failed") from None
     return {**report, "report_sha256": digest}
+
+
+def report_matches_assignment(assignment: SpecialistAssignment | None, report: dict) -> bool:
+    return assignment is not None and (
+        str(assignment.id), assignment.last_report_event_id, assignment.role, assignment.scope,
+    ) == (report.get("assignment_id"), report.get("report_event_id"), report.get("role"), report.get("scope"))

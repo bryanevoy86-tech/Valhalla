@@ -1007,3 +1007,9 @@ The acceptance matrix retains 13 P0 and 39 total criteria requiring internal cod
 - Fixture checks cover mandate denial, emergency stop, request replay, stale review, exact digest application and tombstone receipt. The integration matrix retains 13 P0 and 39 total criteria requiring coding.
 
 - Hosted runs 45049583308 and 45050002801 passed all four jobs at backend commit `00c0fe5521002c951979e51d8b4a6ba7109a91c5` and cockpit commit `cab6a1bf714f3b4859770ce6180986e27d69f314` respectively. The cockpit run recorded 377 backend tests, 22 disposable PostgreSQL checks, 36 critical routers and 107 required routes. All 13 local owner widget tests passed. An isolated fixture harness executed all six exact JavaScript actions read back from the editor and separately rejected a subscriber session before transport. Staging browser and device acceptance remain open.
+
+## November 22 — Startup planning, Pantheon report discovery and current Prime evidence
+
+- Draft commit `b1888100cfb5289d30c557612a0c122f8abbf94e` adds startup comparison and professional-review draft rendering, owner-only Pantheon report pagination, exact independent Loki status, and hold handling for missing or mismatched reports. Hosted run 45053628537 passed all four jobs.
+- The primary editor gained startup panel `7a41906c-a17a-4b05-a283-74df9bb6e434` and specialist directory `b6039f5e-a0db-4eb3-9754-a6f7805d6683`. Snapshot `a21a20e8-fcf4-489e-9044-2c4c1a75d477` preceded the change. All four workflow definitions were read back. Isolated fixtures exercised three saved network actions, and all 17 owner interface tests passed locally.
+- Prime evaluation, verified Factory execution and private decision readback require the same current assignment role, scope, latest report and independent review. The product rehearsal verifies rejection after a scope rebind. The approved staging origin remains blank and actual browser acceptance remains pending.
