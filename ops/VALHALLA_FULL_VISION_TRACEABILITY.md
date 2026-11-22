@@ -184,3 +184,7 @@ Both the independent Pantheon role worker and Prime shadow scheduling now persis
 ### Owner startup and continuing reassessment
 
 The private owner startup calculator reuses the existing WeWeb owner identity. Registration and professional decisions remain owner-gated. The integrated Product Foundry rehearsal links signed discovery, role-specific evidence, independent review, forecast verification, scoped internal execution, fixture reconciliation, retained losses and a subsequent recommendation. The existing contracts and December activation gates remain authoritative.
+
+### Startup independence planning
+
+The existing private owner, treasury and capital workstreams now include a registration-based review through `StartupIndependenceIn`. The internal calculation separates establishment, operations, reserves and reversible experiment capacity and records reported amounts without certifying available cash or benefits. Reconciled evidence integration, private preview acceptance and dated case-specific reporting confirmation remain outstanding.

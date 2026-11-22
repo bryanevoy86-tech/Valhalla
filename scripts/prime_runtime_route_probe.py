@@ -75,6 +75,7 @@ MANDATORY_ENDPOINTS = {
     "weweb_owner_attention": ("GET", "/api/weweb/owner-attention"),
     "weweb_owner_attention_ack": ("POST", "/api/weweb/owner-attention/acknowledge"),
     "weweb_owner_startup": ("POST", "/api/weweb/owner-startup/compare"),
+    "weweb_owner_startup_independence": ("POST", "/api/weweb/owner-startup/independence-review"),
     "weweb_owner_operating_scope": ("POST", "/api/weweb/owner-operating-scope"),
     "weweb_owner_personal_allocation": ("POST", "/api/weweb/owner-personal-allocation"),
     "personal_allocation_receipt": ("POST", "/api/governance/floor/wealth/personal-allocation-receipts"),

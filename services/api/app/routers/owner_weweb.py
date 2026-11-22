@@ -16,6 +16,7 @@ from app.schemas.market_intelligence import MarketScope
 from app.services.owner_specialist_context import pantheon_report_index, prime_decision_context, specialist_context
 from app.services.prime_business_execution import require_owner_mandate_key
 from app.services.owner_startup import StartupPlanIn, prepare_startup
+from app.services.startup_independence import StartupIndependenceIn, startup_independence
 from app.services.acquisition_comparison import ComparisonIn
 from app.services.wealth_scenario import PersonalAllocationIn, recommend_personal_allocation
 from app.services.owner_conversation import (
@@ -56,6 +57,13 @@ def owner_list_attachments(conversation_id: UUID, limit: int = 50, db: Session =
 @router.post("/owner-startup/compare")
 def startup_comparison(payload: StartupPlanIn):
     return private_owner_response(prepare_startup(payload))
+
+
+@router.post("/owner-startup/independence-review")
+def owner_startup_independence(payload: StartupIndependenceIn):
+    from datetime import datetime, timezone
+
+    return private_owner_response(startup_independence(payload, datetime.now(timezone.utc).date()))
 
 
 @router.post("/owner-personal-allocation")

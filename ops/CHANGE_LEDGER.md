@@ -1049,3 +1049,7 @@ The acceptance matrix retains 13 P0 and 39 total criteria requiring internal cod
 
 - Signed channel rehearsal commit `509a9d241f5edf205e140a1a54312c08cea03c6e` passed all four jobs in run 45064570951. Reviewed campaign and capital history commit `16e2b5782a65a13cbc8fc512afa8f0b5dba5a910` passed all four jobs in run 45064776187.
 - Saved and re-read the private Marketing and sales comparison workflow. Exact editor action fixtures and the owner transport regression passed. The comparison requires independent review and grants no external authority.
+
+### Private startup independence review
+
+- Added a registration-based 90-day review, a zero-extra-contribution fallback and separate funding status and reporting evidence through the existing owner session. This internal tool keeps cash, benefit outcomes and authority unverified. Synthetic regression covers registration timing, reserve gaps, restricted sources, report classification and owner/subscriber separation. Hosted evidence is recorded on draft PR #4.
