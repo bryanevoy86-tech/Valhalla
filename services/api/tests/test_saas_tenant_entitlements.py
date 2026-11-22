@@ -79,6 +79,11 @@ def test_trial_is_bound_to_authenticated_subscriber_and_tenant(deal_client, monk
     }]
     assert client.post(path, json=plan).status_code == 401
     assert client.post(path, headers=outsider, json=plan).status_code == 403
+    opinions = "/tax-bridge/opinions"
+    opinion_id = str(uuid4())
+    wrong_prime = {"X-Prime-Control-Key": "wrong"}
+    assert client.get(f"{opinions}/{opinion_id}", headers=wrong_prime).status_code == 401
+    assert client.get(f"{opinions}/{opinion_id}").status_code == 503
     quote = client.post(path, headers=bearer, json=plan)
     assert quote.status_code == 200, quote.text
     assert quote.headers["cache-control"] == "no-store"
