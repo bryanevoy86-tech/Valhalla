@@ -910,3 +910,8 @@ Development commit `aa5d755c4ab62a38bdf49c18b08718aef7da7f51` extends Factory re
 ## November 21 — Factory queue admission honors capital containment
 
 Development commit `f66b5139be26d557b662470e827acf5c5f481028` extends the canonical economic guard to fresh Factory work admission. The focused test proves a held scope cannot create a new work row or queue event and can still read an exact replay of the original action.
+
+
+## November 21 — Governed metrics collection repair and combined verification
+
+Development commit `58a557beb14cc53d874cd1489cefe6ffbbbce145` adds a fixed metrics collection repair recipe to the existing Builder route and keeps the private owner briefing recipe. Both verify the source and routes, prepare one review candidate and leave the checkout intact. Local combined verification passed 374 canonical backend tests, 22 disposable PostgreSQL checks, eight Builder materializer checks and one simulated-browser voice test. The route probe verified 36 critical routers and 94 required routes.

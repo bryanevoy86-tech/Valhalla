@@ -503,3 +503,8 @@ Approval, contradiction and verified-learning roles use the same scoped Factory 
 ### Containment at Factory queue admission
 
 A contained Factory scope cannot create a fresh listing-draft queue entry. An exact retry can still return the existing action. The existing approval, standing grant, execution, failover and checkout boundaries remain separate. When rehearsing recovery, verify the queue count and original action identity before reopening a scope.
+
+
+### Builder metrics collection repair
+
+Use `refresh_metrics_collection` with the exact metrics collection digest, authorized base commit and pinned runner image on the existing private Builder preparation route. The generated candidate restores the registered GET metrics request and its 30-second telemetry cache. The private briefing recipe continues to use zero caching. The runner still produces a review candidate for owner approval.
