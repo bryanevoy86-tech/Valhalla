@@ -612,6 +612,7 @@ def rehearse_checkout(client, engine, monkeypatch, owner, action_id, price, scop
     monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "false")
     paid = apply(capture, "evt_fixture_capture", price)
     assert paid.status_code == 200, paid.text
+    assert paid.json()["checkout_state"] == "PAID_AWAITING_DELIVERY"
     assert apply(capture, "evt_fixture_capture", price).json() == paid.json()
     assert summary()["rehearsed_conversions"] == 1
     assert summary()["rehearsed_net_minor"] == price
@@ -619,6 +620,7 @@ def rehearse_checkout(client, engine, monkeypatch, owner, action_id, price, scop
     delivered = client.post(f"{root}/orders/{order_id}/delivery", headers=owner)
     assert delivered.status_code == 200, delivered.text
     assert delivered.json()["internal_delivery_recorded"]
+    assert delivered.json()["checkout_state"] == "DELIVERED_INTERNAL"
     expense_url = f"{root}/orders/{order_id}/cost-fixtures"
     expense = {"fixture_ref": "fixture:fulfillment-labor", "category": "FULFILLMENT", "amount_minor": 175}
     cost = client.post(expense_url, headers=owner, json=expense)
@@ -626,7 +628,12 @@ def rehearse_checkout(client, engine, monkeypatch, owner, action_id, price, scop
     assert client.post(expense_url, headers=owner, json=expense).json() == cost.json()
     assert client.post(expense_url, headers=owner, json={**expense, "amount_minor": 100}).status_code == 409
     assert cost.json()["fixture_contribution_minor"] == price - 175
-    assert apply(refund, "evt_fixture_refund_one", price // 2).status_code == 200
+    partial = apply(refund, "evt_fixture_refund_one", price // 2)
+    assert partial.status_code == 200
+    assert partial.json()["checkout_state"] == "PARTIALLY_REFUNDED"
+    assert partial.json()["owner_followup_required"] is True
+    assert apply(refund, "evt_fixture_refund_one", price // 2).json() == partial.json()
+    assert apply(refund, "evt_fixture_duplicate_total", price // 2).status_code == 409
     assert apply(refund, "evt_fixture_over_refund", price + 1).status_code == 409
     monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "true")
     assert apply(refund, "evt_fixture_refund_final", price).status_code == 200
@@ -634,6 +641,7 @@ def rehearse_checkout(client, engine, monkeypatch, owner, action_id, price, scop
     final = client.get(f"{root}/orders/{order_id}").json()
     assert final["captured_minor"] == final["refunded_minor"] == price
     assert final["net_minor"] == 0
+    assert final["checkout_state"] == "REFUNDED" and final["owner_followup_required"] is True
     assert final["verified_commercial_revenue"] is False
     assert summary()["rehearsed_net_minor"] == 0
     assert summary()["rehearsed_contribution_minor"] == -175

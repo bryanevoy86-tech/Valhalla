@@ -136,6 +136,14 @@ def _view(db, row):
     ).where(FoundryRehearsalPayment.order_id == row.id)).one()
     if (captured, refunded) != (row.captured_minor, row.refunded_minor):
         raise HTTPException(409, "Rehearsal journal does not reconcile")
+    if not 0 <= refunded <= captured <= row.amount_minor:
+        raise HTTPException(409, "Rehearsal payment amounts are inconsistent")
+    if refunded:
+        checkout_state = "REFUNDED" if refunded == captured else "PARTIALLY_REFUNDED"
+    elif row.delivered_at is not None:
+        checkout_state = "DELIVERED_INTERNAL"
+    else:
+        checkout_state = "PAID_AWAITING_DELIVERY" if captured else "AWAITING_CAPTURE"
     costs = _rehearsal_costs(db, row)
     expense = sum(item["amount_minor"] for item in costs)
     return {
@@ -144,6 +152,8 @@ def _view(db, row):
         "fixture_cost_minor": expense, "fixture_cost_count": len(costs),
         "fixture_contribution_minor": captured - refunded - expense if costs else None,
         "actual_profit_minor": None,
+        "checkout_state": checkout_state,
+        "owner_followup_required": bool(refunded and row.delivered_at is not None),
         "net_minor": captured - refunded, "internal_delivery_recorded": row.delivered_at is not None,
         "verified_commercial_revenue": False, "external_delivery_authorized": False,
     }
@@ -262,7 +272,7 @@ def apply_fixture(event: tuple = Depends(_signed_fixture), db: Session = Depends
         captured = amount
         order.captured_minor = amount
     else:
-        if not order.refunded_minor <= amount <= order.captured_minor:
+        if not order.refunded_minor < amount <= order.captured_minor:
             raise HTTPException(409, "Fixture refund is out of sequence or exceeds capture")
         refunded = amount - order.refunded_minor
         order.refunded_minor = amount
