@@ -977,3 +977,5 @@ Local regression passed 377 backend tests, 22 disposable PostgreSQL checks, eigh
 - `94f07c50230eae44b65d09010cff1015575e1e87` routes held fulfillment and unresolved refund support through Prime's shared checkout blocker mapping, independent Loki review and Norns operating context. Fixture activity retains its internal evidence class.
 
 The acceptance matrix retains 13 P0 and 39 total criteria requiring internal coding. Provider commissioning and real revenue evidence remain separate.
+
+- `feaee4e00a4771e88321f272d8f682d7af50a322` preserves pending checkout and fulfillment observations before settlement infrastructure is available. The rehearsal requires an explicit Prime HOLD and an unmatched capture when the treasury tables are absent.

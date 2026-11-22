@@ -556,3 +556,5 @@ The current matrix records 13 P0 criteria and 39 criteria overall with remaining
 Prime can now cite `NORNS_FACTORY_DEADLINE` in reviewed Mimir claims using the forecast ID, the route's `resolution_sha256` and exact observed outcome. Each use revalidates the ordinary-cohort forecast and Factory receipt. Checkout operating evidence can now suspend scheduled advice for a fulfillment hold or outstanding refund review, and Loki challenges the same conditions. These checks apply to local rehearsal evidence and do not activate commercial checkout.
 
 The first authorized revenue cycle still needs the selected operating adapter and mandate, independently validated demand and rights, tenant and provider settlement proof where applicable, scoped workers in migrated staging, and the owner's explicit commissioning authorization.
+
+During staged checkout rehearsal, test fulfillment holds before treasury or settlement provisioning. Scoped evidence must retain the hold and identify the capture as unmatched until its independent statement and settlement proof can be verified.
