@@ -40,3 +40,19 @@ test("allocation refuses authority claims and keeps subscribers outside the prev
     assert.equal((await runOwnerAllocationAcquisition(input,async()=>response({...receipt,standing_mandate_approved:true}))).status,"unavailable");
     assert.equal((await runOwnerAllocationAcquisition({...input,isOwner:false},()=>assert.fail("subscriber transport"))).status,"denied");
 });
+
+test("campaign comparison uses one exact set of campaign arms and rejects external authority", async () => {
+    const input={...base,mode:"comparison",request:JSON.stringify({scope,campaign_ids:[2,1]})};
+    const receipt={scope,sha256,currency:"CAD",basis:"SETTLED_CAMPAIGN_FIXTURE_COMPARISON",
+        external_action_authorized:false,verified_commercial_revenue:false,causality_verified:false,requires_independent_review:true,
+        arms:[{campaign_id:1,decision:"STOP",visits:80,positive_net_orders:4,contribution_minor:-175,reason:"Loss"},
+              {campaign_id:2,decision:"SCALE_REVIEW",visits:80,positive_net_orders:40,contribution_minor:9000,reason:"Review only"}]};
+    const result=await runOwnerAllocationAcquisition(input,async(url,options)=>{
+        assert.equal(url,origin+"/api/weweb/owner-acquisition/comparisons");
+        assert.deepEqual(JSON.parse(options.body).campaign_ids,[2,1]);
+        return response(receipt);
+    });
+    assert.match(result.text,/Campaign 2 · SCALE_REVIEW/);
+    assert.equal((await runOwnerAllocationAcquisition(input,async()=>response({...receipt,causality_verified:true}))).status,"unavailable");
+    assert.equal((await runOwnerAllocationAcquisition(input,async()=>response({...receipt,arms:receipt.arms.slice(0,1)}))).status,"unavailable");
+});

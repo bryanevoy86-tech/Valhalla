@@ -11,7 +11,7 @@ function formatMinor(value) {
 }
 
 function present(mode, body, payload, campaign) {
-    const scope = mode === "allocation" ? payload.scope : payload;
+    const scope = mode === "acquisition" ? payload : payload.scope;
     if (body?.currency !== "CAD" || !/^[a-f0-9]{64}$/.test(body.sha256)
         || !scopeKeys.every(key => body.scope?.[key] === scope[key])) throw new Error("Unexpected scope receipt");
     if (mode === "allocation") {
@@ -29,6 +29,22 @@ function present(mode, body, payload, campaign) {
             ...body.blockers.map(blocker => "Hold · " + blocker),
             "Evidence SHA-256 · " + body.sha256,
         ];
+    }
+    if (mode === "comparison") {
+        const ordered = [...payload.campaign_ids].sort((a, b) => a - b);
+        if (body.basis !== "SETTLED_CAMPAIGN_FIXTURE_COMPARISON" || body.external_action_authorized !== false
+            || body.verified_commercial_revenue !== false || body.causality_verified !== false
+            || body.requires_independent_review !== true || !Array.isArray(body.arms)
+            || body.arms.length !== ordered.length || body.arms.some((arm, index) => arm.campaign_id !== ordered[index]
+                || !["STOP", "IMPROVE", "CONTINUE_TESTING", "SCALE_REVIEW"].includes(arm.decision))) {
+            throw new Error("Unexpected campaign comparison");
+        }
+        return ["Comparative campaign rehearsal · independent review required",
+            ...body.arms.flatMap(arm => [
+                "Campaign " + arm.campaign_id + " · " + arm.decision,
+                "Visits · " + arm.visits + " · Positive-net orders · " + arm.positive_net_orders,
+                "Contribution · " + formatMinor(arm.contribution_minor) + " · " + arm.reason,
+            ]), "Evidence SHA-256 · " + body.sha256];
     }
     if (body.basis !== "SETTLED_ACQUISITION_FIXTURE_ONLY" || body.campaign_id !== campaign
         || body.external_action_authorized !== false || body.verified_commercial_revenue !== false) {
@@ -62,20 +78,25 @@ export async function runOwnerAllocationAcquisition(input, transport = fetch) {
     }
     let payload;
     const isAllocation = input.mode === "allocation";
+    const isComparison = input.mode === "comparison";
     const campaign = Number(input.campaign?.trim());
     try {
-        if (!isAllocation && (input.mode !== "acquisition" || !Number.isSafeInteger(campaign) || campaign <= 0
+        if (!isAllocation && !isComparison && (input.mode !== "acquisition" || !Number.isSafeInteger(campaign) || campaign <= 0
             || !/^\d+$/.test(input.campaign?.trim()))) throw new Error("Invalid campaign");
         if (!input.request || input.request.length > 24000) throw new Error("Invalid request");
         payload = JSON.parse(input.request);
-        const scope = isAllocation ? payload?.scope : payload;
+        const scope = isAllocation || isComparison ? payload?.scope : payload;
         if (!scopeKeys.every(key => typeof scope?.[key] === "string" && scope[key] === scope[key].trim()
             && scope[key].length >= 2 && scope[key].length <= 120)) throw new Error("Invalid scope");
         if (isAllocation && !/^[0-9a-f-]{36}$/.test(payload.statement_id)) throw new Error("Invalid statement");
+        if (isComparison && (!Array.isArray(payload.campaign_ids) || payload.campaign_ids.length < 2
+            || payload.campaign_ids.length > 5 || new Set(payload.campaign_ids).size !== payload.campaign_ids.length
+            || payload.campaign_ids.some(id => !Number.isSafeInteger(id) || id <= 0))) throw new Error("Invalid campaigns");
     } catch {
         return result("invalid");
     }
-    const path = isAllocation ? "owner-personal-allocation" : "owner-acquisition/" + campaign + "/settled-review";
+    const path = isAllocation ? "owner-personal-allocation" : isComparison ? "owner-acquisition/comparisons"
+        : "owner-acquisition/" + campaign + "/settled-review";
     try {
         const response = await transport(origin + "/api/weweb/" + path, {
             method:"POST", headers:{Authorization:"Bearer " + input.bearer,"Content-Type":"application/json"},

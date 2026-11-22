@@ -1046,3 +1046,6 @@ The acceptance matrix retains 13 P0 and 39 total criteria requiring internal cod
 - The existing Product Foundry rehearsal now stages an exact scheduled acquisition media intent and verifies a signed synthetic channel receipt. Bad signatures, changed media state and conflicting receipts fail closed. Successful rehearsal does not change actual publication status.
 
 - Reviewed acquisition results now require current evidence, an exact independent Loki receipt and reconsideration. The projection checks the current economic mandate and records zero reserved capital. Mimir and other acquisition specialists can inspect the digest-bound historical result. The integrated product scenario verifies the unreviewed refusal, changed-sample refusal, no reserve and historical readback.
+
+- Signed channel rehearsal commit `509a9d241f5edf205e140a1a54312c08cea03c6e` passed all four jobs in run 45064570951. Reviewed campaign and capital history commit `16e2b5782a65a13cbc8fc512afa8f0b5dba5a910` passed all four jobs in run 45064776187.
+- Saved and re-read the private Marketing and sales comparison workflow. Exact editor action fixtures and the owner transport regression passed. The comparison requires independent review and grants no external authority.
