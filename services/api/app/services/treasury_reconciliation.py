@@ -62,6 +62,33 @@ def payload_for(row):
     return StatementFixture.model_validate(row.payload)
 
 
+def verify_statement_claim(db, scope: dict, claim: dict) -> dict:
+    """A reconciled fixture can support its stated balance, never actual available funds."""
+    from uuid import UUID
+
+    if (set(claim) != {"basis", "statement_id", "sha256", "closing_minor"}
+            or not isinstance(claim["statement_id"], str)
+            or not isinstance(claim["sha256"], str)
+            or len(claim["sha256"]) != 64
+            or type(claim["closing_minor"]) is not int):
+        raise HTTPException(422, "Invalid Mimir statement claim")
+    try:
+        statement_id = UUID(claim["statement_id"])
+    except ValueError:
+        raise HTTPException(422, "Invalid statement ID") from None
+    if not statement_ready(db):
+        raise HTTPException(503, "Statement fixture schema unavailable")
+    row = db.get(StatementImport, statement_id)
+    if row is None or row.digest != claim["sha256"]:
+        raise HTTPException(409, "Mimir statement claim lacks matching scoped evidence")
+    document = payload_for(row)
+    if (document.scope.model_dump() != scope or document.purpose != "BUSINESS"
+            or document.basis != claim["basis"] or document.closing_minor != claim["closing_minor"]):
+        raise HTTPException(409, "Mimir statement claim lacks matching scoped evidence")
+    return {**claim, "statement_id": str(statement_id), "evidence_scope": "LOCAL_STATEMENT_FIXTURE_ONLY",
+            "actual_accessible_funds_minor": None}
+
+
 def summary(request):
     expense = -sum(min(0, row.amount_minor) for row in request.entries if row.category == "EXPENSE")
     compensation = sum(row.amount_minor for row in request.entries if row.category == "COMPENSATION")

@@ -891,34 +891,45 @@ def verified_internal_outcomes(
 
 
 def verify_mimir_claims(db: Session, scope: dict, claims: Any) -> list[dict]:
-    """Verify exact historical artifact claims within the proposal's registered scope."""
+    """Verify exact scoped claims against the existing artifact and treasury stores."""
     if (not isinstance(claims, list) or not 1 <= len(claims) <= 10
             or any(not isinstance(value, str) or not value for value in scope.values())):
         raise HTTPException(422, "Mimir claims require an exact scope and one to ten entries")
+    if any(not isinstance(claim, dict) for claim in claims):
+        raise HTTPException(422, "Invalid Mimir claim")
+
     seen = set()
-    for claim in claims:
-        if (not isinstance(claim, dict) or set(claim) != {"outcome_event_id", "artifact_sha256", "sales_verified"}
-                or not isinstance(claim["outcome_event_id"], str)
-                or not re.fullmatch(r"MIMIR-[0-9a-f]{64}", claim["outcome_event_id"])
-                or not isinstance(claim["artifact_sha256"], str)
-                or not re.fullmatch(r"[0-9a-f]{64}", claim["artifact_sha256"])
-                or type(claim["sales_verified"]) is not bool
-                or claim["outcome_event_id"] in seen):
-            raise HTTPException(422, "Invalid or repeated Mimir claim")
-        seen.add(claim["outcome_event_id"])
-    schema = inspect(db.connection())
-    if not all(schema.has_table(model.__tablename__) for model in (
-        LegacyInstanceWorkItem, LegacyOrchestrationEvent, MediaContent,
-    )):
-        raise HTTPException(503, "Mimir outcome proof schema unavailable")
     verified = []
     for claim in claims:
-        event_id = claim["outcome_event_id"]
-        proof = verified_internal_outcomes(db, **scope, limit=0, trigger_event_id=event_id)
-        if not proof or any(proof[0][field] != value for field, value in claim.items()):
-            raise HTTPException(409, detail={"message": "Mimir outcome claim lacks matching scoped evidence",
-                                            "outcome_event_id": event_id})
-        verified.append({**claim, "evidence_scope": proof[0]["evidence_scope"]})
+        if claim.get("basis") == "LOCAL_STATEMENT_FIXTURE":
+            from app.services.treasury_reconciliation import verify_statement_claim
+
+            proof = verify_statement_claim(db, scope, claim)
+            identity = ("statement", proof["statement_id"])
+        else:
+            if (set(claim) != {"outcome_event_id", "artifact_sha256", "sales_verified"}
+                    or not isinstance(claim["outcome_event_id"], str)
+                    or not re.fullmatch(r"MIMIR-[0-9a-f]{64}", claim["outcome_event_id"])
+                    or not isinstance(claim["artifact_sha256"], str)
+                    or not re.fullmatch(r"[0-9a-f]{64}", claim["artifact_sha256"])
+                    or type(claim["sales_verified"]) is not bool):
+                raise HTTPException(422, "Invalid Mimir outcome claim")
+            event_id = claim["outcome_event_id"]
+            schema = inspect(db.connection())
+            if not all(schema.has_table(model.__tablename__) for model in (
+                LegacyInstanceWorkItem, LegacyOrchestrationEvent, MediaContent,
+            )):
+                raise HTTPException(503, "Mimir outcome proof schema unavailable")
+            matches = verified_internal_outcomes(db, **scope, limit=0, trigger_event_id=event_id)
+            if not matches or any(matches[0][field] != value for field, value in claim.items()):
+                raise HTTPException(409, detail={"message": "Mimir outcome claim lacks matching scoped evidence",
+                                                "outcome_event_id": event_id})
+            proof = {**claim, "evidence_scope": matches[0]["evidence_scope"]}
+            identity = ("outcome", event_id)
+        if identity in seen:
+            raise HTTPException(422, "Repeated Mimir claim")
+        seen.add(identity)
+        verified.append(proof)
     return verified
 
 

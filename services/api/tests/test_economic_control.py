@@ -526,6 +526,31 @@ def test_statement_continuity_quarantine_and_fixture_asset_recovery(economic_cli
     home = {**statement, "id": str(uuid4()), "account_ref": "household-a", "purpose": "HOUSEHOLD"}
     assert client.post(url, headers=OWNER, json=home).json()["protected_balance_minor"] == 420
 
+    from app.models.completion_registry import KnowledgeRegistryItem, LearningFeedbackRecord
+
+    for model in (KnowledgeRegistryItem, LearningFeedbackRecord):
+        model.__table__.create(engine)
+    evaluation = "/api/completion/phase3/universal-opportunity/evaluate"
+    claim = {"basis": "LOCAL_STATEMENT_FIXTURE", "statement_id": statement["id"],
+             "sha256": data.json()["sha256"], "closing_minor": 420}
+
+    def challenge_claim(claim, **overrides):
+        return client.post(evaluation, json={"shadow_mode": True, "persist_decision": False, "opportunities": [{
+            "opportunity_id": "treasury-history", "engine_id": SCOPE["engine_id"], "legacy": SCOPE["legacy_instance_id"],
+            "jurisdiction": SCOPE["jurisdiction"], "title": "Treasury history", "summary": "Preserve verified fixture scope.",
+            "specialist_inputs": {"business_id": SCOPE["business_id"], "mimir_outcome_claims": [claim]},
+            **overrides,
+        }]})
+
+    proof = challenge_claim(claim)
+    assert proof.status_code == 200, proof.text
+    assert proof.json()["evaluations"][0]["verified_mimir_claims"] == [
+        {**claim, "actual_accessible_funds_minor": None, "evidence_scope": "LOCAL_STATEMENT_FIXTURE_ONLY"},
+    ]
+    assert challenge_claim({**claim, "closing_minor": 999}).status_code == 409
+    assert challenge_claim(claim, jurisdiction="CA-ON").status_code == 409
+    assert challenge_claim({**claim, "actual_accessible_funds_minor": 420}).status_code == 422
+
     post(client, "mandates", mandate(today))
     software = {"asset_ref": "fixture:licensable-software", "kind": "SOFTWARE",
                 "rights": "REUSE_PERMITTED", "projected_liquidation_minor": 90, "obligations": []}
