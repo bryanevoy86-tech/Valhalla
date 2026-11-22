@@ -955,3 +955,14 @@ Local verification passed 374 backend tests, 22 disposable PostgreSQL checks, ei
 | `174d6f3f3f3259a6cf046a64e9d482aa91ccf3ac` | Private opinion intake verifies a scoped Ed25519 signature against an accepted attachment and exact case metadata. A withdrawn key or disposed file invalidates provenance. Reliance is separately gated. |
 
 Local regression passed 376 backend tests, 22 disposable PostgreSQL checks, eight Builder materializer checks and three simulated-browser voice tests. The route probe verified 36 critical routers and all 98 required routes. The matrix closes the Legacy reactivation and mandate-enrollment code requirement and retains 14 P0 criteria and 40 criteria overall requiring internal coding. All 50 acceptance criteria, 53 tasks and seven construction packages are preserved.
+
+## November 21 — Shared business holds, qualified reliance and operating evidence
+
+| Development commit | Verified internal capability |
+|---|---|
+| `309a3c0ca2635c90d4af2e4d92eed8ae6924f12a` | Dispatch and funding use the registered business identity across Legacy roots and currencies. A hold blocks an already-reviewed reservation and fresh opening commitments while preserving liability records. |
+| `00aff9a888433dcbb87344db83db1958514478f9` | A separately enrolled qualified reviewer signs the exact reliance scope and the owner can approve or revoke it. Each reliance check revalidates the current opinion, reviewer, dates, purpose and emergency state. |
+| `ea6b302e83ded81936ad7a04c9f9b3020a9c4659` | Checkout uses durable owner-reviewed fulfillment holds and retry receipts. SaaS subscription creation, updates and access checks isolate fixture references from actual entitlement activation. |
+| `917e925e4e47de871f3226032d8b2657d835eaa6` | Economic performance fixtures can be cited by exact identity and digest. Prime refuses altered or cross-scope claims. The independent local challenger flags economic evidence contradictions in a specialist report. |
+
+Local regression passed 377 backend tests, 22 disposable PostgreSQL checks, eight Builder materializer checks and three simulated-browser voice tests. The route probe passed all 36 critical routers and 102 required routes. The professional reliance coding requirement is closed. The matrix retains 13 P0 criteria and 39 criteria overall requiring internal coding. The Legacy reactivation and enrollment classification is unchanged. All 50 acceptance criteria, 53 tasks and seven packages remain in the canonical records.

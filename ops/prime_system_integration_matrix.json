@@ -88,11 +88,11 @@
       "owner_external_authorization_required": false,
       "continuation": {
         "next_implementation": "Extend hard gates to remaining operating routes and rehearse recovery after governance denial.",
-        "existing_test_evidence": "See POSTGRES_INTEGRATION_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
+        "existing_test_evidence": "See POSTGRES_INTEGRATION_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md. The alternate-root rehearsal rejects a cross-currency reservation reviewed before a hold and refuses a newly reviewed proposal while that hold remains. A new accounting identity cannot book opening commitments to evade it.",
         "owner_action": "Internal continuation is authorized under the standing development scope.",
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
-          "internal_coding": "Apply hard gates to remaining dispatch lanes. Scoped reactivation and fresh assignment now revalidate current governance, emergency stop and relevant economic holds.",
+          "internal_coding": "Apply the canonical gates to remaining dispatch lanes. Factory, fulfillment and economic booking share business-wide holds across operating roots and currencies.",
           "insufficient_test_evidence": "Exercise denial, rollback and emergency recovery on each path.",
           "external_commissioning": "Rehearse long-running governance recovery.",
           "owner_or_professional_action": "Authorize scoped worker activation.",
@@ -221,11 +221,11 @@
       "owner_external_authorization_required": false,
       "continuation": {
         "next_implementation": "Extend structured claim verification to other evidence classes and rehearse backlog recovery in staging.",
-        "existing_test_evidence": "Factory reconciliation verifies Mimir outcome receipts against current scoped artifacts. Prime and Mimir can revalidate the exact delayed trigger beyond the recent 20-outcome window. Prime compares structured outcome claims with the exact current proof before allowing them into a decision. The private owner decision view and the Factory boundary revalidate a persisted claim before presenting or consuming it. The integrated rehearsal detects an altered learning receipt and recovers after restoring the original evidence. test_owner_conversation.py exercises rationale, visible dependencies, owner scope and repeated-topic conflict recall. Product Foundry continuous fixture links signed discovery, independent challenge, scoped execution, outcome, retained losses and a subsequent HOLD with contradiction evidence. The scoped acquisition fixture verifies debt stress, separately reviewed simulation, receipt reuse, revocation and reevaluation. Prime can verify scoped treasury statement fixture claims against current statement balance and digest. They provide zero proof of actual accessible funds.",
+        "existing_test_evidence": "Factory reconciliation verifies Mimir outcome receipts against current scoped artifacts. Prime and Mimir can revalidate the exact delayed trigger beyond the recent 20-outcome window. Prime compares structured outcome claims with the exact current proof before allowing them into a decision. The private owner decision view and the Factory boundary revalidate a persisted claim before presenting or consuming it. The integrated rehearsal detects an altered learning receipt and recovers after restoring the original evidence. test_owner_conversation.py exercises rationale, visible dependencies, owner scope and repeated-topic conflict recall. Product Foundry continuous fixture links signed discovery, independent challenge, scoped execution, outcome, retained losses and a subsequent HOLD with contradiction evidence. The scoped acquisition fixture verifies debt stress, separately reviewed simulation, receipt reuse, revocation and reevaluation. Prime can verify scoped treasury statement fixture claims against current statement balance and digest. They provide zero proof of actual accessible funds. Prime accepts an exact scoped economic performance fixture and rejects altered results, wrong-jurisdiction reuse and attempts to mark it as a real-world outcome.",
         "owner_action": "Internal continuation is authorized under the standing development scope.",
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
-          "internal_coding": "Extend structured claim verification to other evidence classes.",
+          "internal_coding": "Extend structured claim verification beyond Factory, scoped statements and the Economic Control performance journal.",
           "insufficient_test_evidence": "Exercise damaged, superseded and delayed proof per class.",
           "external_commissioning": "Rehearse backlog recovery and independent outcome lineage.",
           "owner_or_professional_action": "Authorize commissioned evidence scope.",
@@ -553,11 +553,11 @@
       "owner_external_authorization_required": true,
       "continuation": {
         "next_implementation": "Run the first authorized storefront lifecycle with support, costs and independently matched settlement receipts.",
-        "existing_test_evidence": "The private checkout rehearsal proved partial and final support closure, stale and conflicting review refusal, exact replay, emergency refund and resolution, and preservation of reconciled fixture accounting.",
+        "existing_test_evidence": "The private checkout rehearsal proved partial and final support closure, stale and conflicting review refusal, exact replay, emergency refund and resolution, and preservation of reconciled fixture accounting. The checkout rehearsal verifies a paid delivery hold, reviewed retry, emergency stop, idempotent retry and subsequent signed refund support. SaaS rejects fixture references on activation and access checks, including previously stored fixture references.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
-          "internal_coding": "Complete product-specific fulfillment exceptions and verify any shared SaaS entitlement linkage before tying store refunds to customer access.",
+          "internal_coding": "Complete exact live subscription-to-payment, tenant, product and support bindings on the verified provider path. Keep fixture references outside entitlement activation.",
           "insufficient_test_evidence": "Test disputed cost corrections, verified external settlements and separately authorized cross-product entitlement changes.",
           "external_commissioning": "Run approved storefront lifecycle in staging.",
           "owner_or_professional_action": "Approve listings, rights, support and merchant scope.",
@@ -934,11 +934,11 @@
       "owner_external_authorization_required": true,
       "continuation": {
         "next_implementation": "Extend substantive domain coverage and explicit contradiction handling. Prove independent Loki review of scoped evidence continuing to a governed Prime decision, verified execution and Mimir reassessment.",
-        "existing_test_evidence": "Approval, contradiction and verified-learning specialists reconcile recent Factory receipts. Forseti, Loki and Tyr can inspect exact checkout fixture evidence. Njord, Forseti, Mimir and Heimdall also inspect scoped business treasury fixture heads. The independent local challenger reports critical contradictions. The integration fixture removed a statement head and verified Njord and independent Loki surfaced the conflict without treating the balance as available cash. Prime holds on scoped contradictions. Pantheon/Prime API regressions exercise scoped queuing, deduplication, replay, stale or missing evidence, digest corruption and emergency stop. Disposable PostgreSQL proves concurrent publishers, recovery from a rolled-back claim, and concurrent economic wakeup deduplication with exact-scope opt-in and rollback. The scoped acquisition fixture verifies debt stress, separately reviewed simulation, receipt reuse, revocation and reevaluation. SaaS, service and real-estate rehearsal covers shared stress rules, projection differences and simulated review. A repeated withdrawal queues one digest-bound event for opted-in Prime schedules and participating specialists. Prime switches to HOLD before cadence and the source is excluded from allocation.",
+        "existing_test_evidence": "Approval, contradiction and verified-learning specialists reconcile recent Factory receipts. Forseti, Loki and Tyr can inspect exact checkout fixture evidence. Njord, Forseti, Mimir and Heimdall also inspect scoped business treasury fixture heads. The independent local challenger reports critical contradictions. The integration fixture removed a statement head and verified Njord and independent Loki surfaced the conflict without treating the balance as available cash. Prime holds on scoped contradictions. Pantheon/Prime API regressions exercise scoped queuing, deduplication, replay, stale or missing evidence, digest corruption and emergency stop. Disposable PostgreSQL proves concurrent publishers, recovery from a rolled-back claim, and concurrent economic wakeup deduplication with exact-scope opt-in and rollback. The scoped acquisition fixture verifies debt stress, separately reviewed simulation, receipt reuse, revocation and reevaluation. SaaS, service and real-estate rehearsal covers shared stress rules, projection differences and simulated review. A repeated withdrawal queues one digest-bound event for opted-in Prime schedules and participating specialists. Prime switches to HOLD before cadence and the source is excluded from allocation. Heimdall, Loki, Mimir and Njord can carry an exact scoped economic performance receipt. The local independent challenger reports conflicting net outcome, source identity or evidence basis.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
-          "internal_coding": "Extend domain coverage beyond the verified Factory, checkout, treasury and current evidence lenses. Treasury contradictions now reach Prime’s HOLD path.",
+          "internal_coding": "Extend domain coverage beyond Factory, checkout, treasury, economic performance and other current evidence lenses.",
           "insufficient_test_evidence": "Exercise missing evidence, tenant isolation and end-to-end independent review for each domain.",
           "external_commissioning": "Verify separate model and worker behavior in approved staging.",
           "owner_or_professional_action": "Ratify role conflicts and authorize specifically scoped operation.",
@@ -1351,7 +1351,7 @@
         "services/api/app/services/tax_opinion_provenance.py",
         "services/api/tests/test_tax_opinion_provenance.py"
       ],
-      "source_observation": "The private startup planner prepares jurisdiction-specific review packets. The tax opinion bridge restricts access and records unverified intake. Professional signoff and reliance await independent proof.",
+      "source_observation": "The private startup planner prepares jurisdiction-specific review packets. The signed opinion intake and separate scoped reliance approvals verify exact evidence, independent enrolled qualified review, owner authorization, revocation, expiry and emergency stop.",
       "evidence_level": "SQLITE_INTEGRATION_TESTED",
       "production_verified": false,
       "acceptance_test": "Require source, date, jurisdiction, legal signoff and preserved opinion files; prohibit AI-led filing, fraud, tax evasion and unsupported tax treatments.",
@@ -1361,15 +1361,15 @@
       ],
       "owner_external_authorization_required": true,
       "continuation": {
-        "next_implementation": "Route a complete scoped fact packet for qualified review before reliance.",
-        "existing_test_evidence": "The startup workflow produces private dated fact-and-question packets. Local signed-opinion tests verify owner auth, signer scope, byte hash, owner document review, invalidated keys, attachment deletion and exact replay.",
+        "next_implementation": "Commission the private opinion and reliance workflow with independently qualified professionals.",
+        "existing_test_evidence": "The startup workflow produces private dated fact-and-question packets. Local signed-opinion tests verify owner auth, signer scope, byte hash, owner document review, invalidated keys, attachment deletion and exact replay. The rehearsal validates the qualified review signature, disallows the original signer, rejects altered or mismatched scope, rechecks key withdrawal and emergency state, and demonstrates idempotent owner revocation.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
-          "internal_coding": "Bind independently reviewed, qualified opinions to the separate governance approval or reliance workflow. Signed-file provenance intake and verification are implemented.",
-          "insufficient_test_evidence": "Exercise the approved qualified professional's commissioned signature, superseding opinion and separate reliance decision.",
-          "external_commissioning": "Verify the signer identity and qualification independently, enroll their scoped public key and exchange opinion signatures only through the approved private workflow.",
-          "owner_or_professional_action": "Licensed tax and legal professionals issue opinions before reliance.",
+          "internal_coding": null,
+          "insufficient_test_evidence": "Exercise real qualification receipts, expiration, separate opinions and revocation in approved staging.",
+          "external_commissioning": "Independently verify the author and reviewer qualifications, enroll distinct scoped public keys and commission a private signed file and reviewed reliance grant.",
+          "owner_or_professional_action": "Qualified professionals author and review the opinion. The owner approves the exact internal decision scope and may revoke it.",
           "conditional_expansion": null
         }
       }
@@ -1559,11 +1559,11 @@
       "owner_external_authorization_required": true,
       "continuation": {
         "next_implementation": "Validate separate model credentials and review exact owner-authorized staged challenges.",
-        "existing_test_evidence": "See SQLITE_INTEGRATION_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md. Product Foundry continuous fixture links signed discovery, independent challenge, scoped execution, outcome, retained losses and a subsequent HOLD with contradiction evidence. The scoped acquisition fixture verifies debt stress, separately reviewed simulation, receipt reuse, revocation and reevaluation.",
+        "existing_test_evidence": "See SQLITE_INTEGRATION_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md. Product Foundry continuous fixture links signed discovery, independent challenge, scoped execution, outcome, retained losses and a subsequent HOLD with contradiction evidence. The scoped acquisition fixture verifies debt stress, separately reviewed simulation, receipt reuse, revocation and reevaluation. Local independent analysis returns a critical contradiction when a Pantheon report's economic result differs from its cited performance fixture.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
-          "internal_coding": "Extend domain-specific contradiction checks with provenance.",
+          "internal_coding": "Extend domain-specific contradiction checks with provenance beyond current evidence lenses.",
           "insufficient_test_evidence": "Exercise exact artifact review and disagreement isolation for new domains.",
           "external_commissioning": "Validate distinct credentials and approved staged model challenges.",
           "owner_or_professional_action": "Approve model scope, independent identity and data class.",
@@ -1673,11 +1673,11 @@
       "owner_external_authorization_required": true,
       "continuation": {
         "next_implementation": "Extend containment to every authorized execution lane and reconcile independently supplied reserves and liabilities.",
-        "existing_test_evidence": "See POSTGRES_INTEGRATION_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md. Product Foundry continuous fixture links signed discovery, independent challenge, scoped execution, outcome, retained losses and a subsequent HOLD with contradiction evidence. The scoped acquisition fixture verifies debt stress, separately reviewed simulation, receipt reuse, revocation and reevaluation. SaaS, service and real-estate rehearsal covers shared stress rules, projection differences and simulated review. A repeated withdrawal queues one digest-bound event for opted-in Prime schedules and participating specialists. Prime switches to HOLD before cadence and the source is excluded from allocation.",
+        "existing_test_evidence": "See POSTGRES_INTEGRATION_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md. Product Foundry continuous fixture links signed discovery, independent challenge, scoped execution, outcome, retained losses and a subsequent HOLD with contradiction evidence. The scoped acquisition fixture verifies debt stress, separately reviewed simulation, receipt reuse, revocation and reevaluation. SaaS, service and real-estate rehearsal covers shared stress rules, projection differences and simulated review. A repeated withdrawal queues one digest-bound event for opted-in Prime schedules and participating specialists. Prime switches to HOLD before cadence and the source is excluded from allocation. The disposable rehearsal kept both currency pools at zero after a cross-scope hold, retained the separate accounting history and preserved the ability to record a liability.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
-          "internal_coding": "Extend containment to remaining authorized execution and funding paths.",
+          "internal_coding": "Apply the containment proof to remaining adapters and non-fixture capital evidence. Existing funding and dispatch gates now span all registered scopes for the same business ID.",
           "insufficient_test_evidence": "Exercise staggered loss, restart and reserve evidence across lanes.",
           "external_commissioning": "Reconcile independently supplied liabilities and reserves in approved staging.",
           "owner_or_professional_action": "Approve scoped funding, review obligations and any release.",
