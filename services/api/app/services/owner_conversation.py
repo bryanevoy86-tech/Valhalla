@@ -57,8 +57,8 @@ class DeleteAttachmentIn(BaseModel):
     reason: Literal["OWNER_REQUEST", "RETENTION_EXPIRED"]
 
 
-def thread(db, cid):
-    row = db.get(OwnerConversation, cid)
+def thread(db, cid, *, lock=False):
+    row = db.get(OwnerConversation, cid, with_for_update=lock)
     if row is None:
         raise HTTPException(404, "Conversation not found")
     return row
@@ -232,12 +232,22 @@ def create_conversation(payload: ThreadIn, db: Session):
         return thread_meta(existing)
     row = OwnerConversation(id=payload.conversation_id, title=title)
     db.add(row)
-    commit(db)
+    try:
+        commit(db)
+    except HTTPException as exc:
+        if exc.status_code != 409:
+            raise
+        # The same client request may have committed while this insert was waiting.
+        existing = db.get(OwnerConversation, payload.conversation_id)
+        if existing is None or existing.title != title:
+            raise
+        return thread_meta(existing)
     return thread_meta(row)
 
 
 def submit_turn(conversation_id: UUID, payload: TurnIn, db: Session, *, local_only: bool = False):
-    thread(db, conversation_id)
+    # Keep retries on the local browser path serialized for the same conversation.
+    thread(db, conversation_id, lock=local_only)
     if local_only and payload.provider_data_class != "PRIVATE":
         raise HTTPException(422, "WeWeb conversation accepts private local turns only")
     message = payload.message.strip()
@@ -252,6 +262,8 @@ def submit_turn(conversation_id: UUID, payload: TurnIn, db: Session, *, local_on
                        if payload.knowledge_domain else None)
     existing = db.get(OwnerTurn, payload.turn_id)
     if existing:
+        if local_only and existing.evidence.get("model_connected"):
+            raise HTTPException(409, "A model-backed turn cannot be replayed through the local submission route")
         if (existing.conversation_id, existing.message, existing.attachment_ids)!=(conversation_id,message,ids):
             raise HTTPException(409, "Turn ID already used")
         if existing.evidence.get("requested_provider_class", "PRIVATE") != payload.provider_data_class:

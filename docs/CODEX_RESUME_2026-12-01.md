@@ -573,3 +573,18 @@ Primary project `286b2f26-c8e6-4561-ac4b-ca6537e7f8fe` has 11 pages and 14 secti
 | In-memory attention result variable | `9bdcbdad-719d-4b68-965b-ba9ec95e88fb` | Session-correlated with no persistence |
 
 Authorize a staging Valhalla API origin and matching preview CORS before placing that exact HTTPS origin in the preview variable and the existing API base in the isolated environment. Test with a configured owner, a subscriber and revoked credentials. Confirm the owner sees only the selected current item and count, the subscriber receives 403, revoked sessions receive 401, and one acknowledgment produces the matching private receipt. Check the signed-out, loading, empty, unavailable and narrow-screen states in WeWeb Preview. The installed workflow source was read back and compared to the repository module. Fixture tests exercised response validation and transport behavior. The browser integration and responsive preview remain pending. Owner conversations, documents, voice, subscriber surfaces and the remaining operating views are separate work.
+
+### November 22 — Private Heimdall conversation preview
+
+The primary WeWeb Home page `05ce39c3-5a5f-4e26-892b-3aa82fff3051` now contains the owner-only conversation panel `aae28eb9-e275-4c9a-81ea-a513df665f24`, after Owner Attention. The recoverable snapshot before this integration is `cc59ed98-6da1-4e01-ae9b-440c82144d8c`. The separate backup project and earlier editor snapshot are preserved.
+
+| Workflow | ID | Canonical request |
+|---|---|---|
+| Refresh private conversations | `8b5e66a2-6d7f-469f-869d-82d32a446470` | GET `/api/weweb/owner-conversations`, then selected thread GET `/turns` and GET `/attachments` |
+| Next private conversation | `80c8c0c3-19c7-4b20-b0ab-737434b372c1` | Same GET routes for another loaded thread |
+| Create private conversation | `65348a7e-31b0-49c9-bd8b-a2e03e859643` | POST `/api/weweb/owner-conversations` with ID and title |
+| Send private local turn | `4e890946-7fda-46d3-8916-cc2cc2c92dde` | POST `/api/weweb/owner-conversations/{conversation_id}/turns` with turn ID, private classification, text and optional exact `prime_decision_id` |
+
+Editor readback confirmed owner visibility and all four action graphs. The volatile session-specific view is `0f8937fb-a055-4a2a-a956-2633613d7554`. All requests reuse the authorized staging-origin guard `2861b009-a06b-436a-9d54-a95ec08e44cc`; value remains blank. The browser displays the latest 20 threads and 20 turns for the selected thread, escapes returned text, and lists at most ten attachment metadata records. Attachment restore errors do not discard verified conversation history. The local-only write path distinguishes historical model replies, serializes same-thread writes in PostgreSQL, and reuses the same request ID on an ambiguous retry.
+
+Commission with the authorized matching staging origin and preview CORS, migrated owner conversation schema, server-side owner identity, and owner/subscriber/revoked-session fixtures. Verify navigation, mobile rendering, response escaping, no-store, revocation and end-to-end no-inference behavior. Document upload, extraction and separately authorized disposition and review remain pending in this editor checkpoint.

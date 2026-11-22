@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, timezone
 import json
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from sqlalchemy.orm import Session
 
@@ -237,6 +237,19 @@ def test_trial_is_bound_to_authenticated_subscriber_and_tenant(deal_client, monk
     assert client.post(f"{inbox}/turns", headers=bearer, json={
         **payload, "provider_data_class": "SYNTHETIC",
     }).status_code == 422
+    historical_id = uuid4()
+    with Session(engine) as db:
+        db.add(OwnerTurn(id=historical_id, conversation_id=UUID(fresh), message="Historical response",
+                         reply="Recorded earlier", evidence={"model_connected": True}, attachment_ids=[]))
+        db.commit()
+    assert client.post(f"{inbox}/turns", headers=bearer, json={
+        "turn_id": str(historical_id), "message": "Historical response",
+    }).status_code == 409
+    historic_read = client.get(f"{inbox}/turns", headers=bearer)
+    assert historic_read.status_code == 200
+    assert any(item["turn_id"] == str(historical_id) and item["response_mode"] == "MODEL_ADVISORY_ONLY"
+               for item in historic_read.json())
+
     content = b"Owner private attachment fixture"
     upload = {"attachment_id": str(uuid4()), "filename":"source.txt", "media_type":"text/plain",
               "sha256": hashlib.sha256(content).hexdigest(), "content_base64": base64.b64encode(content).decode()}
