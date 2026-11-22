@@ -1,7 +1,7 @@
 import base64
 import hashlib
 import json
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from uuid import UUID, uuid4
 
 from fastapi import HTTPException
@@ -732,6 +732,7 @@ def rehearse_checkout(client, engine, monkeypatch, owner, action_id, price, scop
                            json={**details, "consent_fixture_id": str(uuid4())}).status_code == 409
         assert client.post(f"{root}/campaign-visits", headers=owner,
                            json={**details, "visit_id": str(uuid4())}).status_code == 409
+    rehearse_channel_intent(client, engine, monkeypatch, owner, scope, visit_ids)
     suppression = {"consent_fixture_id": details["consent_fixture_id"], **scope}
     endpoint = f"{root}/consent-suppressions"
     assert client.post(endpoint, json=suppression).status_code == 401
@@ -925,3 +926,59 @@ def rehearse_checkout(client, engine, monkeypatch, owner, action_id, price, scop
     with Session(engine) as db:
         assert db.query(FoundryRehearsalPayment).count() == 3
     return final
+
+
+def rehearse_channel_intent(client, engine, monkeypatch, owner, scope, visit_ids):
+    import hmac
+
+    from app.loki.evidence import artifact_digest
+    from app.models.media_engine import MediaChannel, MediaPublishLog
+
+    for model in (MediaChannel, MediaPublishLog):
+        model.__table__.create(engine)
+    key = "isolated-channel-fixture-only"
+    monkeypatch.setenv("VALHALLA_ACQUISITION_CHANNEL_FIXTURE_KEY", key)
+    with Session(engine) as db:
+        channel = MediaChannel(name="Internal synthetic opt-in", slug="fixture-direct")
+        db.add(channel)
+        db.flush()
+        entry = MediaPublishLog(content_id=db.query(MediaContent).one().id, channel_id=channel.id, status="planned")
+        db.add(entry)
+        db.commit()
+        media_id = entry.id
+    root = "/api/prime/foundry/rehearsal"
+    intent = {"intent_id": str(uuid4()), "scope": scope, "campaign_id": 1, "media_publish_id": media_id,
+              "scheduled_at": datetime.now(timezone.utc).isoformat(), "reviewed_transparent_copy": True,
+              "visit_id": visit_ids[0]}
+    assert client.post(f"{root}/channel-intents", json=intent).status_code == 401
+    staged = client.post(f"{root}/channel-intents", headers=owner, json=intent)
+    assert staged.status_code == 201, staged.text
+    assert client.post(f"{root}/channel-intents", headers=owner, json=intent).json() == staged.json()
+    receipt = {"intent_id": intent["intent_id"], "scope": scope, "provider_fixture_event_id": str(uuid4()),
+               "expected_intent_sha256": staged.json()["sha256"], "outcome": "ACCEPTED_IN_FIXTURE"}
+
+    def post_receipt(body, valid=True):
+        digest = artifact_digest("acquisition_channel_provider_fixture", body["provider_fixture_event_id"], body)
+        signature = hmac.new(key.encode(), digest.encode(), hashlib.sha256).hexdigest() if valid else "invalid"
+        return client.post(f"{root}/channel-fixture-receipts", headers={"X-Acquisition-Fixture-Signature": signature}, json=body)
+
+    assert post_receipt(receipt, valid=False).status_code == 401
+    assert post_receipt({**receipt, "expected_intent_sha256": "0" * 64}).status_code == 409
+    with Session(engine) as db:
+        row = db.get(MediaPublishLog, media_id)
+        row.status = "cancelled"
+        db.commit()
+    assert post_receipt(receipt).status_code == 409
+    with Session(engine) as db:
+        row = db.get(MediaPublishLog, media_id)
+        row.status = "planned"
+        db.commit()
+    accepted = post_receipt(receipt)
+    assert accepted.status_code == 201, accepted.text
+    assert accepted.json()["status"] == "ACCEPTED_IN_FIXTURE"
+    assert accepted.json()["publication_verified"] is False
+    assert post_receipt(receipt).json() == accepted.json()
+    assert post_receipt({**receipt, "outcome": "REJECTED_IN_FIXTURE"}).status_code == 409
+    with Session(engine) as db:
+        row = db.get(MediaPublishLog, media_id)
+        assert row.status == "planned" and row.external_ref is None

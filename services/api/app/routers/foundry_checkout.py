@@ -7,7 +7,7 @@ import re
 from uuid import UUID
 from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import func, inspect, select
@@ -28,6 +28,7 @@ from app.services.acquisition_rehearsal import (
     make_plan, plan_reference, read_plan, settled_campaign, verify_consent,
 )
 from app.services.acquisition_comparison import ComparisonIn, compare_campaigns
+from app.services.acquisition_channel_fixture import ChannelIntentIn, ChannelReceiptIn, accept_channel_receipt, stage_channel
 from app.services.economic_control import require_no_containment
 from app.services.prime_business_execution import _check_legacy, _emergency_stop_active, _event, _json, action_status, require_owner_mandate_key
 from app.services.product_artifacts import load_artifact, verify_artifact
@@ -566,6 +567,19 @@ def compare_acquisition_campaigns(payload: ComparisonIn, db: Session = Depends(g
     _attribution_schema(db)
     _check_legacy(db, **payload.scope.model_dump())
     return compare_campaigns(db, payload)
+
+
+@router.post("/channel-intents", status_code=201, dependencies=owner)
+def stage_channel_intent(payload: ChannelIntentIn, db: Session = Depends(get_db)):
+    return stage_channel(db, payload)
+
+
+@router.post("/channel-fixture-receipts", status_code=201)
+def apply_channel_fixture_receipt(
+    payload: ChannelReceiptIn, db: Session = Depends(get_db),
+    signature: str | None = Header(default=None, alias="X-Acquisition-Fixture-Signature"),
+):
+    return accept_channel_receipt(db, payload, signature)
 
 
 @router.post("/campaign-comparisons/review-artifact", dependencies=owner)

@@ -1041,3 +1041,6 @@ The acceptance matrix retains 13 P0 and 39 total criteria requiring internal cod
 - Prime persists the exact checked consumer summary with the independent review and revalidates the source in private owner decision readback. The product fixture attempts to replace the descriptive study with an asserted causal result and expects refusal.
 
 - Commercial execution continuation records scope-bound synthetic consent suppression, deduplicates attributed direct customer references and compares settled campaign fixtures. The independent review artifact labels stop, improve, continue testing and scale review without commercial or funding authority. The product integration rehearsal checks withdrawal and same-version comparison; focused cases exercise profitable, loss-making, overlapping and incomplete evidence.
+
+- Consent withdrawal and settled comparison commit `905bbe0e84c59c1ba7745915260fcfee69d9a726` passed all four hosted jobs in run 45064334262.
+- The existing Product Foundry rehearsal now stages an exact scheduled acquisition media intent and verifies a signed synthetic channel receipt. Bad signatures, changed media state and conflicting receipts fail closed. Successful rehearsal does not change actual publication status.
