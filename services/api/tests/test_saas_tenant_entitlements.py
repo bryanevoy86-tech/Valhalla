@@ -134,12 +134,12 @@ def test_trial_is_bound_to_authenticated_subscriber_and_tenant(deal_client, monk
     stale = client.post(path, headers=bearer, json=plan).json()["options"][0]["activation"]
     assert stale["verified_government_minor"] == 0 and stale["minimum_additional_capital_minor"] is None
 
-    from app.models.owner_conversation import OwnerAttachment, OwnerAttachmentExtraction, OwnerConversation, OwnerTurn
+    from app.models.owner_conversation import OwnerAttachment, OwnerAttachmentExtraction, OwnerAttachmentReview, OwnerConversation, OwnerTurn
 
     from app.routers.prime_specialist_schedules import REPORT_EVENT, shadow_report_digest
 
     for model in (LearningTaskQueueItem, LegacyOrchestrationEvent, GoLiveState, PrimeSpecialistSchedule,
-                  PrimeScheduleTrigger, OwnerConversation, OwnerTurn, OwnerAttachment, OwnerAttachmentExtraction):
+                  PrimeScheduleTrigger, OwnerConversation, OwnerTurn, OwnerAttachment, OwnerAttachmentExtraction, OwnerAttachmentReview):
         model.__table__.create(engine)
     thread_id = uuid4()
     schedule_id, report_id = uuid4(), "PRIME-owner-fixture"
@@ -268,6 +268,56 @@ def test_trial_is_bound_to_authenticated_subscriber_and_tenant(deal_client, monk
     extraction = client.post(f"{attachment_root}/extract", headers=bearer)
     assert extraction.status_code == 200, extraction.text
     assert extraction.json()["sent_to_provider"] is False
+
+    schedule_route = f"/api/weweb/owner-specialist-schedules/{schedule_id}"
+    assert client.get(schedule_route, headers=outsider).status_code == 403
+    specialist = client.get(schedule_route, headers=bearer)
+    assert specialist.status_code == 200, specialist.text
+    assert specialist.headers["cache-control"] == "no-store"
+    assert specialist.json()["report_event_id"] == report_id
+    assert specialist.json()["execution_authorized"] is False
+
+    pending = {"request_id": str(uuid4()), "source_sha256": upload["sha256"],
+               "operation": "ACCEPT_LOCAL", "reason": "Synthetic local review"}
+    request_url = f"{attachment_root}/requests"
+    assert client.post(request_url, headers=outsider, json=pending).status_code == 403
+    staged = client.post(request_url, headers=bearer, json=pending)
+    assert staged.status_code == 201, staged.text
+    assert staged.json()["status"] == "PENDING_MANDATE"
+    assert client.post(request_url, headers=bearer, json=pending).json() == staged.json()
+    assert client.post(request_url, headers=bearer, json={**pending, "reason": "Changed"}).status_code == 409
+    assert client.get(f"{inbox}/attachments", headers=bearer).json()[0]["state"] == "QUARANTINED_UNREVIEWED"
+    stale = client.post(request_url, headers=bearer,
+                        json={**pending, "request_id": str(uuid4()), "operation": "REJECT"})
+    assert stale.status_code == 201
+    status = f"/api/weweb/owner-document-requests/{pending['request_id']}"
+    approval = {"expected_sha256": staged.json()["request_sha256"]}
+    assert client.post(status + "/apply", headers=bearer, json=approval).status_code == 401
+    assert client.post(status + "/apply", headers={**bearer, **owner}, json=approval).status_code == 503
+    monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "false")
+    with Session(engine) as db:
+        db.get(GoLiveState, 1).kill_switch_engaged = False
+        db.commit()
+    assert client.post(status + "/apply", headers={**bearer, **owner},
+                       json={"expected_sha256": "0" * 64}).status_code == 409
+    applied = client.post(status + "/apply", headers={**bearer, **owner}, json=approval)
+    assert applied.status_code == 200, applied.text
+    assert applied.json()["receipt"]["disposition"] == "ACCEPT_LOCAL"
+    assert client.get(status, headers=bearer).json() == applied.json()
+    assert client.post(status + "/apply", headers={**bearer, **owner}, json=approval).json() == applied.json()
+    stale_apply = f"/api/weweb/owner-document-requests/{stale.json()['request']['request_id']}/apply"
+    assert client.post(stale_apply, headers={**bearer, **owner},
+                       json={"expected_sha256": stale.json()["request_sha256"]}).status_code == 409
+
+    disposal = client.post(request_url, headers=bearer, json={
+        **pending, "request_id": str(uuid4()), "operation": "DISPOSE",
+    }).json()
+    dispose_url = f"/api/weweb/owner-document-requests/{disposal['request']['request_id']}/apply"
+    disposed = client.post(dispose_url, headers={**bearer, **owner},
+                           json={"expected_sha256": disposal["request_sha256"]})
+    assert disposed.status_code == 200, disposed.text
+    assert disposed.json()["receipt"]["state"] == "DELETED"
+    assert client.get(f"{inbox}/attachments", headers=bearer).json()[0]["state"] == "DELETED"
 
     access = f"{root}/{trial['tenant_id']}/access/wholesale_engine"
     assert client.get(access).status_code == 401

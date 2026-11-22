@@ -538,6 +538,16 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
     fresh_context = owner_turn("Show the verified history behind this proposal", prime_decision_id=followup_listing["prime_verdict_id"])
     assert fresh_context["evidence"]["reviewed_mimir_outcomes"] == next_advice["independent_loki"]["reviewed_mimir_outcomes"]
     assert fresh_context["execution_authorized"] is False
+    decision_route = f"/api/weweb/owner-prime-decisions/{followup_listing['prime_verdict_id']}"
+    from app.routers.auth_weweb import require_owner_session
+
+    with monkeypatch.context() as route_fixture:
+        route_fixture.setitem(client.app.dependency_overrides, require_owner_session, lambda: 1)
+        direct = client.get(decision_route)
+    assert direct.status_code == 200, direct.text
+    assert direct.headers["cache-control"] == "no-store"
+    assert direct.json()["independent_loki"]["review_id"] == claim_review
+    assert direct.json()["reviewed_mimir_outcomes"] == next_advice["independent_loki"]["reviewed_mimir_outcomes"]
     still_held = client.post(f"{FACTORY}/listing-drafts", headers=admin, json=followup_listing)
     assert still_held.status_code == 409 and "containment" in still_held.json()["detail"]
     with Session(engine) as db:

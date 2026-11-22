@@ -8,6 +8,11 @@ from sqlalchemy.orm import Session
 
 from app.core.db import get_db
 from app.routers.auth_weweb import private_owner_response, require_owner_session
+from app.services.owner_document_requests import (
+    DocumentApplyIn, DocumentRequestIn, apply_document_request, document_request_status, request_document_action,
+)
+from app.services.owner_specialist_context import prime_decision_context, specialist_context
+from app.services.prime_business_execution import require_owner_mandate_key
 from app.services.owner_startup import StartupPlanIn, prepare_startup
 from app.services.owner_conversation import (
     ThreadIn, TurnIn, UploadIn, attachment_summaries, bounded_upload, create_conversation, local_extraction,
@@ -90,3 +95,31 @@ def attention_acknowledge(payload: AttentionAcknowledgmentIn, db: Session = Depe
 
     receipt = AttentionAcknowledgmentOut.model_validate(acknowledge_owner_attention(db, owner_id, payload.notification_id))
     return private_owner_response(receipt)
+
+
+@router.post("/owner-conversations/{conversation_id}/attachments/{attachment_id}/requests", status_code=201)
+def stage_document_request(conversation_id: UUID, attachment_id: UUID, payload: DocumentRequestIn,
+                           db: Session = Depends(get_db), owner_id: int = Depends(require_owner_session)):
+    return private_owner_response(request_document_action(db, owner_id, conversation_id, attachment_id, payload),
+                                  status_code=201)
+
+
+@router.get("/owner-document-requests/{request_id}")
+def owner_document_request(request_id: UUID, db: Session = Depends(get_db), owner_id: int = Depends(require_owner_session)):
+    return private_owner_response(document_request_status(db, owner_id, request_id))
+
+
+@router.post("/owner-document-requests/{request_id}/apply", dependencies=[Depends(require_owner_mandate_key)])
+def owner_apply_document_request(request_id: UUID, payload: DocumentApplyIn,
+                                 db: Session = Depends(get_db), owner_id: int = Depends(require_owner_session)):
+    return private_owner_response(apply_document_request(db, owner_id, request_id, payload.expected_sha256))
+
+
+@router.get("/owner-prime-decisions/{decision_id}")
+def owner_prime_decision(decision_id: UUID, db: Session = Depends(get_db)):
+    return private_owner_response(prime_decision_context(db, decision_id))
+
+
+@router.get("/owner-specialist-schedules/{schedule_id}")
+def owner_specialist_receipt(schedule_id: UUID, db: Session = Depends(get_db)):
+    return private_owner_response(specialist_context(db, schedule_id, require_digest=True))

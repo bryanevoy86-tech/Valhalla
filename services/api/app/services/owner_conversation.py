@@ -405,7 +405,7 @@ def attachment_summaries(conversation_id: UUID, limit: int, db: Session):
     return summaries
 
 
-def delete_attachment(conversation_id: UUID, attachment_id: UUID, payload: DeleteAttachmentIn, db: Session):
+def delete_attachment(conversation_id: UUID, attachment_id: UUID, payload: DeleteAttachmentIn, db: Session, *, persist=True):
     attachment = db.get(OwnerAttachment, attachment_id, with_for_update=True)
     if attachment is None or attachment.conversation_id != conversation_id:
         raise HTTPException(404, "Attachment not found in conversation")
@@ -436,7 +436,8 @@ def delete_attachment(conversation_id: UUID, attachment_id: UUID, payload: Delet
     attachment.filename = "[deleted]"
     attachment.deleted_at = datetime.now(timezone.utc)
     attachment.deletion_reason = payload.reason
-    commit(db)
+    if persist:
+        commit(db)
     return meta(attachment)
 
 
