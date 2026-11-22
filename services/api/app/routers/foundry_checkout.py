@@ -581,9 +581,11 @@ def scoped_checkout_learning(db: Session, scope: dict, outcomes: list[dict], *, 
     """Re-read checkout fixtures tied to a verified scoped listing outcome."""
     inspector = inspect(db.connection())
     if not outcomes or any(not inspector.has_table(model.__tablename__) for model in (
-        FoundryRehearsalOrder, FoundryRehearsalPayment, FoundryFixtureSettlement, StatementImport, StatementEntry,
+        FoundryRehearsalOrder, FoundryRehearsalPayment,
     )):
         return []
+    has_settlements = inspector.has_table(FoundryFixtureSettlement.__tablename__)
+    has_statements = all(inspector.has_table(model.__tablename__) for model in (StatementImport, StatementEntry))
     by_action = {item["action_id"]: item for item in outcomes if item.get("product_asset")
                  and (artifact_id is None or item["product_asset"]["artifact_id"] == artifact_id)}
     if not by_action:
@@ -610,10 +612,12 @@ def scoped_checkout_learning(db: Session, scope: dict, outcomes: list[dict], *, 
                 raise HTTPException(409, "Checkout payment history exceeds advisory limit")
             matched, pending = [], []
             for payment in payments:
-                settlement = db.get(FoundryFixtureSettlement, payment.event_id)
+                settlement = db.get(FoundryFixtureSettlement, payment.event_id) if has_settlements else None
                 if settlement is None:
                     pending.append(payment.event_id)
                     continue
+                if not has_statements:
+                    raise HTTPException(409, "Checkout settlement evidence storage is unavailable")
                 statement = db.get(StatementImport, settlement.statement_id)
                 indexed = db.get(StatementEntry, settlement.statement_entry_key)
                 if (statement is None or indexed is None or indexed.statement_id != statement.id

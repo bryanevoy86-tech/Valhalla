@@ -644,9 +644,23 @@ def rehearse_checkout(client, engine, monkeypatch, owner, action_id, price, scop
     assert held.json()["owner_followup_required"] is True
     from app.loki.analyst import challenge
     from app.loki.evidence import artifact_digest
-    from app.services.checkout_operating_signals import checkout_operating_blockers
+    from types import SimpleNamespace
 
-    held_observation = {**held.json(), "status": "UNRECONCILED_FIXTURE"}
+    from app.routers.foundry_checkout import scoped_checkout_learning
+    from app.routers.prime_specialist_schedules import attach_operating_reassessment
+    from app.services.checkout_operating_signals import checkout_operating_blockers
+    from app.services.prime_business_execution import verified_internal_outcomes
+
+    with Session(engine) as db:
+        outcomes = verified_internal_outcomes(db, **scope)
+        [held_observation] = scoped_checkout_learning(db, scope, outcomes)
+        reassessment = {"recommendation": {"heimdall_decision": "EVALUATE"}}
+        scheduled = SimpleNamespace(opportunity=SimpleNamespace(specialist_inputs={}, source="internal"))
+        attach_operating_reassessment(db, scheduled, scope, _utc_now().date(), outcomes, reassessment)
+    assert "CHECKOUT_FULFILLMENT_HELD" in reassessment["operating_reassessment"]["blockers"]
+    assert reassessment["recommendation"]["heimdall_decision"] == "HOLD"
+    assert held_observation["status"] == "UNRECONCILED_FIXTURE"
+    assert held_observation["unmatched_fixture_payment_ids"] == ["evt_fixture_capture"]
     assert "CHECKOUT_FULFILLMENT_HELD" in checkout_operating_blockers([held_observation])
     review_ref = "checkout-hold-fixture"
     report = {"status": "observed", "external_authority": False,
