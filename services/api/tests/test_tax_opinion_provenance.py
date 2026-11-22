@@ -9,8 +9,8 @@ from sqlalchemy.orm import Session
 
 from app.models.owner_conversation import OwnerAttachment, OwnerAttachmentReview, OwnerConversation
 from app.models.tax_interpretations import TaxOpinion
-from app.schemas.tax_interpretations import TaxOpinionProvenanceIn
-from app.services.tax_opinion_provenance import PROVENANCE_KEY, signature_message
+from app.schemas.tax_interpretations import TaxOpinionProvenanceIn, TaxOpinionRelianceIn
+from app.services.tax_opinion_provenance import PROVENANCE_KEY, reliance_signature_message, signature_message
 
 
 def test_opinion_signature_requires_exact_private_file_and_trusted_specialist(deal_client, monkeypatch):
@@ -71,6 +71,9 @@ def test_opinion_signature_requires_exact_private_file_and_trusted_specialist(de
     assert PROVENANCE_KEY not in flags and flags["reliance_authorized"] is False
     assert client.post(endpoint, headers=owner, json=review).json() == verified.json()
 
+    assert_scoped_reliance(client, engine, monkeypatch, owner, opinion_id, today, enrollment, private_key,
+                           flags["professional_opinion_provenance"]["provenance_sha256"])
+
     monkeypatch.setenv("VALHALLA_PROFESSIONAL_OPINION_PUBLIC_KEYS", "{}")
     read = f"{path}/{opinion_id}"
     assert client.get(read).json()["flags"]["professional_opinion_provenance"]["status"] == "UNAVAILABLE_OR_INVALID"
@@ -82,3 +85,51 @@ def test_opinion_signature_requires_exact_private_file_and_trusted_specialist(de
         attachment.data = None
         db.commit()
     assert client.get(read).json()["flags"]["professional_opinion_provenance"]["status"] == "UNAVAILABLE_OR_INVALID"
+
+
+
+def assert_scoped_reliance(client, engine, monkeypatch, owner, opinion_id, today, signer_enrollments, author_key, digest):
+    monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "false")
+    review_key = Ed25519PrivateKey.generate()
+    reviewers = {**signer_enrollments, "qualified-fixture": {
+        "public_key_hex": review_key.public_key().public_bytes(Encoding.Raw, PublicFormat.Raw).hex(),
+        "specialist_id": str(uuid4()), "role": "accountant", "jurisdictions": ["CA-CRA"], "qualified_reviewer": True,
+    }}
+    monkeypatch.setenv("VALHALLA_PROFESSIONAL_OPINION_PUBLIC_KEYS", json.dumps(reviewers))
+    scope = {"decision_reference": "structure-fixture-1", "purpose": "INTERNAL_STRUCTURE_REVIEW"}
+    grant = {**scope, "approval_id": str(uuid4()), "expected_provenance_sha256": digest,
+             "reviewer_key_id": "qualified-fixture", "reviewed_on": today.isoformat(),
+             "valid_until": (today + timedelta(days=2)).isoformat(), "signature": "0" * 128}
+
+    def sign(data, key):
+        with Session(engine) as db:
+            message = reliance_signature_message(db.get(TaxOpinion, UUID(opinion_id)),
+                                                 TaxOpinionRelianceIn.model_validate(data))
+        return {**data, "signature": key.sign(message).hex()}
+
+    endpoint = f"/tax-bridge/opinions/{opinion_id}/reliance"
+    status = f"{endpoint}/{grant['approval_id']}/check"
+    revoke = f"{endpoint}/{grant['approval_id']}/revoke"
+    assert client.post(endpoint, headers=owner, json=sign(grant, author_key)).status_code == 409
+    signed = sign(grant, review_key)
+    assert client.post(endpoint, json=signed).status_code == 401
+    tampered = {**signed, "decision_reference": "another-private-decision"}
+    assert client.post(endpoint, headers=owner, json=tampered).status_code == 409
+    approved = client.post(endpoint, headers=owner, json=signed)
+    assert approved.status_code == 200, approved.text
+    assert approved.json()["execution_authorized"] is False
+    assert client.post(endpoint, headers=owner, json=signed).json() == approved.json()
+    assert client.post(status, json=scope).json()["reliance_authorized"] is True
+    assert client.post(status, json={**scope, "purpose": "INTERNAL_RISK_ASSESSMENT"}).status_code == 409
+
+    monkeypatch.setenv("VALHALLA_PROFESSIONAL_OPINION_PUBLIC_KEYS", json.dumps(signer_enrollments))
+    assert client.post(status, json=scope).status_code == 409
+    monkeypatch.setenv("VALHALLA_PROFESSIONAL_OPINION_PUBLIC_KEYS", json.dumps(reviewers))
+    monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "true")
+    assert client.post(status, json=scope).status_code == 503
+    withdrawn = client.post(revoke, headers=owner, json={"reason": "Withdraw fixture approval"})
+    assert withdrawn.status_code == 200, withdrawn.text
+    assert client.post(revoke, headers=owner, json={"reason": "Withdraw fixture approval"}).json() == withdrawn.json()
+    monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "false")
+    assert client.post(status, json=scope).status_code == 409
+    assert client.post(endpoint, headers=owner, json=signed).status_code == 409
