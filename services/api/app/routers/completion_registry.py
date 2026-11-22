@@ -3805,6 +3805,13 @@ def assign_legacy_work(payload: LegacyWorkAssignRequest, db: Session = Depends(g
     if payload.engine_id not in set(_loads(row.engines_json, [])):
         raise HTTPException(status_code=409, detail="requested engine is not assigned to this legacy instance")
 
+    from app.services.economic_control import require_no_containment
+
+    require_no_containment(db, {
+        "legacy_instance_id": payload.legacy_instance_id, "business_id": payload.business_id,
+        "engine_id": payload.engine_id, "jurisdiction": payload.jurisdiction,
+    })
+
     item = LegacyInstanceWorkItem(
         action_id=payload.action_id,
         idempotency_key=payload.idempotency_key,

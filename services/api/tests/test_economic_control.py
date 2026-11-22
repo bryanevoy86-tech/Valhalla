@@ -801,6 +801,12 @@ def test_legacy_failover_pauses_contained_scope_before_reassignment(economic_cli
     post(client, "mandates", mandate(datetime.now(timezone.utc).date(), scope=destination))
     post(client, "containment", {"id": str(uuid4()), "scope": destination,
                                   "rationale": "Hold the affected receiving business."})
+    denied = client.post("/api/completion/legacy-orchestration/work/assign", json={
+        **SCOPE, "action_id": "new-held-legacy", "idempotency_key": "new-held-legacy",
+        "industry": "fixture", "objective": "Attempt fresh assignment during containment",
+        "data_namespace": "disposable",
+    })
+    assert denied.status_code == 409 and "containment" in denied.json()["detail"]
     result = client.post("/api/completion/legacy-orchestration/failover", json={
         "failed_instance_id": SCOPE["legacy_instance_id"], "recovery_instance_id": MIRROR["legacy_instance_id"],
     })
@@ -808,6 +814,7 @@ def test_legacy_failover_pauses_contained_scope_before_reassignment(economic_cli
     assert result.json()["containment_paused"] == 2
     assert result.json()["reassigned"] == 1
     with Session(engine) as db:
+        assert db.query(LegacyInstanceWorkItem).filter_by(action_id="new-held-legacy").count() == 0
         held = db.query(LegacyInstanceWorkItem).filter_by(action_id="held-failover").one()
         healthy = db.query(LegacyInstanceWorkItem).filter_by(action_id="healthy-failover").one()
         assert (held.status, held.legacy_instance_id) == ("paused", SCOPE["legacy_instance_id"])
