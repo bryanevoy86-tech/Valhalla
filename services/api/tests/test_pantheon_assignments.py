@@ -288,3 +288,34 @@ def test_queued_mimir_outcome_older_than_recent_window_reaches_prime(deal_client
     assert len(report["verified_internal_outcomes"]) == 21
     observation = client.get(f"{pantheon}/reports/{mimir['report_event_id']}").json()
     assert old_event in observation["observations"]["verified_internal_outcomes"]
+
+    # A proposed action can cite the same old proof, but it cannot promote it to a sale.
+    historical = report["verified_internal_outcomes"][0]
+    claim = {key: historical[key] for key in ("outcome_event_id", "artifact_sha256", "sales_verified")}
+    inputs = {"business_id": scope["business_id"], "mimir_outcome_claims": [claim]}
+    proposed = {"opportunity_id": "private-mimir-proof", "engine_id": scope["engine_id"],
+                "legacy": scope["legacy_instance_id"], "jurisdiction": scope["jurisdiction"],
+                "title": "Proposed internal follow-up", "summary": "Re-use the verified internal artifact only.",
+                "specialist_inputs": inputs}
+    evaluation = "/api/completion/phase3/universal-opportunity/evaluate"
+
+    def evaluate(opportunity, **settings):
+        return client.post(evaluation, json={
+            "opportunities": [opportunity], "shadow_mode": True, "persist_decision": False, **settings,
+        })
+
+    result = evaluate(proposed)
+    assert result.status_code == 200, result.text
+    assert result.json()["evaluations"][0]["verified_mimir_claims"] == [
+        {**claim, "evidence_scope": "INTERNAL_ARTIFACT_ONLY"},
+    ]
+    assert evaluate({**proposed, "jurisdiction": "CA-ON"}).status_code == 409
+    assert evaluate(proposed, replay_mode=True).status_code == 409
+    false_sale = {**proposed, "specialist_inputs": {**inputs, "mimir_outcome_claims": [{**claim, "sales_verified": True}]}}
+    denied = evaluate(false_sale)
+    assert denied.status_code == 409
+    assert denied.json()["detail"]["outcome_event_id"] == old_event
+    with Session(engine) as db:
+        db.query(LegacyOrchestrationEvent).filter_by(event_id=old_event).one().payload_json = "{}"
+        db.commit()
+    assert evaluate(proposed).status_code == 409

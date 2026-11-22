@@ -13,6 +13,7 @@ import hashlib
 import hmac
 import json
 import os
+import re
 import time
 from datetime import datetime, timezone
 from typing import Any
@@ -385,14 +386,17 @@ def _bound_prime_decision(db: Session, verdict_id: UUID, work: Any, listing: dic
         raise HTTPException(status_code=409, detail="Listing differs from the reviewed Prime proposal")
     from app.services.foundry_discovery import require_current_candidate
 
-    require_current_candidate(db, proposal, {
-        "legacy_instance_id": work.legacy_instance_id, "jurisdiction": work.jurisdiction,
-        "engine_id": work.engine_id, "business_id": work.business_id,
-    }, datetime.now(timezone.utc).date())
+    scope = {key: getattr(work, key) for key in ("legacy_instance_id", "business_id", "engine_id", "jurisdiction")}
+    require_current_candidate(db, proposal, scope, datetime.now(timezone.utc).date())
     reference = {
         "verdict_id": str(verdict_id), "review_id": str(review.id),
         "proposal_sha256": decision.artifact_sha256,
     }
+    if "mimir_outcome_claims" in specialist_inputs:
+        evidence = verify_mimir_claims(db, scope, specialist_inputs["mimir_outcome_claims"])
+        if evidence != independent.get("reviewed_mimir_outcomes"):
+            raise HTTPException(409, "Mimir evidence differs from the reviewed decision")
+        reference["reviewed_mimir_outcomes"] = evidence
     if "pantheon_report_ids" in specialist_inputs:
         from app.loki.specialist_review import require_reviewed_reports
 
@@ -883,6 +887,38 @@ def verified_internal_outcomes(
             if proof is not None:
                 outcomes.insert(0, proof)
     return outcomes
+
+
+def verify_mimir_claims(db: Session, scope: dict, claims: Any) -> list[dict]:
+    """Verify exact historical artifact claims within the proposal's registered scope."""
+    if (not isinstance(claims, list) or not 1 <= len(claims) <= 10
+            or any(not isinstance(value, str) or not value for value in scope.values())):
+        raise HTTPException(422, "Mimir claims require an exact scope and one to ten entries")
+    seen = set()
+    for claim in claims:
+        if (not isinstance(claim, dict) or set(claim) != {"outcome_event_id", "artifact_sha256", "sales_verified"}
+                or not isinstance(claim["outcome_event_id"], str)
+                or not re.fullmatch(r"MIMIR-[0-9a-f]{64}", claim["outcome_event_id"])
+                or not isinstance(claim["artifact_sha256"], str)
+                or not re.fullmatch(r"[0-9a-f]{64}", claim["artifact_sha256"])
+                or type(claim["sales_verified"]) is not bool
+                or claim["outcome_event_id"] in seen):
+            raise HTTPException(422, "Invalid or repeated Mimir claim")
+        seen.add(claim["outcome_event_id"])
+    schema = inspect(db.connection())
+    if not all(schema.has_table(model.__tablename__) for model in (
+        LegacyInstanceWorkItem, LegacyOrchestrationEvent, MediaContent,
+    )):
+        raise HTTPException(503, "Mimir outcome proof schema unavailable")
+    verified = []
+    for claim in claims:
+        event_id = claim["outcome_event_id"]
+        proof = verified_internal_outcomes(db, **scope, limit=0, trigger_event_id=event_id)
+        if not proof or any(proof[0][field] != value for field, value in claim.items()):
+            raise HTTPException(409, detail={"message": "Mimir outcome claim lacks matching scoped evidence",
+                                            "outcome_event_id": event_id})
+        verified.append({**claim, "evidence_scope": proof[0]["evidence_scope"]})
+    return verified
 
 
 def scoped_factory_findings(db: Session, scope: dict, verified_outcomes: list[dict]) -> dict:

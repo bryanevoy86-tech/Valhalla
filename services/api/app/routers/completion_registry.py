@@ -42,7 +42,7 @@ from app.models.completion_registry import (
 )
 from app.services.data_safety import DatasetSafetyInput, evaluate_dataset_safety
 from app.services.scenario_safety import ScenarioSafetyInput, evaluate_scenario_safety
-from app.services.prime_business_execution import verified_internal_outcomes
+from app.services.prime_business_execution import verified_internal_outcomes, verify_mimir_claims
 from app.services.universal_opportunity_evaluator import (
     LookaheadLeakageBlocked,
     best_option_or_abstain as svc_best_option_or_abstain,
@@ -2728,11 +2728,25 @@ def evaluate_universal_opportunities(payload: UniversalOpportunityBatchIn, db: S
             )
 
     outcome_class = _resolve_phase3_outcome_class(payload)
+    checked_mimir = {}
+    for index, opportunity in enumerate(payload.opportunities):
+        inputs = opportunity.specialist_inputs
+        if "mimir_outcome_claims" not in inputs:
+            continue
+        if payload.replay_mode or opportunity.replay_partition is not None:
+            raise HTTPException(409, "Current Mimir outcome claims are unavailable in historical replay")
+        checked_mimir[index] = verify_mimir_claims(db, {
+            "legacy_instance_id": opportunity.legacy, "jurisdiction": opportunity.jurisdiction,
+            "engine_id": opportunity.engine_id, "business_id": inputs.get("business_id"),
+        }, inputs["mimir_outcome_claims"])
     checked_reviews = {
         index: _require_independent_review(db, opp)
         for index, opp in enumerate(payload.opportunities)
         if not payload.shadow_mode and not payload.replay_mode and payload.persist_decision and opp.persist_decision
     }
+    for index, evidence in checked_mimir.items():
+        if index in checked_reviews:
+            checked_reviews[index]["reviewed_mimir_outcomes"] = evidence
     evaluated: list[dict[str, Any]] = []
     for index, opp in enumerate(payload.opportunities):
         try:
@@ -2749,6 +2763,8 @@ def evaluate_universal_opportunities(payload: UniversalOpportunityBatchIn, db: S
             )
             if index in checked_reviews:
                 row["independent_loki"] = checked_reviews[index]
+            if index in checked_mimir:
+                row["verified_mimir_claims"] = checked_mimir[index]
             evaluated.append(row)
         except LookaheadLeakageBlocked as exc:
             raise HTTPException(status_code=409, detail=exc.detail)
