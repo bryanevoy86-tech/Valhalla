@@ -206,6 +206,10 @@ def run_assignment(db: Session, role: str, *, now=None) -> dict:
                 facts["checkout_learning"] = checkout
         if role == "HEIMDALL" or LENSES[role] in {"approval_evidence", "counter_evidence", "verified_learning"}:
             facts["factory_evidence_reconciliation"] = scoped_factory_findings(db, assignment.scope, outcomes)
+        if role in {"NJORD", "FORSETI", "MIMIR", "HEIMDALL"}:
+            from app.services.treasury_reconciliation import observe_statement_heads
+
+            facts["treasury_statement_evidence"] = observe_statement_heads(db, assignment.scope)
         facts.update(specialist_economics(db, role, assignment.scope, now.date()))
         report.update(status="observed", observations=facts)
     except HTTPException as exc:

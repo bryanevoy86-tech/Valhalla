@@ -4,8 +4,8 @@ from typing import Annotated, Literal
 from uuid import UUID
 
 from fastapi import HTTPException
-from pydantic import Field, model_validator
-from sqlalchemy import inspect, update
+from pydantic import Field, ValidationError, model_validator
+from sqlalchemy import inspect, select, update
 
 from app.loki.evidence import artifact_digest
 from app.models.treasury_reconciliation import StatementAccount, StatementEntry, StatementImport
@@ -144,3 +144,31 @@ def append_statement(db, request, today):
                            digest=digest, payload=document))
     account.head_id = request.id
     return {**summary(request), "sha256": digest}
+
+def observe_statement_heads(db, scope: dict) -> dict:
+    """Sample current scoped business fixture heads for specialist reconciliation."""
+    if not statement_ready(db):
+        return {"status": "UNAVAILABLE", "actual_accessible_funds_minor": None}
+    account = StatementAccount
+    binding = outcome_scope_key(scope)
+    rows = db.scalars(select(account).where(account.scope_key == binding, account.purpose == "BUSINESS")
+                      .order_by(account.account_key).limit(21)).all()
+    observations = []
+    for ledger in rows[:20]:
+        reference = {"account_key": ledger.account_key, "statement_id": str(ledger.head_id) if ledger.head_id else None}
+        statement = db.get(StatementImport, ledger.head_id) if ledger.head_id is not None else None
+        try:
+            if statement is None or statement.account_key != ledger.account_key:
+                raise HTTPException(409, "Statement head unavailable")
+            snapshot = payload_for(statement)
+            if (snapshot.scope.model_dump() != scope or snapshot.currency != ledger.currency
+                    or snapshot.purpose != ledger.purpose or snapshot.end != statement.period_end):
+                raise HTTPException(409, "Statement head context mismatch")
+            observations.append({**reference, "status": "MATCHED_FIXTURE", "sha256": statement.digest,
+                                 "currency": snapshot.currency, "closing_minor": snapshot.closing_minor,
+                                 "outstanding_liabilities_minor": snapshot.outstanding_liabilities_minor})
+        except (HTTPException, ValidationError):
+            observations.append({**reference, "status": "EVIDENCE_CONFLICT"})
+    return {"status": "FIXTURE_SAMPLE" if rows else "NO_SCOPED_FIXTURES",
+            "accounts": observations, "truncated": len(rows) > 20,
+            "actual_accessible_funds_minor": None}

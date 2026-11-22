@@ -551,6 +551,37 @@ def test_statement_continuity_quarantine_and_fixture_asset_recovery(economic_cli
     assert challenge_claim(claim, jurisdiction="CA-ON").status_code == 409
     assert challenge_claim({**claim, "actual_accessible_funds_minor": 420}).status_code == 422
 
+    from app.loki.evidence import artifact_digest
+    from app.pantheon.monitor import utc_now, verified_report
+
+    assigned = client.post("/api/prime/pantheon/assignments", headers=OWNER, json={
+        **SCOPE, "assignment_id": str(uuid4()), "role": "NJORD", "cadence_seconds": 120,
+        "duration_seconds": 1800,
+    })
+    assert assigned.status_code == 201, assigned.text
+    at = utc_now() + timedelta(seconds=1)
+    with Session(engine) as db:
+        result = run_assignment(db, "NJORD", now=at)
+        report = verified_report(db, result["report_event_id"])
+        treasury = report["observations"]["treasury_statement_evidence"]
+        assert treasury["actual_accessible_funds_minor"] is None
+        [business] = treasury["accounts"]
+        assert business["status"] == "MATCHED_FIXTURE"
+        assert business["statement_id"] == statement["id"] and business["closing_minor"] == 420
+        account = db.query(StatementAccount).filter_by(purpose="BUSINESS").one()
+        last_head = account.head_id
+        account.head_id = uuid4()
+        db.commit()
+        result = run_assignment(db, "NJORD", now=at + timedelta(seconds=120))
+        report = verified_report(db, result["report_event_id"])
+        assert report["observations"]["treasury_statement_evidence"]["accounts"][0]["status"] == "EVIDENCE_CONFLICT"
+        challenge_ref = report["report_event_id"]
+        review = challenge({"artifact_type": "pantheon_report", "reference": challenge_ref, "raw_input": report,
+                            "artifact_sha256": artifact_digest("pantheon_report", challenge_ref, report)})
+        assert any(f.category == "treasury_statement_conflict" and f.severity == "critical" for f in review.findings)
+        account.head_id = last_head
+        db.commit()
+
     post(client, "mandates", mandate(today))
     software = {"asset_ref": "fixture:licensable-software", "kind": "SOFTWARE",
                 "rights": "REUSE_PERMITTED", "projected_liquidation_minor": 90, "obligations": []}

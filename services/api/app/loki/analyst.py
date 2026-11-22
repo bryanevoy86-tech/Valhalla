@@ -88,6 +88,16 @@ def challenge(item: dict) -> IndependentReviewIn:
                     "factory_evidence_conflict", "observations/factory_evidence_reconciliation",
                     "Reconcile the approval, artifact and learning receipts cited in this report.", critical=True,
                 ))
+            treasury = sources.get("treasury_statement_evidence")
+            if isinstance(treasury, dict):
+                accounts = treasury.get("accounts")
+                if isinstance(accounts, list) and any(
+                    isinstance(row, dict) and row.get("status") == "EVIDENCE_CONFLICT" for row in accounts
+                ):
+                    findings.append(_finding(
+                        "treasury_statement_conflict", "observations/treasury_statement_evidence",
+                        "Reconcile the current scoped statement head before relying on this fixture.", critical=True,
+                    ))
         findings.append(_finding(
             "evidence_reassessment", "observations",
             "Reassess the specialist's scoped observations before relying on them for a material action.",
