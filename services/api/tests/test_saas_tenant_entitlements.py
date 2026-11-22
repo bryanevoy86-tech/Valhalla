@@ -131,6 +131,12 @@ def test_trial_is_bound_to_authenticated_subscriber_and_tenant(deal_client, monk
     assert independence.status_code == 200, independence.text
     assert independence.headers["cache-control"] == "no-store"
     assert independence.json()["external_action_authorized"] is False
+    private_marker = "private-fixture-should-not-echo"
+    invalid = client.post(review_path, headers=bearer, json={**review_payload, "reserve_months": private_marker})
+    assert invalid.status_code == 422 and invalid.headers["cache-control"] == "no-store"
+    assert private_marker not in invalid.text
+    denied = client.post(review_path, headers=outsider, json=review_payload)
+    assert denied.headers["cache-control"] == "no-store"
     budget = quote.json()
     [packet] = budget["professional_review_packets"]
     assert packet["jurisdiction"] == "Panama"

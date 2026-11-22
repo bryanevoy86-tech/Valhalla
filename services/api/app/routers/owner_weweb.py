@@ -2,7 +2,9 @@
 from typing import Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.routing import APIRoute
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.orm import Session
 
@@ -24,8 +26,28 @@ from app.services.owner_conversation import (
     store_attachment, submit_turn,
 )
 
+class PrivateStartupRoute(APIRoute):
+    def get_route_handler(self):
+        handle = super().get_route_handler()
+
+        async def with_private_errors(request: Request):
+            try:
+                return await handle(request)
+            except RequestValidationError:
+                return private_owner_response({"detail": "Invalid private startup planning data"}, status_code=422)
+            except HTTPException as error:
+                response = private_owner_response({"detail": error.detail}, status_code=error.status_code)
+                for name, value in (error.headers or {}).items():
+                    if name.lower() not in {"cache-control", "vary"}:
+                        response.headers[name] = value
+                return response
+
+        return with_private_errors
+
+
 router = APIRouter(prefix="/api/weweb", tags=["weweb-owner-conversation"],
                    dependencies=[Depends(require_owner_session)])
+startup_router = APIRouter(prefix="/owner-startup", route_class=PrivateStartupRoute)
 
 
 @router.post("/owner-conversations", status_code=201)
@@ -54,12 +76,12 @@ def owner_list_attachments(conversation_id: UUID, limit: int = 50, db: Session =
     return private_owner_response(attachment_summaries(conversation_id, limit, db))
 
 
-@router.post("/owner-startup/compare")
+@startup_router.post("/compare")
 def startup_comparison(payload: StartupPlanIn):
     return private_owner_response(prepare_startup(payload))
 
 
-@router.post("/owner-startup/independence-review")
+@startup_router.post("/independence-review")
 def owner_startup_independence(payload: StartupIndependenceIn):
     from datetime import datetime, timezone
 
@@ -208,3 +230,6 @@ def owner_pantheon_reports(role: Role | None = None, after: UUID | None = None,
 
     assignment_schema(db)
     return private_owner_response(pantheon_report_index(db, role, after, limit))
+
+
+router.include_router(startup_router)
