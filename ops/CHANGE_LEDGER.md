@@ -895,3 +895,8 @@ Development commit `e53dc8607308d6e57ffd1a8b94e745d21a9f1c9a` prevents Legacy fa
 ## November 21 — Governed Builder owner briefing repair
 
 Development commit `e4362ebb48284e6a9357229f3452efd8a0b98c13` produces a review candidate for the private owner attention collection from a named recipe and the exact source digest. The isolated fixture supplied no edits, corrected stale cache configuration and recovered both briefing views, then claimed one immutable review bundle without changing the checked-out file. Local combined regression passed 373 backend tests, 22 disposable PostgreSQL checks, eight Builder materializer checks and one simulated-browser voice test. The runtime probe verified 36 critical routers and 94 required routes.
+
+
+## November 21 — Verified Mimir claims in Prime proposals
+
+Development commit `0f2220d74753e634420ef63e81aee562f63eca5e` checks cited outcome evidence in the exact scope before evaluation or persistence. The rehearsal verifies a valid historical artifact beyond the recent window and rejects claims of a commercial sale, a mismatched jurisdiction, historical replay intake and damaged proof. Governed Factory work also rechecks the claims in the independently reviewed decision. The full local backend passed 373 tests.

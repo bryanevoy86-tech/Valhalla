@@ -488,3 +488,8 @@ Legacy failover reports `containment_paused` when either the failed scope or the
 ### Builder owner briefing repair recipe
 
 An owner can request `refresh_owner_attention_collection` at the existing private `POST /builder/assignments/prepare` with the exact source digest, base commit and pinned runner image. Builder generates the canonical GET-only, zero-cache collection from the fixed owner attention and briefing requirements after verifying the routes are registered. It returns a candidate through the unchanged review lease. An approved private WeWeb preview is still required to verify the collection on a real browser account and device.
+
+
+### Mimir claims in a subsequent Prime proposal
+
+An authorized proposal can cite up to ten scoped `mimir_outcome_claims` in its specialist inputs. Each claim carries the exact outcome event, artifact SHA-256 and whether sales were verified. The Factory source always classifies this proof as internal artifact evidence. A contradiction, damaged receipt or another jurisdiction blocks evaluation. Replay excludes current claims. A governed internal draft rechecks the evidence bound to the independent review before execution.
