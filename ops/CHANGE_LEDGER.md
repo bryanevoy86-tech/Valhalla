@@ -970,3 +970,10 @@ Local regression passed 377 backend tests, 22 disposable PostgreSQL checks, eigh
 ## November 22 — Builder draft-target packaging
 
 `502a4d0e79dafae848eb37a77edc505eb265ac68` binds the owner-approved Builder handoff to a chosen draft repository, PR number and development head. The offline materializer checks origin, the tracked branch and patch applicability, then records the hashes in a submission manifest. Local verification passed nine Builder materializer checks. A fresh remote draft and branch check and separately authorized submission identity are commissioning prerequisites. The acceptance matrix retains 13 P0 and 39 total criteria requiring internal coding.
+
+## November 22 — Closed-loop forecast and fulfillment evidence
+
+- `b653411e77263f6ccffd5b79a933f39abe42bbf8` adds scoped, receipt-verified ordinary Norns deadline outcomes to Mimir's reviewed evidence inputs. Its regression exercises acceptance, modified labels and holdout exclusion through Prime and Factory.
+- `94f07c50230eae44b65d09010cff1015575e1e87` routes held fulfillment and unresolved refund support through Prime's shared checkout blocker mapping, independent Loki review and Norns operating context. Fixture activity retains its internal evidence class.
+
+The acceptance matrix retains 13 P0 and 39 total criteria requiring internal coding. Provider commissioning and real revenue evidence remain separate.
