@@ -88,6 +88,18 @@ def challenge(item: dict) -> IndependentReviewIn:
                     "factory_evidence_conflict", "observations/factory_evidence_reconciliation",
                     "Reconcile the approval, artifact and learning receipts cited in this report.", critical=True,
                 ))
+            economic = sources.get("economic_reassessment")
+            proof = economic.get("verified_performance_claim") if isinstance(economic, dict) else None
+            if isinstance(proof, dict) and (
+                proof.get("verified_real_world_outcome") is not False
+                or proof.get("basis") != "ECONOMIC_PERFORMANCE_FIXTURE"
+                or ("period_net_minor" in economic and proof.get("period_net_minor") != economic["period_net_minor"])
+                or ("last_performance_id" in economic and proof.get("record_id") != economic["last_performance_id"])
+            ):
+                findings.append(_finding(
+                    "economic_fixture_contradiction", "observations/economic_reassessment",
+                    "The claimed performance disagrees with the cited fixture identity, basis, or net result.", critical=True,
+                ))
             treasury = sources.get("treasury_statement_evidence")
             if isinstance(treasury, dict):
                 accounts = treasury.get("accounts")

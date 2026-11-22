@@ -551,6 +551,19 @@ def test_statement_continuity_quarantine_and_fixture_asset_recovery(economic_cli
     assert challenge_claim(claim, jurisdiction="CA-ON").status_code == 409
     assert challenge_claim({**claim, "actual_accessible_funds_minor": 420}).status_code == 422
 
+    post(client, "mandates", mandate(today))
+    economic_row = post(client, "performance", performance(today, operating_receipts=94, operating_costs=55))
+    economic_claim = {"basis": "ECONOMIC_PERFORMANCE_FIXTURE", "record_id": economic_row["id"],
+                      "sha256": economic_row["sha256"], "period_net_minor": 39}
+    assessment = challenge_claim(economic_claim)
+    assert assessment.status_code == 200, assessment.text
+    assert assessment.json()["evaluations"][0]["verified_mimir_claims"] == [{
+        **economic_claim, "evidence_scope": "ECONOMIC_PERFORMANCE_FIXTURE_ONLY", "verified_real_world_outcome": False,
+    }]
+    assert challenge_claim({**economic_claim, "period_net_minor": 40}).status_code == 409
+    assert challenge_claim(economic_claim, jurisdiction="CA-ON").status_code == 409
+    assert challenge_claim({**economic_claim, "verified_real_world_outcome": True}).status_code == 422
+
     from app.loki.evidence import artifact_digest
     from app.pantheon.monitor import utc_now, verified_report
 
@@ -580,6 +593,17 @@ def test_statement_continuity_quarantine_and_fixture_asset_recovery(economic_cli
     with Session(engine) as db:
         result = run_assignment(db, "NJORD", now=at)
         report = verified_report(db, result["report_event_id"])
+        economic = report["observations"]["economic_reassessment"]
+        assert economic["verified_performance_claim"]["record_id"] == economic_claim["record_id"]
+        contradictory = {**report, "observations": {
+            **report["observations"], "economic_reassessment": {**economic, "period_net_minor": 40},
+        }}
+        reference = report["report_event_id"]
+        challenge_result = challenge({"artifact_type": "pantheon_report", "reference": reference,
+                                      "raw_input": contradictory,
+                                      "artifact_sha256": artifact_digest("pantheon_report", reference, contradictory)})
+        assert any(f.category == "economic_fixture_contradiction" and f.severity == "critical"
+                   for f in challenge_result.findings)
         treasury = report["observations"]["treasury_statement_evidence"]
         assert treasury["actual_accessible_funds_minor"] is None
         [business] = treasury["accounts"]
@@ -605,7 +629,6 @@ def test_statement_continuity_quarantine_and_fixture_asset_recovery(economic_cli
         account.head_id = last_head
         db.commit()
 
-    post(client, "mandates", mandate(today))
     software = {"asset_ref": "fixture:licensable-software", "kind": "SOFTWARE",
                 "rights": "REUSE_PERMITTED", "projected_liquidation_minor": 90, "obligations": []}
     approval, _ = queue_review(client, plan(action="EXIT", requested_additional_minor=0, assets=[software]), reconsider=True)

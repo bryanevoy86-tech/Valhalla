@@ -942,7 +942,7 @@ def verified_internal_outcomes(
 
 
 def verify_mimir_claims(db: Session, scope: dict, claims: Any) -> list[dict]:
-    """Verify exact scoped claims against the existing artifact and treasury stores."""
+    """Verify exact scoped claims against the operating evidence stores."""
     if (not isinstance(claims, list) or not 1 <= len(claims) <= 10
             or any(not isinstance(value, str) or not value for value in scope.values())):
         raise HTTPException(422, "Mimir claims require an exact scope and one to ten entries")
@@ -957,6 +957,11 @@ def verify_mimir_claims(db: Session, scope: dict, claims: Any) -> list[dict]:
 
             proof = verify_statement_claim(db, scope, claim)
             identity = ("statement", proof["statement_id"])
+        elif claim.get("basis") == "ECONOMIC_PERFORMANCE_FIXTURE":
+            from app.services.economic_control import verify_performance_claim
+
+            proof = verify_performance_claim(db, scope, claim)
+            identity = ("economic_performance", proof["record_id"])
         else:
             if (set(claim) != {"outcome_event_id", "artifact_sha256", "sales_verified"}
                     or not isinstance(claim["outcome_event_id"], str)

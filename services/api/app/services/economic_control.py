@@ -330,6 +330,31 @@ def assessment(db, operation, state, pool, today, plan: Plan | None = None, *, l
     }
 
 
+def verify_performance_claim(db, scope, claim):
+    """Bind a historical net result to the exact immutable performance fixture."""
+    if (set(claim) != {"basis", "record_id", "sha256", "period_net_minor"}
+            or not isinstance(claim["record_id"], str) or not isinstance(claim["sha256"], str)
+            or len(claim["sha256"]) != 64 or type(claim["period_net_minor"]) is not int):
+        raise HTTPException(422, "Invalid Mimir economic performance claim")
+    try:
+        record_id = UUID(claim["record_id"])
+    except ValueError:
+        raise HTTPException(422, "Invalid economic performance record ID") from None
+    if not ready(db):
+        raise HTTPException(503, "Economic performance proof unavailable")
+    operation = db.get(EconomicOperation, operation_key(scope))
+    row = db.get(EconomicRecord, record_id)
+    if (operation is None or operation.scope != scope or row is None or row.scope_key != operation.scope_key
+            or row.kind != "PERFORMANCE" or row.digest != claim["sha256"]):
+        raise HTTPException(409, "Mimir economic claim lacks matching scoped evidence")
+    data = Performance.model_validate(verified_payload(row))
+    if (data.scope.model_dump() != scope or data.id != record_id or data.evidence_class != "RECONCILIATION_FIXTURE"
+            or data.operating_receipts - data.operating_costs != claim["period_net_minor"]):
+        raise HTTPException(409, "Mimir economic claim contradicts the performance receipt")
+    return {**claim, "record_id": str(record_id), "evidence_scope": "ECONOMIC_PERFORMANCE_FIXTURE_ONLY",
+            "verified_real_world_outcome": False}
+
+
 def specialist_economics(db, role, scope, today):
     if role not in REVIEW_ROLES or not ready(db):
         return {}
@@ -352,6 +377,11 @@ def specialist_economics(db, role, scope, today):
         "MIMIR": ("last_performance_id", "cumulative_loss_minor"),
     }
     common.update({key: report[key] for key in role_fields[role]})
+    if state.performance is not None and role in {"HEIMDALL", "LOKI", "MIMIR", "NJORD"}:
+        row = db.get(EconomicRecord, state.performance.id)
+        claim = {"basis": "ECONOMIC_PERFORMANCE_FIXTURE", "record_id": str(state.performance.id),
+                 "sha256": row.digest, "period_net_minor": report["period_net_minor"]}
+        common["verified_performance_claim"] = verify_performance_claim(db, scope, claim)
     if role == "NORNS":
         common["forward_recovery"] = [
             {"opportunity_key": item["opportunity_key"], "declared_uncertainty_bp": item["uncertainty_bp"],
