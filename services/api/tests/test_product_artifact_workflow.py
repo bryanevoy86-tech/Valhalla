@@ -460,11 +460,39 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
     assert learned_response["observations"]["checkout_learning"][0]["fixture_contribution_minor"] == -175
     assert learned_response["observations"]["economic_reassessment"]["cumulative_loss_minor"] == 175
     next_tick = datetime.fromisoformat(next_cadence).replace(tzinfo=None) + timedelta(seconds=1)
+    pantheon_root = "/api/prime/pantheon"
+    forseti = client.post(f"{pantheon_root}/assignments", headers=owner, json={
+        **scope, "assignment_id": str(uuid4()), "role": "FORSETI",
+        "cadence_seconds": 120, "duration_seconds": 1800,
+    })
+    assert forseti.status_code == 201, forseti.text
+    review_at = datetime.fromisoformat(forseti.json()["next_due_at"]).replace(tzinfo=None) + timedelta(seconds=1)
+    with Session(engine) as db:
+        checked = run_assignment(db, "FORSETI", now=review_at)
+    check_path = f"{pantheon_root}/reports/{checked['report_event_id']}"
+    observations = client.get(check_path).json()["observations"]
+    assert observations["checkout_learning"][0]["status"] == "MATCHED_FIXTURE"
+    assert observations["factory_evidence_reconciliation"]["contradictions"] == []
+
     with Session(engine) as db:
         settlement = db.get(FoundryFixtureSettlement, "evt_fixture_capture")
         settlement.amount_minor += 1
         db.commit()
         assert run_due_schedule(db, now=next_tick)["status"] == "evaluated"
+        checked = run_assignment(db, "FORSETI", now=review_at + timedelta(seconds=120))
+    conflicted = client.get(f"{pantheon_root}/reports/{checked['report_event_id']}").json()
+    [checkout_evidence] = conflicted["observations"]["checkout_learning"]
+    assert checkout_evidence["status"] == "EVIDENCE_CONFLICT"
+    assert checkout_evidence["verified_commercial_revenue"] is False
+    from app.loki.evidence import artifact_digest
+
+    challenged_report = challenge({
+        "artifact_type": "pantheon_report", "reference": conflicted["report_event_id"],
+        "raw_input": conflicted,
+        "artifact_sha256": artifact_digest("pantheon_report", conflicted["report_event_id"], conflicted),
+    })
+    assert any(f.category == "checkout_evidence_conflict" and f.severity == "critical"
+               for f in challenged_report.findings)
     contradicted = client.get(f"{schedule_root}/{schedule_id}").json()["latest_report"]
     assert "CHECKOUT_EVIDENCE_CONFLICT" in contradicted["operating_reassessment"]["blockers"]
     assert contradicted["operating_reassessment"]["economic_reassessment"]["cumulative_loss_minor"] == 175

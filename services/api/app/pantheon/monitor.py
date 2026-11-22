@@ -198,13 +198,13 @@ def run_assignment(db: Session, role: str, *, now=None) -> dict:
         if role in DISCOVERY_ROLES:
             facts.update(discover(db, role, assignment.scope, now.date()))
         facts.update(market_observations(db, role, assignment.scope, now))
-        if role in {"MIMIR", "NJORD", "HEIMDALL"}:
+        if role in {"MIMIR", "NJORD", "HEIMDALL", "FORSETI", "LOKI", "TYR"}:
             from app.routers.foundry_checkout import scoped_checkout_learning
 
             checkout = scoped_checkout_learning(db, assignment.scope, outcomes)
             if checkout:
                 facts["checkout_learning"] = checkout
-        if role in {"TYR", "LOKI", "MIMIR", "HEIMDALL"}:
+        if role == "HEIMDALL" or LENSES[role] in {"approval_evidence", "counter_evidence", "verified_learning"}:
             facts["factory_evidence_reconciliation"] = scoped_factory_findings(db, assignment.scope, outcomes)
         facts.update(specialist_economics(db, role, assignment.scope, now.date()))
         report.update(status="observed", observations=facts)

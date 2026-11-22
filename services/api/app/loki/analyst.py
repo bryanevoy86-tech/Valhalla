@@ -71,6 +71,23 @@ def challenge(item: dict) -> IndependentReviewIn:
                 "A paper receipt does not establish executable liquidity or operator authority.",
                 critical=market.get("external_execution_authorized") is not False,
             ))
+        if isinstance(sources, dict):
+            checkout = sources.get("checkout_learning")
+            if isinstance(checkout, list) and any(
+                isinstance(row, dict) and (row.get("status") == "EVIDENCE_CONFLICT"
+                                           or row.get("verified_commercial_revenue") is not False)
+                for row in checkout
+            ):
+                findings.append(_finding(
+                    "checkout_evidence_conflict", "observations/checkout_learning",
+                    "Reconcile the scoped checkout receipts before relying on the report.", critical=True,
+                ))
+            factory = sources.get("factory_evidence_reconciliation")
+            if isinstance(factory, dict) and factory.get("contradictions"):
+                findings.append(_finding(
+                    "factory_evidence_conflict", "observations/factory_evidence_reconciliation",
+                    "Reconcile the approval, artifact and learning receipts cited in this report.", critical=True,
+                ))
         findings.append(_finding(
             "evidence_reassessment", "observations",
             "Reassess the specialist's scoped observations before relying on them for a material action.",
