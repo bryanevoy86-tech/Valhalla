@@ -933,3 +933,15 @@ Development commit `10f03df3e84294237c314302dce92d95f8218bbd` makes the private 
 The matrix records the remaining work in five fields for all 50 criteria. Scheduling and private acknowledgment gained verified evidence classifications for those specific slices. Production verification stays at zero. All 53 tasks and seven packages are preserved.
 
 Local complete regression passed 374 backend tests, 22 disposable PostgreSQL checks, eight Builder materializer checks and three simulated-browser voice checks. The route probe verified 36 critical routers and 95 required routes. The proof used isolated fixtures.
+
+## November 21 — P0 governance, fulfillment, treasury and professional intake
+
+| Development commit | Verified capability slice |
+|---|---|
+| `6b1c6b568dc953b35271d37b27ebb59cf37bb9f7` | Existing Legacy cannot be reset through provisioning. Failover pauses work unless the destination is eligible for the business, engine, jurisdiction and namespace. Containment at either end blocks movement. Factory identities stay pinned to their original Legacy. |
+| `f3ccfcfb803fa76d83b5838ca6d49763502e064d` | Private startup planner builds dated, sourced route/topic packets with owner-reported facts and questions. It rejects asserted professional signoff and retains the no-store response. |
+| `f3e504f3bab2215fbc407b8a4fe9a65e15e660bd` | Foundry rehearsal distinguishes capture, internal delivery and refund states. Exact event replay remains idempotent, duplicate cumulative refund events are refused, and post-delivery refunds surface owner follow-up. |
+| `a5e619cabc1cde52342957e3d7509bd39133f7e5` | Scoped treasury fixture contradictions reach Prime advisory HOLD. The rehearsal confirms that no accessible cash is inferred from the fixture. |
+| `2dd5acf162e2a5722b64fd1ea38be7e6b9e8a7d6` | Tax opinion bridge restricts access with existing server-side credentials and labels intake as unverified. Tests cover missing authorization and absent-schema refusal. Signed professional opinion verification remains open. |
+
+Local verification passed 374 backend tests, 22 disposable PostgreSQL checks, eight Builder materializer checks and three simulated-browser voice tests. The local route probe verified 36 critical routers and 95 required routes. The matrix retains 15 P0 criteria and 41 criteria overall with internal coding, and records the completed subrequirements. All 50 acceptance criteria, 53 tasks and seven packages are preserved.

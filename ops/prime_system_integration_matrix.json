@@ -92,7 +92,7 @@
         "owner_action": "Internal continuation is authorized under the standing development scope.",
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
-          "internal_coding": "Apply hard gates to remaining operational workers and dispatch lanes.",
+          "internal_coding": "Apply hard gates to remaining dispatch lanes. Legacy failover now pauses work for an incompatible destination, a local containment hold or a Factory identity bound to the original Legacy.",
           "insufficient_test_evidence": "Exercise denial, rollback and emergency recovery on each path.",
           "external_commissioning": "Rehearse long-running governance recovery.",
           "owner_or_professional_action": "Authorize scoped worker activation.",
@@ -255,8 +255,8 @@
         "owner_action": "Internal continuation is authorized under the standing development scope.",
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
-          "internal_coding": "Finish any missing scoped enrollment and runtime recovery paths identified by integration.",
-          "insufficient_test_evidence": "Prove isolation and namespace recovery across multiple registered Legacies.",
+          "internal_coding": "Finish safe post-recovery reactivation and group enrollment for the approved startup mandates. Fresh enrollment cannot reset an existing Legacy.",
+          "insufficient_test_evidence": "Local rehearsal verified recovery destination scope, failover namespace rebinding and duplicate provisioning refusal. Verify prolonged multi-Legacy restart and registry isolation.",
           "external_commissioning": "Commission the approved Legacy workers.",
           "owner_or_professional_action": "Select initial mandates and jurisdictions.",
           "conditional_expansion": "Additional regions follow viable operation."
@@ -554,8 +554,8 @@
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
-          "internal_coding": "Finish repeatable product fulfillment and exception handling.",
-          "insufficient_test_evidence": "Exercise refunds, disputed costs and independently matched settlements.",
+          "internal_coding": "Complete reviewed support resolution for post-delivery refunds and remaining product-specific fulfillment exceptions.",
+          "insufficient_test_evidence": "Fixture verifies order state, exact refund replay and refusal of a second event for the same cumulative refund. Test support closure, disputed costs and independently matched settlements.",
           "external_commissioning": "Run approved storefront lifecycle in staging.",
           "owner_or_professional_action": "Approve listings, rights, support and merchant scope.",
           "conditional_expansion": "Real sales follow commercial approval."
@@ -935,7 +935,7 @@
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
-          "internal_coding": "Extend domain coverage outside Factory, checkout and current evidence lenses.",
+          "internal_coding": "Extend domain coverage beyond the verified Factory, checkout, treasury and current evidence lenses. Treasury contradictions now reach Prime’s HOLD path.",
           "insufficient_test_evidence": "Exercise missing evidence, tenant isolation and end-to-end independent review for each domain.",
           "external_commissioning": "Verify separate model and worker behavior in approved staging.",
           "owner_or_professional_action": "Ratify role conflicts and authorize specifically scoped operation.",
@@ -1202,7 +1202,7 @@
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
-          "internal_coding": "Extend governed cash release and liability linkage beyond fixture statements.",
+          "internal_coding": "Extend governed cash release and liability linkage beyond fixture statements. Scheduled Prime advice now holds on contradictory statement-head evidence.",
           "insufficient_test_evidence": "Prove reconciliation using independent readback and reversal edge cases.",
           "external_commissioning": "Connect approved banking and accounting sandboxes.",
           "owner_or_professional_action": "Approve read-only scope and professional integration.",
@@ -1340,13 +1340,14 @@
       "priority": "P0",
       "source_paths": [
         "services/api/app/models/tax_interpretations.py",
+        "services/api/app/routers/tax_bridge.py",
         "legal/TRUST_RESIDENCY_OVERVIEW.md",
         "services/api/app/routers/governance_tyr.py",
         "services/api/app/services/owner_startup.py",
         "services/api/tests/test_saas_tenant_entitlements.py"
       ],
-      "source_observation": "Jurisdictional tax opinion schema and legal gate exist; legal and regulatory execution not verified.",
-      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "source_observation": "The private startup planner prepares jurisdiction-specific review packets. The tax opinion bridge restricts access and records unverified intake. Professional signoff and reliance await independent proof.",
+      "evidence_level": "SQLITE_INTEGRATION_TESTED",
       "production_verified": false,
       "acceptance_test": "Require source, date, jurisdiction, legal signoff and preserved opinion files; prohibit AI-led filing, fraud, tax evasion and unsupported tax treatments.",
       "depends_on": [
@@ -1356,11 +1357,11 @@
       "owner_external_authorization_required": true,
       "continuation": {
         "next_implementation": "Route a complete scoped fact packet for qualified review before reliance.",
-        "existing_test_evidence": "See SOURCE_INSPECTED_ONLY and source observations above, with exact releases in ops/CHANGE_LEDGER.md. Private owner startup comparison separates dated public fees, quote and estimate classes, unknowns, activation, reserves and runway.",
+        "existing_test_evidence": "The private startup API accepts dated, sourced owner facts and questions, refuses client-supplied signoff and returns no-store draft packets. The tax opinion bridge rejects unauthenticated access and fails closed without its table. Qualified review and reliance remain unverified.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
-          "internal_coding": "Complete scoped fact and question intake for qualified reviewers.",
+          "internal_coding": "The private dated fact-and-question packet is implemented. Complete verifiable signed-opinion provenance and reliance checks once the permitted professional workflow is specified.",
           "insufficient_test_evidence": "Verify scope, provenance and reliance limits of completed reviews.",
           "external_commissioning": "Commission approved private review process.",
           "owner_or_professional_action": "Licensed tax and legal professionals issue opinions before reliance.",

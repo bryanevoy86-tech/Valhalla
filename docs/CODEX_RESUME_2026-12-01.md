@@ -533,3 +533,14 @@ Call `dictateOwnerDraft` only from the parked owner's deliberate Dictate action 
 Prime Mimir claim inputs can now identify a business treasury statement fixture by its exact ID, digest, basis and closing amount. The report only verifies the declared scoped fixture. Actual accessible funds remain unverified. Fresh Legacy work admission also checks the same containment state as Factory and failover.
 
 Njord, Forseti, Mimir and Heimdall read recent business statement fixture heads in their exact scope. A missing or inconsistent head is reported as a contradiction for independent Loki review. Household balances stay outside this business evidence projection. Actual bank and accounting verification still requires approved external commissioning.
+
+
+### P0 continuation checkpoint
+
+Legacy reprovisioning cannot reset an existing instance. The scoped failover path verifies the recovery membership, engine, jurisdiction, policy sync, isolation and destination namespace before moving work. Factory work remains bound to its original Legacy. Contained or incompatible items stay paused. Safe post-recovery reactivation and startup mandate enrollment still require internal work.
+
+Foundry checkout rehearsals expose paid, delivered, partially refunded and fully refunded states. A refund after recorded delivery requires owner follow-up. Exact provider-fixture replay remains idempotent. Another event for the same cumulative refund is refused. Scheduled Prime advice now uses scoped treasury statement evidence and returns HOLD on a contradiction. The fixture cannot establish cash availability.
+
+The existing private startup comparison prepares dated, sourced fact-and-question packets for qualified review. Stored tax opinions remain unverified intake. Obtain the independent review and any owner authorization before reliance. Use the qualified professional’s approved workflow to validate provenance and signed-opinion evidence. Draft packets alone establish neither signoff nor authority.
+
+Fifteen P0 criteria still contain internal coding. These batches completed narrower requirements within those rows. Commissioning still requires approved Legacy runtime recovery and owner accounts, independently sourced provider and financial receipts, licensed professional participation and scoped staged rehearsal. Real allocation and commercial expansion remain conditional.
