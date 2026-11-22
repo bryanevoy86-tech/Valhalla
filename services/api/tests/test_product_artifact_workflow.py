@@ -635,6 +635,15 @@ def rehearse_checkout(client, engine, monkeypatch, owner, action_id, price, scop
     assert apply(refund, "evt_fixture_refund_one", price // 2).json() == partial.json()
     assert apply(refund, "evt_fixture_duplicate_total", price // 2).status_code == 409
     assert apply(refund, "evt_fixture_over_refund", price + 1).status_code == 409
+    support = f"{root}/orders/{order_id}/support-resolution"
+    resolution = {"expected_refunded_minor": price // 2, "resolution": "Reviewed the partial refund fixture."}
+    assert client.post(support, json=resolution).status_code == 401
+    closed = client.post(support, headers=owner, json=resolution)
+    assert closed.status_code == 200, closed.text
+    assert closed.json()["owner_followup_required"] is False
+    assert closed.json()["support_resolution"]["external_customer_action_verified"] is False
+    assert client.post(support, headers=owner, json=resolution).json() == closed.json()
+    assert client.post(support, headers=owner, json={**resolution, "resolution": "Different review note."}).status_code == 409
     monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "true")
     assert apply(refund, "evt_fixture_refund_final", price).status_code == 200
     monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "false")
@@ -643,6 +652,15 @@ def rehearse_checkout(client, engine, monkeypatch, owner, action_id, price, scop
     assert final["net_minor"] == 0
     assert final["checkout_state"] == "REFUNDED" and final["owner_followup_required"] is True
     assert final["verified_commercial_revenue"] is False
+    assert final["support_resolution"] is None
+    assert client.post(support, headers=owner, json=resolution).status_code == 409
+    monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "true")
+    final_closed = client.post(support, headers=owner, json={**resolution, "expected_refunded_minor": price})
+    monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "false")
+    assert final_closed.status_code == 200, final_closed.text
+    assert final_closed.json()["owner_followup_required"] is False
+    assert final_closed.json()["support_resolution"]["event_id"] != closed.json()["support_resolution"]["event_id"]
+
     assert summary()["rehearsed_net_minor"] == 0
     assert summary()["rehearsed_contribution_minor"] == -175
     assert summary()["actual_profit_minor"] is None

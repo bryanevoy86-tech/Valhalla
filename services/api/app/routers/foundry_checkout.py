@@ -129,6 +129,82 @@ def record_cost(order_id: UUID, request: CostIn, db: Session = Depends(get_db)):
     return result
 
 
+SUPPORT_EVENT = "FOUNDRY_REFUND_SUPPORT_RESOLVED"
+
+
+class SupportResolutionIn(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    expected_refunded_minor: int = Field(strict=True, gt=0, le=10_000_000)
+    resolution: str = Field(min_length=10, max_length=500)
+
+
+def _support_event_id(row):
+    return f"FOUNDRY-SUPPORT-{row.id}-{row.refunded_minor}"
+
+
+def _support_resolution(db, order):
+    if not order.refunded_minor or order.delivered_at is None:
+        return None
+    if not inspect(db.connection()).has_table(LegacyOrchestrationEvent.__tablename__):
+        return None
+    event_id = _support_event_id(order)
+    event = db.scalar(select(LegacyOrchestrationEvent).filter_by(event_id=event_id))
+    if event is None:
+        return None
+    payload = _json(event.payload_json, None)
+    if not isinstance(payload, dict):
+        raise HTTPException(409, "Support resolution payload is unavailable")
+    legacy_id = db.scalar(select(LegacyInstanceWorkItem.legacy_instance_id).filter_by(action_id=order.action_id))
+    checksum = payload.pop("sha256", None)
+    if (event.event_type != SUPPORT_EVENT or legacy_id is None or event.legacy_instance_id != legacy_id
+            or payload.get("evidence_scope") != "INTERNAL_REHEARSAL_ONLY"
+            or payload.get("order_id") != str(order.id)
+            or payload.get("action_id") != order.action_id
+            or payload.get("refunded_minor") != order.refunded_minor
+            or payload.get("listing_sha256") != order.listing_sha256
+            or payload.get("artifact_sha256") != order.artifact_sha256
+            or checksum != artifact_digest("foundry_support", event_id, payload)):
+        raise HTTPException(409, "Support resolution evidence failed integrity")
+    return {"event_id": event_id, "refunded_minor": order.refunded_minor,
+            "status": "RESOLVED_INTERNAL_REHEARSAL", "external_customer_action_verified": False}
+
+
+@router.post("/orders/{order_id}/support-resolution", dependencies=owner)
+def resolve_refund_support(order_id: UUID, payload: SupportResolutionIn, db: Session = Depends(get_db)):
+    order = db.get(FoundryRehearsalOrder, order_id, with_for_update=True)
+    if order is None:
+        raise HTTPException(404, "Rehearsal order not found")
+    if (order.delivered_at is None or order.refunded_minor != payload.expected_refunded_minor):
+        raise HTTPException(409, "A post-delivery refund at the reviewed total is required")
+    work = db.scalar(select(LegacyInstanceWorkItem).filter_by(action_id=order.action_id))
+    if work is None:
+        raise HTTPException(409, "Rehearsal order scope unavailable")
+    scope = {key: getattr(work, key) for key in ("legacy_instance_id", "business_id", "engine_id", "jurisdiction")}
+    _check_legacy(db, **scope)
+    # This records historical review and can run during economic containment or emergency stop.
+    result = _view(db, order)
+    event_id = _support_event_id(order)
+    if result["support_resolution"] is not None:
+        event = db.scalar(select(LegacyOrchestrationEvent).filter_by(event_id=event_id))
+        if _json(event.payload_json, {}).get("resolution") != payload.resolution:
+            raise HTTPException(409, "The reviewed refund already has a different support resolution")
+        return result
+    if not inspect(db.connection()).has_table(LegacyOrchestrationEvent.__tablename__):
+        raise HTTPException(503, "Foundry support evidence schema unavailable")
+    evidence = {
+        "order_id": str(order.id), "action_id": order.action_id, "refunded_minor": order.refunded_minor,
+        "listing_sha256": order.listing_sha256, "artifact_sha256": order.artifact_sha256,
+        "resolution": payload.resolution, "evidence_scope": "INTERNAL_REHEARSAL_ONLY",
+    }
+    evidence["sha256"] = artifact_digest("foundry_support", event_id, evidence)
+    _event(db, event_id=event_id, legacy_instance_id=work.legacy_instance_id, event_type=SUPPORT_EVENT,
+           message="Owner recorded support resolution for reconciled rehearsal refund", payload=evidence)
+    db.flush()
+    result = _view(db, order)
+    db.commit()
+    return result
+
+
 def _view(db, row):
     captured, refunded = db.execute(select(
         func.coalesce(func.sum(FoundryRehearsalPayment.captured_delta), 0),
@@ -146,6 +222,7 @@ def _view(db, row):
         checkout_state = "PAID_AWAITING_DELIVERY" if captured else "AWAITING_CAPTURE"
     costs = _rehearsal_costs(db, row)
     expense = sum(item["amount_minor"] for item in costs)
+    support = _support_resolution(db, row)
     return {
         "order_id": row.id, "currency": "CAD", "price_minor": row.amount_minor,
         "basis": "SIGNED_LOCAL_FIXTURE", "captured_minor": captured, "refunded_minor": refunded,
@@ -153,7 +230,8 @@ def _view(db, row):
         "fixture_contribution_minor": captured - refunded - expense if costs else None,
         "actual_profit_minor": None,
         "checkout_state": checkout_state,
-        "owner_followup_required": bool(refunded and row.delivered_at is not None),
+        "owner_followup_required": bool(refunded and row.delivered_at is not None and support is None),
+        "support_resolution": support,
         "net_minor": captured - refunded, "internal_delivery_recorded": row.delivered_at is not None,
         "verified_commercial_revenue": False, "external_delivery_authorized": False,
     }

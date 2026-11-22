@@ -32,6 +32,7 @@ MANDATORY_ENDPOINTS = {
     "economic_portfolio_exposure": ("GET", "/api/prime/economy/portfolio-exposure"),
     "foundry_source_intake": ("POST", "/api/prime/foundry/intake"),
     "foundry_fixture_settlement": ("POST", "/api/prime/foundry/rehearsal/orders/{order_id}/settlement-fixtures"),
+    "foundry_support_resolution": ("POST", "/api/prime/foundry/rehearsal/orders/{order_id}/support-resolution"),
     "foundry_rehearsal_cost": ("POST", "/api/prime/foundry/rehearsal/orders/{order_id}/cost-fixtures"),
     "treasury_statement_fixture": ("POST", "/api/governance/floor/treasury/statement-fixtures"),
     "economic_containment": ("POST", "/api/prime/economy/containment"),
