@@ -68,6 +68,14 @@ def _listing(db, action_id):
     return receipt, artifact, data["price_cents_cad"], scope
 
 
+def _verify_order_listing(db, order):
+    receipt, artifact, price, _ = _listing(db, order.action_id)
+    if (receipt["sha256"], artifact.id, artifact.sha256, price) != (
+        order.listing_sha256, order.artifact_id, order.artifact_sha256, order.amount_minor,
+    ):
+        raise HTTPException(409, "Product evidence changed")
+
+
 COST_EVENT = "FOUNDRY_ORDER_COST_FIXTURE"
 
 
@@ -143,7 +151,7 @@ def _support_event_id(row):
 
 
 def _support_resolution(db, order):
-    if not order.refunded_minor or order.delivered_at is None:
+    if not order.refunded_minor:
         return None
     if not inspect(db.connection()).has_table(LegacyOrchestrationEvent.__tablename__):
         return None
@@ -174,8 +182,8 @@ def resolve_refund_support(order_id: UUID, payload: SupportResolutionIn, db: Ses
     order = db.get(FoundryRehearsalOrder, order_id, with_for_update=True)
     if order is None:
         raise HTTPException(404, "Rehearsal order not found")
-    if (order.delivered_at is None or order.refunded_minor != payload.expected_refunded_minor):
-        raise HTTPException(409, "A post-delivery refund at the reviewed total is required")
+    if order.refunded_minor != payload.expected_refunded_minor:
+        raise HTTPException(409, "A reconciled refund at the reviewed total is required")
     work = db.scalar(select(LegacyInstanceWorkItem).filter_by(action_id=order.action_id))
     if work is None:
         raise HTTPException(409, "Rehearsal order scope unavailable")
@@ -205,6 +213,89 @@ def resolve_refund_support(order_id: UUID, payload: SupportResolutionIn, db: Ses
     return result
 
 
+FULFILLMENT_EVENT = "FOUNDRY_FULFILLMENT_EXCEPTION"
+
+
+class FulfillmentExceptionIn(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    event_id: UUID
+    previous_event_id: UUID | None = None
+    action: Literal["HOLD", "RELEASE_FOR_RETRY"]
+    reason: str = Field(min_length=10, max_length=500)
+
+
+def _order_evidence(order):
+    return {"order_id": str(order.id), "action_id": order.action_id, "listing_sha256": order.listing_sha256,
+            "artifact_sha256": order.artifact_sha256}
+
+
+def _fulfillment_exception(db, order):
+    if not inspect(db.connection()).has_table(LegacyOrchestrationEvent.__tablename__):
+        return None
+    event = db.scalar(select(LegacyOrchestrationEvent).where(
+        LegacyOrchestrationEvent.event_type == FULFILLMENT_EVENT,
+        LegacyOrchestrationEvent.event_id.startswith(f"FOUNDRY-FUL-{order.id.hex}-"),
+    ).order_by(LegacyOrchestrationEvent.id.desc()).limit(1))
+    if event is None:
+        return None
+    stored = _json(event.payload_json, None)
+    if not isinstance(stored, dict):
+        raise HTTPException(409, "Fulfillment exception evidence is unavailable")
+    checksum = stored.pop("sha256", None)
+    legacy_id = db.scalar(select(LegacyInstanceWorkItem.legacy_instance_id).filter_by(action_id=order.action_id))
+    if (legacy_id is None or event.legacy_instance_id != legacy_id
+            or any(stored.get(key) != value for key, value in _order_evidence(order).items())
+            or stored.get("action") not in {"HOLD", "RELEASE_FOR_RETRY"}
+            or checksum != artifact_digest("foundry_fulfillment_exception", event.event_id, stored)):
+        raise HTTPException(409, "Fulfillment exception evidence failed integrity")
+    if order.refunded_minor >= order.amount_minor:
+        status = "CLOSED_BY_REFUND"
+    else:
+        status = "HELD" if stored["action"] == "HOLD" else "RETRY_REVIEWED"
+    return {"event_id": stored["event_id"], "status": status, "basis": "INTERNAL_REHEARSAL_ONLY"}
+
+
+@router.post("/orders/{order_id}/fulfillment-exception", dependencies=owner)
+def review_fulfillment_exception(order_id: UUID, payload: FulfillmentExceptionIn, db: Session = Depends(get_db)):
+    order = db.get(FoundryRehearsalOrder, order_id, with_for_update=True)
+    if order is None:
+        raise HTTPException(404, "Rehearsal order not found")
+    if not inspect(db.connection()).has_table(LegacyOrchestrationEvent.__tablename__):
+        raise HTTPException(503, "Foundry fulfillment evidence schema unavailable")
+    work = db.scalar(select(LegacyInstanceWorkItem).filter_by(action_id=order.action_id))
+    if work is None:
+        raise HTTPException(409, "Rehearsal order scope unavailable")
+    _check_legacy(db, **{key: getattr(work, key) for key in ("legacy_instance_id", "business_id", "engine_id", "jurisdiction")})
+    current = _view(db, order)
+    event_id = f"FOUNDRY-FUL-{order.id.hex}-{payload.event_id.hex}"
+    evidence = {**_order_evidence(order), **payload.model_dump(mode="json")}
+    evidence["sha256"] = artifact_digest("foundry_fulfillment_exception", event_id, evidence)
+    earlier = db.scalar(select(LegacyOrchestrationEvent).filter_by(event_id=event_id))
+    if earlier is not None:
+        if (earlier.event_type != FULFILLMENT_EVENT or earlier.legacy_instance_id != work.legacy_instance_id
+                or _json(earlier.payload_json, {}) != evidence):
+            raise HTTPException(409, "Fulfillment event ID already used")
+        return current
+    state = current["fulfillment_exception"]
+    prior_id = str(payload.previous_event_id) if payload.previous_event_id else None
+    if prior_id != (state["event_id"] if state else None):
+        raise HTTPException(409, "Review requires the current fulfillment exception receipt")
+    if order.captured_minor != order.amount_minor or order.delivered_at is not None or order.refunded_minor >= order.amount_minor:
+        raise HTTPException(409, "Only captured, undelivered orders with a balance can enter fulfillment review")
+    if (payload.action == "RELEASE_FOR_RETRY") != bool(state and state["status"] == "HELD"):
+        raise HTTPException(409, "Review must alternate hold and release transitions")
+    if payload.action == "RELEASE_FOR_RETRY":
+        if order.refunded_minor:
+            raise HTTPException(409, "Partially refunded orders require refund support review")
+        _verify_order_listing(db, order)
+    _event(db, event_id=event_id, legacy_instance_id=work.legacy_instance_id, event_type=FULFILLMENT_EVENT,
+           message="Owner reviewed a held fulfillment in the private rehearsal", payload=evidence)
+    db.flush()
+    result = _view(db, order)
+    db.commit()
+    return result
+
+
 def _view(db, row):
     captured, refunded = db.execute(select(
         func.coalesce(func.sum(FoundryRehearsalPayment.captured_delta), 0),
@@ -223,6 +314,7 @@ def _view(db, row):
     costs = _rehearsal_costs(db, row)
     expense = sum(item["amount_minor"] for item in costs)
     support = _support_resolution(db, row)
+    exception = _fulfillment_exception(db, row)
     return {
         "order_id": row.id, "currency": "CAD", "price_minor": row.amount_minor,
         "basis": "SIGNED_LOCAL_FIXTURE", "captured_minor": captured, "refunded_minor": refunded,
@@ -230,8 +322,10 @@ def _view(db, row):
         "fixture_contribution_minor": captured - refunded - expense if costs else None,
         "actual_profit_minor": None,
         "checkout_state": checkout_state,
-        "owner_followup_required": bool(refunded and row.delivered_at is not None and support is None),
-        "support_resolution": support,
+        "owner_followup_required": bool(
+            (refunded and support is None) or (exception and exception["status"] == "HELD")
+        ),
+        "support_resolution": support, "fulfillment_exception": exception,
         "net_minor": captured - refunded, "internal_delivery_recorded": row.delivered_at is not None,
         "verified_commercial_revenue": False, "external_delivery_authorized": False,
     }
@@ -286,11 +380,10 @@ def record_delivery(order_id: UUID, db: Session = Depends(get_db)):
         raise HTTPException(404, "Rehearsal order not found")
     if order.captured_minor != order.amount_minor or order.refunded_minor:
         raise HTTPException(409, "An intact signed capture fixture is required")
-    receipt, artifact, price, _ = _listing(db, order.action_id)
-    if (receipt["sha256"], artifact.id, artifact.sha256, price) != (
-        order.listing_sha256, order.artifact_id, order.artifact_sha256, order.amount_minor,
-    ):
-        raise HTTPException(409, "Product evidence changed")
+    current = _view(db, order)
+    if current["fulfillment_exception"] and current["fulfillment_exception"]["status"] == "HELD":
+        raise HTTPException(409, "Fulfillment is held for owner review")
+    _verify_order_listing(db, order)
     if order.delivered_at is None:
         order.delivered_at = datetime.now(timezone.utc)
     result = _view(db, order)
@@ -342,11 +435,7 @@ def apply_fixture(event: tuple = Depends(_signed_fixture), db: Session = Depends
     if kind == "payment_intent.succeeded":
         if amount != order.amount_minor or order.captured_minor:
             raise HTTPException(409, "Fixture capture does not match the outstanding order amount")
-        listing, asset, price, _ = _listing(db, order.action_id)
-        if (listing["sha256"], asset.id, asset.sha256, price) != (
-            order.listing_sha256, order.artifact_id, order.artifact_sha256, order.amount_minor,
-        ):
-            raise HTTPException(409, "Checkout evidence changed before capture")
+        _verify_order_listing(db, order)
         captured = amount
         order.captured_minor = amount
     else:

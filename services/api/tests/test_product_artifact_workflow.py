@@ -617,6 +617,24 @@ def rehearse_checkout(client, engine, monkeypatch, owner, action_id, price, scop
     assert summary()["rehearsed_conversions"] == 1
     assert summary()["rehearsed_net_minor"] == price
     assert apply(capture, "evt_fixture_capture", price + 5).status_code == 409
+    exception = f"{root}/orders/{order_id}/fulfillment-exception"
+    hold = {"event_id": str(uuid4()), "action": "HOLD", "reason": "Review an internal fulfillment exception."}
+    assert client.post(exception, json=hold).status_code == 401
+    held = client.post(exception, headers=owner, json=hold)
+    assert held.status_code == 200, held.text
+    assert held.json()["fulfillment_exception"]["status"] == "HELD"
+    assert held.json()["owner_followup_required"] is True
+    assert client.post(f"{root}/orders/{order_id}/delivery", headers=owner).status_code == 409
+    release = {"event_id": str(uuid4()), "action": "RELEASE_FOR_RETRY", "reason": "Internal artifact reviewed and ready."}
+    assert client.post(exception, headers=owner, json=release).status_code == 409
+    release["previous_event_id"] = hold["event_id"]
+    monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "true")
+    assert client.post(exception, headers=owner, json=release).status_code == 503
+    monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "false")
+    released = client.post(exception, headers=owner, json=release)
+    assert released.status_code == 200, released.text
+    assert released.json()["fulfillment_exception"]["status"] == "RETRY_REVIEWED"
+    assert client.post(exception, headers=owner, json=release).json() == released.json()
     delivered = client.post(f"{root}/orders/{order_id}/delivery", headers=owner)
     assert delivered.status_code == 200, delivered.text
     assert delivered.json()["internal_delivery_recorded"]

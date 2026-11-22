@@ -39,6 +39,24 @@ def test_trial_is_bound_to_authenticated_subscriber_and_tenant(deal_client, monk
     assert plan.status_code == 200, plan.text
     assert client.post("/saas/subscriptions", json={"user_id": subject_id, "plan_id": plan.json()["id"]}).status_code == 401
 
+    fake = {"user_id": subject_id, "plan_id": plan.json()["id"], "provider": "stripe",
+            "provider_sub_id": " PI_FIXTURE_refunded_order "}
+    assert client.post("/saas/subscriptions", headers=owner, json=fake).status_code == 409
+    # Previously persisted fixture IDs must remain visible for review without granting access.
+    with Session(engine) as db:
+        contaminated = Subscription(**fake)
+        db.add(contaminated)
+        db.commit()
+        contaminated_id = contaminated.id
+    check = client.get("/saas/access-check", params={"user_id": subject_id, "module_key": "wholesale_engine"})
+    assert check.status_code == 200 and check.json()["has_access"] is False
+    assert client.patch(f"/saas/subscriptions/{contaminated_id}", headers=owner,
+                        json={"status": "active"}).status_code == 409
+    assert client.patch(f"/saas/subscriptions/{contaminated_id}", headers=owner,
+                        json={"status": "cancelled"}).status_code == 200
+    assert client.patch(f"/saas/subscriptions/{contaminated_id}", headers=owner,
+                        json={"provider_sub_id": None}).status_code == 409
+
     trial = {
         "entitlement_id": str(uuid4()), "tenant_id": str(uuid4()), "subject_id": subject_id, "plan_id": plan.json()["id"],
         "expires_at": (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat(), "modules": ["wholesale_engine"],
