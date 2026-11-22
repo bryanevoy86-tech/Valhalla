@@ -22,6 +22,7 @@ MANDATORY_ENDPOINTS = {
     "pantheon_assign": ("POST", "/api/prime/pantheon/assignments"),
     "pantheon_challenge": ("POST", "/api/prime/pantheon/reports/{event_id}/challenge"),
     "provider_stage_probe": ("POST", "/api/prime/provider-intelligence/stage-probes"),
+    "tax_opinion_provenance": ("POST", "/tax-bridge/opinions/{opinion_id}/provenance"),
     "market_forecast": ("POST", "/api/prime/norns/market/forecasts"),
     "economic_assessment": ("POST", "/api/prime/economy/assessment"),
     "weweb_owner_message": ("POST", "/api/weweb/owner-conversations/{conversation_id}/turns"),

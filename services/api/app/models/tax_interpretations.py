@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, String, Text
+from sqlalchemy import Column, DateTime, JSON, String, Text
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 
 from app.core.db import Base
@@ -26,8 +26,8 @@ class TaxOpinion(Base):
     case_id = Column(UUID(as_uuid=True), nullable=True)  # link into dual-god case if needed
 
     summary = Column(Text, nullable=True)
-    details = Column(JSONB, nullable=True)  # structured explanation
+    details = Column(JSON().with_variant(JSONB(), "postgresql"), nullable=True)  # structured explanation
 
     # "safe", "moderate", "aggressive", etc.
     risk_level = Column(String(20), nullable=True)
-    flags = Column(JSONB, nullable=True)  # e.g. {"cra_audit_risk": "low", "documentation_needed": [...]}
+    flags = Column(JSON().with_variant(JSONB(), "postgresql"), nullable=True)  # e.g. {"cra_audit_risk": "low", "documentation_needed": [...]}

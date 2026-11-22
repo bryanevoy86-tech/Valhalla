@@ -2,21 +2,33 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy import inspect, select
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
 from app.core.dependencies import require_prime_control_key
 from app.services.prime_business_execution import require_owner_mandate_key
+from app.services.tax_opinion_provenance import PROVENANCE_KEY, current_provenance, verify_provenance
 from app.models.tax_interpretations import TaxOpinion
 from app.schemas.tax_interpretations import (
     TaxOpinionCreate,
     TaxOpinionRead,
+    TaxOpinionProvenanceIn,
 )
 
 def _intake_flags(flags):
-    return {**(flags or {}), "professional_signoff_verified": False, "reliance_authorized": False}
+    public_flags = {key: value for key, value in (flags or {}).items()
+                    if key not in {PROVENANCE_KEY, "professional_opinion_provenance"}}
+    return {**public_flags, "professional_signoff_verified": False, "reliance_authorized": False}
+
+
+def _opinion_read(db, opinion):
+    flags = _intake_flags(opinion.flags)
+    provenance = current_provenance(db, opinion)
+    if provenance:
+        flags["professional_opinion_provenance"] = provenance
+    return TaxOpinionRead.model_validate(opinion).model_copy(update={"flags": flags})
 
 
 def require_opinion_schema(db: Session = Depends(get_db)):
@@ -31,8 +43,10 @@ router = APIRouter(prefix="/tax-bridge", tags=["Tax Interpretation Engine"],
 @router.post("/opinions", response_model=TaxOpinionRead, dependencies=[Depends(require_owner_mandate_key)])
 def create_tax_opinion(
     payload: TaxOpinionCreate,
+    response: Response,
     db: Session = Depends(get_db),
 ):
+    response.headers["Cache-Control"] = "no-store"
     opinion = TaxOpinion(
         jurisdiction=payload.jurisdiction,
         tax_year=payload.tax_year,
@@ -69,18 +83,41 @@ def create_tax_opinion(
 
     db.commit()
     db.refresh(opinion)
-    return TaxOpinionRead.model_validate(opinion).model_copy(update={"flags": _intake_flags(opinion.flags)})
+    return _opinion_read(db, opinion)
 
 
 @router.get("/opinions/{opinion_id}", response_model=TaxOpinionRead)
 def get_tax_opinion(
     opinion_id: UUID,
+    response: Response,
     db: Session = Depends(get_db),
 ):
+    response.headers["Cache-Control"] = "no-store"
     result = db.execute(
         select(TaxOpinion).where(TaxOpinion.id == opinion_id)
     )
     opinion = result.scalar_one_or_none()
     if not opinion:
         raise HTTPException(status_code=404, detail="Tax opinion not found")
-    return TaxOpinionRead.model_validate(opinion).model_copy(update={"flags": _intake_flags(opinion.flags)})
+    return _opinion_read(db, opinion)
+
+
+
+@router.post("/opinions/{opinion_id}/provenance", response_model=TaxOpinionRead,
+             dependencies=[Depends(require_owner_mandate_key)])
+def record_opinion_provenance(opinion_id: UUID, payload: TaxOpinionProvenanceIn, response: Response,
+                              db: Session = Depends(get_db)):
+    response.headers["Cache-Control"] = "no-store"
+    opinion = db.get(TaxOpinion, opinion_id, with_for_update=True)
+    if opinion is None:
+        raise HTTPException(404, "Tax opinion not found")
+    verify_provenance(db, opinion, payload, lock=True)
+    packet = payload.model_dump(mode="json")
+    existing = (opinion.flags or {}).get(PROVENANCE_KEY)
+    if existing is not None and existing != packet:
+        raise HTTPException(409, "Opinion already has different provenance. Create a new superseding opinion.")
+    if existing is None:
+        opinion.flags = {**_intake_flags(opinion.flags), PROVENANCE_KEY: packet}
+        db.commit()
+        db.refresh(opinion)
+    return _opinion_read(db, opinion)
