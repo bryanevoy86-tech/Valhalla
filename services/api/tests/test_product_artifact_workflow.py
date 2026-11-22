@@ -4,6 +4,8 @@ import json
 from datetime import date, datetime, timedelta
 from uuid import UUID, uuid4
 
+from fastapi import HTTPException
+import pytest
 from sqlalchemy.orm import Session
 
 from app.god.models import GodReviewCase, GodReviewEvent
@@ -369,6 +371,16 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
     assert decision_turn["evidence"]["independent_loki"]["reconsideration_status"] == "accept_risk"
     assert decision_turn["execution_authorized"] is False
     assert decision_turn["evidence"]["reviewed_specialist_reports"] == advice["independent_loki"]["reviewed_specialist_reports"]
+    behavioural_review = decision_turn["evidence"]["reviewed_consumer_research"]
+    assert behavioural_review == advice["independent_loki"]["reviewed_consumer_research"]
+    assert behavioural_review["sha256"] == aggregate["sha256"] and not behavioural_review["settled_conversion_verified"]
+    from app.services.foundry_discovery import require_current_candidate
+
+    with Session(engine) as db:
+        forged = {**proposal, "specialist_inputs": {**proposal["specialist_inputs"],
+                  "consumer_research": {**aggregate, "causality_verified": True}}}
+        with pytest.raises(HTTPException, match="source-bound candidate"):
+            require_current_candidate(db, forged, scope, today)
     assignment_id = UUID(source_report["assignment_id"])
     with Session(engine) as db:
         db.get(SpecialistAssignment, assignment_id).scope = {**scope, "jurisdiction": "CA-ON"}
@@ -601,8 +613,6 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
     performance_claim = {"basis": "ECONOMIC_PERFORMANCE_FIXTURE", "record_id": booked_checkout["id"],
                          "sha256": booked_checkout["sha256"], "period_net_minor": -175}
     from app.services.prime_business_execution import verify_mimir_claims
-    from fastapi import HTTPException
-    import pytest
 
     assert client.get(proof_route).status_code == 409
     with Session(engine) as db:

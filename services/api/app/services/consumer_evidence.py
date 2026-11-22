@@ -116,6 +116,12 @@ def build_record(row, evidence, scope, study, today):
     return {**body, "sha256": artifact_digest("foundry_consumer_evidence", event_id(row.id), body)}
 
 
+def reviewed_summary(research):
+    return {key: research[key] for key in (
+        "sha256", "confidence", "price_signal", "research_actions", "settled_conversion_verified",
+    )}
+
+
 def read_consumer_evidence(db, row, evidence, scope, today):
     if not inspect(db.connection()).has_table(LegacyOrchestrationEvent.__tablename__):
         return None

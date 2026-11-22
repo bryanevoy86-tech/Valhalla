@@ -138,6 +138,17 @@ def prime_decision_context(db: Session, decision_id: UUID) -> dict:
         if evidence != linked.get("reviewed_specialist_reports"):
             raise HTTPException(409, "Specialist evidence differs from the reviewed decision")
         checked["reviewed_specialist_reports"] = evidence
+    if "consumer_research" in inputs:
+        from datetime import datetime, timezone
+
+        from app.services.consumer_evidence import reviewed_summary
+        from app.services.foundry_discovery import require_current_candidate
+
+        require_current_candidate(db, proposal, scope, datetime.now(timezone.utc).date(), advisory_only=True)
+        expected = reviewed_summary(inputs["consumer_research"])
+        if expected != linked.get("reviewed_consumer_research"):
+            raise HTTPException(409, "Consumer evidence differs from the reviewed decision")
+        checked["reviewed_consumer_research"] = expected
 
     return {
         **checked,

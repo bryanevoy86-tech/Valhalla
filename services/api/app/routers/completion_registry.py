@@ -2712,6 +2712,10 @@ def _require_independent_review(db: Session, opportunity: UniversalOpportunityIn
         "legacy_instance_id": opportunity.legacy, "jurisdiction": opportunity.jurisdiction,
         "engine_id": opportunity.engine_id, "business_id": opportunity.specialist_inputs.get("business_id"),
     }, datetime.now(timezone.utc).date())
+    if "consumer_research" in opportunity.specialist_inputs:
+        from app.services.consumer_evidence import reviewed_summary
+
+        result["reviewed_consumer_research"] = reviewed_summary(opportunity.specialist_inputs["consumer_research"])
     if "pantheon_report_ids" in opportunity.specialist_inputs:
         from app.loki.specialist_review import require_reviewed_reports
 

@@ -88,11 +88,10 @@ def prepare_candidate(report_id: str, evidence_id: UUID, db: Session = Depends(g
     _check_legacy(db, **report["scope"])
     payload = checked_evidence(row, report["scope"], datetime.now(timezone.utc).date(), db=db)
     research = read_consumer_evidence(db, row, payload, report["scope"], datetime.now(timezone.utc).date())
-    if research is not None:
-        signal = next(signal for signal in report["observations"]["foundry_signals"]
-                      if signal["evidence_id"] == str(evidence_id) and signal["sha256"] == row.digest)
-        if signal.get("consumer_research") != research:
-            raise HTTPException(409, "Run a current specialist report before using consumer research")
+    signal = next(signal for signal in report["observations"]["foundry_signals"]
+                  if signal["evidence_id"] == str(evidence_id) and signal["sha256"] == row.digest)
+    if signal.get("consumer_research") != research:
+        raise HTTPException(409, "Run a current specialist report before using consumer research")
     return {"proposal": {**candidate_fields(row, payload, report_id, consumer_research=research), "persist_decision": False},
             "state": "RESEARCH_CANDIDATE", "execution_authorized": False}
 
