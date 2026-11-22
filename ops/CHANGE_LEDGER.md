@@ -945,3 +945,13 @@ Local complete regression passed 374 backend tests, 22 disposable PostgreSQL che
 | `2dd5acf162e2a5722b64fd1ea38be7e6b9e8a7d6` | Tax opinion bridge restricts access with existing server-side credentials and labels intake as unverified. Tests cover missing authorization and absent-schema refusal. Signed professional opinion verification remains open. |
 
 Local verification passed 374 backend tests, 22 disposable PostgreSQL checks, eight Builder materializer checks and three simulated-browser voice tests. The local route probe verified 36 critical routers and 95 required routes. The matrix retains 15 P0 criteria and 41 criteria overall with internal coding, and records the completed subrequirements. All 50 acceptance criteria, 53 tasks and seven packages are preserved.
+
+## November 21 — Reviewed recovery, refund support and professional provenance
+
+| Development commit | Verified capability |
+|---|---|
+| `eb82606d960d5fc4d5959c0611cd11606a19792a` | Reviewed Legacy reactivation binds the latest recovery receipt, synchronized active policy, owner authority, emergency state and existing operating scope. Paused work stays paused. Factory enrolls finite startup draft mandates atomically and verifies a new internal draft receipt. |
+| `8f98499ab110d0221cf5e81c28adbd5238b2eb11` | Owner closes Foundry support for an exact cumulative refund after delivery. Replay is idempotent, conflicting resolutions are refused, and an additional refund opens a new follow-up. |
+| `174d6f3f3f3259a6cf046a64e9d482aa91ccf3ac` | Private opinion intake verifies a scoped Ed25519 signature against an accepted attachment and exact case metadata. A withdrawn key or disposed file invalidates provenance. Reliance is separately gated. |
+
+Local regression passed 376 backend tests, 22 disposable PostgreSQL checks, eight Builder materializer checks and three simulated-browser voice tests. The route probe verified 36 critical routers and all 98 required routes. The matrix closes the Legacy reactivation and mandate-enrollment code requirement and retains 14 P0 criteria and 40 criteria overall requiring internal coding. All 50 acceptance criteria, 53 tasks and seven construction packages are preserved.

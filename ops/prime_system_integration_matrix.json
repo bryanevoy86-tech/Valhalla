@@ -92,7 +92,7 @@
         "owner_action": "Internal continuation is authorized under the standing development scope.",
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
-          "internal_coding": "Apply hard gates to remaining dispatch lanes. Legacy failover now pauses work for an incompatible destination, a local containment hold or a Factory identity bound to the original Legacy.",
+          "internal_coding": "Apply hard gates to remaining dispatch lanes. Scoped reactivation and fresh assignment now revalidate current governance, emergency stop and relevant economic holds.",
           "insufficient_test_evidence": "Exercise denial, rollback and emergency recovery on each path.",
           "external_commissioning": "Rehearse long-running governance recovery.",
           "owner_or_professional_action": "Authorize scoped worker activation.",
@@ -238,10 +238,13 @@
       "priority": "P0",
       "source_paths": [
         "services/api/app/routers/completion_registry.py",
-        "services/api/app/models/completion_registry.py"
+        "services/api/app/models/completion_registry.py",
+        "services/api/app/routers/prime_business_factory.py",
+        "services/api/app/services/prime_business_execution.py",
+        "services/api/tests/test_completion_registry.py"
       ],
-      "source_observation": "Legacy provisioning, policy sync, multi-instance work-assignment records exist",
-      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "source_observation": "Policy-managed Legacies revalidate live policy during admission and recovery. A recorded recovery remains blocked until the owner approves its exact current receipt and synchronized policy. Factory group enrollment is atomic and scoped to finite internal-draft mandates.",
+      "evidence_level": "SQLITE_INTEGRATION_TESTED",
       "production_verified": false,
       "acceptance_test": "Two isolated legacies may not see or steal each other's tasks; identity/policy and failover tests pass",
       "depends_on": [
@@ -250,15 +253,15 @@
       ],
       "owner_external_authorization_required": false,
       "continuation": {
-        "next_implementation": "Enroll startup Legacies and independently verify namespaces, scope isolation and runtime recovery.",
-        "existing_test_evidence": "See SOURCE_INSPECTED_ONLY and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
+        "next_implementation": "Commission owner-approved Legacy scopes using the reviewed recovery receipt and group enrollment already implemented.",
+        "existing_test_evidence": "Disposable SQLite rehearsed failover, policy drift, emergency hold, stale receipt denial, rejected group rollback, enrollment and verified internal draft. PostgreSQL Factory and migration suites passed.",
         "owner_action": "Internal continuation is authorized under the standing development scope.",
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
-          "internal_coding": "Finish safe post-recovery reactivation and group enrollment for the approved startup mandates. Fresh enrollment cannot reset an existing Legacy.",
-          "insufficient_test_evidence": "Local rehearsal verified recovery destination scope, failover namespace rebinding and duplicate provisioning refusal. Verify prolonged multi-Legacy restart and registry isolation.",
-          "external_commissioning": "Commission the approved Legacy workers.",
-          "owner_or_professional_action": "Select initial mandates and jurisdictions.",
+          "internal_coding": null,
+          "insufficient_test_evidence": "Run prolonged multi-Legacy restart and registry-isolation commissioning on migrated PostgreSQL.",
+          "external_commissioning": "Enroll the selected startup scopes in staging, commission authorized Legacy workers and record scoped recovery and execution receipts.",
+          "owner_or_professional_action": "Select initial mandates and jurisdictions, approve mandate limits, and authorize staging.",
           "conditional_expansion": "Additional regions follow viable operation."
         }
       }
@@ -282,7 +285,7 @@
       ],
       "owner_external_authorization_required": false,
       "continuation": {
-        "next_implementation": "Exercise dispatch and verified outcomes on the first authorized operating adapter.",
+        "next_implementation": "Exercise dispatch and verified outcomes on the first authorized operating adapter. Draft enrollment and post-recovery execution use the existing Factory lane.",
         "existing_test_evidence": "See POSTGRES_INTEGRATION_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
         "owner_action": "Internal continuation is authorized under the standing development scope.",
         "required_acceptance_evidence_field": "acceptance_test",
@@ -539,7 +542,7 @@
         "services/api/app/models/media_engine.py",
         "services/api/tests/test_product_artifact_workflow.py"
       ],
-      "source_observation": "Existing checkout rehearsals now bind exact listing evidence at capture, gate capture on emergency and containment, and allow refunds during an emergency stop. Settlement is a fixture comparison and actual profit remains unknown.",
+      "source_observation": "Capture revalidates listing evidence and emergency/containment gates. Owner support closure is bound to a delivered order and its exact cumulative fixture refund. Additional refunds reopen follow-up. Settlement remains fixture-based.",
       "evidence_level": "SQLITE_INTEGRATION_TESTED",
       "production_verified": false,
       "acceptance_test": "Real approved listing/checkout/delivery/refund, buyer rights and content-hash verified, receipt tied to business",
@@ -550,12 +553,12 @@
       "owner_external_authorization_required": true,
       "continuation": {
         "next_implementation": "Run the first authorized storefront lifecycle with support, costs and independently matched settlement receipts.",
-        "existing_test_evidence": "test_product_artifact_workflow.py exercises capture blocking and continued fixture refund during emergency stop. Product Foundry continuous fixture links signed discovery, independent challenge, scoped execution, outcome, retained losses and a subsequent HOLD with contradiction evidence.",
+        "existing_test_evidence": "The private checkout rehearsal proved partial and final support closure, stale and conflicting review refusal, exact replay, emergency refund and resolution, and preservation of reconciled fixture accounting.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
-          "internal_coding": "Complete reviewed support resolution for post-delivery refunds and remaining product-specific fulfillment exceptions.",
-          "insufficient_test_evidence": "Fixture verifies order state, exact refund replay and refusal of a second event for the same cumulative refund. Test support closure, disputed costs and independently matched settlements.",
+          "internal_coding": "Complete product-specific fulfillment exceptions and verify any shared SaaS entitlement linkage before tying store refunds to customer access.",
+          "insufficient_test_evidence": "Test disputed cost corrections, verified external settlements and separately authorized cross-product entitlement changes.",
           "external_commissioning": "Run approved storefront lifecycle in staging.",
           "owner_or_professional_action": "Approve listings, rights, support and merchant scope.",
           "conditional_expansion": "Real sales follow commercial approval."
@@ -1344,7 +1347,9 @@
         "legal/TRUST_RESIDENCY_OVERVIEW.md",
         "services/api/app/routers/governance_tyr.py",
         "services/api/app/services/owner_startup.py",
-        "services/api/tests/test_saas_tenant_entitlements.py"
+        "services/api/tests/test_saas_tenant_entitlements.py",
+        "services/api/app/services/tax_opinion_provenance.py",
+        "services/api/tests/test_tax_opinion_provenance.py"
       ],
       "source_observation": "The private startup planner prepares jurisdiction-specific review packets. The tax opinion bridge restricts access and records unverified intake. Professional signoff and reliance await independent proof.",
       "evidence_level": "SQLITE_INTEGRATION_TESTED",
@@ -1357,13 +1362,13 @@
       "owner_external_authorization_required": true,
       "continuation": {
         "next_implementation": "Route a complete scoped fact packet for qualified review before reliance.",
-        "existing_test_evidence": "The private startup API accepts dated, sourced owner facts and questions, refuses client-supplied signoff and returns no-store draft packets. The tax opinion bridge rejects unauthenticated access and fails closed without its table. Qualified review and reliance remain unverified.",
+        "existing_test_evidence": "The startup workflow produces private dated fact-and-question packets. Local signed-opinion tests verify owner auth, signer scope, byte hash, owner document review, invalidated keys, attachment deletion and exact replay.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
-          "internal_coding": "The private dated fact-and-question packet is implemented. Complete verifiable signed-opinion provenance and reliance checks once the permitted professional workflow is specified.",
-          "insufficient_test_evidence": "Verify scope, provenance and reliance limits of completed reviews.",
-          "external_commissioning": "Commission approved private review process.",
+          "internal_coding": "Bind independently reviewed, qualified opinions to the separate governance approval or reliance workflow. Signed-file provenance intake and verification are implemented.",
+          "insufficient_test_evidence": "Exercise the approved qualified professional's commissioned signature, superseding opinion and separate reliance decision.",
+          "external_commissioning": "Verify the signer identity and qualification independently, enroll their scoped public key and exchange opinion signatures only through the approved private workflow.",
           "owner_or_professional_action": "Licensed tax and legal professionals issue opinions before reliance.",
           "conditional_expansion": null
         }
