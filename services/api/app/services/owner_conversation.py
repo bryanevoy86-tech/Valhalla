@@ -351,15 +351,33 @@ def store_attachment(conversation_id: UUID, payload: UploadIn, db: Session):
         raise HTTPException(503, "Attachment access paused for restore reconciliation")
     thread(db, conversation_id)
     data = decode_upload(payload)
-    existing = db.get(OwnerAttachment, payload.attachment_id)
-    if existing:
-        if (existing.conversation_id,existing.filename,existing.media_type,existing.sha256,existing.data)!=(conversation_id,payload.filename,payload.media_type,payload.sha256,data):
+
+    def exact_replay(existing):
+        if existing.conversation_id != conversation_id:
+            raise HTTPException(409, "Attachment ID already used")
+        if existing.deleted_at is not None:
+            raise HTTPException(410, "Deleted attachments cannot be restored")
+        if (existing.filename, existing.media_type, existing.sha256, existing.size_bytes, existing.data) != (
+            payload.filename, payload.media_type, payload.sha256, len(data), data,
+        ):
             raise HTTPException(409, "Attachment ID already used")
         return meta(existing)
-    row = OwnerAttachment(id=payload.attachment_id,conversation_id=conversation_id, filename=payload.filename,
-        media_type=payload.media_type,sha256=payload.sha256,data=data,size_bytes=len(data))
+
+    existing = db.get(OwnerAttachment, payload.attachment_id, with_for_update=True)
+    if existing is not None:
+        return exact_replay(existing)
+    row = OwnerAttachment(id=payload.attachment_id, conversation_id=conversation_id, filename=payload.filename,
+                          media_type=payload.media_type, sha256=payload.sha256, data=data, size_bytes=len(data))
     db.add(row)
-    commit(db)
+    try:
+        commit(db)
+    except HTTPException as exc:
+        if exc.status_code != 409:
+            raise
+        existing = db.get(OwnerAttachment, payload.attachment_id, with_for_update=True)
+        if existing is None:
+            raise
+        return exact_replay(existing)
     return meta(row)
 
 

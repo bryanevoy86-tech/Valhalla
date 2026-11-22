@@ -991,3 +991,9 @@ The acceptance matrix retains 13 P0 and 39 total criteria requiring internal cod
 - Primary Home panel `aae28eb9-e275-4c9a-81ea-a513df665f24`. Recoverable editor snapshot `cc59ed98-6da1-4e01-ae9b-440c82144d8c`.
 - Four owner-only workflows were installed and re-read. The preview uses existing owner auth and allows local thread creation, durable history, one private turn, exact Prime reference and attachment metadata. The test transport verifies an ambiguous retry, subscriber denial and protected conversation scope. Runtime remains gated on an explicit staging origin.
 - Backend changes make concurrent exact thread creation recoverable, serialize local-only writes on the same PostgreSQL conversation, and prevent the local submit route from replaying previously model-backed turns. Historical reads preserve their response mode.
+
+## November 22 — Private WeWeb document upload and reviewed extraction
+
+- The existing private conversation panel gained document action group `f3cb0fa8-ac55-422a-9ace-c98db66cbdc9`. Editor readback confirmed workflow `293a2228-8d42-4045-b9ec-7e41ab7573b7` for upload and workflow `020647e1-6715-4516-95b2-088fd127d628` for local extraction on a current approved file.
+- The backend now reconciles exact upload retries and refuses replacements with changed scope, contents or metadata and refuses restoration of deleted attachments.
+- Isolated Node tests cover upload retry, origin checks, exact reviewed extraction and restore hold. The authorized preview origin remains blank. Separate owner-mandate review and disposition and browser acceptance remain open.
