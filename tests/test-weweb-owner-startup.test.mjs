@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {runOwnerStartup} from "../web/weweb-widgets/owner-startup.mjs";
+import {runOwnerIndependence, runOwnerStartup} from "../web/weweb-widgets/owner-startup.mjs";
 
 const origin = "https://staging.example.invalid";
 const token = "a." + Buffer.from(JSON.stringify({jti:"owner-fixture",exp:Math.floor(Date.now()/1000)+300})).toString("base64url") + ".b";
@@ -49,4 +49,37 @@ test("preserves draft provenance and rejects an asserted approval, disclosure or
     assert.equal((await runOwnerStartup({...input,isOwner:false},none)).status,"denied");
     assert.equal((await runOwnerStartup({...input,previewOrigin:""},none)).status,"unconfigured");
     assert.equal((await runOwnerStartup({...input,details:'{"selected_jurisdiction":"MANITOBA"}'},none)).status,"invalid");
+});
+
+test("binds the private startup independence form and refuses unsupported cash and authority", async()=>{
+    const review = {
+        currency:"CAD",basis:"PRIVATE_STARTUP_PLANNING",external_action_authorized:false,
+        borrowing_authorized:false,transfers_authorized:false,contingency_activation_authorized:false,
+        verified_available_cash_minor:null,verified_after_tax_income_minor:null,support_forecast_minor:null,
+        stretch_guaranteed:false,registration_date:"2026-11-08",
+        reviews:[{day:15,due:"2026-11-23",focus:"PILOT_READINESS",status:"UPCOMING"}],
+        capital_scenarios:[{hypothetical_extra_contribution_minor:0,total_plan_gap_minor:17000,experiment_headroom_minor:0}],
+        funding:[{kind:"GRANT",status:"APPROVED",amount_minor:10000,included_in_spendable_cash_minor:0}],
+        reporting:{official_or_case_evidence_verified:false,status:"DRAFT_REQUIRES_OFFICIAL_AND_CASE_REVIEW",checklist:[]},
+    };
+    const form = {...input,details:'{"registration_date":"2026-11-08"}'};
+    const result = await runOwnerIndependence(form,async(url,req)=>{
+        assert.equal(url,origin+"/api/weweb/owner-startup/independence-review");
+        assert.equal(req.cache,"no-store");
+        assert.equal(req.redirect,"error");
+        assert.equal(req.headers.Authorization,"Bearer " + token);
+        assert.deepEqual(JSON.parse(req.body),{registration_date:"2026-11-08"});
+        return ok(review);
+    });
+    assert.equal(result.status,"ready");
+    assert.match(result.summary,/Day 15 · 2026-11-23/);
+    assert.match(result.summary,/CAD\s0\.00 extra contribution · gap CAD\s170\.00/);
+    assert.match(result.summary,/grant · approved/);
+    const response = data => async()=>ok(data);
+    assert.equal((await runOwnerIndependence(form,response({...review,verified_available_cash_minor:10000}))).status,"unavailable");
+    assert.equal((await runOwnerIndependence(form,response({...review,borrowing_authorized:true}))).status,"unavailable");
+    const none = async()=>assert.fail("Unexpected network request");
+    assert.equal((await runOwnerIndependence({...form,isOwner:false},none)).status,"denied");
+    assert.equal((await runOwnerIndependence({...form,previewOrigin:""},none)).status,"unconfigured");
+    assert.equal((await runOwnerIndependence({...form,details:"[]"},none)).status,"invalid");
 });

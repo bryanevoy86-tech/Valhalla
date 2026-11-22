@@ -85,7 +85,7 @@ export function formatStartupComparison(data, candidate, expectedPackets) {
     };
 }
 
-export async function runOwnerStartup(input, transport = fetch) {
+async function requestStartupReview(input, transport, route, prepare, format) {
     const session = ownerAttentionSession(input.bearer);
     if (!session) return {status: "signed_out"};
     const result = (status, payload = {}) => ({status, session, ...payload});
@@ -102,12 +102,12 @@ export async function runOwnerStartup(input, transport = fetch) {
     }
     let payload;
     try {
-        payload = startupPayload(input);
+        payload = prepare(input);
     } catch {
         return result("invalid");
     }
     try {
-        const reply = await transport(origin + "/api/weweb/owner-startup/compare", {
+        const reply = await transport(origin + "/api/weweb/owner-startup/" + route, {
             method: "POST", headers: {Authorization: "Bearer " + input.bearer, "Content-Type": "application/json"},
             body: JSON.stringify(payload), cache: "no-store", credentials: "omit", redirect: "error",
             signal: AbortSignal.timeout(15000),
@@ -116,9 +116,66 @@ export async function runOwnerStartup(input, transport = fetch) {
         if (reply.status === 403) return result("denied");
         if (reply.status === 422) return result("invalid");
         if (!reply.ok) return result("unavailable");
-        return result("ready", formatStartupComparison(await reply.json(), payload.international_jurisdiction,
-            payload.professional_review?.length ?? 0));
+        return result("ready", format(await reply.json(), payload));
     } catch {
         return result("unavailable");
     }
+}
+
+export function runOwnerStartup(input, transport = fetch) {
+    return requestStartupReview(input, transport, "compare", startupPayload, (data, payload) =>
+        formatStartupComparison(data, payload.international_jurisdiction, payload.professional_review?.length ?? 0));
+}
+
+function independencePayload({details}) {
+    if (typeof details !== "string" || !details.trim() || details.length > 60000) throw new Error("Invalid plan");
+    const plan = JSON.parse(details);
+    if (!plan || typeof plan !== "object" || Array.isArray(plan)) throw new Error("Invalid plan");
+    return plan;
+}
+
+function formatIndependence(data) {
+    if (data?.currency !== "CAD" || data.basis !== "PRIVATE_STARTUP_PLANNING"
+        || data.external_action_authorized !== false || data.borrowing_authorized !== false
+        || data.transfers_authorized !== false || data.contingency_activation_authorized !== false
+        || data.verified_available_cash_minor !== null || data.verified_after_tax_income_minor !== null
+        || data.support_forecast_minor !== null || data.stretch_guaranteed !== false
+        || data.reporting?.official_or_case_evidence_verified !== false
+        || data.capital_scenarios?.[0]?.hypothetical_extra_contribution_minor !== 0) {
+        throw new Error("Unexpected independence review");
+    }
+    const {financing_screen: financing} = data;
+    if (financing && (financing.basis !== "SYNTHETIC_FIXTURE" || financing.new_revenue_assumed_minor !== 0
+        || financing.borrowing_authorized !== false || financing.requires_reconciled_balances_and_review !== true)) {
+        throw new Error("Unexpected financing review");
+    }
+    const label = value => safeText(value.replaceAll("_", " ").toLowerCase());
+    const checkpoints = data.reviews.map(review =>
+        "Day " + review.day + " · " + safeText(review.due) + " · " + label(review.focus) + " · " + label(review.status));
+    const capital = data.capital_scenarios.map(scenario =>
+        amount(scenario.hypothetical_extra_contribution_minor) + " extra contribution · gap "
+        + amount(scenario.total_plan_gap_minor) + " · experiment headroom " + amount(scenario.experiment_headroom_minor));
+    const funding = data.funding.map(item => {
+        if (item.included_in_spendable_cash_minor !== 0) throw new Error("Unexpected funding availability");
+        return label(item.kind) + " · " + label(item.status) + " · " + amount(item.amount_minor);
+    });
+    return {summary: [
+        "Registration · " + (data.registration_date ? safeText(data.registration_date) : "Awaiting evidence"),
+        ...checkpoints,
+        "Synthetic capital scenarios",
+        ...capital,
+        ...funding,
+        "Personal emergency reserve gap · " + amount(data.personal_reserve_gap_minor),
+        "Estimated household shortfall · " + amount(data.household_estimated_shortfall_minor),
+        "Draft reporting · " + label(data.reporting.status),
+        ...data.reporting.checklist.map(label),
+        ...(financing ? ["Synthetic financing screen · " + label(financing.screen),
+            "Stressed monthly debt service · " + amount(financing.stressed_total_monthly_debt_service_minor),
+            "Opening unrestricted cash gap · " + amount(financing.opening_unrestricted_cash_gap_minor),
+            ...financing.reasons.map(label)] : []),
+    ].join("\n")};
+}
+
+export function runOwnerIndependence(input, transport = fetch) {
+    return requestStartupReview(input, transport, "independence-review", independencePayload, formatIndependence);
 }

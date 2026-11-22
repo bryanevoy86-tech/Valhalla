@@ -117,10 +117,14 @@ def test_trial_is_bound_to_authenticated_subscriber_and_tenant(deal_client, monk
     quote = client.post(path, headers=bearer, json=plan)
     assert quote.status_code == 200, quote.text
     assert quote.headers["cache-control"] == "no-store"
-    from test_startup_independence import plan as independence_fixture
-
     review_path = "/api/weweb/owner-startup/independence-review"
-    review_payload = independence_fixture().model_dump(mode="json")
+    review_payload = {
+        "monthly_essentials_minor": 100000, "reserve_months": 3, "reserve_balance_minor": 0,
+        "monthly_stretch_low_minor": 120000, "monthly_stretch_high_minor": 160000,
+        "opening_unrestricted_cash_fixture_minor": 50000, "establishment_minor": 42000,
+        "operating_minor": 15000, "business_reserve_minor": 8000, "experiment_minor": 2000,
+        "reporting_month": datetime.now(timezone.utc).date().replace(day=1).isoformat(),
+    }
     assert client.post(review_path, json=review_payload).status_code == 401
     assert client.post(review_path, headers=outsider, json=review_payload).status_code == 403
     independence = client.post(review_path, headers=bearer, json=review_payload)
