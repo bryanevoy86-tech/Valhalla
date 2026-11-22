@@ -458,6 +458,33 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
     assert compared.json()["external_action_authorized"] is False
     comparison_artifact = client.post(comparison_path + "/review-artifact", headers=owner, json=comparison)
     assert comparison_artifact.status_code == 200 and comparison_artifact.json()["raw_input"] == compared.json()
+    comparison_review = client.post("/loki/reviews", json=comparison_artifact.json())
+    assert comparison_review.status_code == 201, comparison_review.text
+    comparison_review_id = comparison_review.json()["id"]
+    review_path = comparison_path + "/reviewed"
+    review_request = {**comparison, "independent_review_id": comparison_review_id}
+    assert client.post(review_path, headers=owner, json=review_request).status_code == 409
+    reviewer_queue = client.get("/loki/worker/reviews", headers=worker,
+                                params={"artifact_type": "acquisition_comparison"}).json()
+    queued_comparison = next(item for item in reviewer_queue if item["review_id"] == comparison_review_id)
+    analysis = challenge(queued_comparison).model_dump(mode="json")
+    assert client.post(f"/loki/worker/reviews/{comparison_review_id}/result", headers=worker,
+                       json=analysis).status_code == 201
+    assert client.post(review_path, headers=owner, json=review_request).status_code == 409
+    objections = client.get(f"/loki/reviews/{comparison_review_id}/findings").json()
+    reconsidered = client.post(f"/loki/reviews/{comparison_review_id}/reconsider", headers=owner, json={
+        "artifact_sha256": analysis["artifact_sha256"], "disposition": "accept_risk",
+        "material_finding_ids": [item["id"] for item in objections],
+        "reason": "Confirmed this is an isolated comparison with insufficient data to scale.",
+    })
+    assert reconsidered.status_code == 200, reconsidered.text
+    reviewed = client.post(review_path, headers=owner, json=review_request)
+    assert reviewed.status_code == 201, reviewed.text
+    reviewed_campaign = reviewed.json()
+    assert reviewed_campaign["economic_mandate_id"] == capital_mandate["id"]
+    assert reviewed_campaign["capital_reserved_minor"] == reviewed_campaign["simulated_followup_cap_minor"] == 0
+    assert client.post(review_path, headers=owner, json=review_request).json() == reviewed_campaign
+    assert client.post(review_path, headers=owner, json={**review_request, "minimum_visits": 21}).status_code == 409
     assert review["plan_sha256"] == planned.json()["sha256"] and not review["verified_commercial_revenue"]
     pending_id = submit_and_approve({**listing, "request_key": "workshop-listing-02"})
     with Session(engine) as db:
@@ -573,6 +600,8 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
         recent_mimir = run_assignment(db, "MIMIR")["report_event_id"]
     learned_response = client.get(f"/api/prime/pantheon/reports/{recent_mimir}").json()
     assert learned_response["observations"]["acquisition_rehearsal"][0]["sha256"] == review["sha256"]
+    history = learned_response["observations"]["reviewed_acquisition_history"][0]
+    assert history["status"] == "HISTORICAL_REVIEW_ONLY" and history["sha256"] == reviewed_campaign["sha256"]
     assert learned_response["observations"]["checkout_learning"][0]["fixture_contribution_minor"] == -175
     assert learned_response["observations"]["economic_reassessment"]["cumulative_loss_minor"] == 175
     next_tick = datetime.fromisoformat(next_cadence).replace(tzinfo=None) + timedelta(seconds=1)

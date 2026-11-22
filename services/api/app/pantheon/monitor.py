@@ -198,11 +198,15 @@ def run_assignment(db: Session, role: str, *, now=None) -> dict:
         if role in DISCOVERY_ROLES:
             facts.update(discover(db, role, assignment.scope, now.date()))
         if role in {"FREYJA", "BRAGI", "ODIN", "HUGINN", "NJORD", "NORNS", "TYR", "LOKI", "HEIMDALL", "MIMIR"}:
+            from app.services.acquisition_comparison import observe_reviewed_comparisons
             from app.services.acquisition_rehearsal import observe_scoped_acquisition
 
             acquisition = observe_scoped_acquisition(db, assignment.scope)
             if acquisition:
                 facts["acquisition_rehearsal"] = acquisition
+            reviewed_acquisition = observe_reviewed_comparisons(db, assignment.scope)
+            if reviewed_acquisition:
+                facts["reviewed_acquisition_history"] = reviewed_acquisition
         facts.update(market_observations(db, role, assignment.scope, now))
         if role in {"MIMIR", "NJORD", "HEIMDALL", "FORSETI", "LOKI", "TYR", "NORNS"}:
             from app.routers.foundry_checkout import scoped_checkout_learning

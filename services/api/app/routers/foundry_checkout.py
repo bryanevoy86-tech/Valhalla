@@ -27,7 +27,10 @@ from app.services.acquisition_rehearsal import (
     SUPPRESSION_TYPE, consent_event_id, consent_receipt, customer_reference, journal_event,
     make_plan, plan_reference, read_plan, settled_campaign, verify_consent,
 )
-from app.services.acquisition_comparison import ComparisonIn, compare_campaigns
+from app.services.acquisition_comparison import (
+    ComparisonIn, REVIEWED_EVENT, REVIEWED_PREFIX, ReviewedComparisonIn, compare_campaigns,
+    comparison_review_artifact, reviewed_capital_projection,
+)
 from app.services.acquisition_channel_fixture import ChannelIntentIn, ChannelReceiptIn, accept_channel_receipt, stage_channel
 from app.services.economic_control import require_no_containment
 from app.services.prime_business_execution import _check_legacy, _emergency_stop_active, _event, _json, action_status, require_owner_mandate_key
@@ -584,11 +587,30 @@ def apply_channel_fixture_receipt(
 
 @router.post("/campaign-comparisons/review-artifact", dependencies=owner)
 def review_acquisition_comparison(payload: ComparisonIn, db: Session = Depends(get_db)):
-    comparison = compare_acquisition_campaigns(payload, db)
-    reference = comparison["sha256"]
-    return {"artifact_type": "acquisition_comparison", "input_source": "acquisition-rehearsal",
-            "heimdall_reference_id": reference, "raw_input": comparison,
-            "artifact_sha256": artifact_digest("acquisition_comparison", reference, comparison)}
+    return comparison_review_artifact(compare_acquisition_campaigns(payload, db))
+
+
+@router.post("/campaign-comparisons/reviewed", status_code=201, dependencies=owner)
+def record_reviewed_comparison(payload: ReviewedComparisonIn, db: Session = Depends(get_db)):
+    _attribution_schema(db)
+    scope = payload.scope.model_dump()
+    _check_legacy(db, **scope)
+    value = reviewed_capital_projection(db, payload)
+    reference = REVIEWED_PREFIX + value["sha256"]
+    prior = journal_event(db, reference)
+    if prior is not None:
+        if (prior.legacy_instance_id != scope["legacy_instance_id"] or prior.event_type != REVIEWED_EVENT
+                or _json(prior.payload_json, {}) != value):
+            raise HTTPException(409, "Reviewed acquisition receipt integrity mismatch")
+        return value
+    _event(db, event_id=reference, legacy_instance_id=scope["legacy_instance_id"], event_type=REVIEWED_EVENT,
+           message="Independently reviewed acquisition and capital fixture", payload=value)
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(409, "Concurrent review already recorded; retry the exact request") from None
+    return value
 
 
 @router.post("/campaigns/{campaign_id}/acquisition-plan", status_code=201, dependencies=owner)

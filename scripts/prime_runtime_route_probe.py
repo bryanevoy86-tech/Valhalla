@@ -56,6 +56,7 @@ MANDATORY_ENDPOINTS = {
     "foundry_acquisition_settled": ("POST", "/api/prime/foundry/rehearsal/campaigns/{campaign_id}/settled-review"),
     "foundry_acquisition_comparisons": ("POST", "/api/prime/foundry/rehearsal/campaign-comparisons"),
     "foundry_acquisition_comparison_review": ("POST", "/api/prime/foundry/rehearsal/campaign-comparisons/review-artifact"),
+    "foundry_acquisition_reviewed_comparison": ("POST", "/api/prime/foundry/rehearsal/campaign-comparisons/reviewed"),
     "foundry_acquisition_suppression": ("POST", "/api/prime/foundry/rehearsal/consent-suppressions"),
     "foundry_acquisition_channel_intent": ("POST", "/api/prime/foundry/rehearsal/channel-intents"),
     "foundry_acquisition_channel_fixture_receipt": ("POST", "/api/prime/foundry/rehearsal/channel-fixture-receipts"),
