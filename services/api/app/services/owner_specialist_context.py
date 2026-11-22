@@ -4,10 +4,12 @@ from uuid import UUID
 
 from fastapi import HTTPException
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, lazyload
 
 from app.models.completion_registry import LegacyOrchestrationEvent
 from app.models.prime_specialist_schedule import PrimeSpecialistSchedule
+from app.models.specialist_assignment import SpecialistAssignment
+from app.pantheon.roles import LENSES, Role
 
 
 def specialist_context(db: Session, schedule_id: UUID, *, require_digest: bool = False) -> dict:
@@ -42,6 +44,57 @@ def specialist_context(db: Session, schedule_id: UUID, *, require_digest: bool =
         ],
         "independent_loki_cleared": False, "execution_authorized": False,
     }
+
+
+def pantheon_report_index(db: Session, role: Role | None, after: UUID | None, limit: int) -> dict:
+    from app.loki.models import LokiReview, LokiReviewStatus
+    from app.loki.review_service import verdict
+    from app.pantheon.monitor import utc_now, verified_report
+
+    query = select(SpecialistAssignment).where(SpecialistAssignment.last_report_event_id.is_not(None))
+    if role is not None:
+        query = query.where(SpecialistAssignment.role == role)
+    if after is not None:
+        query = query.where(SpecialistAssignment.id > after)
+    assignments = db.scalars(query.order_by(SpecialistAssignment.id).limit(limit + 1)).all()
+    now = utc_now()
+    results = []
+    for assignment in assignments[:limit]:
+        reference = {"assignment_id": str(assignment.id), "role": assignment.role}
+        try:
+            report = verified_report(db, assignment.last_report_event_id)
+            if (report["report_event_id"], report["assignment_id"], report["role"], report["scope"]) != (
+                assignment.last_report_event_id, str(assignment.id), assignment.role, assignment.scope,
+            ):
+                raise ValueError
+            review = db.scalar(select(LokiReview).options(lazyload(LokiReview.findings)).filter_by(
+                artifact_type="pantheon_report", artifact_sha256=report["report_sha256"],
+                heimdall_reference_id=assignment.last_report_event_id,
+            ))
+            independent = None
+            if review is not None:
+                independent = {"review_id": str(review.id), "status": review.status}
+                if review.status == LokiReviewStatus.COMPLETED:
+                    try:
+                        challenge = verdict(db, review)
+                    except HTTPException:
+                        independent["status"] = "integrity_hold"
+                    else:
+                        independent.update(reconsideration_status=challenge.reconsideration_status,
+                                           findings=challenge.key_risks)
+            results.append({
+                **reference, "state": "VERIFIED_RECEIPT", "report_event_id": report["report_event_id"],
+                "report_sha256": report["report_sha256"], "scope": report["scope"],
+                "observed_at": report["observed_at"], "report_status": report["status"],
+                "lens": LENSES[assignment.role], "trigger": report["trigger"],
+                "assignment_state": "expired" if assignment.state == "active" and assignment.expires_at <= now else assignment.state,
+                "observation_categories": sorted((report.get("observations") or {}).keys()),
+                "independent_loki": independent,
+            })
+        except (HTTPException, KeyError, TypeError, ValueError, AttributeError):
+            results.append({**reference, "state": "INTEGRITY_HOLD"})
+    return {"reports": results, "next_after": str(assignments[limit - 1].id) if len(assignments) > limit else None,
+            "execution_authorized": False}
 
 
 def prime_decision_context(db: Session, decision_id: UUID) -> dict:

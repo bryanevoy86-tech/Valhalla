@@ -59,6 +59,7 @@ MANDATORY_ENDPOINTS = {
     "weweb_owner_document_apply": ("POST", "/api/weweb/owner-document-requests/{request_id}/apply"),
     "weweb_owner_prime_decision": ("GET", "/api/weweb/owner-prime-decisions/{decision_id}"),
     "weweb_owner_specialist_receipt": ("GET", "/api/weweb/owner-specialist-schedules/{schedule_id}"),
+    "weweb_owner_pantheon_reports": ("GET", "/api/weweb/owner-pantheon/reports"),
     "weweb_owner_attention": ("GET", "/api/weweb/owner-attention"),
     "weweb_owner_attention_ack": ("POST", "/api/weweb/owner-attention/acknowledge"),
     "weweb_owner_startup": ("POST", "/api/weweb/owner-startup/compare"),

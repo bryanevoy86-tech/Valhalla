@@ -277,6 +277,51 @@ def test_trial_is_bound_to_authenticated_subscriber_and_tenant(deal_client, monk
     assert specialist.json()["report_event_id"] == report_id
     assert specialist.json()["execution_authorized"] is False
 
+    from app.loki.evidence import artifact_digest
+    from app.loki.models import LokiReview
+    from app.models.specialist_assignment import SpecialistAssignment, SpecialistTrigger
+    from app.pantheon.monitor import REPORT_EVENT as PANTHEON_REPORT_EVENT
+
+    for model in (SpecialistAssignment, SpecialistTrigger, LokiReview):
+        model.__table__.create(engine, checkfirst=True)
+    report_index = "/api/weweb/owner-pantheon/reports"
+    assert client.get(report_index).status_code == 401
+    assert client.get(report_index, headers=outsider).status_code == 403
+    assert client.get(report_index, headers=bearer).json()["reports"] == []
+    scope = {"legacy_instance_id": "test-legacy", "business_id": "test-shop",
+             "engine_id": "micro_saas", "jurisdiction": "CA-MB"}
+    first, second = UUID(int=1), UUID(int=2)
+    report_ref = "GOD-" + "a" * 64
+    role = "TYR"
+    evidence = {"assignment_id": str(first), "report_event_id": report_ref, "scope": scope, "role": role,
+                "observed_at": instant.isoformat() + "Z", "status": "observed", "trigger": "CADENCE",
+                "observations": {"approval_evidence": {"private": "Unprojected raw source"}}}
+    digest = artifact_digest("pantheon_report", report_ref, evidence)
+    with Session(engine) as db:
+        for assignment_id, assigned_role, latest in ((first, role, report_ref), (second, "NJORD", "GOD-missing")):
+            db.add(SpecialistAssignment(id=assignment_id, role=assigned_role, scope_key=assigned_role, scope=scope,
+                                       state="active", cadence_seconds=300, next_due_at=instant,
+                                       expires_at=instant + timedelta(hours=1), last_report_event_id=latest))
+        db.add(LegacyOrchestrationEvent(
+            event_id=report_ref, legacy_instance_id=scope["legacy_instance_id"], event_type=PANTHEON_REPORT_EVENT,
+            message="Synthetic digest-bound report", payload_json=json.dumps({**evidence, "report_sha256": digest}),
+        ))
+        db.add(LokiReview(input_source="pantheon-assignment", artifact_type="pantheon_report",
+                          heimdall_reference_id=report_ref, artifact_sha256=digest, raw_input=evidence))
+        db.commit()
+    result = client.get(report_index, params={"limit": 1}, headers=bearer)
+    assert result.status_code == 200 and result.headers["cache-control"] == "no-store"
+    page = result.json()
+    [entry] = page["reports"]
+    assert page["execution_authorized"] is False and page["next_after"] == str(first)
+    assert entry["state"] == "VERIFIED_RECEIPT" and entry["report_sha256"] == digest and entry["scope"] == scope
+    assert entry["independent_loki"]["status"] == "queued"
+    assert "Unprojected raw source" not in result.text
+    remaining = client.get(report_index, params={"after": page["next_after"]}, headers=bearer).json()
+    assert remaining["reports"] == [{"assignment_id": str(second), "role": "NJORD", "state": "INTEGRITY_HOLD"}]
+    assert remaining["next_after"] is None
+    assert client.get(report_index, params={"role": "TYR"}, headers=bearer).json()["reports"] == [entry]
+
     pending = {"request_id": str(uuid4()), "source_sha256": upload["sha256"],
                "operation": "ACCEPT_LOCAL", "reason": "Synthetic local review"}
     request_url = f"{attachment_root}/requests"

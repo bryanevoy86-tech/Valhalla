@@ -2,7 +2,7 @@
 from typing import Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.orm import Session
 
@@ -11,7 +11,8 @@ from app.routers.auth_weweb import private_owner_response, require_owner_session
 from app.services.owner_document_requests import (
     DocumentApplyIn, DocumentRequestIn, apply_document_request, document_request_status, request_document_action,
 )
-from app.services.owner_specialist_context import prime_decision_context, specialist_context
+from app.pantheon.roles import Role
+from app.services.owner_specialist_context import pantheon_report_index, prime_decision_context, specialist_context
 from app.services.prime_business_execution import require_owner_mandate_key
 from app.services.owner_startup import StartupPlanIn, prepare_startup
 from app.services.owner_conversation import (
@@ -123,3 +124,12 @@ def owner_prime_decision(decision_id: UUID, db: Session = Depends(get_db)):
 @router.get("/owner-specialist-schedules/{schedule_id}")
 def owner_specialist_receipt(schedule_id: UUID, db: Session = Depends(get_db)):
     return private_owner_response(specialist_context(db, schedule_id, require_digest=True))
+
+
+@router.get("/owner-pantheon/reports")
+def owner_pantheon_reports(role: Role | None = None, after: UUID | None = None,
+                           limit: int = Query(10, ge=1, le=25), db: Session = Depends(get_db)):
+    from app.pantheon.monitor import assignment_schema
+
+    assignment_schema(db)
+    return private_owner_response(pantheon_report_index(db, role, after, limit))
