@@ -1,5 +1,5 @@
 from __future__ import annotations
-from datetime import date
+from datetime import date, datetime, timezone
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import inspect, select
@@ -97,7 +97,7 @@ def import_statement(payload: StatementFixture, db: Session = Depends(get_db)):
         raise HTTPException(503, "Statement fixture schema unavailable")
     _check_legacy(db, **payload.scope.model_dump())
     try:
-        result = append_statement(db, payload, date.today())
+        result = append_statement(db, payload, datetime.now(timezone.utc).date())
         db.commit()
     except IntegrityError:
         db.rollback()

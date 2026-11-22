@@ -3818,6 +3818,8 @@ def assign_legacy_work(payload: LegacyWorkAssignRequest, db: Session = Depends(g
 
 @router.post("/legacy-orchestration/failover")
 def failover_legacy_instance(payload: LegacyFailoverRequest, db: Session = Depends(get_db)):
+    from app.services.economic_control import require_no_containment
+
     _ensure_registry_tables(db)
     failed = db.query(LegacyInstanceRegistryItem).filter(
         LegacyInstanceRegistryItem.legacy_instance_id == payload.failed_instance_id
@@ -3831,6 +3833,7 @@ def failover_legacy_instance(payload: LegacyFailoverRequest, db: Session = Depen
 
     reassigned = 0
     paused = 0
+    containment_paused = 0
     if payload.recovery_instance_id:
         recovery = db.query(LegacyInstanceRegistryItem).filter(
             LegacyInstanceRegistryItem.legacy_instance_id == payload.recovery_instance_id
@@ -3845,8 +3848,21 @@ def failover_legacy_instance(payload: LegacyFailoverRequest, db: Session = Depen
             LegacyInstanceWorkItem.legacy_instance_id == payload.failed_instance_id,
             LegacyInstanceWorkItem.status.in_(["queued", "in_progress"]),
         )
-        for item in q.all():
+        for item in q.order_by(LegacyInstanceWorkItem.id).with_for_update().all():
             if item.business_id in recovery_businesses and item.business_id in failed_businesses:
+                scope = {key: getattr(item, key) for key in (
+                    "legacy_instance_id", "business_id", "engine_id", "jurisdiction",
+                )}
+                try:
+                    require_no_containment(db, scope)
+                    require_no_containment(db, {**scope, "legacy_instance_id": recovery.legacy_instance_id})
+                except HTTPException as exc:
+                    if exc.status_code not in (409, 503):
+                        raise
+                    item.status = "paused"
+                    containment_paused += 1
+                    paused += 1
+                    continue
                 item.reassigned_from_instance_id = payload.failed_instance_id
                 item.legacy_instance_id = payload.recovery_instance_id
                 item.status = "queued"
@@ -3874,6 +3890,7 @@ def failover_legacy_instance(payload: LegacyFailoverRequest, db: Session = Depen
             "recovery_instance": payload.recovery_instance_id,
             "reassigned": reassigned,
             "paused": paused,
+            "containment_paused": containment_paused,
         },
     )
 
@@ -3883,6 +3900,7 @@ def failover_legacy_instance(payload: LegacyFailoverRequest, db: Session = Depen
         "recovery_instance_id": payload.recovery_instance_id,
         "reassigned": reassigned,
         "paused": paused,
+        "containment_paused": containment_paused,
     }
 
 

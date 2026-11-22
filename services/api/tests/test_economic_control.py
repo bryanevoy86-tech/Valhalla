@@ -1,5 +1,5 @@
 """End-to-end economic rehearsal through Prime, existing Loki, and Pantheon."""
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 import json
 from uuid import UUID, uuid4
 
@@ -473,7 +473,7 @@ def test_discovery_queue_sources_rank_and_do_not_claim_external_demand(economic_
     assert client.get(f"/api/prime/foundry/reports/{report_id}/candidate/{evidence['evidence_id']}").status_code == 409
 
 
-def test_statement_continuity_quarantine_and_fixture_asset_recovery(economic_client):
+def test_statement_continuity_quarantine_and_fixture_asset_recovery(economic_client, monkeypatch):
     from app.finops.models import VaultBalance
     from app.models.treasury_reconciliation import StatementAccount, StatementEntry, StatementImport
 
@@ -482,6 +482,14 @@ def test_statement_continuity_quarantine_and_fixture_asset_recovery(economic_cli
         model.__table__.create(engine)
     today = datetime.now(timezone.utc).date()
     earlier = today - timedelta(days=1)
+    from app.routers import floor_control
+
+    class PreviousLocalDay(date):
+        @classmethod
+        def today(cls):
+            return earlier
+
+    monkeypatch.setattr(floor_control, "date", PreviousLocalDay)
     with Session(engine) as db:
         db.add(VaultBalance(vault_code="MAIN", balance=987, currency="CAD", last_source="fx_engine"))
         db.commit()
@@ -736,3 +744,40 @@ def test_prime_reassesses_queued_economic_evidence_without_waiting_for_cadence(e
     assert loss_report["effect"] == "ADVISORY_ONLY"
     assert loss_report["recommendation"]["heimdall_decision"] == "HOLD"
     assert loss_report["operating_reassessment"]["economic_reassessment"]["cumulative_loss_minor"] == 150
+
+def test_legacy_failover_pauses_contained_scope_before_reassignment(economic_client):
+    client, engine = economic_client
+    post(client, "mandates", mandate(datetime.now(timezone.utc).date()))
+    post(client, "containment", {"id": str(uuid4()), "scope": SCOPE,
+                                  "rationale": "Pause economic work before legacy failover."})
+    with Session(engine) as db:
+        for legacy in db.query(LegacyInstanceRegistryItem):
+            legacy.assigned_businesses_json = '["venture-local","unrelated-unit","restricted-destination"]'
+            if legacy.legacy_instance_id == MIRROR["legacy_instance_id"]:
+                legacy.local_knowledge_context_json = json.dumps({**MIRROR, "business_id": "restricted-destination"})
+        for action, business in (("held-failover", SCOPE["business_id"]), ("healthy-failover", "unrelated-unit"),
+                                 ("held-at-destination", "restricted-destination")):
+            db.add(LegacyInstanceWorkItem(
+                action_id=action, idempotency_key=action, legacy_instance_id=SCOPE["legacy_instance_id"],
+                business_id=business, engine_id=SCOPE["engine_id"], jurisdiction=SCOPE["jurisdiction"],
+                status="queued", industry="fixture", objective="Internal reassignment", namespace="disposable",
+                payload_json="{}",
+            ))
+        db.commit()
+    destination = {**MIRROR, "business_id": "restricted-destination"}
+    post(client, "mandates", mandate(datetime.now(timezone.utc).date(), scope=destination))
+    post(client, "containment", {"id": str(uuid4()), "scope": destination,
+                                  "rationale": "Hold the affected receiving business."})
+    result = client.post("/api/completion/legacy-orchestration/failover", json={
+        "failed_instance_id": SCOPE["legacy_instance_id"], "recovery_instance_id": MIRROR["legacy_instance_id"],
+    })
+    assert result.status_code == 200, result.text
+    assert result.json()["containment_paused"] == 2
+    assert result.json()["reassigned"] == 1
+    with Session(engine) as db:
+        held = db.query(LegacyInstanceWorkItem).filter_by(action_id="held-failover").one()
+        healthy = db.query(LegacyInstanceWorkItem).filter_by(action_id="healthy-failover").one()
+        assert (held.status, held.legacy_instance_id) == ("paused", SCOPE["legacy_instance_id"])
+        assert (healthy.status, healthy.legacy_instance_id) == ("queued", MIRROR["legacy_instance_id"])
+        held_at_destination = db.query(LegacyInstanceWorkItem).filter_by(action_id="held-at-destination").one()
+        assert (held_at_destination.status, held_at_destination.legacy_instance_id) == ("paused", SCOPE["legacy_instance_id"])
