@@ -818,12 +818,17 @@ def test_legacy_failover_pauses_contained_scope_before_reassignment(economic_cli
         for legacy in db.query(LegacyInstanceRegistryItem):
             legacy.assigned_businesses_json = '["venture-local","unrelated-unit","restricted-destination"]'
             if legacy.legacy_instance_id == MIRROR["legacy_instance_id"]:
-                legacy.local_knowledge_context_json = json.dumps({**MIRROR, "business_id": "restricted-destination"})
+                legacy.local_knowledge_context_json = json.dumps({
+                    **MIRROR, "business_id": "restricted-destination", "data_namespace": "recovery-namespace",
+                })
+                legacy.assigned_jurisdictions_json = '["CA-MB","CA-ON"]'
         for action, business in (("held-failover", SCOPE["business_id"]), ("healthy-failover", "unrelated-unit"),
-                                 ("held-at-destination", "restricted-destination")):
+                                 ("held-at-destination", "restricted-destination"),
+                                 ("wrong-jurisdiction", "unrelated-unit"), ("bfd_pinned-fixture", "unrelated-unit")):
             db.add(LegacyInstanceWorkItem(
                 action_id=action, idempotency_key=action, legacy_instance_id=SCOPE["legacy_instance_id"],
-                business_id=business, engine_id=SCOPE["engine_id"], jurisdiction=SCOPE["jurisdiction"],
+                business_id=business, engine_id=SCOPE["engine_id"],
+                jurisdiction="US-TX" if action == "wrong-jurisdiction" else SCOPE["jurisdiction"],
                 status="queued", industry="fixture", objective="Internal reassignment", namespace="disposable",
                 payload_json="{}",
             ))
@@ -843,12 +848,18 @@ def test_legacy_failover_pauses_contained_scope_before_reassignment(economic_cli
     })
     assert result.status_code == 200, result.text
     assert result.json()["containment_paused"] == 2
+    assert result.json()["scope_paused"] == 2
     assert result.json()["reassigned"] == 1
     with Session(engine) as db:
         assert db.query(LegacyInstanceWorkItem).filter_by(action_id="new-held-legacy").count() == 0
         held = db.query(LegacyInstanceWorkItem).filter_by(action_id="held-failover").one()
         healthy = db.query(LegacyInstanceWorkItem).filter_by(action_id="healthy-failover").one()
         assert (held.status, held.legacy_instance_id) == ("paused", SCOPE["legacy_instance_id"])
-        assert (healthy.status, healthy.legacy_instance_id) == ("queued", MIRROR["legacy_instance_id"])
+        assert (healthy.status, healthy.legacy_instance_id, healthy.namespace) == (
+            "queued", MIRROR["legacy_instance_id"], "recovery-namespace",
+        )
+        for paused_id in ("wrong-jurisdiction", "bfd_pinned-fixture"):
+            paused = db.query(LegacyInstanceWorkItem).filter_by(action_id=paused_id).one()
+            assert (paused.status, paused.legacy_instance_id) == ("paused", SCOPE["legacy_instance_id"])
         held_at_destination = db.query(LegacyInstanceWorkItem).filter_by(action_id="held-at-destination").one()
         assert (held_at_destination.status, held_at_destination.legacy_instance_id) == ("paused", SCOPE["legacy_instance_id"])

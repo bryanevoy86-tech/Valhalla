@@ -2012,25 +2012,23 @@ def test_legacy_orchestration_runtime_multi_instance_policy_failover_and_isolati
     )
     assert legacy_a.status_code == 200, legacy_a.text
 
-    legacy_b = client.post(
-        "/api/completion/legacy-orchestration/provision",
-        json={
-            "legacy_instance_id": "LEGACY_B",
-            "display_name": "Legacy B - Texas Acquisitions",
-            "parent_instance_id": "PRIMARY_HEIMDALL",
-            "business_id": "business_b",
-            "industry": "operating_businesses",
-            "jurisdiction": "US-TX",
-            "allowed_engines": ["business_acquisitions", "market_intelligence"],
-            "operating_objectives": ["acquisition pipeline"],
-            "data_namespace": "legacy_b_ns",
-            "integration_profile": {"policy_propagation_blocked": True},
-            "risk_profile": {"tier": "heightened"},
-            "permissions": {"operator": ["execute"], "owner": ["approve"]},
-            "local_knowledge_refs": ["playbook-us-tx-v1"],
-            "policy_id": "policy-primary-global",
-        },
-    )
+    legacy_b_payload = {
+        "legacy_instance_id": "LEGACY_B",
+        "display_name": "Legacy B - Texas Acquisitions",
+        "parent_instance_id": "PRIMARY_HEIMDALL",
+        "business_id": "business_b",
+        "industry": "operating_businesses",
+        "jurisdiction": "US-TX",
+        "allowed_engines": ["business_acquisitions", "market_intelligence"],
+        "operating_objectives": ["acquisition pipeline"],
+        "data_namespace": "legacy_b_ns",
+        "integration_profile": {"policy_propagation_blocked": True},
+        "risk_profile": {"tier": "heightened"},
+        "permissions": {"operator": ["execute"], "owner": ["approve"]},
+        "local_knowledge_refs": ["playbook-us-tx-v1"],
+        "policy_id": "policy-primary-global",
+    }
+    legacy_b = client.post("/api/completion/legacy-orchestration/provision", json=legacy_b_payload)
     assert legacy_b.status_code == 200, legacy_b.text
 
     policy_v2 = client.post(
@@ -2150,6 +2148,13 @@ def test_legacy_orchestration_runtime_multi_instance_policy_failover_and_isolati
     by_instance = {row["legacy_instance_id"]: row for row in health_body["instances"]}
     assert by_instance["LEGACY_B"]["synchronization_status"] in {"BLOCKED", "DIVERGED"}
     assert by_instance["LEGACY_B"]["pending_work"] >= 1
+
+    replay = client.post("/api/completion/legacy-orchestration/provision", json=legacy_b_payload)
+    assert replay.status_code == 409
+    still_failed = client.get("/api/completion/legacy-orchestration/health").json()
+    assert next(row for row in still_failed["instances"] if row["legacy_instance_id"] == "LEGACY_B")[
+        "synchronization_status"
+    ] == "BLOCKED"
 
     recover = client.post(
         "/api/completion/legacy-orchestration/recover",

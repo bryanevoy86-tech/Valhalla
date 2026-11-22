@@ -3550,10 +3550,11 @@ def provision_legacy_instance(payload: LegacyProvisionRequest, db: Session = Dep
 
     row = db.query(LegacyInstanceRegistryItem).filter(
         LegacyInstanceRegistryItem.legacy_instance_id == payload.legacy_instance_id
-    ).first()
-    if row is None:
-        row = LegacyInstanceRegistryItem(legacy_instance_id=payload.legacy_instance_id)
-        db.add(row)
+    ).with_for_update().first()
+    if row is not None:
+        raise HTTPException(409, "Legacy already exists. Use scoped policy and recovery operations.")
+    row = LegacyInstanceRegistryItem(legacy_instance_id=payload.legacy_instance_id)
+    db.add(row)
 
     row.display_name = payload.display_name
     row.parent_instance_id = payload.parent_instance_id
@@ -3805,6 +3806,11 @@ def assign_legacy_work(payload: LegacyWorkAssignRequest, db: Session = Depends(g
     if payload.engine_id not in set(_loads(row.engines_json, [])):
         raise HTTPException(status_code=409, detail="requested engine is not assigned to this legacy instance")
 
+    if payload.business_id not in _loads(row.assigned_businesses_json, []):
+        raise HTTPException(409, "requested business is not assigned to this legacy instance")
+    if local.get("data_namespace") and local["data_namespace"] != payload.data_namespace:
+        raise HTTPException(409, "requested namespace does not match legacy context")
+
     from app.services.economic_control import require_no_containment
 
     require_no_containment(db, {
@@ -3844,11 +3850,21 @@ def failover_legacy_instance(payload: LegacyFailoverRequest, db: Session = Depen
     from app.services.economic_control import require_no_containment
 
     _ensure_registry_tables(db)
-    failed = db.query(LegacyInstanceRegistryItem).filter(
-        LegacyInstanceRegistryItem.legacy_instance_id == payload.failed_instance_id
-    ).first()
+    if payload.recovery_instance_id == payload.failed_instance_id:
+        raise HTTPException(409, "Recovery must use a different legacy instance")
+    instance_ids = {payload.failed_instance_id}
+    if payload.recovery_instance_id:
+        instance_ids.add(payload.recovery_instance_id)
+    registry = LegacyInstanceRegistryItem
+    rows = {item.legacy_instance_id: item for item in db.query(registry).filter(
+        registry.legacy_instance_id.in_(instance_ids),
+    ).order_by(registry.legacy_instance_id).with_for_update().all()}
+    failed = rows.get(payload.failed_instance_id)
     if failed is None:
-        raise HTTPException(status_code=404, detail="failed instance not found")
+        raise HTTPException(404, "failed instance not found")
+    recovery = rows.get(payload.recovery_instance_id)
+    if payload.recovery_instance_id and recovery is None:
+        raise HTTPException(404, "recovery instance not found")
 
     failed.failover_state = "FAILED"
     failed.synchronization_status = "BLOCKED"
@@ -3857,22 +3873,31 @@ def failover_legacy_instance(payload: LegacyFailoverRequest, db: Session = Depen
     reassigned = 0
     paused = 0
     containment_paused = 0
-    if payload.recovery_instance_id:
-        recovery = db.query(LegacyInstanceRegistryItem).filter(
-            LegacyInstanceRegistryItem.legacy_instance_id == payload.recovery_instance_id
-        ).first()
-        if recovery is None:
-            raise HTTPException(status_code=404, detail="recovery instance not found")
-
-        failed_businesses = set(_loads(failed.assigned_businesses_json, []))
-        recovery_businesses = set(_loads(recovery.assigned_businesses_json, []))
+    scope_paused = 0
+    if recovery is not None:
+        failed_businesses = _loads(failed.assigned_businesses_json, [])
+        recovery_businesses = _loads(recovery.assigned_businesses_json, [])
+        recovery_engines = _loads(recovery.engines_json, [])
+        recovery_jurisdictions = _loads(recovery.assigned_jurisdictions_json, [])
+        context = _loads(recovery.local_knowledge_context_json, {})
+        namespace = context.get("data_namespace") if isinstance(context, dict) else None
+        recovery_ready = (
+            recovery.status in {"PASS", "PARTIAL"} and recovery.isolation_state == "ISOLATED"
+            and recovery.synchronization_status == "SYNCED" and recovery.failover_state == "NOT_TRIGGERED"
+            and isinstance(namespace, str) and bool(namespace)
+            and all(isinstance(value, list) for value in (
+                failed_businesses, recovery_businesses, recovery_engines, recovery_jurisdictions,
+            ))
+        )
 
         q = db.query(LegacyInstanceWorkItem).filter(
             LegacyInstanceWorkItem.legacy_instance_id == payload.failed_instance_id,
             LegacyInstanceWorkItem.status.in_(["queued", "in_progress"]),
         )
         for item in q.order_by(LegacyInstanceWorkItem.id).with_for_update().all():
-            if item.business_id in recovery_businesses and item.business_id in failed_businesses:
+            if (recovery_ready and item.business_id in recovery_businesses and item.business_id in failed_businesses
+                    and item.engine_id in recovery_engines and item.jurisdiction in recovery_jurisdictions
+                    and not item.action_id.startswith("bfd_")):
                 scope = {key: getattr(item, key) for key in (
                     "legacy_instance_id", "business_id", "engine_id", "jurisdiction",
                 )}
@@ -3888,17 +3913,19 @@ def failover_legacy_instance(payload: LegacyFailoverRequest, db: Session = Depen
                     continue
                 item.reassigned_from_instance_id = payload.failed_instance_id
                 item.legacy_instance_id = payload.recovery_instance_id
+                item.namespace = namespace
                 item.status = "queued"
                 reassigned += 1
             else:
                 item.status = "paused"
                 paused += 1
+                scope_paused += 1
     else:
         q = db.query(LegacyInstanceWorkItem).filter(
             LegacyInstanceWorkItem.legacy_instance_id == payload.failed_instance_id,
             LegacyInstanceWorkItem.status.in_(["queued", "in_progress"]),
         )
-        for item in q.all():
+        for item in q.order_by(LegacyInstanceWorkItem.id).with_for_update().all():
             item.status = "paused"
             paused += 1
 
@@ -3914,6 +3941,7 @@ def failover_legacy_instance(payload: LegacyFailoverRequest, db: Session = Depen
             "reassigned": reassigned,
             "paused": paused,
             "containment_paused": containment_paused,
+            "scope_paused": scope_paused,
         },
     )
 
@@ -3924,6 +3952,7 @@ def failover_legacy_instance(payload: LegacyFailoverRequest, db: Session = Depen
         "reassigned": reassigned,
         "paused": paused,
         "containment_paused": containment_paused,
+        "scope_paused": scope_paused,
     }
 
 
