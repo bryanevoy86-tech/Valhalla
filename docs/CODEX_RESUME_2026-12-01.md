@@ -498,3 +498,8 @@ An authorized proposal can cite up to ten scoped `mimir_outcome_claims` in its s
 ### Specialist and independent checkout contradiction review
 
 Approval, contradiction and verified-learning roles use the same scoped Factory receipt reconciliation. Forseti, Loki and Tyr can inspect checkout fixtures. The independent reviewer raises critical findings when checkout settlement or Factory source receipts conflict, while preserving the distinct reviewer identity and existing review workflow. A matched fixture remains internal evidence.
+
+
+### Containment at Factory queue admission
+
+A contained Factory scope cannot create a fresh listing-draft queue entry. An exact retry can still return the existing action. The existing approval, standing grant, execution, failover and checkout boundaries remain separate. When rehearsing recovery, verify the queue count and original action identity before reopening a scope.

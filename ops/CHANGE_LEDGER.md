@@ -905,3 +905,8 @@ Development commit `0f2220d74753e634420ef63e81aee562f63eca5e` checks cited outco
 ## November 21 — Specialists and independent review receive checkout contradictions
 
 Development commit `aa5d755c4ab62a38bdf49c18b08718aef7da7f51` extends Factory reconciliation to the existing approval, counter-evidence and learning lenses. Forseti, Loki and Tyr also receive the scoped checkout observations. The integrated fixture changed one settlement amount. Forseti changed from matched to conflict and the independent local reviewer identified the critical evidence discrepancy. The full local backend passed 373 tests.
+
+
+## November 21 — Factory queue admission honors capital containment
+
+Development commit `f66b5139be26d557b662470e827acf5c5f481028` extends the canonical economic guard to fresh Factory work admission. The focused test proves a held scope cannot create a new work row or queue event and can still read an exact replay of the original action.
