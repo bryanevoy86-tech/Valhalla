@@ -5,6 +5,7 @@ from pathlib import Path
 import runpy
 from uuid import uuid4
 
+import pytest
 from sqlalchemy.orm import Session
 
 from app.core.settings import settings
@@ -187,7 +188,14 @@ def test_owner_prepares_atomic_multifile_builder_candidate(deal_client, tmp_path
         assert record["content"] == edit["after"] + "\n"
         assert (tmp_path / edit["path"]).read_text() == edit["before"] + "\n"
 
-def test_builder_generates_owner_attention_repair_without_owner_supplied_edits(deal_client, tmp_path, monkeypatch):
+@pytest.mark.parametrize("name,recipe,requests,cache", [
+    ("owner_attention", "refresh_owner_attention_collection",
+     ["/api/weweb/owner-attention", "/api/weweb/owner-briefing", "/api/weweb/owner-briefing?mode=driving"], 0),
+    ("metrics", "refresh_metrics_collection", ["/metrics"], 30),
+])
+def test_builder_generates_collection_repair_without_owner_supplied_edits(
+    deal_client, tmp_path, monkeypatch, name, recipe, requests, cache,
+):
     client, engine = deal_client
     for model in (BuilderEvent, BuilderTask, BuilderAssignment):
         model.__table__.create(engine)
@@ -197,12 +205,12 @@ def test_builder_generates_owner_attention_repair_without_owner_supplied_edits(d
     monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "false")
     owner = {"X-Owner-Mandate-Key": "fixture-recipe-owner"}
     runner = {"X-Builder-Runner-Key": "fixture-recipe-runner"}
-    target = tmp_path / "web/weweb-datasources/owner_attention.collection.json"
+    target = tmp_path / f"web/weweb-datasources/{name}.collection.json"
     target.parent.mkdir(parents=True)
     original = b'{"requests":[{"name":"list_owner_attention","cacheSeconds":60}]}'
     target.write_bytes(original)
     request = {"assignment_id": str(uuid4()), "base_commit": "a" * 40, "image_id": "sha256:" + "b" * 64,
-               "title": "Refresh canonical owner attention collection", "recipe": "refresh_owner_attention_collection",
+               "title": "Refresh canonical route collection", "recipe": recipe,
                "source_sha256": sha256(original).hexdigest()}
     endpoint = "/builder/assignments/prepare"
     assert client.post(endpoint, headers=runner, json=request).status_code == 401
@@ -216,8 +224,6 @@ def test_builder_generates_owner_attention_repair_without_owner_supplied_edits(d
     assert target.read_bytes() == original
     assert record["path"] == target.relative_to(tmp_path).as_posix()
     generated = json.loads(record["content"])
-    assert [entry["url"] for entry in generated["requests"]] == [
-        "/api/weweb/owner-attention", "/api/weweb/owner-briefing", "/api/weweb/owner-briefing?mode=driving",
-    ]
-    assert all(entry["cacheSeconds"] == 0 and entry["method"] == "GET" for entry in generated["requests"])
+    assert [entry["url"] for entry in generated["requests"]] == requests
+    assert all(entry["cacheSeconds"] == cache and entry["method"] == "GET" for entry in generated["requests"])
     assert lease["release_authorized"] is False

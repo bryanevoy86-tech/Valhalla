@@ -24,12 +24,17 @@ from app.services.prime_business_execution import _emergency_stop_active, requir
 
 
 MAX_LEASE_CLAIMS = 3
-OWNER_ATTENTION_PATH = "web/weweb-datasources/owner_attention.collection.json"
-OWNER_ATTENTION_REQUESTS = (
-    ("list_owner_attention", "/api/weweb/owner-attention"),
-    ("read_owner_briefing", "/api/weweb/owner-briefing"),
-    ("read_driving_briefing", "/api/weweb/owner-briefing?mode=driving"),
-)
+COLLECTION_RECIPES = {
+    "refresh_owner_attention_collection": (
+        "owner_attention",
+        (("list_owner_attention", "/api/weweb/owner-attention", 0),
+         ("read_owner_briefing", "/api/weweb/owner-briefing", 0),
+         ("read_driving_briefing", "/api/weweb/owner-briefing?mode=driving", 0)),
+    ),
+    "refresh_metrics_collection": (
+        "metrics", (("list_metrics", "/metrics", 30),),
+    ),
+}
 
 
 def require_schema(db: Session = Depends(get_db)):
@@ -86,7 +91,7 @@ class BatchCandidateIn(CandidateRequest):
 
 
 class RecipeCandidateIn(CandidateRequest):
-    recipe: Literal["refresh_owner_attention_collection"]
+    recipe: Literal["refresh_owner_attention_collection", "refresh_metrics_collection"]
     source_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
 
 
@@ -156,20 +161,21 @@ def prepare(payload: CandidateIn | BatchCandidateIn | RecipeCandidateIn, request
         return view(existing)
     files, source_hashes = [], []
     if recipe:
-        _, source_hash = _read_base(OWNER_ATTENTION_PATH)
+        name, requests = COLLECTION_RECIPES[payload.recipe]
+        path = f"web/weweb-datasources/{name}.collection.json"
+        _, source_hash = _read_base(path)
         if source_hash != payload.source_sha256:
-            raise HTTPException(409, "Owner attention collection snapshot changed")
+            raise HTTPException(409, "Collection snapshot changed")
         get_paths = {getattr(route, "path", None) for route in request.app.routes
                      if "GET" in (getattr(route, "methods", None) or ())}
-        if any(url.partition("?")[0] not in get_paths for _, url in OWNER_ATTENTION_REQUESTS):
-            raise HTTPException(409, "Owner briefing routes are unavailable")
+        if any(url.partition("?")[0] not in get_paths for _, url, _ in requests):
+            raise HTTPException(409, "Collection routes are unavailable")
         collection = {
-            "name": "owner_attention.collection", "datasource": "Valhalla API",
-            "requests": [{"name": name, "method": "GET", "url": url, "cacheSeconds": 0}
-                         for name, url in OWNER_ATTENTION_REQUESTS],
+            "name": f"{name}.collection", "datasource": "Valhalla API",
+            "requests": [{"name": key, "method": "GET", "url": url, "cacheSeconds": cache}
+                         for key, url, cache in requests],
         }
-        files.append(FileSpec(path=OWNER_ATTENTION_PATH, mode="replace",
-                              content=json.dumps(collection, indent=2) + "\n"))
+        files.append(FileSpec(path=path, mode="replace", content=json.dumps(collection, indent=2) + "\n"))
         source_hashes.append(source_hash)
     else:
         edits = payload.edits if isinstance(payload, BatchCandidateIn) else [payload]
