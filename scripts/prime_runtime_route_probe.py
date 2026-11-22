@@ -49,6 +49,7 @@ MANDATORY_ENDPOINTS = {
     "market_investment_replay": ("POST", "/api/prime/market/replays/investment"),
     "market_fx_replay": ("POST", "/api/prime/market/replays/fx"),
     "foundry_evidence": ("POST", "/api/prime/foundry/evidence"),
+    "foundry_consumer_research": ("POST", "/api/prime/foundry/evidence/{evidence_id}/consumer-research"),
     "foundry_candidate": ("GET", "/api/prime/foundry/reports/{report_id}/candidate/{evidence_id}"),
     "foundry_campaign_summary": ("POST", "/api/prime/foundry/rehearsal/campaigns/{campaign_id}/summary"),
     "foundry_acquisition_plan": ("POST", "/api/prime/foundry/rehearsal/campaigns/{campaign_id}/acquisition-plan"),

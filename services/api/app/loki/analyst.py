@@ -16,6 +16,18 @@ def _number(proposal, field):
     return value if type(value) in {float, int} and isfinite(value) else None
 
 
+def _consumer_findings(research, field):
+    if (not isinstance(research, dict) or research.get("confidence") != "AGGREGATE_DESCRIPTIVE_ONLY"
+            or any(research.get(key) is not False for key in (
+                "causality_verified", "settled_conversion_verified", "independent_study_source_verified",
+                "external_action_authorized",
+            ))):
+        return [_finding("consumer_claim_overreach", field,
+                         "Aggregate research cannot establish causality, settlement, or action authority.", critical=True)]
+    return [_finding("consumer_evidence_limits", field,
+                     "Check cohort selection, transparent terms, pricing uncertainty, and transfer to this market before reliance.")]
+
+
 def challenge(item: dict) -> IndependentReviewIn:
     kind, proposal = item["artifact_type"], item["raw_input"]
     digest = artifact_digest(kind, item["reference"], proposal)
@@ -23,6 +35,9 @@ def challenge(item: dict) -> IndependentReviewIn:
         raise ValueError("Queued artifact digest mismatch")
     findings = []
     if kind == "universal_opportunity":
+        specialist = proposal.get("specialist_inputs")
+        if isinstance(specialist, dict) and "consumer_research" in specialist:
+            findings.extend(_consumer_findings(specialist["consumer_research"], "specialist_inputs/consumer_research"))
         lower = _number(proposal, "expected_margin_low")
         upper = _number(proposal, "expected_margin_high")
         cost = _number(proposal, "estimated_test_cost")
@@ -95,6 +110,15 @@ def challenge(item: dict) -> IndependentReviewIn:
                 critical=market.get("external_execution_authorized") is not False,
             ))
         if isinstance(sources, dict):
+            if sources.get("consumer_research_holds"):
+                findings.append(_finding("consumer_evidence_hold", "observations/foundry_signals",
+                                         "Refresh stale or changed consumer evidence before reliance.", critical=True))
+            signals = sources.get("foundry_signals")
+            if isinstance(signals, list):
+                for index, signal in enumerate(signals):
+                    if isinstance(signal, dict) and "consumer_research" in signal:
+                        findings.extend(_consumer_findings(signal["consumer_research"],
+                                                           f"observations/foundry_signals/{index}/consumer_research"))
             acquisition = sources.get("acquisition_rehearsal")
             if isinstance(acquisition, list) and any(
                 isinstance(item, dict) and (item.get("basis") == "EVIDENCE_HOLD"

@@ -507,7 +507,8 @@ def record_campaign_visit(payload: VisitIn, db: Session = Depends(get_db)):
                 raise HTTPException(503, "Campaign attribution paused by emergency stop")
             recorded = AcquisitionPlanIn.model_validate(plan["request"])
             current = make_plan(db, payload.campaign_id, recorded, datetime.now(timezone.utc).date())
-            if plan["demand_sha256"] != current["demand_sha256"]:
+            if (plan["demand_sha256"] != current["demand_sha256"]
+                    or plan.get("consumer_research") != current.get("consumer_research")):
                 raise HTTPException(409, "Campaign demand evidence has changed")
         if direct:
             proof = consent_receipt(scope, payload.campaign_id, payload.visit_id, payload.consent_fixture_id)

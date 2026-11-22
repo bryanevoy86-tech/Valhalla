@@ -1035,3 +1035,5 @@ The acceptance matrix retains 13 P0 and 39 total criteria requiring internal cod
 - Added both private WeWeb previews with editor snapshot and exact workflow readback. Added a closed-month allocation API rehearsal and the local independent Loki review artifact, including bounds, authority and evidence mutation checks.
 
 - The direct acquisition rehearsal now requires owner-gated synthetic opt-in evidence, binds replay to the recorded consent, and checks consent integrity before reporting settled conversion. The review can recommend pausing if recorded fixture acquisition costs exceed the planned validation budget.
+
+- Consumer behaviour continuation adds a scoped aggregated research contract bound to current sourced demand and propagates it into existing Pantheon, Prime candidate, independent Loki and acquisition paths. The synthetic Product Foundry workflow tests ethics refusal, small-cell suppression, non-conclusive price comparison, exact replay, governed candidate use and digest linkage to a reconciled fixture outcome.

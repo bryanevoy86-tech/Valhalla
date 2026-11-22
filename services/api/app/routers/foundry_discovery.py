@@ -11,14 +11,15 @@ from sqlalchemy.orm import Session
 from app.core.db import get_db
 from app.core.dependencies import require_prime_control_key
 from app.loki.evidence import artifact_digest
-from app.models.completion_registry import SourceRegistryItem
+from app.models.completion_registry import LegacyOrchestrationEvent, SourceRegistryItem
 from app.models.foundry_evidence import FoundryEvidence
 from app.pantheon.monitor import verified_report
 from app.services.foundry_discovery import (
     DISCOVERY_ROLES, EvidenceIn, SCOPE_FIELDS, candidate_fields, checked_evidence, withdrawal_trigger,
 )
 from app.services.foundry_intake import FoundryIntakeJob, Intake, current_time, intake_ready, job_view, key_for, source_for
-from app.services.prime_business_execution import _check_legacy, require_owner_mandate_key
+from app.services.prime_business_execution import _check_legacy, _event, _json, require_owner_mandate_key
+from app.services.consumer_evidence import ConsumerEvidence, EVENT, build_record, event_id, project, read_consumer_evidence
 from app.services.specialist_triggers import enqueue_prime, enqueue_research, outcome_scope_key
 
 
@@ -86,8 +87,43 @@ def prepare_candidate(report_id: str, evidence_id: UUID, db: Session = Depends(g
         raise HTTPException(404, "Report does not contain this research candidate")
     _check_legacy(db, **report["scope"])
     payload = checked_evidence(row, report["scope"], datetime.now(timezone.utc).date(), db=db)
-    return {"proposal": {**candidate_fields(row, payload, report_id), "persist_decision": False},
+    research = read_consumer_evidence(db, row, payload, report["scope"], datetime.now(timezone.utc).date())
+    if research is not None:
+        signal = next(signal for signal in report["observations"]["foundry_signals"]
+                      if signal["evidence_id"] == str(evidence_id) and signal["sha256"] == row.digest)
+        if signal.get("consumer_research") != research:
+            raise HTTPException(409, "Run a current specialist report before using consumer research")
+    return {"proposal": {**candidate_fields(row, payload, report_id, consumer_research=research), "persist_decision": False},
             "state": "RESEARCH_CANDIDATE", "execution_authorized": False}
+
+
+@router.post("/evidence/{evidence_id}/consumer-research", status_code=201, dependencies=owner)
+def record_consumer_research(evidence_id: UUID, request: ConsumerEvidence, db: Session = Depends(get_db)):
+    scope = request.scope.model_dump()
+    _check_legacy(db, **scope)
+    if not inspect(db.connection()).has_table(LegacyOrchestrationEvent.__tablename__):
+        raise HTTPException(503, "Consumer research journal unavailable")
+    row = db.get(FoundryEvidence, evidence_id, with_for_update=True)
+    if row is None:
+        raise HTTPException(404, "Demand evidence not found")
+    today = datetime.now(timezone.utc).date()
+    evidence = checked_evidence(row, scope, today, db=db)
+    result = build_record(row, evidence, scope, request, today)
+    reference = event_id(evidence_id)
+    recorded = db.scalar(select(LegacyOrchestrationEvent).filter_by(event_id=reference))
+    if recorded is not None:
+        if (recorded.event_type != EVENT or recorded.legacy_instance_id != scope["legacy_instance_id"]
+                or _json(recorded.payload_json, {}) != result):
+            raise HTTPException(409, "Demand observation already has different consumer research")
+        return project(result)
+    _event(db, event_id=reference, legacy_instance_id=scope["legacy_instance_id"], event_type=EVENT,
+           message="Aggregate consumer research recorded", payload=result)
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(409, "Concurrent consumer research already recorded") from None
+    return project(result)
 
 
 @router.post("/intake", status_code=202, dependencies=owner)

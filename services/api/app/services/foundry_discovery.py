@@ -16,7 +16,7 @@ from app.services.specialist_triggers import outcome_scope_key
 Cents = Annotated[int, Field(strict=True, ge=0, le=10_000_000_000)]
 SCOPE_FIELDS = {"legacy_instance_id", "business_id", "engine_id", "jurisdiction"}
 DISCOVERY_ROLES = frozenset({
-    "ODIN", "HUGINN", "NJORD", "FREYJA", "TYR", "FORSETI", "NORNS", "HEIMDALL", "MIMIR", "LOKI",
+    "ODIN", "HUGINN", "NJORD", "FREYJA", "TYR", "FORSETI", "NORNS", "HEIMDALL", "MIMIR", "LOKI", "BRAGI",
 })
 
 
@@ -218,6 +218,8 @@ def review_priority(role: str, metrics: dict) -> str:
 
 
 def discover(db: Session, role: str, scope: dict, today: date) -> dict:
+    from app.services.consumer_evidence import read_consumer_evidence
+
     if not inspect(db.connection()).has_table(FoundryEvidence.__tablename__):
         return {"foundry_signal_status": "SOURCE_SCHEMA_UNAVAILABLE", "foundry_signals": []}
     rows = db.scalars(select(FoundryEvidence).where(
@@ -227,6 +229,7 @@ def discover(db: Session, role: str, scope: dict, today: date) -> dict:
     ).order_by(FoundryEvidence.observed_on.desc(), FoundryEvidence.id).limit(20)).all()
     signals = []
     rejected = []
+    research_holds = []
     for row in rows:
         try:
             payload = checked_evidence(row, scope, today, db=db)
@@ -234,16 +237,23 @@ def discover(db: Session, role: str, scope: dict, today: date) -> dict:
             rejected.append(str(row.id))
             continue
         metrics = economics(payload)
+        research = None
+        try:
+            research = read_consumer_evidence(db, row, payload, scope, today)
+        except HTTPException:
+            research_holds.append(str(row.id))
         signals.append({
             "evidence_id": str(row.id), "sha256": row.digest, "source_ref": row.source_ref,
             "title": payload.title, "kind": payload.kind, "evidence_class": payload.evidence_class,
             "priority": review_priority(role, metrics), "economics": metrics, "demand_evidence": demand_evidence(payload),
+            **({"consumer_research": research} if research is not None else {}),
         })
     return {"foundry_signal_status": "OBSERVED" if signals else "NO_ELIGIBLE_SOURCE",
-            "foundry_signals": signals, "invalid_foundry_evidence_ids": rejected}
+            "foundry_signals": signals, "invalid_foundry_evidence_ids": rejected,
+            **({"consumer_research_holds": research_holds} if research_holds else {})}
 
 
-def candidate_fields(row: FoundryEvidence, payload: EvidenceIn, report_id: str) -> dict:
+def candidate_fields(row: FoundryEvidence, payload: EvidenceIn, report_id: str, *, consumer_research=None) -> dict:
     return {
         "opportunity_id": f"foundry-{row.id}",
         "source": "scoped_foundry_evidence",
@@ -259,6 +269,7 @@ def candidate_fields(row: FoundryEvidence, payload: EvidenceIn, report_id: str) 
             "foundry_evidence": {"id": str(row.id), "sha256": row.digest, "report_id": report_id},
             "foundry_economics": economics(payload),
             **({"discovery_demand": demand_evidence(payload)} if payload.provenance else {}),
+            **({"consumer_research": consumer_research} if consumer_research is not None else {}),
         },
     }
 
@@ -268,8 +279,11 @@ def require_current_candidate(db: Session, proposal: dict, scope: dict, today: d
     inputs = proposal.get("specialist_inputs", {})
     evidence = inputs.get("foundry_evidence")
     if evidence is None and proposal.get("source") != "scoped_foundry_evidence":
+        if "consumer_research" in inputs:
+            raise HTTPException(409, "Consumer research requires exact Foundry provenance")
         return
     from app.pantheon.monitor import verified_report
+    from app.services.consumer_evidence import read_consumer_evidence
 
     try:
         row = db.get(FoundryEvidence, UUID(evidence["id"]), with_for_update=not advisory_only)
@@ -278,16 +292,19 @@ def require_current_candidate(db: Session, proposal: dict, scope: dict, today: d
             raise ValueError
         payload = checked_evidence(row, scope, today, db=db)
         report = verified_report(db, report_id)
-        if not any(signal["evidence_id"] == str(row.id) and signal["sha256"] == row.digest
-                   for signal in report["observations"]["foundry_signals"]):
+        signal = next((signal for signal in report["observations"]["foundry_signals"]
+                       if signal["evidence_id"] == str(row.id) and signal["sha256"] == row.digest), None)
+        research = read_consumer_evidence(db, row, payload, scope, today)
+        if signal is None or signal.get("consumer_research") != research:
             raise ValueError
-        canonical = candidate_fields(row, payload, report_id)
+        canonical = candidate_fields(row, payload, report_id, consumer_research=research)
         if canonical["simulation_fixture"] and not advisory_only:
             raise HTTPException(409, "Simulated Foundry evidence stays in shadow evaluation")
         expected_inputs = canonical.pop("specialist_inputs")
         if (any(proposal.get(key) != value for key, value in canonical.items())
                 or inputs.get("foundry_economics") != expected_inputs["foundry_economics"]
-                or inputs.get("discovery_demand") != expected_inputs.get("discovery_demand")):
+                or inputs.get("discovery_demand") != expected_inputs.get("discovery_demand")
+                or inputs.get("consumer_research") != expected_inputs.get("consumer_research")):
             raise ValueError
         return payload
     except (AttributeError, KeyError, TypeError, ValueError):

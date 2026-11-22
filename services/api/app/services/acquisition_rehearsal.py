@@ -14,6 +14,7 @@ from app.models.foundry_evidence import FoundryEvidence
 from app.models.marketing import MarketingCampaign
 from app.schemas.market_intelligence import MarketScope, StrictModel
 from app.services.foundry_discovery import checked_evidence, demand_evidence, economics
+from app.services.consumer_evidence import read_consumer_evidence
 from app.services.prime_business_execution import _json
 from app.services.specialist_triggers import outcome_scope_key
 
@@ -48,11 +49,13 @@ def make_plan(db, campaign_id, request, today: date):
         raise HTTPException(409, "Current sourced CAD demand evidence with observed interest is required")
     if request.experiment_budget_minor > evidence.test_cost:
         raise HTTPException(409, "Proposed campaign budget exceeds the sourced validation estimate")
+    research = read_consumer_evidence(db, row, evidence, scope, today)
     return {
         "campaign_id": campaign_id, "request": request.model_dump(mode="json"), "demand_sha256": row.digest,
         "target_buyer_segment": demand["buyer_segment"], "source_id": demand["source_id"],
         "demand_sample_count": demand["sample_count"], "demand_positive_count": demand["demand_count"],
         "unit_economics": economics(evidence), "basis": "INTERNAL_ACQUISITION_REHEARSAL",
+        **({"consumer_research": research} if research is not None else {}),
         "external_outreach_authorized": False, "spend_authorized": False, "publication_authorized": False,
     }
 
@@ -166,6 +169,12 @@ def settled_campaign(db, campaign_id, scope):
                                                    {"receipts": consent_digests}) if consent_digests else None,
         "verified_commercial_revenue": False, "external_action_authorized": False,
     }
+    if plan.get("consumer_research") is not None:
+        result["research_relationship"] = {
+            "consumer_research_sha256": plan["consumer_research"]["sha256"],
+            "research_actions": plan["consumer_research"]["research_actions"],
+            "campaign_causality_verified": False,
+        }
     return {**result, "sha256": artifact_digest("acquisition_fixture_result", str(campaign_id), result)}
 
 

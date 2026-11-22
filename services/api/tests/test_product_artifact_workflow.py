@@ -187,6 +187,30 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
     with Session(engine) as db:
         tick = foundry_intake.current_time()
         assert foundry_intake.run_intake(db, now=tick)["status"] == "COMPLETED"
+    research_path = f"/api/prime/foundry/evidence/{evidence_id}/consumer-research"
+    research = {
+        "scope": scope, "observation_end": today.isoformat(), "source_basis": "SYNTHETIC", "aggregate_sample": 80,
+        "observations": [{"signal": "UNDERSERVED_NEED", "count": 32}, {"signal": "CHECKOUT_FRICTION", "count": 12},
+                         {"signal": "PRICE_OBJECTION", "count": 20}, {"signal": "VOLUNTARY_REFERRAL", "count": 10}],
+        "offer_experiment": [{"cad_price_minor": 2500, "exposed": 40, "chose_offer": 18},
+                             {"cad_price_minor": 3000, "exposed": 40, "chose_offer": 16}],
+        "transparent_offer_and_terms": True, "voluntary_participation": True, "no_deceptive_claims_or_urgency": True,
+        "no_sensitive_profiling_or_vulnerability_targeting": True,
+        "no_fake_endorsements_or_manipulative_interfaces": True,
+    }
+    assert client.post(research_path, json=research).status_code == 401
+    assert client.post(research_path, headers=owner,
+                       json={**research, "no_deceptive_claims_or_urgency": False}).status_code == 422
+    assert client.post(research_path, headers=owner,
+                       json={**research, "observations": [{"signal": "PRICE_OBJECTION", "count": 2}]}).status_code == 422
+    recorded = client.post(research_path, headers=owner, json=research)
+    assert recorded.status_code == 201, recorded.text
+    aggregate = recorded.json()
+    assert client.post(research_path, headers=owner, json=research).json() == aggregate
+    assert client.post(research_path, headers=owner, json={**research, "aggregate_sample": 81}).status_code == 409
+    assert aggregate["price_signal"] == "NO_CLEAR_SEPARATION" and aggregate["causality_verified"] is False
+    assert {"SIMPLIFY_CHECKOUT", "TEST_TRANSPARENT_PRICING"} <= set(aggregate["research_actions"])
+    with Session(engine) as db:
         specialist_report_id = run_assignment(db, "ODIN", now=tick)["report_event_id"]
     source_report = client.get(f"/api/prime/pantheon/reports/{specialist_report_id}").json()
     assert source_report["trigger"] == "SOURCE_DISCOVERY"
@@ -196,6 +220,7 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
     proposal = {**proposal, **grounded, "persist_decision": True,
                 "specialist_inputs": {**proposal["specialist_inputs"], **grounded["specialist_inputs"]}}
     assert proposal["specialist_inputs"]["discovery_demand"]["sample_demand_bp"] == 7500
+    assert proposal["specialist_inputs"]["consumer_research"] == aggregate
     for model in (MarketingCampaign, FoundryRehearsalOrder, FoundryRehearsalPayment, FoundryCampaignVisit):
         model.__table__.create(engine)
     with Session(engine) as db:
@@ -211,6 +236,7 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
     assert planned.status_code == 201, planned.text
     assert planned.json()["target_buyer_segment"] == "Practice workshop operators"
     assert planned.json()["spend_authorized"] is False
+    assert planned.json()["consumer_research"]["sha256"] == aggregate["sha256"]
 
     capital_mandate = {"id": str(uuid4()), "scope": scope, "currency": "CAD", "max_exposure": 5000,
                "max_cumulative_loss": 175, "max_additional_funding": 1000, "min_operating_reserve": 200,
@@ -320,6 +346,7 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
     specialist_queue = client.get("/loki/worker/reviews", params={"artifact_type": "pantheon_report"}, headers=worker)
     specialist_input = specialist_queue.json()[0]
     specialist_result = challenge(specialist_input).model_dump(mode="json")
+    assert any(item["category"] == "consumer_evidence_limits" for item in specialist_result["findings"])
     specialist_path = f"/loki/reviews/{report_review['review_id']}"
     published = client.post(f"/loki/worker/reviews/{report_review['review_id']}/result", headers=worker, json=specialist_result)
     assert published.status_code == 201, published.text
@@ -405,6 +432,8 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
     assert review["settled_conversion_bp"] == 5000 and review["retained_net_order_conversion_bp"] == 0
     assert review["contribution_minor"] == -175 and review["recommendation"] == "RECOMMEND_PAUSE"
     assert review["consent_receipt_count"] == 2 and len(review["consent_evidence_sha256"]) == 64
+    assert review["research_relationship"]["consumer_research_sha256"] == aggregate["sha256"]
+    assert review["research_relationship"]["campaign_causality_verified"] is False
     assert review["plan_sha256"] == planned.json()["sha256"] and not review["verified_commercial_revenue"]
     pending_id = submit_and_approve({**listing, "request_key": "workshop-listing-02"})
     with Session(engine) as db:
@@ -585,7 +614,8 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
     history = report["verified_internal_outcomes"][0]
     claim = {key: history[key] for key in ("outcome_event_id", "artifact_sha256", "sales_verified")}
     reviewed_inputs = {key: value for key, value in proposal["specialist_inputs"].items()
-                       if key not in {"pantheon_report_ids", "foundry_evidence", "foundry_economics", "discovery_demand"}}
+                       if key not in {"pantheon_report_ids", "foundry_evidence", "foundry_economics",
+                                      "discovery_demand", "consumer_research"}}
     forecast_claim = {"basis": "NORNS_FACTORY_DEADLINE", "forecast_id": forecast_id,
                       "sha256": resolved.json()["resolution_sha256"], "observed_outcome": 1}
     reviewed_inputs["mimir_outcome_claims"] = [claim, forecast_claim, performance_claim]
