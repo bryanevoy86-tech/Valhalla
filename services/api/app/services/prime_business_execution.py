@@ -209,7 +209,7 @@ def _emergency_stop_active(db: Session) -> bool:
     }:
         return True
     try:
-        if not inspect(db.get_bind()).has_table("go_live_state"):
+        if not inspect(db.connection()).has_table("go_live_state"):
             return False
         from app.models.go_live_state import GoLiveState
 

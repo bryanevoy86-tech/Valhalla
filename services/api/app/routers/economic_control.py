@@ -15,7 +15,8 @@ from app.loki.review_service import reviewer_identity, verdict
 from app.models.economic_control import EconomicOperation, EconomicPool, EconomicRecord
 from app.schemas.economic_control import AssetRecovery, Containment, Decision, Liquidity, Mandate, MarketScope, Obligation, Opportunity, Performance, Plan, ReservationRelease
 from app.services.economic_control import (
-    ADVICE_TYPE, CONTAINMENT, assessment, current_performance, load_state, lock_pool, operation_key, pool_liquidity, ready,
+    ADVICE_TYPE, CONTAINMENT, assessment, business_contained, current_performance, load_state, lock_capital_pools,
+    lock_pool, operation_key, pool_liquidity, ready,
     store_record, trigger_reassessment, verified_payload,
 )
 from app.services.prime_business_execution import _check_legacy, _emergency_stop_active, require_owner_mandate_key
@@ -43,7 +44,7 @@ def commit(db):
         raise HTTPException(409, "Economic identity, source receipt or sequence already used") from None
 
 
-def context(db, scope, *, lock=True, new_currency=None):
+def context(db, scope, *, lock=True, new_currency=None, lock_all_pools=False):
     values = scope.model_dump()
     _check_legacy(db, **values)
     key = operation_key(values)
@@ -51,7 +52,10 @@ def context(db, scope, *, lock=True, new_currency=None):
     currency = operation.currency if operation else new_currency
     if currency is None:
         raise HTTPException(404, "Economic operation is not enrolled")
-    pool = lock_pool(db, currency) if lock else db.get(EconomicPool, currency)
+    if lock_all_pools:
+        pool = lock_capital_pools(db).get(currency)
+    else:
+        pool = lock_pool(db, currency) if lock else db.get(EconomicPool, currency)
     if pool is None:
         raise HTTPException(503, "Economic currency pool unavailable")
     operation = db.get(EconomicOperation, key, populate_existing=True)
@@ -110,7 +114,7 @@ def historical_candidates(db: Session = Depends(get_db)):
 
 @router.post("/mandates", status_code=201, dependencies=owner)
 def mandate(request: Mandate, db: Session = Depends(get_db)):
-    operation, state, pool = context(db, request.scope, new_currency=request.currency)
+    operation, state, pool = context(db, request.scope, new_currency=request.currency, lock_all_pools=True)
     row = existing_record(db, operation, "MANDATE", request)
     if row:
         return retry(row)
@@ -126,6 +130,9 @@ def mandate(request: Mandate, db: Session = Depends(get_db)):
         raise HTTPException(409, "Ordinary mandate revisions cannot relax capital or reserve limits")
     if previous and (request.opening_cumulative_loss or request.opening_additional_funding or request.opening_receipt_ref):
         raise HTTPException(409, "A revision cannot restate opening accounting history")
+    if not previous and request.opening_additional_funding:
+        if _emergency_stop_active(db) or business_contained(db, operation.scope, exclude_scope_key=operation.scope_key):
+            raise HTTPException(409, "Economic containment or emergency stop blocks opening commitments")
     if not previous:
         pool.committed_minor += request.opening_additional_funding
     return store(db, operation, "MANDATE", request, receipt_ref=request.opening_receipt_ref)
@@ -316,7 +323,7 @@ def review_artifact(plan: Plan, db: Session = Depends(get_db)):
 @router.post("/decisions", status_code=201, dependencies=owner)
 def record_decision(request: Decision, db: Session = Depends(get_db)):
     plan = request.plan
-    operation, state, pool = context(db, plan.scope)
+    operation, state, pool = context(db, plan.scope, lock_all_pools=True)
     row = existing_record(db, operation, "DECISION", plan)
     if row:
         record = verified_payload(row)

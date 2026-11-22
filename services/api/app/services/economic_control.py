@@ -8,7 +8,6 @@ from sqlalchemy import inspect, select, update
 from sqlalchemy.orm import Session
 
 from app.loki.evidence import artifact_digest
-from app.models.completion_registry import LegacyInstanceRegistryItem
 from app.models.economic_control import EconomicOperation, EconomicPool, EconomicRecord
 from app.models.foundry_evidence import FoundryEvidence
 from app.schemas.economic_control import Containment, Liquidity, Mandate, Obligation, Opportunity, Performance, Plan
@@ -251,12 +250,14 @@ def assessment(db, operation, state, pool, today, plan: Plan | None = None, *, l
     scope, mandate = operation.scope, state.mandate
     liquidity = pool_liquidity(db, pool)
     open_obligations = [item for item in state.obligations.values() if item.status != "CLOSED_IN_FIXTURE"]
-    available = max(0, usable_cash(state, pool, liquidity, today) - sum(item.amount_minor for item in open_obligations))
+    related_hold = business_contained(db, scope, exclude_scope_key=operation.scope_key)
+    available = (0 if related_hold else
+                 max(0, usable_cash(state, pool, liquidity, today) - sum(item.amount_minor for item in open_obligations)))
     remaining_exposure = max(0, mandate.max_exposure - (state.performance.outstanding_exposure if state.performance else 0)
                              - state.outstanding_reservations)
     comparison_budget = min(available, remaining_exposure, max(0, state.funding_limit - state.simulated_funding))
     ranked = comparison(db, state, scope, operation.currency, comparison_budget, today, lock_sources=lock_sources)
-    blockers = []
+    blockers = ["RELATED_BUSINESS_CONTAINED"] if related_hold else []
     performance = state.performance
     if not current_performance(state, today):
         blockers.append("MISSING_OR_STALE_PERFORMANCE")
@@ -369,39 +370,39 @@ def specialist_economics(db, role, scope, today):
     return {"economic_reassessment": common}
 
 
-def legacy_root(db, legacy_id):
-    visited = set()
-    while legacy_id and legacy_id not in visited and len(visited) < 12:
-        visited.add(legacy_id)
-        row = db.scalar(select(LegacyInstanceRegistryItem).filter_by(legacy_instance_id=legacy_id))
-        if row is None:
-            raise HTTPException(409, "Legacy lineage references an unavailable parent")
-        if not row.parent_instance_id:
-            return legacy_id
-        legacy_id = row.parent_instance_id
-    raise HTTPException(409, "Legacy lineage cannot be verified")
+def business_operations(db, business_id):
+    return db.scalars(select(EconomicOperation).where(
+        EconomicOperation.scope["business_id"].as_string() == business_id,
+    ).execution_options(populate_existing=True)).all()
+
+
+def lock_capital_pools(db):
+    # A new mirror or alternate currency cannot race admission past a business hold.
+    # All multi-pool writers acquire the existing pools in the same order.
+    currencies = db.scalars(select(EconomicPool.currency).order_by(EconomicPool.currency)).all()
+    return {currency: lock_pool(db, currency) for currency in currencies}
+
+
+def business_contained(db, scope, *, exclude_scope_key=None):
+    for candidate in business_operations(db, scope["business_id"]):
+        if candidate.scope_key == exclude_scope_key:
+            continue
+        if candidate.scope_key == operation_key(scope) and candidate.scope != scope:
+            raise HTTPException(409, "Economic mandate applies to this operating identity")
+        state = load_state(db, candidate)
+        if state.contained or state.cumulative_loss >= state.loss_limit:
+            return True
+    return False
 
 
 def require_no_containment(db: Session, scope: dict):
-    """Gate the internal Factory and fulfillment lanes across registered mirrors."""
+    """Gate dispatch and funding across all operating scopes of the same business."""
     if not ready(db):
         if inspect(db.connection()).has_table(EconomicOperation.__tablename__):
             raise HTTPException(503, "Economic containment evidence unavailable")
         return
-    candidates = db.scalars(select(EconomicOperation).where(
-        EconomicOperation.scope["business_id"].as_string() == scope["business_id"],
-    )).all()
-    if not candidates:
+    if not business_operations(db, scope["business_id"]):
         return
-    root = legacy_root(db, scope["legacy_instance_id"])
-    compatible = [operation for operation in candidates
-                  if legacy_root(db, operation.scope["legacy_instance_id"]) == root]
-    for currency in sorted({operation.currency for operation in compatible}):
-        lock_pool(db, currency)
-    for operation in compatible:
-        db.refresh(operation)
-        if operation.scope_key == operation_key(scope) and operation.scope != scope:
-            raise HTTPException(409, "Economic mandate applies to this operating identity")
-        state = load_state(db, operation)
-        if state.contained or state.cumulative_loss >= state.loss_limit:
-            raise HTTPException(409, "Economic containment blocks this operation")
+    lock_capital_pools(db)
+    if business_contained(db, scope):
+        raise HTTPException(409, "Economic containment blocks this operation")

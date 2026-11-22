@@ -886,3 +886,45 @@ def test_legacy_failover_pauses_contained_scope_before_reassignment(economic_cli
             assert (paused.status, paused.legacy_instance_id) == ("paused", SCOPE["legacy_instance_id"])
         held_at_destination = db.query(LegacyInstanceWorkItem).filter_by(action_id="held-at-destination").one()
         assert (held_at_destination.status, held_at_destination.legacy_instance_id) == ("paused", SCOPE["legacy_instance_id"])
+
+
+def test_business_hold_blocks_alternate_currency_reservation_and_dispatch(economic_client):
+    client, engine = economic_client
+    today = datetime.now(timezone.utc).date()
+    post(client, "mandates", mandate(today))
+    post(client, "mandates", mandate(today, scope=MIRROR, currency="USD"))
+    post(client, "performance", performance(today, scope=MIRROR))
+    post(client, "liquidity", liquidity(today, scope=MIRROR))
+    pre_hold, _ = queue_review(client, plan(scope=MIRROR), reconsider=True)
+
+    post(client, "containment", {"id": str(uuid4()), "scope": SCOPE,
+                                 "rationale": "Freeze this business while operator evidence is reviewed."})
+    post(client, "decisions", pre_hold, 409)
+    preview = post(client, "review-artifact", pre_hold["plan"], 200)["raw_input"]["analysis"]
+    assert "RELATED_BUSINESS_CONTAINED" in preview["blockers"]
+    assert preview["new_exposure_available_minor"] == 0
+    reviewed, _ = queue_review(client, plan(scope=MIRROR), reconsider=False)
+    refused = post(client, "decisions", reviewed, 409)
+    assert "RELATED_BUSINESS_CONTAINED" in refused["detail"]["blockers"]
+
+    new_scope = {**SCOPE, "legacy_instance_id": "alternate-registered-root"}
+    with Session(engine) as db:
+        db.add(LegacyInstanceRegistryItem(
+            legacy_instance_id=new_scope["legacy_instance_id"], display_name="Alternate root fixture",
+            status="PASS", synchronization_status="SYNCED", engines_json='["candidate-engine"]',
+            assigned_businesses_json='["venture-local"]', assigned_jurisdictions_json='["CA-MB"]',
+            local_knowledge_context_json=json.dumps(new_scope),
+        ))
+        db.commit()
+    rejected = post(client, "mandates", mandate(today, scope=new_scope, opening_additional_funding=1,
+                                               opening_receipt_ref="fixture:alternate-opening"), 409)
+    assert "containment" in rejected["detail"]
+    post(client, "mandates", mandate(today, scope=new_scope))
+    with Session(engine) as db:
+        with pytest.raises(HTTPException, match="containment"):
+            require_no_containment(db, new_scope)
+        assert all(row.committed_minor == 0 for row in db.query(EconomicPool))
+    # Preserve loss and liability evidence collection while blocking new exposure.
+    post(client, "obligations", {"id": str(uuid4()), "scope": MIRROR, "obligation_key": "held-invoice",
+                                 "due_on": today.isoformat(), "status": "OPEN", "amount_minor": 3,
+                                 "evidence_ref": "fixture:held-invoice"})
