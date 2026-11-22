@@ -769,7 +769,9 @@
         "services/api/tests/test_saas_tenant_entitlements.py",
         "services/api/app/routers/owner_weweb.py",
         "services/api/app/services/owner_startup.py",
-        "web/weweb-datasources/owner_attention.collection.json"
+        "web/weweb-datasources/owner_attention.collection.json",
+        "web/weweb-widgets/owner-attention.mjs",
+        "tests/test-weweb-owner-attention.test.mjs"
       ],
       "source_observation": "The private owner routes support JARVIS and attachment access gating. Driving mode includes specialist backlog integrity failures as an attention count.",
       "evidence_level": "SQLITE_INTEGRATION_TESTED",
@@ -782,13 +784,13 @@
       "owner_external_authorization_required": true,
       "continuation": {
         "next_implementation": "Wire the exact owner-preview routes in the December handoff. Verify status handling and device-local speech with a separately authorized preview project and test device.",
-        "existing_test_evidence": "Owner API and tenant regressions verify JWT isolation, disposition metadata, restore-hold blocking, no-store and revoked sessions. Private owner startup comparison separates dated public fees, quote and estimate classes, unknowns, activation, reserves and runway. The owner attention and driving briefing datasource is prepared for the authorized preview.",
+        "existing_test_evidence": "Owner API and tenant regressions verify JWT isolation, disposition metadata, restore-hold blocking, no-store and revoked sessions. Private owner startup comparison separates dated public fees, quote and estimate classes, unknowns, activation, reserves and runway. The owner attention and driving briefing datasource is prepared for the authorized preview. Owner Attention is installed in the primary WeWeb Home cockpit (05ce39c3-5a5f-4e26-892b-3aa82fff3051). Editor readback confirms both workflows and volatile variables. Transport fixtures pass owner response, denial, empty state, and exact acknowledgment checks.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
-          "internal_coding": "Bind new acknowledgment and parked draft actions in the owner preview.",
+          "internal_coding": "Bind parked dictation, private conversations, documents, and remaining owner and subscriber surfaces. Owner Attention read and acknowledgment are installed for approved preview.",
           "insufficient_test_evidence": "Exercise revocation, protected state and device outcomes end to end.",
-          "external_commissioning": "Test approved private preview and device.",
+          "external_commissioning": "Configure an authorized matching staging API origin and preview CORS. Test owner/subscriber denials, logout and revocation, exact acknowledgment receipt, responsive layout and local voice devices.",
           "owner_or_professional_action": "Approve preview access and local speech consent.",
           "conditional_expansion": null
         }

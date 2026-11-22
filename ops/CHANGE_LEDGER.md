@@ -979,3 +979,9 @@ Local regression passed 377 backend tests, 22 disposable PostgreSQL checks, eigh
 The acceptance matrix retains 13 P0 and 39 total criteria requiring internal coding. Provider commissioning and real revenue evidence remain separate.
 
 - `feaee4e00a4771e88321f272d8f682d7af50a322` preserves pending checkout and fulfillment observations before settlement infrastructure is available. The rehearsal requires an explicit Prime HOLD and an unmatched capture when the treasury tables are absent.
+
+## November 22 — Primary WeWeb cockpit Owner Attention
+
+- Primary project `286b2f26-c8e6-4561-ac4b-ca6537e7f8fe`, Home `05ce39c3-5a5f-4e26-892b-3aa82fff3051`. Editor snapshot `43225903-ebbb-482b-b2e0-de099c98b7eb` taken before installing panel `71ef9693-0ef5-49b7-9bf7-69c71498b321`.
+- Readback confirmed the refresh workflow `66e3b3e8-628a-4e33-8c32-f5bdd970c978` and one-item acknowledgment workflow `51525a55-75dd-4637-91bc-001900d7e26e`. Both are staged behind an empty approved-origin variable and reuse the existing revocable browser session. The canonical backend publishes and validates typed inbox and receipt shapes.
+- Local Node verification passed six checks across attention and voice. The editor binding is verified by readback. The authorized staging API origin, preview CORS and live browser acceptance remain pending.

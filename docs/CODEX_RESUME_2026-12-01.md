@@ -558,3 +558,18 @@ Prime can now cite `NORNS_FACTORY_DEADLINE` in reviewed Mimir claims using the f
 The first authorized revenue cycle still needs the selected operating adapter and mandate, independently validated demand and rights, tenant and provider settlement proof where applicable, scoped workers in migrated staging, and the owner's explicit commissioning authorization.
 
 During staged checkout rehearsal, test fulfillment holds before treasury or settlement provisioning. Scoped evidence must retain the hold and identify the capture as unmatched until its independent statement and settlement proof can be verified.
+
+### November 22 — WeWeb Owner Attention
+
+Primary project `286b2f26-c8e6-4561-ac4b-ca6537e7f8fe` has 11 pages and 14 sections on Home. Home `05ce39c3-5a5f-4e26-892b-3aa82fff3051` is the existing cockpit and still owns its prior navigation and login. The inventory found 143 pre-existing variables, 45 frontend workflows, no collections or reusable components, and no WeWeb-native backend/auth installed. The existing custom authentication workflows use the Valhalla API.
+
+| Editor resource | ID | Binding state |
+|---|---|---|
+| Recoverable editor snapshot | `43225903-ebbb-482b-b2e0-de099c98b7eb` | Created before integration |
+| Owner Attention panel | `71ef9693-0ef5-49b7-9bf7-69c71498b321` | Installed under existing cockpit |
+| Refresh click workflow | `66e3b3e8-628a-4e33-8c32-f5bdd970c978` | GET `/api/weweb/owner-attention` |
+| Acknowledge click workflow | `51525a55-75dd-4637-91bc-001900d7e26e` | POST `/api/weweb/owner-attention/acknowledge`, then refresh after matching receipt |
+| Allowed preview origin variable | `2861b009-a06b-436a-9d54-a95ec08e44cc` | Empty by design pending approved staging |
+| In-memory attention result variable | `9bdcbdad-719d-4b68-965b-ba9ec95e88fb` | Session-correlated with no persistence |
+
+Authorize a staging Valhalla API origin and matching preview CORS before placing that exact HTTPS origin in the preview variable and the existing API base in the isolated environment. Test with a configured owner, a subscriber and revoked credentials. Confirm the owner sees only the selected current item and count, the subscriber receives 403, revoked sessions receive 401, and one acknowledgment produces the matching private receipt. Check the signed-out, loading, empty, unavailable and narrow-screen states in WeWeb Preview. The installed workflow source was read back and compared to the repository module. Fixture tests exercised response validation and transport behavior. The browser integration and responsive preview remain pending. Owner conversations, documents, voice, subscriber surfaces and the remaining operating views are separate work.

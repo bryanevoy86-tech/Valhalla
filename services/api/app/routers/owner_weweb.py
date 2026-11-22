@@ -1,4 +1,5 @@
 """Write-side owner browser routes over the existing private JARVIS store."""
+from typing import Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends
@@ -53,16 +54,39 @@ class AttentionAcknowledgmentIn(BaseModel):
     notification_id: str = Field(min_length=3, max_length=128)
 
 
-@router.get("/owner-attention")
+class AttentionEntry(BaseModel):
+    notification_id: str
+    category: Literal["integrity", "prime_integrity", "review", "prime_advisory", "economic", "discovery", "schedule"]
+    reference: str
+
+
+class AttentionInboxOut(BaseModel):
+    entries: list[AttentionEntry]
+    acknowledged_ids: list[str]
+    view: Literal["PRIVATE_IN_APP"]
+    delivery_attempted: Literal[False]
+    execution_authorized: Literal[False]
+
+
+class AttentionAcknowledgmentOut(BaseModel):
+    notification_id: str
+    acknowledged: Literal[True]
+    delivery_attempted: Literal[False]
+    execution_authorized: Literal[False]
+
+
+@router.get("/owner-attention", response_model=AttentionInboxOut)
 def attention_inbox(db: Session = Depends(get_db), owner_id: int = Depends(require_owner_session)):
     from app.services.owner_operating_brief import owner_attention_with_acknowledgments
 
-    return private_owner_response(owner_attention_with_acknowledgments(db, owner_id))
+    inbox = AttentionInboxOut.model_validate(owner_attention_with_acknowledgments(db, owner_id))
+    return private_owner_response(inbox)
 
 
-@router.post("/owner-attention/acknowledge")
+@router.post("/owner-attention/acknowledge", response_model=AttentionAcknowledgmentOut)
 def attention_acknowledge(payload: AttentionAcknowledgmentIn, db: Session = Depends(get_db),
                           owner_id: int = Depends(require_owner_session)):
     from app.services.owner_operating_brief import acknowledge_owner_attention
 
-    return private_owner_response(acknowledge_owner_attention(db, owner_id, payload.notification_id))
+    receipt = AttentionAcknowledgmentOut.model_validate(acknowledge_owner_attention(db, owner_id, payload.notification_id))
+    return private_owner_response(receipt)
