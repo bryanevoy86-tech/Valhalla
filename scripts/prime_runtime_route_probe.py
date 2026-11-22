@@ -64,6 +64,7 @@ MANDATORY_ENDPOINTS = {
     "weweb_owner_attention": ("GET", "/api/weweb/owner-attention"),
     "weweb_owner_attention_ack": ("POST", "/api/weweb/owner-attention/acknowledge"),
     "weweb_owner_startup": ("POST", "/api/weweb/owner-startup/compare"),
+    "weweb_owner_operating_scope": ("POST", "/api/weweb/owner-operating-scope"),
     "provider_prices": ("POST", "/api/prime/provider-intelligence/price-quotes"),
     "provider_staging_selection": ("POST", "/api/prime/provider-intelligence/select-staging-candidate"),
     "norns_holdout": ("POST", "/api/prime/norns/forecasts/{forecast_id}/holdout"),

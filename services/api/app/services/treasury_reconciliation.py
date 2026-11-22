@@ -145,13 +145,13 @@ def append_statement(db, request, today):
     account.head_id = request.id
     return {**summary(request), "sha256": digest}
 
-def observe_statement_heads(db, scope: dict) -> dict:
+def observe_statement_heads(db, scope: dict, *, purpose="BUSINESS", detailed=False) -> dict:
     """Sample current scoped business fixture heads for specialist reconciliation."""
     if not statement_ready(db):
         return {"status": "UNAVAILABLE", "actual_accessible_funds_minor": None}
     account = StatementAccount
     binding = outcome_scope_key(scope)
-    rows = db.scalars(select(account).where(account.scope_key == binding, account.purpose == "BUSINESS")
+    rows = db.scalars(select(account).where(account.scope_key == binding, account.purpose == purpose)
                       .order_by(account.account_key).limit(21)).all()
     observations = []
     for ledger in rows[:20]:
@@ -167,6 +167,11 @@ def observe_statement_heads(db, scope: dict) -> dict:
             observations.append({**reference, "status": "MATCHED_FIXTURE", "sha256": statement.digest,
                                  "currency": snapshot.currency, "closing_minor": snapshot.closing_minor,
                                  "outstanding_liabilities_minor": snapshot.outstanding_liabilities_minor})
+            if detailed:
+                activity = summary(snapshot)
+                observations[-1].update({key: activity[key] for key in (
+                    "expense_minor", "compensation_net_minor", "budget_variance_minor", "protected_balance_minor",
+                )})
         except (HTTPException, ValidationError):
             observations.append({**reference, "status": "EVIDENCE_CONFLICT"})
     return {"status": "FIXTURE_SAMPLE" if rows else "NO_SCOPED_FIXTURES",

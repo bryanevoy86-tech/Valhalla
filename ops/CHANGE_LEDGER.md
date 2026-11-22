@@ -1020,3 +1020,6 @@ The acceptance matrix retains 13 P0 and 39 total criteria requiring internal cod
 ## November 22 — Checkout-to-economic proof
 
 - The existing isolated discovery-to-learning rehearsal now books checkout performance against the exact scope-bound order proof. Verified delivery, refund support, signed event deltas, matched statement items and cost evidence are required. Altered evidence blocks exposure and historical Mimir reliance without erasing the recorded loss. The rehearsal verifies exact replay, false amounts, a bad digest and post-booking settlement corruption. The proof is fixture-only.
+
+- Checkout-to-economic commit `a0cc48d50d371d5ca6e2c5cfbd56dbf877d66a9d` passed all four hosted jobs in run 45056369715. The Product Foundry workflow covers signed opportunity intake, independent review, governed execution, fulfillment and refunds, exact closed checkout booking, and scoped Mimir and Norns evidence.
+- The private Legacy operating view ships with the owner-only no-store API projection and a saved WeWeb action validated using isolated fixtures. The view preserves separate business, household and protected reserve reporting. The snapshot, panel and workflow identifiers are in the December handoff.

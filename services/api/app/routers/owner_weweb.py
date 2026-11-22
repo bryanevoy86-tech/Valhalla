@@ -2,7 +2,7 @@
 from typing import Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.orm import Session
 
@@ -12,6 +12,7 @@ from app.services.owner_document_requests import (
     DocumentApplyIn, DocumentRequestIn, apply_document_request, document_request_status, request_document_action,
 )
 from app.pantheon.roles import Role
+from app.schemas.market_intelligence import MarketScope
 from app.services.owner_specialist_context import pantheon_report_index, prime_decision_context, specialist_context
 from app.services.prime_business_execution import require_owner_mandate_key
 from app.services.owner_startup import StartupPlanIn, prepare_startup
@@ -53,6 +54,42 @@ def owner_list_attachments(conversation_id: UUID, limit: int = 50, db: Session =
 @router.post("/owner-startup/compare")
 def startup_comparison(payload: StartupPlanIn):
     return private_owner_response(prepare_startup(payload))
+
+
+@router.post("/owner-operating-scope")
+def owner_operating_scope(payload: MarketScope, db: Session = Depends(get_db)):
+    from sqlalchemy import inspect
+
+    from app.models.completion_registry import LegacyInstanceRegistryItem
+    from app.routers.economic_control import assess, require_schema
+    from app.services.prime_business_execution import _check_legacy
+    from app.services.treasury_reconciliation import observe_statement_heads
+
+    if not inspect(db.connection()).has_table(LegacyInstanceRegistryItem.__tablename__):
+        raise HTTPException(503, "Legacy registry unavailable")
+    scope = payload.model_dump()
+    legacy = _check_legacy(db, **scope)
+    require_schema(db)
+    try:
+        report = assess(payload, db)
+    except HTTPException as exc:
+        if exc.status_code != 404:
+            raise
+        capital = None
+    else:
+        capital = {key: report[key] for key in (
+            "currency", "basis", "as_of", "mandate_id", "period_net_minor", "outstanding_reservations_minor",
+            "open_obligations_minor", "cumulative_loss_minor", "new_exposure_available_minor", "blockers",
+            "suggested_action",
+        )}
+    return private_owner_response({
+        "scope": scope, "legacy": {"display_name": legacy.display_name, "status": legacy.status},
+        "capital_fixture": capital, "statement_fixtures": {
+            purpose: observe_statement_heads(db, scope, purpose=purpose, detailed=True)
+            for purpose in ("BUSINESS", "HOUSEHOLD", "OPERATING_RESERVE")
+        },
+        "actual_accessible_funds_minor": None, "execution_authorized": False,
+    })
 
 
 class AttentionAcknowledgmentIn(BaseModel):

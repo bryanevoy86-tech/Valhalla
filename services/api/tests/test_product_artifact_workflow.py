@@ -421,6 +421,22 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
     assert after["period_net_minor"] == -175 and after["cumulative_loss_minor"] == 175
     assert after["suggested_action"] == "EXIT"
 
+    owner_operating_route = "/api/weweb/owner-operating-scope"
+    from app.routers.auth_weweb import require_owner_session
+
+    assert client.post(owner_operating_route, json=scope).status_code == 401
+    with monkeypatch.context() as owner_fixture:
+        owner_fixture.setitem(client.app.dependency_overrides, require_owner_session, lambda: 1)
+        operating = client.post(owner_operating_route, json=scope)
+        assert operating.status_code == 200 and operating.headers["cache-control"] == "no-store"
+        view = operating.json()
+        assert view["execution_authorized"] is False and view["actual_accessible_funds_minor"] is None
+        assert view["capital_fixture"]["period_net_minor"] == -175
+        assert view["statement_fixtures"]["BUSINESS"]["accounts"][0]["status"] == "MATCHED_FIXTURE"
+        assert view["statement_fixtures"]["HOUSEHOLD"]["accounts"] == []
+        assert view["statement_fixtures"]["OPERATING_RESERVE"]["accounts"] == []
+        assert client.post(owner_operating_route, json={**scope, "jurisdiction": "CA-ON"}).status_code == 409
+
     with Session(engine) as db:
         triggered = run_due_schedule(db, now=slot_time + timedelta(seconds=1))
         assert triggered["status"] == "evaluated"
@@ -580,8 +596,6 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
     assert fresh_context["evidence"]["reviewed_mimir_outcomes"] == next_advice["independent_loki"]["reviewed_mimir_outcomes"]
     assert fresh_context["execution_authorized"] is False
     decision_route = f"/api/weweb/owner-prime-decisions/{followup_listing['prime_verdict_id']}"
-    from app.routers.auth_weweb import require_owner_session
-
     with monkeypatch.context() as route_fixture:
         route_fixture.setitem(client.app.dependency_overrides, require_owner_session, lambda: 1)
         direct = client.get(decision_route)
