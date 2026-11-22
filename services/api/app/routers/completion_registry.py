@@ -9,7 +9,7 @@ from pathlib import Path
 from datetime import date, datetime, timedelta, timezone
 from typing import Any, Literal
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from sqlalchemy import inspect
@@ -42,7 +42,14 @@ from app.models.completion_registry import (
 )
 from app.services.data_safety import DatasetSafetyInput, evaluate_dataset_safety
 from app.services.scenario_safety import ScenarioSafetyInput, evaluate_scenario_safety
-from app.services.prime_business_execution import verified_internal_outcomes, verify_mimir_claims
+from app.services.prime_business_execution import (
+    _check_legacy,
+    _emergency_stop_active,
+    require_current_legacy_policy,
+    require_owner_mandate_key,
+    verified_internal_outcomes,
+    verify_mimir_claims,
+)
 from app.services.universal_opportunity_evaluator import (
     LookaheadLeakageBlocked,
     best_option_or_abstain as svc_best_option_or_abstain,
@@ -928,6 +935,9 @@ class LegacyFailoverRequest(BaseModel):
 class LegacyRecoveryRequest(BaseModel):
     legacy_instance_id: str
     synchronize_policy: bool = True
+    recovery_event_id: str | None = Field(default=None, min_length=1, max_length=80)
+    expected_policy_id: str | None = Field(default=None, min_length=1, max_length=80)
+    expected_policy_version: str | None = Field(default=None, min_length=1, max_length=40)
 
 
 ALLOWED_LEGACY_STATUSES = {"PASS", "PARTIAL", "FAIL", "EXTERNAL_OWNER_ACTION_REQUIRED"}
@@ -3433,10 +3443,14 @@ def upsert_legacy_instance(payload: LegacyInstanceRegistryIn, db: Session = Depe
 
     row = db.query(LegacyInstanceRegistryItem).filter(
         LegacyInstanceRegistryItem.legacy_instance_id == payload.legacy_instance_id
-    ).first()
+    ).with_for_update().first()
     if row is None:
         row = LegacyInstanceRegistryItem(legacy_instance_id=payload.legacy_instance_id)
         db.add(row)
+    elif row.failover_state in {"FAILED", "RECOVERED"} or db.query(LegacyInstancePolicyState).filter_by(
+        legacy_instance_id=row.legacy_instance_id,
+    ).first() is not None:
+        raise HTTPException(409, "Use scoped orchestration for a managed or recovering Legacy")
 
     row.display_name = payload.display_name
     row.parent_instance_id = payload.parent_instance_id
@@ -3476,7 +3490,7 @@ def _orchestration_event(
     message: str,
     severity: str = "info",
     payload: dict[str, Any] | None = None,
-) -> None:
+) -> str:
     stamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S%f")
     event_id = f"LEGACY-EVT-{event_type}-{stamp}"
     db.add(
@@ -3489,6 +3503,7 @@ def _orchestration_event(
             payload_json=json.dumps(payload or {}),
         )
     )
+    return event_id
 
 
 def _get_active_policy_or_404(db: Session, policy_id: str) -> LegacyGovernancePolicy:
@@ -3620,17 +3635,23 @@ def provision_legacy_instance(payload: LegacyProvisionRequest, db: Session = Dep
 @router.post("/legacy-orchestration/policies/propagate")
 def propagate_legacy_policy(payload: LegacyPolicyPropagationRequest, db: Session = Depends(get_db)):
     _ensure_registry_tables(db)
-    policy = _get_active_policy_or_404(db, payload.policy_id)
     q = db.query(LegacyInstanceRegistryItem)
     if payload.target_instances:
         q = q.filter(LegacyInstanceRegistryItem.legacy_instance_id.in_(payload.target_instances))
-    rows = q.all()
+    rows = q.order_by(LegacyInstanceRegistryItem.legacy_instance_id).with_for_update().all()
+    policy = _get_active_policy_or_404(db, payload.policy_id)
 
     propagated = 0
     blocked: list[str] = []
     for row in rows:
         integrations = _loads(row.integrations_json, {})
-        if bool(integrations.get("policy_propagation_blocked", False)):
+        local = _loads(row.local_knowledge_context_json, {})
+        current_governance = local.get("governance", {})
+        recovering_policy_change = (
+            row.failover_state in {"FAILED", "RECOVERED"}
+            and current_governance.get("policy_id") not in (None, policy.policy_id)
+        )
+        if bool(integrations.get("policy_propagation_blocked", False)) or recovering_policy_change:
             row.synchronization_status = "BLOCKED"
             blocked.append(row.legacy_instance_id)
             state = db.query(LegacyInstancePolicyState).filter(
@@ -3638,7 +3659,10 @@ def propagate_legacy_policy(payload: LegacyPolicyPropagationRequest, db: Session
             ).first()
             if state is not None:
                 state.sync_status = "DIVERGED"
-                state.divergence_reason = "propagation blocked by integration profile"
+                state.divergence_reason = (
+                    "recovering Legacy cannot switch policy identity" if recovering_policy_change
+                    else "propagation blocked by integration profile"
+                )
             _orchestration_event(
                 db,
                 legacy_instance_id=row.legacy_instance_id,
@@ -3663,7 +3687,6 @@ def propagate_legacy_policy(payload: LegacyPolicyPropagationRequest, db: Session
         row.synchronization_status = "SYNCED"
         propagated += 1
 
-        local = _loads(row.local_knowledge_context_json, {})
         local["governance"] = {"policy_id": policy.policy_id, "policy_version": policy.policy_version}
         row.local_knowledge_context_json = json.dumps(local)
 
@@ -3773,7 +3796,7 @@ def assign_legacy_work(payload: LegacyWorkAssignRequest, db: Session = Depends(g
     _ensure_registry_tables(db)
     row = db.query(LegacyInstanceRegistryItem).filter(
         LegacyInstanceRegistryItem.legacy_instance_id == payload.legacy_instance_id
-    ).first()
+    ).with_for_update().first()
     if row is None:
         raise HTTPException(status_code=404, detail="legacy instance not found")
 
@@ -3799,24 +3822,20 @@ def assign_legacy_work(payload: LegacyWorkAssignRequest, db: Session = Depends(g
             "duplicate": True,
         }
 
+    if _emergency_stop_active(db):
+        raise HTTPException(409, "EMERGENCY_STOP_ACTIVE")
+    scope = {
+        "legacy_instance_id": payload.legacy_instance_id, "business_id": payload.business_id,
+        "engine_id": payload.engine_id, "jurisdiction": payload.jurisdiction,
+    }
+    _check_legacy(db, **scope)
     local = _loads(row.local_knowledge_context_json, {})
-    if local.get("jurisdiction") != payload.jurisdiction:
-        raise HTTPException(status_code=409, detail="requested jurisdiction does not match legacy context; re-verification required")
-
-    if payload.engine_id not in set(_loads(row.engines_json, [])):
-        raise HTTPException(status_code=409, detail="requested engine is not assigned to this legacy instance")
-
-    if payload.business_id not in _loads(row.assigned_businesses_json, []):
-        raise HTTPException(409, "requested business is not assigned to this legacy instance")
     if local.get("data_namespace") and local["data_namespace"] != payload.data_namespace:
         raise HTTPException(409, "requested namespace does not match legacy context")
 
     from app.services.economic_control import require_no_containment
 
-    require_no_containment(db, {
-        "legacy_instance_id": payload.legacy_instance_id, "business_id": payload.business_id,
-        "engine_id": payload.engine_id, "jurisdiction": payload.jurisdiction,
-    })
+    require_no_containment(db, scope)
 
     item = LegacyInstanceWorkItem(
         action_id=payload.action_id,
@@ -3902,6 +3921,15 @@ def failover_legacy_instance(payload: LegacyFailoverRequest, db: Session = Depen
                     "legacy_instance_id", "business_id", "engine_id", "jurisdiction",
                 )}
                 try:
+                    require_current_legacy_policy(db, recovery, item.jurisdiction)
+                except HTTPException as exc:
+                    if exc.status_code != 409:
+                        raise
+                    item.status = "paused"
+                    scope_paused += 1
+                    paused += 1
+                    continue
+                try:
                     require_no_containment(db, scope)
                     require_no_containment(db, {**scope, "legacy_instance_id": recovery.legacy_instance_id})
                 except HTTPException as exc:
@@ -3957,33 +3985,98 @@ def failover_legacy_instance(payload: LegacyFailoverRequest, db: Session = Depen
 
 
 @router.post("/legacy-orchestration/recover")
-def recover_legacy_instance(payload: LegacyRecoveryRequest, db: Session = Depends(get_db)):
+def recover_legacy_instance(
+    payload: LegacyRecoveryRequest,
+    db: Session = Depends(get_db),
+    owner_key: str | None = Header(default=None, alias="X-Owner-Mandate-Key"),
+):
+    from app.services.economic_control import require_no_containment
+
+    reactivation_fields = (payload.recovery_event_id, payload.expected_policy_id, payload.expected_policy_version)
+    reactivating = any(reactivation_fields)
+    if reactivating:
+        require_owner_mandate_key(owner_key)
+        if not all(reactivation_fields) or not payload.synchronize_policy:
+            raise HTTPException(422, "Reactivation requires a recovery receipt and the synchronized policy identity")
+
     _ensure_registry_tables(db)
-    row = db.query(LegacyInstanceRegistryItem).filter(
-        LegacyInstanceRegistryItem.legacy_instance_id == payload.legacy_instance_id
-    ).first()
-    if row is None:
-        raise HTTPException(status_code=404, detail="legacy instance not found")
-
-    row.failover_state = "RECOVERED"
-    row.synchronization_status = "SYNCED"
-    if payload.synchronize_policy:
-        policy_state = db.query(LegacyInstancePolicyState).filter(
-            LegacyInstancePolicyState.legacy_instance_id == payload.legacy_instance_id
-        ).first()
-        if policy_state is not None:
-            policy_state.sync_status = "SYNCED"
-            policy_state.divergence_reason = None
-            policy_state.propagated_at = datetime.utcnow()
-
-    _orchestration_event(
-        db,
+    row = db.query(LegacyInstanceRegistryItem).filter_by(
         legacy_instance_id=payload.legacy_instance_id,
-        event_type="FAILOVER_RECOVERED",
-        message="Legacy instance recovered and synchronized",
+    ).with_for_update().first()
+    if row is None:
+        raise HTTPException(404, "legacy instance not found")
+
+    latest = db.query(LegacyOrchestrationEvent).filter(
+        LegacyOrchestrationEvent.legacy_instance_id == row.legacy_instance_id,
+        LegacyOrchestrationEvent.event_type.in_(("FAILOVER_TRIGGERED", "FAILOVER_RECOVERED", "FAILOVER_REACTIVATED")),
+    ).order_by(LegacyOrchestrationEvent.id.desc()).first()
+    if not reactivating:
+        if row.failover_state == "RECOVERED" and latest and latest.event_type == "FAILOVER_RECOVERED":
+            event_id = latest.event_id
+        elif row.failover_state in {"FAILED", "RECOVERED"}:
+            # Existing RECOVERED rows may predate the reviewed reactivation contract.
+            row.failover_state = "RECOVERED"
+            row.synchronization_status = "BLOCKED"
+            event_id = _orchestration_event(
+                db, legacy_instance_id=row.legacy_instance_id, event_type="FAILOVER_RECOVERED",
+                message="Recovery prepared. Execution remains blocked pending separate owner reactivation.",
+                payload={"execution_unblocked": False},
+            )
+        else:
+            raise HTTPException(409, "Legacy has no failed operation to recover")
+        db.commit()
+        return {"legacy_instance_id": payload.legacy_instance_id, "status": "RECOVERED",
+                "recovery_event_id": event_id, "execution_unblocked": False}
+
+    approval = {
+        "recovery_event_id": payload.recovery_event_id, "policy_id": payload.expected_policy_id,
+        "policy_version": payload.expected_policy_version,
+    }
+    if (latest and latest.event_type == "FAILOVER_REACTIVATED" and _loads(latest.payload_json, {}) == approval
+            and row.failover_state == "NOT_TRIGGERED"):
+        return {"legacy_instance_id": row.legacy_instance_id, "status": "REACTIVATED",
+                "reactivation_event_id": latest.event_id, "replayed": True}
+    if (row.failover_state != "RECOVERED" or not latest or latest.event_type != "FAILOVER_RECOVERED"
+            or latest.event_id != payload.recovery_event_id):
+        raise HTTPException(409, "Current Legacy recovery receipt does not match")
+    if _emergency_stop_active(db):
+        raise HTTPException(409, "EMERGENCY_STOP_ACTIVE")
+
+    context = _loads(row.local_knowledge_context_json, {})
+    integrations = _loads(row.integrations_json, None)
+    engines = _loads(row.engines_json, None)
+    if (row.status not in {"PASS", "PARTIAL"} or row.isolation_state != "ISOLATED"
+            or not isinstance(context, dict) or not isinstance(integrations, dict)
+            or integrations.get("policy_propagation_blocked") or not isinstance(engines, list)
+            or not engines or any(not isinstance(engine, str) or not engine.strip() for engine in engines)
+            or any(not isinstance(context.get(key), str) or not context[key].strip()
+                   for key in ("business_id", "jurisdiction", "data_namespace"))):
+        raise HTTPException(409, "Legacy recovery scope or integration is not eligible")
+
+    policy = db.query(LegacyGovernancePolicy).filter_by(
+        policy_id=payload.expected_policy_id, active=True,
+    ).with_for_update().first()
+    state = db.query(LegacyInstancePolicyState).filter_by(legacy_instance_id=row.legacy_instance_id).first()
+    if (policy is None or policy.policy_version != payload.expected_policy_version or state is None
+            or state.policy_id != policy.policy_id or state.policy_version != policy.policy_version
+            or state.sync_status != "SYNCED" or context.get("governance") != {
+                "policy_id": policy.policy_id, "policy_version": policy.policy_version,
+            }):
+        raise HTTPException(409, "Current active policy must be propagated before reactivation")
+    row.failover_state = "NOT_TRIGGERED"
+    row.synchronization_status = "SYNCED"
+    for engine_id in sorted(set(engines)):
+        scope = {"legacy_instance_id": row.legacy_instance_id, "business_id": context["business_id"],
+                 "jurisdiction": context["jurisdiction"], "engine_id": engine_id}
+        _check_legacy(db, **scope)
+        require_no_containment(db, scope)
+    event_id = _orchestration_event(
+        db, legacy_instance_id=row.legacy_instance_id, event_type="FAILOVER_REACTIVATED",
+        message="Owner reactivated Legacy under its existing scope. Paused tasks remain paused.", payload=approval,
     )
     db.commit()
-    return {"legacy_instance_id": payload.legacy_instance_id, "status": "RECOVERED"}
+    return {"legacy_instance_id": payload.legacy_instance_id, "status": "REACTIVATED",
+            "reactivation_event_id": event_id, "replayed": False}
 
 
 @router.get("/legacy-orchestration/health")

@@ -26,6 +26,8 @@ from app.loki.models import LokiFinding, LokiIndependentReceipt, LokiReconsidera
 from app.loki.review_service import verdict as independent_verdict
 from app.models.god_verdicts import GodVerdict
 from app.models.completion_registry import (
+    LegacyGovernancePolicy,
+    LegacyInstancePolicyState,
     LegacyInstanceRegistryItem,
     LegacyInstanceWorkItem,
     LegacyOrchestrationEvent,
@@ -119,10 +121,12 @@ def _check_legacy(
     business_id: str,
     engine_id: str,
     jurisdiction: str,
+    lock: bool = False,
 ) -> LegacyInstanceRegistryItem:
-    row = db.query(LegacyInstanceRegistryItem).filter(
+    query = db.query(LegacyInstanceRegistryItem).filter(
         LegacyInstanceRegistryItem.legacy_instance_id == legacy_instance_id
-    ).first()
+    )
+    row = (query.with_for_update() if lock else query).first()
     if row is None:
         raise HTTPException(status_code=409, detail="legacy instance is not registered")
     if row.status not in {"PASS", "PARTIAL"}:
@@ -148,7 +152,28 @@ def _check_legacy(
         or engine_id not in engines
     ):
         raise HTTPException(status_code=409, detail="legacy business, engine, or jurisdiction mismatch")
+    require_current_legacy_policy(db, row, jurisdiction)
     return row
+
+
+def require_current_legacy_policy(db: Session, row: LegacyInstanceRegistryItem, jurisdiction: str) -> None:
+    context = _json(row.local_knowledge_context_json, {})
+    if not isinstance(context, dict):
+        raise HTTPException(409, "Legacy governance context is invalid")
+    if "governance" in context:
+        governance = context["governance"]
+        if not isinstance(governance, dict) or not governance.get("policy_id"):
+            raise HTTPException(409, "Legacy governance identity is invalid")
+        policy = db.query(LegacyGovernancePolicy).filter_by(policy_id=governance["policy_id"], active=True).first()
+        state = db.query(LegacyInstancePolicyState).filter_by(legacy_instance_id=row.legacy_instance_id).first()
+        if (policy is None or state is None or state.sync_status != "SYNCED"
+                or state.policy_id != policy.policy_id or state.policy_version != policy.policy_version
+                or governance.get("policy_version") != policy.policy_version):
+            raise HTTPException(409, "Legacy governance policy is out of date or diverged")
+        restrictions = _json(policy.jurisdiction_restrictions_json, None)
+        if (not isinstance(restrictions, dict) or not isinstance(restrictions.get("blocked", []), list)
+                or jurisdiction in restrictions.get("blocked", [])):
+            raise HTTPException(409, "Current policy blocks this Legacy jurisdiction")
 
 
 def _event(
@@ -242,9 +267,35 @@ def require_factory_scope_open(db: Session, item: Any) -> None:
 
 
 def grant_draft_mandate(db: Session, request: Any) -> dict:
-    """Grant finite standing authority for ONE product's local drafts only."""
+    """Grant finite standing authority for one product's internal drafts."""
+    return grant_draft_mandate_group(db, [request])[0]
+
+
+def grant_draft_mandate_group(db: Session, requests: list[Any]) -> list[dict]:
+    """Enroll approved startup scopes atomically without reprovisioning Legacies."""
     if _emergency_stop_active(db):
-        raise HTTPException(status_code=409, detail="EMERGENCY_STOP_ACTIVE")
+        raise HTTPException(409, "EMERGENCY_STOP_ACTIVE")
+    legacy_ids = {request.legacy_instance_id for request in requests}
+    if len(legacy_ids) != len(requests) or len({request.mandate_id for request in requests}) != len(requests):
+        raise HTTPException(422, "Each enrollment must have a distinct Legacy and mandate ID")
+    # Failover and concurrent enrollments acquire these same rows in this order.
+    db.query(LegacyInstanceRegistryItem).filter(
+        LegacyInstanceRegistryItem.legacy_instance_id.in_(legacy_ids),
+    ).order_by(LegacyInstanceRegistryItem.legacy_instance_id).with_for_update().all()
+    try:
+        grants = [_prepare_draft_mandate(db, request)
+                  for request in sorted(requests, key=lambda request: request.legacy_instance_id)]
+        db.commit()
+    except HTTPException:
+        db.rollback()
+        raise
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(409, "Mandate ID already used") from exc
+    return grants
+
+
+def _prepare_draft_mandate(db: Session, request: Any) -> dict:
     _check_legacy(db, legacy_instance_id=request.legacy_instance_id,
                   business_id=request.business_id, engine_id=request.engine_id,
                   jurisdiction=request.jurisdiction)
@@ -267,7 +318,6 @@ def grant_draft_mandate(db: Session, request: Any) -> dict:
     _event(db, event_id=_mandate_event_id(request.mandate_id),
            legacy_instance_id=request.legacy_instance_id, event_type=MANDATE_GRANT,
            message="Owner granted finite internal-draft standing authority", payload=grant)
-    db.commit()
     return grant
 
 
@@ -461,6 +511,7 @@ def submit_listing_draft(db: Session, request: Any) -> dict:
         business_id=request.business_id,
         engine_id=request.engine_id,
         jurisdiction=request.jurisdiction,
+        lock=True,
     )
     require_factory_scope_open(db, request)
     local = _json(instance.local_knowledge_context_json, {})

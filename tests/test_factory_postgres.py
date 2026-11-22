@@ -387,10 +387,9 @@ class FactoryPostgresTests(unittest.TestCase):
         original = factory._check_legacy
 
         def checked(*args, **kwargs):
-            row = original(*args, **kwargs)
-            # Both transactions have passed their initial missing-key lookup.
+            # Both requests reached the Legacy lock after their first missing-key lookup.
             barrier.wait(timeout=5)
-            return row
+            return original(*args, **kwargs)
 
         def submit(index):
             args = dict(self.payload)

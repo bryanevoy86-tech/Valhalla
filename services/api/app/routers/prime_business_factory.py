@@ -18,6 +18,7 @@ from app.services.prime_business_execution import (
     require_factory_key,
     require_owner_mandate_key,
     grant_draft_mandate,
+    grant_draft_mandate_group,
     revoke_draft_mandate,
     submit_listing_draft,
     approve_action,
@@ -79,6 +80,10 @@ class DraftMandateRequest(BaseModel):
     max_price_cents_cad: int = Field(ge=1, le=10_000_000, strict=True)
 
 
+class DraftMandateEnrollment(BaseModel):
+    mandates: list[DraftMandateRequest] = Field(min_length=2, max_length=20)
+
+
 class ApprovalRequest(BaseModel):
     confirmation: str = Field(pattern=r"^APPROVE_INTERNAL_DRAFT$")
 
@@ -100,6 +105,11 @@ def approve_internal_draft(
 @router.post("/mandates", dependencies=[Depends(require_owner_mandate_key)])
 def grant_mandate(request: DraftMandateRequest, db: Session = Depends(get_db)):
     return grant_draft_mandate(db, request)
+
+
+@router.post("/mandates/enroll", dependencies=[Depends(require_owner_mandate_key)])
+def enroll_startup_mandates(request: DraftMandateEnrollment, db: Session = Depends(get_db)):
+    return {"mandates": grant_draft_mandate_group(db, request.mandates)}
 
 
 @router.post("/mandates/{mandate_id}/revoke", dependencies=[Depends(require_owner_mandate_key)])

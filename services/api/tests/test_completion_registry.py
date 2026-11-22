@@ -38,7 +38,7 @@ from app.models.governance_decision import GovernanceDecision
 from app.routers.completion_registry import router
 
 
-def _build_client() -> TestClient:
+def _build_client(*, with_factory: bool = False) -> TestClient:
     engine = create_engine(
         "sqlite://",
         connect_args={"check_same_thread": False},
@@ -71,6 +71,12 @@ def _build_client() -> TestClient:
 
     app = FastAPI()
     app.include_router(router)
+    if with_factory:
+        from app.models.media_engine import MediaContent
+        from app.routers.prime_business_factory import router as factory_router
+
+        MediaContent.__table__.create(bind=engine)
+        app.include_router(factory_router)
 
     def override_get_db():
         db = session_local()
@@ -1971,7 +1977,9 @@ def test_legacy_instance_registry_supports_multi_business_multi_jurisdiction_and
     assert summary.json()["legacy_instances"]["total"] >= 2
 
 
-def test_legacy_orchestration_runtime_multi_instance_policy_failover_and_isolation():
+def test_legacy_orchestration_runtime_multi_instance_policy_failover_and_isolation(monkeypatch):
+    monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "false")
+    monkeypatch.setenv("VALHALLA_OWNER_MANDATE_KEY", "legacy-fixture-owner")
     client = _build_client()
 
     policy_v1 = client.post(
@@ -2030,6 +2038,25 @@ def test_legacy_orchestration_runtime_multi_instance_policy_failover_and_isolati
     }
     legacy_b = client.post("/api/completion/legacy-orchestration/provision", json=legacy_b_payload)
     assert legacy_b.status_code == 200, legacy_b.text
+
+    work_b = client.post(
+        "/api/completion/legacy-orchestration/work/assign",
+        json={
+            "action_id": "ACT-3",
+            "idempotency_key": "idem-b-2",
+            "legacy_instance_id": "LEGACY_B",
+            "business_id": "business_b",
+            "industry": "operating_businesses",
+            "jurisdiction": "US-TX",
+            "engine_id": "business_acquisitions",
+            "objective": "Prepare acquisition memo",
+            "data_namespace": "legacy_b_ns",
+            "risk_profile": "heightened",
+            "integration_profile": "broker",
+            "payload": {"batch": "B2"},
+        },
+    )
+    assert work_b.status_code == 200, work_b.text
 
     policy_v2 = client.post(
         "/api/completion/legacy-orchestration/policies",
@@ -2114,25 +2141,6 @@ def test_legacy_orchestration_runtime_multi_instance_policy_failover_and_isolati
     assert duplicate_cross_instance.status_code == 409
     assert "duplicate action identity" in duplicate_cross_instance.json()["detail"]
 
-    work_b = client.post(
-        "/api/completion/legacy-orchestration/work/assign",
-        json={
-            "action_id": "ACT-3",
-            "idempotency_key": "idem-b-2",
-            "legacy_instance_id": "LEGACY_B",
-            "business_id": "business_b",
-            "industry": "operating_businesses",
-            "jurisdiction": "US-TX",
-            "engine_id": "business_acquisitions",
-            "objective": "Prepare acquisition memo",
-            "data_namespace": "legacy_b_ns",
-            "risk_profile": "heightened",
-            "integration_profile": "broker",
-            "payload": {"batch": "B2"},
-        },
-    )
-    assert work_b.status_code == 200, work_b.text
-
     failover = client.post(
         "/api/completion/legacy-orchestration/failover",
         json={"failed_instance_id": "LEGACY_B", "recovery_instance_id": "LEGACY_A"},
@@ -2162,6 +2170,15 @@ def test_legacy_orchestration_runtime_multi_instance_policy_failover_and_isolati
     )
     assert recover.status_code == 200, recover.text
     assert recover.json()["status"] == "RECOVERED"
+    assert recover.json()["execution_unblocked"] is False
+    refused = client.post(
+        "/api/completion/legacy-orchestration/recover",
+        headers={"X-Owner-Mandate-Key": "legacy-fixture-owner"},
+        json={"legacy_instance_id": "LEGACY_B", "recovery_event_id": recover.json()["recovery_event_id"],
+              "expected_policy_id": "policy-primary-global", "expected_policy_version": "v2"},
+    )
+    assert refused.status_code == 409
+    assert "integration" in refused.json()["detail"]
 
     summary = client.get("/api/completion/summary")
     assert summary.status_code == 200
@@ -2170,6 +2187,98 @@ def test_legacy_orchestration_runtime_multi_instance_policy_failover_and_isolati
     assert summary_body["legacy_instances"]["orchestration_events"] >= 1
     assert summary_body["legacy_instances"]["work_items"]["total"] >= 2
     assert summary_body["legacy_instances"]["policy_sync"]["SYNCED"] >= 1
+
+
+def test_reviewed_legacy_reactivation_and_atomic_startup_enrollment(monkeypatch):
+    monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "false")
+    monkeypatch.setenv("VALHALLA_OWNER_MANDATE_KEY", "fixture-owner")
+    monkeypatch.setenv("VALHALLA_FACTORY_KEY", "fixture-factory")
+    client = _build_client(with_factory=True)
+    orchestration = "/api/completion/legacy-orchestration"
+    owner = {"X-Owner-Mandate-Key": "fixture-owner"}
+    factory = {"X-Business-Factory-Key": "fixture-factory"}
+    enroll_url = "/api/business-factory/mandates/enroll"
+    policy = {"policy_id": "startup-policy", "policy_version": "v1", "policy_scope": "GLOBAL",
+              "autonomy_policy": {}, "ethics_evidence_policy": {}, "kill_shield_policy": {},
+              "engine_activation_policy": {}, "jurisdiction_restrictions": {}, "approval_requirements": {},
+              "audit_requirements": {}}
+
+    assert client.post(f"{orchestration}/policies", json=policy).status_code == 200
+
+    def enroll_scope(name):
+        scope = {"legacy_instance_id": f"legacy_{name}", "business_id": f"business_{name}",
+                 "engine_id": "digital_products", "jurisdiction": "CA-MB"}
+        instance = {**scope, "display_name": f"Startup Legacy {name}", "parent_instance_id": "PRIMARY_HEIMDALL",
+                    "industry": "digital_products", "data_namespace": f"legacy/{name}",
+                    "policy_id": "startup-policy", "allowed_engines": ["digital_products"]}
+        response = client.post(f"{orchestration}/provision", json=instance)
+        assert response.status_code == 200, response.text
+        return {**scope, "mandate_id": f"mandate_{name}", "product_id": "test_product",
+                "ttl_seconds": 600, "max_uses": 1, "max_price_cents_cad": 2000}
+
+    a, b = enroll_scope("a"), enroll_scope("b")
+    work = {**a, "action_id": "pending-a", "idempotency_key": "pending-a",
+            "industry": "digital_products", "data_namespace": "legacy/a", "objective": "Review draft"}
+    assert client.post(f"{orchestration}/work/assign", json=work).json()["status"] == "queued"
+    failover_url = f"{orchestration}/failover"
+    recover_url = f"{orchestration}/recover"
+    assert client.post(failover_url, json={"failed_instance_id": "legacy_a"}).json()["paused"] == 1
+    assert client.post(
+        "/api/completion/legacy-instances", json={"legacy_instance_id": "legacy_a", "display_name": "Reset"},
+    ).status_code == 409
+    failed_group = client.post(enroll_url, headers={**owner, **factory}, json={"mandates": [b, a]})
+    assert failed_group.status_code == 409
+
+    prepared = client.post(recover_url, json={"legacy_instance_id": "legacy_a"}).json()
+    receipt = {"legacy_instance_id": "legacy_a", "recovery_event_id": prepared["recovery_event_id"],
+               "expected_policy_id": "startup-policy", "expected_policy_version": "v1"}
+    assert client.post(recover_url, json=receipt).status_code == 401
+    assert client.post(
+        f"{orchestration}/work/assign", json={**work, "action_id": "new-a", "idempotency_key": "new-a"},
+    ).status_code == 409
+    assert client.post(f"{orchestration}/policies", json={**policy, "policy_version": "v2"}).status_code == 200
+    assert client.post(recover_url, json=receipt, headers=owner).status_code == 409
+    assert client.post(f"{orchestration}/policies/propagate", json={"policy_id": "startup-policy"}).status_code == 200
+    receipt["expected_policy_version"] = "v2"
+    monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "true")
+    assert client.post(recover_url, json=receipt, headers=owner).json()["detail"] == "EMERGENCY_STOP_ACTIVE"
+    monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "false")
+
+    reactivated = client.post(recover_url, json=receipt, headers=owner)
+    assert reactivated.status_code == 200, reactivated.text
+    assert reactivated.json()["status"] == "REACTIVATED"
+    replay = client.post(recover_url, json=receipt, headers=owner).json()
+    assert replay["replayed"] is True
+    assert replay["reactivation_event_id"] == reactivated.json()["reactivation_event_id"]
+    assert client.post(f"{orchestration}/work/assign", json=work).json()["status"] == "paused"
+
+    denied_group = client.post(enroll_url, headers=factory, json={"mandates": [a, b]})
+    assert denied_group.status_code == 401
+    invalid_group = client.post(enroll_url, headers={**owner, **factory},
+                                json={"mandates": [a, {**b, "business_id": "other_business"}]})
+    assert invalid_group.status_code == 409
+    enrolled = client.post(enroll_url, headers={**owner, **factory}, json={"mandates": [b, a]})
+    assert enrolled.status_code == 200, enrolled.text
+    assert [grant["mandate_id"] for grant in enrolled.json()["mandates"]] == ["mandate_a", "mandate_b"]
+    assert all(grant["external_effects_authorized"] is False for grant in enrolled.json()["mandates"])
+    assert client.post(
+        enroll_url, headers={**owner, **factory}, json={"mandates": [a, b]},
+    ).status_code == 409
+    queued = client.post(
+        "/api/business-factory/listing-drafts", headers=factory,
+        json={**a, "industry": "digital_products", "title": "Internal startup draft",
+              "description": "An isolated test listing with no external publication or activity.",
+              "price_cents_cad": 1250, "request_key": "reviewed-startup-a"},
+    )
+    assert queued.status_code == 200, queued.text
+    run = client.post("/api/business-factory/actions/run-once", headers=factory)
+    assert run.status_code == 200, run.text
+    assert run.json()["verified"] is True
+    assert run.json()["receipt"]["action_id"] == queued.json()["action_id"]
+
+    assert client.post(failover_url, json={"failed_instance_id": "legacy_a"}).status_code == 200
+    assert client.post(recover_url, json={"legacy_instance_id": "legacy_a"}).status_code == 200
+    assert client.post(recover_url, json=receipt, headers=owner).status_code == 409
 
 
 def test_legacy_orchestration_blocks_governance_bypass_payloads():
