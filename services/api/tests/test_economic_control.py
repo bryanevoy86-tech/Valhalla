@@ -554,6 +554,23 @@ def test_statement_continuity_quarantine_and_fixture_asset_recovery(economic_cli
     from app.loki.evidence import artifact_digest
     from app.pantheon.monitor import utc_now, verified_report
 
+    from app.models.media_engine import MediaContent
+    from app.models.prime_specialist_schedule import PrimeScheduleTrigger, PrimeSpecialistSchedule
+    from app.routers.prime_specialist_schedules import run_due_schedule
+
+    for model in (MediaContent, PrimeSpecialistSchedule, PrimeScheduleTrigger):
+        model.__table__.create(engine)
+    schedule_id = str(uuid4())
+    schedule_root = "/api/prime/specialist-schedules"
+    registered = client.post(schedule_root, headers=OWNER, json={
+        "schedule_id": schedule_id, "business_id": SCOPE["business_id"],
+        "cadence_seconds": 300, "duration_seconds": 1800,
+        "opportunity": {"opportunity_id": "treasury-statement-review", "engine_id": SCOPE["engine_id"],
+                        "legacy": SCOPE["legacy_instance_id"], "jurisdiction": SCOPE["jurisdiction"],
+                        "title": "Treasury integrity rehearsal", "summary": "Observe scoped account evidence."},
+    })
+    assert registered.status_code == 201, registered.text
+
     assigned = client.post("/api/prime/pantheon/assignments", headers=OWNER, json={
         **SCOPE, "assignment_id": str(uuid4()), "role": "NJORD", "cadence_seconds": 120,
         "duration_seconds": 1800,
@@ -579,6 +596,12 @@ def test_statement_continuity_quarantine_and_fixture_asset_recovery(economic_cli
         review = challenge({"artifact_type": "pantheon_report", "reference": challenge_ref, "raw_input": report,
                             "artifact_sha256": artifact_digest("pantheon_report", challenge_ref, report)})
         assert any(f.category == "treasury_statement_conflict" and f.severity == "critical" for f in review.findings)
+        assert run_due_schedule(db, now=at + timedelta(seconds=120))["status"] == "evaluated"
+        prime = client.get(f"{schedule_root}/{schedule_id}").json()["latest_report"]
+        assert prime["recommendation"]["heimdall_decision"] == "HOLD"
+        reassessment = prime["operating_reassessment"]
+        assert "TREASURY_STATEMENT_EVIDENCE_CONFLICT" in reassessment["blockers"]
+        assert reassessment["treasury_statement_evidence"]["actual_accessible_funds_minor"] is None
         account.head_id = last_head
         db.commit()
 

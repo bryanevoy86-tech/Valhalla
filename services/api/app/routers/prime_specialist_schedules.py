@@ -177,6 +177,7 @@ def cancel_schedule(schedule_id: UUID, db: Session = Depends(get_db)):
 
 def attach_operating_reassessment(db, payload, scope, today, outcomes, report):
     from app.routers.foundry_checkout import scoped_checkout_learning
+    from app.services.treasury_reconciliation import observe_statement_heads
     from app.services.economic_control import specialist_economics
     from app.services.foundry_discovery import economic_blockers, economics, require_current_candidate
 
@@ -209,13 +210,18 @@ def attach_operating_reassessment(db, payload, scope, today, outcomes, report):
             blockers.add("NEGATIVE_FIXTURE_CONTRIBUTION")
     factory_findings = scoped_factory_findings(db, scope, outcomes)["contradictions"]
     blockers.update(item["code"] for item in factory_findings)
+    treasury = observe_statement_heads(db, scope)
+    if any(row["status"] == "EVIDENCE_CONFLICT" for row in treasury.get("accounts", [])):
+        blockers.add("TREASURY_STATEMENT_EVIDENCE_CONFLICT")
     recommendation = report["recommendation"]
-    if checkout or capital or source_assessment or blockers:
+    if checkout or capital or source_assessment or treasury.get("accounts") or blockers:
         report["operating_reassessment"] = {
             "checkout_learning": checkout, "economic_reassessment": capital,
             "source_assessment": source_assessment, "blockers": sorted(blockers),
             "external_authority": False, "prior_recommendation": recommendation["heimdall_decision"],
         }
+    if treasury.get("accounts"):
+        report["operating_reassessment"]["treasury_statement_evidence"] = treasury
     if factory_findings:
         report["operating_reassessment"]["factory_evidence_contradictions"] = factory_findings
     if blockers:
