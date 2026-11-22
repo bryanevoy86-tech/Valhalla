@@ -462,6 +462,7 @@ def submit_listing_draft(db: Session, request: Any) -> dict:
         engine_id=request.engine_id,
         jurisdiction=request.jurisdiction,
     )
+    require_factory_scope_open(db, request)
     local = _json(instance.local_knowledge_context_json, {})
     item = LegacyInstanceWorkItem(
         action_id=action_id,

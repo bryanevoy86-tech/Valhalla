@@ -271,6 +271,12 @@ def test_immediate_containment_holds_existing_factory_lane(economic_client, monk
     assert client.post(f"{ROOT}/containment", json=freeze).status_code == 401
     receipt = post(client, "containment", freeze)
     assert post(client, "containment", freeze) == receipt
+    denied_submission = client.post(f"{factory}/listing-drafts", headers=headers,
+                                    json={**listing, "request_key": "new-held-work"})
+    assert denied_submission.status_code == 409 and "containment" in denied_submission.json()["detail"]
+    replay = client.post(f"{factory}/listing-drafts", headers=headers, json=listing)
+    assert replay.status_code == 200 and replay.json()["duplicate"] is True
+    assert replay.json()["action_id"] == action_id
     denied = client.post(f"{factory}/actions/{pending_id}/approve", headers=headers,
                          json={"confirmation": "APPROVE_INTERNAL_DRAFT"})
     assert denied.status_code == 409 and "containment" in denied.json()["detail"]
@@ -282,6 +288,8 @@ def test_immediate_containment_holds_existing_factory_lane(economic_client, monk
     with Session(engine) as db:
         from app.services.prime_business_execution import _approval_id, _mandate_event_id
 
+        assert db.query(LegacyInstanceWorkItem).count() == 2
+        assert db.query(LegacyOrchestrationEvent).filter_by(event_type="FACTORY_WORK_QUEUED").count() == 2
         assert db.query(LegacyOrchestrationEvent).filter_by(event_id=_approval_id(pending_id)).count() == 0
         assert db.query(LegacyOrchestrationEvent).filter_by(event_id=_mandate_event_id("contained-fixture")).count() == 0
         outcome = run_one_approved_draft(db)
