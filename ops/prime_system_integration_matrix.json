@@ -382,7 +382,7 @@
         "services/api/tests/test_builder_assignments.py",
         "services/api/app/routers/builder_assignments.py"
       ],
-      "source_observation": "Existing snapshot-bound isolated test assignments now persist a bounded lease recovery counter and surface exhaustion without accepting a missing or stale receipt. Reviewed GitHub submission and general candidate generation remain pending.",
+      "source_observation": "Isolated assignments, verified review exports and offline packages carry a selected GitHub draft target and locally tracked development head. Governed recipe expansion and actual GitHub commissioning remain open.",
       "evidence_level": "SQLITE_INTEGRATION_TESTED",
       "production_verified": false,
       "acceptance_test": "Prove authorized durable development assignments, snapshot-bound artifact export, isolated fresh checkout and actual regression/security tests, scoped PR review and staged release. No API mutation of running source or unrestricted pushes.",
@@ -392,12 +392,12 @@
       ],
       "owner_external_authorization_required": false,
       "continuation": {
-        "next_implementation": "Package review-ready candidates for GitHub with a separately authorized submission identity.",
-        "existing_test_evidence": "test_builder_assignments.py exercises lease reclaims, exhaustion, terminal status and stale receipt handling. The exact passing snapshot yields an owner-only, checksummed review packet. Recovery, wrong review input and emergency stop are exercised. Offline review materialization refuses a changed Git HEAD or mismatched receipt. An owner-authorized preparation can now group bounded file replacements into one pinned lease. Builder can generate the private owner-briefing collection from its named recipe after checking the source digest and registered GET routes. A second governed recipe repairs the metrics collection using the same review lease and its existing telemetry cache policy. Stale or duplicate targets leave no task or receipt. The materializer uses committed Git blobs for its checksummed diff and refuses dirty replacement bytes or additions already tracked at the passing base. A valid diff passes git apply --check in a disposable repository.",
+        "next_implementation": "Extend governed candidate recipes and commission a distinct runner and approved review-only GitHub workflow.",
+        "existing_test_evidence": "test_builder_assignments.py exercises lease reclaims, exhaustion, terminal status and stale receipt handling. The exact passing snapshot yields an owner-only, checksummed review packet. Recovery, wrong review input and emergency stop are exercised. Offline review materialization refuses a changed Git HEAD or mismatched receipt. An owner-authorized preparation can now group bounded file replacements into one pinned lease. Builder can generate the private owner-briefing collection from its named recipe after checking the source digest and registered GET routes. A second governed recipe repairs the metrics collection using the same review lease and its existing telemetry cache policy. Stale or duplicate targets leave no task or receipt. The materializer uses committed Git blobs for its checksummed diff and refuses dirty replacement bytes or additions already tracked at the passing base. A valid diff passes git apply --check in a disposable repository. An offline target-bound manifest verifies the repository, tracked head and patch, rejects mismatches and carries no submission or release authority.",
         "owner_action": "Internal continuation is authorized under the standing development scope.",
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
-          "internal_coding": "Extend governed recipes and package the review-ready submission path.",
+          "internal_coding": "Extend governed candidate recipes and implement the authorized readback for actual reviewed GitHub submissions.",
           "insufficient_test_evidence": "Verify failure, stale base and review handoff for each recipe.",
           "external_commissioning": "Commission a distinct runner and submission identity.",
           "owner_or_professional_action": "Approve exact repository, branch, reviewer and write scope.",
