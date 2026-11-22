@@ -356,7 +356,7 @@ def store_attachment(conversation_id: UUID, payload: UploadIn, db: Session):
         if existing.conversation_id != conversation_id:
             raise HTTPException(409, "Attachment ID already used")
         if existing.deleted_at is not None:
-            raise HTTPException(410, "Deleted attachments cannot be restored")
+            raise HTTPException(409, "Deleted attachments cannot be restored")
         if (existing.filename, existing.media_type, existing.sha256, existing.size_bytes, existing.data) != (
             payload.filename, payload.media_type, payload.sha256, len(data), data,
         ):

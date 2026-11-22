@@ -997,3 +997,5 @@ The acceptance matrix retains 13 P0 and 39 total criteria requiring internal cod
 - The existing private conversation panel gained document action group `f3cb0fa8-ac55-422a-9ace-c98db66cbdc9`. Editor readback confirmed workflow `293a2228-8d42-4045-b9ec-7e41ab7573b7` for upload and workflow `020647e1-6715-4516-95b2-088fd127d628` for local extraction on a current approved file.
 - The backend now reconciles exact upload retries and refuses replacements with changed scope, contents or metadata and refuses restoration of deleted attachments.
 - Isolated Node tests cover upload retry, origin checks, exact reviewed extraction and restore hold. The authorized preview origin remains blank. Separate owner-mandate review and disposition and browser acceptance remain open.
+
+- Hosted regression found that the new upload replay branch returned 410 for an already deleted ID. The upload route retains its established 409 contract and still refuses resurrection. The existing deletion-and-replay test remains in the required suite.
