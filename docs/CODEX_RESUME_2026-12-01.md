@@ -473,3 +473,8 @@ The existing Factory approval and standing mandate routes now apply the same sco
 ### Norns automatic outcome resolution
 
 The existing owner-scoped NORNS assignment scans up to 20 eligible forecasts per tick. It uses the same receipt checks as manual resolution. The report lists resolved forecast IDs, unverified IDs, locked/deferred rows and a continuation cursor. Contradictory receipts stay pending and out of calibration. The cursor rotates through the eligible records so later items still receive attention. The emergency stop pauses the existing worker. Staging acceptance requires an authorized PostgreSQL worker rehearsal with interrupted transactions, missed deadlines, a real internal artifact and verified report continuity.
+
+
+### Delayed Mimir outcome reuse
+
+A queued outcome outside the recent 20-work context window can still inform Prime and Pantheon. The worker revalidates the specific event, completed action, artifact and exact scope. Replay retains ordinary duplicate handling. Backlog commissioning should delay delivery beyond the display window, verify the original receipt still appears, and confirm another jurisdiction cannot cite it as local evidence.

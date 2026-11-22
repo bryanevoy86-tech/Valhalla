@@ -880,3 +880,8 @@ The 50 acceptance contracts, 53 task entries and seven packages are preserved. T
 ## November 21 — Norns automatic outcome resolution
 
 Development commit `be03ebbe709f1e3944503f68a0f5f5dd60d6f32a` resolves scoped Factory forecasts through existing Norns worker ticks using the manual receipt validator. The regression verifies deadline resolution, replay, calibration update and exclusion of contradictory receipt evidence. Disposable PostgreSQL verifies another worker defers a locked forecast, rollback leaves it eligible, a wrong scope cannot claim it, and the committed label stays settled. Local regression passed 370 backend tests and 22 PostgreSQL checks.
+
+
+## November 21 — Delayed Mimir evidence reuse
+
+Development commit `7baaaa64363506ce8b876dce35cac26174861ae7` revalidates an exact queued Mimir outcome even after it falls outside the recent outcome window. With 21 real internal draft fixtures, both Prime and Mimir consumed the oldest receipt, and a different jurisdiction could not reuse it. The UTC local run passed 371 canonical backend tests. A default-timezone run exposed an unrelated local-day check in treasury fixture ingestion, addressed in the following batch.

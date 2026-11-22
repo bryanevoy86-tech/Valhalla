@@ -177,8 +177,8 @@
       ],
       "owner_external_authorization_required": false,
       "continuation": {
-        "next_implementation": "Connect reviewed outcomes across scopes and compare evidence against new claims and proposed actions.",
-        "existing_test_evidence": "Factory reconciliation verifies Mimir outcome receipts against current scoped artifacts. The integrated rehearsal detects an altered learning receipt and recovers after restoring the original evidence. test_owner_conversation.py exercises rationale, visible dependencies, owner scope and repeated-topic conflict recall. Product Foundry continuous fixture links signed discovery, independent challenge, scoped execution, outcome, retained losses and a subsequent HOLD with contradiction evidence. The scoped acquisition fixture verifies debt stress, separately reviewed simulation, receipt reuse, revocation and reevaluation.",
+        "next_implementation": "Compare currently valid scoped outcome evidence against new claims and proposed actions, and rehearse backlog recovery in staging.",
+        "existing_test_evidence": "Factory reconciliation verifies Mimir outcome receipts against current scoped artifacts. Prime and Mimir can revalidate the exact delayed trigger beyond the recent 20-outcome window. The integrated rehearsal detects an altered learning receipt and recovers after restoring the original evidence. test_owner_conversation.py exercises rationale, visible dependencies, owner scope and repeated-topic conflict recall. Product Foundry continuous fixture links signed discovery, independent challenge, scoped execution, outcome, retained losses and a subsequent HOLD with contradiction evidence. The scoped acquisition fixture verifies debt stress, separately reviewed simulation, receipt reuse, revocation and reevaluation.",
         "owner_action": "Internal continuation is authorized under the standing development scope.",
         "required_acceptance_evidence_field": "acceptance_test"
       }
