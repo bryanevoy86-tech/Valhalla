@@ -1053,3 +1053,5 @@ The acceptance matrix retains 13 P0 and 39 total criteria requiring internal cod
 ### Private startup independence review
 
 - Added a registration-based 90-day review, a zero-extra-contribution fallback and separate funding status and reporting evidence through the existing owner session. This internal tool keeps cash, benefit outcomes and authority unverified. Synthetic regression covers registration timing, reserve gaps, restricted sources, report classification and owner/subscriber separation. Hosted evidence is recorded on draft PR #4.
+
+- Added an optional fixture-only financing screen using configurable reserve and stressed debt-service coverage thresholds. It combines adverse rate, customer loss, delayed settlements and higher costs, counts existing repayments and excludes the proposed loan proceeds and new revenue from affordability. Tests exercise reserve shortfall, adequate synthetic coverage and rate shock. Reconciled inputs and independent review are required for any real financing assessment.

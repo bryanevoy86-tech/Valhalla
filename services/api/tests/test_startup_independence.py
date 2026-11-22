@@ -57,3 +57,30 @@ def test_reporting_retains_entries_and_keeps_owner_estimates_unverified():
     assert result["reporting"]["official_or_case_evidence_verified"] is False
     with pytest.raises(ValidationError, match="unique"):
         plan(reporting_lines=[rows[0], rows[0]])
+
+
+def test_financing_screen_uses_zero_new_revenue_stressed_cash_and_excludes_loan_proceeds():
+    terms = {
+        "term_evidence_ref": "fixture:terms", "principal_minor": 120000, "term_months": 12,
+        "annual_rate_bps": 0, "stress_rate_increase_bps": 0,
+        "recurring_settled_receipts_fixture_minor": 80000, "customer_loss_fixture_minor": 30000,
+        "settlement_delay_fixture_minor": 13000, "mandatory_monthly_costs_minor": 16000,
+        "stressed_cost_increase_minor": 3000, "existing_monthly_debt_service_minor": 2000,
+        "fees_and_unavoidable_upfront_costs_minor": 1000,
+    }
+    today = date(2026, 9, 30)
+    data = startup_independence(plan(financing_scenario=terms), today)["financing_screen"]
+    assert data["stressed_proposed_monthly_payment_minor"] == 10000
+    assert data["stressed_total_monthly_debt_service_minor"] == 12000
+    assert data["stressed_coverage_bps"] == 15000
+    assert data["required_unrestricted_reserve_minor"] == 186000
+    assert data["opening_unrestricted_cash_gap_minor"] == 137000
+    assert data["reasons"] == ["INSUFFICIENT_UNRESTRICTED_RESERVE_FIXTURE"]
+    with_reserve = {"opening_unrestricted_cash_fixture_minor": 187000}
+    data = startup_independence(plan(financing_scenario=terms, **with_reserve), today)["financing_screen"]
+    assert data["screen"] == "FIXTURE_MEETS_THRESHOLDS" and data["borrowing_authorized"] is False
+    assert data["new_revenue_assumed_minor"] == 0 and data["requires_reconciled_balances_and_review"] is True
+    data = startup_independence(plan(financing_scenario={**terms, "stress_rate_increase_bps": 300},
+                                     **with_reserve), today)["financing_screen"]
+    assert data["stressed_proposed_monthly_payment_minor"] > 10000
+    assert "STRESSED_DEBT_SERVICE_COVERAGE_BELOW_TARGET" in data["reasons"]

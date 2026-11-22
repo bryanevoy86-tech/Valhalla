@@ -1,5 +1,8 @@
 """Private startup planning over explicitly classified rehearsal evidence."""
 from datetime import date, timedelta
+from decimal import ROUND_CEILING, Decimal
+
+from fastapi import HTTPException
 from typing import Annotated, Literal
 
 from pydantic import Field, model_validator
@@ -41,6 +44,23 @@ class FundingLine(StrictModel):
     amount_minor: Minor
 
 
+class FinancingScenario(StrictModel):
+    term_evidence_ref: Reference
+    principal_minor: Annotated[int, Field(strict=True, gt=0, le=100_000_000_000)]
+    term_months: int = Field(strict=True, ge=1, le=360)
+    annual_rate_bps: int = Field(strict=True, ge=0, le=25_000)
+    stress_rate_increase_bps: int = Field(strict=True, ge=0, le=25_000)
+    recurring_settled_receipts_fixture_minor: Minor
+    customer_loss_fixture_minor: Minor
+    settlement_delay_fixture_minor: Minor
+    mandatory_monthly_costs_minor: Minor
+    stressed_cost_increase_minor: Minor
+    existing_monthly_debt_service_minor: Minor
+    fees_and_unavoidable_upfront_costs_minor: Minor
+    minimum_business_reserve_months: int = Field(default=6, strict=True, ge=1, le=24)
+    minimum_stressed_coverage_bps: int = Field(default=15_000, strict=True, ge=10_000, le=100_000)
+
+
 class StartupIndependenceIn(StrictModel):
     registration_date: date | None = None
     registration_evidence_ref: Reference | None = None
@@ -63,6 +83,7 @@ class StartupIndependenceIn(StrictModel):
     reporting_rules_ref: Reference | None = None
     reporting_rules_checked_on: date | None = None
     case_confirmation_ref: Reference | None = None
+    financing_scenario: FinancingScenario | None = None
 
     @model_validator(mode="after")
     def validate_report(self):
@@ -86,8 +107,46 @@ class StartupIndependenceIn(StrictModel):
         return self
 
 
+def financing_screen(scenario: FinancingScenario, opening_cash: int, protected_capital: int) -> dict:
+    principal = Decimal(scenario.principal_minor)
+    months = scenario.term_months
+    stressed_rate = Decimal(scenario.annual_rate_bps + scenario.stress_rate_increase_bps) / 120_000
+    payment = (principal * stressed_rate / (1 - (1 + stressed_rate) ** -months)
+               if stressed_rate else principal / months)
+    proposed_debt = int(payment.to_integral_value(rounding=ROUND_CEILING))
+    total_debt = proposed_debt + scenario.existing_monthly_debt_service_minor
+    stressed_operating_costs = scenario.mandatory_monthly_costs_minor + scenario.stressed_cost_increase_minor
+    stressed_receipts = max(0, scenario.recurring_settled_receipts_fixture_minor
+                            - scenario.customer_loss_fixture_minor - scenario.settlement_delay_fixture_minor)
+    stressed_cash_flow = stressed_receipts - stressed_operating_costs
+    coverage_bps = stressed_cash_flow * 10_000 // total_debt
+    reserve = (stressed_operating_costs + total_debt) * scenario.minimum_business_reserve_months
+    required_cash = max(reserve, protected_capital) + scenario.fees_and_unavoidable_upfront_costs_minor
+    gap = max(0, required_cash - opening_cash)
+    reasons = []
+    if gap:
+        reasons.append("INSUFFICIENT_UNRESTRICTED_RESERVE_FIXTURE")
+    if coverage_bps < scenario.minimum_stressed_coverage_bps:
+        reasons.append("STRESSED_DEBT_SERVICE_COVERAGE_BELOW_TARGET")
+    return {
+        "basis": "SYNTHETIC_FIXTURE",
+        "term_evidence_ref": scenario.term_evidence_ref,
+        "new_revenue_assumed_minor": 0,
+        "stressed_proposed_monthly_payment_minor": proposed_debt,
+        "stressed_total_monthly_debt_service_minor": total_debt,
+        "stressed_coverage_bps": coverage_bps,
+        "minimum_stressed_coverage_bps": scenario.minimum_stressed_coverage_bps,
+        "required_unrestricted_reserve_minor": reserve,
+        "required_opening_unrestricted_cash_minor": required_cash,
+        "opening_unrestricted_cash_gap_minor": gap,
+        "screen": "FIXTURE_BELOW_THRESHOLDS" if reasons else "FIXTURE_MEETS_THRESHOLDS",
+        "reasons": reasons,
+        "requires_reconciled_balances_and_review": True,
+        "borrowing_authorized": False,
+    }
+
+
 def startup_independence(plan: StartupIndependenceIn, today: date) -> dict:
-    from fastapi import HTTPException
 
     registered = plan.registration_date
     if ((registered and registered > today) or (plan.commissioning_date and plan.commissioning_date > today)
@@ -134,6 +193,8 @@ def startup_independence(plan: StartupIndependenceIn, today: date) -> dict:
         "commissioning_date": plan.commissioning_date, "reviews": milestones,
         "reassessment_required": any(review["status"] == "REASSESS" for review in milestones),
         "capital_scenarios": capital, "verified_available_cash_minor": None,
+        "financing_screen": financing_screen(plan.financing_scenario, plan.opening_unrestricted_cash_fixture_minor,
+                                             protected) if plan.financing_scenario else None,
         "funding": [{**line.model_dump(), "included_in_spendable_cash_minor": 0,
                      "requires_settlement_and_use_review": True} for line in plan.funding],
         "monthly_essentials_minor": plan.monthly_essentials_minor,
