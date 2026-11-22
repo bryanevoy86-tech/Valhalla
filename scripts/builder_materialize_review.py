@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Materialize a verified Builder review bundle into a NEW artifact directory.
+"""Materialize a verified Builder review bundle or independently verify a draft submission.
 
 This does not edit a checkout, execute generated code, run its tests, commit,
 push, or deploy. A later isolated runner must apply the exact artifact to a
@@ -191,7 +191,7 @@ def write_review_diff(output: Path, base_root: Path, packet: dict) -> None:
     receipt_path.write_bytes(canonical(receipt))
 
 
-def verify_draft_target(root: Path, target: dict, commit: str) -> None:
+def tracked_draft_head(root: Path, target: dict) -> str:
     if not isinstance(target, dict) or set(target) != {"repository", "pull_request_number", "head_branch"}:
         raise ValueError("Invalid draft review target")
     repository, branch = target["repository"], target["head_branch"]
@@ -207,8 +207,12 @@ def verify_draft_target(root: Path, target: dict, commit: str) -> None:
     match = re.fullmatch(r"(?:https://github\.com/|git@github\.com:)([^\s]+)", remote)
     if not match or match.group(1).removesuffix(".git").casefold() != repository.casefold():
         raise ValueError("Origin does not match the selected GitHub repository")
-    tracked = subprocess.run(git + ["rev-parse", "--verify", f"refs/remotes/origin/{branch}"], check=True,
-                             text=True, capture_output=True, timeout=10).stdout.strip()
+    return subprocess.run(git + ["rev-parse", "--verify", f"refs/remotes/origin/{branch}"], check=True,
+                          text=True, capture_output=True, timeout=10).stdout.strip()
+
+
+def verify_draft_target(root: Path, target: dict, commit: str) -> None:
+    tracked = tracked_draft_head(root, target)
     if tracked != commit:
         raise ValueError("Locally fetched draft head differs from the tested commit")
 
@@ -223,6 +227,7 @@ def write_submission_manifest(output: Path, root: Path, packet: dict) -> None:
         "draft_target": packet["draft_target"], "expected_head_commit": packet["base_commit"],
         "handoff_sha256": packet["handoff_sha256"], "bundle_sha256": packet["bundle_sha256"],
         "test_receipt_sha256": packet["test_receipt_sha256"], "review_diff_sha256": receipt["review_diff_sha256"],
+        "files": receipt["files"],
         "remote_state_verified": False, "github_write_authorized": False, "release_authorized": False,
     }
     encoded = canonical(manifest)
@@ -270,15 +275,99 @@ def materialize_handoff(packet: dict, base_root: Path, output_parent: Path) -> P
     return output
 
 
+def read_github_pull(target: dict) -> dict:
+    endpoint = f"repos/{target['repository']}/pulls/{target['pull_request_number']}"
+    output = subprocess.run(
+        ["gh", "api", "--hostname", "github.com", "--method", "GET", endpoint],
+        check=True, capture_output=True, timeout=20,
+    ).stdout
+    return json.loads(output)
+
+
+def verify_submission_readback(raw: bytes, expected_sha256: str, root: Path, *, read_pull=read_github_pull) -> dict:
+    if len(raw) > 64_000 or sha(raw) != expected_sha256:
+        raise ValueError("Submission manifest digest differs from the approved artifact")
+    manifest = json.loads(raw)
+    flags = ("remote_state_verified", "github_write_authorized", "release_authorized")
+    if any(manifest.get(flag) is not False for flag in flags):
+        raise ValueError("Submission manifest has unsupported authority")
+    target = manifest["draft_target"]
+    base = manifest["expected_head_commit"]
+    if not isinstance(base, str) or not re.fullmatch("[a-f0-9]{40}", base):
+        raise ValueError("Invalid tested base")
+
+    git = ["git", "--no-replace-objects", "--literal-pathspecs", "-C", str(root)]
+
+    def read_git(*args):
+        return subprocess.run(git + list(args), check=True, capture_output=True, timeout=15).stdout
+
+    # Validate the target before constructing a GitHub request. Its tracking ref
+    # must already have been fetched by the operator.
+    submitted = tracked_draft_head(root, target)
+    pull = read_pull(target)
+    try:
+        identity = (pull["head"]["repo"]["full_name"].casefold(), pull["base"]["repo"]["full_name"].casefold(),
+                    pull["head"]["ref"], pull["number"])
+        expected_repo = target["repository"].casefold()
+        matches = (identity == (expected_repo, expected_repo, target["head_branch"], target["pull_request_number"])
+                   and pull["head"]["sha"] == submitted and pull["draft"] is True and pull["state"] == "open"
+                   and pull["merged"] is False)
+    except (KeyError, TypeError, AttributeError):
+        matches = False
+    if not matches or not re.fullmatch("[a-f0-9]{40}", submitted):
+        raise ValueError("Remote draft identity or fetched head differs")
+    if read_git("show", "-s", "--format=%P", submitted).decode().strip() != base:
+        raise ValueError("Submitted head is not a single commit over the exact tested base")
+
+    records = manifest["files"]
+    if not isinstance(records, list) or not 1 <= len(records) <= MAX_FILES:
+        raise ValueError("Invalid approved file set")
+    expected = {row["path"] for row in records}
+    actual = read_git("diff-tree", "--no-commit-id", "--name-only", "--no-renames", "-r", "-z", base, submitted)
+    if len(expected) != len(records) or {path.decode() for path in actual.split(b"\0") if path} != expected:
+        raise ValueError("Submitted files differ from the approved file set")
+    for row in records:
+        path = row["path"]
+        checked = resolve_path(path, list(DEFAULT_ALLOWED_DIRS), root)
+        if checked.relative_to(root).as_posix() != path:
+            raise ValueError("Submitted path is not canonical")
+        entry = read_git("ls-tree", "-z", submitted, "--", path)
+        metadata, _, name = entry.partition(b"\t")
+        mode, kind, blob = metadata.split()
+        previous_mode = read_git("ls-tree", "-z", base, "--", path).split(b" ", 1)[0]
+        valid_mode = (row["mode"] == "add" and not previous_mode and mode == b"100644") or (
+            row["mode"] == "replace" and mode == previous_mode and mode in (b"100644", b"100755"))
+        blob_id = blob.decode("ascii")
+        if (not valid_mode or kind != b"blob" or name != path.encode() + b"\0"
+                or int(read_git("cat-file", "-s", blob_id)) > MAX_FILE_BYTES
+                or sha(read_git("cat-file", "blob", blob_id)) != row["content_sha256"]):
+            raise ValueError("Submitted bytes or mode differ from the approved artifact")
+    return {"status": "EXACT_DRAFT_READBACK", "draft_target": target, "tested_base": base,
+            "submitted_head": submitted, "submission_manifest_sha256": expected_sha256,
+            "verified_file_count": len(records), "github_write_authorized": False, "release_authorized": False}
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     source = parser.add_mutually_exclusive_group(required=True)
     source.add_argument("--review", type=Path)
     source.add_argument("--review-handoff", type=Path)
+    source.add_argument("--submission-readback", type=Path)
     parser.add_argument("--base-root", required=True, type=Path)
-    parser.add_argument("--output-parent", required=True, type=Path)
+    parser.add_argument("--output-parent", type=Path)
+    parser.add_argument("--manifest-sha256")
     args = parser.parse_args()
     try:
+        if args.submission_readback:
+            if not args.manifest_sha256:
+                parser.error("--manifest-sha256 is required for submission readback")
+            with args.submission_readback.open("rb") as source_file:
+                readback = verify_submission_readback(source_file.read(64_001), args.manifest_sha256,
+                                                      args.base_root.resolve(strict=True))
+            print(json.dumps(readback, sort_keys=True))
+            return 0
+        if not args.output_parent:
+            parser.error("--output-parent is required for materialization")
         path = args.review_handoff or args.review
         limit = MAX_ENVELOPE_BYTES + (4096 if args.review_handoff else 0)
         with path.open("rb") as source_file:
@@ -287,7 +376,7 @@ def main() -> int:
             raise ValueError("review envelope too large")
         create = materialize_handoff if args.review_handoff else materialize
         output = create(json.loads(raw), args.base_root, args.output_parent)
-    except (OSError, ValueError, TypeError, SyntaxError, subprocess.SubprocessError) as exc:
+    except (OSError, ValueError, TypeError, KeyError, AttributeError, SyntaxError, subprocess.SubprocessError) as exc:
         # Do not print generated code or potentially sensitive file contents.
         parser.exit(2, f"Builder materialization refused: {type(exc).__name__}\n")
     print(output)

@@ -637,3 +637,13 @@ The startup planner can run with the three scenario inputs alone. Optional struc
 For Pantheon, the scope, current assignment, report identity and digest must agree. Missing or inconsistent evidence appears as an integrity hold without raw payload. A matching independent review can be queued, running, failed, completed or on integrity hold. Findings appear only from a verified completed review. Prime review and Factory execution revalidate the cited report against the latest role, scope, freshness and independent verdict. Private Prime decision inspection rechecks the same report references.
 
 Editor readback verified four workflow graphs and isolated script execution covered the three network actions. Commission using the already designated blank preview-origin variable `2861b009-a06b-436a-9d54-a95ec08e44cc` and authorized staging CORS. Verify owner/subscriber/revoked sessions, mobile layout, the real clear action, startup quote evidence classes, draft packet display, empty and paginated specialist results, completed separate Loki findings and invalid receipt behavior. Use synthetic costs and facts. Any professional opinion or authorized reliance still follows the separately governed signed process. No configuration or publication was performed.
+
+### November 22 — Builder draft submission verification
+
+The Builder materializer now seals the approved file set into `submission.json`. Preserve the manifest SHA-256 from its review receipt independently before a reviewer performs any separately authorized submission. From a verified local checkout of the selected repository, after the reviewer has fetched the selected draft head, use authenticated GitHub CLI with repository pull-request read access.
+
+```bash
+python scripts/builder_materialize_review.py --submission-readback /private/review/submission.json --manifest-sha256 APPROVED_MANIFEST_SHA256 --base-root /verified/local/checkout
+```
+
+The CLI only reads the selected GitHub draft and local Git objects. `EXACT_DRAFT_READBACK` requires the open same-repository draft, matching head ref and fetched object, one commit over the tested head, and exactly the approved paths, file modes and content hashes. A changed manifest, remote or candidate fails closed. Single-commit staging is a requirement of this exact readback mode. Regenerate older manifests before using it. Commission with a separately approved candidate, a read-only GitHub identity and an independently pinned review checksum. No write, publish or release follows from the receipt.

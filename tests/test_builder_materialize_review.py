@@ -139,6 +139,41 @@ class BuilderMaterializeTests(unittest.TestCase):
         self.assertEqual(manifest["review_diff_sha256"], sha((output / "review.diff").read_bytes()))
         self.assertEqual(json.loads((output / "receipt.json").read_bytes())["submission_manifest_sha256"], sha(manifest_bytes))
         self.assertEqual(git("status", "--porcelain"), "")
+        git("apply", str(output / "review.diff"))
+        git("add", "--", self.path)
+        submitted = git("-c", "user.name=Builder Fixture", "-c", "user.email=fixture@example.invalid",
+                        "commit-tree", git("write-tree"), "-p", base, "-m", "exact owner submission")
+        git("update-ref", "refs/remotes/origin/review/candidate", submitted)
+        remote = {
+            "number": 4, "state": "open", "draft": True, "merged": False,
+            "head": {"repo": {"full_name": target["repository"]}, "ref": target["head_branch"], "sha": submitted},
+            "base": {"repo": {"full_name": target["repository"]}},
+        }
+        readback = MOD["verify_submission_readback"]
+
+        def read_pull(requested):
+            self.assertEqual(requested, target)
+            return remote
+
+        sealed_digest = sha(manifest_bytes)
+        proof = readback(manifest_bytes, sealed_digest, self.base, read_pull=read_pull)
+        self.assertEqual(proof["status"], "EXACT_DRAFT_READBACK")
+        self.assertEqual(proof["submitted_head"], submitted)
+        self.assertFalse(proof["release_authorized"])
+        with self.assertRaisesRegex(ValueError, "manifest digest"):
+            readback(manifest_bytes, "0" * 64, self.base, read_pull=read_pull)
+        with self.assertRaisesRegex(ValueError, "identity or fetched head"):
+            readback(manifest_bytes, sealed_digest, self.base, read_pull=lambda _: {**remote, "draft": False})
+
+        self.source.write_bytes(b"VALUE = 999\n")
+        git("add", "--", self.path)
+        changed = git("-c", "user.name=Builder Fixture", "-c", "user.email=fixture@example.invalid",
+                      "commit-tree", git("write-tree"), "-p", base, "-m", "unapproved bytes")
+        git("update-ref", "refs/remotes/origin/review/candidate", changed)
+        remote["head"]["sha"] = changed
+        with self.assertRaisesRegex(ValueError, "Submitted bytes or mode"):
+            readback(manifest_bytes, sealed_digest, self.base, read_pull=read_pull)
+        git("restore", "--source=HEAD", "--staged", "--worktree", "--", self.path)
         alternate = git("-c", "user.name=Builder Fixture", "-c", "user.email=fixture@example.invalid",
                         "commit-tree", "HEAD^{tree}", "-p", base, "-m", "new remote head")
         git("update-ref", "refs/remotes/origin/review/candidate", alternate)
