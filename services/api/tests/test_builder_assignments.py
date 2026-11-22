@@ -1,5 +1,6 @@
 from datetime import timedelta
 from hashlib import sha256
+import json
 from pathlib import Path
 import runpy
 from uuid import uuid4
@@ -185,3 +186,38 @@ def test_owner_prepares_atomic_multifile_builder_candidate(deal_client, tmp_path
         assert record["base_sha256"] == edit["source_sha256"]
         assert record["content"] == edit["after"] + "\n"
         assert (tmp_path / edit["path"]).read_text() == edit["before"] + "\n"
+
+def test_builder_generates_owner_attention_repair_without_owner_supplied_edits(deal_client, tmp_path, monkeypatch):
+    client, engine = deal_client
+    for model in (BuilderEvent, BuilderTask, BuilderAssignment):
+        model.__table__.create(engine)
+    monkeypatch.setattr(builder, "_REPO_ROOT", tmp_path)
+    monkeypatch.setenv("VALHALLA_OWNER_MANDATE_KEY", "fixture-recipe-owner")
+    monkeypatch.setenv("VALHALLA_BUILDER_RUNNER_KEY", "fixture-recipe-runner")
+    monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "false")
+    owner = {"X-Owner-Mandate-Key": "fixture-recipe-owner"}
+    runner = {"X-Builder-Runner-Key": "fixture-recipe-runner"}
+    target = tmp_path / "web/weweb-datasources/owner_attention.collection.json"
+    target.parent.mkdir(parents=True)
+    original = b'{"requests":[{"name":"list_owner_attention","cacheSeconds":60}]}'
+    target.write_bytes(original)
+    request = {"assignment_id": str(uuid4()), "base_commit": "a" * 40, "image_id": "sha256:" + "b" * 64,
+               "title": "Refresh canonical owner attention collection", "recipe": "refresh_owner_attention_collection",
+               "source_sha256": sha256(original).hexdigest()}
+    endpoint = "/builder/assignments/prepare"
+    assert client.post(endpoint, headers=runner, json=request).status_code == 401
+    assert client.post(endpoint, headers=owner, json={**request, "source_sha256": "0" * 64}).status_code == 409
+    assert client.post(endpoint, headers=owner, json={**request, "path": str(target)}).status_code == 422
+    prepared = client.post(endpoint, headers=owner, json=request)
+    assert prepared.status_code == 201, prepared.text
+    assert client.post(endpoint, headers=owner, json=request).json() == prepared.json()
+    lease = client.post("/builder/assignments/claim", headers=runner).json()
+    [record] = lease["review"]["bundle"]["files"]
+    assert target.read_bytes() == original
+    assert record["path"] == target.relative_to(tmp_path).as_posix()
+    generated = json.loads(record["content"])
+    assert [entry["url"] for entry in generated["requests"]] == [
+        "/api/weweb/owner-attention", "/api/weweb/owner-briefing", "/api/weweb/owner-briefing?mode=driving",
+    ]
+    assert all(entry["cacheSeconds"] == 0 and entry["method"] == "GET" for entry in generated["requests"])
+    assert lease["release_authorized"] is False

@@ -1,11 +1,12 @@
 """Lease exact approved review bundles and receive isolated test evidence."""
 from datetime import datetime, timedelta, timezone
 import hmac
+import json
 import os
 from typing import Literal
 from uuid import UUID, uuid4
 
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import inspect, or_, select
@@ -23,6 +24,12 @@ from app.services.prime_business_execution import _emergency_stop_active, requir
 
 
 MAX_LEASE_CLAIMS = 3
+OWNER_ATTENTION_PATH = "web/weweb-datasources/owner_attention.collection.json"
+OWNER_ATTENTION_REQUESTS = (
+    ("list_owner_attention", "/api/weweb/owner-attention"),
+    ("read_owner_briefing", "/api/weweb/owner-briefing"),
+    ("read_driving_briefing", "/api/weweb/owner-briefing?mode=driving"),
+)
 
 
 def require_schema(db: Session = Depends(get_db)):
@@ -78,6 +85,11 @@ class BatchCandidateIn(CandidateRequest):
     edits: list[CandidateEdit] = Field(min_length=1, max_length=MAX_BATCH_FILES)
 
 
+class RecipeCandidateIn(CandidateRequest):
+    recipe: Literal["refresh_owner_attention_collection"]
+    source_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+
+
 class TestReceipt(BaseModel):
     model_config = ConfigDict(extra="forbid")
     lease_id: UUID
@@ -128,32 +140,53 @@ def assign(payload: AssignmentIn, db: Session = Depends(get_db)):
 
 
 @router.post("/prepare", status_code=201, dependencies=[Depends(require_prime_control_key), Depends(require_owner_mandate_key)])
-def prepare(payload: CandidateIn | BatchCandidateIn, db: Session = Depends(get_db)):
+def prepare(payload: CandidateIn | BatchCandidateIn | RecipeCandidateIn, request: Request,
+            db: Session = Depends(get_db)):
     """Generate a snapshot-bound repair candidate and queue the existing runner atomically."""
     if _emergency_stop_active(db):
         raise HTTPException(503, "Builder assignment preparation paused")
     request_hash = _sha(_canonical(payload.model_dump(mode="json")))
+    recipe = isinstance(payload, RecipeCandidateIn)
+    plan = f"{payload.recipe if recipe else 'literal-replacement'}:{request_hash}"
     existing = db.get(BuilderAssignment, payload.assignment_id)
     if existing:
         prior_task = db.get(BuilderTask, existing.task_id)
-        if prior_task is None or prior_task.plan != f"literal-replacement:{request_hash}":
+        if prior_task is None or prior_task.plan != plan:
             raise HTTPException(409, "Assignment ID already used")
         return view(existing)
-    edits = payload.edits if isinstance(payload, BatchCandidateIn) else [payload]
-    files = []
-    for edit in edits:
-        old, source_hash = _read_base(edit.path)
-        match = old.find(edit.before)
-        if source_hash != edit.source_sha256 or match == -1 or old.find(edit.before, match + 1) != -1:
-            raise HTTPException(409, "Expected source hash and a single matching edit are required")
-        files.append(FileSpec(path=edit.path, mode="replace", content=old.replace(edit.before, edit.after, 1)))
+    files, source_hashes = [], []
+    if recipe:
+        _, source_hash = _read_base(OWNER_ATTENTION_PATH)
+        if source_hash != payload.source_sha256:
+            raise HTTPException(409, "Owner attention collection snapshot changed")
+        get_paths = {getattr(route, "path", None) for route in request.app.routes
+                     if "GET" in (getattr(route, "methods", None) or ())}
+        if any(url.partition("?")[0] not in get_paths for _, url in OWNER_ATTENTION_REQUESTS):
+            raise HTTPException(409, "Owner briefing routes are unavailable")
+        collection = {
+            "name": "owner_attention.collection", "datasource": "Valhalla API",
+            "requests": [{"name": name, "method": "GET", "url": url, "cacheSeconds": 0}
+                         for name, url in OWNER_ATTENTION_REQUESTS],
+        }
+        files.append(FileSpec(path=OWNER_ATTENTION_PATH, mode="replace",
+                              content=json.dumps(collection, indent=2) + "\n"))
+        source_hashes.append(source_hash)
+    else:
+        edits = payload.edits if isinstance(payload, BatchCandidateIn) else [payload]
+        for edit in edits:
+            old, source_hash = _read_base(edit.path)
+            match = old.find(edit.before)
+            if source_hash != edit.source_sha256 or match == -1 or old.find(edit.before, match + 1) != -1:
+                raise HTTPException(409, "Expected source hash and a single matching edit are required")
+            files.append(FileSpec(path=edit.path, mode="replace", content=old.replace(edit.before, edit.after, 1)))
+            source_hashes.append(source_hash)
     records, _ = _prepare_files(files)
-    if any(record["base_sha256"] != edit.source_sha256 for record, edit in zip(records, edits, strict=True)):
+    if any(record["base_sha256"] != source_hash for record, source_hash in zip(records, source_hashes, strict=True)):
         raise HTTPException(409, "Source changed during preparation")
     count = len(records)
     scope = records[0]["path"] if count == 1 else f"{count} snapshot-bound files"
     task = BuilderTask(title=payload.title, scope=scope, status="review_ready",
-                       plan=f"literal-replacement:{request_hash}", diff_summary=f"{count} snapshot-verified prepared file(s)")
+                       plan=plan, diff_summary=f"{count} snapshot-verified prepared file(s)")
     db.add(task)
     try:
         db.flush()
@@ -166,7 +199,7 @@ def prepare(payload: CandidateIn | BatchCandidateIn, db: Session = Depends(get_d
         row = BuilderAssignment(id=payload.assignment_id, task_id=task.id, base_commit=payload.base_commit,
                                 image_id=payload.image_id, bundle_sha256=digest, status="queued", created_at=now())
         db.add(row)
-        db.add(BuilderEvent(kind="review_ready", msg="Authorized literal repair candidate prepared",
+        db.add(BuilderEvent(kind="review_ready", msg="Authorized repair candidate prepared",
                             meta_json=_canonical({"task_id": task.id, "sha256": digest, "file_count": count}).decode("utf-8")))
         db.commit()
     except IntegrityError:
