@@ -64,9 +64,16 @@ def _require_non_fixture_subscription(provider, reference):
         raise HTTPException(409, "Checkout rehearsal evidence cannot activate SaaS subscriptions")
 
 
+def _provider_payment_required(provider, reference):
+    return (provider or "").strip().casefold() not in {"", "manual"} or reference is not None
+
+
 def create_subscription(db: Session, payload: SubscriptionCreate) -> Subscription:
     _require_non_fixture_subscription(payload.provider, payload.provider_sub_id)
-    sub = Subscription(**payload.model_dump())
+    fields = payload.model_dump()
+    if _provider_payment_required(payload.provider, payload.provider_sub_id):
+        fields["status"] = "pending_verification"
+    sub = Subscription(**fields)
     db.add(sub)
     db.commit()
     db.refresh(sub)
@@ -86,6 +93,9 @@ def update_subscription(
     if "provider_sub_id" in data or data.get("status", sub.status) == "active":
         _require_non_fixture_subscription(sub.provider, sub.provider_sub_id)
         _require_non_fixture_subscription(sub.provider, data.get("provider_sub_id", sub.provider_sub_id))
+        if (_provider_payment_required(sub.provider, sub.provider_sub_id)
+                or _provider_payment_required(sub.provider, data.get("provider_sub_id", sub.provider_sub_id))):
+            raise HTTPException(409, "Provider-backed subscriptions require a verified entitlement receipt")
     for field, value in data.items():
         setattr(sub, field, value)
 
@@ -100,13 +110,11 @@ def update_subscription(
 
 def get_active_subscription_for_user(db: Session, user_id: int) -> Optional[Subscription]:
     provider = func.lower(func.trim(Subscription.provider))
-    reference = func.lower(func.trim(Subscription.provider_sub_id))
-    fixture_ref = or_(*(reference.startswith(prefix, autoescape=True) for prefix in FIXTURE_REFERENCE_PREFIXES))
     return (
         db.query(Subscription).join(SaaSPlan)
         .filter(Subscription.user_id == user_id, Subscription.status == "active", SaaSPlan.is_active.is_(True),
-                or_(Subscription.provider.is_(None), ~provider.in_(FIXTURE_PROVIDERS)),
-                or_(Subscription.provider_sub_id.is_(None), ~fixture_ref))
+                or_(Subscription.provider.is_(None), provider.in_(("", "manual"))),
+                Subscription.provider_sub_id.is_(None))
         .order_by(Subscription.started_at.desc())
         .first()
     )

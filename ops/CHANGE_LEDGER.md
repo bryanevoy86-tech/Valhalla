@@ -1023,3 +1023,5 @@ The acceptance matrix retains 13 P0 and 39 total criteria requiring internal cod
 
 - Checkout-to-economic commit `a0cc48d50d371d5ca6e2c5cfbd56dbf877d66a9d` passed all four hosted jobs in run 45056369715. The Product Foundry workflow covers signed opportunity intake, independent review, governed execution, fulfillment and refunds, exact closed checkout booking, and scoped Mimir and Norns evidence.
 - The private Legacy operating view ships with the owner-only no-store API projection and a saved WeWeb action validated using isolated fixtures. The view preserves separate business, household and protected reserve reporting. The snapshot, panel and workflow identifiers are in the December handoff.
+
+- Provider-tagged subscriptions no longer activate or grant access from a submitted reference or previously stored active status. The tenant rehearsal checks pending, refused activation, access refusal and cancellation. Signed provider-to-order, ledger, settlement and entitlement reconciliation is still internal work. The existing finance webhook criterion now explicitly records that code gap.

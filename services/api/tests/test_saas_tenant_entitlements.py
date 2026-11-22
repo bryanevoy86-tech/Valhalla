@@ -56,6 +56,18 @@ def test_trial_is_bound_to_authenticated_subscriber_and_tenant(deal_client, monk
                         json={"status": "cancelled"}).status_code == 200
     assert client.patch(f"/saas/subscriptions/{contaminated_id}", headers=owner,
                         json={"provider_sub_id": None}).status_code == 409
+    unverified = {**fake, "provider_sub_id": "sub_unverified_fixture_test"}
+    pending_subscription = client.post("/saas/subscriptions", headers=owner, json=unverified)
+    assert pending_subscription.status_code == 200 and pending_subscription.json()["status"] == "pending_verification"
+    subscription_path = f"/saas/subscriptions/{pending_subscription.json()['id']}"
+    assert client.patch(subscription_path, headers=owner, json={"status": "active"}).status_code == 409
+    with Session(engine) as db:
+        db.get(Subscription, pending_subscription.json()["id"]).status = "active"
+        db.commit()
+    assert client.get("/saas/access-check", params={
+        "user_id": subject_id, "module_key": "wholesale_engine",
+    }).json()["has_access"] is False
+    assert client.patch(subscription_path, headers=owner, json={"status": "cancelled"}).status_code == 200
 
     trial = {
         "entitlement_id": str(uuid4()), "tenant_id": str(uuid4()), "subject_id": subject_id, "plan_id": plan.json()["id"],

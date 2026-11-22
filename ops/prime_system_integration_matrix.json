@@ -553,7 +553,7 @@
       "owner_external_authorization_required": true,
       "continuation": {
         "next_implementation": "Run the first authorized storefront lifecycle with support, costs and independently matched settlement receipts.",
-        "existing_test_evidence": "The private checkout rehearsal proved partial and final support closure, stale and conflicting review refusal, exact replay, emergency refund and resolution, and preservation of reconciled fixture accounting. The checkout rehearsal verifies a paid delivery hold, reviewed retry, emergency stop, idempotent retry and subsequent signed refund support. SaaS rejects fixture references on activation and access checks, including previously stored fixture references. Held fulfillment and unresolved refund support now cause scheduled Prime to HOLD. They also surface in specialist evidence routed to Loki. The checkout rehearsal asserts that Prime can identify a fulfillment hold with settlement tables absent, preserving capture as unreconciled. The completed synthetic order now yields a digest-bound closed-checkout proof joining Mimir listing lineage, full capture, delivery, refund support, costs and the independently matched statement postings. Economic booking and later Mimir verification check the exact scope, totals, period and current proof. An altered receipt removes simulated exposure headroom and is surfaced to Prime and independent Loki.",
+        "existing_test_evidence": "The private checkout rehearsal proved partial and final support closure, stale and conflicting review refusal, exact replay, emergency refund and resolution, and preservation of reconciled fixture accounting. The checkout rehearsal verifies a paid delivery hold, reviewed retry, emergency stop, idempotent retry and subsequent signed refund support. SaaS rejects fixture references on activation and access checks, including previously stored fixture references. Legacy SaaS records tagged with unverified provider references cannot grant access. New provider-tagged requests are pending verification, and tracked manual subscriptions remain available. Held fulfillment and unresolved refund support now cause scheduled Prime to HOLD. They also surface in specialist evidence routed to Loki. The checkout rehearsal asserts that Prime can identify a fulfillment hold with settlement tables absent, preserving capture as unreconciled. The completed synthetic order now yields a digest-bound closed-checkout proof joining Mimir listing lineage, full capture, delivery, refund support, costs and the independently matched statement postings. Economic booking and later Mimir verification check the exact scope, totals, period and current proof. An altered receipt removes simulated exposure headroom and is surfaced to Prime and independent Loki.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
@@ -574,7 +574,7 @@
         "services/api/app/webhooks/stripe.py",
         "services/api/tests/test_product_artifact_workflow.py"
       ],
-      "source_observation": "Signed local capture and refund deltas can reconcile with unique scoped statement-fixture entries. Mismatches show the exact difference and cannot attach a settlement receipt. Live payment and bank settlement remain pending.",
+      "source_observation": "Signed local capture and refund deltas can reconcile with unique scoped statement-fixture entries. Mismatches show the exact difference and cannot attach a settlement receipt. Live payment and bank settlement remain pending. The existing Stripe ingress rejects financial events with a 503 until a verified consumer is wired.",
       "evidence_level": "SQLITE_INTEGRATION_TESTED",
       "production_verified": false,
       "acceptance_test": "Signed timestamped webhooks idempotently persist, settle, reverse, reconcile Stripe/Payhip events; provider receipt",
@@ -584,12 +584,12 @@
       ],
       "owner_external_authorization_required": true,
       "continuation": {
-        "next_implementation": "Verify one authorized payment-provider sandbox event stream and independently sourced bank settlement evidence.",
+        "next_implementation": "Connect the canonical Stripe financial event consumer to exact order, entitlement and ledger receipts, then verify the authorized sandbox event stream and separately sourced settlement.",
         "existing_test_evidence": "test_product_artifact_workflow.py exercises exact matches, difference reporting and bound-receipt replay in an integrated checkout.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
-          "internal_coding": null,
+          "internal_coding": "Implement the live financial event consumer and exact order-to-ledger linkage while preserving current fail-closed ingress.",
           "insufficient_test_evidence": "Extend provider-specific event and settlement reconciliation evidence.",
           "external_commissioning": "Verify named sandbox event stream and separately sourced settlement.",
           "owner_or_professional_action": "Approve sandbox credentials, callbacks and side effects.",

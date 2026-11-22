@@ -150,7 +150,7 @@ def test_create_subscription(client):
     assert res.status_code == 200
     data = res.json()
     assert data["user_id"] == 1
-    assert data["status"] == "active"
+    assert data["status"] == "pending_verification"
 
 
 def test_update_subscription_status(client):
