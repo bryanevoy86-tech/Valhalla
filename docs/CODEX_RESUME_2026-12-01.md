@@ -508,3 +508,10 @@ A contained Factory scope cannot create a fresh listing-draft queue entry. An ex
 ### Builder metrics collection repair
 
 Use `refresh_metrics_collection` with the exact metrics collection digest, authorized base commit and pinned runner image on the existing private Builder preparation route. The generated candidate restores the registered GET metrics request and its 30-second telemetry cache. The private briefing recipe continues to use zero caching. The runner still produces a review candidate for owner approval.
+
+
+### Verified historical evidence in the owner's reviewed decision
+
+The private conversation turn for a reviewed Prime decision can return `reviewed_mimir_outcomes` from the independently reviewed proposal. The read revalidates the cited Factory receipt in its exact scope. A damaged source returns a conflict on a fresh read and blocks Factory admission. A verified presentation carries no execution authority. The rehearsal independently reviewed a follow-up proposal and verified both paths.
+
+Remaining internal development includes structured claims for other evidence classes, role-specific analysis beyond Factory and checkout, more Builder recipes and a containment audit of other authorization paths. Sustained Norns recovery, genuine outcome calibration, approved WeWeb preview and device tests, independent provider isolation and external financial verification require authorized commissioning.

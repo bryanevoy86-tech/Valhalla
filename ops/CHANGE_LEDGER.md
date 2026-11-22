@@ -915,3 +915,8 @@ Development commit `f66b5139be26d557b662470e827acf5c5f481028` extends the canoni
 ## November 21 — Governed metrics collection repair and combined verification
 
 Development commit `58a557beb14cc53d874cd1489cefe6ffbbbce145` adds a fixed metrics collection repair recipe to the existing Builder route and keeps the private owner briefing recipe. Both verify the source and routes, prepare one review candidate and leave the checkout intact. Local combined verification passed 374 canonical backend tests, 22 disposable PostgreSQL checks, eight Builder materializer checks and one simulated-browser voice test. The route probe verified 36 critical routers and 94 required routes.
+
+
+## November 21 — Reviewed history in the private owner decision view
+
+Development commit `10f03df3e84294237c314302dce92d95f8218bbd` makes the private decision view revalidate and surface the exact Mimir claims bound to the independently reviewed proposal. The integrated test persists a follow-up decision, retrieves the verified historical evidence privately, confirms containment still blocks new work and then damages the historical receipt. Both the fresh owner view and Factory admission reject the stale evidence. Final local full regression passed 374 backend tests. The previous combined checkpoint passed all four hosted gates in run 44973042999.
