@@ -19,6 +19,7 @@ from app.services.specialist_triggers import outcome_scope_key
 
 
 EVENT_TYPE = "ACQUISITION_FIXTURE_PLAN"
+CONSENT_TYPE = "ACQUISITION_FIXTURE_OPT_IN"
 
 
 class AcquisitionPlanIn(StrictModel):
@@ -64,12 +65,37 @@ def read_plan(db, campaign_id, scope):
     if event is None:
         return None
     plan = _json(event.payload_json, {})
+    if not isinstance(plan, dict) or not isinstance(plan.get("request"), dict):
+        raise HTTPException(409, "Campaign plan integrity or scope mismatch")
     digest = plan.pop("sha256", None)
     if (event.event_type != EVENT_TYPE or event.legacy_instance_id != scope["legacy_instance_id"]
             or plan.get("request", {}).get("scope") != scope
             or digest != artifact_digest("acquisition_fixture_plan", ref, plan)):
         raise HTTPException(409, "Campaign plan integrity or scope mismatch")
     return {**plan, "sha256": digest}
+
+
+def consent_event_id(visit_id):
+    return f"ACQ-OPTIN-{visit_id}"
+
+
+def consent_receipt(scope, campaign_id, visit_id, consent_id):
+    body = {"scope": scope, "campaign_id": campaign_id, "visit_id": str(visit_id),
+            "consent_fixture_id": str(consent_id), "basis": "EXPLICIT_OPT_IN_FIXTURE",
+            "external_outreach_authorized": False}
+    return {**body, "sha256": artifact_digest("acquisition_fixture_consent", consent_event_id(visit_id), body)}
+
+
+def verify_consent(event, scope, campaign_id, visit_id):
+    body = _json(event.payload_json, {}) if event else {}
+    try:
+        consent_id = UUID(body["consent_fixture_id"])
+        if (event.event_type != CONSENT_TYPE or event.legacy_instance_id != scope["legacy_instance_id"]
+                or body != consent_receipt(scope, campaign_id, visit_id, consent_id)):
+            raise ValueError
+    except (KeyError, ValueError, TypeError, AttributeError):
+        raise HTTPException(409, "Direct acquisition visit lacks matching synthetic consent") from None
+    return body
 
 
 def settled_campaign(db, campaign_id, scope):
@@ -83,6 +109,16 @@ def settled_campaign(db, campaign_id, scope):
     visits = db.scalars(linked.order_by(visit.id).limit(10001)).all()
     if len(visits) > 10000:
         raise HTTPException(409, "Campaign exceeds the rehearsal evidence limit")
+    consent_digests = []
+    if plan["request"]["channel"] == "DIRECT_OPT_IN":
+        for start in range(0, len(visits), 200):
+            page = visits[start:start + 200]
+            ids = [consent_event_id(item.id) for item in page]
+            receipts = {row.event_id: row for row in db.scalars(select(LegacyOrchestrationEvent).where(
+                LegacyOrchestrationEvent.event_id.in_(ids),
+            ))}
+            consent_digests.extend(verify_consent(receipts.get(ref), scope, campaign_id, item.id)["sha256"]
+                                   for ref, item in zip(ids, page))
     order_ids = [item.order_id for item in visits if item.order_id is not None]
     if len(order_ids) > 100:
         raise HTTPException(409, "Campaign exceeds the rehearsal order limit")
@@ -107,7 +143,8 @@ def settled_campaign(db, campaign_id, scope):
     contribution = sum(proof["fixture_contribution_minor"] for proof in settled)
     target = plan["request"]["stop_after_visits"]
     evaluation = "REVIEW_EVIDENCE"
-    if not pending and len(visits) >= target and (not retained or contribution <= 0):
+    budget_exceeded = cost_recorded and acquisition_cost > plan["request"]["experiment_budget_minor"]
+    if budget_exceeded or (not pending and len(visits) >= target and (not retained or contribution <= 0)):
         evaluation = "RECOMMEND_PAUSE"
     elif not pending and retained and contribution > 0:
         evaluation = "REVIEW_POSITIVE_FIXTURE"
@@ -119,8 +156,14 @@ def settled_campaign(db, campaign_id, scope):
         "retained_net_order_conversion_bp": retained * 10000 // len(visits) if visits else None,
         "contribution_minor": contribution if settled and not pending else None,
         "recorded_order_acquisition_cost_minor": acquisition_cost if cost_recorded else None,
+        "acquisition_cost_per_positive_net_order_minor": acquisition_cost // retained
+        if not pending and cost_recorded and retained else None,
+        "recorded_acquisition_cost_exceeds_budget": budget_exceeded,
         "recommendation": evaluation, "currency": "CAD",
         "order_proofs": [{"id": proof["order_id"], "sha256": proof["sha256"]} for proof in settled],
+        "consent_receipt_count": len(consent_digests),
+        "consent_evidence_sha256": artifact_digest("acquisition_fixture_consent_set", str(campaign_id),
+                                                   {"receipts": consent_digests}) if consent_digests else None,
         "verified_commercial_revenue": False, "external_action_authorized": False,
     }
     return {**result, "sha256": artifact_digest("acquisition_fixture_result", str(campaign_id), result)}

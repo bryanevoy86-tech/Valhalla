@@ -448,7 +448,7 @@
         "services/api/app/routers/marketing.py",
         "services/api/app/services/marketing_service.py"
       ],
-      "source_observation": "Private simulation binds a demand-backed plan before campaign visits and reconciles the attributed capture, refunds, delivery, costs and settlement. Roles can read the settled fixture and recommend pausing. Live publishing, audience consent and verified paid-order attribution are pending.",
+      "source_observation": "Private simulation binds a demand-backed plan before campaign visits and reconciles the attributed capture, refunds, delivery, costs and settlement. Direct-opt-in visits require exact scoped synthetic consent receipts. Roles can read the settled fixture and recommend pausing. Live publishing, audience consent and verified paid-order attribution are pending.",
       "evidence_level": "SQLITE_INTEGRATION_TESTED",
       "production_verified": false,
       "acceptance_test": "True platform authenticated publish and provider receipt, lawful scheduling/consent, click attribution to paid order",

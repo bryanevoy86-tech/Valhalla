@@ -1033,3 +1033,5 @@ The acceptance matrix retains 13 P0 and 39 total criteria requiring internal cod
 
 - Commit `ffb631b9616f7b742426f8e447be7a25c475b2b5` passed all four hosted jobs in run 45060746495. The integrated campaign fixture used two visits and one reconciled capture, ending with zero positive-net orders and negative CAD 1.75 in settled order contribution. It recommended pausing without external action.
 - Added both private WeWeb previews with editor snapshot and exact workflow readback. Added a closed-month allocation API rehearsal and the local independent Loki review artifact, including bounds, authority and evidence mutation checks.
+
+- The direct acquisition rehearsal now requires owner-gated synthetic opt-in evidence, binds replay to the recorded consent, and checks consent integrity before reporting settled conversion. The review can recommend pausing if recorded fixture acquisition costs exceed the planned validation budget.

@@ -404,6 +404,7 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
     review = acquisition_review.json()
     assert review["settled_conversion_bp"] == 5000 and review["retained_net_order_conversion_bp"] == 0
     assert review["contribution_minor"] == -175 and review["recommendation"] == "RECOMMEND_PAUSE"
+    assert review["consent_receipt_count"] == 2 and len(review["consent_evidence_sha256"]) == 64
     assert review["plan_sha256"] == planned.json()["sha256"] and not review["verified_commercial_revenue"]
     pending_id = submit_and_approve({**listing, "request_key": "workshop-listing-02"})
     with Session(engine) as db:
@@ -668,9 +669,15 @@ def rehearse_checkout(client, engine, monkeypatch, owner, action_id, price, scop
     root = "/api/prime/foundry/rehearsal"
     visit_ids = [str(uuid4()), str(uuid4())]
     assert client.post(f"{root}/campaign-visits", json={**scope, "campaign_id": 1, "visit_id": visit_ids[0]}).status_code == 401
+    assert client.post(f"{root}/campaign-visits", headers=owner,
+                       json={**scope, "campaign_id": 1, "visit_id": visit_ids[0]}).status_code == 409
     for visit_id in visit_ids:
-        visit = client.post(f"{root}/campaign-visits", headers=owner, json={**scope, "campaign_id": 1, "visit_id": visit_id})
+        details = {**scope, "campaign_id": 1, "visit_id": visit_id, "consent_fixture_id": str(uuid4())}
+        visit = client.post(f"{root}/campaign-visits", headers=owner, json=details)
         assert visit.status_code == 201, visit.text
+        assert client.post(f"{root}/campaign-visits", headers=owner, json=details).json() == visit.json()
+        assert client.post(f"{root}/campaign-visits", headers=owner,
+                           json={**details, "consent_fixture_id": str(uuid4())}).status_code == 409
     def summary():
         result = client.post(f"{root}/campaigns/1/summary", json=scope)
         assert result.status_code == 200, result.text

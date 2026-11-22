@@ -22,7 +22,10 @@ from app.models.foundry_checkout import FoundryCampaignVisit, FoundryFixtureSett
 from app.models.treasury_reconciliation import StatementEntry, StatementImport
 from app.models.marketing import MarketingCampaign
 from app.providers.stripe_adapter import verify_stripe_signature
-from app.services.acquisition_rehearsal import AcquisitionPlanIn, EVENT_TYPE as ACQUISITION_PLAN_EVENT, make_plan, plan_reference, read_plan, settled_campaign
+from app.services.acquisition_rehearsal import (
+    AcquisitionPlanIn, CONSENT_TYPE, EVENT_TYPE as ACQUISITION_PLAN_EVENT, consent_event_id,
+    consent_receipt, make_plan, plan_reference, read_plan, settled_campaign, verify_consent,
+)
 from app.services.economic_control import require_no_containment
 from app.services.prime_business_execution import _check_legacy, _emergency_stop_active, _event, _json, action_status, require_owner_mandate_key
 from app.services.product_artifacts import load_artifact, verify_artifact
@@ -468,6 +471,7 @@ class CampaignScope(BaseModel):
 class VisitIn(CampaignScope):
     visit_id: UUID
     campaign_id: int = Field(gt=0)
+    consent_fixture_id: UUID | None = None
 
 
 def _attribution_schema(db):
@@ -479,22 +483,36 @@ def _attribution_schema(db):
 @router.post("/campaign-visits", status_code=201, dependencies=owner)
 def record_campaign_visit(payload: VisitIn, db: Session = Depends(get_db)):
     _attribution_schema(db)
-    scope = payload.model_dump(exclude={"visit_id", "campaign_id"})
+    scope = payload.model_dump(exclude={"visit_id", "campaign_id", "consent_fixture_id"})
     _check_legacy(db, **scope)
     if db.get(MarketingCampaign, payload.campaign_id, with_for_update=True) is None:
         raise HTTPException(404, "Campaign record not found")
     key = outcome_scope_key(scope)
+    plan = read_plan(db, payload.campaign_id, scope)
+    direct = plan is not None and plan["request"]["channel"] == "DIRECT_OPT_IN"
+    if direct != (payload.consent_fixture_id is not None):
+        raise HTTPException(409, "Direct acquisition visits require scoped synthetic opt-in evidence")
     visit = db.get(FoundryCampaignVisit, payload.visit_id)
     if visit is not None:
         if (visit.campaign_id, visit.scope_key) != (payload.campaign_id, key):
             raise HTTPException(409, "Visit ID already used")
+        if direct:
+            event = db.scalar(select(LegacyOrchestrationEvent).filter_by(event_id=consent_event_id(visit.id)))
+            proof = verify_consent(event, scope, payload.campaign_id, visit.id)
+            if proof["consent_fixture_id"] != str(payload.consent_fixture_id):
+                raise HTTPException(409, "Visit ID already uses different opt-in evidence")
     else:
-        plan = read_plan(db, payload.campaign_id, scope)
         if plan is not None:
+            if _emergency_stop_active(db):
+                raise HTTPException(503, "Campaign attribution paused by emergency stop")
             recorded = AcquisitionPlanIn.model_validate(plan["request"])
             current = make_plan(db, payload.campaign_id, recorded, datetime.now(timezone.utc).date())
             if plan["demand_sha256"] != current["demand_sha256"]:
                 raise HTTPException(409, "Campaign demand evidence has changed")
+        if direct:
+            proof = consent_receipt(scope, payload.campaign_id, payload.visit_id, payload.consent_fixture_id)
+            _event(db, event_id=consent_event_id(payload.visit_id), legacy_instance_id=scope["legacy_instance_id"],
+                   event_type=CONSENT_TYPE, message="Synthetic scoped opt-in recorded", payload=proof)
         db.add(FoundryCampaignVisit(id=payload.visit_id, campaign_id=payload.campaign_id, scope_key=key))
         try:
             db.commit()
