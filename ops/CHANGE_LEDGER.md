@@ -999,3 +999,9 @@ The acceptance matrix retains 13 P0 and 39 total criteria requiring internal cod
 - Isolated Node tests cover upload retry, origin checks, exact reviewed extraction and restore hold. The authorized preview origin remains blank. Separate owner-mandate review and disposition and browser acceptance remain open.
 
 - Hosted regression found that the new upload replay branch returned 410 for an already deleted ID. The upload route retains its established 409 contract and still refuses resurrection. The existing deletion-and-replay test remains in the required suite.
+
+## November 22 — Server-mediated owner documents and decision evidence
+
+- `00c0fe5521002c951979e51d8b4a6ba7109a91c5` adds owner-only staging and status for exact document review/disposition requests, and a separate digest-bound server mandate path. Canonical attachment checks and atomic receipt storage preserve the distinction between a request and an applied action. Exact Prime/Loki and digest-verified specialist receipt routes are read-only.
+- The primary WeWeb Home panel `02e27c91-519f-433f-afe8-6d728375d6da` gained six workflows for requests, status and verified evidence. Their editor definitions were read back. Snapshot `29e19fdf-2047-46c7-9412-b1c738263393` preceded the change. The approved preview origin remains blank.
+- Fixture checks cover mandate denial, emergency stop, request replay, stale review, exact digest application and tombstone receipt. The integration matrix retains 13 P0 and 39 total criteria requiring coding.

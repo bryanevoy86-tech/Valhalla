@@ -35,7 +35,7 @@ jobs:
         with:
           python-version: '3.11'
       - name: Verify owner voice, attention and conversation preview contracts
-        run: node --test web/weweb-widgets/owner-driving-voice.test.mjs tests/test-weweb-owner-attention.test.mjs tests/test-weweb-owner-conversations.test.mjs tests/test-weweb-owner-documents.test.mjs
+        run: node --test web/weweb-widgets/owner-driving-voice.test.mjs tests/test-weweb-owner-attention.test.mjs tests/test-weweb-owner-conversations.test.mjs tests/test-weweb-owner-documents.test.mjs tests/test-weweb-owner-review-portal.test.mjs
       - name: Compile all touched safety and Business Factory modules
         run: |
           python -m py_compile \

@@ -775,7 +775,10 @@
         "web/weweb-widgets/owner-conversations.mjs",
         "tests/test-weweb-owner-conversations.test.mjs",
         "web/weweb-widgets/owner-conversation-documents.mjs",
-        "tests/test-weweb-owner-documents.test.mjs"
+        "tests/test-weweb-owner-documents.test.mjs",
+        "services/api/app/services/owner_document_requests.py",
+        "web/weweb-widgets/owner-review-portal.mjs",
+        "tests/test-weweb-owner-review-portal.test.mjs"
       ],
       "source_observation": "The private owner routes support JARVIS and attachment access gating. Driving mode includes specialist backlog integrity failures as an attention count.",
       "evidence_level": "SQLITE_INTEGRATION_TESTED",
@@ -788,11 +791,11 @@
       "owner_external_authorization_required": true,
       "continuation": {
         "next_implementation": "Wire the exact owner-preview routes in the December handoff. Verify status handling and device-local speech with a separately authorized preview project and test device.",
-        "existing_test_evidence": "Owner API and tenant regressions verify JWT isolation, disposition metadata, restore-hold blocking, no-store and revoked sessions. Private owner startup comparison separates dated public fees, quote and estimate classes, unknowns, activation, reserves and runway. The owner attention and driving briefing datasource is prepared for the authorized preview. Owner Attention is installed in the primary WeWeb Home cockpit (05ce39c3-5a5f-4e26-892b-3aa82fff3051). Editor readback confirms both workflows and volatile variables. Transport fixtures pass owner response, denial, empty state, and exact acknowledgment checks. The primary Home cockpit now has owner-gated local thread creation, history, message submission, exact Prime decision references and attachment metadata. Four installed workflows were read back against tested source. The conversation panel now contains private file selection, SHA-256 upload, and local extraction from exact current ACCEPT_LOCAL metadata. Both document workflows were read back. Fixtures check interrupted upload, approved digest verification, restore hold and refusal outside the authorized origin.",
+        "existing_test_evidence": "Owner API and tenant regressions verify JWT isolation, disposition metadata, restore-hold blocking, no-store and revoked sessions. Private owner startup comparison separates dated public fees, quote and estimate classes, unknowns, activation, reserves and runway. The owner attention and driving briefing datasource is prepared for the authorized preview. Owner Attention is installed in the primary WeWeb Home cockpit (05ce39c3-5a5f-4e26-892b-3aa82fff3051). Editor readback confirms both workflows and volatile variables. Transport fixtures pass owner response, denial, empty state, and exact acknowledgment checks. The primary Home cockpit now has owner-gated local thread creation, history, message submission, exact Prime decision references and attachment metadata. Four installed workflows were read back against tested source. The conversation panel now contains private file selection, SHA-256 upload, and local extraction from exact current ACCEPT_LOCAL metadata. Both document workflows were read back. Fixtures check interrupted upload, approved digest verification, restore hold and refusal outside the authorized origin. The primary Home cockpit has owner-only staging and status for document review and disposal. A separate server mandate binds the matching request digest and current attachment/review state. Read-only Prime/Loki and specialist schedule evidence use the canonical verifier. Editor readback and fixture tests passed.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
-          "internal_coding": "Bind secure server-mediated disposition and review, device-local voice, wider Prime and Pantheon views, and remaining owner and subscriber surfaces. Owner Attention, private local conversations, upload and reviewed extraction are installed for preview.",
+          "internal_coding": "Bind device-local voice, startup guidance, broader Pantheon evidence views, Legacy and treasury views, and remaining owner/subscriber surfaces. Document and decision previews are installed.",
           "insufficient_test_evidence": "Exercise revocation, protected state and device outcomes end to end.",
           "external_commissioning": "Configure an authorized matching staging API origin and preview CORS. Test owner/subscriber denials, logout and revocation, exact acknowledgment receipt, responsive layout and local voice devices.",
           "owner_or_professional_action": "Approve preview access and local speech consent.",

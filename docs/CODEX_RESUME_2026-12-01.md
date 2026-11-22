@@ -597,3 +597,20 @@ Commission with the authorized matching staging origin and preview CORS, migrate
 | Reviewed extraction click workflow | `020647e1-6715-4516-95b2-088fd127d628` | Refresh exact GET attachment metadata, then POST `/api/weweb/owner-conversations/{conversation_id}/attachments/{attachment_id}/extract` for an exact current `ACCEPT_LOCAL` file |
 
 The preview shows metadata and confirms a matched extraction receipt. It keeps the raw file selection in the local input until the explicit upload, and it does not render extract contents or send a provider payload. Upload backend retries reconcile exact bytes and scope and refuse restore through a tombstoned ID. To commission, use the previously recorded staging origin and CORS, disposable or authorized attachment storage on the migrated API, review and extraction tables, and an owner-reviewed fixture document. Supply the review server-side through the existing separate owner-mandate path. Rehearse owner/subscriber and revoked sessions, checksum and size enforcement with a synthetic file only, original upload retry, rejected/expired/deleted files and a restore-hold fixture. Test the actual native browser file value and responsive layout in WeWeb Preview.
+
+### November 22 — Document approval and verified decision views
+
+The primary Home page `05ce39c3-5a5f-4e26-892b-3aa82fff3051` includes private review panel `02e27c91-519f-433f-afe8-6d728375d6da` after the conversation panel. Its volatile state is `75194f23-6d17-48e9-a061-4fa0deb1e835`. Snapshot `29e19fdf-2047-46c7-9412-b1c738263393` preceded the change. Prior snapshots and the backup project are preserved.
+
+| Workflow | ID | Backend contract |
+|---|---|---|
+| Request local approval | `d9141d98-bb18-4a72-88aa-09724af3931b` | POST `/api/weweb/owner-conversations/{conversation_id}/attachments/{attachment_id}/requests`, `ACCEPT_LOCAL` |
+| Request rejection | `55afa4e1-66e1-4d63-a40b-eb9b37fe31b7` | Same request route, `REJECT` |
+| Request disposal | `25dee52a-0e25-4095-a947-b20dbc2e18e1` | Same request route, `DISPOSE` |
+| Check document request | `79beeb6c-0790-4a2d-b3eb-eae6a2536ac4` | GET `/api/weweb/owner-document-requests/{request_id}` |
+| Inspect Prime and Loki | `099b65c5-55de-43ce-aede-adae97aa5f9d` | GET `/api/weweb/owner-prime-decisions/{decision_id}` |
+| Inspect a specialist receipt | `c7104350-3552-41e6-b413-bfba94931614` | GET `/api/weweb/owner-specialist-schedules/{schedule_id}` |
+
+The owner reviews the exact attachment in the selected conversation. Staging records intent and a digest with status `PENDING_MANDATE`. The browser uses the existing owner session and the blank authorized-preview origin `2861b009-a06b-436a-9d54-a95ec08e44cc`. A separately authorized operator can apply the recorded digest with POST `/api/weweb/owner-document-requests/{request_id}/apply` using a current owner session and the separate server-side mandate key. The browser does not call this endpoint. Applying rechecks emergency stop, restore hold, original attachment digest and prior review. The existing review or disposal logic and audit receipt commit atomically. Apply replay returns the recorded result.
+
+Commission with approved staging API HTTPS origin and WeWeb preview CORS, migrated conversation, review, extraction, disposition and orchestration journal storage, server-side owner identity and mandate configuration, and an operator approved for this workflow. Use owner, subscriber and revoked sessions and disposable attachments to verify stale digest, stale review, review acceptance/rejection, authorized disposition and exact readback. Exercise genuine Prime and specialist fixtures with matching Loki and Mimir evidence before a browser acceptance claim. Broader Pantheon views and dynamic operating domains remain internal work.
