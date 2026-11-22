@@ -71,12 +71,28 @@ def test_trial_is_bound_to_authenticated_subscriber_and_tenant(deal_client, monk
              "basis": "OWNER_ESTIMATE", "amount_minor": 3000},
         ],
     }
+    plan["professional_review"] = [{
+        "route": "INTERNATIONAL_FIRST", "topic": "TAX_RESIDENCY",
+        "facts": [{"label": "Proposed decision location", "statement": "Management would initially work in Manitoba.",
+                   "source_reference": "owner:startup-fixture", "observed_on": datetime.now(timezone.utc).date().isoformat()}],
+        "questions": ["What residency and reporting questions require independent review?"],
+    }]
     assert client.post(path, json=plan).status_code == 401
     assert client.post(path, headers=outsider, json=plan).status_code == 403
     quote = client.post(path, headers=bearer, json=plan)
     assert quote.status_code == 200, quote.text
     assert quote.headers["cache-control"] == "no-store"
     budget = quote.json()
+    [packet] = budget["professional_review_packets"]
+    assert packet["jurisdiction"] == "Panama"
+    assert packet["facts"][0]["basis"] == "OWNER_REPORTED"
+    assert packet["status"] == "DRAFT_AWAITING_QUALIFIED_REVIEW"
+    assert packet["professional_signoff"] is None and packet["reliance_authorized"] is False
+    review = plan["professional_review"][0]
+    assert client.post(path, headers=bearer, json={**plan, "professional_review": [review, review]}).status_code == 422
+    assert client.post(path, headers=bearer, json={
+        **plan, "professional_review": [{**review, "professional_signoff": "unverified owner claim"}],
+    }).status_code == 422
     mb, federal, foreign = budget["options"]
     assert mb["activation"]["verified_government_minor"] == 39500
     assert mb["activation"]["estimate_including_all_items_minor"] == 69500

@@ -62,6 +62,27 @@ class SurplusAsset(PrivateInput):
     owner_valuation_minor: Money
 
 
+class ProfessionalReviewFact(PrivateInput):
+    label: Label
+    statement: str = Field(min_length=1, max_length=400)
+    source_reference: Label
+    observed_on: date
+
+
+class ProfessionalReviewIntake(PrivateInput):
+    route: Route
+    topic: Literal["CORPORATE_STRUCTURE", "TAX_RESIDENCY", "IP_OWNERSHIP", "TRUST_AND_SUCCESSION", "REGISTRATION"]
+    facts: list[ProfessionalReviewFact] = Field(min_length=1, max_length=12)
+    questions: list[str] = Field(min_length=1, max_length=12)
+
+    @model_validator(mode="after")
+    def validate_questions(self):
+        self.questions = [question.strip() for question in self.questions]
+        if any(not question or len(question) > 400 for question in self.questions):
+            raise ValueError("Questions must be between one and 400 characters")
+        return self
+
+
 class StartupPlanIn(PrivateInput):
     manitoba_operations: bool
     named_corporation: bool
@@ -72,6 +93,7 @@ class StartupPlanIn(PrivateInput):
     operating_reserve_target_minor: Money | None = None
     operating_cash_available_minor: Money | None = None
     surplus_assets: list[SurplusAsset] = Field(default_factory=list, max_length=50)
+    professional_review: list[ProfessionalReviewIntake] = Field(default_factory=list, max_length=10)
 
     @model_validator(mode="after")
     def avoid_double_counting(self):
@@ -194,6 +216,29 @@ CHECKLIST = (
 )
 
 
+def professional_review_packets(request: StartupPlanIn, today: date) -> list[dict]:
+    from fastapi import HTTPException
+
+    packets = []
+    seen = set()
+    for item in request.professional_review:
+        identity = (item.route, item.topic)
+        if identity in seen or any(fact.observed_on > today for fact in item.facts):
+            raise HTTPException(422, "Review packets need distinct route/topic pairs and non-future fact dates")
+        seen.add(identity)
+        jurisdiction = {
+            "MANITOBA": "Manitoba", "FEDERAL_CANADA": "Canada (federal)",
+            "INTERNATIONAL_FIRST": request.international_jurisdiction,
+        }[item.route]
+        packets.append({
+            "route": item.route, "jurisdiction": jurisdiction, "topic": item.topic,
+            "facts": [{**fact.model_dump(mode="json"), "basis": "OWNER_REPORTED"} for fact in item.facts],
+            "questions": item.questions, "status": "DRAFT_AWAITING_QUALIFIED_REVIEW",
+            "professional_signoff": None, "opinion_reference": None, "reliance_authorized": False,
+        })
+    return packets
+
+
 def prepare_startup(request: StartupPlanIn, *, today=None):
     today = today or datetime.now(timezone.utc).date()
     return {
@@ -203,6 +248,7 @@ def prepare_startup(request: StartupPlanIn, *, today=None):
         "startup_cash_available_minor": request.startup_cash_available_minor,
         "options": [compare_route(route, request, today) for route in ("MANITOBA", "FEDERAL_CANADA", "INTERNATIONAL_FIRST")],
         "cross_border_sources": [CORPORATE_RESIDENCY, DEPARTURE],
+        "professional_review_packets": professional_review_packets(request, today),
         "checklist": [{"sequence": index, "step": step, "requires": requires}
                       for index, (step, requires) in enumerate(CHECKLIST, 1)],
         "selected_jurisdiction": None, "activation_authorized": False, "external_effects": 0,
