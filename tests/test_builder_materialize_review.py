@@ -103,6 +103,48 @@ class BuilderMaterializeTests(unittest.TestCase):
         self.assertEqual(self.source.read_bytes(), b"VALUE = 1\n")
         self.assertEqual(list(self.output.iterdir()), [output])
 
+    def test_draft_submission_manifest_binds_local_repository_target_and_patch(self):
+        def git(*args):
+            return subprocess.check_output(["git", "-C", str(self.base), *args], text=True).strip()
+
+        git("init", "-q")
+        git("add", ".")
+        git("-c", "user.name=Builder Fixture", "-c", "user.email=fixture@example.invalid", "commit", "-qm", "base")
+        base = git("rev-parse", "HEAD")
+        git("remote", "add", "origin", "https://github.com/fixture/Valhalla.git")
+        git("update-ref", "refs/remotes/origin/review/candidate", base)
+        review = self.review()
+        receipt = {"base_commit": base, "bundle_sha256": review["sha256"], "status": "suite_exited_zero",
+                   "suite": "services/api/tests", "exit_code": 0, "source_modified": False,
+                   "committed": False, "deployed": False, "release_authorized": False}
+        target = {"repository": "fixture/Valhalla", "pull_request_number": 4, "head_branch": "review/candidate"}
+        packet = {"base_commit": base, "bundle_sha256": review["sha256"], "review": review,
+                  "runner_receipt": receipt, "test_receipt_sha256": sha(canonical(receipt)),
+                  "submission_state": "PREPARED_FOR_OWNER_REVIEW", "github_write_authorized": False,
+                  "release_authorized": False, "draft_target": target}
+
+        def sealed(proposed):
+            return {**proposed, "handoff_sha256": sha(canonical(proposed))}
+
+        with self.assertRaisesRegex(ValueError, "Origin does not match"):
+            MOD["materialize_handoff"](sealed({**packet, "draft_target": {**target, "repository": "different/Valhalla"}}),
+                                       self.base, self.output)
+        output = MOD["materialize_handoff"](sealed(packet), self.base, self.output)
+        manifest_bytes = (output / "submission.json").read_bytes()
+        manifest = json.loads(manifest_bytes)
+        self.assertEqual(manifest["draft_target"], target)
+        self.assertEqual(manifest["expected_head_commit"], base)
+        self.assertFalse(manifest["github_write_authorized"])
+        self.assertFalse(manifest["remote_state_verified"])
+        self.assertEqual(manifest["review_diff_sha256"], sha((output / "review.diff").read_bytes()))
+        self.assertEqual(json.loads((output / "receipt.json").read_bytes())["submission_manifest_sha256"], sha(manifest_bytes))
+        self.assertEqual(git("status", "--porcelain"), "")
+        alternate = git("-c", "user.name=Builder Fixture", "-c", "user.email=fixture@example.invalid",
+                        "commit-tree", "HEAD^{tree}", "-p", base, "-m", "new remote head")
+        git("update-ref", "refs/remotes/origin/review/candidate", alternate)
+        with self.assertRaisesRegex(ValueError, "draft head differs"):
+            MOD["materialize_handoff"](sealed(packet), self.base, self.output)
+
     def test_stale_base_rejects_entire_batch(self):
         self.source.write_bytes(b"VALUE = 3\n")
         with self.assertRaises(ValueError):

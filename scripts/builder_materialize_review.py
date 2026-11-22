@@ -191,6 +191,46 @@ def write_review_diff(output: Path, base_root: Path, packet: dict) -> None:
     receipt_path.write_bytes(canonical(receipt))
 
 
+def verify_draft_target(root: Path, target: dict, commit: str) -> None:
+    if not isinstance(target, dict) or set(target) != {"repository", "pull_request_number", "head_branch"}:
+        raise ValueError("Invalid draft review target")
+    repository, branch = target["repository"], target["head_branch"]
+    if (not isinstance(repository, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,38}/[A-Za-z0-9][A-Za-z0-9_.-]{0,99}", repository)
+            or type(target["pull_request_number"]) is not int or target["pull_request_number"] < 1
+            or not isinstance(branch, str) or len(branch) > 160
+            or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]*(/[A-Za-z0-9][A-Za-z0-9_.-]*)*", branch)
+            or branch.casefold() in {"main", "master", "production"}):
+        raise ValueError("Invalid draft review target")
+    git = ["git", "-C", str(root)]
+    remote = subprocess.run(git + ["remote", "get-url", "origin"], check=True, text=True,
+                            capture_output=True, timeout=10).stdout.strip()
+    match = re.fullmatch(r"(?:https://github\.com/|git@github\.com:)([^\s]+)", remote)
+    if not match or match.group(1).removesuffix(".git").casefold() != repository.casefold():
+        raise ValueError("Origin does not match the selected GitHub repository")
+    tracked = subprocess.run(git + ["rev-parse", "--verify", f"refs/remotes/origin/{branch}"], check=True,
+                             text=True, capture_output=True, timeout=10).stdout.strip()
+    if tracked != commit:
+        raise ValueError("Locally fetched draft head differs from the tested commit")
+
+
+def write_submission_manifest(output: Path, root: Path, packet: dict) -> None:
+    patch = output / "review.diff"
+    subprocess.run(["git", "-C", str(root), "apply", "--check", str(patch)], check=True,
+                   capture_output=True, timeout=15)
+    receipt_path = output / "receipt.json"
+    receipt = json.loads(receipt_path.read_bytes())
+    manifest = {
+        "draft_target": packet["draft_target"], "expected_head_commit": packet["base_commit"],
+        "handoff_sha256": packet["handoff_sha256"], "bundle_sha256": packet["bundle_sha256"],
+        "test_receipt_sha256": packet["test_receipt_sha256"], "review_diff_sha256": receipt["review_diff_sha256"],
+        "remote_state_verified": False, "github_write_authorized": False, "release_authorized": False,
+    }
+    encoded = canonical(manifest)
+    (output / "submission.json").write_bytes(encoded)
+    receipt["submission_manifest_sha256"] = sha(encoded)
+    receipt_path.write_bytes(canonical(receipt))
+
+
 def materialize_handoff(packet: dict, base_root: Path, output_parent: Path) -> Path:
     """Check the owner packet and committed base before producing review artifacts."""
     if not isinstance(packet, dict):
@@ -217,9 +257,13 @@ def materialize_handoff(packet: dict, base_root: Path, output_parent: Path) -> P
     ).stdout.splitlines()
     if len(result) != 2 or Path(result[0]).resolve() != expected_root or result[1] != base_commit:
         raise ValueError("Review checkout differs from the tested Git base")
+    if "draft_target" in packet:
+        verify_draft_target(expected_root, packet["draft_target"], base_commit)
     output = materialize(review, expected_root, output_parent)
     try:
         write_review_diff(output, expected_root, packet)
+        if "draft_target" in packet:
+            write_submission_manifest(output, expected_root, packet)
     except BaseException:
         shutil.rmtree(output)
         raise

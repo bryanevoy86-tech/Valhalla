@@ -80,6 +80,13 @@ def test_scoped_builder_lease_survives_restart_and_submits_review_receipt(deal_c
     assert client.post(f"{root}/claim", headers=runner_key).json()["status"] == "idle"
     assert not (tmp_path / path).exists()
     assert client.post(handoff, headers=owner, json={**expected, "expected_base_commit": "c" * 40}).status_code == 409
+    target = {"repository": "valhalla-fixture/Valhalla", "pull_request_number": 4, "head_branch": "review/candidate"}
+    rejected = client.post(handoff, headers=owner, json={**expected, "draft_target": {**target, "head_branch": "main"}})
+    assert rejected.status_code == 422
+    bound = client.post(handoff, headers=owner, json={**expected, "draft_target": target})
+    assert bound.status_code == 200, bound.text
+    assert bound.json()["draft_target"] == target
+    assert bound.json()["github_write_authorized"] is False
     prepared = client.post(handoff, headers=owner, json=expected)
     assert prepared.status_code == 200, prepared.text
     assert prepared.headers["cache-control"] == "no-store"

@@ -280,10 +280,18 @@ def read(assignment_id: UUID, db: Session = Depends(get_db)):
     return view(row)
 
 
+class DraftReviewTarget(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    repository: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,38}/[A-Za-z0-9][A-Za-z0-9_.-]{0,99}$")
+    pull_request_number: int = Field(gt=0, strict=True)
+    head_branch: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9_.-]*(/[A-Za-z0-9][A-Za-z0-9_.-]*)*$", max_length=160)
+
+
 class HandoffIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
     expected_base_commit: str = Field(pattern=r"^[a-f0-9]{40}$")
     expected_bundle_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    draft_target: DraftReviewTarget | None = None
 
 
 @router.post("/{assignment_id}/review-handoff",
@@ -318,5 +326,9 @@ def review_handoff(assignment_id: UUID, payload: HandoffIn, db: Session = Depend
         "runner_receipt": row.receipt,
         "submission_state": "PREPARED_FOR_OWNER_REVIEW", "github_write_authorized": False, "release_authorized": False,
     }
+    if payload.draft_target:
+        if payload.draft_target.head_branch.casefold() in {"main", "master", "production"}:
+            raise HTTPException(422, "The draft target must have a development head branch")
+        handoff["draft_target"] = payload.draft_target.model_dump(mode="json")
     return JSONResponse({**handoff, "handoff_sha256": _sha(_canonical(handoff))},
                         headers={"Cache-Control": "no-store"})
