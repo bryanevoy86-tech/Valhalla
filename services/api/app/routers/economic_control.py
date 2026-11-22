@@ -17,7 +17,7 @@ from app.schemas.economic_control import AssetRecovery, Containment, Decision, L
 from app.services.economic_control import (
     ADVICE_TYPE, CONTAINMENT, assessment, business_contained, current_performance, load_state, lock_capital_pools,
     lock_pool, operation_key, pool_liquidity, ready,
-    store_record, trigger_reassessment, verified_payload,
+    store_record, trigger_reassessment, verified_payload, verify_checkout_performance,
 )
 from app.services.prime_business_execution import _check_legacy, _emergency_stop_active, require_owner_mandate_key
 
@@ -69,19 +69,23 @@ def context(db, scope, *, lock=True, new_currency=None, lock_all_pools=False):
     return operation, load_state(db, operation), pool
 
 
+def record_payload(request):
+    return request.journal_payload() if isinstance(request, Performance) else request.model_dump(mode="json")
+
+
 def existing_record(db, operation, kind, request):
     row = db.get(EconomicRecord, request.id)
     if row is None:
         return None
     previous = verified_payload(row)
     expected = previous["request"] if kind == "DECISION" and row.kind == "DECISION" else previous
-    if row.kind != kind or row.scope_key != operation.scope_key or expected != request.model_dump(mode="json"):
+    if row.kind != kind or row.scope_key != operation.scope_key or expected != record_payload(request):
         raise HTTPException(409, "Economic record ID already used")
     return row
 
 
 def store(db, operation, kind, request, *, receipt_ref=None):
-    row = store_record(db, operation, kind, request.model_dump(mode="json"), receipt_ref=receipt_ref)
+    row = store_record(db, operation, kind, record_payload(request), receipt_ref=receipt_ref)
     trigger_reassessment(db, operation.scope, row.id, now().replace(tzinfo=None))
     commit(db)
     return {"id": row.id, "sha256": row.digest, "sequence": row.sequence, "external_authority": False}
@@ -140,7 +144,11 @@ def mandate(request: Mandate, db: Session = Depends(get_db)):
 
 @router.post("/performance", status_code=201, dependencies=owner)
 def performance(request: Performance, db: Session = Depends(get_db)):
-    operation, state, _ = context(db, request.scope)
+    # Match delivery's order-before-pool lock order.
+    checkout = verify_checkout_performance(db, request, lock=True)
+    operation, state, pool = context(db, request.scope)
+    if checkout is not None and checkout["currency"] != pool.currency:
+        raise HTTPException(409, "Checkout currency differs from the economic operation")
     row = existing_record(db, operation, "PERFORMANCE", request)
     if row:
         return retry(row)

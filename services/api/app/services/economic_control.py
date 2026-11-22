@@ -1,6 +1,6 @@
 """Simulation-only economic controls using scoped Prime and Loki evidence."""
 from dataclasses import dataclass, field
-from datetime import timedelta
+from datetime import date, timedelta
 from uuid import UUID
 
 from fastapi import HTTPException
@@ -163,6 +163,20 @@ def current_performance(state, today):
     return state.performance is not None and today - timedelta(days=30) <= state.performance.end <= today
 
 
+def verify_checkout_performance(db, performance, *, lock=False):
+    if performance.checkout_order_id is None:
+        return None
+    from app.routers.foundry_checkout import closed_checkout_proof
+
+    proof = closed_checkout_proof(db, performance.checkout_order_id, scope=performance.scope.model_dump(), lock=lock)
+    settlement_dates = [date.fromisoformat(ref["posted_on"]) for ref in proof["settlements"]]
+    if (proof["sha256"] != performance.checkout_sha256 or proof["net_minor"] != performance.operating_receipts
+            or proof["fixture_cost_minor"] != performance.operating_costs
+            or not all(performance.start <= posted <= performance.end for posted in settlement_dates)):
+        raise HTTPException(409, "Checkout performance differs from the reconciled fixture or reported period")
+    return proof
+
+
 def pool_liquidity(db, pool):
     if pool.liquidity_id is None:
         return None
@@ -251,14 +265,22 @@ def assessment(db, operation, state, pool, today, plan: Plan | None = None, *, l
     liquidity = pool_liquidity(db, pool)
     open_obligations = [item for item in state.obligations.values() if item.status != "CLOSED_IN_FIXTURE"]
     related_hold = business_contained(db, scope, exclude_scope_key=operation.scope_key)
-    available = (0 if related_hold else
+    performance = state.performance
+    checkout_conflict = False
+    if performance is not None and performance.checkout_order_id is not None:
+        try:
+            verify_checkout_performance(db, performance)
+        except HTTPException:
+            checkout_conflict = True
+    available = (0 if related_hold or checkout_conflict else
                  max(0, usable_cash(state, pool, liquidity, today) - sum(item.amount_minor for item in open_obligations)))
     remaining_exposure = max(0, mandate.max_exposure - (state.performance.outstanding_exposure if state.performance else 0)
                              - state.outstanding_reservations)
     comparison_budget = min(available, remaining_exposure, max(0, state.funding_limit - state.simulated_funding))
     ranked = comparison(db, state, scope, operation.currency, comparison_budget, today, lock_sources=lock_sources)
     blockers = ["RELATED_BUSINESS_CONTAINED"] if related_hold else []
-    performance = state.performance
+    if checkout_conflict:
+        blockers.append("CHECKOUT_PERFORMANCE_EVIDENCE_CONFLICT")
     if not current_performance(state, today):
         blockers.append("MISSING_OR_STALE_PERFORMANCE")
     if not fresh_liquidity(liquidity, today):
@@ -351,7 +373,9 @@ def verify_performance_claim(db, scope, claim):
     if (data.scope.model_dump() != scope or data.id != record_id or data.evidence_class != "RECONCILIATION_FIXTURE"
             or data.operating_receipts - data.operating_costs != claim["period_net_minor"]):
         raise HTTPException(409, "Mimir economic claim contradicts the performance receipt")
-    return {**claim, "record_id": str(record_id), "evidence_scope": "ECONOMIC_PERFORMANCE_FIXTURE_ONLY",
+    checkout = verify_checkout_performance(db, data)
+    binding = {"checkout_order_id": checkout["order_id"], "checkout_sha256": checkout["sha256"]} if checkout else {}
+    return {**claim, **binding, "record_id": str(record_id), "evidence_scope": "ECONOMIC_PERFORMANCE_FIXTURE_ONLY",
             "verified_real_world_outcome": False}
 
 
@@ -377,7 +401,8 @@ def specialist_economics(db, role, scope, today):
         "MIMIR": ("last_performance_id", "cumulative_loss_minor"),
     }
     common.update({key: report[key] for key in role_fields[role]})
-    if state.performance is not None and role in {"HEIMDALL", "LOKI", "MIMIR", "NJORD"}:
+    if (state.performance is not None and "CHECKOUT_PERFORMANCE_EVIDENCE_CONFLICT" not in report["blockers"]
+            and role in {"HEIMDALL", "LOKI", "MIMIR", "NJORD"}):
         row = db.get(EconomicRecord, state.performance.id)
         claim = {"basis": "ECONOMIC_PERFORMANCE_FIXTURE", "record_id": str(state.performance.id),
                  "sha256": row.digest, "period_net_minor": report["period_net_minor"]}

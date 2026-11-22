@@ -92,6 +92,11 @@ def challenge(item: dict) -> IndependentReviewIn:
                     "Reconcile the approval, artifact and learning receipts cited in this report.", critical=True,
                 ))
             economic = sources.get("economic_reassessment")
+            if isinstance(economic, dict) and "CHECKOUT_PERFORMANCE_EVIDENCE_CONFLICT" in economic.get("blockers", []):
+                findings.append(_finding(
+                    "checkout_performance_conflict", "observations/economic_reassessment",
+                    "Revalidate the economic result against the exact closed checkout fixture.", critical=True,
+                ))
             proof = economic.get("verified_performance_claim") if isinstance(economic, dict) else None
             if isinstance(proof, dict) and (
                 proof.get("verified_real_world_outcome") is not False

@@ -1016,3 +1016,7 @@ The acceptance matrix retains 13 P0 and 39 total criteria requiring internal cod
 
 - Prime/Loki continuation commit `a47f42721a7b7132336232025c91d7b4c4420516` passed all four hosted jobs in run 45054044820.
 - Builder now verifies an independently read GitHub draft head against the sealed, tested candidate and the exact committed files. The nine local materializer checks pass, including exact readback and refusal for a changed manifest, non-draft response and unexpected committed bytes. Actual GitHub Builder receipt commissioning remains separate.
+
+## November 22 — Checkout-to-economic proof
+
+- The existing isolated discovery-to-learning rehearsal now books checkout performance against the exact scope-bound order proof. Verified delivery, refund support, signed event deltas, matched statement items and cost evidence are required. Altered evidence blocks exposure and historical Mimir reliance without erasing the recorded loss. The rehearsal verifies exact replay, false amounts, a bad digest and post-booking settlement corruption. The proof is fixture-only.

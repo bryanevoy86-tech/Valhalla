@@ -647,3 +647,11 @@ python scripts/builder_materialize_review.py --submission-readback /private/revi
 ```
 
 The CLI only reads the selected GitHub draft and local Git objects. `EXACT_DRAFT_READBACK` requires the open same-repository draft, matching head ref and fetched object, one commit over the tested head, and exactly the approved paths, file modes and content hashes. A changed manifest, remote or candidate fails closed. Single-commit staging is a requirement of this exact readback mode. Regenerate older manifests before using it. Commission with a separately approved candidate, a read-only GitHub identity and an independently pinned review checksum. No write, publish or release follows from the receipt.
+
+### November 22 — Closed checkout proof and economic learning
+
+In the isolated product rehearsal, GET `/api/prime/foundry/rehearsal/orders/{order_id}/closed-checkout-proof` joins the exact Factory listing and Mimir outcome, delivery, signed captures and refunds, current support closure, recorded costs, and matched statement postings. It returns a SHA-256 over these scope-bound inputs. Missing, contradictory or unreconciled evidence cannot produce a closed proof. Accepted results remain synthetic.
+
+To book an existing scoped CAD operation, use the existing owner-only `POST /api/prime/economy/performance` with the exact order in `checkout_order_id`, its proof digest in `checkout_sha256` and the stable `checkout-fixture:{order_id}` receipt. Supply the period containing all matched statement postings and the exact net receipts and costs. Use the existing risk and obligations inputs for broader operation accounting. Retry the same economic record ID and payload. The source-order receipt is single use. If underlying evidence changes, preserve booked history, hold further simulated exposure and revalidate before citing the period in a Prime decision. No external provider receipt, transferable balance, production entitlement or commercial income follows from this procedure.
+
+Live commissioning still requires a separately selected and authorized operating adapter and mandate, source and product-rights evidence, merchant sandbox, an approved test callback, independent settlement evidence, migrated staging and the distinct reviewer/worker identities. Keep production keys and commercial activity disabled.

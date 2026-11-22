@@ -53,12 +53,25 @@ class Performance(StrictModel):
     receipt_ref: Reference
     obligations_status: Literal["SATISFIED", "UNRESOLVED", "BREACHED"]
     evidence_class: Literal["RECONCILIATION_FIXTURE"]
+    checkout_order_id: UUID | None = None
+    checkout_sha256: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
 
     @model_validator(mode="after")
     def period_order(self):
         if self.start > self.end:
             raise ValueError("Invalid reporting period")
+        if (self.checkout_order_id is None) != (self.checkout_sha256 is None):
+            raise ValueError("Checkout order ID and SHA-256 must be supplied together")
+        if self.checkout_order_id is not None:
+            if self.receipt_ref != f"checkout-fixture:{self.checkout_order_id}":
+                raise ValueError("Checkout-linked performance requires the canonical order receipt reference")
+        elif self.receipt_ref.casefold().startswith("checkout-fixture:"):
+            raise ValueError("Reserved checkout receipt reference requires verified order evidence")
         return self
+
+    def journal_payload(self):
+        fields = {"checkout_order_id", "checkout_sha256"} if self.checkout_order_id is None else set()
+        return self.model_dump(mode="json", exclude=fields)
 
 
 class Liquidity(StrictModel):

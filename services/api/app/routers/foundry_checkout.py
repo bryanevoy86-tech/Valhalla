@@ -8,6 +8,7 @@ from uuid import UUID
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import func, inspect, select
 from sqlalchemy.exc import IntegrityError
@@ -577,7 +578,7 @@ def reconcile_settlement(order_id: UUID, request: SettlementIn, db: Session = De
     return {**detail, "status": "MATCHED_FIXTURE"}
 
 
-def scoped_checkout_learning(db: Session, scope: dict, outcomes: list[dict], *, artifact_id=None) -> list[dict]:
+def scoped_checkout_learning(db: Session, scope: dict, outcomes: list[dict], *, artifact_id=None, order_id=None) -> list[dict]:
     """Re-read checkout fixtures tied to a verified scoped listing outcome."""
     inspector = inspect(db.connection())
     if not outcomes or any(not inspector.has_table(model.__tablename__) for model in (
@@ -590,9 +591,12 @@ def scoped_checkout_learning(db: Session, scope: dict, outcomes: list[dict], *, 
                  and (artifact_id is None or item["product_asset"]["artifact_id"] == artifact_id)}
     if not by_action:
         return []
-    orders = db.scalars(select(FoundryRehearsalOrder).where(
+    query = select(FoundryRehearsalOrder).where(
         FoundryRehearsalOrder.action_id.in_(by_action),
-    ).order_by(FoundryRehearsalOrder.id).limit(20)).all()
+    )
+    if order_id is not None:
+        query = query.where(FoundryRehearsalOrder.id == order_id)
+    orders = db.scalars(query.order_by(FoundryRehearsalOrder.id).limit(20)).all()
     observations = []
     for order in orders:
         outcome = by_action[order.action_id]
@@ -610,7 +614,7 @@ def scoped_checkout_learning(db: Session, scope: dict, outcomes: list[dict], *, 
             ).order_by(FoundryRehearsalPayment.event_id).limit(101)).all()
             if len(payments) > 100:
                 raise HTTPException(409, "Checkout payment history exceeds advisory limit")
-            matched, pending = [], []
+            matched, pending, settlement_refs = [], [], []
             for payment in payments:
                 settlement = db.get(FoundryFixtureSettlement, payment.event_id) if has_settlements else None
                 if settlement is None:
@@ -625,15 +629,54 @@ def scoped_checkout_learning(db: Session, scope: dict, outcomes: list[dict], *, 
                         or settlement.amount_minor != payment.captured_delta - payment.refunded_delta):
                     raise HTTPException(409, "Checkout settlement linkage failed integrity")
                 document = payload_for(statement)
+                matched_entry = next((entry for entry in document.entries
+                                      if entry.category == "TRANSFER" and entry.amount_minor == settlement.amount_minor
+                                      and artifact_digest("statement_transaction", statement.account_key,
+                                                          entry.external_ref.casefold()) == indexed.key), None)
                 if (document.scope.model_dump() != scope or document.purpose != "BUSINESS" or document.currency != "CAD"
-                        or not any(entry.category == "TRANSFER" and entry.amount_minor == settlement.amount_minor
-                                   and artifact_digest("statement_transaction", statement.account_key,
-                                                       entry.external_ref.casefold()) == indexed.key
-                                   for entry in document.entries)):
+                        or matched_entry is None):
                     raise HTTPException(409, "Checkout settlement no longer matches the statement fixture")
                 matched.append(payment.event_id)
+                settlement_refs.append({"payment_event_id": payment.event_id, "payment_sha256": payment.sha256,
+                                        "statement_id": str(statement.id), "statement_sha256": statement.digest,
+                                        "statement_entry_key": indexed.key, "amount_minor": settlement.amount_minor,
+                                        "posted_on": matched_entry.posted_on.isoformat()})
             observations.append({**view, **reference, "matched_fixture_payment_ids": matched, "unmatched_fixture_payment_ids": pending,
                                  "status": "MATCHED_FIXTURE" if matched and not pending else "UNRECONCILED_FIXTURE"})
+            if order_id is not None:
+                observations[-1]["settlements"] = settlement_refs
+                observations[-1]["costs"] = _rehearsal_costs(db, order)
         except HTTPException:
             observations.append({**reference, "status": "EVIDENCE_CONFLICT"})
     return observations
+
+
+def closed_checkout_proof(db: Session, order_id: UUID, *, scope=None, lock=False) -> dict:
+    from app.services.prime_business_execution import _mimir_outcome_id, verified_internal_outcomes
+
+    schema(db)
+    order = db.get(FoundryRehearsalOrder, order_id, with_for_update=lock)
+    if order is None:
+        raise HTTPException(404, "Rehearsal order not found")
+    work = db.scalar(select(LegacyInstanceWorkItem).filter_by(action_id=order.action_id))
+    if work is None:
+        raise HTTPException(409, "Checkout listing work is unavailable")
+    exact_scope = {key: getattr(work, key) for key in ("legacy_instance_id", "business_id", "engine_id", "jurisdiction")}
+    if scope is not None and exact_scope != scope:
+        raise HTTPException(409, "Checkout scope differs from the economic operation")
+    outcomes = verified_internal_outcomes(db, **exact_scope, limit=0, trigger_event_id=_mimir_outcome_id(work.action_id))
+    observations = scoped_checkout_learning(db, exact_scope, outcomes, order_id=order_id)
+    observation = observations[0] if observations else {}
+    if (observation.get("status") != "MATCHED_FIXTURE" or not observation["internal_delivery_recorded"]
+            or observation["captured_minor"] != observation["price_minor"] or observation["owner_followup_required"]
+            or observation["fixture_cost_count"] == 0):
+        raise HTTPException(409, "Current closed checkout, settlement, delivery and cost evidence is required")
+    data = jsonable_encoder({"scope": exact_scope, "listing_sha256": order.listing_sha256,
+                            "product_sha256": order.artifact_sha256, "delivered_at": order.delivered_at,
+                            **observation})
+    return {**data, "sha256": artifact_digest("foundry_closed_checkout_fixture", str(order_id), data)}
+
+
+@router.get("/orders/{order_id}/closed-checkout-proof")
+def read_closed_checkout_proof(order_id: UUID, db: Session = Depends(get_db)):
+    return closed_checkout_proof(db, order_id)

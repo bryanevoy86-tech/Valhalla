@@ -401,10 +401,21 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
         db.get(ProductArtifact, UUID(asset_id)).data = content
         db.commit()
 
+    proof_route = f"/api/prime/foundry/rehearsal/orders/{closed_order['order_id']}/closed-checkout-proof"
+    proof_response = client.get(proof_route)
+    assert proof_response.status_code == 200, proof_response.text
+    proof = proof_response.json()
+    assert proof["scope"] == scope and proof["internal_delivery_recorded"]
+    assert proof["verified_commercial_revenue"] is False and len(proof["settlements"]) == 3
     adverse = {**performance, "id": str(uuid4()), "start": today.isoformat(), "end": today.isoformat(),
                "operating_receipts": closed_order["net_minor"], "operating_costs": closed_order["fixture_cost_minor"],
-               "receipt_ref": f"fixture:checkout-{closed_order['order_id']}"}
-    economic("performance", adverse)
+               "receipt_ref": f"checkout-fixture:{closed_order['order_id']}",
+               "checkout_order_id": closed_order["order_id"], "checkout_sha256": proof["sha256"]}
+    economic("performance", {**adverse, "operating_receipts": 1}, 409)
+    economic("performance", {**adverse, "checkout_sha256": "0" * 64}, 409)
+    booked_checkout = economic("performance", adverse)
+    assert economic("performance", adverse) == booked_checkout
+    economic("performance", {**adverse, "id": str(uuid4())}, 409)
     economic("mandates", {**capital_mandate, "id": str(uuid4()), "previous_id": capital_mandate["id"]})
     after = economic("assessment", scope, 200)
     assert after["period_net_minor"] == -175 and after["cumulative_loss_minor"] == 175
@@ -508,7 +519,9 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
                for f in challenged_report.findings)
     contradicted = client.get(f"{schedule_root}/{schedule_id}").json()["latest_report"]
     assert "CHECKOUT_EVIDENCE_CONFLICT" in contradicted["operating_reassessment"]["blockers"]
+    assert "CHECKOUT_PERFORMANCE_EVIDENCE_CONFLICT" in contradicted["operating_reassessment"]["blockers"]
     assert contradicted["operating_reassessment"]["economic_reassessment"]["cumulative_loss_minor"] == 175
+    assert contradicted["operating_reassessment"]["economic_reassessment"]["new_exposure_available_minor"] == 0
     assert contradicted["recommendation"]["heimdall_decision"] == "HOLD"
     assert client.get(f"{schedule_root}/{schedule_id}/reports/{report['report_event_id']}").json() == report
     with Session(engine) as db:
@@ -517,6 +530,18 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
         verified = json.loads(learned.payload_json)
         assert verified["product_asset"]["sha256"] == checksum
         assert verified["prime_decision"]["proposal_sha256"] == artifact["artifact_sha256"]
+    performance_claim = {"basis": "ECONOMIC_PERFORMANCE_FIXTURE", "record_id": booked_checkout["id"],
+                         "sha256": booked_checkout["sha256"], "period_net_minor": -175}
+    from app.services.prime_business_execution import verify_mimir_claims
+    from fastapi import HTTPException
+    import pytest
+
+    assert client.get(proof_route).status_code == 409
+    with Session(engine) as db:
+        with pytest.raises(HTTPException, match="closed checkout"):
+            verify_mimir_claims(db, scope, [performance_claim])
+        db.get(FoundryFixtureSettlement, "evt_fixture_capture").amount_minor -= 1
+        db.commit()
     # Exercise the current proof through independent review, persisted advice and the Factory boundary.
     history = report["verified_internal_outcomes"][0]
     claim = {key: history[key] for key in ("outcome_event_id", "artifact_sha256", "sales_verified")}
@@ -524,7 +549,7 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
                        if key not in {"pantheon_report_ids", "foundry_evidence", "foundry_economics", "discovery_demand"}}
     forecast_claim = {"basis": "NORNS_FACTORY_DEADLINE", "forecast_id": forecast_id,
                       "sha256": resolved.json()["resolution_sha256"], "observed_outcome": 1}
-    reviewed_inputs["mimir_outcome_claims"] = [claim, forecast_claim]
+    reviewed_inputs["mimir_outcome_claims"] = [claim, forecast_claim, performance_claim]
     followup = {**proposal, "opportunity_id": "product-history-follow-up", "source": "internal",
                 "specialist_inputs": reviewed_inputs}
     current_artifact = client.post(f"{PHASE3}/review-artifact", json=followup).json()
@@ -545,6 +570,9 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
         {**claim, "evidence_scope": "INTERNAL_ARTIFACT_ONLY"},
         {**forecast_claim, "evidence_scope": "INTERNAL_FACTORY_DEADLINE_ONLY",
          "evidence_ref": resolved.json()["evidence_ref"], "commercial_result": False},
+        {**performance_claim, "evidence_scope": "ECONOMIC_PERFORMANCE_FIXTURE_ONLY",
+         "checkout_order_id": closed_order["order_id"], "checkout_sha256": proof["sha256"],
+         "verified_real_world_outcome": False},
     ]
     followup_listing = {**listing, "request_key": "history-bound-listing",
                         "prime_verdict_id": next_advice["persistence"]["god_verdict_id"]}
@@ -775,6 +803,7 @@ def rehearse_checkout(client, engine, monkeypatch, owner, action_id, price, scop
     imported = client.post("/api/governance/floor/treasury/statement-fixtures", headers=owner, json=statement)
     assert imported.status_code == 201, imported.text
     endpoint = f"{root}/orders/{order_id}/settlement-fixtures"
+    assert client.get(f"{root}/orders/{order_id}/closed-checkout-proof").status_code == 409
     link = {"statement_id": statement_id, "entry_ref": "wrong-amount", "payment_event_id": "evt_fixture_capture"}
     mismatch = client.post(endpoint, headers=owner, json=link)
     assert mismatch.json()["status"] == "DISCREPANCY" and mismatch.json()["difference_minor"] == 1
