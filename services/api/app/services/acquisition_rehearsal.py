@@ -21,6 +21,8 @@ from app.services.specialist_triggers import outcome_scope_key
 
 EVENT_TYPE = "ACQUISITION_FIXTURE_PLAN"
 CONSENT_TYPE = "ACQUISITION_FIXTURE_OPT_IN"
+SUPPRESSION_TYPE = "ACQUISITION_FIXTURE_SUPPRESSED"
+CUSTOMER_TYPE = "ACQUISITION_FIXTURE_CUSTOMER"
 
 
 class AcquisitionPlanIn(StrictModel):
@@ -82,6 +84,19 @@ def consent_event_id(visit_id):
     return f"ACQ-OPTIN-{visit_id}"
 
 
+def customer_reference(scope, consent_id, campaign_id=None):
+    kind = "suppression" if campaign_id is None else "campaign_customer"
+    body = {"scope": scope, "consent_fixture_id": str(consent_id), "campaign_id": campaign_id,
+            "basis": "SYNTHETIC_CUSTOMER_REFERENCE", "external_outreach_authorized": False}
+    digest = artifact_digest(kind, str(consent_id), body)
+    prefix = "ACQ-SUP-" if campaign_id is None else "ACQ-CRM-"
+    return prefix + digest, {**body, "sha256": digest}
+
+
+def journal_event(db, reference):
+    return db.scalar(select(LegacyOrchestrationEvent).filter_by(event_id=reference))
+
+
 def consent_receipt(scope, campaign_id, visit_id, consent_id):
     body = {"scope": scope, "campaign_id": campaign_id, "visit_id": str(visit_id),
             "consent_fixture_id": str(consent_id), "basis": "EXPLICIT_OPT_IN_FIXTURE",
@@ -101,7 +116,7 @@ def verify_consent(event, scope, campaign_id, visit_id):
     return body
 
 
-def settled_campaign(db, campaign_id, scope):
+def settled_campaign(db, campaign_id, scope, *, cohort=None):
     from app.routers.foundry_checkout import closed_checkout_proof
 
     plan = read_plan(db, campaign_id, scope)
@@ -120,8 +135,11 @@ def settled_campaign(db, campaign_id, scope):
             receipts = {row.event_id: row for row in db.scalars(select(LegacyOrchestrationEvent).where(
                 LegacyOrchestrationEvent.event_id.in_(ids),
             ))}
-            consent_digests.extend(verify_consent(receipts.get(ref), scope, campaign_id, item.id)["sha256"]
-                                   for ref, item in zip(ids, page))
+            for ref, item in zip(ids, page):
+                receipt = verify_consent(receipts.get(ref), scope, campaign_id, item.id)
+                consent_digests.append(receipt["sha256"])
+                if cohort is not None:
+                    cohort.append(receipt["consent_fixture_id"])
     order_ids = [item.order_id for item in visits if item.order_id is not None]
     if len(order_ids) > 100:
         raise HTTPException(409, "Campaign exceeds the rehearsal order limit")
@@ -143,6 +161,8 @@ def settled_campaign(db, campaign_id, scope):
                            if cost["category"] == "ACQUISITION")
     cost_recorded = bool(settled) and any(cost["category"] == "ACQUISITION"
                                          for proof in settled for cost in proof["costs"])
+    cost_covered = bool(settled) and all(any(cost["category"] == "ACQUISITION" for cost in proof["costs"])
+                                        for proof in settled)
     contribution = sum(proof["fixture_contribution_minor"] for proof in settled)
     target = plan["request"]["stop_after_visits"]
     evaluation = "REVIEW_EVIDENCE"
@@ -159,6 +179,7 @@ def settled_campaign(db, campaign_id, scope):
         "retained_net_order_conversion_bp": retained * 10000 // len(visits) if visits else None,
         "contribution_minor": contribution if settled and not pending else None,
         "recorded_order_acquisition_cost_minor": acquisition_cost if cost_recorded else None,
+        "acquisition_cost_covered": cost_covered,
         "acquisition_cost_per_positive_net_order_minor": acquisition_cost // retained
         if not pending and cost_recorded and retained else None,
         "recorded_acquisition_cost_exceeds_budget": budget_exceeded,

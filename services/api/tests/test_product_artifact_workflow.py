@@ -227,6 +227,7 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
         model.__table__.create(engine)
     with Session(engine) as db:
         db.add(MarketingCampaign(id=1, name="Private rehearsal", strategy_payload="{}"))
+        db.add(MarketingCampaign(id=2, name="Comparable rehearsal control", strategy_payload="{}"))
         db.commit()
     acquisition = "/api/prime/foundry/rehearsal/campaigns/1"
     plan = {"scope": scope, "demand_evidence_id": evidence_id, "channel": "DIRECT_OPT_IN",
@@ -239,6 +240,8 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
     assert planned.json()["target_buyer_segment"] == "Practice workshop operators"
     assert planned.json()["spend_authorized"] is False
     assert planned.json()["consumer_research"]["sha256"] == aggregate["sha256"]
+    control = client.post("/api/prime/foundry/rehearsal/campaigns/2/acquisition-plan", headers=owner, json=plan)
+    assert control.status_code == 201, control.text
 
     capital_mandate = {"id": str(uuid4()), "scope": scope, "currency": "CAD", "max_exposure": 5000,
                "max_cumulative_loss": 175, "max_additional_funding": 1000, "min_operating_reserve": 200,
@@ -446,6 +449,15 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
     assert review["consent_receipt_count"] == 2 and len(review["consent_evidence_sha256"]) == 64
     assert review["research_relationship"]["consumer_research_sha256"] == aggregate["sha256"]
     assert review["research_relationship"]["campaign_causality_verified"] is False
+    comparison_path = "/api/prime/foundry/rehearsal/campaign-comparisons"
+    comparison = {"scope": scope, "campaign_ids": [2, 1], "minimum_visits": 20}
+    compared = client.post(comparison_path, json=comparison)
+    assert compared.status_code == 200, compared.text
+    assert [arm["decision"] for arm in compared.json()["arms"]] == ["CONTINUE_TESTING", "CONTINUE_TESTING"]
+    assert compared.json()["consumer_research_sha256"] == aggregate["sha256"]
+    assert compared.json()["external_action_authorized"] is False
+    comparison_artifact = client.post(comparison_path + "/review-artifact", headers=owner, json=comparison)
+    assert comparison_artifact.status_code == 200 and comparison_artifact.json()["raw_input"] == compared.json()
     assert review["plan_sha256"] == planned.json()["sha256"] and not review["verified_commercial_revenue"]
     pending_id = submit_and_approve({**listing, "request_key": "workshop-listing-02"})
     with Session(engine) as db:
@@ -718,6 +730,17 @@ def rehearse_checkout(client, engine, monkeypatch, owner, action_id, price, scop
         assert client.post(f"{root}/campaign-visits", headers=owner, json=details).json() == visit.json()
         assert client.post(f"{root}/campaign-visits", headers=owner,
                            json={**details, "consent_fixture_id": str(uuid4())}).status_code == 409
+        assert client.post(f"{root}/campaign-visits", headers=owner,
+                           json={**details, "visit_id": str(uuid4())}).status_code == 409
+    suppression = {"consent_fixture_id": details["consent_fixture_id"], **scope}
+    endpoint = f"{root}/consent-suppressions"
+    assert client.post(endpoint, json=suppression).status_code == 401
+    receipt = client.post(endpoint, headers=owner, json=suppression)
+    assert receipt.status_code == 201 and receipt.json()["status"] == "SUPPRESSED_IN_FIXTURE"
+    assert client.post(endpoint, headers=owner, json=suppression).json() == receipt.json()
+    assert client.post(f"{root}/campaign-visits", headers=owner,
+                       json={**details, "campaign_id": 2, "visit_id": str(uuid4())}).status_code == 409
+    assert client.post(f"{root}/campaign-visits", headers=owner, json=details).status_code == 201
     def summary():
         result = client.post(f"{root}/campaigns/1/summary", json=scope)
         assert result.status_code == 200, result.text

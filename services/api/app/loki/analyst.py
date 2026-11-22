@@ -73,6 +73,29 @@ def challenge(item: dict) -> IndependentReviewIn:
                                      "Cross-business support is beyond this private planning mandate.", critical=True))
         findings.append(_finding("reconcile_forward_case", "analysis",
                                  "Review forward alternatives, continuity of cash and obligations, and asset recovery assumptions."))
+    elif kind == "acquisition_comparison":
+        if (proposal.get("basis") != "SETTLED_CAMPAIGN_FIXTURE_COMPARISON"
+                or any(proposal.get(key) is not False for key in (
+                    "verified_commercial_revenue", "external_action_authorized", "causality_verified",
+                ))):
+            findings.append(_finding("acquisition_comparison_overreach", "basis",
+                                     "Settled fixtures grant no commercial, causal or external authority.", critical=True))
+        minimum = _number(proposal, "minimum_visits")
+        arms = proposal.get("arms")
+        if isinstance(arms, list) and len(arms) <= 5:
+            for index, arm in enumerate(arms):
+                if not isinstance(arm, dict) or arm.get("decision") != "SCALE_REVIEW":
+                    continue
+                visits, contribution = _number(arm, "visits"), _number(arm, "contribution_minor")
+                if (minimum is None or minimum < 20 or visits is None or visits < minimum or contribution is None
+                        or contribution <= 0 or _number(arm, "unresolved_orders") != 0
+                        or arm.get("acquisition_cost_covered") is not True
+                        or proposal.get("customer_identity_coverage_complete") is not True):
+                    findings.append(_finding("acquisition_scale_evidence_incomplete", f"arms/{index}",
+                                             "Scale review requires sufficient settled visits, covered costs and positive contribution.",
+                                             critical=True))
+        findings.append(_finding("acquisition_comparison_review", "arms",
+                                 "Recheck cohort separation, attribution and complete costs before relying on expansion advice."))
     elif kind == "personal_allocation":
         eligible = _number(proposal, "eligible_distributable_profit_minor")
         personal = _number(proposal, "recommended_personal_minor")

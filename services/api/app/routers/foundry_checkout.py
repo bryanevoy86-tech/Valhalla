@@ -23,9 +23,11 @@ from app.models.treasury_reconciliation import StatementEntry, StatementImport
 from app.models.marketing import MarketingCampaign
 from app.providers.stripe_adapter import verify_stripe_signature
 from app.services.acquisition_rehearsal import (
-    AcquisitionPlanIn, CONSENT_TYPE, EVENT_TYPE as ACQUISITION_PLAN_EVENT, consent_event_id,
-    consent_receipt, make_plan, plan_reference, read_plan, settled_campaign, verify_consent,
+    AcquisitionPlanIn, CONSENT_TYPE, CUSTOMER_TYPE, EVENT_TYPE as ACQUISITION_PLAN_EVENT,
+    SUPPRESSION_TYPE, consent_event_id, consent_receipt, customer_reference, journal_event,
+    make_plan, plan_reference, read_plan, settled_campaign, verify_consent,
 )
+from app.services.acquisition_comparison import ComparisonIn, compare_campaigns
 from app.services.economic_control import require_no_containment
 from app.services.prime_business_execution import _check_legacy, _emergency_stop_active, _event, _json, action_status, require_owner_mandate_key
 from app.services.product_artifacts import load_artifact, verify_artifact
@@ -474,6 +476,10 @@ class VisitIn(CampaignScope):
     consent_fixture_id: UUID | None = None
 
 
+class SuppressionIn(CampaignScope):
+    consent_fixture_id: UUID
+
+
 def _attribution_schema(db):
     tables = inspect(db.connection())
     if any(not tables.has_table(model.__tablename__) for model in (FoundryCampaignVisit, MarketingCampaign)):
@@ -484,7 +490,7 @@ def _attribution_schema(db):
 def record_campaign_visit(payload: VisitIn, db: Session = Depends(get_db)):
     _attribution_schema(db)
     scope = payload.model_dump(exclude={"visit_id", "campaign_id", "consent_fixture_id"})
-    _check_legacy(db, **scope)
+    _check_legacy(db, **scope, lock=True)
     if db.get(MarketingCampaign, payload.campaign_id, with_for_update=True) is None:
         raise HTTPException(404, "Campaign record not found")
     key = outcome_scope_key(scope)
@@ -511,6 +517,14 @@ def record_campaign_visit(payload: VisitIn, db: Session = Depends(get_db)):
                     or plan.get("consumer_research") != current.get("consumer_research")):
                 raise HTTPException(409, "Campaign demand evidence has changed")
         if direct:
+            suppress_key, _ = customer_reference(scope, payload.consent_fixture_id)
+            if journal_event(db, suppress_key) is not None:
+                raise HTTPException(409, "Synthetic customer is suppressed for this scope")
+            customer_key, customer = customer_reference(scope, payload.consent_fixture_id, payload.campaign_id)
+            if journal_event(db, customer_key) is not None:
+                raise HTTPException(409, "Synthetic customer is already attributed to this campaign")
+            _event(db, event_id=customer_key, legacy_instance_id=scope["legacy_instance_id"],
+                   event_type=CUSTOMER_TYPE, message="Synthetic customer attribution registered", payload=customer)
             proof = consent_receipt(scope, payload.campaign_id, payload.visit_id, payload.consent_fixture_id)
             _event(db, event_id=consent_event_id(payload.visit_id), legacy_instance_id=scope["legacy_instance_id"],
                    event_type=CONSENT_TYPE, message="Synthetic scoped opt-in recorded", payload=proof)
@@ -521,6 +535,46 @@ def record_campaign_visit(payload: VisitIn, db: Session = Depends(get_db)):
             db.rollback()
             raise HTTPException(409, "Visit ID already used") from None
     return {"visit_id": payload.visit_id, "campaign_id": payload.campaign_id, "basis": "REHEARSED_VISIT"}
+
+
+@router.post("/consent-suppressions", status_code=201, dependencies=owner)
+def suppress_consent(payload: SuppressionIn, db: Session = Depends(get_db)):
+    scope = payload.model_dump(exclude={"consent_fixture_id"})
+    _check_legacy(db, **scope, lock=True)
+    if not inspect(db.connection()).has_table(LegacyOrchestrationEvent.__tablename__):
+        raise HTTPException(503, "Synthetic consent journal unavailable")
+    ref, evidence = customer_reference(scope, payload.consent_fixture_id)
+    prior = journal_event(db, ref)
+    if prior is not None:
+        if (prior.event_type != SUPPRESSION_TYPE or prior.legacy_instance_id != scope["legacy_instance_id"]
+                or _json(prior.payload_json, {}) != evidence):
+            raise HTTPException(409, "Synthetic suppression integrity mismatch")
+    else:
+        _event(db, event_id=ref, legacy_instance_id=scope["legacy_instance_id"],
+               event_type=SUPPRESSION_TYPE, message="Synthetic customer suppressed", payload=evidence)
+        try:
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+            raise HTTPException(409, "Concurrent suppression already recorded; retry the same request") from None
+    return {"status": "SUPPRESSED_IN_FIXTURE", "sha256": evidence["sha256"],
+            "external_outreach_authorized": False}
+
+
+@router.post("/campaign-comparisons")
+def compare_acquisition_campaigns(payload: ComparisonIn, db: Session = Depends(get_db)):
+    _attribution_schema(db)
+    _check_legacy(db, **payload.scope.model_dump())
+    return compare_campaigns(db, payload)
+
+
+@router.post("/campaign-comparisons/review-artifact", dependencies=owner)
+def review_acquisition_comparison(payload: ComparisonIn, db: Session = Depends(get_db)):
+    comparison = compare_acquisition_campaigns(payload, db)
+    reference = comparison["sha256"]
+    return {"artifact_type": "acquisition_comparison", "input_source": "acquisition-rehearsal",
+            "heimdall_reference_id": reference, "raw_input": comparison,
+            "artifact_sha256": artifact_digest("acquisition_comparison", reference, comparison)}
 
 
 @router.post("/campaigns/{campaign_id}/acquisition-plan", status_code=201, dependencies=owner)

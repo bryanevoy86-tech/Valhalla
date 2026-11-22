@@ -16,6 +16,7 @@ from app.schemas.market_intelligence import MarketScope
 from app.services.owner_specialist_context import pantheon_report_index, prime_decision_context, specialist_context
 from app.services.prime_business_execution import require_owner_mandate_key
 from app.services.owner_startup import StartupPlanIn, prepare_startup
+from app.services.acquisition_comparison import ComparisonIn
 from app.services.wealth_scenario import PersonalAllocationIn, recommend_personal_allocation
 from app.services.owner_conversation import (
     ThreadIn, TurnIn, UploadIn, attachment_summaries, bounded_upload, create_conversation, local_extraction,
@@ -75,6 +76,14 @@ def owner_acquisition_review(campaign_id: int, payload: MarketScope, db: Session
     scope = payload.model_dump()
     _check_legacy(db, **scope)
     return private_owner_response(settled_campaign(db, campaign_id, scope))
+
+
+@router.post("/owner-acquisition/comparisons")
+def owner_acquisition_comparison(payload: ComparisonIn, db: Session = Depends(get_db)):
+    from app.routers.foundry_checkout import compare_acquisition_campaigns, schema
+
+    schema(db)
+    return private_owner_response(compare_acquisition_campaigns(payload, db))
 
 
 @router.post("/owner-operating-scope")
