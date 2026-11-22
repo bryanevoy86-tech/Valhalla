@@ -3,9 +3,10 @@ from datetime import datetime, timedelta, timezone
 from uuid import UUID, uuid4
 
 from fastapi import HTTPException
-from sqlalchemy import exists, or_, select
+from sqlalchemy import exists, inspect, or_, select
 from sqlalchemy.orm import Session
 
+from app.loki.evidence import artifact_digest
 from app.models.completion_registry import LegacyInstanceWorkItem, LegacyOrchestrationEvent
 from app.models.norns_forecast import NornsForecast, NornsHoldout
 from app.services.prime_business_execution import ACTION_TYPE, _json, _receipt_id, action_status
@@ -124,6 +125,45 @@ def outcome_matches_receipt(db: Session, forecast, work, now, *, enrolled_at=Non
         # A legitimate completion that arrived after the negative was recorded does not rewrite history.
         return verified_at > forecast.resolved_at
     return verified_at <= forecast.resolved_at and forecast.observed_outcome == int(verified_at <= forecast.deadline_at)
+
+
+def forecast_resolution_digest(forecast) -> str | None:
+    if forecast.resolved_at is None:
+        return None
+    return artifact_digest("norns_internal_factory_resolution", str(forecast.id), {
+        "action_id": forecast.action_id, "probability_bp": forecast.probability_bp,
+        "estimate_source": forecast.estimate_source, "issued_at": forecast.issued_at.isoformat(),
+        "deadline_at": forecast.deadline_at.isoformat(), "observed_outcome": forecast.observed_outcome,
+        "evidence_ref": forecast.evidence_ref, "resolved_at": forecast.resolved_at.isoformat(),
+    })
+
+
+def verify_forecast_claim(db: Session, scope: dict, claim: dict) -> dict:
+    """Carry a resolved ordinary forecast into governed decisions without promoting it to sales evidence."""
+    if (set(claim) != {"basis", "forecast_id", "sha256", "observed_outcome"}
+            or not isinstance(claim["forecast_id"], str) or not isinstance(claim["sha256"], str)
+            or len(claim["sha256"]) != 64 or type(claim["observed_outcome"]) is not int
+            or claim["observed_outcome"] not in (0, 1)):
+        raise HTTPException(422, "Invalid Mimir forecast claim")
+    try:
+        forecast_id = UUID(claim["forecast_id"])
+    except ValueError:
+        raise HTTPException(422, "Invalid Norns forecast ID") from None
+    schema = inspect(db.connection())
+    if any(not schema.has_table(model.__tablename__) for model in (
+        NornsForecast, NornsHoldout, LegacyInstanceWorkItem, LegacyOrchestrationEvent,
+    )):
+        raise HTTPException(503, "Norns forecast evidence unavailable")
+    forecast = db.get(NornsForecast, forecast_id)
+    work = db.scalar(select(LegacyInstanceWorkItem).filter_by(action_id=forecast.action_id, **scope)) if forecast else None
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    if (forecast is None or work is None or db.get(NornsHoldout, forecast_id) is not None
+            or forecast.observed_outcome != claim["observed_outcome"]
+            or forecast_resolution_digest(forecast) != claim["sha256"]
+            or not outcome_matches_receipt(db, forecast, work, now)):
+        raise HTTPException(409, "Mimir forecast claim lacks current scoped ordinary-cohort evidence")
+    return {**claim, "forecast_id": str(forecast_id), "evidence_ref": forecast.evidence_ref,
+            "evidence_scope": "INTERNAL_FACTORY_DEADLINE_ONLY", "commercial_result": False}
 
 
 def calibration_measurements(

@@ -962,6 +962,11 @@ def verify_mimir_claims(db: Session, scope: dict, claims: Any) -> list[dict]:
 
             proof = verify_performance_claim(db, scope, claim)
             identity = ("economic_performance", proof["record_id"])
+        elif claim.get("basis") == "NORNS_FACTORY_DEADLINE":
+            from app.pantheon.forecasts import verify_forecast_claim
+
+            proof = verify_forecast_claim(db, scope, claim)
+            identity = ("norns_factory_deadline", proof["forecast_id"])
         else:
             if (set(claim) != {"outcome_event_id", "artifact_sha256", "sales_verified"}
                     or not isinstance(claim["outcome_event_id"], str)

@@ -13,7 +13,9 @@ from app.core.db import get_db
 from app.core.dependencies import require_prime_control_key
 from app.models.completion_registry import LegacyInstanceWorkItem, LegacyOrchestrationEvent
 from app.models.norns_forecast import NornsForecast, NornsHoldout
-from app.pantheon.forecasts import calibration_measurements, outcome_matches_receipt, resolve_factory_outcome
+from app.pantheon.forecasts import (
+    calibration_measurements, forecast_resolution_digest, outcome_matches_receipt, resolve_factory_outcome,
+)
 from app.services.prime_business_execution import ACTION_TYPE, _json, _receipt_id, require_owner_mandate_key
 
 
@@ -51,6 +53,7 @@ def _explain(forecast):
         "deadline_at": forecast.deadline_at.replace(tzinfo=timezone.utc),
         "observed_outcome": forecast.observed_outcome, "evidence_ref": forecast.evidence_ref,
         "resolved_at": forecast.resolved_at.replace(tzinfo=timezone.utc) if forecast.resolved_at else None,
+        "resolution_sha256": forecast_resolution_digest(forecast),
         "commercial_result": False,
     }
 

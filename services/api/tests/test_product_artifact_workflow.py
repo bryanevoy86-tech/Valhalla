@@ -509,7 +509,9 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
     claim = {key: history[key] for key in ("outcome_event_id", "artifact_sha256", "sales_verified")}
     reviewed_inputs = {key: value for key, value in proposal["specialist_inputs"].items()
                        if key not in {"pantheon_report_ids", "foundry_evidence", "foundry_economics", "discovery_demand"}}
-    reviewed_inputs["mimir_outcome_claims"] = [claim]
+    forecast_claim = {"basis": "NORNS_FACTORY_DEADLINE", "forecast_id": forecast_id,
+                      "sha256": resolved.json()["resolution_sha256"], "observed_outcome": 1}
+    reviewed_inputs["mimir_outcome_claims"] = [claim, forecast_claim]
     followup = {**proposal, "opportunity_id": "product-history-follow-up", "source": "internal",
                 "specialist_inputs": reviewed_inputs}
     current_artifact = client.post(f"{PHASE3}/review-artifact", json=followup).json()
@@ -528,6 +530,8 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
     next_advice = followup_result.json()["evaluations"][0]
     assert next_advice["independent_loki"]["reviewed_mimir_outcomes"] == [
         {**claim, "evidence_scope": "INTERNAL_ARTIFACT_ONLY"},
+        {**forecast_claim, "evidence_scope": "INTERNAL_FACTORY_DEADLINE_ONLY",
+         "evidence_ref": resolved.json()["evidence_ref"], "commercial_result": False},
     ]
     followup_listing = {**listing, "request_key": "history-bound-listing",
                         "prime_verdict_id": next_advice["persistence"]["god_verdict_id"]}
@@ -537,6 +541,20 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
     still_held = client.post(f"{FACTORY}/listing-drafts", headers=admin, json=followup_listing)
     assert still_held.status_code == 409 and "containment" in still_held.json()["detail"]
     with Session(engine) as db:
+        historical = db.get(NornsForecast, UUID(forecast_id))
+        historical.observed_outcome = 0
+        db.commit()
+    altered_forecast = client.post(f"{FACTORY}/listing-drafts", headers=admin, json=followup_listing)
+    assert altered_forecast.status_code == 409 and "forecast claim" in altered_forecast.json()["detail"]
+    with Session(engine) as db:
+        historical = db.get(NornsForecast, UUID(forecast_id))
+        historical.observed_outcome = 1
+        db.add(NornsHoldout(forecast_id=historical.id, enrolled_at=historical.issued_at))
+        db.commit()
+    holdout_forecast = client.post(f"{FACTORY}/listing-drafts", headers=admin, json=followup_listing)
+    assert holdout_forecast.status_code == 409 and "ordinary-cohort" in holdout_forecast.json()["detail"]
+    with Session(engine) as db:
+        db.delete(db.get(NornsHoldout, UUID(forecast_id)))
         event = db.query(LegacyOrchestrationEvent).filter_by(event_id=claim["outcome_event_id"]).one()
         event.payload_json = "{}"
         db.commit()
