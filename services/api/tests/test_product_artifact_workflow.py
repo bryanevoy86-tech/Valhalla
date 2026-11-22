@@ -504,6 +504,51 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
         verified = json.loads(learned.payload_json)
         assert verified["product_asset"]["sha256"] == checksum
         assert verified["prime_decision"]["proposal_sha256"] == artifact["artifact_sha256"]
+    # Exercise the current proof through independent review, persisted advice and the Factory boundary.
+    history = report["verified_internal_outcomes"][0]
+    claim = {key: history[key] for key in ("outcome_event_id", "artifact_sha256", "sales_verified")}
+    reviewed_inputs = {key: value for key, value in proposal["specialist_inputs"].items()
+                       if key not in {"pantheon_report_ids", "foundry_evidence", "foundry_economics", "discovery_demand"}}
+    reviewed_inputs["mimir_outcome_claims"] = [claim]
+    followup = {**proposal, "opportunity_id": "product-history-follow-up", "source": "internal",
+                "specialist_inputs": reviewed_inputs}
+    current_artifact = client.post(f"{PHASE3}/review-artifact", json=followup).json()
+    queued_review = client.post("/loki/reviews", json={**current_artifact, "input_source": "history-rehearsal"})
+    assert queued_review.status_code == 201, queued_review.text
+    claim_review = queued_review.json()["id"]
+    observed = client.post(f"/loki/worker/reviews/{claim_review}/result", headers=worker, json={
+        "artifact_sha256": current_artifact["artifact_sha256"], "analysis_ref": "fixture:historical-proof-review",
+        "summary": "Verified scoped internal use of the cited artifact.", "findings": [],
+    })
+    assert observed.status_code == 201, observed.text
+    followup_result = client.post(f"{PHASE3}/evaluate", json={
+        "opportunities": [{**followup, "independent_loki_review_id": claim_review}], "shadow_mode": False,
+    })
+    assert followup_result.status_code == 200, followup_result.text
+    next_advice = followup_result.json()["evaluations"][0]
+    assert next_advice["independent_loki"]["reviewed_mimir_outcomes"] == [
+        {**claim, "evidence_scope": "INTERNAL_ARTIFACT_ONLY"},
+    ]
+    followup_listing = {**listing, "request_key": "history-bound-listing",
+                        "prime_verdict_id": next_advice["persistence"]["god_verdict_id"]}
+    fresh_context = owner_turn("Show the verified history behind this proposal", prime_decision_id=followup_listing["prime_verdict_id"])
+    assert fresh_context["evidence"]["reviewed_mimir_outcomes"] == next_advice["independent_loki"]["reviewed_mimir_outcomes"]
+    assert fresh_context["execution_authorized"] is False
+    still_held = client.post(f"{FACTORY}/listing-drafts", headers=admin, json=followup_listing)
+    assert still_held.status_code == 409 and "containment" in still_held.json()["detail"]
+    with Session(engine) as db:
+        event = db.query(LegacyOrchestrationEvent).filter_by(event_id=claim["outcome_event_id"]).one()
+        event.payload_json = "{}"
+        db.commit()
+    refused = client.post(f"{FACTORY}/listing-drafts", headers=admin, json=followup_listing)
+    assert refused.status_code == 409
+    assert refused.json()["detail"]["outcome_event_id"] == claim["outcome_event_id"]
+    stale_context = client.post(turns, json={
+        "turn_id": str(uuid4()), "message": "Check the reviewed evidence again",
+        "prime_decision_id": followup_listing["prime_verdict_id"],
+    })
+    assert stale_context.status_code == 409
+    assert stale_context.json()["detail"]["outcome_event_id"] == claim["outcome_event_id"]
     assert client.delete(f"{ASSETS}/{asset_id}", headers=admin).status_code == 401
     assert client.delete(f"{ASSETS}/{asset_id}", headers=owner).json()["revoked"]
     assert client.get(download_url, headers=owner).status_code == 409

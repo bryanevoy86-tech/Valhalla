@@ -66,7 +66,22 @@ def prime_decision_context(db: Session, decision_id: UUID) -> dict:
     except (KeyError, TypeError, ValueError, AttributeError):
         raise HTTPException(409, "Prime decision and independent evidence do not match") from None
 
+    checked_mimir = {}
+    proposal = review.raw_input
+    inputs = proposal.get("specialist_inputs", {}) if isinstance(proposal, dict) else {}
+    if isinstance(inputs, dict) and "mimir_outcome_claims" in inputs:
+        from app.services.prime_business_execution import verify_mimir_claims
+
+        evidence = verify_mimir_claims(db, {
+            "legacy_instance_id": proposal.get("legacy"), "business_id": inputs.get("business_id"),
+            "engine_id": proposal.get("engine_id"), "jurisdiction": proposal.get("jurisdiction"),
+        }, inputs["mimir_outcome_claims"])
+        if evidence != linked.get("reviewed_mimir_outcomes"):
+            raise HTTPException(409, "Mimir evidence differs from the reviewed decision")
+        checked_mimir["reviewed_mimir_outcomes"] = evidence
+
     return {
+        **checked_mimir,
         "prime_decision_id": str(decision_id),
         "opportunity_id": metadata.get("opportunity_id"),
         "heimdall_decision": (snapshot.heimdall_recommendation or {}).get("decision"),
