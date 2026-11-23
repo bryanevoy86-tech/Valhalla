@@ -1070,3 +1070,5 @@ The acceptance matrix retains 13 P0 and 39 total criteria requiring internal cod
 
 - All four hosted jobs passed for the scoped independence and commercial target linkage commit `3b18606b4f18922bfbe548b17ec98f8149d62a17` in run 45089788688.
 - Added dated startup funding observations to the existing grants catalog and owner workflow using digest-checked journal records. Eligibility drafts flag registration, expenditure timing, deadline and matching-capital issues and prepare a requirements checklist. Credits and candidate funding contribute zero accessible cash. Approved external source refresh, independent verification and applications remain open.
+
+- The integrated signed-capture check in run 45089919567 caught an order attribution regression: the newly verified consent receipt replaced the listing receipt used to identify the order. Corrected the distinct evidence variables and kept the full capture-to-settlement regression as the acceptance check.

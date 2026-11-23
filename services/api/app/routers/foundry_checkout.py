@@ -372,8 +372,10 @@ def create_order(payload: OrderIn, db: Session = Depends(get_db)):
         if plan is not None:
             _require_current_campaign_plan(db, visit.campaign_id, plan)
             if plan["request"]["channel"] == "DIRECT_OPT_IN":
-                receipt = verify_consent(journal_event(db, consent_event_id(visit.id)), scope, visit.campaign_id, visit.id)
-                suppression_key, _ = customer_reference(scope, UUID(receipt["consent_fixture_id"]))
+                consent = verify_consent(
+                    journal_event(db, consent_event_id(visit.id)), scope, visit.campaign_id, visit.id,
+                )
+                suppression_key, _ = customer_reference(scope, UUID(consent["consent_fixture_id"]))
                 if journal_event(db, suppression_key) is not None:
                     raise HTTPException(409, "Synthetic customer opt-in was withdrawn before order attribution")
     order = FoundryRehearsalOrder(id=payload.order_id, action_id=payload.action_id, listing_sha256=receipt["sha256"],
