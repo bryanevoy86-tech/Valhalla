@@ -13,7 +13,7 @@ from app.core.db import get_db
 from app.core.dependencies import require_prime_control_key
 from app.loki.review_service import artifact_digest, record_reconsideration, reviewer_identity, verdict
 from app.services.prime_business_execution import require_owner_mandate_key
-from app.loki.models import LokiFinding, LokiReview, LokiReviewStatus
+from app.loki.models import LokiReview, LokiReviewStatus
 from app.loki.schemas import (
     LokiFindingRead,
     LokiReviewCreate,
@@ -140,12 +140,12 @@ def list_loki_findings(
     review_id: UUID,
     db: Session = Depends(get_db),
 ) -> list[LokiFindingRead]:
-    """List all findings for a specific Loki review."""
-    result = db.execute(
-        select(LokiFinding).where(LokiFinding.review_id == review_id)
-    )
-    findings = result.scalars().all()
-    return findings
+    """Return findings only when their complete review receipt verifies."""
+    review = db.get(LokiReview, review_id)
+    if review is None:
+        raise HTTPException(status_code=404, detail="Loki review not found")
+    verdict(db, review)
+    return review.findings
 
 
 @router.get(

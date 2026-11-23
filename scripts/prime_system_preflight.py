@@ -10,12 +10,14 @@ from __future__ import annotations
 import argparse
 import ast
 import json
+import re
 from pathlib import Path
 import sys
 from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 MATRIX_PATH = "ops/prime_system_integration_matrix.json"
+HANDOFF_PATH = "docs/CODEX_RESUME_2026-12-01.md"
 EVIDENCE_LEVELS = {
     "SOURCE_INSPECTED_ONLY",
     "FOCUSED_CI_TESTED",
@@ -59,19 +61,34 @@ def inspect_matrix(root: Path = REPO_ROOT, matrix_path: str = MATRIX_PATH) -> di
     examined_files = set()
     remaining_counts = dict.fromkeys(REMAINING_WORK_CLASSES, 0)
     p0_coding_count = 0
+    classified = []
     try:
         doc = json.loads(matrix_file.read_text(encoding="utf-8"))
     except (OSError, ValueError) as exc:
         return {"ok": False, "issues": [f"invalid matrix: {type(exc).__name__}"], "capability_count": 0}
 
     rows = doc.get("capabilities")
-    if not isinstance(rows, list) or len(rows) < 20:
-        return {"ok": False, "issues": ["expected at least 20 structured capabilities"], "capability_count": 0}
+    if not isinstance(rows, list) or len(rows) != 50:
+        return {"ok": False, "issues": ["expected 50 structured capabilities"],
+                "capability_count": len(rows) if isinstance(rows, list) else 0}
 
     ids = [row.get("id") for row in rows if isinstance(row, dict)]
     known = set(ids)
     if len(known) != len(rows):
         issues.append("duplicate or missing capability identifiers")
+
+    task_count = 0
+    try:
+        register = (root / HANDOFF_PATH).read_text(encoding="utf-8").split(
+            "## Reconstructed task register and later workstreams", 1,
+        )[1].split("### Safely retrieve current work", 1)[0]
+        task_rows = re.findall(r"^\| (\d{2}) \| ([^|]+) \|", register, flags=re.MULTILINE)
+        task_count = len(task_rows)
+        mappings = [entry.split("`")[1] for _, entry in task_rows[3:] if entry.startswith("`")]
+        if [number for number, _ in task_rows] != [f"{number:02}" for number in range(1, 54)] or mappings != ids:
+            issues.append("December handoff must map all 53 tasks in order to the acceptance inventory")
+    except (OSError, UnicodeError, IndexError):
+        issues.append("December handoff task register unavailable")
 
     for row in rows:
         if not isinstance(row, dict):
@@ -93,6 +110,19 @@ def inspect_matrix(root: Path = REPO_ROOT, matrix_path: str = MATRIX_PATH) -> di
                         issues.append(f"{identifier}: {kind} must be a nonempty note or null")
                     else:
                         remaining_counts[kind] += 1
+            by_category = {
+                "internally_implementable": ("internal_coding", "internally_achievable_testing"),
+                "staging_or_independent_evidence": ("owner_authorization_or_account_establishment",
+                                                    "independent_financial_or_operational_evidence"),
+                "external_provider_dependent": ("external_api_and_provider_commissioning",),
+                "professionally_gated": ("qualified_professional_review",),
+                "future_capability": ("conditional_future_expansion",),
+            }
+            classified.append({
+                "id": identifier, "priority": row["priority"], "evidence_level": row["evidence_level"],
+                "outstanding": {category: {key: work[key] for key in keys if work[key] is not None}
+                                for category, keys in by_category.items() if any(work[key] is not None for key in keys)},
+            })
             if row["priority"] == "P0" and isinstance(work["internal_coding"], str) and work["internal_coding"].strip():
                 p0_coding_count += 1
                 gates = continuation.get("january_2027_launch_gates")
@@ -144,6 +174,8 @@ def inspect_matrix(root: Path = REPO_ROOT, matrix_path: str = MATRIX_PATH) -> di
         "ok": not issues,
         "capability_count": len(rows),
         "source_file_count": len(examined_files),
+        "task_count": task_count,
+        "capability_gap_classification": classified,
         "remaining_work_counts": remaining_counts,
         "p0_internal_coding_count": p0_coding_count,
         "issues": issues,

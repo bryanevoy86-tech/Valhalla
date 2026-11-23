@@ -1867,6 +1867,7 @@
         "services/api/app/ai/agents/loki.py",
         "services/api/app/core/loki_engine.py",
         "services/api/app/routers/loki.py",
+        "services/api/app/loki/review_service.py",
         "services/api/app/routers/loki_worker.py",
         "services/api/tests/test_loki_independent_receipt.py",
         "services/api/app/services/universal_opportunity_evaluator.py",
@@ -1875,7 +1876,7 @@
         "services/api/tests/test_product_artifact_workflow.py",
         "services/api/tests/test_foundry_discovery.py"
       ],
-      "source_observation": "Independent Loki receipts and reconsideration remain required for reviewed specialist material. Staging advice excludes the active Prime model across providers. A separate real model and transport proof remain pending.",
+      "source_observation": "Independent Loki receipts and reconsideration remain required for reviewed specialist material. Staging advice excludes the active Prime model across providers. Findings and decision clearance require a digest-bound completed independent receipt. Legacy unbound history remains readable. A separate staged model, reviewer process and transport proof remain pending.",
       "evidence_level": "SQLITE_INTEGRATION_TESTED",
       "production_verified": false,
       "acceptance_test": "Independently audit immutable Heimdall proposals with contrary evidence and sourced objection ledger, prove re-audit after changes, equal-standing owner dissent, lawful professional escalation, and mandatory fail-closed high-risk dispatch; realistic adversarial cases and reviewer outage tested in Postgres/staging. Prove proactive cross-system coverage, reports to Prime, immutable independent dissent and recorded Prime response. Owner receives exceptions rather than approving every routine decision.",
@@ -1888,7 +1889,7 @@
       "owner_external_authorization_required": true,
       "continuation": {
         "next_implementation": "Validate separate model credentials and review exact owner-authorized staged challenges.",
-        "existing_test_evidence": "See SQLITE_INTEGRATION_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md. Product Foundry continuous fixture links signed discovery, independent challenge, scoped execution, outcome, retained losses and a subsequent HOLD with contradiction evidence. The scoped acquisition fixture verifies debt stress, separately reviewed simulation, receipt reuse, revocation and reevaluation. Local independent analysis returns a critical contradiction when a Pantheon report's economic result differs from its cited performance fixture. Verified held fulfillment and open refund support are independently flagged as critical operating findings before material reliance.",
+        "existing_test_evidence": "See SQLITE_INTEGRATION_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md. Product Foundry continuous fixture links signed discovery, independent challenge, scoped execution, outcome, retained losses and a subsequent HOLD with contradiction evidence. The scoped acquisition fixture verifies debt stress, separately reviewed simulation, receipt reuse, revocation and reevaluation. Local independent analysis returns a critical contradiction when a Pantheon report's economic result differs from its cited performance fixture. Verified held fulfillment and open refund support are independently flagged as critical operating findings before material reliance. Regression exercises mutated findings, unbound historical receipts and reviewer credential collisions while preserving the raw history.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
@@ -1901,7 +1902,7 @@
           "conditional_future_expansion": null
         },
         "january_2027_launch_gates": {
-          "implemented_and_tested": "Digest-scoped objections, distinct credentials and targeted fail-closed/replay fixtures exist.",
+          "implemented_and_tested": "Digest-scoped objections, separate reviewer authentication, intact findings display and fail-closed clearance for unbound historical receipts have isolated fixture evidence.",
           "january_core": "Verify independent reviewer identity, outages, stale-object rejection and durable dissent.",
           "first_one_time_cad": "Bind the exact commercial proposal to Loki's report and require a matching disposition at activation.",
           "first_recurring_cad": "Also challenge recurring terms, recovery, disputed funds and access changes.",

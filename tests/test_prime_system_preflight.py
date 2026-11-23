@@ -22,15 +22,21 @@ class PrimeSystemPreflightTests(unittest.TestCase):
         report = inspect_matrix(ROOT)
         self.assertTrue(report["ok"], report["issues"])
         self.assertEqual(report["capability_count"], 50)
+        self.assertEqual(report["task_count"], 53)
+        self.assertEqual(len(report["capability_gap_classification"]), 50)
         self.assertEqual(len(report["remaining_work_counts"]), 7)
         self.assertGreaterEqual(report["remaining_work_counts"]["internal_coding"], report["p0_internal_coding_count"])
         self.assertEqual(report["production_verified_count"], 0)
         self.assertIn("cannot prove", report["warning"])
 
-    def _altered_report(self, alter):
+    def _altered_report(self, alter, alter_handoff=lambda handoff: handoff):
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
             (root / "ops").mkdir()
+            handoff = root / MODULE["HANDOFF_PATH"]
+            handoff.parent.mkdir()
+            handoff.write_text(alter_handoff((ROOT / MODULE["HANDOFF_PATH"]).read_text(encoding="utf-8")),
+                               encoding="utf-8")
             doc = copy.deepcopy(self.doc)
             alter(doc)
             (root / "ops/prime_system_integration_matrix.json").write_text(json.dumps(doc), encoding="utf-8")
@@ -67,6 +73,16 @@ class PrimeSystemPreflightTests(unittest.TestCase):
 
         report = self._altered_report(alter)
         self.assertTrue(any("runtime_governance: every January launch gate" in issue for issue in report["issues"]))
+
+    def test_tasks_must_match_the_original_acceptance_mapping(self):
+        report = self._altered_report(
+            lambda doc: None,
+            lambda handoff: handoff.replace("| 50 | `loki_independent_challenger` |",
+                                            "| 50 | `api_wiring` |"),
+        )
+        self.assertEqual(report["task_count"], 53)
+        self.assertIn("December handoff must map all 53 tasks in order to the acceptance inventory",
+                      report["issues"])
 
     def test_missing_sources_are_not_treated_as_complete(self):
         report = self._altered_report(lambda doc: None)

@@ -55,6 +55,10 @@ def test_independent_receipt_binds_findings_and_owner_reconsideration_to_prime_d
     }
     path = f"/loki/worker/reviews/{review_id}/result"
     assert client.post(path, json=result).status_code == 401
+    assert client.post(path, json=result, headers={"X-Loki-Reviewer-Key": owner_key}).status_code == 401
+    with monkeypatch.context() as colliding:
+        colliding.setenv("VALHALLA_SPECIALIST_GROQ_KEY", reviewer_key)
+        assert client.post(path, json=result, headers=worker).status_code == 503
     assert client.post(path, headers=worker, json={**result, "artifact_sha256": "a" * 64}).status_code == 409
     response = client.post(path, json=result, headers=worker)
     assert response.status_code == 201, response.text
@@ -88,6 +92,20 @@ def test_independent_receipt_binds_findings_and_owner_reconsideration_to_prime_d
         assert db.get(LokiReconsideration, UUID(review_id)).material_finding_ids == [finding_id]
         review_case = db.query(GodReviewCase).one()
         assert review_case.heimdall_payload["result"]["independent_loki"]["review_id"] == review_id
+
+        finding = db.get(LokiFinding, UUID(finding_id))
+        finding.message = "An alteration to the already accepted findings."
+        db.commit()
+    assert client.get(f"/loki/reviews/{review_id}/findings").status_code == 409
+    assert evaluate(reviewed).status_code == 409
+    with Session(engine) as db:
+        receipt = db.get(LokiIndependentReceipt, UUID(review_id))
+        receipt.result_sha256 = None
+        db.commit()
+    assert client.get(f"/loki/reviews/{review_id}").status_code == 200
+    assert client.get(f"/loki/reviews/{review_id}/findings").status_code == 409
+    assert client.get(f"/loki/reviews/{review_id}/verdict").status_code == 409
+    assert evaluate(reviewed).status_code == 409
 
 
     critical_artifact = client.post(f"{ROOT}/review-artifact", json={
