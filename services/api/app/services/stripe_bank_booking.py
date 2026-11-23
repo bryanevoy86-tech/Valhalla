@@ -283,18 +283,29 @@ def _bank_reversal_recorded(db, reference):
 
 
 def bank_batch_summary(db: Session, order_id: UUID, projection: dict, *, live: bool):
+    return _member_bank_summary(db, f"STRIPE-BANK-ORDER-{order_id}", projection["order"]["scope"],
+                                "orders", "order_id", str(order_id),
+                                held=projection["status"] != "MATCHED_PROCESSOR_EVIDENCE", live=live)
+
+
+def invoice_bank_summary(db, invoice_id, scope, *, held, live, lock=False):
+    key = "STRIPE-BANK-INVOICE-" + artifact_digest("stripe_bank_invoice_key", invoice_id, {"live": live})[:40]
+    return _member_bank_summary(db, key, scope, "invoices", "invoice_id", invoice_id, held=held, live=live, lock=lock)
+
+
+def _member_bank_summary(db, key, scope, group, field, identity, *, held, live, lock=False):
     journal = LegacyOrchestrationEvent
     if not inspect(db.connection()).has_table(journal.__tablename__):
         return None
-    scope = projection["order"]["scope"]
-    claim = db.scalar(select(journal).filter_by(event_id=f"STRIPE-BANK-ORDER-{order_id}"))
+    claim = db.scalar(select(journal).filter_by(event_id=key))
     if claim is None:
         return None
     index = _json(claim.payload_json, {})
     if (claim.event_type != SETTLEMENT or claim.legacy_instance_id != scope["legacy_instance_id"]
             or not isinstance(index, dict) or not isinstance(index.get("bundle"), str)):
         raise HTTPException(409, "Bank order booking index differs from its scope")
-    entry = db.scalar(select(journal).filter_by(event_id=index["bundle"]))
+    query = select(journal).filter_by(event_id=index["bundle"])
+    entry = db.scalar(query.with_for_update() if lock else query)
     if entry is None or entry.event_type != SETTLEMENT or entry.legacy_instance_id != scope["legacy_instance_id"]:
         raise HTTPException(409, "Bank booking receipt unavailable")
     receipt = _json(entry.payload_json, {})
@@ -304,8 +315,11 @@ def bank_batch_summary(db: Session, order_id: UUID, projection: dict, *, live: b
             or receipt.get("sha256") != index.get("sha256")
             or receipt["sha256"] != artifact_digest("stripe_bank_reconciliation", entry.event_id, value)):
         raise HTTPException(409, "Bank booking receipt integrity failed")
-    member = next((order for order in value["orders"] if order["order_id"] == str(order_id)), None)
-    if member is None:
+    members = [item for item in value.get(group, []) if item.get(field) == identity]
+    if len(members) != 1:
+        raise HTTPException(409, "Exact bank booking member unavailable")
+    member = members[0]
+    if not minor_amount(member.get("net_minor")):
         raise HTTPException(409, "Bank booking receipt does not include this order")
     ledger_id = receipt.get("ledger_entry_id")
     if live:
@@ -314,7 +328,7 @@ def bank_batch_summary(db: Session, order_id: UUID, projection: dict, *, live: b
             raise HTTPException(409, "Matched accounting entry is unavailable")
     elif ledger_id is not None:
         raise HTTPException(409, "Synthetic evidence cannot have a ledger posting")
-    held = (projection["status"] != "MATCHED_PROCESSOR_EVIDENCE" or _payout_failed(db, value["payout_id"], live)
+    held = (held or _payout_failed(db, value["payout_id"], live)
             or _bank_reversal_recorded(db, entry.event_id))
     return {
         "basis": expected_basis, "status": "CORRECTION_REVIEW_REQUIRED" if held else "RECONCILIATION_RECORDED",

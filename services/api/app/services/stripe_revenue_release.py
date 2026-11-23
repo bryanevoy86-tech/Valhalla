@@ -8,7 +8,7 @@ from pydantic import Field
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
-from app.accounting.models import Account, JournalEntry, JournalLine
+from app.accounting.models import Account, JournalEntry, JournalLine, Period
 from app.loki.evidence import artifact_digest
 from app.schemas.market_intelligence import StrictModel
 from app.services.stripe_bank_booking import bank_batch_summary, require_open_period
@@ -25,7 +25,7 @@ class DeliveryReleaseIn(StrictModel):
     acknowledgment_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
 
 
-def _release_posting(db, key, scope, posted_on, bank, gross):
+def _release_posting(db, key, scope, posted_on, bank, gross, *, served_from=None, served_until=None):
     if (os.getenv("VALHALLA_STRIPE_BANK_BOOKING_ENABLED") != "1"
             or os.getenv("VALHALLA_STRIPE_BANK_BOOKING_SCOPE") != outcome_scope_key(scope)):
         raise HTTPException(503, "Revenue posting is not authorized for this scope")
@@ -34,6 +34,10 @@ def _release_posting(db, key, scope, posted_on, bank, gross):
                                                     type="liability", active=True, currency="CAD"))
     income = db.scalar(select(Account).filter_by(code=os.getenv("VALHALLA_STRIPE_BOOK_DELIVERY_INCOME"),
                                                   type="income", active=True, currency="CAD"))
+    if served_from is not None:
+        window = db.scalar(select(Period).where(Period.start_date <= posted_on, Period.end_date >= posted_on))
+        if not window.start_date <= served_from <= served_until <= window.end_date:
+            raise HTTPException(409, "Cross-period service needs a separately approved accrual and posting schedule")
     original = db.get(JournalEntry, bank["ledger_entry_id"])
     if liability is None or income is None or original is None:
         raise HTTPException(503, "Approved income, liability and bank journal accounts are required")

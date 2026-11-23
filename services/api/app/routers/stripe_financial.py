@@ -28,6 +28,9 @@ from app.services.stripe_recurring import (
     InvoiceProofIn, RecurringBindingIn, apply_paid_invoice, bind_recurring, recurring_clients, schedule_cancellation,
     start_checkout, subscriber_recurring_list, subscription_status, verify_period_payout, verify_period_processor_balance,
 )
+from app.services.stripe_subscription_delivery import (
+    SubscriptionAckIn, SubscriptionReleaseIn, acknowledge_service, recognize_service, subscriber_service_history,
+)
 from app.webhooks.stripe import router as stripe_webhooks
 
 router = APIRouter()
@@ -253,3 +256,21 @@ def subscriber_end_recurring(tenant_id: UUID, local_id: int, principal: dict = D
         return private_owner_response(schedule_cancellation(
             db, local_id, tenant_id, principal, live=live, reader=reader, writer=writer,
         ))
+
+
+@router.get("/api/weweb/stripe-subscriptions/{tenant_id}/{local_id}/service-history")
+def paid_service_history(tenant_id: UUID, local_id: int, principal: dict = Depends(get_current_user),
+                         db: Session = Depends(get_db)):
+    return private_owner_response(subscriber_service_history(db, tenant_id, local_id, principal, live=is_live()))
+
+
+@router.post("/api/weweb/stripe-subscriptions/{tenant_id}/{local_id}/paid-period/{invoice_id}/acknowledge")
+def acknowledge_paid_service(tenant_id: UUID, local_id: int, invoice_id: str, payload: SubscriptionAckIn,
+                             principal: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+    return private_owner_response(acknowledge_service(db, tenant_id, local_id, invoice_id, payload, principal, live=is_live()))
+
+
+@router.post("/api/governance/floor/stripe-subscriptions/{local_id}/paid-period/{invoice_id}/release-liability",
+             dependencies=owner_keys)
+def release_paid_service(local_id: int, invoice_id: str, payload: SubscriptionReleaseIn, db: Session = Depends(get_db)):
+    return private_owner_response(recognize_service(db, local_id, invoice_id, payload, live=is_live()))

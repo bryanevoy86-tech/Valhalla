@@ -307,7 +307,33 @@ def test_recurring_checkout_renewal_cancellation_and_payment_holds(deal_client, 
     assert booked["value"]["bank_settlement_verified"] is False and booked["value"]["available_cash_minor"] is None
     assert booked["value"]["gross_customer_obligation_minor"] == 2400
     assert [item["invoice_id"] for item in booked["value"]["invoices"]] == ["in_First", "in_Renewal"]
+    service_tick = clock
+    monkeypatch.setattr("app.services.stripe_subscription_delivery._now", lambda: service_tick)
+    history = url + "/service-history"
+    acknowledgment = url + "/paid-period/in_First/acknowledge"
+    release_url = root + "/paid-period/in_First/release-liability"
+    exact = {"paid_period_sha256": paid.json()["sha256"]}
+    assert client.get(history, headers=buyer).json()["completed_paid_periods"] == []
+    assert client.post(acknowledgment, headers=buyer, json=exact).status_code == 409
+    service_tick = datetime.fromtimestamp(end + 1, timezone.utc)
+    assert client.get(history, headers=outsider).status_code == 404
+    assert client.post(acknowledgment, headers=outsider, json=exact).status_code == 404
+    [completed] = client.get(history, headers=buyer).json()["completed_paid_periods"]
+    assert completed["invoice_id"] == "in_First" and completed["paid_period_sha256"] == exact["paid_period_sha256"]
+    assert client.post(acknowledgment, headers=buyer, json={"paid_period_sha256": "0" * 64}).status_code == 409
+    ack = client.post(acknowledgment, headers=buyer, json=exact)
+    assert ack.status_code == 200, ack.text
+    assert client.post(acknowledgment, headers=buyer, json=exact).json() == ack.json()
+    inputs = {"acknowledgment_sha256": ack.json()["sha256"]}
+    assert client.post(release_url, headers=buyer, json=inputs).status_code == 401
+    recognition = client.post(release_url, headers=owner, json=inputs)
+    assert recognition.status_code == 200, recognition.text
+    assert recognition.json()["basis"] == "SYNTHETIC_SERVICE_RELEASE"
+    assert recognition.json()["eligible_liability_minor"] == 1200
+    assert all(recognition.json()[field] is None for field in ("ledger_entry_id", "available_cash_minor", "recognized_revenue_minor"))
+    assert client.post(release_url, headers=owner, json=inputs).json() == recognition.json()
     webhook("payout.failed", "RecurringPayoutFailed", payout)
+    assert client.post(release_url, headers=owner, json=inputs).status_code == 409
     assert client.post(payout_url, headers=owner).status_code == 409
     listing = url.rsplit("/", 1)[0]
     assert client.get(listing).status_code == 401
