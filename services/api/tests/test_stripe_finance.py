@@ -479,8 +479,19 @@ def test_registered_stripe_finance_replays_and_reconciles_only_matching_capture(
         monkeypatch.setenv("VALHALLA_STRIPE_BOOK_DELIVERY_INCOME", "DELIVERY")
         db.add(Account(code="DELIVERY", name="Paid delivery", type="income", currency="CAD", active=True))
         db.flush()
-        posting = _release_posting(db, "isolated-release", scope, posting_date,
-                                   {"ledger_entry_id": entry_id, "batch_liability_minor": 2000}, 1000)
+        bank_evidence = {"ledger_entry_id": entry_id, "batch_liability_minor": 2000}
+        with monkeypatch.context() as scoped:
+            scoped.setenv("VALHALLA_EMERGENCY_STOP", "1")
+            with pytest.raises(HTTPException, match="Emergency stop holds new revenue postings") as stopped:
+                _release_posting(db, "isolated-release", scope, posting_date, bank_evidence, 1000)
+            assert stopped.value.status_code == 409
+            assert db.query(JournalEntry).filter_by(source_ref="isolated-release").count() == 0
+            scoped.setenv("VALHALLA_EMERGENCY_STOP", "0")
+            with pytest.raises(HTTPException, match="Cross-period service needs a separately approved"):
+                _release_posting(db, "isolated-release", scope, posting_date, bank_evidence, 1000,
+                                 served_from=date(2020, 1, 1), served_until=posting_date)
+            posting = _release_posting(db, "isolated-release", scope, posting_date, bank_evidence, 1000,
+                                       served_from=posting_date, served_until=posting_date)
         db.flush()
         release_lines = db.query(JournalLine).filter_by(entry_id=posting).all()
         assert len(release_lines) == 2
