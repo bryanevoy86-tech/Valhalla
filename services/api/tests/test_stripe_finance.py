@@ -12,8 +12,10 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.core import db as database
+from app.models.completion_registry import LegacyOrchestrationEvent
 from app.models.stripe_finance import StripeBalanceEvidence, StripeFinancialEvent, StripeOrderBinding
 from app.services.stripe_finance import read_processor_balance
+from app.services.stripe_payout_evidence import record_payout_evidence
 
 
 def test_registered_stripe_finance_replays_and_reconciles_only_matching_capture(deal_client, monkeypatch):
@@ -21,6 +23,7 @@ def test_registered_stripe_finance_replays_and_reconciles_only_matching_capture(
     StripeFinancialEvent.__table__.create(engine)
     StripeBalanceEvidence.__table__.create(engine)
     StripeOrderBinding.__table__.create(engine)
+    LegacyOrchestrationEvent.__table__.create(engine, checkfirst=True)
     monkeypatch.setattr(database, "SessionLocal", lambda: Session(engine))
     monkeypatch.setattr("app.webhooks.stripe.is_live", lambda: False)
     monkeypatch.setattr("app.routers.stripe_financial.is_live", lambda: False)
@@ -81,9 +84,19 @@ def test_registered_stripe_finance_replays_and_reconciles_only_matching_capture(
                "currency": "cad", "amount": 1000, "fee": 40, "net": 960,
                "available_on": int(time.time()) - 5, "status": "pending"}
 
+    payout = {"id": "po_ValhallaTest", "object": "payout", "livemode": False, "automatic": True,
+              "method": "standard", "type": "bank_account", "destination": "ba_ApprovedTest",
+              "status": "paid", "reconciliation_status": "completed", "currency": "cad", "amount": 2100,
+              "arrival_date": int(time.time())}
+    listed = {"object": "list", "has_more": False, "data": []}
+
     def upstream(request):
         assert request.method == "GET"
-        responses = {"/v1/account": {"id": "acct_ValhallaTest", "object": "account"},
+        if request.url.path == "/v1/balance_transactions":
+            assert request.url.params["payout"] == "po_ValhallaTest"
+            assert request.url.params["source"] == "ch_CaptureA"
+            return httpx.Response(200, json=listed)
+        responses = {"/v1/payouts/po_ValhallaTest": payout, "/v1/account": {"id": "acct_ValhallaTest", "object": "account"},
                      "/v1/charges/ch_CaptureA": charge, "/v1/balance_transactions/txn_CaptureA": balance}
         return httpx.Response(200, json=responses[request.url.path])
 
@@ -109,6 +122,29 @@ def test_registered_stripe_finance_replays_and_reconciles_only_matching_capture(
         assert matched.status_code == 200, matched.text
         assert matched.json()["status"] == "MATCHED_PROCESSOR_EVIDENCE"
         assert matched.json()["available_cash_minor"] is None
+
+        def read_payout(destination="ba_ApprovedTest"):
+            from uuid import UUID
+            return record_payout_evidence(db, UUID(order_id), "po_ValhallaTest", client=adapter,
+                                          account_id="acct_ValhallaTest", destination_id=destination, live=False)
+
+        with pytest.raises(HTTPException, match="configured destination"):
+            read_payout("ba_Wrong")
+        with pytest.raises(HTTPException, match="missing or ambiguous"):
+            read_payout()
+        listed["data"] = [{**balance, "net": 900}]
+        with pytest.raises(HTTPException, match="differs"):
+            read_payout()
+        listed["data"] = [balance]
+        payout_receipt = read_payout()
+        assert read_payout() == payout_receipt
+        assert payout_receipt["capture_net_minor"] == 960
+        assert payout_receipt["processor_reported_payout_minor"] == 2100
+        assert payout_receipt["confirmed_bank_amount_minor"] is None and not payout_receipt["bank_settlement_verified"]
+        payout["reversed_by"] = "po_Reversal"
+        with pytest.raises(HTTPException, match="reversed"):
+            read_payout()
+
         wrong_order = str(uuid4())
         assert deliver({"id": "evt_CaptureWrongOrder", **{k: v for k, v in event.items() if k not in {"id", "data"}},
                         "data": {"object": {**event["data"]["object"],

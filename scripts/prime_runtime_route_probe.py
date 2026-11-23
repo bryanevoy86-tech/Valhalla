@@ -19,6 +19,7 @@ API_ROOT = REPO_ROOT / "services/api"
 # Exact backend API contracts as authored in the working branch. These
 # checks establish registration, NOT successful execution or authorization.
 MANDATORY_ENDPOINTS = {
+    "stripe_payout_readback": ("POST", "/api/governance/floor/stripe-orders/{order_id}/payout-readback/{payout_id}"),
     "weweb_owner_stripe_order": ("GET", "/api/weweb/owner-stripe-orders/{order_id}"),
     "stripe_order_binding": ("POST", "/api/governance/floor/stripe-orders"),
     "stripe_order_inspection": ("GET", "/api/governance/floor/stripe-orders/{order_id}"),

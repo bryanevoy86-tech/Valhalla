@@ -609,6 +609,8 @@
       "id": "payouts_and_funds",
       "priority": "P0",
       "source_paths": [
+        "services/api/app/services/stripe_payout_evidence.py",
+        "services/api/tests/test_stripe_finance.py",
         "services/api/app/integrations/stripe/payouts.py",
         "services/api/app/core/runtime_flags.py"
       ],
@@ -627,7 +629,7 @@
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
-          "internal_coding": "Complete verified settlement adapters and owner-mandate validation.",
+          "internal_coding": "Processor payout membership is checked for exact automatic Stripe payout and capture. Complete independent bank matching, validated ledger booking and owner-mandate enforcement for actual funds.",
           "insufficient_test_evidence": "Test denial, mismatched receipts and duplicate payout intents.",
           "external_commissioning": "Commission approved sandbox with reusable receipt proof.",
           "owner_or_professional_action": "Approve provider and allowed authority.",

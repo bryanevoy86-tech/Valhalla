@@ -1,4 +1,5 @@
 """Authenticate upstream deliveries, journal a minimal snapshot, and reconcile processor evidence."""
+from contextlib import contextmanager
 import hashlib
 import os
 import re
@@ -106,14 +107,21 @@ def persist_delivery(payload, raw, live):
         return journal_event(db, payload, raw, live)
 
 
-def _provider_object(client, path, identity, kind):
+def provider_json(client, path, *, params=None):
     try:
-        response = client.get(path)
+        response = client.get(path, params=params)
         response.raise_for_status()
         result = response.json()
     except (httpx.HTTPError, ValueError):
         raise HTTPException(503, "Stripe readback unavailable") from None
-    if not isinstance(result, dict) or result.get("id") != identity or result.get("object") != kind:
+    if not isinstance(result, dict):
+        raise HTTPException(409, "Stripe readback response is not an object")
+    return result
+
+
+def _provider_object(client, path, identity, kind):
+    result = provider_json(client, path)
+    if result.get("id") != identity or result.get("object") != kind:
         raise HTTPException(409, "Stripe readback identity mismatch")
     return result
 
@@ -188,7 +196,8 @@ def read_processor_balance(db: Session, event_id: str, *, client: httpx.Client, 
     return {**evidence, "sha256": digest}
 
 
-def configured_readback(db: Session, event_id: str, *, live: bool):
+@contextmanager
+def stripe_readback_client(*, live: bool):
     mode = "live" if live else "test"
     account_id = os.getenv("VALHALLA_STRIPE_ACCOUNT_ID")
     key = os.getenv("VALHALLA_STRIPE_READBACK_KEY", "")
@@ -198,4 +207,9 @@ def configured_readback(db: Session, event_id: str, *, live: bool):
         raise HTTPException(503, "Stripe restricted readback is disabled or unconfigured")
     with httpx.Client(base_url="https://api.stripe.com", auth=(key, ""), follow_redirects=False,
                       timeout=5.0, trust_env=False) as client:
+        yield client, account_id
+
+
+def configured_readback(db: Session, event_id: str, *, live: bool):
+    with stripe_readback_client(live=live) as (client, account_id):
         return read_processor_balance(db, event_id, client=client, account_id=account_id, live=live)

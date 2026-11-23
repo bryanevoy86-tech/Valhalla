@@ -33,3 +33,10 @@ def bind_checkout_order(payload: OrderBindingIn, db: Session = Depends(get_db)):
 @router.get("/api/governance/floor/stripe-orders/{order_id}", dependencies=owner_keys)
 def inspect_checkout_order(order_id: UUID, db: Session = Depends(get_db)):
     return private_owner_response(inspect_binding(db, order_id, live=is_live()))
+
+
+@router.post("/api/governance/floor/stripe-orders/{order_id}/payout-readback/{payout_id}", dependencies=owner_keys)
+def read_checkout_payout(order_id: UUID, payout_id: str, db: Session = Depends(get_db)):
+    from app.services.stripe_payout_evidence import configured_payout_readback
+
+    return private_owner_response(configured_payout_readback(db, order_id, payout_id, live=is_live()))
