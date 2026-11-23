@@ -35,7 +35,7 @@ PHASE3 = "/api/completion/phase3/universal-opportunity"
 
 
 @pytest.mark.parametrize("deal_client", ["disk"], indirect=True)
-def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkeypatch):
+def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkeypatch, browser_acceptance):
     client, engine = deal_client
     admin = {"X-Business-Factory-Key": "ci-factory-for-product-assets"}
     owner = {**admin, "X-Owner-Mandate-Key": "ci-owner-for-product-assets"}
@@ -492,6 +492,8 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
     observed_stop = client.get(briefing, headers=owner_session)
     assert observed_stop.status_code == 200 and observed_stop.headers["cache-control"] == "no-store"
     assert observed_stop.json()["emergency_stop"] is True
+    if browser_acceptance:
+        browser_acceptance(phase="stopped", owner=owner_email, buyer=buyer_email, password=password)
     held = client.post(f"{FACTORY}/actions/run-once", headers=admin).json()
     assert held["status"] == "blocked" and held["reason"] == "EMERGENCY_STOP_ACTIVE"
     assert client.get(f"{FACTORY}/actions/{action_id}", headers=admin).json()["receipt"] is None
@@ -827,6 +829,16 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
     assert direct.headers["cache-control"] == "no-store"
     assert direct.json()["independent_loki"]["review_id"] == claim_review
     assert direct.json()["reviewed_mimir_outcomes"] == next_advice["independent_loki"]["reviewed_mimir_outcomes"]
+    if browser_acceptance:
+        from app.services.startup_walkthrough import COMMAND
+
+        engine.dispose()
+        browser_acceptance(
+            phase="recovered", owner=owner_email, buyer=buyer_email, password=password,
+            decision=followup_listing["prime_verdict_id"], review=claim_review,
+            result_digest=observed.json()["result_sha256"], mimir=direct.json()["reviewed_mimir_outcomes"],
+            conversation=str(uuid4()), today=datetime.now(timezone.utc).date().isoformat(), startup_command=COMMAND,
+        )
     still_held = client.post(f"{FACTORY}/listing-drafts", headers=admin, json=followup_listing)
     assert still_held.status_code == 409 and "containment" in still_held.json()["detail"]
     with Session(engine) as db:

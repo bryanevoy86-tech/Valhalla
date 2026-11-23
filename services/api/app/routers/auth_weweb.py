@@ -12,7 +12,7 @@ import hmac
 import os
 import uuid
 from typing import Dict, Any, Literal, Optional
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi import APIRouter, Depends, HTTPException, status, Request, Response
 from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -148,6 +148,7 @@ def _issue_access_token(auth_runtime, user: UserProfile) -> str:
 @router.post("/login", response_model=LoginResponse)
 def login(
     credentials: LoginRequest,
+    response: Response,
     db: Session = Depends(get_db),
 ) -> LoginResponse:
     """
@@ -206,6 +207,7 @@ def login(
     
     # Issue JWT token
     token = _issue_access_token(auth_runtime, user)
+    response.headers["Cache-Control"] = "no-store"
     
     return LoginResponse(
         ok=True,
@@ -224,6 +226,7 @@ def login(
 
 @router.post("/refresh", response_model=LoginResponse)
 def refresh_token(
+    response: Response,
     current_user: Dict[str, Any] = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> LoginResponse:
@@ -258,6 +261,7 @@ def refresh_token(
         ) from exc
 
     token = _issue_access_token(auth_runtime, user)
+    response.headers["Cache-Control"] = "no-store"
 
     return LoginResponse(
         ok=True,

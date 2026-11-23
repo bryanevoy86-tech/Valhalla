@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; connect-src 'self'; form-action 'none'; base-uri 'none'">
+<title>Heimdall local acceptance</title>
+<script type="module" src="./client.mjs"></script>
+<main>
+    <h1>Heimdall local acceptance</h1>
+    <p>Disposable identities and synthetic records only.</p>
+    <form id="login">
+        <label>Fixture email <input name="email" type="email" required></label>
+        <label>Fixture password <input name="password" type="password" required></label>
+        <button>Sign in</button>
+    </form>
+    <button id="briefing" type="button">Read owner briefing</button>
+    <label>Prime decision ID <input id="decision-id"></label>
+    <button id="decision" type="button">Read reviewed decision</button>
+    <button id="stop" type="button">Check stop authority</button>
+    <form id="startup">
+        <label>Conversation ID <input name="id" required></label>
+        <label>Startup message <input name="message"></label>
+        <button>Create startup conversation</button>
+        <button name="send">Send startup message</button>
+    </form>
+    <button id="logout" type="button">Sign out</button>
+    <p id="status" role="status"></p>
+    <pre id="result" aria-label="Fixture response"></pre>
+</main>
+</html>

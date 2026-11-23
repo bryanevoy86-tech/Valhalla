@@ -18,6 +18,8 @@ on:
       - 'scripts/builder_assignment_worker.py'
       - 'scripts/prime_runtime_route_probe.py'
       - 'scripts/january_core_readiness.py'
+      - 'scripts/local_browser_acceptance.py'
+      - 'tests/browser-acceptance/**'
       - 'scripts/staging_preflight.py'
       - 'scripts/staging_workers.sh'
       - 'web/weweb-widgets/owner-*.mjs'
@@ -270,6 +272,19 @@ jobs:
           VALHALLA_EMERGENCY_STOP: "true"
         run: |
           python -m pytest -q services/api/tests
+      - name: Run the disposable Chromium acceptance client
+        run: |
+          npm install --prefix "$RUNNER_TEMP/valhalla-browser" --ignore-scripts playwright@1.55.1
+          "$RUNNER_TEMP/valhalla-browser/node_modules/.bin/playwright" install chromium --only-shell
+          NODE_PATH="$RUNNER_TEMP/valhalla-browser/node_modules" python scripts/local_browser_acceptance.py \
+            --report local-browser-acceptance.json
+      - name: Archive disposable browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: local-browser-acceptance
+          path: local-browser-acceptance.json
+          if-no-files-found: ignore
       - name: Run the executable January core operating rehearsal
         run: python scripts/january_core_readiness.py --report january-core-readiness.json
       - name: Archive the January core operating rehearsal

@@ -109,11 +109,11 @@ def legacy_http_client(deal_client, monkeypatch):
 
 
 @contextmanager
-def _serve_loopback(client):
+def _serve_loopback(client, *, app=None):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
         listener.bind(("127.0.0.1", 0))
         port = listener.getsockname()[1]
-        server = uvicorn.Server(uvicorn.Config(client.app, lifespan="off", log_level="error"))
+        server = uvicorn.Server(uvicorn.Config(app if app is not None else client.app, lifespan="off", log_level="error"))
         thread = Thread(target=server.run, kwargs={"sockets": [listener]}, daemon=True)
         thread.start()
         try:
@@ -144,3 +144,37 @@ def loopback_contract_api(contract_client):
     with _serve_loopback(client) as network:
         network.base_url = network.base_url.join("/api/")
         yield network
+
+
+@pytest.fixture
+def browser_acceptance(deal_client):
+    """Drive the disposable browser client at operating workflow checkpoints."""
+    import json
+    import os
+    from pathlib import Path
+    import subprocess
+
+    if os.environ.get("VALHALLA_BROWSER_ACCEPTANCE") != "1":
+        return None
+
+    from starlette.applications import Starlette
+    from starlette.routing import Mount
+    from starlette.staticfiles import StaticFiles
+
+    root = Path(__file__).resolve().parents[3] / "tests" / "browser-acceptance"
+    client, _ = deal_client
+    app = Starlette(routes=[
+        Mount("/__acceptance", app=StaticFiles(directory=root, html=True)),
+        Mount("/", app=client.app),
+    ])
+
+    def run(**fixture):
+        with _serve_loopback(client, app=app) as network:
+            result = subprocess.run(
+                ["node", str(root / "run.cjs")], text=True, capture_output=True, timeout=90,
+                input=json.dumps({"origin": str(network.base_url), **fixture}),
+            )
+        assert result.returncode == 0, result.stderr
+        print("BROWSER_ACCEPTANCE " + json.dumps(json.loads(result.stdout), sort_keys=True))
+
+    return run

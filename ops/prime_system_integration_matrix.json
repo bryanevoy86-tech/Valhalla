@@ -49,7 +49,7 @@
         "services/api/app/models/auth_revocations.py",
         "alembic/versions/20261119_persistent_auth_revocation.py"
       ],
-      "source_observation": "WeWeb logout and refresh revocations moved from process-local memory into hashed persistent database records; owner reset now always requires configured secret. SQLite tests pass. Other auth paths and production migration unverified.",
+      "source_observation": "WeWeb logout and refresh revocations moved from process-local memory into hashed persistent database records; owner reset now always requires configured secret. Login and refresh token responses are explicitly uncacheable. Disposable Chromium exercises the real owner and buyer login, private authorization and revoked bearer replay over loopback. SQLite tests pass. Other auth paths and production migration unverified.",
       "evidence_level": "SQLITE_INTEGRATION_TESTED",
       "production_verified": false,
       "acceptance_test": "Persistent logout/revocation and RBAC across restart; ownership and tenant-bound denies; real login/logout smoke",
@@ -63,7 +63,7 @@
         "remaining": {
           "internal_coding": null,
           "internally_achievable_testing": "Test every private write lane and role isolation with actual revocation.",
-          "external_api_and_provider_commissioning": "Exercise fresh login, revocation and owner bypass-denial in staging.",
+          "external_api_and_provider_commissioning": "Exercise fresh login, revocation and owner bypass-denial from the actual WeWeb Preview origin in authorized staging.",
           "owner_authorization_or_account_establishment": "Approve test accounts and credential rotation.",
           "independent_financial_or_operational_evidence": "Independently observed owner versus subscriber access denial and revoked sessions.",
           "qualified_professional_review": null,
