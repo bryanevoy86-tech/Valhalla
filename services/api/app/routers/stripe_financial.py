@@ -23,7 +23,9 @@ from app.services.stripe_revenue_release import DeliveryReleaseIn, recognize_del
 from app.schemas.market_intelligence import MarketScope
 from app.services.treasury_cash_position import CashPositionRequest, reconcile_cash_position, verify_cash_close, verify_journal_head
 from app.services.stripe_dispute_correction import ChargebackIn, configured_chargeback, configured_subscription_chargeback
-from app.services.stripe_refund_correction import RefundCorrectionIn, configured_refund_correction
+from app.services.stripe_refund_correction import (
+    RefundCorrectionIn, configured_refund_correction, configured_subscription_refund,
+)
 from app.services.stripe_recurring import (
     InvoiceProofIn, RecurringBindingIn, apply_paid_invoice, bind_recurring, recurring_clients, schedule_cancellation,
     start_checkout, subscriber_recurring_list, subscription_status, verify_period_payout, verify_period_processor_balance,
@@ -281,3 +283,10 @@ def release_paid_service(local_id: int, invoice_id: str, payload: SubscriptionRe
 def reconcile_recurring_chargeback(local_id: int, invoice_id: str, payload: ChargebackIn,
                                    db: Session = Depends(get_db)):
     return private_owner_response(configured_subscription_chargeback(db, local_id, invoice_id, payload, live=is_live()))
+
+
+@router.post("/api/governance/floor/stripe-subscriptions/{local_id}/paid-period/{invoice_id}/refund-correction",
+             dependencies=owner_keys)
+def reconcile_recurring_refund(local_id: int, invoice_id: str, payload: RefundCorrectionIn,
+                               db: Session = Depends(get_db)):
+    return private_owner_response(configured_subscription_refund(db, local_id, invoice_id, payload, live=is_live()))

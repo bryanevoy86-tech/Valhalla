@@ -25,9 +25,8 @@ from app.services.stripe_recurring_worker import reconcile_due_invoice
 from app.users.models import AccountSettings, UserProfile
 
 
-@pytest.mark.parametrize("terminal_chargeback_minor", [0, 1200, 475],
-                         ids=["lifecycle", "full-chargeback", "partial-chargeback"])
-def test_recurring_checkout_renewal_cancellation_and_payment_holds(deal_client, monkeypatch, terminal_chargeback_minor):
+@pytest.mark.parametrize("correction", ["lifecycle", "full-chargeback", "partial-chargeback", "ordered-refunds"])
+def test_recurring_checkout_renewal_cancellation_and_payment_holds(deal_client, monkeypatch, correction):
     client, engine = deal_client
     for model in (UserProfile, AccountSettings, RevokedAccessToken, SaaSPlan, SaaSPlanModule,
                   Subscription, StripeFinancialEvent, StripeOrderBinding, StripeBalanceEvidence,
@@ -342,7 +341,62 @@ def test_recurring_checkout_renewal_cancellation_and_payment_holds(deal_client, 
         assert settlement["acknowledged_count"] == settlement["liability_release_count"] == 1
         assert settlement["recognized_unheld_minor"] is None and settlement["available_cash_minor"] is None
         assert scoped_service_settlement(db, {**params["scope"], "business_id": "business-other"}, live=False) is None
-    if terminal_chargeback_minor:
+    if correction == "ordered-refunds":
+        @contextmanager
+        def refund_client(*, live):
+            assert live is False
+            with clients(live=False) as (reader, _):
+                yield reader, "acct_Recurring"
+
+        monkeypatch.setattr("app.services.stripe_refund_correction.stripe_readback_client", refund_client)
+        charge = fixtures["/v1/charges/ch_First"]
+        charge.update(refunded=True, amount_refunded=1200)
+        route = root + "/paid-period/in_First/refund-correction"
+        wrong_invoice = root + "/paid-period/in_Renewal/refund-correction"
+
+        def refund_fixture(suffix, amount, cumulative):
+            refund_id, balance_id = "re_" + suffix, "txn_" + suffix
+            fixtures[f"/v1/refunds/{refund_id}"] = {
+                "id": refund_id, "object": "refund", "charge": "ch_First", "payment_intent": "pi_First",
+                "status": "succeeded", "currency": "cad", "amount": amount, "balance_transaction": balance_id,
+            }
+            txn = {"id": balance_id, "object": "balance_transaction", "source": refund_id,
+                   "currency": "cad", "type": "refund", "status": "available",
+                   "amount": -amount, "net": -amount, "fee": 0, "available_on": start + 300}
+            fixtures[f"/v1/balance_transactions/{balance_id}"] = txn
+            signed = webhook("charge.refunded", suffix, {**charge, "amount_refunded": cumulative,
+                                                        "refunded": cumulative == 1200})
+            return {"refund_id": refund_id, "signed_event_id": signed["event_id"]}, txn
+
+        first, first_tx = refund_fixture("FirstRefund", 300, 300)
+        rest, _ = refund_fixture("RemainingRefund", 900, 1200)
+        assert client.post(route, headers=buyer, json=first).status_code == 401
+        assert client.post(wrong_invoice, headers=owner, json=first).status_code == 409
+        assert client.post(route, headers=owner, json=rest).status_code == 409
+        first_tx["net"] += 1
+        assert client.post(route, headers=owner, json=first).status_code == 409
+        first_tx["net"] -= 1
+        original = client.post(route, headers=owner, json=first)
+        assert original.status_code == 200, original.text
+        completed_refund = client.post(route, headers=owner, json=rest)
+        assert completed_refund.status_code == 200, completed_refund.text
+        for response, amount, cumulative in ((original, 300, 300), (completed_refund, 900, 1200)):
+            evidence = response.json()
+            assert evidence["invoice_id"] == "in_First" and evidence["paid_period_sha256"] == exact["paid_period_sha256"]
+            assert evidence["basis"] == "SYNTHETIC_REFUND_CORRECTION" and evidence["corrects_delivery_income"]
+            assert (evidence["refund_minor"], evidence["cumulative_refund_minor"]) == (amount, cumulative)
+            assert evidence["ledger_entry_id"] is None and evidence["available_cash_minor"] is None
+            assert evidence["bank_debit_confirmed"] is False and evidence["cash_hold_released"] is False
+        assert client.post(route, headers=owner, json=first).json() == original.json()
+        assert client.post(route, headers=owner, json=rest).json() == completed_refund.json()
+        assert client.post(release_url, headers=owner, json=inputs).status_code == 409
+        assert client.get(history, headers=buyer).json()["completed_paid_periods"] == []
+        with Session(engine) as db:
+            assert scoped_bank_blockers(db, params["scope"], live=False) == {"STRIPE_BANK_CORRECTION_REQUIRED"}
+        return
+
+    if correction in {"full-chargeback", "partial-chargeback"}:
+        terminal_chargeback_minor = 1200 if correction == "full-chargeback" else 475
         dispute = {"id": "du_First", "object": "dispute", "livemode": False, "charge": "ch_First",
                    "payment_intent": "pi_First", "currency": "cad", "amount": terminal_chargeback_minor, "status": "lost",
                    "balance_transactions": [{"id": "txn_ServiceDispute"}]}
@@ -363,23 +417,23 @@ def test_recurring_checkout_renewal_cancellation_and_payment_holds(deal_client, 
         monkeypatch.setattr("app.services.stripe_dispute_correction.stripe_readback_client", dispute_client)
         event = webhook("charge.dispute.closed", "FirstServiceLost", dispute)
         signed = {"signed_event_id": event["event_id"]}
-        correction = root + "/paid-period/in_First/chargeback-correction"
-        assert client.post(correction, headers=buyer, json=signed).status_code == 401
+        route = root + "/paid-period/in_First/chargeback-correction"
+        assert client.post(route, headers=buyer, json=signed).status_code == 401
         wrong_invoice = root + "/paid-period/in_Renewal/chargeback-correction"
         assert client.post(wrong_invoice, headers=owner, json=signed).status_code == 409
         over_capture = webhook("charge.dispute.closed", "FirstServiceOverCapture", {**dispute, "amount": 1201})
-        assert client.post(correction, headers=owner, json={"signed_event_id": over_capture["event_id"]}).status_code == 409
+        assert client.post(route, headers=owner, json={"signed_event_id": over_capture["event_id"]}).status_code == 409
         txn["net"] += 1
-        assert client.post(correction, headers=owner, json=signed).status_code == 409
+        assert client.post(route, headers=owner, json=signed).status_code == 409
         txn["net"] -= 1
-        result = client.post(correction, headers=owner, json=signed)
+        result = client.post(route, headers=owner, json=signed)
         assert result.status_code == 200, result.text
         corrected = result.json()
         assert corrected["corrects_delivery_income"] is True
         assert corrected["debit_minor"] == terminal_chargeback_minor
         assert corrected["basis"] == "SYNTHETIC_CHARGEBACK" and corrected["fee_minor"] == 150
         assert corrected["bank_debit_confirmed"] is False and corrected["ledger_entry_id"] is None
-        assert client.post(correction, headers=owner, json=signed).json() == corrected
+        assert client.post(route, headers=owner, json=signed).json() == corrected
         assert client.post(release_url, headers=owner, json=inputs).status_code == 409
         assert client.get(history, headers=buyer).json()["completed_paid_periods"] == []
         with Session(engine) as db:

@@ -132,6 +132,17 @@ def record_refund_correction(db, order_id, request, *, client, account_id, live)
     ))
     if capture is None or capture.evidence.get("charge_id") != event.snapshot.get("charge_id"):
         raise HTTPException(409, "Refund charge differs from the originally reconciled capture")
+    release_key = f"STRIPE-DELIVERY-REVENUE-{order_id}"
+    release = _read_record(db, release_key, RELEASE, scope)
+    return _record_matched_refund(
+        db, request, client, account_id, binding, event, bank, release_key, release,
+        target=str(order_id), identity={"order_id": str(order_id)}, live=live,
+    )
+
+
+def _record_matched_refund(db, request, client, account_id, binding, event, bank, release_key, release, *,
+                           target, identity, live):
+    scope = binding["scope"]
     dispute = db.scalar(select(StripeFinancialEvent).where(
         StripeFinancialEvent.livemode == live,
         StripeFinancialEvent.snapshot["kind"].as_string().in_(("charge.dispute.created", "charge.dispute.closed")),
@@ -140,8 +151,8 @@ def record_refund_correction(db, order_id, request, *, client, account_id, live)
     if dispute is not None:
         _event_receipt(dispute, True)
         raise HTTPException(409, "A separate signed dispute requires professional correction review")
-    prefix = f"STRIPE-PARTIAL-REFUND-{order_id}-"
-    full_key = f"STRIPE-FULL-REFUND-{order_id}"
+    prefix = f"STRIPE-PARTIAL-REFUND-{target}-"
+    full_key = f"STRIPE-FULL-REFUND-{target}"
     full = _read_record(db, full_key, CORRECTION, scope)
     keys = db.scalars(select(LegacyOrchestrationEvent.event_id).where(
         LegacyOrchestrationEvent.event_id.startswith(prefix, autoescape=True),
@@ -151,7 +162,7 @@ def record_refund_correction(db, order_id, request, *, client, account_id, live)
     committed = 0
     for receipt in partials:
         committed += receipt["refund_minor"]
-        if receipt["order_id"] != str(order_id) or receipt["cumulative_refund_minor"] != committed:
+        if any(receipt.get(field) != value for field, value in identity.items()) or receipt["cumulative_refund_minor"] != committed:
             raise HTTPException(409, "Refund correction history is contradictory")
     key = prefix + artifact_digest("stripe_refund_identity", request.refund_id, {"live": live})[:32]
     prior = _read_record(db, key, PARTIAL, scope)
@@ -159,7 +170,8 @@ def record_refund_correction(db, order_id, request, *, client, account_id, live)
         key, prior = full_key, full
     kind = CORRECTION if key == full_key else PARTIAL
     if prior is not None:
-        if prior["signed_refund_sha256"] != event.snapshot_sha256 or prior["bank_batch_sha256"] != bank["sha256"]:
+        if (any(prior.get(field) != value for field, value in identity.items())
+                or prior["signed_refund_sha256"] != event.snapshot_sha256 or prior["bank_batch_sha256"] != bank["sha256"]):
             raise HTTPException(409, "Refund evidence differs from the recorded correction")
         preceding = prior.get("cumulative_refund_minor", prior["refund_minor"]) - prior["refund_minor"]
         current = refund_evidence(client, account_id, binding, event.snapshot, request.refund_id,
@@ -178,14 +190,12 @@ def record_refund_correction(db, order_id, request, *, client, account_id, live)
                             datetime.now(timezone.utc), prior_minor=committed)
     if match["refund_minor"] == binding["amount_minor"]:
         key, kind = full_key, CORRECTION
-    release_key = f"STRIPE-DELIVERY-REVENUE-{order_id}"
-    release = _read_record(db, release_key, RELEASE, scope)
     if live and release is not None:
         entry = db.get(JournalEntry, release["ledger_entry_id"])
         if (entry is None or entry.source != RELEASE_SOURCE or entry.source_ref != release_key
                 or release["recognized_revenue_minor"] != binding["amount_minor"]):
             raise HTTPException(409, "Prior delivery income posting is unavailable or contradictory")
-    value = {"scope": scope, "order_id": str(order_id), "bank_batch_sha256": bank["sha256"],
+    value = {"scope": scope, **identity, "bank_batch_sha256": bank["sha256"],
              "signed_refund_sha256": event.snapshot_sha256, **match,
              "basis": "STRIPE_CAD_PROCESSOR_CORRECTION" if live else "SYNTHETIC_REFUND_CORRECTION",
              "corrects_delivery_income": release is not None, "bank_debit_confirmed": False,
@@ -202,7 +212,7 @@ def record_refund_correction(db, order_id, request, *, client, account_id, live)
         unique = "STRIPE-REFUND-TX-" + artifact_digest("stripe_refund_balance", match["refund_balance_id"],
                                                      {"live": live})[:40]
         _event(db, event_id=unique, legacy_instance_id=scope["legacy_instance_id"], event_type=kind,
-               message="Refund transaction consumed", payload={"order_id": str(order.id), "sha256": digest})
+               message="Refund transaction consumed", payload={**identity, "sha256": digest})
         _event(db, event_id=key, legacy_instance_id=scope["legacy_instance_id"], event_type=kind,
                message="Exact independently verified Stripe refund correction", payload={"value": value, "sha256": digest})
         db.commit()
@@ -215,3 +225,41 @@ def record_refund_correction(db, order_id, request, *, client, account_id, live)
 def configured_refund_correction(db, order_id, request, *, live):
     with stripe_readback_client(live=live) as (client, account_id):
         return record_refund_correction(db, order_id, request, client=client, account_id=account_id, live=live)
+
+
+def configured_subscription_refund(db, local_id, invoice_id, request, *, live):
+    from app.models.stripe_recurring import StripePaidPeriod
+    from app.services.stripe_bank_booking import invoice_bank_summary
+    from app.services.stripe_recurring import _binding, _period_value
+    from app.services.stripe_subscription_delivery import ACK, RELEASE as SERVICE_RELEASE
+
+    if not stripe_id(invoice_id, "in"):
+        raise HTTPException(422, "Native Stripe invoice identity required")
+    with stripe_readback_client(live=live) as (client, account_id):
+        row, binding, _ = _binding(db, local_id, live, lock=True)
+        period = db.get(StripePaidPeriod, invoice_id)
+        event = db.get(StripeFinancialEvent, request.signed_event_id)
+        if (period is None or period.binding_id != local_id or account_id != binding["stripe_account_id"]
+                or event is None or event.livemode is not live):
+            raise HTTPException(409, "Exact subscription, paid period and signed refund are required")
+        paid = _period_value(row, period)
+        _event_receipt(event, True)
+        if paid["charge_id"] != event.snapshot.get("charge_id"):
+            raise HTTPException(409, "Refund charge differs from the settled invoice capture")
+        scope = binding["scope"]
+        bank = invoice_bank_summary(db, invoice_id, scope, held=False, live=live, lock=True)
+        if bank is None or bank["status"] != "RECONCILIATION_RECORDED":
+            raise HTTPException(409, "Original invoice bank settlement without a payout correction is required")
+        reference = artifact_digest(ACK, invoice_id, {"live": live})[:32]
+        release_key = f"STRIPE-SERVICE-REVENUE-{local_id}-{reference}"
+        release = _read_record(db, release_key, SERVICE_RELEASE, scope)
+        if release is not None and (release["paid_period_sha256"] != period.evidence_sha256
+                                    or release["batch_sha256"] != bank["sha256"]):
+            raise HTTPException(409, "Prior service recognition did not match this invoice settlement")
+        financial = {"scope": scope, "amount_minor": paid["captured_minor"],
+                     "payment_intent_id": paid["payment_intent_id"], "livemode": live}
+        identity = {"subscription_id": local_id, "invoice_id": invoice_id, "paid_period_sha256": period.evidence_sha256}
+        return _record_matched_refund(
+            db, request, client, account_id, financial, event, bank, release_key, release,
+            target=f"SERVICE-{local_id}-{reference}", identity=identity, live=live,
+        )
