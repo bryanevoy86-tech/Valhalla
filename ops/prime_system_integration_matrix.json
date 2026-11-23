@@ -212,6 +212,7 @@
       "id": "learning_mimir",
       "priority": "P1",
       "source_paths": [
+        "services/api/app/routers/legacy_playbooks.py",
         "services/api/app/services/heimdall_outcomes.py",
         "services/api/app/routers/decision_outcome.py",
         "services/api/app/routers/completion_registry.py",

@@ -757,6 +757,36 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
         db.commit()
     holdout_forecast = client.post(f"{FACTORY}/listing-drafts", headers=admin, json=followup_listing)
     assert holdout_forecast.status_code == 409 and "ordinary-cohort" in holdout_forecast.json()["detail"]
+    from app.models.completion_registry import LegacyGovernancePolicy, LegacyInstancePolicyState
+    for model in (LegacyGovernancePolicy, LegacyInstancePolicyState):
+        model.__table__.create(engine, checkfirst=True)
+    with Session(engine) as db:
+        legacy = db.query(LegacyInstanceRegistryItem).filter_by(legacy_instance_id=scope["legacy_instance_id"]).one()
+        policy = {"policy_id": "workflow-fixture", "policy_version": "v1"}
+        context = json.loads(legacy.local_knowledge_context_json)
+        legacy.local_knowledge_context_json = json.dumps({**context, "governance": policy})
+        db.add(LegacyGovernancePolicy(**policy, policy_scope="GLOBAL", autonomy_policy_json="{}",
+                                     ethics_evidence_policy_json="{}", kill_shield_policy_json="{}",
+                                     engine_activation_policy_json="{}", jurisdiction_restrictions_json="{}",
+                                     approval_requirements_json="{}", audit_requirements_json="{}"))
+        db.add(LegacyInstancePolicyState(legacy_instance_id=scope["legacy_instance_id"], **policy))
+        db.commit()
+    path = "/api/prime/legacy-playbooks/workflow-versions"
+    reusable = client.post(path + "/record", headers=owner, json={
+        "scope": scope, "name": "exact-product-draft", "version": 1, "outcome_ids": [claim["outcome_event_id"]],
+        "input_contract": ["Approved product draft"], "acceptance_checks": ["Product asset digest verified"],
+        "rollback_procedure": "Discard the draft and retain the last reviewed version.", "data_class": "SYNTHETIC",
+    })
+    assert reusable.status_code == 201, reusable.text
+    evidence = reusable.json()
+    assert evidence["verified_internal_outcomes"][0]["artifact_sha256"] == claim["artifact_sha256"]
+    advice = client.post(path + "/assess", headers=admin, json={
+        "source": scope, "target": scope, "name": "exact-product-draft", "version": 1,
+        "expected_sha256": evidence["sha256"], "data_class": "SYNTHETIC",
+    })
+    assert advice.status_code == 200 and advice.json()["status"] == "REUSE_REVIEW_REQUIRED"
+    assert advice.json()["execution_authorized"] is False
+
     with Session(engine) as db:
         db.delete(db.get(NornsHoldout, UUID(forecast_id)))
         event = db.query(LegacyOrchestrationEvent).filter_by(event_id=claim["outcome_event_id"]).one()

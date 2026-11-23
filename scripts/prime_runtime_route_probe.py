@@ -152,6 +152,8 @@ MANDATORY_ENDPOINTS = {
     "factory_startup_enrollment": ("POST", "/api/business-factory/mandates/enroll"),
     "factory_execution": ("POST", "/api/business-factory/actions/run-once"),
     "legacy_playbook_rehearsal": ("POST", "/api/prime/legacy-playbooks"),
+    "workflow_playbook_record": ("POST", "/api/prime/legacy-playbooks/workflow-versions/record"),
+    "workflow_playbook_assess": ("POST", "/api/prime/legacy-playbooks/workflow-versions/assess"),
     "legacy_playbook_receipt": ("GET", "/api/prime/legacy-playbooks/{target_id}"),
     "specialist_schedule_create": ("POST", "/api/prime/specialist-schedules"),
     "specialist_schedule_status": ("GET", "/api/prime/specialist-schedules/{schedule_id}"),
