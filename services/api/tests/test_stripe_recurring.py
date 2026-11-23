@@ -25,7 +25,9 @@ from app.services.stripe_recurring_worker import reconcile_due_invoice
 from app.users.models import AccountSettings, UserProfile
 
 
-@pytest.mark.parametrize("correction", ["lifecycle", "full-chargeback", "partial-chargeback", "ordered-refunds"])
+@pytest.mark.parametrize("correction", [
+    "lifecycle", "full-chargeback", "partial-chargeback", "ordered-refunds", "reopened-dispute",
+])
 def test_recurring_checkout_renewal_cancellation_and_payment_holds(deal_client, monkeypatch, correction):
     client, engine = deal_client
     for model in (UserProfile, AccountSettings, RevokedAccessToken, SaaSPlan, SaaSPlanModule,
@@ -159,9 +161,12 @@ def test_recurring_checkout_renewal_cancellation_and_payment_holds(deal_client, 
     assert len(posts) == 2 and posts[0] == posts[1]
     checkout.update(status="complete", subscription="sub_Recurring", url=None)
 
-    def webhook(kind, suffix, item):
+    def webhook(kind, suffix, item, *, created=None):
         event_id = f"evt_{suffix}"
-        body = json.dumps({"id": event_id, "type": kind, "livemode": False, "data": {"object": item}}).encode()
+        payload = {"id": event_id, "type": kind, "livemode": False, "data": {"object": item}}
+        if created is not None:
+            payload["created"] = created
+        body = json.dumps(payload).encode()
         timestamp = str(int(time.time()))
         signature = hmac.new(secret.encode(), timestamp.encode() + b"." + body, hashlib.sha256).hexdigest()
         delivery = client.post("/webhooks/stripe", content=body, headers={"Stripe-Signature": f"t={timestamp},v1={signature}"})
@@ -395,7 +400,7 @@ def test_recurring_checkout_renewal_cancellation_and_payment_holds(deal_client, 
             assert scoped_bank_blockers(db, params["scope"], live=False) == {"STRIPE_BANK_CORRECTION_REQUIRED"}
         return
 
-    if correction in {"full-chargeback", "partial-chargeback"}:
+    if correction in {"full-chargeback", "partial-chargeback", "reopened-dispute"}:
         terminal_chargeback_minor = 1200 if correction == "full-chargeback" else 475
         dispute = {"id": "du_First", "object": "dispute", "livemode": False, "charge": "ch_First",
                    "payment_intent": "pi_First", "currency": "cad", "amount": terminal_chargeback_minor, "status": "lost",
@@ -415,7 +420,17 @@ def test_recurring_checkout_renewal_cancellation_and_payment_holds(deal_client, 
                 yield reader, "acct_Recurring"
 
         monkeypatch.setattr("app.services.stripe_dispute_correction.stripe_readback_client", dispute_client)
-        event = webhook("charge.dispute.closed", "FirstServiceLost", dispute)
+        if correction == "reopened-dispute":
+            signal = webhook("charge.dispute.funds_withdrawn", "ServiceDisputeWithdrawn",
+                             {**dispute, "status": "needs_response"}, created=start + 300)
+            with Session(engine) as db:
+                row = db.get(StripeFinancialEvent, signal["event_id"])
+                assert row.snapshot["native_status"] == "needs_response"
+                assert scoped_bank_blockers(db, params["scope"], live=False) == {"STRIPE_BANK_CORRECTION_REQUIRED"}
+            assert client.get(history, headers=buyer).json()["completed_paid_periods"] == []
+            webhook("charge.dispute.updated", "ServiceDisputeOriginalReview",
+                    {**dispute, "status": "under_review"}, created=start + 301)
+        event = webhook("charge.dispute.closed", "FirstServiceLost", dispute, created=start + 302)
         signed = {"signed_event_id": event["event_id"]}
         route = root + "/paid-period/in_First/chargeback-correction"
         assert client.post(route, headers=buyer, json=signed).status_code == 401
@@ -434,6 +449,20 @@ def test_recurring_checkout_renewal_cancellation_and_payment_holds(deal_client, 
         assert corrected["basis"] == "SYNTHETIC_CHARGEBACK" and corrected["fee_minor"] == 150
         assert corrected["bank_debit_confirmed"] is False and corrected["ledger_entry_id"] is None
         assert client.post(route, headers=owner, json=signed).json() == corrected
+        if correction == "reopened-dispute":
+            webhook("charge.dispute.updated", "ServiceDisputeAppeal",
+                    {**dispute, "status": "appeal_needs_response"}, created=start + 303)
+            assert client.post(route, headers=owner, json=signed).status_code == 409
+            restore = webhook("charge.dispute.funds_reinstated", "ServiceDisputeReinstated",
+                              {**dispute, "status": "won"}, created=start + 304)
+            assert webhook("charge.dispute.funds_reinstated", "ServiceDisputeReinstated",
+                           {**dispute, "status": "won"}, created=start + 304) == restore
+            with Session(engine) as db:
+                row = db.get(StripeFinancialEvent, restore["event_id"])
+                assert row.snapshot["provider_created_at"] == start + 304
+                assert row.snapshot["native_status"] == "won"
+            assert client.post(route, headers=owner, json={"signed_event_id": restore["event_id"]}).status_code == 409
+            assert client.post(route, headers=owner, json=signed).status_code == 409
         assert client.post(release_url, headers=owner, json=inputs).status_code == 409
         assert client.get(history, headers=buyer).json()["completed_paid_periods"] == []
         with Session(engine) as db:

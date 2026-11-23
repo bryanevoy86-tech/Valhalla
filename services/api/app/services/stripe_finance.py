@@ -16,6 +16,18 @@ from app.loki.evidence import artifact_digest
 from app.models.stripe_finance import StripeBalanceEvidence, StripeFinancialEvent, StripeOrderBinding
 
 
+DISPUTE_LIFECYCLE_EVENTS = frozenset({
+    "charge.dispute.updated", "charge.dispute.funds_withdrawn", "charge.dispute.funds_reinstated",
+})
+DISPUTE_EVENTS = DISPUTE_LIFECYCLE_EVENTS | {"charge.dispute.created", "charge.dispute.closed"}
+CHARGE_CORRECTION_EVENTS = DISPUTE_EVENTS | {"charge.refunded"}
+ACTIVE_DISPUTE_STATUSES = frozenset({
+    "warning_needs_response", "warning_under_review", "needs_response", "under_review",
+    "appeal_needs_response", "appeal_under_review",
+})
+TERMINAL_DISPUTE_STATUSES = frozenset({"won", "lost", "warning_closed"})
+
+
 def stripe_id(value, prefix):
     return (isinstance(value, str) and re.fullmatch(rf"{prefix}_[A-Za-z0-9_]{{1,120}}", value)
             is not None and not value.casefold().startswith((f"{prefix}_fixture_", f"{prefix}_sandbox")))
@@ -91,7 +103,7 @@ def event_snapshot(payload, live):
     elif kind == "charge.refunded":
         object_type, prefix, intent = "charge", "ch", item.get("payment_intent")
         amount, charge = item.get("amount_refunded"), item.get("id")
-    elif kind in {"charge.dispute.created", "charge.dispute.closed"}:
+    elif kind in DISPUTE_EVENTS:
         object_type, prefix, intent = "dispute", "du", item.get("payment_intent")
         amount, charge = item.get("amount"), item.get("charge")
         if not stripe_id(charge, "ch"):
@@ -112,10 +124,18 @@ def event_snapshot(payload, live):
     snapshot = {"kind": kind, "livemode": live, "object_id": item["id"], "payment_intent_id": intent,
             "charge_id": charge, "amount_minor": amount, "currency": currency,
             "merchant_order_id": merchant_order_reference(item) if object_type == "payment_intent" else None}
-    if kind == "charge.dispute.closed":
-        if item.get("status") not in {"won", "lost", "warning_closed"}:
-            raise HTTPException(422, "A terminal dispute status is required")
+    if kind in DISPUTE_LIFECYCLE_EVENTS or kind == "charge.dispute.closed":
+        statuses = TERMINAL_DISPUTE_STATUSES if kind == "charge.dispute.closed" else (
+            ACTIVE_DISPUTE_STATUSES | TERMINAL_DISPUTE_STATUSES | {"prevented"}
+        )
+        if not isinstance(item.get("status"), str) or item["status"] not in statuses:
+            raise HTTPException(422, "Unsupported Stripe dispute status")
         snapshot["native_status"] = item["status"]
+        created = payload.get("created")
+        if type(created) is int and 0 < created < 4_102_444_800:
+            snapshot["provider_created_at"] = created
+        elif kind in DISPUTE_LIFECYCLE_EVENTS:
+            raise HTTPException(422, "A signed Stripe dispute timestamp is required")
     if object_type == "payment_intent" and item.get("customer") is not None:
         if not stripe_id(item["customer"], "cus"):
             raise HTTPException(422, "Unsupported Stripe customer identity")
@@ -140,7 +160,7 @@ def journal_event(db: Session, payload, raw, live):
         raise HTTPException(503, "Stripe event journal unavailable")
     event_id = payload["id"]
     body_hash = hashlib.sha256(raw).hexdigest()
-    if snapshot["kind"] in {"charge.refunded", "charge.dispute.created", "charge.dispute.closed"} and inspect(db.connection()).has_table(
+    if snapshot["kind"] in CHARGE_CORRECTION_EVENTS and inspect(db.connection()).has_table(
         StripeOrderBinding.__tablename__,
     ):
         captures = StripeFinancialEvent.snapshot
@@ -154,7 +174,7 @@ def journal_event(db: Session, payload, raw, live):
             or_(StripeOrderBinding.payment_intent_id == snapshot["payment_intent_id"],
                 StripeOrderBinding.payment_intent_id.in_(matches)),
         ).order_by(StripeOrderBinding.id).with_for_update()).all()
-    if snapshot["kind"] in {"charge.refunded", "charge.dispute.created", "charge.dispute.closed"}:
+    if snapshot["kind"] in CHARGE_CORRECTION_EVENTS:
         from app.models.stripe_recurring import StripePaidPeriod, StripeSaaSBinding
 
         inspector = inspect(db.connection())

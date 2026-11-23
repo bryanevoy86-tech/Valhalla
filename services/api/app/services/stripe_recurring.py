@@ -21,7 +21,7 @@ from app.schemas.market_intelligence import MarketScope, StrictModel
 from app.services.economic_control import require_no_containment
 from app.services.prime_business_execution import _check_legacy, _emergency_stop_active, _event, _json
 from app.services.stripe_finance import (
-    _event_receipt, _provider_object, capture_evidence, minor_amount, provider_json, read_captured_charge,
+    CHARGE_CORRECTION_EVENTS, _event_receipt, _provider_object, capture_evidence, minor_amount, provider_json, read_captured_charge,
     read_processor_balance,
     stripe_id, stripe_readback_client,
 )
@@ -337,7 +337,7 @@ def _reversed(db, row, receipt):
     snapshot = StripeFinancialEvent.snapshot
     event = db.scalar(select(StripeFinancialEvent).where(
         StripeFinancialEvent.livemode == row.livemode,
-        snapshot["kind"].as_string().in_(("charge.refunded", "charge.dispute.created", "charge.dispute.closed")),
+        snapshot["kind"].as_string().in_(CHARGE_CORRECTION_EVENTS),
         (snapshot["payment_intent_id"].as_string() == receipt["payment_intent_id"])
         | (snapshot["charge_id"].as_string() == receipt["charge_id"]),
     ).limit(1))

@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from app.loki.evidence import artifact_digest
 from app.models.stripe_finance import StripeBalanceEvidence, StripeFinancialEvent, StripeOrderBinding
 from app.schemas.market_intelligence import MarketScope, StrictModel
-from app.services.stripe_finance import _event_receipt, stripe_id
+from app.services.stripe_finance import CHARGE_CORRECTION_EVENTS, _event_receipt, stripe_id
 
 
 class OrderBindingIn(StrictModel):
@@ -92,7 +92,7 @@ def _reversal_pending(db: Session, order: StripeOrderBinding, charge_id: str | N
     if charge_id is not None:
         matches = or_(matches, snapshot["charge_id"].as_string() == charge_id)
     row = db.scalar(select(StripeFinancialEvent).where(
-        StripeFinancialEvent.livemode == order.livemode, snapshot["kind"].as_string().in_(("charge.refunded", "charge.dispute.created", "charge.dispute.closed")), matches,
+        StripeFinancialEvent.livemode == order.livemode, snapshot["kind"].as_string().in_(CHARGE_CORRECTION_EVENTS), matches,
     ).limit(1))
     if row is None:
         return False

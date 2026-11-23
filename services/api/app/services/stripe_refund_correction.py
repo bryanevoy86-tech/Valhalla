@@ -16,7 +16,9 @@ from app.schemas.market_intelligence import StrictModel
 from app.services.prime_business_execution import _event
 from app.services.specialist_triggers import outcome_scope_key
 from app.services.stripe_bank_booking import _payout_failed, bank_batch_summary, require_open_period
-from app.services.stripe_finance import _event_receipt, _provider_object, minor_amount, stripe_id, stripe_readback_client
+from app.services.stripe_finance import (
+    DISPUTE_EVENTS, _event_receipt, _provider_object, minor_amount, stripe_id, stripe_readback_client,
+)
 from app.services.stripe_fulfillment import _locked_order, _read_record
 from app.services.stripe_orders import inspect_binding
 from app.services.stripe_revenue_release import RELEASE, SOURCE as RELEASE_SOURCE
@@ -145,7 +147,7 @@ def _record_matched_refund(db, request, client, account_id, binding, event, bank
     scope = binding["scope"]
     dispute = db.scalar(select(StripeFinancialEvent).where(
         StripeFinancialEvent.livemode == live,
-        StripeFinancialEvent.snapshot["kind"].as_string().in_(("charge.dispute.created", "charge.dispute.closed")),
+        StripeFinancialEvent.snapshot["kind"].as_string().in_(DISPUTE_EVENTS),
         StripeFinancialEvent.snapshot["charge_id"].as_string() == event.snapshot["charge_id"],
     ).limit(1))
     if dispute is not None:

@@ -11,7 +11,9 @@ from app.models.stripe_finance import StripeFinancialEvent
 from app.schemas.market_intelligence import StrictModel
 from app.services.prime_business_execution import _event
 from app.services.stripe_bank_booking import _payout_failed, bank_batch_summary
-from app.services.stripe_finance import _event_receipt, _provider_object, minor_amount, stripe_id, stripe_readback_client
+from app.services.stripe_finance import (
+    ACTIVE_DISPUTE_STATUSES, _event_receipt, _provider_object, minor_amount, stripe_id, stripe_readback_client,
+)
 from app.services.stripe_fulfillment import _locked_order, _read_record
 from app.services.stripe_orders import inspect_binding
 from app.services.stripe_refund_correction import _post_correction
@@ -79,6 +81,7 @@ def configured_chargeback(db, order_id, request, *, live):
         scope = binding["scope"]
         charge_id = projection["processor_evidence"]["charge_id"]
         _deny_prior_refund(db, charge_id, live)
+        _deny_superseded_loss(db, event)
         effect = _debit(client, event.snapshot, binding, charge_id, datetime.now(timezone.utc))
         key = f"STRIPE-CHARGEBACK-{order_id}"
         release_key = f"STRIPE-DELIVERY-REVENUE-{order_id}"
@@ -90,6 +93,27 @@ def configured_chargeback(db, order_id, request, *, live):
         return _record_chargeback(
             db, key, value, bank, release_key, release, captured_minor=binding["amount_minor"], live=live,
         )
+
+
+def _deny_superseded_loss(db, event):
+    snapshot = StripeFinancialEvent.snapshot
+    candidates = db.scalars(select(StripeFinancialEvent).where(
+        StripeFinancialEvent.livemode == event.livemode,
+        snapshot["object_id"].as_string() == event.snapshot["object_id"],
+        snapshot["kind"].as_string().in_((
+            "charge.dispute.closed", "charge.dispute.updated", "charge.dispute.funds_reinstated",
+        )),
+        StripeFinancialEvent.event_id != event.event_id,
+    )).all()
+    lost_at = event.snapshot.get("provider_created_at")
+    for candidate in candidates:
+        _event_receipt(candidate, True)
+        evidence = candidate.snapshot
+        if (evidence["kind"] == "charge.dispute.funds_reinstated"
+                or evidence.get("native_status") in ACTIVE_DISPUTE_STATUSES | {"won", "warning_closed", "prevented"}):
+            observed_at = evidence.get("provider_created_at")
+            if lost_at is None or observed_at is None or observed_at >= lost_at:
+                raise HTTPException(409, "A reopened or reinstated dispute requires independent correction review")
 
 
 def _deny_prior_refund(db, charge_id, live):
@@ -160,6 +184,7 @@ def configured_subscription_chargeback(db, local_id, invoice_id, request, *, liv
         financial = {"amount_minor": paid["captured_minor"], "payment_intent_id": paid["payment_intent_id"],
                      "stripe_account_id": account, "livemode": live}
         _deny_prior_refund(db, paid["charge_id"], live)
+        _deny_superseded_loss(db, event)
         effect = _debit(client, event.snapshot, financial, paid["charge_id"], datetime.now(timezone.utc))
         reference = artifact_digest(ACK, invoice_id, {"live": live})[:32]
         release_key = f"STRIPE-SERVICE-REVENUE-{local_id}-{reference}"

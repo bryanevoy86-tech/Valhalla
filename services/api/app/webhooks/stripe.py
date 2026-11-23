@@ -9,15 +9,13 @@ from starlette.concurrency import run_in_threadpool
 
 from app.heimdall.authority import is_live
 from app.providers.stripe_adapter import StripeAdapter
+from app.services.stripe_finance import CHARGE_CORRECTION_EVENTS
 
 router = APIRouter(prefix="/webhooks/stripe")
 
-FINANCIAL_EVENTS = {
+FINANCIAL_EVENTS = CHARGE_CORRECTION_EVENTS | {
     "payment_intent.succeeded",
     "payment_intent.payment_failed",
-    "charge.refunded",
-    "charge.dispute.created",
-    "charge.dispute.closed",
     "payout.failed",
     "payout.canceled",
     "invoice.paid",
