@@ -1,0 +1,176 @@
+"""Independently verify one full CAD refund and stage its processor correction."""
+from datetime import datetime, timezone
+from decimal import Decimal
+import os
+
+from fastapi import HTTPException
+from pydantic import field_validator
+from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
+
+from app.accounting.models import Account, JournalEntry, JournalLine
+from app.loki.evidence import artifact_digest
+from app.models.stripe_finance import StripeBalanceEvidence, StripeFinancialEvent
+from app.schemas.market_intelligence import StrictModel
+from app.services.prime_business_execution import _event
+from app.services.specialist_triggers import outcome_scope_key
+from app.services.stripe_bank_booking import _payout_failed, bank_batch_summary, require_open_period
+from app.services.stripe_finance import _event_receipt, _provider_object, minor_amount, stripe_id, stripe_readback_client
+from app.services.stripe_fulfillment import _locked_order, _read_record
+from app.services.stripe_orders import inspect_binding
+from app.services.stripe_revenue_release import RELEASE, SOURCE as RELEASE_SOURCE
+
+CORRECTION = "STRIPE_FULL_REFUND_PROCESSOR_CORRECTION"
+SOURCE = "stripe_refund_processor_correction"
+
+
+class RefundCorrectionIn(StrictModel):
+    refund_id: str
+    signed_event_id: str
+
+    @field_validator("refund_id", "signed_event_id")
+    @classmethod
+    def native_id(cls, value, info):
+        if not stripe_id(value, "re" if info.field_name == "refund_id" else "evt"):
+            raise ValueError("Native Stripe refund and event identities required")
+        return value
+
+
+def refund_evidence(client, account_id, order, event, refund_id, now):
+    if (event.get("kind"), event.get("payment_intent_id"), event.get("currency"), event.get("amount_minor")) != (
+        "charge.refunded", order["payment_intent_id"], "cad", order["amount_minor"],
+    ) or not stripe_id(event.get("charge_id"), "ch"):
+        raise HTTPException(409, "An exact signed full-refund event is required")
+    _provider_object(client, "/v1/account", account_id, "account")
+    charge = _provider_object(client, f"/v1/charges/{event['charge_id']}", event["charge_id"], "charge")
+    gross = order["amount_minor"]
+    if (charge.get("livemode") is not order["livemode"] or charge.get("payment_intent") != order["payment_intent_id"]
+            or charge.get("currency") != "cad" or charge.get("captured") is not True
+            or charge.get("refunded") is not True or charge.get("disputed") is not False
+            or not minor_amount(charge.get("amount_refunded")) or charge["amount_refunded"] != gross):
+        raise HTTPException(409, "The independently read charge is not fully refunded or has a dispute")
+    refund = _provider_object(client, f"/v1/refunds/{refund_id}", refund_id, "refund")
+    transaction_id = refund.get("balance_transaction")
+    if (refund.get("charge") != charge["id"] or refund.get("payment_intent") != order["payment_intent_id"]
+            or refund.get("status") != "succeeded" or refund.get("currency") != "cad"
+            or not minor_amount(refund.get("amount")) or refund["amount"] != gross
+            or refund.get("failure_balance_transaction") or not stripe_id(transaction_id, "txn")):
+        raise HTTPException(409, "Full successful Stripe refund does not match the order")
+    txn = _provider_object(client, f"/v1/balance_transactions/{transaction_id}", transaction_id, "balance_transaction")
+    stamp = txn.get("available_on")
+    if (txn.get("source") != refund_id or txn.get("currency") != "cad"
+            or txn.get("type") not in {"refund", "payment_refund"} or txn.get("status") != "available"
+            or any(type(txn.get(key)) is not int for key in ("amount", "net", "fee"))
+            or (txn["amount"], txn["net"], txn["fee"]) != (-gross, -gross, 0)
+            or type(stamp) is not int or not 0 < stamp <= int(now.timestamp())):
+        raise HTTPException(409, "Refund clearing movement is pending or has unmatched adjustments")
+    return {"refund_id": refund_id, "refund_balance_id": transaction_id, "charge_id": charge["id"],
+            "refund_minor": gross, "processor_posted_on": datetime.fromtimestamp(stamp, timezone.utc).date().isoformat()}
+
+
+def _post_correction(db, scope, key, posted, gross, bank, prior_release):
+    if (os.getenv("VALHALLA_STRIPE_BANK_BOOKING_ENABLED") != "1"
+            or os.getenv("VALHALLA_STRIPE_BANK_BOOKING_SCOPE") != outcome_scope_key(scope)):
+        raise HTTPException(503, "Processor refund accounting is not authorized for this scope")
+    require_open_period(db, posted)
+    clearing = db.scalar(select(Account).filter_by(code=os.getenv("VALHALLA_STRIPE_BOOK_CLEARING"),
+                                                    type="asset", active=True, currency="CAD"))
+    code = "VALHALLA_STRIPE_BOOK_REFUND_CONTRA_INCOME" if prior_release else "VALHALLA_STRIPE_BOOK_OBLIGATIONS"
+    debit = db.scalar(select(Account).filter_by(code=os.getenv(code), active=True, currency="CAD",
+                                                 type="income" if prior_release else "liability"))
+    if clearing is None or debit is None:
+        raise HTTPException(503, "Approved processor correction accounts are required")
+    if prior_release is None:
+        original = db.get(JournalEntry, bank["ledger_entry_id"])
+        original_tag = artifact_digest("stripe_booking_scope", original.source_ref, scope)
+        original_liability = db.scalars(select(JournalLine).filter_by(
+            entry_id=original.id, account_id=debit.id, tag=original_tag,
+        )).all()
+        if (len(original_liability) != 1 or original_liability[0].debit != 0
+                or original_liability[0].credit != Decimal(bank["batch_liability_minor"]) / 100):
+            raise HTTPException(409, "Refund liability account differs from the original bank booking")
+    if db.scalar(select(JournalEntry.id).filter_by(source=SOURCE, source_ref=key).limit(1)) is not None:
+        raise HTTPException(409, "Refund correction exists without an exact evidence receipt")
+    entry = JournalEntry(entry_date=posted, memo="Stripe full refund in processor clearing", source=SOURCE, source_ref=key)
+    db.add(entry)
+    db.flush()
+    amount = Decimal(gross) / 100
+    tag = artifact_digest("stripe_refund_scope", key, scope)
+    db.add_all([
+        JournalLine(entry_id=entry.id, account_id=debit.id, debit=amount, credit=0, tag=tag),
+        JournalLine(entry_id=entry.id, account_id=clearing.id, debit=0, credit=amount, tag=tag),
+    ])
+    return entry.id
+
+
+def record_refund_correction(db, order_id, request, *, client, account_id, live):
+    order, binding = _locked_order(db, order_id, live)
+    scope = binding["scope"]
+    event = db.get(StripeFinancialEvent, request.signed_event_id)
+    if event is None or event.livemode is not live or account_id != binding["stripe_account_id"]:
+        raise HTTPException(409, "Matching signed refund and processor account are required")
+    _event_receipt(event, True)
+    projection = inspect_binding(db, order_id, live=live)
+    bank = bank_batch_summary(db, order_id, projection, live=live)
+    if bank is None or _payout_failed(db, bank["payout_id"], live):
+        raise HTTPException(409, "A booked original batch without a separate payout failure is required")
+    capture = db.scalar(select(StripeBalanceEvidence).filter_by(
+        livemode=live, payment_intent_id=order.payment_intent_id,
+    ))
+    if capture is None or capture.evidence.get("charge_id") != event.snapshot.get("charge_id"):
+        raise HTTPException(409, "Refund charge differs from the originally reconciled capture")
+    dispute = db.scalar(select(StripeFinancialEvent).where(
+        StripeFinancialEvent.livemode == live,
+        StripeFinancialEvent.snapshot["kind"].as_string() == "charge.dispute.created",
+        StripeFinancialEvent.snapshot["charge_id"].as_string() == event.snapshot["charge_id"],
+    ).limit(1))
+    if dispute is not None:
+        _event_receipt(dispute, True)
+        raise HTTPException(409, "A separate signed dispute requires professional correction review")
+    match = refund_evidence(client, account_id, binding, event.snapshot, request.refund_id, datetime.now(timezone.utc))
+    release_key = f"STRIPE-DELIVERY-REVENUE-{order_id}"
+    release = _read_record(db, release_key, RELEASE, scope)
+    if live and release is not None:
+        entry = db.get(JournalEntry, release["ledger_entry_id"])
+        if (entry is None or entry.source != RELEASE_SOURCE or entry.source_ref != release_key
+                or release["recognized_revenue_minor"] != match["refund_minor"]):
+            raise HTTPException(409, "Prior delivery income posting is unavailable or contradictory")
+    key = f"STRIPE-FULL-REFUND-{order_id}"
+    value = {"scope": scope, "order_id": str(order_id), "bank_batch_sha256": bank["sha256"],
+             "signed_refund_sha256": event.snapshot_sha256, **match,
+             "basis": "STRIPE_CAD_PROCESSOR_CORRECTION" if live else "SYNTHETIC_REFUND_CORRECTION",
+             "corrects_delivery_income": release is not None, "bank_debit_confirmed": False,
+             "available_cash_minor": None, "cash_hold_released": False}
+    prior = _read_record(db, key, CORRECTION, scope)
+    if prior is not None:
+        if {k: v for k, v in prior.items() if k not in {"sha256", "ledger_entry_id"}} != value:
+            raise HTTPException(409, "Refund evidence differs from the recorded correction")
+        posting = db.get(JournalEntry, prior["ledger_entry_id"]) if live else None
+        if (live and (posting is None or posting.source != SOURCE or posting.source_ref != key)) or (
+            not live and prior["ledger_entry_id"] is not None
+        ):
+            raise HTTPException(409, "Refund accounting entry is contradictory")
+        return prior
+    try:
+        posted_on = max(bank["booked_on"], match["processor_posted_on"])
+        if release is not None:
+            posted_on = max(posted_on, release["posting_date"])
+        value["ledger_entry_id"] = (_post_correction(db, scope, key, datetime.fromisoformat(posted_on).date(),
+                                                    match["refund_minor"], bank, release) if live else None)
+        digest = artifact_digest(CORRECTION, key, value)
+        unique = "STRIPE-REFUND-TX-" + artifact_digest("stripe_refund_balance", match["refund_balance_id"],
+                                                     {"live": live})[:40]
+        _event(db, event_id=unique, legacy_instance_id=scope["legacy_instance_id"], event_type=CORRECTION,
+               message="Full refund transaction consumed", payload={"order_id": str(order.id), "sha256": digest})
+        _event(db, event_id=key, legacy_instance_id=scope["legacy_instance_id"], event_type=CORRECTION,
+               message="Exact independently verified Stripe refund correction", payload={"value": value, "sha256": digest})
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(409, "Refund transaction already consumed; replay the exact correction") from None
+    return {**value, "sha256": digest}
+
+
+def configured_refund_correction(db, order_id, request, *, live):
+    with stripe_readback_client(live=live) as (client, account_id):
+        return record_refund_correction(db, order_id, request, client=client, account_id=account_id, live=live)

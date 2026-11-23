@@ -19,6 +19,7 @@ API_ROOT = REPO_ROOT / "services/api"
 # Exact backend API contracts as authored in the working branch. These
 # checks establish registration, NOT successful execution or authorization.
 MANDATORY_ENDPOINTS = {
+    "stripe_refund_correction": ("POST", "/api/governance/floor/stripe-orders/{order_id}/refund-correction"),
     "stripe_delivery_liability_release": ("POST", "/api/governance/floor/stripe-orders/{order_id}/delivery/release-liability"),
     "stripe_delivery_revoke": ("POST", "/api/governance/floor/stripe-orders/{order_id}/delivery/revoke"),
     "stripe_delivery_authorize": ("POST", "/api/governance/floor/stripe-orders/{order_id}/delivery"),

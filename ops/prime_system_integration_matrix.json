@@ -598,7 +598,7 @@
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
-          "internal_coding": "Signed event journaling and processor capture readback are implemented. Complete governed refund and renewal posting, liability release and independently matched bank corrections. Ordinary same-scope CAD batch matching and guarded liability booking have implementation.",
+          "internal_coding": "Signed event journaling and processor capture readback are implemented. Complete governed partial refund, dispute, renewal and bank-side reversal posting. Same-scope full CAD processor refund correction and guarded delivery liability release have bounded implementation. Ordinary same-scope CAD batch matching and guarded liability booking have implementation.",
           "insufficient_test_evidence": "Extend provider-specific event and settlement reconciliation evidence.",
           "external_commissioning": "Verify named sandbox event stream and separately sourced settlement.",
           "owner_or_professional_action": "Approve sandbox credentials, callbacks and side effects.",

@@ -270,6 +270,7 @@ def bank_batch_summary(db: Session, order_id: UUID, projection: dict, *, live: b
     return {
         "basis": expected_basis, "status": "CORRECTION_REVIEW_REQUIRED" if held else "RECONCILIATION_RECORDED",
         "currency": "CAD", "batch_minor": value["payout_minor"], "order_contribution_minor": member["net_minor"],
+        "payout_id": value["payout_id"],
         "booked_on": value["bank"]["posted_on"], "ledger_entry_id": ledger_id, "available_cash_minor": None,
         "batch_liability_minor": value["gross_customer_obligation_minor"], "sha256": receipt["sha256"],
     }

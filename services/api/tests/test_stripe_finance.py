@@ -130,6 +130,12 @@ def test_registered_stripe_finance_replays_and_reconciles_only_matching_capture(
               "arrival_date": int(time.time())}
     listed = {"object": "list", "has_more": False, "data": []}
 
+    native_refund = {"id": "re_FullB", "object": "refund", "payment_intent": "pi_CaptureB", "charge": "ch_CaptureB",
+                     "status": "succeeded", "currency": "cad", "amount": 1000, "balance_transaction": "txn_RefundB"}
+    refund_balance = {"id": "txn_RefundB", "object": "balance_transaction", "source": "re_FullB",
+                      "type": "refund", "currency": "cad", "status": "available", "amount": -1000, "net": -1000,
+                      "fee": 0, "available_on": int(time.time()) - 5}
+
     def upstream(request):
         assert request.method == "GET"
         if request.url.path == "/v1/balance_transactions":
@@ -143,6 +149,7 @@ def test_registered_stripe_finance_replays_and_reconciles_only_matching_capture(
         responses = {"/v1/payouts/po_ValhallaTest": payout, "/v1/account": {"id": "acct_ValhallaTest", "object": "account"},
                      "/v1/charges/ch_CaptureA": charge, "/v1/balance_transactions/txn_CaptureA": balance,
                      "/v1/charges/ch_CaptureB": charge_b, "/v1/balance_transactions/txn_CaptureB": balance_b}
+        responses.update({"/v1/refunds/re_FullB": native_refund, "/v1/balance_transactions/txn_RefundB": refund_balance})
         return httpx.Response(200, json=responses[request.url.path])
 
     with Session(engine) as db, httpx.Client(base_url="https://example.invalid",
@@ -277,6 +284,30 @@ def test_registered_stripe_finance_replays_and_reconciles_only_matching_capture(
         with pytest.raises(HTTPException, match="changed after reconciliation"):
             reconcile([order_id, other_id])
         bank_item["transaction_id"] = "test_tx_exact"
+
+        charge_b["refunded"], charge_b["amount_refunded"] = True, 1000
+        signed_full_refund = {"id": "evt_FullRefundB", "type": "charge.refunded", "livemode": False, "data": {"object": {
+            "id": "ch_CaptureB", "object": "charge", "amount_refunded": 1000, "currency": "cad",
+            "payment_intent": "pi_CaptureB",
+        }}}
+        assert deliver(signed_full_refund).status_code == 200
+        monkeypatch.setattr("app.services.stripe_refund_correction.stripe_readback_client", read_only_fixture)
+        correction_url = f"{binding_url}/{other_id}/refund-correction"
+        correction_request = {"refund_id": "re_FullB", "signed_event_id": signed_full_refund["id"]}
+        assert client.post(correction_url, json=correction_request).status_code == 401
+        refund_balance["fee"] = 1
+        assert client.post(correction_url, headers=keys, json=correction_request).status_code == 409
+        refund_balance["fee"] = 0
+        corrected = client.post(correction_url, headers=keys, json=correction_request)
+        assert corrected.status_code == 200, corrected.text
+        assert corrected.json()["basis"] == "SYNTHETIC_REFUND_CORRECTION"
+        assert corrected.json()["refund_minor"] == 1000 and corrected.json()["ledger_entry_id"] is None
+        assert corrected.json()["bank_debit_confirmed"] is False and corrected.json()["cash_hold_released"] is False
+        assert client.post(correction_url, headers=keys, json=correction_request).json() == corrected.json()
+
+
+
+
         failure = {"id": "evt_PayoutFailedA", "type": "payout.failed", "livemode": False, "data": {"object": {
             "id": "po_ValhallaTest", "object": "payout", "amount": 1920, "currency": "cad",
         }}}
@@ -287,9 +318,8 @@ def test_registered_stripe_finance_replays_and_reconciles_only_matching_capture(
         assert scoped_bank_blockers(db, scope, live=False) == {"STRIPE_BANK_CORRECTION_REQUIRED"}
         assert scoped_bank_blockers(db, {**scope, "business_id": "another-business"}, live=False) == set()
         assert scoped_bank_blockers(db, scope, live=True) == set()
-        with pytest.raises(HTTPException, match="signed payout failure"):
+        with pytest.raises(HTTPException, match="refund hold"):
             reconcile([order_id, other_id])
-
         for label, type_ in (("BANK", "asset"), ("CLEARING", "asset"), ("FEES", "expense"),
                              ("OBLIGATIONS", "liability")):
             monkeypatch.setenv("VALHALLA_STRIPE_BOOK_" + label, label)

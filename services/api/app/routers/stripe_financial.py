@@ -17,6 +17,7 @@ from app.services.stripe_fulfillment import (
 from app.services.stripe_bank_booking import BankBatchIn, configured_bank_batch
 from app.services.stripe_orders import OrderBindingIn, inspect_binding, register_binding
 from app.services.stripe_revenue_release import DeliveryReleaseIn, recognize_delivery
+from app.services.stripe_refund_correction import RefundCorrectionIn, configured_refund_correction
 from app.webhooks.stripe import router as stripe_webhooks
 
 router = APIRouter()
@@ -97,3 +98,9 @@ def revoke_paid_delivery(order_id: UUID, payload: RevokeDeliveryIn, db: Session 
 @router.post("/api/governance/floor/stripe-orders/{order_id}/delivery/release-liability", dependencies=owner_keys)
 def release_paid_delivery_liability(order_id: UUID, payload: DeliveryReleaseIn, db: Session = Depends(get_db)):
     return private_owner_response(recognize_delivery(db, order_id, payload, live=is_live()))
+
+
+
+@router.post("/api/governance/floor/stripe-orders/{order_id}/refund-correction", dependencies=owner_keys)
+def correct_stripe_refund(order_id: UUID, payload: RefundCorrectionIn, db: Session = Depends(get_db)):
+    return private_owner_response(configured_refund_correction(db, order_id, payload, live=is_live()))
