@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Heimdall · Owner demonstration</title>
+<link rel="stylesheet" href="./demo.css">
+<script type="module" src="./demo.mjs"></script>
+<main>
+    <header>
+        <p class="label">LOCAL OWNER DEMONSTRATION</p>
+        <h1>Heimdall</h1>
+        <p>Walk through the eight stages of setting up a business.</p>
+        <p class="notice">Synthetic records only. Use invented names and references. Nothing here files paperwork, contacts a professional, or authorizes a launch.</p>
+    </header>
+    <form id="login">
+        <label>Demo email <input name="email" type="email" value="owner@heimdall-demo.invalid" required></label>
+        <label>One-run password <input name="password" type="password" autocomplete="off" required></label>
+        <button>Sign in</button>
+    </form>
+    <p id="status" role="status"></p>
+    <section id="workspace" hidden>
+        <nav aria-label="Heimdall demonstration">
+            <button type="button" id="walkthrough">Start walkthrough</button>
+            <button type="button" id="professionals">Review shortlist</button>
+            <button type="button" id="progress">Show saved progress</button>
+            <button type="button" id="loki">Read Loki evidence</button>
+            <button type="button" id="mimir">Recall Mimir note</button>
+            <button type="button" id="logout">Sign out</button>
+        </nav>
+        <section aria-labelledby="conversation-title">
+            <h2 id="conversation-title">Startup conversation</h2>
+            <div id="conversation" aria-live="polite"></div>
+            <button type="button" id="record" hidden>Record next stage as practice</button>
+            <form id="message">
+                <label>Ask Heimdall <textarea name="text" rows="3" required maxlength="8000"></textarea></label>
+                <button>Send</button>
+            </form>
+        </section>
+    </section>
+</main>
+</html>

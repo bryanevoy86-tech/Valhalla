@@ -1,0 +1,16 @@
+:root { color-scheme: light; background: #f1eee6; color: #202a2b; font: 1rem/1.55 system-ui, sans-serif; }
+body { margin: 0; }
+main { max-width: 52rem; margin: auto; padding: clamp(1rem, 5vw, 3rem); }
+header { border-bottom: 1px solid #bcc5be; margin-bottom: 1rem; }
+h1 { font: 600 clamp(2.8rem, 8vw, 4.8rem)/1 Georgia, serif; margin: .25em 0; }
+.label { color: #355b4a; font-size: .78rem; font-weight: 700; letter-spacing: .13em; }
+.notice { background: #fbf2d8; padding: .8rem; border-left: 4px solid #9d760c; }
+form, article { padding: 1rem; margin: 1rem 0; background: #fffdf7; border: 1px solid #bcc5be; border-radius: .4rem; }
+label { display: block; margin-bottom: .75rem; }
+input, textarea { display: block; box-sizing: border-box; width: 100%; max-width: 35rem; font: inherit; padding: .45rem; }
+nav { display: flex; flex-wrap: wrap; gap: .5rem; }
+button { background: #254b3e; color: white; border: 0; padding: .6rem .85rem; border-radius: .3rem; font: inherit; cursor: pointer; }
+button:disabled { opacity: .55; cursor: wait; }
+button:focus-visible, textarea:focus-visible, input:focus-visible { outline: 3px solid #aa7e10; outline-offset: 2px; }
+article p { white-space: pre-wrap; overflow-wrap: anywhere; }
+#conversation { max-height: 34rem; overflow-y: auto; }

@@ -19,6 +19,9 @@ on:
       - 'scripts/prime_runtime_route_probe.py'
       - 'scripts/january_core_readiness.py'
       - 'scripts/local_browser_acceptance.py'
+      - 'scripts/launch_heimdall_demo.py'
+      - 'scripts/heimdall_demo/**'
+      - 'tests/run_heimdall_owner_demo.py'
       - 'tests/browser-acceptance/**'
       - 'scripts/staging_preflight.py'
       - 'scripts/staging_workers.sh'
@@ -281,6 +284,18 @@ jobs:
           export VALHALLA_BROWSER_EXECUTABLE
           python scripts/local_browser_acceptance.py \
             --report local-browser-acceptance.json
+          if ! command -v pg_config || ! test -x "$(pg_config --bindir)/initdb"; then
+            sudo apt-get update
+            sudo apt-get install -y postgresql
+          fi
+          python tests/run_heimdall_owner_demo.py --pg-bin "$(pg_config --bindir)" --report heimdall-owner-demo.json
+      - name: Archive owner demonstration evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: heimdall-owner-demo
+          path: heimdall-owner-demo.json
+          if-no-files-found: ignore
       - name: Archive disposable browser evidence
         if: always()
         uses: actions/upload-artifact@v4
