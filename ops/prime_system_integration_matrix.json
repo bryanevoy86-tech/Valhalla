@@ -1868,6 +1868,7 @@
         "services/api/app/core/loki_engine.py",
         "services/api/app/routers/loki.py",
         "services/api/app/loki/review_service.py",
+        "services/api/app/loki/analyst.py",
         "services/api/app/routers/loki_worker.py",
         "services/api/tests/test_loki_independent_receipt.py",
         "services/api/app/services/universal_opportunity_evaluator.py",
@@ -1889,7 +1890,7 @@
       "owner_external_authorization_required": true,
       "continuation": {
         "next_implementation": "Validate separate model credentials and review exact owner-authorized staged challenges.",
-        "existing_test_evidence": "See SQLITE_INTEGRATION_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md. Product Foundry continuous fixture links signed discovery, independent challenge, scoped execution, outcome, retained losses and a subsequent HOLD with contradiction evidence. The scoped acquisition fixture verifies debt stress, separately reviewed simulation, receipt reuse, revocation and reevaluation. Local independent analysis returns a critical contradiction when a Pantheon report's economic result differs from its cited performance fixture. Verified held fulfillment and open refund support are independently flagged as critical operating findings before material reliance. Regression exercises mutated findings, unbound historical receipts and reviewer credential collisions while preserving the raw history.",
+        "existing_test_evidence": "See SQLITE_INTEGRATION_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md. Product Foundry continuous fixture links signed discovery, independent challenge, scoped execution, outcome, retained losses and a subsequent HOLD with contradiction evidence. The scoped acquisition fixture verifies debt stress, separately reviewed simulation, receipt reuse, revocation and reevaluation. Local independent analysis returns a critical contradiction when a Pantheon report's economic result differs from its cited performance fixture. Verified held fulfillment and open refund support are independently flagged as critical operating findings before material reliance. Regression exercises mutated findings, unbound historical receipts and reviewer credential collisions while preserving the raw history. The local analyst records material objections to malformed market evidence, unbound economic performance claims and fixture treasury reports that claim accessible funds. The checks reconcile artifact claims and do not establish source truth.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {

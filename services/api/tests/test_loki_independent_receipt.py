@@ -175,3 +175,37 @@ def test_local_analyst_process_publishes_material_and_hash_bound_findings(deal_c
         db.get(LokiFinding, UUID(findings[0]["id"])).message = "Altered after publication"
         db.commit()
     assert client.get(verdict_url).status_code == 409
+
+
+def test_local_analyst_retains_material_findings_for_unbound_specialist_claims():
+    from app.loki.analyst import challenge
+    from app.loki.evidence import artifact_digest
+
+    kind, reference = "pantheon_report", "specialist-integrity"
+    report = {
+        "status": "observed",
+        "external_authority": False,
+        "observations": {
+            "market_intelligence": ["malformed source"],
+            "economic_reassessment": {
+                "verified_performance_claim": {
+                    "basis": "ECONOMIC_PERFORMANCE_FIXTURE",
+                    "evidence_scope": "ECONOMIC_PERFORMANCE_FIXTURE_ONLY",
+                    "record_id": "performance-fixture",
+                    "period_net_minor": 250,
+                    "verified_real_world_outcome": False,
+                },
+            },
+            "treasury_statement_evidence": {"accounts": [], "actual_accessible_funds_minor": 250},
+        },
+    }
+    review = challenge({
+        "artifact_type": kind, "reference": reference, "raw_input": report,
+        "artifact_sha256": artifact_digest(kind, reference, report),
+    })
+    by_category = {item.category: item for item in review.findings if item.material and item.severity == "critical"}
+    assert {key: item.evidence_ref for key, item in by_category.items()} == {
+        "market_simulation": "artifact:/observations/market_intelligence",
+        "economic_fixture_contradiction": "artifact:/observations/economic_reassessment",
+        "treasury_statement_conflict": "artifact:/observations/treasury_statement_evidence",
+    }

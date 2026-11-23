@@ -1,5 +1,6 @@
 """Independent local proposal checks. No Prime evaluator and no model transport."""
 from math import isfinite
+import re
 
 from app.loki.evidence import artifact_digest
 from app.loki.schemas import IndependentFinding, IndependentReviewIn
@@ -130,7 +131,9 @@ def challenge(item: dict) -> IndependentReviewIn:
                 "market_simulation", "observations/market_intelligence",
                 "Check quote freshness, settlement sequencing, execution costs and source rights independently. "
                 "A paper receipt does not establish executable liquidity or operator authority.",
-                critical=market.get("external_execution_authorized") is not False,
+                critical=(not isinstance(market, dict) or market.get("external_execution_authorized") is not False
+                          or market.get("verified_real_world_outcomes") is not False
+                          or bool(market.get("invalid_evidence_ids"))),
             ))
         if isinstance(sources, dict):
             if sources.get("consumer_research_holds"):
@@ -212,9 +215,13 @@ def challenge(item: dict) -> IndependentReviewIn:
                     critical=True,
                 ))
             proof = economic.get("verified_performance_claim") if isinstance(economic, dict) else None
-            if isinstance(proof, dict) and (
-                proof.get("verified_real_world_outcome") is not False
+            if proof is not None and (
+                not isinstance(proof, dict) or proof.get("verified_real_world_outcome") is not False
                 or proof.get("basis") != "ECONOMIC_PERFORMANCE_FIXTURE"
+                or proof.get("evidence_scope") != "ECONOMIC_PERFORMANCE_FIXTURE_ONLY"
+                or not isinstance(proof.get("record_id"), str) or not proof["record_id"]
+                or not isinstance(proof.get("sha256"), str) or not re.fullmatch(r"[a-f0-9]{64}", proof["sha256"])
+                or type(proof.get("period_net_minor")) is not int
                 or ("period_net_minor" in economic and proof.get("period_net_minor") != economic["period_net_minor"])
                 or ("last_performance_id" in economic and proof.get("record_id") != economic["last_performance_id"])
             ):
@@ -223,14 +230,15 @@ def challenge(item: dict) -> IndependentReviewIn:
                     "The claimed performance disagrees with the cited fixture identity, basis, or net result.", critical=True,
                 ))
             treasury = sources.get("treasury_statement_evidence")
-            if isinstance(treasury, dict):
-                accounts = treasury.get("accounts")
-                if isinstance(accounts, list) and any(
-                    isinstance(row, dict) and row.get("status") == "EVIDENCE_CONFLICT" for row in accounts
-                ):
+            if treasury is not None:
+                accounts = treasury.get("accounts", []) if isinstance(treasury, dict) else None
+                if (not isinstance(accounts, list) or treasury.get("actual_accessible_funds_minor") is not None
+                        or any(not isinstance(row, dict) or row.get("status") == "EVIDENCE_CONFLICT"
+                               for row in accounts)):
                     findings.append(_finding(
                         "treasury_statement_conflict", "observations/treasury_statement_evidence",
-                        "Reconcile the current scoped statement head before relying on this fixture.", critical=True,
+                        "Reconcile the scoped statement head. A sampled statement cannot establish accessible cash.",
+                        critical=True,
                     ))
         findings.append(_finding(
             "evidence_reassessment", "observations",
