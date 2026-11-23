@@ -200,3 +200,5 @@ The one-time Stripe order projection associates an existing governed Foundry lis
 The provider payment path can now evidence that a known capture is part of an exact automatic payout at the Stripe processor. The journal distinguishes order contribution from batch payout amount and carries no independently confirmed bank credit or spendable balance.
 
 The CAD payment path now supports an independently read bank credit joined to the exact automatic payout trace and its complete single-scope order membership. One batch creates one bank posting under separate authority; the gross proceeds remain delivery obligations pending fulfillment. Sandbox verification carries no actual settlement, spendable cash or tenant access.
+
+One-time paid product fulfillment separately matches scoped Stripe payment authentication, exact buyer and tenant metadata, product bytes and commercial rights. A buyer acknowledgment is independent from bank settlement, revenue recognition and spending authority.

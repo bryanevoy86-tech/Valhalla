@@ -1,15 +1,19 @@
 """Canonical provider event ingress and owner-controlled readback."""
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Response
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
 from app.core.dependencies import require_prime_control_key
 from app.heimdall.authority import is_live
-from app.routers.auth_weweb import private_owner_response
+from app.routers.auth_weweb import get_current_user, private_owner_response
 from app.services.prime_business_execution import require_owner_mandate_key
 from app.services.stripe_finance import configured_readback
+from app.services.stripe_fulfillment import (
+    DeliveryAcceptanceIn, FulfillmentIn, RevokeDeliveryIn, acknowledge_delivery, configured_delivery, delivery_access,
+    record_delivery_offer, revoke_delivery,
+)
 from app.services.stripe_bank_booking import BankBatchIn, configured_bank_batch
 from app.services.stripe_orders import OrderBindingIn, inspect_binding, register_binding
 from app.webhooks.stripe import router as stripe_webhooks
@@ -47,3 +51,42 @@ def read_checkout_payout(order_id: UUID, payout_id: str, db: Session = Depends(g
 @router.post("/api/governance/floor/stripe-bank-batches/reconcile", dependencies=owner_keys)
 def confirm_bank_batch(payload: BankBatchIn, db: Session = Depends(get_db)):
     return private_owner_response(configured_bank_batch(db, payload, live=is_live()))
+
+
+
+@router.post("/api/governance/floor/stripe-orders/{order_id}/delivery", dependencies=owner_keys)
+def authorize_paid_delivery(order_id: UUID, payload: FulfillmentIn, db: Session = Depends(get_db)):
+    grant = configured_delivery(db, order_id, payload, live=is_live())
+    return private_owner_response({"order_id": grant["order_id"], "tenant_id": grant["tenant_id"],
+                                   "product_id": grant["product_id"], "grant_sha256": grant["sha256"],
+                                   "basis": grant["basis"], "available_cash_minor": None})
+
+
+@router.get("/api/weweb/paid-products/{tenant_id}/{order_id}")
+def paid_product(tenant_id: UUID, order_id: UUID, principal: dict = Depends(get_current_user),
+                 db: Session = Depends(get_db)):
+    live = is_live()
+    artifact, grant = delivery_access(db, tenant_id, order_id, principal, live=live)
+    if not live:
+        return private_owner_response({"order_id": str(order_id), "tenant_id": str(tenant_id),
+                                       "basis": grant["basis"], "product_id": grant["product_id"],
+                                       "grant_sha256": grant["sha256"], "download_enabled": False})
+    record_delivery_offer(db, order_id, grant)
+    return Response(content=artifact.data, media_type="application/octet-stream", headers={
+        "Content-Disposition": f'attachment; filename="{artifact.id}.bin"', "Cache-Control": "no-store",
+        "Vary": "Authorization", "X-Content-Type-Options": "nosniff", "X-Delivery-Grant": grant["sha256"],
+    })
+
+
+@router.post("/api/weweb/paid-products/{tenant_id}/{order_id}/acknowledge")
+def acknowledge_paid_product(tenant_id: UUID, order_id: UUID, payload: DeliveryAcceptanceIn,
+                             principal: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+    return private_owner_response(acknowledge_delivery(db, tenant_id, order_id, principal, payload, live=is_live()))
+
+
+
+@router.post("/api/governance/floor/stripe-orders/{order_id}/delivery/revoke", dependencies=owner_keys)
+def revoke_paid_delivery(order_id: UUID, payload: RevokeDeliveryIn, db: Session = Depends(get_db)):
+    receipt = revoke_delivery(db, order_id, payload, live=is_live())
+    return private_owner_response({"order_id": str(order_id), "revoked": receipt["revoked"],
+                                   "revocation_sha256": receipt["sha256"]})

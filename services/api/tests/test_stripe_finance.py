@@ -1,4 +1,5 @@
 """Signed delivery through registered ingress and independently sourced HTTP readback."""
+from contextlib import contextmanager
 import hashlib
 import hmac
 import json
@@ -16,6 +17,10 @@ from app.accounting.models import Account, JournalEntry, JournalLine, Period
 from app.banking.plaid_transactions import posted_credit
 from app.core import db as database
 from app.models.completion_registry import LegacyOrchestrationEvent
+from app.models.auth_revocations import RevokedAccessToken
+from app.routers.auth_weweb import _auth_runtime, _issue_access_token
+from app.services.stripe_fulfillment import delivery_buyer_reference
+from app.users.models import AccountSettings, UserProfile
 from app.models.stripe_finance import StripeBalanceEvidence, StripeFinancialEvent, StripeOrderBinding
 from app.services.stripe_finance import read_processor_balance
 from app.services.stripe_bank_booking import BankBatchIn, _journal, bank_batch_summary, reconcile_bank_batch, scoped_bank_blockers
@@ -27,7 +32,8 @@ def test_registered_stripe_finance_replays_and_reconciles_only_matching_capture(
     StripeFinancialEvent.__table__.create(engine)
     StripeBalanceEvidence.__table__.create(engine)
     StripeOrderBinding.__table__.create(engine)
-    for model in (LegacyOrchestrationEvent, Account, Period, JournalEntry, JournalLine):
+    for model in (LegacyOrchestrationEvent, Account, Period, JournalEntry, JournalLine,
+                  UserProfile, AccountSettings, RevokedAccessToken):
         model.__table__.create(engine, checkfirst=True)
     monkeypatch.setattr(database, "SessionLocal", lambda: Session(engine))
     monkeypatch.setattr("app.webhooks.stripe.is_live", lambda: False)
@@ -38,7 +44,23 @@ def test_registered_stripe_finance_replays_and_reconciles_only_matching_capture(
     monkeypatch.setenv("VALHALLA_STRIPE_TEST_WEBHOOK_SECRET", secret)
     monkeypatch.delenv("VALHALLA_STRIPE_READBACK_ENABLED", raising=False)
     monkeypatch.setenv("VALHALLA_STRIPE_ACCOUNT_ID", "acct_ValhallaTest")
-    order_id = str(uuid4())
+    order_id, tenant_id = str(uuid4()), str(uuid4())
+    with Session(engine) as db:
+        buyer = UserProfile(first_name="Fixture", last_name="Buyer", email="stripe-buyer@example.invalid")
+        outsider = UserProfile(first_name="Fixture", last_name="Outsider", email="stripe-outsider@example.invalid")
+        db.add_all([buyer, outsider])
+        db.flush()
+        subscriber_id = buyer.user_id
+        for profile in (buyer, outsider):
+            db.add(AccountSettings(user_id=profile.user_id, account_locked=False, password_hash="unused-fixture"))
+        buyer_headers = {"Authorization": f"Bearer {_issue_access_token(_auth_runtime(), buyer)}"}
+        outsider_headers = {"Authorization": f"Bearer {_issue_access_token(_auth_runtime(), outsider)}"}
+        db.commit()
+    buyer_metadata = {
+        "valhalla_order_id": order_id, "valhalla_tenant_id": tenant_id,
+        "valhalla_buyer_ref": delivery_buyer_reference(order_id, tenant_id, subscriber_id),
+    }
+
     scope = {"legacy_instance_id": "stripe-test-legacy", "business_id": "stripe-test-business",
              "engine_id": "stripe-test-engine", "jurisdiction": "CA-MB"}
     asset = SimpleNamespace(id=uuid4(), product_id="sample-product", sha256="b" * 64)
@@ -57,7 +79,7 @@ def test_registered_stripe_finance_replays_and_reconciles_only_matching_capture(
     event = {"id": "evt_CaptureA", "type": "payment_intent.succeeded", "livemode": False, "data": {"object": {
         "id": "pi_CaptureA", "object": "payment_intent", "status": "succeeded", "latest_charge": "ch_CaptureA",
         "amount_received": 1000, "currency": "cad",
-        "metadata": {"private": "do not retain this", "valhalla_order_id": order_id},
+        "customer": "cus_PaidBuyer", "metadata": {"private": "do not retain this", **buyer_metadata},
     }}}
 
     def deliver(payload, *, key=secret):
@@ -87,7 +109,7 @@ def test_registered_stripe_finance_replays_and_reconciles_only_matching_capture(
     charge = {"id": "ch_CaptureA", "object": "charge", "payment_intent": "pi_CaptureA", "livemode": False,
               "currency": "cad", "amount_captured": 1000, "status": "succeeded", "paid": True,
               "captured": True, "disputed": False, "refunded": False, "amount_refunded": 0,
-              "balance_transaction": "txn_CaptureA", "metadata": {"valhalla_order_id": order_id}}
+              "balance_transaction": "txn_CaptureA", "customer": "cus_PaidBuyer", "metadata": buyer_metadata}
     balance = {"id": "txn_CaptureA", "object": "balance_transaction", "source": charge["id"], "type": "charge",
                "currency": "cad", "amount": 1000, "fee": 40, "net": 960,
                "available_on": int(time.time()) - 5, "status": "pending"}
@@ -135,6 +157,38 @@ def test_registered_stripe_finance_replays_and_reconciles_only_matching_capture(
         with pytest.raises(HTTPException, match="pending"):
             read()
         assert db.query(StripeBalanceEvidence).count() == 0
+
+        @contextmanager
+        def read_only_fixture(*, live):
+            assert not live
+            yield adapter, "acct_ValhallaTest"
+
+        monkeypatch.setattr("app.services.stripe_fulfillment.stripe_readback_client", read_only_fixture)
+        purchase = f"/api/weweb/paid-products/{tenant_id}/{order_id}"
+        gate = f"{review_url}/delivery"
+        authority = {"tenant_id": tenant_id, "subscriber_id": subscriber_id, "stripe_customer_id": "cus_PaidBuyer",
+                     "signed_event_id": event["id"], "commercial_rights_reference": "fixture-commercial-license",
+                     "attestation": "OWNER_AUTHORIZES_EXACT_PAID_PRODUCT_DELIVERY"}
+        assert client.post(gate, json=authority).status_code == 401
+        assert client.post(gate, headers=keys, json={**authority, "tenant_id": str(uuid4())}).status_code == 409
+        assert client.get(purchase, headers=buyer_headers).status_code == 404
+        grant = client.post(gate, headers=keys, json=authority)
+        assert grant.status_code == 200, grant.text
+        assert client.post(gate, headers=keys, json=authority).json() == grant.json()
+        assert db.query(StripeBalanceEvidence).count() == 0
+        assert client.get(purchase, headers=outsider_headers).status_code == 404
+        assert client.get(purchase.replace(tenant_id, str(uuid4())), headers=buyer_headers).status_code == 404
+        entitlement = client.get(purchase, headers=buyer_headers)
+        assert entitlement.status_code == 200 and entitlement.json()["download_enabled"] is False
+        assert entitlement.headers["cache-control"] == "no-store"
+        payload = {"grant_sha256": grant.json()["grant_sha256"]}
+        assert client.post(purchase + "/acknowledge", headers=buyer_headers,
+                           json={"grant_sha256": "0" * 64}).status_code == 409
+        accepted = client.post(purchase + "/acknowledge", headers=buyer_headers, json=payload)
+        assert accepted.status_code == 200, accepted.text
+        assert accepted.json()["recognized_revenue_minor"] is None
+        assert client.post(purchase + "/acknowledge", headers=buyer_headers, json=payload).json() == accepted.json()
+
         balance["status"] = "available"
         receipt = read()
         assert read() == receipt and receipt["net_minor"] == 960
@@ -252,6 +306,14 @@ def test_registered_stripe_finance_replays_and_reconciles_only_matching_capture(
         }}}
         assert deliver(refund).status_code == 200
         assert client.get(review_url, headers=keys).json()["status"] == "REFUND_REVIEW_REQUIRED"
+        assert client.get(purchase, headers=buyer_headers).status_code == 409
+        revoke_url = gate + "/revoke"
+        reason = {"reason_reference": "fixture-license-revocation"}
+        revoke = client.post(revoke_url, headers=keys, json=reason)
+        assert revoke.status_code == 200 and revoke.json()["revoked"] is True
+        assert client.post(revoke_url, headers=keys, json=reason).json() == revoke.json()
+        assert client.post(revoke_url, headers=keys, json={"reason_reference": "different-reference"}).status_code == 409
+
         second = {**binding, "order_id": str(uuid4()), "payment_intent_id": "pi_RefundFirst"}
         assert client.post(binding_url, headers=keys, json=second).status_code == 201
         refund_first = {**refund, "id": "evt_RefundFirst", "data": {"object": {

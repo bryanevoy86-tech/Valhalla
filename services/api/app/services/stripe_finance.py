@@ -8,12 +8,12 @@ from uuid import UUID
 
 import httpx
 from fastapi import HTTPException
-from sqlalchemy import inspect
+from sqlalchemy import inspect, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.loki.evidence import artifact_digest
-from app.models.stripe_finance import StripeBalanceEvidence, StripeFinancialEvent
+from app.models.stripe_finance import StripeBalanceEvidence, StripeFinancialEvent, StripeOrderBinding
 
 
 def stripe_id(value, prefix):
@@ -34,6 +34,20 @@ def merchant_order_reference(item):
         return str(UUID(value))
     except (ValueError, TypeError, AttributeError):
         raise HTTPException(422, "Invalid Stripe merchant order reference") from None
+
+
+def buyer_metadata(item):
+    metadata = item.get("metadata")
+    if not isinstance(metadata, dict) or not ({"valhalla_tenant_id", "valhalla_buyer_ref"} & metadata.keys()):
+        return {}
+    tenant, buyer = metadata.get("valhalla_tenant_id"), metadata.get("valhalla_buyer_ref")
+    try:
+        tenant = str(UUID(tenant))
+    except (ValueError, TypeError, AttributeError):
+        raise HTTPException(422, "Invalid Stripe tenant identity") from None
+    if not isinstance(buyer, str) or not re.fullmatch("[a-f0-9]{64}", buyer):
+        raise HTTPException(422, "Invalid Stripe buyer reference")
+    return {"tenant_id": tenant, "buyer_ref": buyer}
 
 
 def event_snapshot(payload, live):
@@ -72,9 +86,16 @@ def event_snapshot(payload, live):
             or not isinstance(currency, str) or not re.fullmatch("[a-z]{3}", currency)
             or not minor_amount(amount)):
         raise HTTPException(422, "Unsupported Stripe financial object")
-    return {"kind": kind, "livemode": live, "object_id": item["id"], "payment_intent_id": intent,
+    snapshot = {"kind": kind, "livemode": live, "object_id": item["id"], "payment_intent_id": intent,
             "charge_id": charge, "amount_minor": amount, "currency": currency,
             "merchant_order_id": merchant_order_reference(item) if object_type == "payment_intent" else None}
+    if object_type == "payment_intent" and item.get("customer") is not None:
+        if not stripe_id(item["customer"], "cus"):
+            raise HTTPException(422, "Unsupported Stripe customer identity")
+        snapshot["stripe_customer_id"] = item["customer"]
+    if object_type == "payment_intent":
+        snapshot.update(buyer_metadata(item))
+    return snapshot
 
 
 def _event_receipt(row, duplicate):
@@ -92,6 +113,20 @@ def journal_event(db: Session, payload, raw, live):
         raise HTTPException(503, "Stripe event journal unavailable")
     event_id = payload["id"]
     body_hash = hashlib.sha256(raw).hexdigest()
+    if snapshot["kind"] in {"charge.refunded", "charge.dispute.created"} and inspect(db.connection()).has_table(
+        StripeOrderBinding.__tablename__,
+    ):
+        captures = StripeFinancialEvent.snapshot
+        matches = select(captures["payment_intent_id"].as_string()).where(
+            StripeFinancialEvent.livemode == live,
+            captures["kind"].as_string() == "payment_intent.succeeded",
+            captures["charge_id"].as_string() == snapshot["charge_id"],
+        )
+        db.scalars(select(StripeOrderBinding).where(
+            StripeOrderBinding.livemode == live,
+            or_(StripeOrderBinding.payment_intent_id == snapshot["payment_intent_id"],
+                StripeOrderBinding.payment_intent_id.in_(matches)),
+        ).order_by(StripeOrderBinding.id).with_for_update()).all()
     previous = db.get(StripeFinancialEvent, event_id)
     if previous is None:
         row = StripeFinancialEvent(event_id=event_id, livemode=live, snapshot=snapshot, payload_sha256=body_hash,
@@ -134,7 +169,7 @@ def _provider_object(client, path, identity, kind):
     return result
 
 
-def capture_evidence(client: httpx.Client, account_id, snapshot, now: datetime):
+def read_captured_charge(client: httpx.Client, account_id, snapshot):
     if snapshot["kind"] != "payment_intent.succeeded":
         raise HTTPException(409, "Independent readback only supports a successful capture")
     charge_id = snapshot["charge_id"]
@@ -143,18 +178,32 @@ def capture_evidence(client: httpx.Client, account_id, snapshot, now: datetime):
     _provider_object(client, "/v1/account", account_id, "account")
     charge = _provider_object(client, f"/v1/charges/{charge_id}", charge_id, "charge")
     gross, currency = snapshot["amount_minor"], snapshot["currency"]
-    transaction_id = charge.get("balance_transaction")
     if (charge.get("livemode") is not snapshot["livemode"]
             or charge.get("payment_intent") != snapshot["payment_intent_id"] or charge.get("currency") != currency
             or not minor_amount(charge.get("amount_captured")) or charge["amount_captured"] != gross
             or charge.get("status") != "succeeded" or charge.get("paid") is not True
             or charge.get("captured") is not True or charge.get("refunded") is not False
-            or charge.get("disputed") is not False or charge.get("amount_refunded") != 0
-            or not stripe_id(transaction_id, "txn")):
+            or charge.get("disputed") is not False or charge.get("amount_refunded") != 0):
         raise HTTPException(409, "Stripe charge is unmatched, refunded, disputed or missing balance evidence")
     order_reference = snapshot.get("merchant_order_id")
     if order_reference is not None and merchant_order_reference(charge) != order_reference:
         raise HTTPException(409, "Stripe charge merchant order differs from signed evidence")
+    if snapshot.get("stripe_customer_id") and charge.get("customer") != snapshot["stripe_customer_id"]:
+        raise HTTPException(409, "Stripe charge customer differs from signed evidence")
+    if snapshot.get("buyer_ref") and buyer_metadata(charge) != {
+        "tenant_id": snapshot.get("tenant_id"), "buyer_ref": snapshot["buyer_ref"],
+    }:
+        raise HTTPException(409, "Stripe charge tenant or buyer differs from signed evidence")
+    return charge
+
+
+def capture_evidence(client: httpx.Client, account_id, snapshot, now: datetime):
+    charge = read_captured_charge(client, account_id, snapshot)
+    charge_id, transaction_id = charge["id"], charge.get("balance_transaction")
+    gross, currency = snapshot["amount_minor"], snapshot["currency"]
+    order_reference = snapshot.get("merchant_order_id")
+    if not stripe_id(transaction_id, "txn"):
+        raise HTTPException(409, "Stripe charge lacks processor balance evidence")
     transaction = _provider_object(client, f"/v1/balance_transactions/{transaction_id}", transaction_id,
                                    "balance_transaction")
     fee, net, available = transaction.get("fee"), transaction.get("net"), transaction.get("available_on")

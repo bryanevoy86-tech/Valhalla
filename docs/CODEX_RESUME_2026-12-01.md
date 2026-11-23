@@ -38,6 +38,12 @@ The existing private Stripe order review in WeWeb exposes the stored bank batch 
 
 Scoped capital assessment and scheduled Prime reassessment now hold new exposure when signed payout failure, dispute/refund, or conflicting bank booking evidence requires correction. Njord, Norns, Tyr and Mimir receive the existing scoped economic blockers. Independent Loki raises a critical correction finding on the scoped economic report. Test and live lanes stay separate. This is a recommendation and capital containment hold, with no automatic accounting reversal or cash release.
 
+### One-time paid delivery
+
+Owner and Prime keys authorize `POST /api/governance/floor/stripe-orders/{order_id}/delivery` for an active exact subscriber, tenant and native Stripe customer. The merchant PaymentIntent must carry the order UUID, tenant UUID and digest from `delivery_buyer_reference` before charge creation. Match signed capture and independently re-read the charge. Attach explicit commercial rights evidence for the reviewed product. Live fulfillment additionally requires separate authorization, `VALHALLA_STRIPE_DELIVERY_ENABLED=1`, and the approved `VALHALLA_STRIPE_DELIVERY_SCOPE` digest.
+
+The authenticated subscriber path is `GET /api/weweb/paid-products/{tenant_id}/{order_id}`. Sandbox returns metadata and withholds bytes. In an authorized live lane a successful lookup records an offer and returns protected bytes with an exact grant header. Acknowledge separately at `.../acknowledge` using that digest. The acknowledgment records a buyer assertion and carries no revenue or cash authority. Owners can revoke the exact grant. Signed refunds, disputes, locked identities and product restrictions block subsequent access. Processor or bank payout timing does not gate fulfillment. Accounting release and recurring subscriptions remain separate work.
+
 ### Isolated operating trial acceptance
 
 Use a pinned draft build and disposable PostgreSQL database in separately authorized staging. Seed synthetic grants, demand exports, one registered Legacy scope and a deliberately unapproved adjacent scope. Keep external providers, outreach, real money movement and production storage disabled. After preflight, schedule the existing discovery, Pantheon, Prime schedule, deterministic Loki and Factory workers using their current staging-only toggles. Read the private owner briefing and worker logs without exporting private inputs.
