@@ -86,6 +86,7 @@ def test_independent_receipt_binds_findings_and_owner_reconsideration_to_prime_d
     evaluations = evaluated.json()["evaluations"]
     assert evaluations[0]["independent_loki"]["reconsideration_status"] == "accept_risk"
     assert evaluations[0]["independent_loki"]["external_effects_authorized"] is False
+    assert evaluations[0]["independent_loki"]["reconsideration_sha256"] == accepted.json()["reconsideration_sha256"]
     with Session(engine) as db:
         receipt = db.get(LokiIndependentReceipt, UUID(review_id))
         assert receipt.reviewer_id == "isolated-independent-reviewer"
@@ -97,6 +98,23 @@ def test_independent_receipt_binds_findings_and_owner_reconsideration_to_prime_d
         finding.message = "An alteration to the already accepted findings."
         db.commit()
     assert client.get(f"/loki/reviews/{review_id}/findings").status_code == 409
+    assert evaluate(reviewed).status_code == 409
+    # A self-consistent replacement receipt still differs from the one accepted by the owner.
+    from app.loki.review_service import result_digest
+
+    with Session(engine) as db:
+        review = db.get(LokiReview, UUID(review_id))
+        receipt = db.get(LokiIndependentReceipt, UUID(review_id))
+        receipt.result_sha256 = result_digest(review, receipt, review.findings)
+        db.commit()
+    refused = client.get(f"/loki/reviews/{review_id}/verdict")
+    assert refused.status_code == 409
+    assert "Owner disposition" in refused.json()["detail"]
+    assert evaluate(reviewed).status_code == 409
+    with Session(engine) as db:
+        disposition = db.get(LokiReconsideration, UUID(review_id))
+        disposition.decision_sha256 = None
+        db.commit()
     assert evaluate(reviewed).status_code == 409
     with Session(engine) as db:
         receipt = db.get(LokiIndependentReceipt, UUID(review_id))

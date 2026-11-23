@@ -88,6 +88,8 @@ class LokiReviewListItem(BaseModel):
 
 class LokiVerdict(BaseModel):
     artifact_sha256: str | None = None
+    result_sha256: str | None = None
+    reconsideration_sha256: str | None = None
     reconsideration_status: str | None = None
     external_effects_authorized: Literal[False] = False
     """Final verdict schema from Loki analysis."""

@@ -74,6 +74,50 @@ The PostgreSQL release test uses the canonical Alembic CLI. It builds the prior 
 
 The before/after code checkpoint is the draft PR head and its CI results. The executable rehearsal can pass while staging remains blocked on owner approval, HTTPS and provider evidence. The [January launch gates](#january-readiness-decisions) continue to govern activation and proceeds reliance.
 
+### Execute the authorized 24-hour staging trial
+
+In this continuation, the local backend regression passed 409 tests and preflight verified 50 criteria, 53 tasks and 208 unique source anchors with zero static issues. All 14 P0 contracts remain open on their original scope. The Loki disposition binding is implemented and exercised, with separate reviewer and staged outage evidence pending.
+
+The internal baseline at `def8c7fa3a7e7402b738a4e0fecb1440edd69505` passed all nine January gates on disposable PostgreSQL. The [baseline hosted run](https://github.com/bryanevoy86-tech/Valhalla/actions/runs/45230788989) passed all four jobs. Use the current draft checks for the reviewed candidate. The integration matrix records an internal evidence path and blocked staging status on each of the 14 P0 rows. Their existing acceptance tests, seven remaining-work fields and scope decisions still apply.
+
+#### Owner approval record
+
+Record this decision in the private staging change record. Keep secret values in the authorized secret store. An empty field blocks its affected step.
+
+| Required field | Purpose and safe recommended setting |
+|---|---|
+| Candidate commit, existing API/worker/PostgreSQL resource identifiers, operator, snapshot location and UTC trial window | Pin the exact reviewed draft commit. Use only approved isolated resources, a staging database and a restore target separate from the active database. Name the operator and an escalation contact. |
+| Staging API origin and actual WeWeb preview origin | Supply two exact HTTPS origins with scheme, host and optional port. Enter the API origin in the primary preview API base and `OWNER_ATTENTION_PREVIEW_ORIGIN`. Set `CORS_ALLOWED_ORIGINS` to the exact approved browser origin. Avoid wildcard, path and production origins. |
+| Selected Legacy, business, engine, jurisdiction, owner and buyer test subjects, and second buyer or foreign scope | Use disposable subjects and synthetic records. Use the owner identity configured by `VALHALLA_OWNER_EMAIL`. Keep each buyer in its approved scope and use separate browser profiles. |
+| Independent Loki reviewer identity and operator credentials | Store `VALHALLA_LOKI_REVIEWER_ID` and distinct `VALHALLA_LOKI_REVIEWER_KEY` in authorized staging configuration. Give the reviewer process the reviewer secret only. Keep owner mandate, Prime control and Factory credentials separate and server-side. |
+| One-time CAD offer and Stripe sandbox | Approve the listing, artifact digest, currency and price in minor units, buyer, test account, callback and restricted readback. Record product rights and support/refund terms privately. Use the existing sandbox settings below. |
+| Trial permissions and abort authority | Authorize worker scheduling, synthetic jobs, signed test checkout, planned interruption, stop/release and snapshot restore. Keep outbound marketing, fulfillment of actual customer bytes, live credentials and money movement disabled. |
+
+#### Operator sequence and record of evidence
+
+1. Match the staging resources and snapshot to the approval record. From the pinned checkout run `python scripts/prime_system_preflight.py` and the nine-gate local rehearsal against disposable PostgreSQL. On the approved staging database only, verify `python -m alembic current`, apply `python -m alembic upgrade head` during the window and verify current again. Check the pinned build and `GET /readyz`. Keep the starting snapshot and use a separate restore target.
+2. Set `VALHALLA_STAGING_API_ORIGIN`, `VALHALLA_PREVIEW_ORIGIN` and `VALHALLA_DENIED_TEST_ORIGIN` locally to the approved exact origins and controlled negative probe origin. This credential-free transport check runs only after approval. Record status and CORS headers. The positive preflight requires status 200 and an exact allow-origin value. The negative preflight requires rejection with no allow-origin header.
+
+```bash
+: "${VALHALLA_STAGING_API_ORIGIN:?approved API origin required}"
+: "${VALHALLA_PREVIEW_ORIGIN:?approved preview origin required}"
+: "${VALHALLA_DENIED_TEST_ORIGIN:?controlled negative probe origin required}"
+curl -fsS --max-time 15 "$VALHALLA_STAGING_API_ORIGIN/readyz"
+for probe_origin in "$VALHALLA_PREVIEW_ORIGIN" "$VALHALLA_DENIED_TEST_ORIGIN"; do
+  curl -sS --max-time 15 -D - -o /dev/null -X OPTIONS \
+    "$VALHALLA_STAGING_API_ORIGIN/api/weweb/login" \
+    -H "Origin: $probe_origin" \
+    -H 'Access-Control-Request-Method: POST' \
+    -H 'Access-Control-Request-Headers: authorization, content-type'
+done
+```
+
+3. In separate signed-in browser profiles, verify the owner briefing, specialist receipts, exact Prime disposition and buyer checkout. Verify buyer denial of owner views, wrong-scope denial and session revocation after reconnect. Archive statuses as redacted evidence. Keep bearer tokens, cookies and unredacted browser network exports out of the record.
+4. On the isolated worker, run the existing `services/api/tools/cron/` scripts with the approved staging service environment. Use `foundry_discovery_worker.py`, `pantheon_worker.py --role <approved-role>`, `specialist_schedule_worker.py`, and `business_factory_worker.py` with their existing explicit enable flags. Run independent `loki_analyst_worker.py --artifact-type pantheon_report` and `loki_analyst_worker.py --artifact-type universal_opportunity` under the separate reviewer identity. The reviewer specifies `VALHALLA_LOKI_QUEUE_URL` as the approved HTTPS API origin and `VALHALLA_LOKI_ANALYST_ENABLED=1`. Keep queue URLs and role selection inside the approved scope. Start the clock at the first successful logged tick and record each expected and actual cadence, worker/process identity, status and receipt IDs in UTC.
+5. Record the exact proposal, independently published result and owner disposition digests, distinct reviewer identity, specialist scopes, Prime decision and Mimir outcome. Hold on a changed proposal and on a queued case while the reviewer is stopped. Resume review under the original identity. Repeated delivery of the same job must yield one effect and receipt. Engage the dual-key stop using the operator path in the browser acceptance table, attempt the scoped job, restart the worker, release under authority and verify one retry and one receipt. Capture denial for an unapproved scope. Restore the original snapshot in the separate target and verify the selected build and recovery checks before extending the trial.
+6. Exercise the one approved test checkout and replay via the [Stripe sandbox settings](#stripe-event-and-processor-readback-commissioning). Record checkout/order ID, signed event, independent capture and balance-transaction IDs, exact amounts and currency, sandbox label, denied bytes/acknowledgment, scoped support/refund and continuing holds. A simulated dispute can exercise existing supported correction fixtures separately. Independent bank and accountant records have separate acceptance.
+7. End after at least 24 elapsed hours from the first recorded tick. Sign the result with the operator identity and exact commit. Record any missed cadence, outage, intervention, exception and remaining blocker. Stop and preserve evidence on a cross-scope effect, duplicate posting, scope or commit mismatch, irreconcilable receipt, live-mode signal, or incomplete restore. A stopped or incomplete run stays open.
+
 ## Private startup dependency checklist
 
 Use `GET /api/weweb/owner-startup/dependencies?lane=ONE_TIME_CAD` with an owner session, or choose `RECURRING_CAD` when the first approved offer actually requires recurring billing. A private Heimdall turn such as “What do I need before first revenue?” returns the same structured checklist without model or provider contact. Existing startup comparison attaches the one-time checklist. The saved primary editor workflow `8f542e20-f080-4e63-bdb2-e820f662a7d9` renders the dependency section after the existing registration budget; the exact saved action passed synthetic owner, subscriber denial and wrong-origin tests. Actual authorized browser and staging verification remains separate.
@@ -250,7 +294,7 @@ The saved primary WeWeb owner operating-scope workflow `8df72133-f027-4dd6-8eaa-
 | First one-time CAD business | BLOCKED | Local end-to-end order, delivery and authorization fixtures, signed event handling, guarded refund and processor settlement. A direct or inbound route can be selected. | One explicitly approved offer and legal seller, approved acquisition path, scoped Stripe sandbox with real callbacks and browser-accepted fulfillment and support, independently matched receiving account, and separate live decision. |
 | First recurring CAD business | BLOCKED | Local fixed CAD plan, renewal, period-end cancellation, refund, entitlement, service release and exact reinstatement fixtures. | Everything applicable to the one-time operating path plus approved subscription terms and cycle, native invoice and recovery acceptance, and approved accounting across the actual service period pattern. Hold unsupported recovery or adjustment shapes. |
 
-The [canonical matrix](../ops/prime_system_integration_matrix.json) adds ten launch-gate fields to each of the 14 open P0 criteria. The existing internal coding notes and full acceptance contracts remain authoritative. Each field records exact requirements for the core, first one-time or recurring business, other Legacies, deferred work, external commissioning, owner/professional action, evidence and next action.
+The [canonical matrix](../ops/prime_system_integration_matrix.json) records the launch-gate fields to each of the 14 open P0 criteria. The existing internal coding notes and full acceptance contracts remain authoritative. Each field records exact requirements for the core, first one-time or recurring business, other Legacies, deferred work, external commissioning, owner/professional action, evidence and next action.
 
 #### P0 January scope and deferral
 
@@ -321,7 +365,7 @@ New completed internal Factory drafts include a server-measured execution interv
 1. Obtain explicit authority for the selected offer and Legacy scope, staging window and cost, private preview, appropriately distinct identities and provider operations. Preserve owner decisions as scoped records.
 2. Pin the reviewed Git commit and provision only the authorized isolated Render API/worker and disposable PostgreSQL. Verify migrations, restore, health and worker interruption, single-effect retry and rollback. Keep production credentials and writes disabled.
 3. Commission the exact HTTPS staging API origin. Enter it in existing primary WeWeb variable `OWNER_ATTENTION_PREVIEW_ORIGIN` and the approved preview API base. Put the actual HTTPS preview browser origin in backend `CORS_ALLOWED_ORIGINS` using a JSON array or comma-separated exact origins. The primary editor variable was verified blank. Leave it blank until approved. The canonical API now denies browser access when the allowlist is empty or only contains a wildcard. Supply an exact approved origin when staging is commissioned. Server-to-server clients still use their existing authentication and authorization. Keep credentials and webhook keys server-side. Use isolated owner and buyer identities via the existing login. Verify negative CORS preflight for an unapproved origin, successful permitted bearer preflight, expired/revoked and cross-tenant denial, logout clearing, no-store responses, delivery-grant visibility, mobile navigation and operator stop. Save redacted receipts.
-4. Commission the minimum transaction services for the selected first business. Use a Stripe sandbox with approved account identity, staged signed webhook, limited readback and only explicitly approved test checkout scope. Verify delivery and support end to end in the staging browser, deliberate failure and recovery, one verified receipt for replay, focused Prime and proactive specialist decision flow, independent Loki and Mimir provenance.
+4. Commission the minimum transaction services for the selected first business. Use a Stripe sandbox with approved account identity, staged signed webhook, limited readback and only explicitly approved test checkout scope. Verify sandbox denial of product bytes and acknowledgment, scoped support, deliberate failure and recovery, one verified receipt for replay, focused Prime and proactive specialist decision flow, independent Loki and Mimir provenance.
 5. Independently match one exact candidate payout to the approved receiving account and have the accountant sign the relevant chart, expense, fee, refund, recognition and close or hold procedures. Keep unverified funds unavailable. Bank or statement evidence and qualified review are needed before relying on commercial proceeds.
 6. Record a separate go/no-go decision per approved business. Authorize recurring terms and period-specific accounting before enabling a recurring lane. Real customer activity and live credentials require separate explicit authority. Publish only after that decision and a staged rollback test.
 

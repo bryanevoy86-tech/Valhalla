@@ -60,6 +60,7 @@ class JanuaryReleaseRestoreTests(unittest.TestCase):
                         ), {"marker": marker})
                     return (conn.scalar(text("SELECT version_num FROM alembic_version")),
                             inspect(conn).has_table("stripe_saas_bindings"),
+                            "decision_sha256" in {column["name"] for column in inspect(conn).get_columns("loki_reconsiderations")},
                             conn.execute(text("SELECT source_id FROM source_registry_items ORDER BY source_id")).scalars().all())
             finally:
                 engine.dispose()
@@ -67,16 +68,17 @@ class JanuaryReleaseRestoreTests(unittest.TestCase):
         candidate_url = create(candidate)
         migrate(candidate_url, PRIOR)
         saved = observe(candidate_url, marker="pre-release")
-        self.assertEqual(saved, (PRIOR, False, ["pre-release"]))
+        self.assertEqual(saved, (PRIOR, False, False, ["pre-release"]))
         create(checkpoint, template=candidate)
 
         migrate(candidate_url, "head")
         candidate_state = observe(candidate_url, marker="candidate-only")
         self.assertNotEqual(candidate_state[0], PRIOR)
         self.assertTrue(candidate_state[1])
-        self.assertEqual(candidate_state[2], ["candidate-only", "pre-release"])
+        self.assertTrue(candidate_state[2])
+        self.assertEqual(candidate_state[3], ["candidate-only", "pre-release"])
 
         restored_url = create(restored, template=checkpoint)
         self.assertEqual(observe(restored_url), saved)
         migrate(restored_url, "head")
-        self.assertEqual(observe(restored_url), (candidate_state[0], True, ["pre-release"]))
+        self.assertEqual(observe(restored_url), (candidate_state[0], True, True, ["pre-release"]))

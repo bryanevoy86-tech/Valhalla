@@ -437,6 +437,23 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
     with Session(engine) as db:
         db.get(SpecialistAssignment, assignment_id).scope = scope
         db.commit()
+    from copy import deepcopy
+
+    with Session(engine) as db:
+        snapshot = db.get(GodVerdict, UUID(listing["prime_verdict_id"]))
+        original_metadata = deepcopy(snapshot.metadata_json)
+        altered = deepcopy(original_metadata)
+        altered["owner_approval_envelope"]["independent_loki"].pop("result_sha256")
+        snapshot.metadata_json = altered
+        db.commit()
+    unbound_context = client.post(turns, json={"turn_id": str(uuid4()), "message": "Check review evidence",
+                                               "prime_decision_id": listing["prime_verdict_id"]})
+    assert unbound_context.status_code == 409
+    refused_listing = client.post(f"{FACTORY}/listing-drafts", headers=admin, json=listing)
+    assert refused_listing.status_code == 409 and "Loki reconsideration" in refused_listing.json()["detail"]
+    with Session(engine) as db:
+        db.get(GodVerdict, UUID(listing["prime_verdict_id"])).metadata_json = original_metadata
+        db.commit()
     different_price = client.post(f"{FACTORY}/listing-drafts", headers=admin, json={
         **listing, "price_cents_cad": listing["price_cents_cad"] + 1,
     })

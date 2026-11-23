@@ -114,7 +114,9 @@
           "external_commissioning": "Isolated staged workers and scoped provider keys.",
           "owner_or_professional": "Owner approves exact action, scope, budget and rollback authority.",
           "launch_acceptance_evidence": "Withhold and revoke an approval in staging. Prove denial, stop during a durable task, restart and observe one executed receipt with no cross-scope effects.",
-          "next_action": "Trace each enabled dispatch route to persisted authority, hold and recovery."
+          "next_action": "Trace each enabled dispatch route to persisted authority, hold and recovery.",
+          "internal_evidence_path": "tests/test_business_factory_pilot.py",
+          "authorized_staging_evidence": "BLOCKED"
         },
         "january_internal_rehearsal": {
           "command": "python scripts/january_core_readiness.py --postgres",
@@ -347,7 +349,9 @@
           "external_commissioning": "Staged workers, PostgreSQL and the authorized adapter per activity.",
           "owner_or_professional": "Owner enrolls the exact Legacy mandate and responsible operator.",
           "launch_acceptance_evidence": "Two workers and a restarted worker act on one approved staged job. Capture one effect and receipt and a refused foreign-scope job.",
-          "next_action": "Run the selected offer's work item across staged workers and a restart."
+          "next_action": "Run the selected offer's work item across staged workers and a restart.",
+          "internal_evidence_path": "tests/test_factory_postgres.py",
+          "authorized_staging_evidence": "BLOCKED"
         },
         "january_internal_rehearsal": {
           "command": "python scripts/january_core_readiness.py --postgres",
@@ -484,7 +488,9 @@
           "external_commissioning": "Approved GitHub review identity and isolated CI runner.",
           "owner_or_professional": "Owner authorizes the repository, exact scope and staged reviewer.",
           "launch_acceptance_evidence": "Show a scoped changed-file list, verified test logs, matching reviewed commit and successful staged rollback.",
-          "next_action": "Run a real governed staging candidate through reviewed commit and rollback."
+          "next_action": "Run a real governed staging candidate through reviewed commit and rollback.",
+          "internal_evidence_path": "services/api/tests/test_builder_assignments.py",
+          "authorized_staging_evidence": "BLOCKED"
         }
       }
     },
@@ -568,7 +574,9 @@
           "external_commissioning": "Only the selected channel/provider, using its least-privilege staging identity.",
           "owner_or_professional": "Owner approves channel, audience and budget. Obtain qualified consent or advertising review when applicable.",
           "launch_acceptance_evidence": "Record authorized acquisition to the exact order. If outbound, also prove suppression, dry run, authorized publish receipt and kill switch.",
-          "next_action": "Bind the chosen launch acquisition path to consent and buyer/order evidence."
+          "next_action": "Bind the chosen launch acquisition path to consent and buyer/order evidence.",
+          "internal_evidence_path": "services/api/tests/test_product_artifact_workflow.py",
+          "authorized_staging_evidence": "BLOCKED"
         }
       }
     },
@@ -690,7 +698,9 @@
           "external_commissioning": "Stripe sandbox and signed-in isolated buyer and owner sessions.",
           "owner_or_professional": "Owner approves offer and rights, price, terms and support. Have qualified professionals review activity-specific obligations.",
           "launch_acceptance_evidence": "Sandbox purchase through a real callback, independent capture, delivery digest, denied foreign buyer, refund and replay, plus accepted staged owner and buyer screens.",
-          "next_action": "Exercise the complete selected CAD product in a pinned authenticated staging release."
+          "next_action": "Exercise the complete selected CAD product in a pinned authenticated staging release.",
+          "internal_evidence_path": "services/api/tests/test_product_artifact_workflow.py",
+          "authorized_staging_evidence": "BLOCKED"
         },
         "january_internal_rehearsal": {
           "command": "python scripts/january_core_readiness.py --postgres",
@@ -747,7 +757,9 @@
           "external_commissioning": "Stripe sandbox signing secret, read-only provider identity, approved event subscription and explicit test mode.",
           "owner_or_professional": "Owner approves credential scopes and activation. Accountant approves selected journal treatment.",
           "launch_acceptance_evidence": "Provider-native sandbox deliveries and independent reads match exact account, charge or invoice, currency, balances, scope and replay.",
-          "next_action": "Commission the actual sandbox callback and record matched receipts for the selected event lane."
+          "next_action": "Commission the actual sandbox callback and record matched receipts for the selected event lane.",
+          "internal_evidence_path": "services/api/tests/test_stripe_finance.py",
+          "authorized_staging_evidence": "BLOCKED"
         },
         "january_internal_rehearsal": {
           "command": "python scripts/january_core_readiness.py --postgres",
@@ -800,7 +812,9 @@
           "external_commissioning": "Exact approved Stripe payout and independent bank read-only feed that exposes payout trace.",
           "owner_or_professional": "Owner approves receiving account and scope. Accountant approves fees, reversals and cash treatment.",
           "launch_acceptance_evidence": "Match processor payout members and exact independent bank credit. Refuse duplicates, wrong accounts and unresolved adjustments.",
-          "next_action": "Prove bank trace availability on the selected institution before enabling its payout reconciliation."
+          "next_action": "Prove bank trace availability on the selected institution before enabling its payout reconciliation.",
+          "internal_evidence_path": "services/api/tests/test_stripe_finance.py",
+          "authorized_staging_evidence": "BLOCKED"
         }
       }
     },
@@ -1084,7 +1098,9 @@
           "external_commissioning": "Authorized HTTPS staging, exact origin/CORS and separate authenticated test identities.",
           "owner_or_professional": "Owner approves the precise staging origin, operator roles and retention policy.",
           "launch_acceptance_evidence": "Owner sees authorized scope and can invoke stop. Signed-out and cross-tenant actors receive denial and zero data in real browser.",
-          "next_action": "Canonical CORS now denies an unset or wildcard-only allowlist. Commission the currently blank WeWeb preview origin and run owner, subscriber and wrong-tenant checks."
+          "next_action": "Canonical CORS now denies an unset or wildcard-only allowlist. Commission the currently blank WeWeb preview origin and run owner, subscriber and wrong-tenant checks.",
+          "internal_evidence_path": "services/api/tests/test_weweb_logout_canonical_mount.py",
+          "authorized_staging_evidence": "BLOCKED"
         },
         "january_internal_rehearsal": {
           "command": "python scripts/january_core_readiness.py --postgres",
@@ -1139,7 +1155,9 @@
           "external_commissioning": "Use approved model identities only for the staged evaluations that need them.",
           "owner_or_professional": "Owner ratifies policy and authorized activities. Qualified legal judgment for applicable hard stops.",
           "launch_acceptance_evidence": "Stage a disagreement and a blocking finding. Prove neither can be bypassed and record the resulting Prime decision and audit.",
-          "next_action": "Prove unresolved disagreement blocks the selected commercial dispatch path."
+          "next_action": "Prove unresolved disagreement blocks the selected commercial dispatch path.",
+          "internal_evidence_path": "services/api/tests/test_governance_orchestrator.py",
+          "authorized_staging_evidence": "BLOCKED"
         }
       }
     },
@@ -1194,7 +1212,9 @@
           "external_commissioning": "Staging scheduling/runtime and separately permitted domain connectors.",
           "owner_or_professional": "Owner ratifies role mapping and sources. No mandate expands through report generation.",
           "launch_acceptance_evidence": "Exercise schedule and trigger through durable scoped reports, missing-evidence hold, independent Loki and a verified Prime decision.",
-          "next_action": "Run one scheduled and one event-driven commercial evidence cycle in staging."
+          "next_action": "Run one scheduled and one event-driven commercial evidence cycle in staging.",
+          "internal_evidence_path": "services/api/tests/test_pantheon_assignments.py",
+          "authorized_staging_evidence": "BLOCKED"
         },
         "january_internal_rehearsal": {
           "command": "python scripts/january_core_readiness.py --postgres",
@@ -1315,7 +1335,9 @@
           "external_commissioning": "Per-scope worker, merchant, bank and activity-specific approved provider.",
           "owner_or_professional": "Owner selects each business, legal entity, mandate, controls and activation. Obtain relevant professional review.",
           "launch_acceptance_evidence": "Five governed and isolated workspaces can be staged independently. Activate each only against its own approved mandate and operating evidence.",
-          "next_action": "Record which scopes the owner actually selects and stage each candidate separately."
+          "next_action": "Record which scopes the owner actually selects and stage each candidate separately.",
+          "internal_evidence_path": "services/api/tests/test_product_artifact_workflow.py",
+          "authorized_staging_evidence": "BLOCKED"
         },
         "january_internal_rehearsal": {
           "command": "python scripts/january_core_readiness.py --postgres",
@@ -1516,7 +1538,9 @@
           "external_commissioning": "Independently reconciled CAD account and read-only bank evidence for allowed scope.",
           "owner_or_professional": "Accountant approves chart, periods and recognition. Owner separately approves any authority or standing limit.",
           "launch_acceptance_evidence": "Show posted bank trace, balanced ledger and signed, scoped close. Prove restricted funds remain unavailable and stop blocks unauthorized action.",
-          "next_action": "Obtain eligible proof of the selected chart and accounting period treatment."
+          "next_action": "Obtain eligible proof of the selected chart and accounting period treatment.",
+          "internal_evidence_path": "services/api/tests/test_economic_control.py",
+          "authorized_staging_evidence": "BLOCKED"
         }
       }
     },
@@ -1875,7 +1899,9 @@
         "services/api/tests/test_loki_audit_fail_closed.py",
         "services/api/tests/test_prime_control_and_decision_integrity.py",
         "services/api/tests/test_product_artifact_workflow.py",
-        "services/api/tests/test_foundry_discovery.py"
+        "services/api/tests/test_foundry_discovery.py",
+        "alembic/versions/20261123_loki_disposition_binding.py",
+        "tests/test_january_release_restore.py"
       ],
       "source_observation": "Independent Loki receipts and reconsideration remain required for reviewed specialist material. Staging advice excludes the active Prime model across providers. Findings and decision clearance require a digest-bound completed independent receipt. Legacy unbound history remains readable. A separate staged model, reviewer process and transport proof remain pending.",
       "evidence_level": "SQLITE_INTEGRATION_TESTED",
@@ -1903,7 +1929,7 @@
           "conditional_future_expansion": null
         },
         "january_2027_launch_gates": {
-          "implemented_and_tested": "Digest-scoped objections, separate reviewer authentication, intact findings display and fail-closed clearance for unbound historical receipts have isolated fixture evidence.",
+          "implemented_and_tested": "Digest-scoped objections, separate reviewer authentication, intact findings display and fail-closed clearance for unbound historical receipts have isolated fixture evidence. Owner dispositions bind the original findings digest. Prime, specialist references and governed listing evidence carry the binding and old unbound decisions are held.",
           "january_core": "Verify independent reviewer identity, outages, stale-object rejection and durable dissent.",
           "first_one_time_cad": "Bind the exact commercial proposal to Loki's report and require a matching disposition at activation.",
           "first_recurring_cad": "Also challenge recurring terms, recovery, disputed funds and access changes.",
@@ -1912,7 +1938,9 @@
           "external_commissioning": "Independent staged identity and approved model/readback sources.",
           "owner_or_professional": "Owner commissions independence and approves evidence scopes. Professional escalation remains independently governed.",
           "launch_acceptance_evidence": "Withhold Loki, then mutate a reviewed proposal. Both refuse high-risk dispatch. Preserve a sourced objection and Prime response on the exact accepted version.",
-          "next_action": "Run independent Loki against the selected live-shaped offer and a version change."
+          "next_action": "Commission an isolated reviewer with a separate credential, run both specialist-report and offer queues, and capture version-change and reviewer-outage evidence.",
+          "internal_evidence_path": "services/api/tests/test_loki_independent_receipt.py",
+          "authorized_staging_evidence": "BLOCKED"
         },
         "january_internal_rehearsal": {
           "command": "python scripts/january_core_readiness.py --postgres",
@@ -2050,7 +2078,9 @@
           "external_commissioning": "Independently sourced balances and evidence only where real capital decisions are enabled.",
           "owner_or_professional": "Owner approves limits, reserves and actions. Accountant or qualified adviser approves relevant classifications.",
           "launch_acceptance_evidence": "Stage shared-business exposures and breach an aggregate limit. Verify a recorded hold and zero movement, then observe approved recovery.",
-          "next_action": "Test the selected business and alternate scope against the same cumulative cap."
+          "next_action": "Test the selected business and alternate scope against the same cumulative cap.",
+          "internal_evidence_path": "services/api/tests/test_economic_control.py",
+          "authorized_staging_evidence": "BLOCKED"
         }
       }
     }

@@ -108,6 +108,16 @@ def _material(review: LokiReview) -> set[UUID]:
     return {finding.id for finding in review.findings if (finding.tags or {}).get("material") is True}
 
 
+def _decision_digest(decision: LokiReconsideration, receipt: LokiIndependentReceipt) -> str:
+    return artifact_digest("loki_owner_disposition", str(decision.review_id), {
+        "proposal_sha256": decision.artifact_sha256,
+        "result_sha256": receipt.result_sha256,
+        "disposition": decision.disposition,
+        "material_finding_ids": decision.material_finding_ids,
+        "reason": decision.reason,
+    })
+
+
 def record_reconsideration(db: Session, review_id: UUID, payload: OwnerReconsiderationIn) -> LokiReconsideration:
     receipt = db.get(LokiIndependentReceipt, review_id, with_for_update=True)
     if receipt is None:
@@ -129,6 +139,7 @@ def record_reconsideration(db: Session, review_id: UUID, payload: OwnerReconside
         material_finding_ids=sorted(str(value) for value in payload.material_finding_ids),
         reason=payload.reason.strip(),
     )
+    decision.decision_sha256 = _decision_digest(decision, receipt)
     db.add(decision)
     db.commit()
     return decision
@@ -143,16 +154,20 @@ def verdict(db: Session, review: LokiReview) -> LokiVerdict:
     require_result_integrity(review, receipt)
     decision = db.get(LokiReconsideration, review.id)
     material = _material(review)
-    accepted = bool(
-        decision and decision.disposition == "accept_risk" and decision.artifact_sha256 == receipt.artifact_sha256
-        and set(decision.material_finding_ids) == {str(value) for value in material}
-    )
-    ok = review.result_severity != "critical" and (not material or accepted) and (
-        decision is None or decision.disposition == "accept_risk"
+    if decision and (
+        not decision.decision_sha256
+        or decision.artifact_sha256 != receipt.artifact_sha256
+        or decision.material_finding_ids != sorted(str(value) for value in material)
+        or not hmac.compare_digest(decision.decision_sha256, _decision_digest(decision, receipt))
+    ):
+        raise HTTPException(409, "Owner disposition does not bind the current Loki findings")
+    ok = review.result_severity != "critical" and (
+        decision.disposition == "accept_risk" if decision else not material
     )
     return LokiVerdict(
         result_severity=review.result_severity, headline=review.summary or "",
-        artifact_sha256=receipt.artifact_sha256, ok_to_proceed=ok,
+        artifact_sha256=receipt.artifact_sha256, result_sha256=receipt.result_sha256,
+        reconsideration_sha256=decision.decision_sha256 if decision else None, ok_to_proceed=ok,
         reconsideration_status=decision.disposition if decision else ("required" if material else "not_required"),
         requires_human_review=not ok, key_risks=[finding.message for finding in review.findings],
     )

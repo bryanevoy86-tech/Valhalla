@@ -67,7 +67,8 @@ def create_loki_review(
 @router.post("/reviews/{review_id}/reconsider", dependencies=[Depends(require_owner_mandate_key)])
 def reconsider_review(review_id: UUID, payload: OwnerReconsiderationIn, db: Session = Depends(get_db)):
     result = record_reconsideration(db, review_id, payload)
-    return {"review_id": result.review_id, "disposition": result.disposition, "artifact_sha256": result.artifact_sha256}
+    return {"review_id": result.review_id, "disposition": result.disposition, "artifact_sha256": result.artifact_sha256,
+            "reconsideration_sha256": result.decision_sha256}
 
 
 @router.get(

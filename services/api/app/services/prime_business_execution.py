@@ -416,7 +416,9 @@ def _bound_prime_decision(db: Session, verdict_id: UUID, work: Any, listing: dic
     if not review or review.artifact_type != "universal_opportunity":
         raise HTTPException(status_code=409, detail="Independent Loki proposal is missing")
     decision = independent_verdict(db, review)
-    if not decision.ok_to_proceed or decision.artifact_sha256 != independent.get("artifact_sha256"):
+    if (not decision.ok_to_proceed or decision.artifact_sha256 != independent.get("artifact_sha256")
+            or decision.result_sha256 != independent.get("result_sha256")
+            or decision.reconsideration_sha256 != independent.get("reconsideration_sha256")):
         raise HTTPException(status_code=409, detail="Independent Loki reconsideration is required")
     proposal = review.raw_input
     specialist_inputs = proposal.get("specialist_inputs") if isinstance(proposal, dict) else None
@@ -442,7 +444,8 @@ def _bound_prime_decision(db: Session, verdict_id: UUID, work: Any, listing: dic
     require_current_candidate(db, proposal, scope, datetime.now(timezone.utc).date())
     reference = {
         "verdict_id": str(verdict_id), "review_id": str(review.id),
-        "proposal_sha256": decision.artifact_sha256,
+        "proposal_sha256": decision.artifact_sha256, "result_sha256": decision.result_sha256,
+        "reconsideration_sha256": decision.reconsideration_sha256,
     }
     if "mimir_outcome_claims" in specialist_inputs:
         evidence = verify_mimir_claims(db, scope, specialist_inputs["mimir_outcome_claims"])

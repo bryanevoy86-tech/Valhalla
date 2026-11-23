@@ -112,7 +112,9 @@ def prime_decision_context(db: Session, decision_id: UUID) -> dict:
         if review is None or review.heimdall_reference_id != metadata.get("opportunity_id"):
             raise ValueError
         independent = verdict(db, review)
-        if independent.artifact_sha256 != linked["artifact_sha256"]:
+        if (independent.artifact_sha256 != linked["artifact_sha256"]
+                or independent.result_sha256 != linked.get("result_sha256")
+                or independent.reconsideration_sha256 != linked.get("reconsideration_sha256")):
             raise ValueError
     except (KeyError, TypeError, ValueError, AttributeError):
         raise HTTPException(409, "Prime decision and independent evidence do not match") from None
@@ -157,6 +159,7 @@ def prime_decision_context(db: Session, decision_id: UUID) -> dict:
         "heimdall_decision": (snapshot.heimdall_recommendation or {}).get("decision"),
         "independent_loki": {
             "review_id": str(review.id), "proposal_sha256": independent.artifact_sha256,
+            "result_sha256": independent.result_sha256, "reconsideration_sha256": independent.reconsideration_sha256,
             "ok_to_proceed": independent.ok_to_proceed, "reconsideration_status": independent.reconsideration_status,
             "findings": independent.key_risks,
         },

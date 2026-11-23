@@ -123,6 +123,7 @@ class LokiReconsideration(Base):
 
     review_id = Column(Uuid(as_uuid=True), ForeignKey("loki_independent_receipts.review_id", ondelete="CASCADE"), primary_key=True)
     artifact_sha256 = Column(String(64), nullable=False)
+    decision_sha256 = Column(String(64), nullable=True)
     disposition = Column(String(24), nullable=False)
     material_finding_ids = Column(JSON_TYPE, nullable=False)
     reason = Column(Text, nullable=False)

@@ -39,7 +39,7 @@ REMAINING_WORK_CLASSES = (
 JANUARY_LAUNCH_FIELDS = {
     "implemented_and_tested", "january_core", "first_one_time_cad", "first_recurring_cad",
     "other_initial_legacies", "after_launch", "external_commissioning", "owner_or_professional",
-    "launch_acceptance_evidence", "next_action",
+    "launch_acceptance_evidence", "next_action", "internal_evidence_path", "authorized_staging_evidence",
 }
 MANDATORY_KEYS = {
     "id",
@@ -129,6 +129,10 @@ def inspect_matrix(root: Path = REPO_ROOT, matrix_path: str = MATRIX_PATH) -> di
                 if (not isinstance(gates, dict) or gates.keys() != JANUARY_LAUNCH_FIELDS
                         or any(not isinstance(value, str) or not value.strip() for value in gates.values())):
                     issues.append(f"{identifier}: every January launch gate requires explicit evidence and scope")
+                else:
+                    evidence_path = (root / gates["internal_evidence_path"]).resolve()
+                    if not evidence_path.is_relative_to(root) or not evidence_path.is_file():
+                        issues.append(f"{identifier}: invalid January internal evidence path")
         if row["priority"] not in ALLOWED_PRIORITIES:
             issues.append(f"{identifier}: invalid priority")
         if row["evidence_level"] not in EVIDENCE_LEVELS:

@@ -61,7 +61,11 @@ def require_reviewed_reports(db: Session, ids, scope: dict) -> list[dict]:
         review = db.scalar(select(LokiReview).filter_by(
             artifact_type="pantheon_report", artifact_sha256=report["report_sha256"], heimdall_reference_id=event_id,
         ))
-        if review is None or not verdict(db, review).ok_to_proceed:
+        decision = verdict(db, review) if review is not None else None
+        if decision is None or not decision.ok_to_proceed:
             raise HTTPException(409, "Specialist report requires independent Loki reconsideration")
-        verified.append({"report_event_id": event_id, "review_id": str(review.id), "sha256": report["report_sha256"]})
+        verified.append({
+            "report_event_id": event_id, "review_id": str(review.id), "sha256": report["report_sha256"],
+            "result_sha256": decision.result_sha256, "reconsideration_sha256": decision.reconsideration_sha256,
+        })
     return verified
