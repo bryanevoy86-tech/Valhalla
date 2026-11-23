@@ -420,13 +420,34 @@ def test_registered_stripe_finance_replays_and_reconciles_only_matching_capture(
             assert client.post(partial_url, headers=keys, json={
                 **requests[0], "refund_id": requests[1]["refund_id"],
             }).status_code == 409
-            first, final = (client.post(partial_url, headers=keys, json=request) for request in requests)
+            first = client.post(partial_url, headers=keys, json=requests[0])
             assert first.status_code == 200, first.text
+            from app.loki.evidence import artifact_digest
+            from app.services.stripe_refund_correction import PARTIAL
+
+            [event] = db.query(LegacyOrchestrationEvent).filter(
+                LegacyOrchestrationEvent.event_id.startswith("STRIPE-RP-"),
+            ).all()
+            assert len(event.event_id) <= LegacyOrchestrationEvent.__table__.c.event_id.type.length
+
+            # Older isolated stores may contain the original, longer receipt ID.
+            historical = f"STRIPE-PARTIAL-REFUND-{order_id}-" + artifact_digest(
+                "stripe_refund_identity", requests[0]["refund_id"], {"live": False},
+            )[:32]
+            envelope = json.loads(event.payload_json)
+            envelope["sha256"] = artifact_digest(PARTIAL, historical, envelope["value"])
+            event.event_id = historical
+            event.payload_json = json.dumps(envelope)
+            db.commit()
+
+            final = client.post(partial_url, headers=keys, json=requests[1])
             assert final.status_code == 200, final.text
             assert (first.json()["refund_minor"], first.json()["cumulative_refund_minor"]) == (250, 250)
             assert (final.json()["refund_minor"], final.json()["cumulative_refund_minor"]) == (750, 1000)
             assert first.json()["bank_debit_confirmed"] is False and final.json()["available_cash_minor"] is None
-            assert client.post(partial_url, headers=keys, json=requests[0]).json() == first.json()
+            assert client.post(partial_url, headers=keys, json=requests[0]).json() == {
+                **first.json(), "sha256": envelope["sha256"],
+            }
             assert db.query(JournalEntry).count() == 0
             return
 

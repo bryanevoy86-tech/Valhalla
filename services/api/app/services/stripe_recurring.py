@@ -12,6 +12,7 @@ from pydantic import Field, field_validator
 from sqlalchemy import inspect, select
 from sqlalchemy.exc import IntegrityError
 
+from app.integrations.stripe import CHARGE_CORRECTION_EVENTS
 from app.loki.evidence import artifact_digest
 from app.models.completion_registry import LegacyOrchestrationEvent
 from app.models.saas_access import SaaSPlan, SaaSPlanModule, Subscription
@@ -21,7 +22,7 @@ from app.schemas.market_intelligence import MarketScope, StrictModel
 from app.services.economic_control import require_no_containment
 from app.services.prime_business_execution import _check_legacy, _emergency_stop_active, _event, _json
 from app.services.stripe_finance import (
-    CHARGE_CORRECTION_EVENTS, _event_receipt, _provider_object, capture_evidence, minor_amount, provider_json, read_captured_charge,
+    _event_receipt, _provider_object, capture_evidence, minor_amount, provider_json, read_captured_charge,
     read_processor_balance,
     stripe_id, stripe_readback_client,
 )

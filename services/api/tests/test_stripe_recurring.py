@@ -398,6 +398,11 @@ def test_recurring_checkout_renewal_cancellation_and_payment_holds(deal_client, 
         assert client.get(history, headers=buyer).json()["completed_paid_periods"] == []
         with Session(engine) as db:
             assert scoped_bank_blockers(db, params["scope"], live=False) == {"STRIPE_BANK_CORRECTION_REQUIRED"}
+            entries = db.query(LegacyOrchestrationEvent).filter(
+                LegacyOrchestrationEvent.event_id.startswith("STRIPE-RP-"),
+            ).all()
+            assert len(entries) == 2
+            assert all(len(entry.event_id) <= LegacyOrchestrationEvent.__table__.c.event_id.type.length for entry in entries)
         return
 
     if correction in {"full-chargeback", "partial-chargeback", "reopened-dispute"}:

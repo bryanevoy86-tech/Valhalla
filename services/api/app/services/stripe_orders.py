@@ -8,10 +8,11 @@ from sqlalchemy import inspect, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.integrations.stripe import CHARGE_CORRECTION_EVENTS
 from app.loki.evidence import artifact_digest
 from app.models.stripe_finance import StripeBalanceEvidence, StripeFinancialEvent, StripeOrderBinding
 from app.schemas.market_intelligence import MarketScope, StrictModel
-from app.services.stripe_finance import CHARGE_CORRECTION_EVENTS, _event_receipt, stripe_id
+from app.services.stripe_finance import _event_receipt, stripe_id
 
 
 class OrderBindingIn(StrictModel):

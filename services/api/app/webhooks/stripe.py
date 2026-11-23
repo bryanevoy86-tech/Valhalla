@@ -8,8 +8,8 @@ from fastapi import APIRouter, HTTPException, Request
 from starlette.concurrency import run_in_threadpool
 
 from app.heimdall.authority import is_live
+from app.integrations.stripe import CHARGE_CORRECTION_EVENTS
 from app.providers.stripe_adapter import StripeAdapter
-from app.services.stripe_finance import CHARGE_CORRECTION_EVENTS
 
 router = APIRouter(prefix="/webhooks/stripe")
 

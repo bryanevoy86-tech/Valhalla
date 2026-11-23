@@ -6,13 +6,14 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
 from app.accounting.models import JournalEntry
+from app.integrations.stripe import ACTIVE_DISPUTE_STATUSES
 from app.loki.evidence import artifact_digest
 from app.models.stripe_finance import StripeFinancialEvent
 from app.schemas.market_intelligence import StrictModel
 from app.services.prime_business_execution import _event
 from app.services.stripe_bank_booking import _payout_failed, bank_batch_summary
 from app.services.stripe_finance import (
-    ACTIVE_DISPUTE_STATUSES, _event_receipt, _provider_object, minor_amount, stripe_id, stripe_readback_client,
+    _event_receipt, _provider_object, minor_amount, stripe_id, stripe_readback_client,
 )
 from app.services.stripe_fulfillment import _locked_order, _read_record
 from app.services.stripe_orders import inspect_binding

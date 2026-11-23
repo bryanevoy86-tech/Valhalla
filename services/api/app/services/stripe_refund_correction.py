@@ -5,10 +5,11 @@ import os
 
 from fastapi import HTTPException
 from pydantic import field_validator
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.exc import IntegrityError
 
 from app.accounting.models import Account, JournalEntry, JournalLine
+from app.integrations.stripe import DISPUTE_EVENTS
 from app.loki.evidence import artifact_digest
 from app.models.completion_registry import LegacyOrchestrationEvent
 from app.models.stripe_finance import StripeBalanceEvidence, StripeFinancialEvent
@@ -17,7 +18,7 @@ from app.services.prime_business_execution import _event
 from app.services.specialist_triggers import outcome_scope_key
 from app.services.stripe_bank_booking import _payout_failed, bank_batch_summary, require_open_period
 from app.services.stripe_finance import (
-    DISPUTE_EVENTS, _event_receipt, _provider_object, minor_amount, stripe_id, stripe_readback_client,
+    _event_receipt, _provider_object, minor_amount, stripe_id, stripe_readback_client,
 )
 from app.services.stripe_fulfillment import _locked_order, _read_record
 from app.services.stripe_orders import inspect_binding
@@ -153,11 +154,14 @@ def _record_matched_refund(db, request, client, account_id, binding, event, bank
     if dispute is not None:
         _event_receipt(dispute, True)
         raise HTTPException(409, "A separate signed dispute requires professional correction review")
-    prefix = f"STRIPE-PARTIAL-REFUND-{target}-"
+    target_digest = artifact_digest("stripe_refund_target", target, {"live": live})[:32]
+    prefix = f"STRIPE-RP-{target_digest}-"
+    historical_prefix = f"STRIPE-PARTIAL-REFUND-{target}-"
     full_key = f"STRIPE-FULL-REFUND-{target}"
     full = _read_record(db, full_key, CORRECTION, scope)
     keys = db.scalars(select(LegacyOrchestrationEvent.event_id).where(
-        LegacyOrchestrationEvent.event_id.startswith(prefix, autoescape=True),
+        or_(LegacyOrchestrationEvent.event_id.startswith(prefix, autoescape=True),
+            LegacyOrchestrationEvent.event_id.startswith(historical_prefix, autoescape=True)),
     )).all()
     partials = sorted((_read_record(db, key, PARTIAL, scope) for key in keys),
                       key=lambda item: item["cumulative_refund_minor"])
@@ -166,8 +170,14 @@ def _record_matched_refund(db, request, client, account_id, binding, event, bank
         committed += receipt["refund_minor"]
         if any(receipt.get(field) != value for field, value in identity.items()) or receipt["cumulative_refund_minor"] != committed:
             raise HTTPException(409, "Refund correction history is contradictory")
-    key = prefix + artifact_digest("stripe_refund_identity", request.refund_id, {"live": live})[:32]
+    refund_digest = artifact_digest("stripe_refund_identity", request.refund_id, {"live": live})[:32]
+    key = prefix + refund_digest
     prior = _read_record(db, key, PARTIAL, scope)
+    if prior is None:
+        historical_key = historical_prefix + refund_digest
+        prior = _read_record(db, historical_key, PARTIAL, scope)
+        if prior is not None:
+            key = historical_key
     if full is not None and full["refund_id"] == request.refund_id:
         key, prior = full_key, full
     kind = CORRECTION if key == full_key else PARTIAL
