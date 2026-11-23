@@ -537,3 +537,100 @@ def test_registered_stripe_finance_replays_and_reconciles_only_matching_capture(
         charge["amount_refunded"] = 50
         with pytest.raises(HTTPException, match="refunded"):
             read()
+
+
+def test_bank_balance_observation_holds_actual_funds_and_limits_bank_scope(deal_client, monkeypatch):
+    from app.banking.plaid_transactions import account_balance_observation
+    from app.services.specialist_triggers import outcome_scope_key
+
+    client, _ = deal_client
+    account_id = "fixture_bank_account"
+    body = {"request_id": "fixture_plaid_request", "accounts": [{
+        "account_id": account_id, "type": "depository",
+        "balances": {"iso_currency_code": "CAD", "current": 10000.0, "available": 9000.01},
+    }]}
+    calls = []
+
+    def upstream(request):
+        calls.append(request.url.path)
+        assert request.method == "POST" and request.url.path == "/accounts/balance/get"
+        assert json.loads(request.content)["options"] == {"account_ids": [account_id]}
+        return httpx.Response(200, json=body)
+
+    with httpx.Client(base_url="https://bank.example.invalid", transport=httpx.MockTransport(upstream)) as bank:
+        def read_balance(**kwargs):
+            assert kwargs["stripe_destination"] == "ba_Balance"
+            return account_balance_observation(bank, token="isolated-test", account_id=account_id, live=False)
+
+        monkeypatch.setattr("app.banking.plaid_transactions.configured_bank_balance", read_balance)
+        monkeypatch.setattr("app.routers.stripe_financial.is_live", lambda: False)
+        monkeypatch.setenv("VALHALLA_OWNER_MANDATE_KEY", "balance-observation-test")
+        monkeypatch.setenv("VALHALLA_STRIPE_PAYOUT_DESTINATION_ID", "ba_Balance")
+        scope = {"legacy_instance_id": "legacy-balance", "business_id": "business-balance",
+                 "engine_id": "engine-balance", "jurisdiction": "CA-MB"}
+        monkeypatch.setenv("VALHALLA_STRIPE_BANK_BOOKING_SCOPE", outcome_scope_key(scope))
+        path = "/api/governance/floor/stripe-bank-batches/balance-observation"
+        owner = {"X-Owner-Mandate-Key": "balance-observation-test"}
+        assert client.post(path, json=scope).status_code == 401
+        assert client.post(path, json={**scope, "business_id": "business-different"}, headers=owner).status_code == 409
+        assert calls == []
+        result = client.post(path, json=scope, headers=owner)
+        assert result.status_code == 200 and result.headers["cache-control"] == "no-store"
+        assert result.json()["bank_available_reported_minor"] == 900001
+        assert result.json()["actual_accessible_funds_minor"] is None
+        assert result.json()["funds_movement_authorized"] is False
+        assert result.json()["basis"] == "PLAID_SANDBOX_BALANCE_OBSERVATION"
+        assert account_id not in result.text and body["request_id"] not in result.text
+        body["accounts"][0]["balances"]["available"] = 9000.001
+        assert client.post(path, json=scope, headers=owner).status_code == 409
+        body["accounts"][0]["balances"]["available"] = None
+        assert client.post(path, json=scope, headers=owner).status_code == 409
+
+
+def test_correction_journals_keep_original_liability_and_balance_separate_effects(deal_client, monkeypatch):
+    from decimal import Decimal
+    from app.accounting.models import Account, JournalLine, Period
+    from app.services.specialist_triggers import outcome_scope_key
+    from app.services.stripe_bank_booking import _journal
+    from app.services.stripe_bank_reversal import _book_reversal
+    from app.services.stripe_refund_correction import _post_correction
+    from app.services.stripe_dispute_correction import SOURCE
+
+    _, engine = deal_client
+    for model in (Account, Period, JournalEntry, JournalLine):
+        model.__table__.create(engine, checkfirst=True)
+    scope = {"legacy_instance_id": "legacy-books", "business_id": "accounting-fixture",
+             "engine_id": "finance-books", "jurisdiction": "CA-MB"}
+    monkeypatch.setenv("VALHALLA_STRIPE_BANK_BOOKING_ENABLED", "1")
+    monkeypatch.setenv("VALHALLA_STRIPE_BANK_BOOKING_SCOPE", outcome_scope_key(scope))
+    for name in ("BANK", "CLEARING", "FEES", "OBLIGATIONS"):
+        monkeypatch.setenv("VALHALLA_STRIPE_BOOK_" + name, name)
+    booked_on = date(2026, 11, 20)
+    with Session(engine) as db:
+        accounts = {key: Account(code=key, name=key, type=value, currency="CAD", active=True)
+                    for key, value in {"BANK": "asset", "CLEARING": "asset", "FEES": "expense",
+                                       "OBLIGATIONS": "liability"}.items()}
+        period = Period(label="isolated correction", start_date=booked_on, end_date=booked_on, closed=False)
+        db.add_all([period, *accounts.values()])
+        db.flush()
+        original = _journal(db, "book_fixture", booked_on, scope, (1140, 60, 1200))
+        db.flush()
+        receipt = {"ledger_entry_id": original, "batch_liability_minor": 1200}
+        reversal = _book_reversal(db, "book_fixture", "reverse_fixture", scope, receipt, 1140, booked_on)
+        chargeback = _post_correction(db, scope, "dispute_fixture", booked_on, 1200, receipt, None,
+                                      fee=150, source=SOURCE)
+        db.flush()
+
+        def amounts(entry):
+            return {(line.account_id, line.debit, line.credit)
+                    for line in db.query(JournalLine).filter_by(entry_id=entry)}
+
+        assert (accounts["OBLIGATIONS"].id, 0, Decimal("12.00")) in amounts(original)
+        assert amounts(reversal) == {(accounts["BANK"].id, 0, Decimal("11.40")),
+                                     (accounts["CLEARING"].id, Decimal("11.40"), 0)}
+        assert amounts(chargeback) == {(accounts["OBLIGATIONS"].id, Decimal("12.00"), 0),
+                                       (accounts["CLEARING"].id, 0, Decimal("13.50")),
+                                       (accounts["FEES"].id, Decimal("1.50"), 0)}
+        period.closed = True
+        with pytest.raises(HTTPException, match="open accounting period"):
+            _book_reversal(db, "book_fixture", "late_fixture", scope, receipt, 1140, booked_on)

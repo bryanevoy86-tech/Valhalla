@@ -2,7 +2,7 @@
 import os
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
@@ -16,9 +16,10 @@ from app.services.stripe_fulfillment import (
     record_delivery_offer, revoke_delivery,
 )
 from app.services.stripe_bank_reversal import BankReversalIn, configured_bank_reversal
-from app.services.stripe_bank_booking import BankBatchIn, configured_bank_batch
+from app.services.stripe_bank_booking import BankBatchIn, configured_bank_batch, scoped_bank_blockers
 from app.services.stripe_orders import OrderBindingIn, inspect_binding, register_binding
 from app.services.stripe_revenue_release import DeliveryReleaseIn, recognize_delivery
+from app.schemas.market_intelligence import MarketScope
 from app.services.stripe_dispute_correction import ChargebackIn, configured_chargeback
 from app.services.stripe_refund_correction import RefundCorrectionIn, configured_refund_correction
 from app.services.stripe_recurring import (
@@ -55,6 +56,21 @@ def read_checkout_payout(order_id: UUID, payout_id: str, db: Session = Depends(g
 
     return private_owner_response(configured_payout_readback(db, order_id, payout_id, live=is_live()))
 
+
+
+@router.post("/api/governance/floor/stripe-bank-batches/balance-observation", dependencies=owner_keys)
+def observe_payout_bank_balance(scope: MarketScope, db: Session = Depends(get_db)):
+    from app.banking.plaid_transactions import configured_bank_balance
+    from app.services.specialist_triggers import outcome_scope_key
+
+    requested = scope.model_dump()
+    if os.getenv("VALHALLA_STRIPE_BANK_BOOKING_SCOPE") != outcome_scope_key(requested):
+        raise HTTPException(409, "Bank observation requires the exact approved receiving scope")
+    live = is_live()
+    blockers = scoped_bank_blockers(db, requested, live=live)
+    observation = configured_bank_balance(live=live, stripe_destination=os.getenv("VALHALLA_STRIPE_PAYOUT_DESTINATION_ID"))
+    return private_owner_response({"scope": requested, **observation,
+                                   "spendable_cash_blockers": sorted(blockers | {"INDEPENDENT_LIABILITIES_AND_RESERVES_REQUIRED"})})
 
 
 @router.post("/api/governance/floor/stripe-bank-batches/reversal", dependencies=owner_keys)

@@ -1,5 +1,6 @@
 """Bounded, read-only Plaid adapter for independently posted CAD credits."""
-from datetime import date, timedelta
+from contextlib import contextmanager
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal, InvalidOperation
 import hashlib
 import os
@@ -53,7 +54,8 @@ def posted_credit(client, *, token, account_id, trace, arrival, amount_minor, to
                             amount_minor=amount_minor, today=today, debit=False)
 
 
-def _configured_bank_movement(*, trace, arrival, amount_minor, today, live, stripe_destination, debit):
+@contextmanager
+def _configured_bank_reader(*, live, stripe_destination):
     mode = "production" if live else "sandbox"
     scope = os.getenv("VALHALLA_PLAID_STRIPE_DESTINATION")
     account = os.getenv("VALHALLA_PLAID_BANK_ACCOUNT_ID")
@@ -66,6 +68,11 @@ def _configured_bank_movement(*, trace, arrival, amount_minor, today, live, stri
     host = "https://production.plaid.com" if live else "https://sandbox.plaid.com"
     with httpx.Client(base_url=host, headers={"PLAID-CLIENT-ID": client_id, "PLAID-SECRET": secret},
                       follow_redirects=False, trust_env=False, timeout=5.0) as client:
+        yield client, token, account
+
+
+def _configured_bank_movement(*, trace, arrival, amount_minor, today, live, stripe_destination, debit):
+    with _configured_bank_reader(live=live, stripe_destination=stripe_destination) as (client, token, account):
         return _posted_movement(client, token=token, account_id=account, trace=trace, arrival=arrival,
                                 amount_minor=amount_minor, today=today, debit=debit)
 
@@ -76,3 +83,46 @@ def configured_bank_credit(**kwargs):
 
 def configured_bank_debit(**kwargs):
     return _configured_bank_movement(**kwargs, debit=True)
+
+
+def _balance_minor(value):
+    if type(value) not in (int, Decimal):
+        raise HTTPException(409, "Independent bank balance is incomplete")
+    amount = Decimal(value) * 100
+    if not amount.is_finite() or abs(amount) > 999_999_999_999 or amount != amount.to_integral_value():
+        raise HTTPException(409, "Independent CAD balance is not an exact minor-unit amount")
+    return int(amount)
+
+
+def account_balance_observation(client, *, token, account_id, live):
+    try:
+        response = client.post("/accounts/balance/get", json={
+            "access_token": token, "options": {"account_ids": [account_id]},
+        })
+        response.raise_for_status()
+        body = response.json(parse_float=Decimal)
+    except (ValueError, httpx.HTTPError):
+        raise HTTPException(503, "Independent bank balance readback unavailable") from None
+    accounts, identity = (body.get("accounts"), body.get("request_id")) if isinstance(body, dict) else (None, None)
+    if (not isinstance(accounts, list) or len(accounts) != 1 or not isinstance(accounts[0], dict)
+            or not isinstance(identity, str) or not 1 <= len(identity) <= 128):
+        raise HTTPException(409, "Exact bank account and request receipt required")
+    account = accounts[0]
+    balances = account.get("balances")
+    if (account.get("account_id") != account_id or account.get("type") != "depository"
+            or not isinstance(balances, dict) or balances.get("iso_currency_code") != "CAD"):
+        raise HTTPException(409, "Bank balance response is outside the approved CAD depository account")
+    return {"bank_available_reported_minor": _balance_minor(balances.get("available")),
+            "bank_current_reported_minor": _balance_minor(balances.get("current")),
+            "basis": "PLAID_BANK_BALANCE_OBSERVATION" if live else "PLAID_SANDBOX_BALANCE_OBSERVATION",
+            "account_reference_sha256": hashlib.sha256(account_id.encode()).hexdigest(),
+            "request_reference_sha256": hashlib.sha256(identity.encode()).hexdigest(),
+            "read_at": datetime.now(timezone.utc).isoformat(), "actual_accessible_funds_minor": None,
+            "funds_movement_authorized": False}
+
+
+def configured_bank_balance(*, live, stripe_destination):
+    if os.getenv("VALHALLA_PLAID_BALANCE_READBACK_ENABLED") != "1":
+        raise HTTPException(503, "Independent bank balance readback is disabled")
+    with _configured_bank_reader(live=live, stripe_destination=stripe_destination) as (client, token, account):
+        return account_balance_observation(client, token=token, account_id=account, live=live)
