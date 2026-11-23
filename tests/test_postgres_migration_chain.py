@@ -59,6 +59,7 @@ NORNS_HISTORY = load("alembic/versions/20261121_norns_scoped_history.py")
 SPECIALIST_BACKLOG = load("alembic/versions/20261123_specialist_backlog.py")
 TUNING_PROFILE = load("alembic/versions/20261123_tuning_profile_identity.py")
 STRIPE_FINANCE = load("alembic/versions/20261123_stripe_finance.py")
+STRIPE_ORDER = load("alembic/versions/20261123_stripe_order_binding.py")
 OWNER_DISPOSITION = load("alembic/versions/20261123_owner_disposition.py")
 BUILDER_LEASE_CAP = load("alembic/versions/20261123_builder_lease_cap.py")
 FIXTURE_SETTLEMENT = load("alembic/versions/20261123_fixture_settlement.py")
@@ -127,11 +128,14 @@ class PostgresMigrationChainTests(unittest.TestCase):
                     conn.execute(text("SET LOCAL search_path TO stripe_finance_ci"))
                     with Operations.context(MigrationContext.configure(conn)):
                         STRIPE_FINANCE.upgrade()
+                        STRIPE_ORDER.upgrade()
                     inspector = inspect(conn)
                     names = {unique["name"] for unique in inspector.get_unique_constraints("stripe_balance_evidence")}
                     self.assertEqual(names, {"uq_stripe_balance_transaction", "uq_stripe_balance_capture"})
                     self.assertEqual(inspector.get_foreign_keys("stripe_balance_evidence")[0]["referred_table"],
                                      "stripe_financial_events")
+                    self.assertEqual(inspector.get_unique_constraints("stripe_order_bindings")[0]["name"],
+                                     "uq_stripe_order_intent")
                 finally:
                     transaction.rollback()
         finally:

@@ -121,6 +121,14 @@ def test_registered_stripe_finance_replays_and_reconciles_only_matching_capture(
         }}}
         assert deliver(refund).status_code == 200
         assert client.get(review_url, headers=keys).json()["status"] == "REFUND_REVIEW_REQUIRED"
+        second = {**binding, "order_id": str(uuid4()), "payment_intent_id": "pi_RefundFirst"}
+        assert client.post(binding_url, headers=keys, json=second).status_code == 201
+        refund_first = {**refund, "id": "evt_RefundFirst", "data": {"object": {
+            **refund["data"]["object"], "id": "ch_RefundFirst", "payment_intent": "pi_RefundFirst",
+        }}}
+        assert deliver(refund_first).status_code == 200
+        hold = client.get(f"{binding_url}/{second['order_id']}", headers=keys).json()
+        assert hold["status"] == "REFUND_REVIEW_REQUIRED" and hold["processor_evidence"] is None
         with pytest.raises(HTTPException, match="already has a receipt"):
             read("evt_CaptureReplay")
         assert db.query(StripeBalanceEvidence).count() == 1

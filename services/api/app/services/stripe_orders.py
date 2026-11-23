@@ -4,7 +4,7 @@ from uuid import UUID
 
 from fastapi import HTTPException
 from pydantic import Field, field_validator
-from sqlalchemy import inspect, select
+from sqlalchemy import inspect, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -86,6 +86,20 @@ def register_binding(db: Session, request: OrderBindingIn, *, live: bool):
     return {**value, "sha256": digest}
 
 
+def _refund_pending(db: Session, order: StripeOrderBinding, charge_id: str | None = None) -> bool:
+    snapshot = StripeFinancialEvent.snapshot
+    matches = snapshot["payment_intent_id"].as_string() == order.payment_intent_id
+    if charge_id is not None:
+        matches = or_(matches, snapshot["charge_id"].as_string() == charge_id)
+    row = db.scalar(select(StripeFinancialEvent).where(
+        StripeFinancialEvent.livemode == order.livemode, snapshot["kind"].as_string() == "charge.refunded", matches,
+    ).limit(1))
+    if row is None:
+        return False
+    _event_receipt(row, True)
+    return True
+
+
 def inspect_binding(db: Session, order_id: UUID, *, live: bool):
     account_id = _require_configured_mode(live)
     _require_tables(db)
@@ -102,6 +116,8 @@ def inspect_binding(db: Session, order_id: UUID, *, live: bool):
                   "status": "AWAITING_PROCESSOR_EVIDENCE", "bank_settlement_verified": False,
                   "available_cash_minor": None, "fulfillment_authorized": False, "entitlement_granted": False}
     if balance is None:
+        if _refund_pending(db, order):
+            projection["status"] = "REFUND_REVIEW_REQUIRED"
         return projection
     row = db.get(StripeFinancialEvent, balance.event_id)
     if row is None:
@@ -118,13 +134,7 @@ def inspect_binding(db: Session, order_id: UUID, *, live: bool):
                 evidence.get("gross_minor"), evidence.get("currency")) != (
                     account_id, order.payment_intent_id, value["amount_minor"], value["currency"])):
         raise HTTPException(409, "Stripe processor and order evidence differ")
-    reversal = db.scalars(select(StripeFinancialEvent).where(
-        StripeFinancialEvent.livemode == live,
-        StripeFinancialEvent.snapshot["kind"].as_string() == "charge.refunded",
-        StripeFinancialEvent.snapshot["charge_id"].as_string() == evidence["charge_id"],
-    ).limit(1)).first()
-    if reversal is not None:
-        _event_receipt(reversal, True)
+    if _refund_pending(db, order, evidence["charge_id"]):
         return {**projection, "status": "REFUND_REVIEW_REQUIRED"}
     return {**projection, "status": "MATCHED_PROCESSOR_EVIDENCE",
             "processor_evidence": {**evidence, "sha256": balance.evidence_sha256}}
