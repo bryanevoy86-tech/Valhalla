@@ -1145,3 +1145,5 @@ The acceptance matrix retains 13 P0 and 39 total criteria requiring internal cod
 - Added seven-class schema validation and open-work counts to the existing token-free Prime preflight. Missing, conflated or empty classes fail the local gate. Production-evidence assertions and source checks remain in force.
 
 - The recurring payout, commissioning adapter and authorization-fixture fixes passed all four hosted jobs together at `c09e483f268801ad8ec78525980e092e614af480` in run 45114231675. Replayed the exact saved startup comparison action with authorized owner, unauthorized subscriber and wrong-origin fixture cases. These results do not claim an authorized external account, deployed host or browser preview.
+
+- The prior WeWeb owner operating-scope renderer was saved successfully in the primary draft. Exact script readback rendered a scoped recurring hold and rejected a fabricated accessible-cash payload in isolated replay. The authorized browser preview and live evidence gates remain open.
