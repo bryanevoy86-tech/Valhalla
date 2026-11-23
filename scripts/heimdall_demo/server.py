@@ -44,9 +44,6 @@ def seed(engine):
     from app.security.auth import pbkdf2_hash_password
     from app.users.models import AccountSettings, UserProfile
 
-    # The migration chain does not yet provision this registry in an empty database.
-    KnowledgeRegistryItem.__table__.create(engine, checkfirst=True)
-
     now = datetime.now(timezone.utc)
     timestamp = now.replace(tzinfo=None)
     assignment = uuid4()

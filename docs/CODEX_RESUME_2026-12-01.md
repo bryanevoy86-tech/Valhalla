@@ -12,7 +12,7 @@ Use the current head of draft PR #4 and confirm the latest required CI run. Use 
 
 The [owner launch guide](HEIMDALL_OWNER_DEMO.md) gives a VS Code procedure for the private incorporation rehearsal. It starts a fresh loopback PostgreSQL cluster, applies the migration chain, seeds one owner and synthetic Loki and Mimir fixtures, and exposes only the existing owner login, conversation and evidence routes. The user can record all eight stages, sign back in, and recall the saved practice progress. Stop the foreground launcher to remove the database. The demo never supplies commercial activation authority.
 
-Cold database testing exposed a missing Mimir knowledge registry table. The demo provisions only that missing table from the existing model in its own cluster. Preserve the canonical migration fix as a separate P0 commissioning dependency. Actual WeWeb Preview, HTTPS staging and the Stripe sandbox remain open.
+The canonical Mimir migration now provisions the knowledge table on a cold database and retains records through rollback and re-upgrade. The desktop launcher uses that migration and has no local table-creation fallback. Actual WeWeb Preview, HTTPS staging and the Stripe sandbox remain open.
 
 ## Disposable browser continuation
 

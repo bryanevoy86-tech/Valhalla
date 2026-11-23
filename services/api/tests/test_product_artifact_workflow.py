@@ -1,6 +1,8 @@
 import base64
 import hashlib
 import json
+import os
+from pathlib import Path
 from datetime import date, datetime, timedelta, timezone
 from uuid import UUID, uuid4
 
@@ -91,12 +93,14 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
     assert len(slots) == 5
     assert sum(slot["status"] == "EXTERNAL_OWNER_ACTION_REQUIRED" for slot in slots) == 4
 
-    content = b"Valhalla owns this product test file.\n"
+    optional_zip = os.getenv("VALHALLA_REHEARSAL_PRODUCT_ZIP")
+    content = Path(optional_zip).read_bytes() if optional_zip else b"Valhalla owns this product test file.\n"
+    product_price = 2900 if optional_zip else 2500
     checksum = hashlib.sha256(content).hexdigest()
     asset_id = str(uuid4())
     asset = {
         **scope, "artifact_id": asset_id, "product_id": "workshop-guide", "version": 1,
-        "media_type": "text/plain", "sha256": checksum,
+        "media_type": "application/zip" if optional_zip else "text/plain", "sha256": checksum,
         "content_base64": base64.b64encode(content).decode(), "rights_reference": "internal-rights-register/example-001",
         "attestation": "OWNER_AUTHORIZES_INTERNAL_STORAGE_AND_USE",
     }
@@ -125,7 +129,7 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
     listing = {
         **scope, "artifact_id": asset_id, "product_id": asset["product_id"], "industry": "digital products",
         "title": "Workshop operations guide", "description": "An internal preview of the workshop operations guide and checklist.",
-        "price_cents_cad": 2500, "request_key": "workshop-listing-01",
+        "price_cents_cad": product_price, "request_key": "workshop-listing-01",
     }
     assert client.post(f"{FACTORY}/listing-drafts", headers=admin, json={**listing, "product_id": "other-product"}).status_code == 409
     for number in range(2, 6):
@@ -219,7 +223,7 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
         "evidence": {**scope, "evidence_id": evidence_id, "kind": "DIGITAL_PRODUCT",
                      "evidence_class": "OPERATOR_REPORTED", "title": listing["title"], "source_ref": "fixture:survey",
                      "observed_on": today.isoformat(), "expires_on": (today + timedelta(days=2)).isoformat(),
-                     "currency": "CAD", "unit_price": 2500, "variable_cost_per_unit": 175,
+                     "currency": "CAD", "unit_price": product_price, "variable_cost_per_unit": 175,
                      "acquisition_cost_per_unit": 0, "monthly_fixed_cost": 0, "monthly_units": 4,
                      "startup_capital": 500, "test_cost": 100,
                      "rights_attestation": "AUTHORIZED_INTERNAL_RESEARCH"},
@@ -235,7 +239,7 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
         "scope": scope, "observation_end": today.isoformat(), "source_basis": "SYNTHETIC", "aggregate_sample": 80,
         "observations": [{"signal": "UNDERSERVED_NEED", "count": 32}, {"signal": "CHECKOUT_FRICTION", "count": 12},
                          {"signal": "PRICE_OBJECTION", "count": 20}, {"signal": "VOLUNTARY_REFERRAL", "count": 10}],
-        "offer_experiment": [{"cad_price_minor": 2500, "exposed": 40, "chose_offer": 18},
+        "offer_experiment": [{"cad_price_minor": product_price, "exposed": 40, "chose_offer": 18},
                              {"cad_price_minor": 3000, "exposed": 40, "chose_offer": 16}],
         "transparent_offer_and_terms": True, "voluntary_participation": True, "no_deceptive_claims_or_urgency": True,
         "no_sensitive_profiling_or_vulnerability_targeting": True,
@@ -1011,6 +1015,12 @@ def rehearse_bound_stripe_delivery(client, engine, monkeypatch, owner, owner_ses
         assert entitlement.headers["X-Delivery-Grant"] == grant.json()["grant_sha256"]
     else:
         assert entitlement.json()["download_enabled"] is False
+        with monkeypatch.context() as staging:
+            staging.setenv("APP_ENV", "staging")
+            blocked = client.post(purchase + "/acknowledge", headers=buyer_session,
+                                  json={"grant_sha256": grant.json()["grant_sha256"]})
+            assert blocked.status_code == 409
+            assert blocked.json()["detail"] == "Staging evidence does not acknowledge customer delivery"
     acceptance = client.post(purchase + "/acknowledge", headers=buyer_session,
                              json={"grant_sha256": grant.json()["grant_sha256"]})
     assert acceptance.status_code == 200 and acceptance.json()["recognized_revenue_minor"] is None

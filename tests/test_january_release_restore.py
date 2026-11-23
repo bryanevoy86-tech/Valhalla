@@ -41,10 +41,10 @@ class JanuaryReleaseRestoreTests(unittest.TestCase):
             self.addCleanup(drop, name)
             return base.set(database=name)
 
-        def migrate(database, revision):
+        def migrate(database, revision, *, direction="upgrade"):
             env = {**os.environ, "DATABASE_URL": database.render_as_string(hide_password=False),
                    "VALHALLA_JWT_SECRET": "isolated-january-migration", "PYTHONPATH": "services/api"}
-            result = subprocess.run([sys.executable, "-m", "alembic", "upgrade", revision],
+            result = subprocess.run([sys.executable, "-m", "alembic", direction, revision],
                                     cwd=ROOT, env=env, capture_output=True, text=True, timeout=90)
             self.assertEqual(result.returncode, 0, result.stderr[-8000:])
 
@@ -61,14 +61,15 @@ class JanuaryReleaseRestoreTests(unittest.TestCase):
                     return (conn.scalar(text("SELECT version_num FROM alembic_version")),
                             inspect(conn).has_table("stripe_saas_bindings"),
                             "decision_sha256" in {column["name"] for column in inspect(conn).get_columns("loki_reconsiderations")},
-                            conn.execute(text("SELECT source_id FROM source_registry_items ORDER BY source_id")).scalars().all())
+                            conn.execute(text("SELECT source_id FROM source_registry_items ORDER BY source_id")).scalars().all(),
+                            inspect(conn).has_table("knowledge_registry_items"))
             finally:
                 engine.dispose()
 
         candidate_url = create(candidate)
         migrate(candidate_url, PRIOR)
         saved = observe(candidate_url, marker="pre-release")
-        self.assertEqual(saved, (PRIOR, False, False, ["pre-release"]))
+        self.assertEqual(saved, (PRIOR, False, False, ["pre-release"], False))
         create(checkpoint, template=candidate)
 
         migrate(candidate_url, "head")
@@ -77,8 +78,31 @@ class JanuaryReleaseRestoreTests(unittest.TestCase):
         self.assertTrue(candidate_state[1])
         self.assertTrue(candidate_state[2])
         self.assertEqual(candidate_state[3], ["candidate-only", "pre-release"])
+        self.assertTrue(candidate_state[4])
+
+        def knowledge(database, *, seed=False):
+            engine = create_engine(database)
+            try:
+                with engine.begin() as conn:
+                    if seed:
+                        conn.execute(text(
+                            """INSERT INTO knowledge_registry_items
+                               (item_id, source, source_type, title, excluded, terminal_state, created_at, updated_at)
+                               VALUES ('retained', 'test', 'test', 'Synthetic learning', false, 'INACTIVE', now(), now())"""
+                        ))
+                    self.assertTrue(any(index["unique"] and index["column_names"] == ["item_id"]
+                                        for index in inspect(conn).get_indexes("knowledge_registry_items")))
+                    return conn.execute(text("SELECT item_id FROM knowledge_registry_items")).scalars().all()
+            finally:
+                engine.dispose()
+
+        self.assertEqual(knowledge(candidate_url, seed=True), ["retained"])
+        migrate(candidate_url, "20261123_loki_disposition_binding", direction="downgrade")
+        self.assertEqual(knowledge(candidate_url), ["retained"])
+        migrate(candidate_url, "head")
+        self.assertEqual(knowledge(candidate_url), ["retained"])
 
         restored_url = create(restored, template=checkpoint)
         self.assertEqual(observe(restored_url), saved)
         migrate(restored_url, "head")
-        self.assertEqual(observe(restored_url), (candidate_state[0], True, True, ["pre-release"]))
+        self.assertEqual(observe(restored_url), (candidate_state[0], True, True, ["pre-release"], True))

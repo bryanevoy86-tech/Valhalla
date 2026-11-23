@@ -201,6 +201,8 @@ def delivery_access(db, tenant_id, order_id, principal, *, live):
 
 def acknowledge_delivery(db, tenant_id, order_id, principal, request, *, live):
     _, grant = delivery_access(db, tenant_id, order_id, principal, live=live)
+    if not live and any(os.getenv(name, "").strip().lower() == "staging" for name in ("APP_ENV", "ENV")):
+        raise HTTPException(409, "Staging evidence does not acknowledge customer delivery")
     if request.grant_sha256 != grant["sha256"]:
         raise HTTPException(409, "Delivery acknowledgment does not match the authorized product")
     scope = grant["scope"]
