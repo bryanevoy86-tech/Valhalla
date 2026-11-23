@@ -136,6 +136,17 @@ def test_registered_stripe_finance_replays_and_reconciles_only_matching_capture(
                       "type": "refund", "currency": "cad", "status": "available", "amount": -1000, "net": -1000,
                       "fee": 0, "available_on": int(time.time()) - 5}
 
+    adjustments = {}
+    for suffix, amount in (("PartialA", 250), ("RemainderA", 750)):
+        refund_id, txn_id = f"re_{suffix}", f"txn_{suffix}"
+        adjustments[f"/v1/refunds/{refund_id}"] = {
+            **native_refund, "id": refund_id, "charge": charge["id"], "payment_intent": charge["payment_intent"],
+            "amount": amount, "balance_transaction": txn_id,
+        }
+        adjustments[f"/v1/balance_transactions/{txn_id}"] = {
+            **refund_balance, "id": txn_id, "source": refund_id, "amount": -amount, "net": -amount,
+        }
+
     def upstream(request):
         assert request.method == "GET"
         if request.url.path == "/v1/balance_transactions":
@@ -150,7 +161,7 @@ def test_registered_stripe_finance_replays_and_reconciles_only_matching_capture(
                      "/v1/charges/ch_CaptureA": charge, "/v1/balance_transactions/txn_CaptureA": balance,
                      "/v1/charges/ch_CaptureB": charge_b, "/v1/balance_transactions/txn_CaptureB": balance_b}
         responses.update({"/v1/refunds/re_FullB": native_refund, "/v1/balance_transactions/txn_RefundB": refund_balance})
-        return httpx.Response(200, json=responses[request.url.path])
+        return httpx.Response(200, json=(responses | adjustments)[request.url.path])
 
     with Session(engine) as db, httpx.Client(base_url="https://example.invalid",
                                              transport=httpx.MockTransport(upstream)) as adapter:
@@ -311,6 +322,27 @@ def test_registered_stripe_finance_replays_and_reconciles_only_matching_capture(
         assert corrected.json()["refund_minor"] == 1000 and corrected.json()["ledger_entry_id"] is None
         assert corrected.json()["bank_debit_confirmed"] is False and corrected.json()["cash_hold_released"] is False
         assert client.post(correction_url, headers=keys, json=correction_request).json() == corrected.json()
+
+        partial_url = f"{binding_url}/{order_id}/refund-correction"
+        requests = []
+        for suffix, cumulative in (("PartialA", 250), ("RemainderA", 1000)):
+            charge.update(refunded=cumulative == 1000, amount_refunded=cumulative)
+            native_event = {"id": f"evt_{suffix}", "type": "charge.refunded", "livemode": False,
+                            "data": {"object": {**charge}}}
+            assert deliver(native_event).status_code == 200
+            requests.append({"refund_id": f"re_{suffix}", "signed_event_id": native_event["id"]})
+        assert client.post(partial_url, headers=keys, json=requests[1]).status_code == 409
+        assert client.post(partial_url, headers=keys, json={
+            **requests[0], "refund_id": requests[1]["refund_id"],
+        }).status_code == 409
+        first, final = (client.post(partial_url, headers=keys, json=request) for request in requests)
+        assert first.status_code == 200, first.text
+        assert final.status_code == 200, final.text
+        assert (first.json()["refund_minor"], first.json()["cumulative_refund_minor"]) == (250, 250)
+        assert (final.json()["refund_minor"], final.json()["cumulative_refund_minor"]) == (750, 1000)
+        assert first.json()["bank_debit_confirmed"] is False and final.json()["available_cash_minor"] is None
+        assert client.post(partial_url, headers=keys, json=requests[0]).json() == first.json()
+        assert db.query(JournalEntry).count() == 0
 
 
 

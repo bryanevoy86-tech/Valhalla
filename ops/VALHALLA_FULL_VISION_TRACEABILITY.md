@@ -202,3 +202,7 @@ The provider payment path can now evidence that a known capture is part of an ex
 The CAD payment path now supports an independently read bank credit joined to the exact automatic payout trace and its complete single-scope order membership. One batch creates one bank posting under separate authority; the gross proceeds remain delivery obligations pending fulfillment. Sandbox verification carries no actual settlement, spendable cash or tenant access.
 
 One-time paid product fulfillment separately matches scoped Stripe payment authentication, exact buyer and tenant metadata, product bytes and commercial rights. A buyer acknowledgment is independent from bank settlement, revenue recognition and spending authority.
+
+### Native CAD recurring and corrections source anchors
+
+The bounded recurring path in `services/api/app/services/stripe_recurring.py` and `services/api/app/services/stripe_recurring_worker.py` links a fixed approved plan to exact provider identity, independently checks each paid interval and keeps cancellation distinct from the end of contracted access. The existing subscriber Home panel binds the three recurring actions through the approved origin and authenticated account. `services/api/app/services/stripe_refund_correction.py` records native one-time CAD refund clearing corrections with a cumulative signed sequence. Finance and commerce acceptance still need independent reversal, recurring bank reconciliation and available-cash coverage, followed by authorized provider and preview commissioning.
