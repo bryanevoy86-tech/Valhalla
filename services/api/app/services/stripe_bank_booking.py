@@ -282,10 +282,11 @@ def _bank_reversal_recorded(db, reference):
     return db.scalar(select(LegacyOrchestrationEvent.id).filter_by(event_id=key)) is not None
 
 
-def bank_batch_summary(db: Session, order_id: UUID, projection: dict, *, live: bool):
+def bank_batch_summary(db: Session, order_id: UUID, projection: dict, *, live: bool, include_order_hold=True, lock=False):
     return _member_bank_summary(db, f"STRIPE-BANK-ORDER-{order_id}", projection["order"]["scope"],
                                 "orders", "order_id", str(order_id),
-                                held=projection["status"] != "MATCHED_PROCESSOR_EVIDENCE", live=live)
+                                held=include_order_hold and projection["status"] != "MATCHED_PROCESSOR_EVIDENCE",
+                                live=live, lock=lock)
 
 
 def invoice_bank_summary(db, invoice_id, scope, *, held, live, lock=False):

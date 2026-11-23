@@ -466,7 +466,32 @@ def test_recurring_checkout_renewal_cancellation_and_payment_holds(deal_client, 
                 row = db.get(StripeFinancialEvent, restore["event_id"])
                 assert row.snapshot["provider_created_at"] == start + 304
                 assert row.snapshot["native_status"] == "won"
-            assert client.post(route, headers=owner, json={"signed_event_id": restore["event_id"]}).status_code == 409
+            request = {"signed_event_id": restore["event_id"]}
+            assert client.post(route, headers=owner, json=request).status_code == 409
+            dispute["status"] = "won"
+            dispute["balance_transactions"].append({"id": "txn_ServiceRestore"})
+            credit = {**txn, "id": "txn_ServiceRestore", "reporting_category": "dispute_reversal",
+                      "amount": terminal_chargeback_minor, "fee": -25, "net": terminal_chargeback_minor + 25,
+                      "available_on": start + 305}
+            fixtures["/v1/balance_transactions/txn_ServiceRestore"] = credit
+            assert client.post(wrong_invoice, headers=owner, json=request).status_code == 409
+            credit["net"] += 1
+            assert client.post(route, headers=owner, json=request).status_code == 409
+            credit["net"] -= 1
+            result = client.post(route, headers=owner, json=request)
+            assert result.status_code == 200, result.text
+            restored = result.json()
+            assert restored["original_chargeback_sha256"] == corrected["sha256"]
+            assert restored["principal_minor"] == terminal_chargeback_minor and restored["returned_fee_minor"] == 25
+            assert restored["basis"] == "SYNTHETIC_REINSTATEMENT"
+            assert restored["ledger_entry_id"] is None and restored["available_cash_minor"] is None
+            assert restored["cash_hold_released"] is False and restored["bank_credit_confirmed"] is False
+            assert client.post(route, headers=owner, json=request).json() == restored
+            closed_won = webhook("charge.dispute.closed", "ServiceDisputeWon", dispute, created=start + 306)
+            assert client.post(route, headers=owner, json={"signed_event_id": closed_won["event_id"]}).json() == restored
+            webhook("charge.dispute.updated", "ServiceDisputeNewAppeal",
+                    {**dispute, "status": "appeal_under_review"}, created=start + 307)
+            assert client.post(route, headers=owner, json=request).status_code == 409
             assert client.post(route, headers=owner, json=signed).status_code == 409
         assert client.post(release_url, headers=owner, json=inputs).status_code == 409
         assert client.get(history, headers=buyer).json()["completed_paid_periods"] == []

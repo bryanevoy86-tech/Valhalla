@@ -383,6 +383,22 @@ def test_registered_stripe_finance_replays_and_reconciles_only_matching_capture(
             assert effect["basis"] == "SYNTHETIC_CHARGEBACK" and effect["bank_debit_confirmed"] is False
             assert effect["ledger_entry_id"] is None and effect["available_cash_minor"] is None
             assert client.post(route, headers=keys, json=body).json() == effect
+            won = {**closed, "id": "evt_DisputeWon", "created": int(time.time()),
+                   "data": {"object": {**dispute, "status": "won"}}}
+            assert deliver(won).status_code == 200
+            won_request = {"signed_event_id": won["id"]}
+            assert client.post(route, headers=keys, json=won_request).status_code == 409
+            dispute["status"] = "won"
+            dispute["balance_transactions"].append({"id": "txn_ReinstateA"})
+            adjustments["/v1/balance_transactions/txn_ReinstateA"] = {
+                **dispute_tx, "id": "txn_ReinstateA", "reporting_category": "dispute_reversal",
+                "amount": 1000, "net": 1000, "fee": 0,
+            }
+            result = client.post(route, headers=keys, json=won_request)
+            assert result.status_code == 200, result.text
+            assert result.json()["principal_minor"] == 1000 and result.json()["returned_fee_minor"] == 0
+            assert result.json()["original_chargeback_sha256"] == effect["sha256"]
+            assert client.post(route, headers=keys, json=won_request).json() == result.json()
             assert db.query(JournalEntry).count() == 0
             assert scoped_bank_blockers(db, scope, live=False) == {"STRIPE_BANK_CORRECTION_REQUIRED"}
             return
@@ -626,7 +642,7 @@ def test_correction_journals_keep_original_liability_and_balance_separate_effect
     from app.services.stripe_bank_booking import _journal
     from app.services.stripe_bank_reversal import _book_reversal
     from app.services.stripe_refund_correction import _post_correction
-    from app.services.stripe_dispute_correction import SOURCE, _record_chargeback
+    from app.services.stripe_dispute_correction import SOURCE, _post_reinstatement, _record_chargeback
     from app.services.stripe_revenue_release import SOURCE as RELEASE_SOURCE
 
     _, engine = deal_client
@@ -683,7 +699,20 @@ def test_correction_journals_keep_original_liability_and_balance_separate_effect
         assert _record_chargeback(
             db, "partial_fixture", dict(effect), bank, "release_fixture", released, captured_minor=1200, live=True,
         ) == corrected
+        restore = {"scope": scope, "returned_fee_minor": 25, "processor_posted_on": booked_on.isoformat()}
+        reinstatement = _post_reinstatement(db, "won_fixture", "partial_fixture",
+                                            {**corrected, "corrects_delivery_income": True}, restore)
+        db.flush()
+        assert amounts(reinstatement) == {
+            (accounts["REFUND_CONTRA_INCOME"].id, 0, Decimal("4.75")),
+            (accounts["CLEARING"].id, Decimal("5.00"), 0),
+            (accounts["FEES"].id, 0, Decimal("0.25")),
+        }
+        assert (accounts["FEES"].id, Decimal("1.50"), 0) in amounts(corrected["ledger_entry_id"])
         period.closed = True
+        with pytest.raises(HTTPException, match="open accounting period"):
+            _post_reinstatement(db, "late_won_fixture", "partial_fixture",
+                                {**corrected, "corrects_delivery_income": True}, restore)
         with pytest.raises(HTTPException, match="open accounting period"):
             _book_reversal(db, "book_fixture", "late_fixture", scope, receipt, 1140, booked_on)
 

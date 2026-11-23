@@ -63,6 +63,61 @@ TABLES = [
 
 @unittest.skipUnless(url, "Disposable Postgres database is not configured")
 class FactoryPostgresTests(unittest.TestCase):
+    def test_stripe_reinstatement_credit_has_one_winner_across_postgres_sessions(self):
+        from concurrent.futures import ThreadPoolExecutor
+        from types import SimpleNamespace
+        from unittest.mock import patch
+        from fastapi import HTTPException
+
+        from app.loki.evidence import artifact_digest
+        from app.models.stripe_finance import StripeFinancialEvent
+        from app.services import stripe_dispute_correction as correction
+
+        StripeFinancialEvent.__table__.create(self.engine)
+        self.addCleanup(StripeFinancialEvent.__table__.drop, self.engine)
+        scope = {"legacy_instance_id": "ci_legacy_a", "business_id": "ci_business_a"}
+        original_key = "STRIPE-CHARGEBACK-PG-CI"
+        original = {"scope": scope, "order_id": "pg-fixture", "dispute_id": "du_Pg",
+                    "debit_minor": 500, "bank_batch_sha256": "batch", "ledger_entry_id": None}
+        with self.sessions.begin() as db:
+            correction._event(db, event_id=original_key, legacy_instance_id="ci_legacy_a",
+                              event_type=correction.KIND, message="Synthetic original debit", payload={
+                                  "value": original, "sha256": artifact_digest(correction.KIND, original_key, original),
+                              })
+        event = SimpleNamespace(snapshot={"provider_created_at": 1795300000}, snapshot_sha256="signed-fixture")
+        effect = {"credit_balance_id": "txn_PgReinstated", "principal_minor": 500,
+                  "returned_fee_minor": 0, "processor_posted_on": "2026-11-22"}
+        barrier = threading.Barrier(2)
+        write_event = correction._event
+
+        def staged_event(db, **values):
+            write_event(db, **values)
+            if values["event_id"].startswith("STRIPE-DISPUTE-TX-"):
+                barrier.wait(timeout=10)
+
+        def submit(_worker):
+            with self.sessions() as db:
+                try:
+                    return correction._reinstate(db, None, event, {"scope": scope}, "ch_Pg",
+                                                 {"sha256": "batch"}, original_key, {"order_id": "pg-fixture"}, live=False)
+                except HTTPException as exc:
+                    self.assertEqual(exc.status_code, 409)
+                    self.assertIn("already consumed", exc.detail)
+                    return None
+
+        with patch.object(correction, "_event", side_effect=staged_event), patch.object(
+            correction, "_reinstatement_credit", return_value=effect,
+        ), ThreadPoolExecutor(max_workers=2) as workers:
+            results = list(workers.map(submit, range(2), timeout=20))
+        [recorded] = [result for result in results if result is not None]
+        self.assertIsNone(recorded["ledger_entry_id"])
+        self.assertFalse(recorded["cash_hold_released"])
+        with self.sessions() as db, patch.object(correction, "_reinstatement_credit", return_value=effect):
+            self.assertEqual(submit(0), recorded)
+            self.assertEqual(len(db.scalars(select(LegacyOrchestrationEvent).filter_by(
+                event_type=correction.REINSTATEMENT,
+            )).all()), 2)
+
     def test_simultaneous_specialist_sources_survive_a_rolled_back_claim(self):
         scope_key = outcome_scope_key({"business_id": "queue-fixture"})
         now = datetime.now(timezone.utc).replace(tzinfo=None)
