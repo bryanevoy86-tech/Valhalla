@@ -36,6 +36,8 @@ Commission only in an authorized isolated environment. In addition to restricted
 
 The existing private Stripe order review in WeWeb exposes the stored bank batch and this order’s contribution as separate amounts. The editor action (`436863aa-aa83-436c-a577-e585f40aa9bb`) renders sandbox matches as rehearsals and marks recorded batches with a refund, dispute or failed payout for correction review. Replay, approved-origin, subscriber denial, and false spendable cash rejection were verified with an isolated copy of the exact saved script. Live HTTPS and browser commissioning remain open.
 
+Scoped capital assessment and scheduled Prime reassessment now hold new exposure when signed payout failure, dispute/refund, or conflicting bank booking evidence requires correction. Njord, Norns, Tyr and Mimir receive the existing scoped economic blockers. Independent Loki raises a critical correction finding on the scoped economic report. Test and live lanes stay separate. This is a recommendation and capital containment hold, with no automatic accounting reversal or cash release.
+
 ### Isolated operating trial acceptance
 
 Use a pinned draft build and disposable PostgreSQL database in separately authorized staging. Seed synthetic grants, demand exports, one registered Legacy scope and a deliberately unapproved adjacent scope. Keep external providers, outreach, real money movement and production storage disabled. After preflight, schedule the existing discovery, Pantheon, Prime schedule, deterministic Loki and Factory workers using their current staging-only toggles. Read the private owner briefing and worker logs without exporting private inputs.

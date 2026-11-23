@@ -189,6 +189,11 @@ def attach_operating_reassessment(db, payload, scope, today, outcomes, report):
     checkout = scoped_checkout_learning(db, scope, outcomes, artifact_id=artifact_id if isinstance(artifact_id, str) else None)
     capital = specialist_economics(db, "HEIMDALL", scope, today).get("economic_reassessment")
     blockers = set(capital["blockers"] if capital else ())
+    if capital is None:
+        from app.heimdall.authority import is_live
+        from app.services.stripe_bank_booking import scoped_bank_blockers
+
+        blockers.update(scoped_bank_blockers(db, scope, live=is_live()))
     source_assessment = None
     if inputs.get("foundry_evidence") or opportunity.source == "scoped_foundry_evidence":
         try:

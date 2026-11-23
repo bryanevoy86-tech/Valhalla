@@ -177,6 +177,14 @@ def challenge(item: dict) -> IndependentReviewIn:
                     "checkout_performance_conflict", "observations/economic_reassessment",
                     "Revalidate the economic result against the exact closed checkout fixture.", critical=True,
                 ))
+            if isinstance(economic, dict) and {"STRIPE_BANK_EVIDENCE_CONFLICT", "STRIPE_BANK_CORRECTION_REQUIRED"}.intersection(
+                economic.get("blockers", [])
+            ):
+                findings.append(_finding(
+                    "bank_batch_correction_required", "observations/economic_reassessment",
+                    "Reconcile the scoped bank batch, signed reversals and existing journal before relying on cash.",
+                    critical=True,
+                ))
             proof = economic.get("verified_performance_claim") if isinstance(economic, dict) else None
             if isinstance(proof, dict) and (
                 proof.get("verified_real_world_outcome") is not False

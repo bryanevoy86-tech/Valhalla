@@ -1675,6 +1675,7 @@
       "id": "dynamic_capital_allocation_loss_containment_and_strategic_redeployment",
       "priority": "P0",
       "source_paths": [
+        "services/api/app/services/stripe_bank_booking.py",
         "engines/ENGINE_REGISTRY.md",
         "services/api/app/routers/economic_control.py",
         "services/api/app/services/economic_control.py",

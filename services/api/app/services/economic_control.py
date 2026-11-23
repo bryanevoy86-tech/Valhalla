@@ -261,7 +261,11 @@ def comparison(db, state, scope, currency, available, today, *, lock_sources=Fal
 
 
 def assessment(db, operation, state, pool, today, plan: Plan | None = None, *, lock_sources=False):
+    from app.heimdall.authority import is_live
+    from app.services.stripe_bank_booking import scoped_bank_blockers
+
     scope, mandate = operation.scope, state.mandate
+    bank_blockers = scoped_bank_blockers(db, scope, live=is_live())
     liquidity = pool_liquidity(db, pool)
     open_obligations = [item for item in state.obligations.values() if item.status != "CLOSED_IN_FIXTURE"]
     related_hold = business_contained(db, scope, exclude_scope_key=operation.scope_key)
@@ -272,13 +276,13 @@ def assessment(db, operation, state, pool, today, plan: Plan | None = None, *, l
             verify_checkout_performance(db, performance)
         except HTTPException:
             checkout_conflict = True
-    available = (0 if related_hold or checkout_conflict else
+    available = (0 if related_hold or checkout_conflict or bank_blockers else
                  max(0, usable_cash(state, pool, liquidity, today) - sum(item.amount_minor for item in open_obligations)))
     remaining_exposure = max(0, mandate.max_exposure - (state.performance.outstanding_exposure if state.performance else 0)
                              - state.outstanding_reservations)
     comparison_budget = min(available, remaining_exposure, max(0, state.funding_limit - state.simulated_funding))
     ranked = comparison(db, state, scope, operation.currency, comparison_budget, today, lock_sources=lock_sources)
-    blockers = ["RELATED_BUSINESS_CONTAINED"] if related_hold else []
+    blockers = sorted(bank_blockers) + (["RELATED_BUSINESS_CONTAINED"] if related_hold else [])
     if checkout_conflict:
         blockers.append("CHECKOUT_PERFORMANCE_EVIDENCE_CONFLICT")
     if not current_performance(state, today):

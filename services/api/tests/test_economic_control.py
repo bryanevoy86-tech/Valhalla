@@ -1093,3 +1093,31 @@ def test_personal_allocation_binds_closed_month_cash_and_protects_obligations(ec
             review_commercial_targets(db, scenario, today)
     checkout["sha256"] = "b" * 64
     assert client.post(path, headers=OWNER, json=request).status_code == 409
+
+
+def test_scoped_bank_correction_blocks_new_exposure_and_prompts_independent_review(economic_client, monkeypatch):
+    from app.loki.evidence import artifact_digest
+    from app.services import stripe_bank_booking
+    from app.services.economic_control import specialist_economics
+
+    client, engine = economic_client
+    today = datetime.now(timezone.utc).date()
+    post(client, "mandates", mandate(today))
+    post(client, "performance", performance(today))
+    post(client, "liquidity", liquidity(today))
+    assert post(client, "assessment", SCOPE, 200)["new_exposure_available_minor"] > 0
+    correction = "STRIPE_BANK_CORRECTION_REQUIRED"
+    monkeypatch.setattr(stripe_bank_booking, "scoped_bank_blockers",
+                        lambda _db, scope, *, live: {correction} if scope == SCOPE else set())
+    held = post(client, "assessment", SCOPE, 200)
+    assert correction in held["blockers"] and held["suggested_action"] == "SUSPEND"
+    assert held["new_exposure_available_minor"] == held["comparison_budget_minor"] == 0
+    with Session(engine) as db:
+        result = specialist_economics(db, "NJORD", SCOPE, today)
+    assert correction in result["economic_reassessment"]["blockers"]
+    reference = "bank-correction-test"
+    report = {"scope": SCOPE, "role": "NJORD", "status": "observed", "observations": result,
+              "verified_real_world_outcome": False, "external_authority": False}
+    review = challenge({"artifact_type": "pantheon_report", "reference": reference, "raw_input": report,
+                        "artifact_sha256": artifact_digest("pantheon_report", reference, report)})
+    assert any(f.category == "bank_batch_correction_required" and f.severity == "critical" for f in review.findings)

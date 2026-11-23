@@ -268,3 +268,42 @@ def bank_batch_summary(db: Session, order_id: UUID, projection: dict, *, live: b
         "currency": "CAD", "batch_minor": value["payout_minor"], "order_contribution_minor": member["net_minor"],
         "booked_on": value["bank"]["posted_on"], "ledger_entry_id": ledger_id, "available_cash_minor": None,
     }
+
+
+def scoped_bank_blockers(db: Session, scope: dict, *, live: bool) -> set[str]:
+    """Hold scoped reallocations when a booked payout needs independent correction."""
+    journal = LegacyOrchestrationEvent
+    if not inspect(db.connection()).has_table(journal.__tablename__):
+        return set()
+    entries = db.scalars(select(journal).where(
+        journal.event_type == SETTLEMENT, journal.legacy_instance_id == scope["legacy_instance_id"],
+        journal.event_id.startswith("STRIPE-BANK-"), ~journal.event_id.startswith("STRIPE-BANK-ORDER-"),
+        ~journal.event_id.startswith("STRIPE-BANK-TX-"),
+    ).execution_options(yield_per=100))
+    expected_basis = "INDEPENDENT_CAD_BANK_READBACK" if live else "SYNTHETIC_BANK_REHEARSAL"
+    blockers = set()
+    for entry in entries:
+        receipt = _json(entry.payload_json, {})
+        value = receipt.get("value") if isinstance(receipt, dict) else None
+        if not isinstance(value, dict) or not isinstance(value.get("scope"), dict):
+            blockers.add("STRIPE_BANK_EVIDENCE_CONFLICT")
+            continue
+        if value["scope"] != scope:
+            continue
+        if receipt.get("sha256") != artifact_digest("stripe_bank_reconciliation", entry.event_id, value):
+            blockers.add("STRIPE_BANK_EVIDENCE_CONFLICT")
+            continue
+        if value.get("basis") != expected_basis:
+            continue
+        try:
+            for member in value["orders"]:
+                order_id = UUID(member["order_id"])
+                projection = inspect_binding(db, order_id, live=live)
+                summary = bank_batch_summary(db, order_id, projection, live=live)
+                if summary is None:
+                    blockers.add("STRIPE_BANK_EVIDENCE_CONFLICT")
+                elif summary["status"] == "CORRECTION_REVIEW_REQUIRED":
+                    blockers.add("STRIPE_BANK_CORRECTION_REQUIRED")
+        except (HTTPException, ValueError, KeyError, TypeError):
+            blockers.add("STRIPE_BANK_EVIDENCE_CONFLICT")
+    return blockers
