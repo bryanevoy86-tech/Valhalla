@@ -89,17 +89,12 @@ def default_allocation_anchors():
             for profit, personal in DEFAULT_PERSONAL_ANCHORS]
 
 
-class PersonalAllocationIn(StrictModel):
-    scope: MarketScope
-    statement_id: UUID
+class AllocationPreferences(StrictModel):
     anchors: list[AllocationAnchor] = Field(default_factory=default_allocation_anchors, min_length=2, max_length=20)
     essential_household_minor: Minor
     other_household_income_minor: Minor = 0
     personal_reserve_target_minor: Minor
     personal_reserve_balance_minor: Minor
-    operating_reserve_minor: Minor
-    corporate_tax_reserve_minor: Minor
-    additional_obligations_minor: Minor = 0
     owner_monthly_limit_minor: Minor | None = None
 
     @model_validator(mode="after")
@@ -112,6 +107,14 @@ class PersonalAllocationIn(StrictModel):
                 raise ValueError("Allocation anchors must increase without allocating more than each profit increment")
             previous_profit, previous_personal = anchor.profit_minor, anchor.personal_minor
         return self
+
+
+class PersonalAllocationIn(AllocationPreferences):
+    scope: MarketScope
+    statement_id: UUID
+    operating_reserve_minor: Minor
+    corporate_tax_reserve_minor: Minor
+    additional_obligations_minor: Minor = 0
 
 
 def interpolate_personal(eligible_minor, anchors):

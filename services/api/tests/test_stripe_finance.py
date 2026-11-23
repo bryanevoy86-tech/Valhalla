@@ -634,3 +634,98 @@ def test_correction_journals_keep_original_liability_and_balance_separate_effect
         period.closed = True
         with pytest.raises(HTTPException, match="open accounting period"):
             _book_reversal(db, "book_fixture", "late_fixture", scope, receipt, 1140, booked_on)
+
+
+def test_signed_cash_close_reconciles_scoped_fixture_without_movement_authority(deal_client, monkeypatch):
+    from datetime import datetime, timezone
+    from decimal import Decimal
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+    from app.accounting.models import Account, JournalLine
+    from app.services.specialist_triggers import outcome_scope_key
+    from app.services.treasury_cash_position import CashCloseIn, REQUIRED_PROTECTIONS, cash_close_message, journal_snapshot
+
+    client, engine = deal_client
+    scope = {"legacy_instance_id": "legacy-close", "business_id": "business-close",
+             "engine_id": "engine-close", "jurisdiction": "CA-MB"}
+    for model in (Account, JournalEntry, JournalLine):
+        model.__table__.create(engine, checkfirst=True)
+    with Session(engine) as db:
+        entry = JournalEntry(entry_date=date.today(), source="fixture", source_ref="one")
+        account = Account(code="cash_fixture", name="Fixture", type="asset", currency="CAD")
+        offset = Account(code="capital_fixture", name="Offset fixture", type="equity", currency="CAD")
+        db.add_all([entry, account, offset])
+        db.flush()
+        line = JournalLine(entry_id=entry.id, account_id=account.id, debit=Decimal("1000.00"), credit=0)
+        db.add_all([line, JournalLine(entry_id=entry.id, account_id=offset.id, debit=0, credit=Decimal("1000.00"))])
+        db.commit()
+        line_id = line.id
+        head, digest = journal_snapshot(db)
+    signer = Ed25519PrivateKey.generate()
+    public = signer.public_key().public_bytes(serialization.Encoding.Raw, serialization.PublicFormat.Raw).hex()
+    monkeypatch.setenv("VALHALLA_OWNER_MANDATE_KEY", "cash-close-fixture-mandate")
+    monkeypatch.setenv("VALHALLA_STRIPE_BANK_BOOKING_SCOPE", outcome_scope_key(scope))
+    monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "0")
+    monkeypatch.setenv("VALHALLA_TREASURY_CASH_ATTESTATION_KEYS", json.dumps({"fixture-accountant": {
+        "public_key_hex": public, "scope_sha256": outcome_scope_key(scope), "account_sha256": "a" * 64,
+        "evidence_class": "SYNTHETIC",
+    }}))
+    monkeypatch.setattr("app.routers.stripe_financial.is_live", lambda: False)
+    bank = {"basis": "PLAID_SANDBOX_BALANCE_OBSERVATION", "account_reference_sha256": "a" * 64,
+            "request_reference_sha256": "b" * 64, "bank_current_reported_minor": 100000,
+            "bank_available_reported_minor": 90000}
+    calls = []
+
+    def read_bank(**kwargs):
+        calls.append(kwargs)
+        return bank
+
+    monkeypatch.setattr("app.banking.plaid_transactions.configured_bank_balance", read_bank)
+    close = {"scope": scope, "signer_id": "fixture-accountant", "signature": "0" * 128,
+             "issued_at": datetime.now(timezone.utc).isoformat(), "currency": "CAD",
+             "evidence_class": "SYNTHETIC", "ledger_snapshot_sha256": digest, "journal_head": head,
+             "bank_current_minor": 100000, "bank_available_minor": 90000, "account_reference_sha256": "a" * 64,
+             "reviewed_categories": sorted(REQUIRED_PROTECTIONS), "retained_distributable_profit_minor": 50000,
+             "protections": [
+                 {"category": "restricted_funds", "amount_minor": 10000, "ledger_item_sha256": "1" * 64,
+                  "already_reflected_in_bank_available": True},
+                 {"category": "delivery_obligations", "amount_minor": 20000, "ledger_item_sha256": "2" * 64,
+                  "already_reflected_in_bank_available": False},
+                 {"category": "tax_and_other_liabilities", "amount_minor": 5000, "ledger_item_sha256": "3" * 64,
+                  "already_reflected_in_bank_available": False},
+             ]}
+
+    def signed(data):
+        return {**data, "signature": signer.sign(cash_close_message(CashCloseIn.model_validate(data))).hex()}
+
+    body = {"signed_close": signed(close), "allocation_preferences": {
+        "essential_household_minor": 10000, "personal_reserve_target_minor": 3000,
+        "personal_reserve_balance_minor": 0,
+    }}
+    path = "/api/governance/floor/stripe-bank-batches/cash-close"
+    headers = {"X-Owner-Mandate-Key": "cash-close-fixture-mandate"}
+    assert client.post(path, json=body).status_code == 401
+    assert client.post(path, headers=headers, json={"signed_close": close}).status_code == 409
+    duplicate = signed({**close, "protections": [*close["protections"], close["protections"][0]]})
+    assert client.post(path, headers=headers, json={"signed_close": duplicate}).status_code == 409
+    assert calls == []
+    result = client.post(path, headers=headers, json=body)
+    assert result.status_code == 200, result.text
+    evidence = result.json()
+    assert result.headers["cache-control"] == "no-store"
+    assert evidence["actual_accessible_funds_minor"] is None and evidence["funds_movement_authorized"] is False
+    assert evidence["synthetic_cash_headroom_minor"] == 65000
+    assert evidence["synthetic_eligible_distribution_minor"] == 50000
+    assert evidence["allocation"]["recommended_personal_minor"] == 20000
+    bank["bank_available_reported_minor"] -= 1
+    assert client.post(path, headers=headers, json=body).status_code == 409
+    bank["bank_available_reported_minor"] += 1
+    monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "1")
+    held = client.post(path, headers=headers, json=body).json()
+    assert held["blockers"] == ["EMERGENCY_STOP"] and held["allocation"] is None
+    assert held["synthetic_cash_headroom_minor"] is None
+    with Session(engine) as db:
+        db.get(JournalLine, line_id).debit = Decimal("1000.01")
+        db.commit()
+    assert client.post(path, headers=headers, json=body).status_code == 409
+    assert len(calls) == 3

@@ -1,4 +1,5 @@
 """Canonical provider event ingress and owner-controlled readback."""
+from datetime import datetime, timezone
 import os
 from uuid import UUID
 
@@ -20,6 +21,7 @@ from app.services.stripe_bank_booking import BankBatchIn, configured_bank_batch,
 from app.services.stripe_orders import OrderBindingIn, inspect_binding, register_binding
 from app.services.stripe_revenue_release import DeliveryReleaseIn, recognize_delivery
 from app.schemas.market_intelligence import MarketScope
+from app.services.treasury_cash_position import CashPositionRequest, reconcile_cash_position, verify_cash_close, verify_journal_head
 from app.services.stripe_dispute_correction import ChargebackIn, configured_chargeback
 from app.services.stripe_refund_correction import RefundCorrectionIn, configured_refund_correction
 from app.services.stripe_recurring import (
@@ -71,6 +73,51 @@ def observe_payout_bank_balance(scope: MarketScope, db: Session = Depends(get_db
     observation = configured_bank_balance(live=live, stripe_destination=os.getenv("VALHALLA_STRIPE_PAYOUT_DESTINATION_ID"))
     return private_owner_response({"scope": requested, **observation,
                                    "spendable_cash_blockers": sorted(blockers | {"INDEPENDENT_LIABILITIES_AND_RESERVES_REQUIRED"})})
+
+
+@router.post("/api/governance/floor/stripe-bank-batches/cash-close", dependencies=owner_keys)
+def reconcile_scoped_cash_close(request: CashPositionRequest, db: Session = Depends(get_db)):
+    from app.banking.plaid_transactions import configured_bank_balance
+    from sqlalchemy import inspect
+    from app.models.completion_registry import LegacyOrchestrationEvent
+    from app.models.stripe_finance import StripeFinancialEvent
+    from app.routers.economic_control import context, require_schema
+    from app.services.economic_control import require_no_containment
+    from app.services.prime_business_execution import _emergency_stop_active
+    from app.services.specialist_triggers import outcome_scope_key
+
+    payload = request.signed_close
+    scope = payload.scope.model_dump()
+    if os.getenv("VALHALLA_STRIPE_BANK_BOOKING_SCOPE") != outcome_scope_key(scope):
+        raise HTTPException(409, "Cash close requires the exact approved receiving scope")
+    live = is_live()
+    verify_cash_close(db, payload, live=live, now=datetime.now(timezone.utc))
+    bank = configured_bank_balance(live=live, stripe_destination=os.getenv("VALHALLA_STRIPE_PAYOUT_DESTINATION_ID"))
+    verify_journal_head(db, payload)
+    blockers = scoped_bank_blockers(db, scope, live=live)
+    if _emergency_stop_active(db):
+        blockers.add("EMERGENCY_STOP")
+    if live:
+        schema = inspect(db.connection())
+        if any(not schema.has_table(model.__tablename__) for model in (LegacyOrchestrationEvent, StripeFinancialEvent)):
+            raise HTTPException(503, "Current settlement and correction journal unavailable")
+        require_schema(db)
+        operation, state, _ = context(db, payload.scope, lock=False)
+        if operation.currency != "CAD" or state.mandate is None or state.mandate.review_by < datetime.now(timezone.utc).date():
+            blockers.add("CURRENT_CAD_CAPITAL_MANDATE_REQUIRED")
+        else:
+            operating = sum(item.amount_minor for item in payload.protections if item.category == "operating_reserve")
+            if operating < state.mandate.min_operating_reserve:
+                blockers.add("OPERATING_RESERVE_BELOW_APPROVED_FLOOR")
+        try:
+            require_no_containment(db, scope)
+        except HTTPException as error:
+            if error.status_code != 409:
+                raise
+            blockers.add("CAPITAL_CONTAINMENT")
+    return private_owner_response(reconcile_cash_position(
+        payload, bank, blockers, live=live, preferences=request.allocation_preferences,
+    ))
 
 
 @router.post("/api/governance/floor/stripe-bank-batches/reversal", dependencies=owner_keys)
