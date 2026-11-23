@@ -21,7 +21,7 @@ def main():
         parser.error("Use an isolated checkout without dotenv files")
 
     env = {key: os.environ[key] for key in ("PATH", "SYSTEMROOT", "WINDIR", "TEMP", "TMP", "TMPDIR",
-           "HOME", "NODE_PATH", "PLAYWRIGHT_BROWSERS_PATH") if key in os.environ}
+           "HOME", "NODE_PATH", "PLAYWRIGHT_BROWSERS_PATH", "VALHALLA_BROWSER_EXECUTABLE") if key in os.environ}
     env.update(DATABASE_URL="sqlite://", VALHALLA_JWT_SECRET="browser-acceptance-fixture-jwt",
                VALHALLA_OWNER_USERNAME="browser-fixture", VALHALLA_OWNER_PASSWORD="synthetic-only",
                PYTEST_DISABLE_PLUGIN_AUTOLOAD="1", ENV="dev", APP_ENV="dev", RESET_OWNER_PASSWORD="false",

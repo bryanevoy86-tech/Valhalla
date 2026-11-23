@@ -47,7 +47,7 @@ Both connected WeWeb projects report the Free plan. Neither has a published depl
 
 The connected workspace still exposes the two existing Free projects and no isolated project. The provider restricts the connector's project creation by account. The recorded refusal does not identify a quota or require a paid plan. The owner can verify whether **New Project** in the signed-in dashboard allows an empty **Valhalla Staging Preview** at $0. If the dashboard also blocks creation, record its exact message and check account eligibility with WeWeb. The primary and backup are excluded from this test. Published staging remains a separate paid option.
 
-Run from an isolated checkout with the existing backend test dependencies, Node and Playwright Chromium. The hosted PR workflow installs its disposable browser and writes the evidence artifact. To run the same check locally on Linux:
+Run from an isolated checkout with the existing backend test dependencies, Node and Playwright Chromium. The hosted PR workflow installs a pinned packaged Chromium binary and writes the evidence artifact. The local command below uses the standard Playwright installation on supported distributions. To run the same check locally on Linux:
 
 ```bash
 npm install --prefix /tmp/valhalla-browser --ignore-scripts playwright@1.55.1

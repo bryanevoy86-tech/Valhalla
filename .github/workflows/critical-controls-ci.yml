@@ -274,9 +274,12 @@ jobs:
           python -m pytest -q services/api/tests
       - name: Run the disposable Chromium acceptance client
         run: |
-          npm install --prefix "$RUNNER_TEMP/valhalla-browser" --ignore-scripts playwright@1.55.1
-          "$RUNNER_TEMP/valhalla-browser/node_modules/.bin/playwright" install chromium --only-shell
-          NODE_PATH="$RUNNER_TEMP/valhalla-browser/node_modules" python scripts/local_browser_acceptance.py \
+          npm install --prefix "$RUNNER_TEMP/valhalla-browser" --ignore-scripts playwright@1.55.1 @sparticuz/chromium@140.0.0
+          export NODE_PATH="$RUNNER_TEMP/valhalla-browser/node_modules"
+          VALHALLA_BROWSER_EXECUTABLE="$(node -e 'require("@sparticuz/chromium").executablePath().then(console.log).catch(error => { console.error(error); process.exitCode = 1; })')"
+          test -x "$VALHALLA_BROWSER_EXECUTABLE"
+          export VALHALLA_BROWSER_EXECUTABLE
+          python scripts/local_browser_acceptance.py \
             --report local-browser-acceptance.json
       - name: Archive disposable browser evidence
         if: always()

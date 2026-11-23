@@ -8,7 +8,7 @@ async function run() {
     assert.equal(origin.hostname, "127.0.0.1");
     assert.equal(origin.protocol, "http:");
     assert.equal(origin.href, origin.origin + "/");
-    const browser = await chromium.launch();
+    const browser = await chromium.launch({executablePath: process.env.VALHALLA_BROWSER_EXECUTABLE});
     try {
         const blocked = [];
         // Insert synthetic fixture values without relying on a desktop keyboard.
