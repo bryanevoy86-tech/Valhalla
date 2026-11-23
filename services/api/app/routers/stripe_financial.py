@@ -22,7 +22,7 @@ from app.services.stripe_orders import OrderBindingIn, inspect_binding, register
 from app.services.stripe_revenue_release import DeliveryReleaseIn, recognize_delivery
 from app.schemas.market_intelligence import MarketScope
 from app.services.treasury_cash_position import CashPositionRequest, reconcile_cash_position, verify_cash_close, verify_journal_head
-from app.services.stripe_dispute_correction import ChargebackIn, configured_chargeback
+from app.services.stripe_dispute_correction import ChargebackIn, configured_chargeback, configured_subscription_chargeback
 from app.services.stripe_refund_correction import RefundCorrectionIn, configured_refund_correction
 from app.services.stripe_recurring import (
     InvoiceProofIn, RecurringBindingIn, apply_paid_invoice, bind_recurring, recurring_clients, schedule_cancellation,
@@ -274,3 +274,10 @@ def acknowledge_paid_service(tenant_id: UUID, local_id: int, invoice_id: str, pa
              dependencies=owner_keys)
 def release_paid_service(local_id: int, invoice_id: str, payload: SubscriptionReleaseIn, db: Session = Depends(get_db)):
     return private_owner_response(recognize_service(db, local_id, invoice_id, payload, live=is_live()))
+
+
+@router.post("/api/governance/floor/stripe-subscriptions/{local_id}/paid-period/{invoice_id}/chargeback-correction",
+             dependencies=owner_keys)
+def reconcile_recurring_chargeback(local_id: int, invoice_id: str, payload: ChargebackIn,
+                                   db: Session = Depends(get_db)):
+    return private_owner_response(configured_subscription_chargeback(db, local_id, invoice_id, payload, live=is_live()))

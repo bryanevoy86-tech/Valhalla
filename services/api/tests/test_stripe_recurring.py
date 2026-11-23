@@ -25,7 +25,8 @@ from app.services.stripe_recurring_worker import reconcile_due_invoice
 from app.users.models import AccountSettings, UserProfile
 
 
-def test_recurring_checkout_renewal_cancellation_and_payment_holds(deal_client, monkeypatch):
+@pytest.mark.parametrize("terminal_chargeback", [False, True], ids=["lifecycle", "after-recognition-chargeback"])
+def test_recurring_checkout_renewal_cancellation_and_payment_holds(deal_client, monkeypatch, terminal_chargeback):
     client, engine = deal_client
     for model in (UserProfile, AccountSettings, RevokedAccessToken, SaaSPlan, SaaSPlanModule,
                   Subscription, StripeFinancialEvent, StripeOrderBinding, StripeBalanceEvidence,
@@ -332,6 +333,45 @@ def test_recurring_checkout_renewal_cancellation_and_payment_holds(deal_client, 
     assert recognition.json()["eligible_liability_minor"] == 1200
     assert all(recognition.json()[field] is None for field in ("ledger_entry_id", "available_cash_minor", "recognized_revenue_minor"))
     assert client.post(release_url, headers=owner, json=inputs).json() == recognition.json()
+    if terminal_chargeback:
+        dispute = {"id": "du_First", "object": "dispute", "livemode": False, "charge": "ch_First",
+                   "payment_intent": "pi_First", "currency": "cad", "amount": 1200, "status": "lost",
+                   "balance_transactions": [{"id": "txn_ServiceDispute"}]}
+        fixtures["/v1/charges/ch_First"]["disputed"] = True
+        fixtures["/v1/disputes/du_First"] = dispute
+        txn = {"id": "txn_ServiceDispute", "object": "balance_transaction", "source": "du_First",
+               "currency": "cad", "type": "adjustment", "reporting_category": "dispute", "status": "available",
+               "amount": -1200, "net": -1350, "fee": 150, "available_on": start + 300}
+        fixtures["/v1/balance_transactions/txn_ServiceDispute"] = txn
+
+        @contextmanager
+        def dispute_client(*, live):
+            assert live is False
+            with clients(live=False) as (reader, _):
+                yield reader, "acct_Recurring"
+
+        monkeypatch.setattr("app.services.stripe_dispute_correction.stripe_readback_client", dispute_client)
+        event = webhook("charge.dispute.closed", "FirstServiceLost", dispute)
+        signed = {"signed_event_id": event["event_id"]}
+        correction = root + "/paid-period/in_First/chargeback-correction"
+        assert client.post(correction, headers=buyer, json=signed).status_code == 401
+        wrong_invoice = root + "/paid-period/in_Renewal/chargeback-correction"
+        assert client.post(wrong_invoice, headers=owner, json=signed).status_code == 409
+        txn["net"] = -1349
+        assert client.post(correction, headers=owner, json=signed).status_code == 409
+        txn["net"] = -1350
+        result = client.post(correction, headers=owner, json=signed)
+        assert result.status_code == 200, result.text
+        corrected = result.json()
+        assert corrected["corrects_delivery_income"] is True
+        assert corrected["basis"] == "SYNTHETIC_CHARGEBACK" and corrected["fee_minor"] == 150
+        assert corrected["bank_debit_confirmed"] is False and corrected["ledger_entry_id"] is None
+        assert client.post(correction, headers=owner, json=signed).json() == corrected
+        assert client.post(release_url, headers=owner, json=inputs).status_code == 409
+        assert client.get(history, headers=buyer).json()["completed_paid_periods"] == []
+        with Session(engine) as db:
+            assert scoped_bank_blockers(db, params["scope"], live=False) == {"STRIPE_BANK_CORRECTION_REQUIRED"}
+        return
     webhook("payout.failed", "RecurringPayoutFailed", payout)
     assert client.post(release_url, headers=owner, json=inputs).status_code == 409
     assert client.post(payout_url, headers=owner).status_code == 409

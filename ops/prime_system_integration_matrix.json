@@ -559,7 +559,7 @@
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
-          "internal_coding": "A private subscriber can now enumerate only their own bound subscriptions with current paid, cancellation and recovery state. Complete editor binding, broader subscriber support, and module-specific entitlement renewal and revocation gaps.",
+          "internal_coding": "A private subscriber can now enumerate only their own bound subscriptions with current paid, cancellation and recovery state. The primary editor inventory binding was saved and replayed in isolation. Complete broader subscriber support, completed-period acknowledgment UI and module-specific entitlement renewal and revocation gaps.",
           "internally_achievable_testing": "Prove billing event replay and tenant isolation for chosen modules.",
           "external_api_and_provider_commissioning": "Verify approved sandbox billing events.",
           "owner_authorization_or_account_establishment": "Select modules and approved merchant sandbox.",

@@ -74,48 +74,97 @@ def configured_chargeback(db, order_id, request, *, live):
             raise HTTPException(409, "Original batch and capture evidence are required")
         scope = binding["scope"]
         charge_id = projection["processor_evidence"]["charge_id"]
-        refund = db.scalar(select(StripeFinancialEvent.event_id).where(
-            StripeFinancialEvent.livemode == live,
-            StripeFinancialEvent.snapshot["kind"].as_string() == "charge.refunded",
-            StripeFinancialEvent.snapshot["charge_id"].as_string() == charge_id,
-        ).limit(1))
-        if refund is not None:
-            raise HTTPException(409, "A prior refund requires separate adjustment review")
+        _deny_prior_refund(db, charge_id, live)
         effect = _debit(client, event.snapshot, binding, charge_id, datetime.now(timezone.utc))
         key = f"STRIPE-CHARGEBACK-{order_id}"
         release_key = f"STRIPE-DELIVERY-REVENUE-{order_id}"
         release = _read_record(db, release_key, RELEASE, scope)
-        if live and release is not None:
-            posting = db.get(JournalEntry, release["ledger_entry_id"])
-            if (posting is None or posting.source != RELEASE_SOURCE or posting.source_ref != release_key
-                    or release["recognized_revenue_minor"] != effect["debit_minor"]):
-                raise HTTPException(409, "Prior recognition is contradictory")
         value = {"scope": scope, "order_id": str(order_id), "bank_batch_sha256": bank["sha256"],
                  "signed_dispute_sha256": event.snapshot_sha256, **effect,
                  "corrects_delivery_income": release is not None, "bank_debit_confirmed": False,
                  "available_cash_minor": None, "basis": "STRIPE_CAD_CHARGEBACK" if live else "SYNTHETIC_CHARGEBACK"}
-        previous = _read_record(db, key, KIND, scope)
-        if previous is not None:
-            if any(previous.get(k) != field for k, field in value.items()):
-                raise HTTPException(409, "Chargeback evidence changed after accounting")
-            entry = db.get(JournalEntry, previous["ledger_entry_id"]) if live else None
-            if (live and (entry is None or entry.source != SOURCE or entry.source_ref != key)
-                    or not live and previous["ledger_entry_id"] is not None):
-                raise HTTPException(409, "Chargeback entry failed integrity")
-            return previous
-        posted = max(bank["booked_on"], effect["processor_posted_on"], release["posting_date"] if release else "")
-        try:
-            value["ledger_entry_id"] = _post_correction(
-                db, scope, key, date.fromisoformat(posted), effect["debit_minor"], bank, release,
-                fee=effect["fee_minor"], source=SOURCE,
-            ) if live else None
-            digest = artifact_digest(KIND, key, value)
-            unique = "STRIPE-DISPUTE-TX-" + artifact_digest(KIND, effect["processor_balance_id"], {"live": live})[:40]
-            for reference, payload in ((unique, {"sha256": digest}), (key, {"value": value, "sha256": digest})):
-                _event(db, event_id=reference, legacy_instance_id=scope["legacy_instance_id"], event_type=KIND,
-                       message="Independently matched Stripe chargeback", payload=payload)
-            db.commit()
-        except IntegrityError:
-            db.rollback()
-            raise HTTPException(409, "Chargeback debit already consumed") from None
-        return {**value, "sha256": digest}
+        return _record_chargeback(db, key, value, bank, release_key, release, live=live)
+
+
+def _deny_prior_refund(db, charge_id, live):
+    refund = db.scalar(select(StripeFinancialEvent.event_id).where(
+        StripeFinancialEvent.livemode == live,
+        StripeFinancialEvent.snapshot["kind"].as_string() == "charge.refunded",
+        StripeFinancialEvent.snapshot["charge_id"].as_string() == charge_id,
+    ).limit(1))
+    if refund is not None:
+        raise HTTPException(409, "A prior refund requires separate adjustment review")
+
+
+def _record_chargeback(db, key, value, bank, release_key, release, *, live):
+    scope = value["scope"]
+    if live and release is not None:
+        posting = db.get(JournalEntry, release["ledger_entry_id"])
+        if (posting is None or posting.source != RELEASE_SOURCE or posting.source_ref != release_key
+                or release["recognized_revenue_minor"] != value["debit_minor"]):
+            raise HTTPException(409, "Prior recognition is contradictory")
+    previous = _read_record(db, key, KIND, scope)
+    if previous is not None:
+        if any(previous.get(k) != field for k, field in value.items()):
+            raise HTTPException(409, "Chargeback evidence changed after accounting")
+        entry = db.get(JournalEntry, previous["ledger_entry_id"]) if live else None
+        if (live and (entry is None or entry.source != SOURCE or entry.source_ref != key)
+                or not live and previous["ledger_entry_id"] is not None):
+            raise HTTPException(409, "Chargeback entry failed integrity")
+        return previous
+    posted = max(bank["booked_on"], value["processor_posted_on"], release["posting_date"] if release else "")
+    try:
+        value["ledger_entry_id"] = _post_correction(
+            db, scope, key, date.fromisoformat(posted), value["debit_minor"], bank, release,
+            fee=value["fee_minor"], source=SOURCE,
+        ) if live else None
+        digest = artifact_digest(KIND, key, value)
+        unique = "STRIPE-DISPUTE-TX-" + artifact_digest(KIND, value["processor_balance_id"], {"live": live})[:40]
+        for reference, payload in ((unique, {"sha256": digest}), (key, {"value": value, "sha256": digest})):
+            _event(db, event_id=reference, legacy_instance_id=scope["legacy_instance_id"], event_type=KIND,
+                   message="Independently matched Stripe chargeback", payload=payload)
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(409, "Chargeback debit already consumed") from None
+    return {**value, "sha256": digest}
+
+
+def configured_subscription_chargeback(db, local_id, invoice_id, request, *, live):
+    from app.models.stripe_recurring import StripePaidPeriod
+    from app.services.stripe_bank_booking import invoice_bank_summary
+    from app.services.stripe_recurring import _binding, _period_value
+    from app.services.stripe_subscription_delivery import ACK, RELEASE as SERVICE_RELEASE
+
+    if not stripe_id(invoice_id, "in") or not stripe_id(request.signed_event_id, "evt"):
+        raise HTTPException(422, "Native Stripe invoice and event identities required")
+    with stripe_readback_client(live=live) as (client, account):
+        row, binding, _ = _binding(db, local_id, live, lock=True)
+        period = db.get(StripePaidPeriod, invoice_id)
+        event = db.get(StripeFinancialEvent, request.signed_event_id)
+        if (period is None or period.binding_id != local_id or account != binding["stripe_account_id"]
+                or event is None or event.livemode is not live):
+            raise HTTPException(409, "Exact subscription, paid period and signed dispute are required")
+        paid = _period_value(row, period)
+        _event_receipt(event, True)
+        scope = binding["scope"]
+        bank = invoice_bank_summary(db, invoice_id, scope, held=False, live=live, lock=True)
+        if bank is None or bank["status"] != "RECONCILIATION_RECORDED":
+            raise HTTPException(409, "Original invoice bank settlement without a payout correction is required")
+        financial = {"amount_minor": paid["captured_minor"], "payment_intent_id": paid["payment_intent_id"],
+                     "stripe_account_id": account, "livemode": live}
+        _deny_prior_refund(db, paid["charge_id"], live)
+        effect = _debit(client, event.snapshot, financial, paid["charge_id"], datetime.now(timezone.utc))
+        reference = artifact_digest(ACK, invoice_id, {"live": live})[:32]
+        release_key = f"STRIPE-SERVICE-REVENUE-{local_id}-{reference}"
+        release = _read_record(db, release_key, SERVICE_RELEASE, scope)
+        if release is not None and (release["paid_period_sha256"] != period.evidence_sha256
+                                    or release["batch_sha256"] != bank["sha256"]):
+            raise HTTPException(409, "Prior service recognition did not match this invoice settlement")
+        key = f"STRIPE-SERVICE-CHARGEBACK-{local_id}-{reference}"
+        value = {"scope": scope, "subscription_id": local_id, "invoice_id": invoice_id,
+                 "paid_period_sha256": period.evidence_sha256, "bank_batch_sha256": bank["sha256"],
+                 "signed_dispute_sha256": event.snapshot_sha256, **effect,
+                 "corrects_delivery_income": release is not None, "bank_debit_confirmed": False,
+                 "available_cash_minor": None, "basis": "STRIPE_CAD_CHARGEBACK" if live else "SYNTHETIC_CHARGEBACK"}
+        return _record_chargeback(db, key, value, bank, release_key, release, live=live)

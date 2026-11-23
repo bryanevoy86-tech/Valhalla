@@ -28,6 +28,7 @@ MANDATORY_ENDPOINTS = {
     "weweb_recurring_checkout": ("POST", "/api/weweb/stripe-subscriptions/{tenant_id}/{local_id}/checkout"),
     "weweb_recurring_service_history": ("GET", "/api/weweb/stripe-subscriptions/{tenant_id}/{local_id}/service-history"),
     "weweb_recurring_service_ack": ("POST", "/api/weweb/stripe-subscriptions/{tenant_id}/{local_id}/paid-period/{invoice_id}/acknowledge"),
+    "stripe_recurring_chargeback": ("POST", "/api/governance/floor/stripe-subscriptions/{local_id}/paid-period/{invoice_id}/chargeback-correction"),
     "stripe_recurring_liability_release": ("POST", "/api/governance/floor/stripe-subscriptions/{local_id}/paid-period/{invoice_id}/release-liability"),
     "weweb_recurring_list": ("GET", "/api/weweb/stripe-subscriptions/{tenant_id}"),
     "weweb_recurring_status": ("GET", "/api/weweb/stripe-subscriptions/{tenant_id}/{local_id}"),
