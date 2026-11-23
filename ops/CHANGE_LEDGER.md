@@ -1060,3 +1060,8 @@ The acceptance matrix retains 13 P0 and 39 total criteria requiring internal cod
 
 - Hosted run 45082205782 passed all four jobs at `2ec48a92142670f225fb69a0e3b0036528360416`, with 387 backend tests, 22 disposable PostgreSQL checks and 125 required route contracts. The earlier runs 45081924982 and 45082067243 failed on the shared test fixture import.
 - The primary WeWeb Home editor now includes the owner-only independence review button `fce75fcb-4e81-4e57-950c-edd8c44dfe7d`, workflow `6525ef34-494e-4d6e-a155-eb71384d6036`. Exact saved action passed five synthetic scenarios. Existing staging-origin restriction and backup project were preserved. Private startup endpoints return redacted, no-store client errors. No live browser, actual financial result, external filing or authority is claimed.
+
+### Scoped independence and commercial target linkage
+
+- Prior checkpoint `46ea731273c9230548d0303bce4e480c18f7e276` passed all four hosted jobs in run 45082571023.
+- Added same-month scoped statement and checkout evidence to the private independence review. Added an owner-only reverse planning route that applies existing allocation caps and anchors to current digest-checked Foundry scenarios, exposing required units, customers, in-month receipts, acquisition spend and capacity blockers. The new projections preserve fixture and assumption classifications. Canonical CI covers linked evidence, zero-contribution separation, cap inversion, authorization and revoked evidence. Actual-provider settlement and funding intake remain open.

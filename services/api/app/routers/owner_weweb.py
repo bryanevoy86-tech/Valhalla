@@ -18,7 +18,8 @@ from app.schemas.market_intelligence import MarketScope
 from app.services.owner_specialist_context import pantheon_report_index, prime_decision_context, specialist_context
 from app.services.prime_business_execution import require_owner_mandate_key
 from app.services.owner_startup import StartupPlanIn, prepare_startup
-from app.services.startup_independence import StartupIndependenceIn, startup_independence
+from app.services.startup_independence import StartupIndependenceIn, review_startup_independence
+from app.services.commercial_targets import CommercialTargetsIn, review_commercial_targets
 from app.services.acquisition_comparison import ComparisonIn
 from app.services.wealth_scenario import PersonalAllocationIn, recommend_personal_allocation
 from app.services.owner_conversation import (
@@ -82,10 +83,17 @@ def startup_comparison(payload: StartupPlanIn):
 
 
 @startup_router.post("/independence-review")
-def owner_startup_independence(payload: StartupIndependenceIn):
+def owner_startup_independence(payload: StartupIndependenceIn, db: Session = Depends(get_db)):
     from datetime import datetime, timezone
 
-    return private_owner_response(startup_independence(payload, datetime.now(timezone.utc).date()))
+    return private_owner_response(review_startup_independence(db, payload, datetime.now(timezone.utc).date()))
+
+
+@startup_router.post("/commercial-targets")
+def owner_commercial_targets(payload: CommercialTargetsIn, db: Session = Depends(get_db)):
+    from datetime import datetime, timezone
+
+    return private_owner_response(review_commercial_targets(db, payload, datetime.now(timezone.utc).date()))
 
 
 @router.post("/owner-personal-allocation")

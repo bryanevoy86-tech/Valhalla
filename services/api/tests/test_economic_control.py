@@ -1016,5 +1016,80 @@ def test_personal_allocation_binds_closed_month_cash_and_protects_obligations(ec
     }
     held = client.post(path, headers=OWNER, json={**request, "additional_obligations_minor":3_000_000}).json()
     assert held["recommended_personal_minor"] == 0 and held["contingency_review_recommended"]
+    from app.models.foundry_evidence import FoundryEvidence
+    from app.services.commercial_targets import CommercialTargetsIn, review_commercial_targets
+    from app.services.foundry_discovery import EvidenceIn
+    from app.services.specialist_triggers import outcome_scope_key
+
+    FoundryEvidence.__table__.create(engine)
+    evidence = EvidenceIn(evidence_id=uuid4(), **SCOPE, kind="SERVICE", evidence_class="SIMULATION",
+                          title="Operating scenario fixture", source_ref="fixture:service-unit-cost",
+                          observed_on=today, expires_on=today, currency="CAD", unit_price=100000,
+                          variable_cost_per_unit=20000, acquisition_cost_per_unit=10000, monthly_fixed_cost=50000,
+                          startup_capital=200000, test_cost=10000, monthly_units=100,
+                          rights_attestation="AUTHORIZED_INTERNAL_RESEARCH")
+    params = {"allocation": request, "net_personal_target_minor": 320000, "estimated_personal_tax_bp": 2000,
+              "reserve_addition_minor": 20000, "candidates": [{
+                  "evidence_id": str(evidence.evidence_id), "in_month_settlement_bp": 8000,
+                  "fulfillment_limit_units": 23, "units_per_customer": 2, "experiment_budget_minor": 5000,
+              }]}
+    endpoint = "/api/weweb/owner-startup/commercial-targets"
+    unauthorized = client.post(endpoint, headers=OWNER, json=params)
+    assert unauthorized.status_code == 401 and unauthorized.headers["cache-control"] == "no-store"
+    body = evidence.model_dump(mode="json")
+    with Session(engine) as db:
+        row = FoundryEvidence(id=evidence.evidence_id, scope_key=outcome_scope_key(SCOPE),
+                              source_ref=evidence.source_ref, observed_on=today, expires_on=today, payload=body,
+                              digest=artifact_digest("foundry_evidence", str(evidence.evidence_id), body))
+        db.add(row)
+        db.commit()
+        scenario = CommercialTargetsIn.model_validate(params)
+        projection = review_commercial_targets(db, scenario, today)
+        assert projection["baseline_allocation_sha256"] == result["sha256"]
+        assert projection["required_gross_personal_minor"] == 400000
+        assert projection["required_distributable_profit_minor"] == 1000000
+        assert projection["fixture_distributable_gap_minor"] == 0
+        option = projection["options"][0]
+        assert option["required_units"] == 25 and option["required_customers"] == 13
+        assert option["required_booked_sales_minor"] == 2500000
+        assert option["estimated_in_month_cash_minor"] == 2000000
+        assert option["required_acquisition_budget_minor"] == 250000
+        assert option["blockers"] == ["POSITIVE_SOURCED_DEMAND_SAMPLE_MISSING", "TEST_COST_EXCEEDS_SCENARIO_BUDGET",
+                                      "VOLUME_EXCEEDS_DECLARED_DEMAND_OR_FULFILLMENT"]
+        assert projection["verified_after_tax_income_minor"] is None
+        assert projection["requires_independent_review"] and not projection["external_action_authorized"]
+
+        from app.services.startup_independence import StartupIndependenceIn, review_startup_independence
+
+        independence = StartupIndependenceIn(
+            registration_date=date(2026, 10, 1), registration_evidence_ref="fixture:registration",
+            reporting_month=date(2026, 10, 1), reconciled_allocation=request,
+            monthly_essentials_minor=350000, reserve_months=3, reserve_balance_minor=0,
+            monthly_stretch_low_minor=800000, monthly_stretch_high_minor=1200000,
+            opening_unrestricted_cash_fixture_minor=0, establishment_minor=1000,
+            operating_minor=0, business_reserve_minor=0, experiment_minor=0,
+        )
+        independence_review = review_startup_independence(db, independence, today)
+        linked = independence_review["reconciled_monthly_fixture"]
+        assert linked["allocation_sha256"] == result["sha256"]
+        assert linked["economic_performance"]["checkout_sha256"] == checkout["sha256"]
+        assert linked["recommendation_gross_personal_minor"] == result["recommended_personal_minor"]
+        assert independence_review["capital_scenarios"][0]["total_plan_gap_minor"] == 1000
+        assert independence_review["verified_available_cash_minor"] is None
+        assert independence_review["verified_after_tax_income_minor"] is None
+        with pytest.raises(HTTPException, match="private review month"):
+            review_startup_independence(db, independence.model_copy(update={"reporting_month": today.replace(day=1)}),
+                                        today)
+
+        low_settlement = CommercialTargetsIn.model_validate({
+            **params, "candidates": [{**params["candidates"][0], "in_month_settlement_bp": 2000}],
+        })
+        blocked = review_commercial_targets(db, low_settlement, today)["options"][0]
+        assert blocked["required_units"] is None
+        assert "NONPOSITIVE_UNIT_MARGIN_OR_IN_MONTH_CASH" in blocked["blockers"]
+        row.revoked = True
+        db.commit()
+        with pytest.raises(HTTPException, match="stale, revised or outside scope"):
+            review_commercial_targets(db, scenario, today)
     checkout["sha256"] = "b" * 64
     assert client.post(path, headers=OWNER, json=request).status_code == 409

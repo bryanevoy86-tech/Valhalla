@@ -188,3 +188,5 @@ The private owner startup calculator reuses the existing WeWeb owner identity. R
 ### Startup independence planning
 
 The existing private owner, treasury and capital workstreams now include a registration-based review through `StartupIndependenceIn`. The internal calculation separates establishment, operations, reserves and reversible experiment capacity and records reported amounts without certifying available cash or benefits. Reconciled evidence integration, private preview acceptance and dated case-specific reporting confirmation remain outstanding.
+
+The private review can recheck a same-month scoped checkout-linked allocation fixture. The separate owner-only commercial target calculation reuses the same fixture and current Foundry records to connect an estimated after-tax objective to required sales and fulfillment. No new engine or acceptance criterion. Live settlement, independently verified market outcomes and cash access remain open.

@@ -8,6 +8,7 @@ from typing import Annotated, Literal
 from pydantic import Field, model_validator
 
 from app.schemas.market_intelligence import StrictModel
+from app.services.wealth_scenario import PersonalAllocationIn
 
 Minor = Annotated[int, Field(strict=True, ge=0, le=100_000_000_000)]
 Reference = Annotated[str, Field(min_length=3, max_length=120)]
@@ -84,6 +85,7 @@ class StartupIndependenceIn(StrictModel):
     reporting_rules_checked_on: date | None = None
     case_confirmation_ref: Reference | None = None
     financing_scenario: FinancingScenario | None = None
+    reconciled_allocation: PersonalAllocationIn | None = None
 
     @model_validator(mode="after")
     def validate_report(self):
@@ -220,3 +222,25 @@ def startup_independence(plan: StartupIndependenceIn, today: date) -> dict:
         "external_action_authorized": False, "borrowing_authorized": False,
         "transfers_authorized": False, "contingency_activation_authorized": False,
     }
+
+
+
+def review_startup_independence(db, plan: StartupIndependenceIn, today: date) -> dict:
+    from app.services.wealth_scenario import recommend_personal_allocation
+
+    result = startup_independence(plan, today)
+    if plan.reconciled_allocation is None:
+        return result
+    allocation = recommend_personal_allocation(db, plan.reconciled_allocation, today)
+    if allocation["period"] != plan.reporting_month.isoformat():
+        raise HTTPException(409, "Reconciled statement must match the private review month")
+    result["reconciled_monthly_fixture"] = {
+        "basis": allocation["basis"], "period": allocation["period"], "scope": allocation["scope"],
+        "allocation_sha256": allocation["sha256"], "statement": allocation["statement"],
+        "economic_performance": allocation["economic_performance"],
+        "eligible_distributable_profit_minor": allocation["eligible_distributable_profit_minor"],
+        "recommendation_gross_personal_minor": allocation["recommended_personal_minor"],
+        "business_protections_minor": allocation["business_protections_minor"],
+        "blockers": allocation["blockers"],
+    }
+    return result

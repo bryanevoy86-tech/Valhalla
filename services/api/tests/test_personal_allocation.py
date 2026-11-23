@@ -39,3 +39,15 @@ def test_household_and_reserve_share_one_capped_personal_allocation():
     assert result["remaining_eligible_for_reinvestment_minor"] == 650000
     assert result["shortfalls"] == {"essentials_minor":0, "personal_reserve_minor":150000}
     assert allocation_waterfall(0, policy)["contingency_review_recommended"] is True
+
+
+def test_reverse_allocation_uses_first_sufficient_cent_and_respects_policy_ceiling():
+    from app.services.commercial_targets import required_distributable_profit
+
+    policy = inputs()
+    for target in (1, 400000, 400001, 750001, 1250000, 25000000):
+        profit = required_distributable_profit(target, policy)
+        assert interpolate_personal(profit - 1, policy.anchors) < target
+        assert interpolate_personal(profit, policy.anchors) >= target
+    assert required_distributable_profit(25000001, policy) is None
+    assert required_distributable_profit(350001, inputs(owner_monthly_limit_minor=350000)) is None

@@ -16,7 +16,9 @@ The Home startup panel (`7a41906c-a17a-4b05-a283-74df9bb6e434`, page `05ce39c3-5
 
 For a synthetic preview use `{"monthly_essentials_minor":120000,"reserve_months":3,"reserve_balance_minor":60000,"monthly_stretch_low_minor":180000,"monthly_stretch_high_minor":240000,"opening_unrestricted_cash_fixture_minor":50000,"establishment_minor":42000,"operating_minor":15000,"business_reserve_minor":8000,"experiment_minor":2000,"reporting_month":"2026-09-01"}`. The response must show a CAD 170.00 synthetic zero-contribution gap and no asserted available cash.
 
-Next, connect authenticated reconciled balances and actual outcome receipts, prepare dated funding-source intake and verify official reporting rules. Case-specific confirmation and authorization are required before relying on or submitting any real report. Keep owner records, benefits and evidence references out of Git.
+The independence route optionally accepts `reconciled_allocation`, an existing `PersonalAllocationIn` payload. It rechecks the current scoped statement, closed checkout proof and economic holds, and only connects that fixture when its statement month equals the reporting month. The zero-additional-capital scenario is still separate. The owner-only `POST /api/weweb/owner-startup/commercial-targets` uses that same evidence boundary and current scoped Foundry records. Its reverse calculation applies a supplied personal tax estimate and the allocation anchors to project required customers, booked sales, timing-adjusted receipts, acquisition costs and fulfillment capacity. Options preserve evidence and bottlenecks. Neither endpoint recognizes actual spendable money or authorizes activity.
+
+Next, attach independently read-back provider, accounting and settlement evidence when separately authorized. Prepare dated funding-source intake and verify official reporting rules. Case-specific confirmation and authorization are required before relying on or submitting any real report. Keep owner records, benefits and evidence references out of Git.
 
 ## Current workstream index and startup order
 
