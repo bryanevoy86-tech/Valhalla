@@ -27,6 +27,8 @@ async def stripe_webhook(req: Request):
     live = is_live()
     mode = os.getenv("VALHALLA_STRIPE_EVENT_MODE")
     if not live and mode is None:
+        if req.headers.get("Stripe-Signature"):
+            raise HTTPException(503, "STRIPE_FINANCIAL_EVENT_CONSUMER_NOT_VERIFIED")
         return {"status": "sandbox_ignored", "verified_financial_effect": False}
 
     raw = bytearray()

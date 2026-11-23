@@ -61,6 +61,9 @@ def test_registered_stripe_finance_replays_and_reconciles_only_matching_capture(
         digest = hmac.new(key.encode(), stamp.encode() + b"." + raw, hashlib.sha256).hexdigest()
         return client.post("/webhooks/stripe", content=raw, headers={"Stripe-Signature": f"t={stamp},v1={digest}"})
 
+    monkeypatch.delenv("VALHALLA_STRIPE_EVENT_MODE")
+    assert deliver(event).status_code == 503
+    monkeypatch.setenv("VALHALLA_STRIPE_EVENT_MODE", "test")
     assert deliver(event, key="wrong").status_code == 400
     assert deliver({**event, "livemode": True}).status_code == 422
     first = deliver(event)
