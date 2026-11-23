@@ -72,6 +72,7 @@ def main():
         ("connected_owner_specialists_loki_factory_mimir_and_cad", [
             PYTHON, "-m", "pytest", "-q", "--tb=short",
             API_TESTS + "test_product_artifact_workflow.py",
+            API_TESTS + "test_loki_independent_receipt.py",
         ]),
         ("cad_processor_buyer_delivery_corrections_and_cash", [
             PYTHON, "-m", "pytest", "-q", "--tb=short", API_TESTS + "test_stripe_finance.py",

@@ -8,7 +8,7 @@ from fastapi import Header, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.settings import settings
-from app.loki.evidence import artifact_digest
+from app.loki.evidence import artifact_digest, findings_digest
 from app.loki.models import (
     LokiFinding,
     LokiIndependentReceipt,
@@ -53,13 +53,10 @@ def result_digest(review: LokiReview, receipt: LokiIndependentReceipt, findings:
     records = [
         {"id": str(item.id), "category": item.category, "severity": item.severity,
          "message": item.message, "suggested_fix": item.suggested_fix, "tags": item.tags}
-        for item in sorted(findings, key=lambda item: str(item.id))
+        for item in findings
     ]
-    return artifact_digest("loki_result", str(review.id), {
-        "proposal_sha256": receipt.artifact_sha256, "reviewer_id": receipt.reviewer_id,
-        "analysis_ref": receipt.analysis_ref, "summary": review.summary, "severity": review.result_severity,
-        "findings": records,
-    })
+    return findings_digest(str(review.id), receipt.artifact_sha256, receipt.reviewer_id, receipt.analysis_ref,
+                           review.summary, review.result_severity, records)
 
 
 def require_result_integrity(review: LokiReview, receipt: LokiIndependentReceipt) -> None:
@@ -71,7 +68,8 @@ def require_result_integrity(review: LokiReview, receipt: LokiIndependentReceipt
         raise HTTPException(409, "Loki findings no longer match the published receipt")
 
 
-def publish_receipt(db: Session, review_id: UUID, reviewer: str, payload: IndependentReviewIn) -> LokiIndependentReceipt:
+def publish_receipt(db: Session, review_id: UUID, reviewer: str,
+                    payload: IndependentReviewIn) -> tuple[LokiIndependentReceipt, list[str]]:
     review = db.get(LokiReview, review_id, with_for_update=True)
     if review is None:
         raise HTTPException(status_code=404, detail="Loki review not found")
@@ -100,8 +98,9 @@ def publish_receipt(db: Session, review_id: UUID, reviewer: str, payload: Indepe
     review.status = LokiReviewStatus.COMPLETED
     db.flush()
     receipt.result_sha256 = result_digest(review, receipt, findings)
+    finding_ids = [str(finding.id) for finding in findings]
     db.commit()
-    return receipt
+    return receipt, finding_ids
 
 
 def _material(review: LokiReview) -> set[UUID]:

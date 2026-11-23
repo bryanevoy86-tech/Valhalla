@@ -14,3 +14,12 @@ def artifact_digest(artifact_type: str, reference: str | None, content: dict) ->
     return hashlib.sha256(canonical.encode()).hexdigest()
 
 
+
+
+def findings_digest(review_id: str, proposal_sha256: str, reviewer_id: str, analysis_ref: str,
+                    summary: str, severity: str, findings: list[dict]) -> str:
+    return artifact_digest("loki_result", review_id, {
+        "proposal_sha256": proposal_sha256, "reviewer_id": reviewer_id,
+        "analysis_ref": analysis_ref, "summary": summary, "severity": severity,
+        "findings": sorted(findings, key=lambda item: item["id"]),
+    })

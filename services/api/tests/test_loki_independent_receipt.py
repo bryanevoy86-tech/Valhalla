@@ -177,6 +177,7 @@ def test_local_analyst_process_publishes_material_and_hash_bound_findings(deal_c
     assert observed["review_id"] == review["id"]
     assert observed["artifact_sha256"] == artifact["artifact_sha256"]
     assert observed["reviewer_id"] == "isolated-running-analyst"
+    assert observed["findings"] >= 2
     assert worker(loopback_api, "universal_opportunity", "isolated-running-analyst") == {"status": "idle"}
     assert loopback_api.get(f"/loki/reviews/{review['id']}").status_code == 401
 
@@ -242,7 +243,7 @@ def test_independent_worker_rejects_mismatched_publication_receipts(monkeypatch)
     import pytest
 
     from app.loki.analyst import challenge
-    from app.loki.evidence import artifact_digest
+    from app.loki.evidence import artifact_digest, findings_digest
 
     worker_root = Path(__file__).resolve().parents[1] / "tools" / "cron"
     monkeypatch.syspath_prepend(str(worker_root))
@@ -251,8 +252,16 @@ def test_independent_worker_rejects_mismatched_publication_receipts(monkeypatch)
     proposal = {"status": "observed", "external_authority": False, "observations": {}}
     item = {"artifact_type": kind, "reference": "fixture", "review_id": str(uuid4()), "raw_input": proposal,
             "artifact_sha256": artifact_digest(kind, "fixture", proposal)}
+    result = challenge(item)
+    [finding] = result.findings
+    finding_id = str(uuid4())
+    records = [{"id": finding_id, "category": finding.category, "severity": finding.severity,
+                "message": finding.message, "suggested_fix": finding.suggested_fix,
+                "tags": {"material": finding.material, "evidence_ref": finding.evidence_ref}}]
     receipt = {"review_id": item["review_id"], "artifact_sha256": item["artifact_sha256"],
-               "result_sha256": "e" * 64, "analysis_ref": challenge(item).analysis_ref, "reviewer_id": "expected"}
+               "result_sha256": findings_digest(item["review_id"], item["artifact_sha256"], "expected",
+                                                result.analysis_ref, result.summary, "warn", records),
+               "analysis_ref": result.analysis_ref, "reviewer_id": "expected", "finding_ids": [finding_id]}
 
     def run(overrides, status=201):
         def send(request):
@@ -262,8 +271,10 @@ def test_independent_worker_rejects_mismatched_publication_receipts(monkeypatch)
         with httpx.Client(base_url="https://fixture.invalid", transport=httpx.MockTransport(send)) as client:
             return worker(client, kind, "expected")
 
+    assert run({})["verified"] is True
     for changes in ({"review_id": str(uuid4())}, {"artifact_sha256": "f" * 64},
-                    {"reviewer_id": "another"}, {"analysis_ref": "another"}, {"result_sha256": "malformed"}):
+                    {"reviewer_id": "another"}, {"analysis_ref": "another"}, {"result_sha256": "malformed"}, {"result_sha256": "e" * 64},
+                    {"finding_ids": []}, {"finding_ids": ["bad-id"]}, {"finding_ids": [str(uuid4())]}):
         with pytest.raises(RuntimeError, match="does not match"):
             run(changes)
     with pytest.raises(RuntimeError, match="does not match"):

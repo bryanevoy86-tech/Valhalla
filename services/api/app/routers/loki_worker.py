@@ -34,6 +34,6 @@ def complete_review(
     review_id: UUID, payload: IndependentReviewIn, reviewer: str = Depends(require_loki_reviewer),
     db: Session = Depends(get_db),
 ):
-    receipt = publish_receipt(db, review_id, reviewer, payload)
+    receipt, finding_ids = publish_receipt(db, review_id, reviewer, payload)
     return {"review_id": receipt.review_id, "artifact_sha256": receipt.artifact_sha256, "analysis_ref": receipt.analysis_ref,
-            "result_sha256": receipt.result_sha256, "reviewer_id": receipt.reviewer_id}
+            "result_sha256": receipt.result_sha256, "reviewer_id": receipt.reviewer_id, "finding_ids": finding_ids}

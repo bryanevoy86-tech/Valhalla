@@ -4,7 +4,6 @@ import argparse
 from datetime import datetime, timezone
 import json
 import os
-import re
 import signal
 import threading
 from urllib.parse import urlsplit
@@ -14,6 +13,32 @@ import httpx
 
 from business_factory_worker import poll
 from app.loki.analyst import challenge
+from app.loki.evidence import findings_digest
+
+
+def matches_findings(receipt: dict, review_id: UUID, reviewer_id: str, result) -> bool:
+    ids = receipt.get("finding_ids")
+    if not isinstance(ids, list) or len(ids) != len(result.findings):
+        return False
+    try:
+        if any(not isinstance(value, str) or str(UUID(value)) != value for value in ids):
+            return False
+    except ValueError:
+        return False
+    if len(ids) != len(set(ids)):
+        return False
+    findings = [
+        {"id": finding_id, "category": finding.category, "severity": finding.severity,
+         "message": finding.message, "suggested_fix": finding.suggested_fix,
+         "tags": {"material": finding.material or finding.severity == "critical", "evidence_ref": finding.evidence_ref}}
+        for finding_id, finding in zip(ids, result.findings, strict=True)
+    ]
+    severity = "critical" if any(finding.severity == "critical" for finding in result.findings) else (
+        "warn" if result.findings else "ok"
+    )
+    return receipt.get("result_sha256") == findings_digest(
+        str(review_id), result.artifact_sha256, reviewer_id, result.analysis_ref, result.summary, severity, findings,
+    )
 
 
 def tick(client: httpx.Client, kind: str, reviewer_id: str) -> dict:
@@ -32,14 +57,13 @@ def tick(client: httpx.Client, kind: str, reviewer_id: str) -> dict:
         return {"status": "blocked", "verified": False}
     published.raise_for_status()
     receipt = published.json()
-    digest = receipt.get("result_sha256")
-    if (published.status_code != 201 or receipt.get("review_id") != str(review_id)
+    if (not isinstance(receipt, dict) or published.status_code != 201 or receipt.get("review_id") != str(review_id)
             or receipt.get("artifact_sha256") != result.artifact_sha256
             or receipt.get("analysis_ref") != result.analysis_ref or receipt.get("reviewer_id") != reviewer_id
-            or not isinstance(digest, str) or not re.fullmatch(r"[0-9a-f]{64}", digest)):
+            or not matches_findings(receipt, review_id, reviewer_id, result)):
         raise RuntimeError("Loki publication receipt does not match the submitted review")
     return {"status": "reviewed", "verified": True, "review_id": str(review_id),
-            "artifact_sha256": result.artifact_sha256, "result_sha256": digest,
+            "artifact_sha256": result.artifact_sha256, "result_sha256": receipt["result_sha256"],
             "reviewer_id": reviewer_id, "findings": len(result.findings)}
 
 

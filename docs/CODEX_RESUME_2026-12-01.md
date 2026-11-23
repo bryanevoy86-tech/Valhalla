@@ -8,6 +8,12 @@ DO NOT restart the project, regenerate completed packs, or treat API presence as
 
 Use the current head of draft PR #4 and confirm the latest required CI run. Use the current workstream index, integration matrix and latest ledger verification to choose unfinished work. Dated checkpoints and original prompts are historical records. The same index supersedes earlier execution orders in the root start page and the finish passes. There are 50 acceptance contracts, 53 task entries and seven construction packages.
 
+## No-paid-staging continuation
+
+Draft PR #4 continued from `ccaa4d30e6e10ba3add1a888d26d67fbb3b3cd7e`. Use the draft head and its hosted checks for the candidate carrying this checkpoint. The [isolated provisioning and teardown runbook](VALHALLA_STAGING_PROVISIONING.md#no-recurring-cost-verification-and-teardown) keeps Ohio on hold, records the WeWeb account restriction and lists zero-cost verification paths. No cloud resources were created, and WeWeb was inspected read-only. The owner dashboard must confirm free isolated project creation. Real signed-in Preview, provider-native Stripe, independent staged reviewer and elapsed trial remain separate evidence gates.
+
+The independent Loki worker now verifies that the publication acknowledgement's canonical findings digest matches the exact submitted findings, including order-to-ID association. The restricted API adds ordered finding IDs to its existing response; persisted receipt hashes and owner dispositions retain their format. Deploy the reviewed API and worker candidate together for staging. An older API without finding IDs yields a worker verification failure and cannot emit a verified tick. The local independent receipt tests are part of the January rehearsal. Next, extend domain-specific contradictions under the existing Loki criterion while the staging decisions are pending.
+
 ## Current January staging readiness
 
 This batch resumed from `59a9b2e8681afa3bb45347c8e26a4e5b9cd841e2` and its [hosted checks](https://github.com/bryanevoy86-tech/Valhalla/actions/runs/45222370052). Use the [draft PR head and checks](https://github.com/bryanevoy86-tech/Valhalla/pull/4/checks) for the exact commit carrying this checkpoint.
@@ -80,7 +86,7 @@ In this continuation, the local backend regression passed 409 tests and prefligh
 
 The internal baseline at `def8c7fa3a7e7402b738a4e0fecb1440edd69505` passed all nine January gates on disposable PostgreSQL. The [baseline hosted run](https://github.com/bryanevoy86-tech/Valhalla/actions/runs/45230788989) passed all four jobs. Use the current draft checks for the reviewed candidate. The integration matrix records an internal evidence path and blocked staging status on each of the 14 P0 rows. Their existing acceptance tests, seven remaining-work fields and scope decisions still apply.
 
-The [isolated provisioning proposal](VALHALLA_STAGING_PROVISIONING.md) contains the staged resource names, current costs, exact pre-deploy and worker commands, and the separate approvals for provisioning and the trial. The offline staging guard is required before migrations or worker launch in that configuration. Neither approval is recorded.
+The [isolated provisioning proposal](VALHALLA_STAGING_PROVISIONING.md) contains the staged resource names, current costs, exact pre-deploy and worker commands, and the separate approvals for provisioning and the trial. The offline staging guard is required before migrations or worker launch in that configuration. Ohio provisioning is on hold under the current no-paid-staging instruction. Trial authorization is outstanding.
 
 #### Owner approval record
 
