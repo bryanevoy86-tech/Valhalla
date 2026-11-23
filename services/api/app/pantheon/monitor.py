@@ -212,11 +212,15 @@ def run_assignment(db: Session, role: str, *, now=None) -> dict:
             from app.routers.foundry_checkout import scoped_checkout_learning
 
             from app.heimdall.authority import is_live
+            from app.services.stripe_recurring import scoped_subscription_outcomes
             from app.services.stripe_revenue_release import scoped_delivery_outcomes
 
             paid_outcomes = scoped_delivery_outcomes(db, assignment.scope, live=is_live())
             if paid_outcomes:
                 facts["paid_delivery_outcomes"] = paid_outcomes
+            recurring = scoped_subscription_outcomes(db, assignment.scope, live=is_live())
+            if recurring:
+                facts["recurring_paid_periods"] = recurring
             checkout = scoped_checkout_learning(db, assignment.scope, outcomes)
             if checkout:
                 facts["checkout_learning"] = checkout

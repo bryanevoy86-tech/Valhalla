@@ -178,6 +178,19 @@ def challenge(item: dict) -> IndependentReviewIn:
                     "paid_delivery_evidence_review", "observations/paid_delivery_outcomes",
                     "Resolve the exact delivery or correction receipts before relying on this outcome.", critical=True,
                 ))
+            recurring = sources.get("recurring_paid_periods")
+            if recurring is not None and (
+                not isinstance(recurring, dict) or recurring.get("status") != "OBSERVED"
+                or recurring.get("basis") not in {"STRIPE_TEST_PAID_PERIODS", "STRIPE_LIVE_PAID_PERIODS"}
+                or recurring.get("available_cash_minor") is not None
+                or recurring.get("recognized_revenue_minor") is not None
+                or recurring.get("external_authority") is not False
+            ):
+                findings.append(_finding(
+                    "recurring_payment_evidence_review", "observations/recurring_paid_periods",
+                    "Reconcile recurring payment evidence and keep paid periods separate from booked income or cash.",
+                    critical=True,
+                ))
             factory = sources.get("factory_evidence_reconciliation")
             if isinstance(factory, dict) and factory.get("contradictions"):
                 findings.append(_finding(

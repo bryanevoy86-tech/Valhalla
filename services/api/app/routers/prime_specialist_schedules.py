@@ -214,13 +214,17 @@ def attach_operating_reassessment(db, payload, scope, today, outcomes, report):
     if any(row["status"] == "EVIDENCE_CONFLICT" for row in treasury.get("accounts", [])):
         blockers.add("TREASURY_STATEMENT_EVIDENCE_CONFLICT")
     from app.heimdall.authority import is_live
+    from app.services.stripe_recurring import scoped_subscription_outcomes
     from app.services.stripe_revenue_release import scoped_delivery_outcomes
 
     paid_outcomes = scoped_delivery_outcomes(db, scope, live=is_live())
     if any(item["status"] in {"DELIVERY_REVIEW_REQUIRED", "DELIVERY_EVIDENCE_CONFLICT"} for item in paid_outcomes):
         blockers.add("PAID_DELIVERY_EVIDENCE_REVIEW_REQUIRED")
+    recurring = scoped_subscription_outcomes(db, scope, live=is_live())
+    if recurring and recurring["status"] == "REVIEW_REQUIRED":
+        blockers.add("RECURRING_PAYMENT_EVIDENCE_REVIEW_REQUIRED")
     recommendation = report["recommendation"]
-    if checkout or capital or source_assessment or treasury.get("accounts") or blockers or paid_outcomes:
+    if checkout or capital or source_assessment or treasury.get("accounts") or blockers or paid_outcomes or recurring:
         report["operating_reassessment"] = {
             "checkout_learning": checkout, "economic_reassessment": capital,
             "source_assessment": source_assessment, "blockers": sorted(blockers),
@@ -228,6 +232,8 @@ def attach_operating_reassessment(db, payload, scope, today, outcomes, report):
         }
     if paid_outcomes:
         report["operating_reassessment"]["paid_delivery_outcomes"] = paid_outcomes
+    if recurring:
+        report["operating_reassessment"]["recurring_paid_periods"] = recurring
     if treasury.get("accounts"):
         report["operating_reassessment"]["treasury_statement_evidence"] = treasury
     if factory_findings:

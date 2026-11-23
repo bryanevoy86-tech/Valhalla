@@ -27,7 +27,8 @@ from app.services.stripe_bank_booking import BankBatchIn, _journal, bank_batch_s
 from app.services.stripe_payout_evidence import record_payout_evidence
 
 
-def test_registered_stripe_finance_replays_and_reconciles_only_matching_capture(deal_client, monkeypatch):
+@pytest.mark.parametrize("partial_refunds", [False, True], ids=["payout-and-delivery", "ordered-partial-refunds"])
+def test_registered_stripe_finance_replays_and_reconciles_only_matching_capture(deal_client, monkeypatch, partial_refunds):
     client, engine = deal_client
     StripeFinancialEvent.__table__.create(engine)
     StripeBalanceEvidence.__table__.create(engine)
@@ -323,26 +324,28 @@ def test_registered_stripe_finance_replays_and_reconciles_only_matching_capture(
         assert corrected.json()["bank_debit_confirmed"] is False and corrected.json()["cash_hold_released"] is False
         assert client.post(correction_url, headers=keys, json=correction_request).json() == corrected.json()
 
-        partial_url = f"{binding_url}/{order_id}/refund-correction"
-        requests = []
-        for suffix, cumulative in (("PartialA", 250), ("RemainderA", 1000)):
-            charge.update(refunded=cumulative == 1000, amount_refunded=cumulative)
-            native_event = {"id": f"evt_{suffix}", "type": "charge.refunded", "livemode": False,
-                            "data": {"object": {**charge}}}
-            assert deliver(native_event).status_code == 200
-            requests.append({"refund_id": f"re_{suffix}", "signed_event_id": native_event["id"]})
-        assert client.post(partial_url, headers=keys, json=requests[1]).status_code == 409
-        assert client.post(partial_url, headers=keys, json={
-            **requests[0], "refund_id": requests[1]["refund_id"],
-        }).status_code == 409
-        first, final = (client.post(partial_url, headers=keys, json=request) for request in requests)
-        assert first.status_code == 200, first.text
-        assert final.status_code == 200, final.text
-        assert (first.json()["refund_minor"], first.json()["cumulative_refund_minor"]) == (250, 250)
-        assert (final.json()["refund_minor"], final.json()["cumulative_refund_minor"]) == (750, 1000)
-        assert first.json()["bank_debit_confirmed"] is False and final.json()["available_cash_minor"] is None
-        assert client.post(partial_url, headers=keys, json=requests[0]).json() == first.json()
-        assert db.query(JournalEntry).count() == 0
+        if partial_refunds:
+            partial_url = f"{binding_url}/{order_id}/refund-correction"
+            requests = []
+            for suffix, cumulative in (("PartialA", 250), ("RemainderA", 1000)):
+                charge.update(refunded=cumulative == 1000, amount_refunded=cumulative)
+                native_event = {"id": f"evt_{suffix}", "type": "charge.refunded", "livemode": False,
+                                "data": {"object": {**charge}}}
+                assert deliver(native_event).status_code == 200
+                requests.append({"refund_id": f"re_{suffix}", "signed_event_id": native_event["id"]})
+            assert client.post(partial_url, headers=keys, json=requests[1]).status_code == 409
+            assert client.post(partial_url, headers=keys, json={
+                **requests[0], "refund_id": requests[1]["refund_id"],
+            }).status_code == 409
+            first, final = (client.post(partial_url, headers=keys, json=request) for request in requests)
+            assert first.status_code == 200, first.text
+            assert final.status_code == 200, final.text
+            assert (first.json()["refund_minor"], first.json()["cumulative_refund_minor"]) == (250, 250)
+            assert (final.json()["refund_minor"], final.json()["cumulative_refund_minor"]) == (750, 1000)
+            assert first.json()["bank_debit_confirmed"] is False and final.json()["available_cash_minor"] is None
+            assert client.post(partial_url, headers=keys, json=requests[0]).json() == first.json()
+            assert db.query(JournalEntry).count() == 0
+            return
 
 
 

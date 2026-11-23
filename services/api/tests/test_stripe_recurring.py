@@ -17,6 +17,7 @@ from app.models.saas_access import SaaSPlan, SaaSPlanModule, Subscription
 from app.models.stripe_finance import StripeFinancialEvent
 from app.models.stripe_recurring import StripePaidPeriod, StripeRecurringAttempt, StripeSaaSBinding
 from app.routers.auth_weweb import _auth_runtime, _issue_access_token
+from app.services.stripe_recurring import scoped_subscription_outcomes
 from app.services.stripe_recurring_worker import reconcile_due_invoice
 from app.users.models import AccountSettings, UserProfile
 
@@ -210,6 +211,12 @@ def test_recurring_checkout_renewal_cancellation_and_payment_holds(deal_client, 
     assert canceled.json()["modules"] == [] and canceled.json()["available_cash_minor"] is None
     assert client.post(url + "/cancel-at-period-end", headers=buyer).json() == canceled.json()
     assert len(posts) == 3
+    with Session(engine) as db:
+        summary = scoped_subscription_outcomes(db, params["scope"], live=False)
+        assert summary["verified_current_periods"] == summary["verified_adjacent_renewals"] == 1
+        assert summary["scheduled_cancellations"] == 1 and summary["recognized_revenue_minor"] is None
+        assert scoped_subscription_outcomes(db, {**params["scope"], "business_id": "other"}, live=False) is None
+        assert scoped_subscription_outcomes(db, params["scope"], live=True) is None
     clock = datetime.fromtimestamp(end + 30 * 86400, timezone.utc)
     assert client.get(url, headers=buyer).json()["status"] == "NO_CURRENT_PAID_PERIOD"
     clock = datetime.fromtimestamp(end + 1, timezone.utc)
@@ -218,3 +225,13 @@ def test_recurring_checkout_renewal_cancellation_and_payment_holds(deal_client, 
     assert client.get(url, headers=buyer).json()["status"] == "EVIDENCE_HELD"
     with Session(engine) as db:
         assert db.query(StripePaidPeriod).count() == 2
+        held = scoped_subscription_outcomes(db, params["scope"], live=False)
+        assert held["status"] == "REVIEW_REQUIRED" and held["available_cash_minor"] is None
+    from app.loki.analyst import challenge
+    from app.loki.evidence import artifact_digest
+
+    report = {"status": "observed", "external_authority": False, "observations": {"recurring_paid_periods": held}}
+    verdict = challenge({"artifact_type": "pantheon_report", "reference": "stripe-recurring-hold", "raw_input": report,
+                         "artifact_sha256": artifact_digest("pantheon_report", "stripe-recurring-hold", report)})
+    assert any(item.category == "recurring_payment_evidence_review" and item.severity == "critical"
+               for item in verdict.findings)

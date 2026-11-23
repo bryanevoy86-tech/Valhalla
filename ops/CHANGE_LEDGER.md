@@ -1122,3 +1122,7 @@ The acceptance matrix retains 13 P0 and 39 total criteria requiring internal cod
 
 - Renewal recovery and subscriber bindings passed all four hosted jobs at `fd8c109f2b0629603c090e0f662639ebcac5f4ff` in run 45098886305. All 28 local owner/subscriber interface tests passed. The three exact saved editor actions also passed isolated HTTP transport replay, including clearing results after session changes and withholding navigation on a different subscription.
 - Extended the existing CAD correction entry point to record ordered independently verified partial refund movements. Each movement ties a signed cumulative amount to its original charge and to one available native refund balance transaction. The original full-refund receipt remains replayable. The fixture rejects a missing preceding movement, a different refund, inconsistent fees and duplicate accounting; no simulated bank debit or accessible cash is produced.
+
+- Added scoped recurring payment observations to Pantheon and Prime decision reassessment. Intact current and adjacent verified paid periods are counted independently of renewal intentions. Test-mode findings remain isolated, and contradictory or reversed evidence requires independent Loki review. The observed periods create no recognized revenue, cash, retention forecast or new expenditure authority.
+
+- Hosted run 45099088624 exposed overlap between the new partial-refund scenario and the existing independent payout-reversal scenario. Both now run on fresh fixtures so each preserves its original assertions.

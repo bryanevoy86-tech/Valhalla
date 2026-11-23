@@ -58,6 +58,8 @@ The opt-in recurring worker consumes exact signed `invoice.paid` events carrying
 
 The primary editor Home page `05ce39c3-5a5f-4e26-892b-3aa82fff3051` has monthly billing panel `557dfc2d-8cd3-43b1-aa90-e7895433996e`. Workflows `2022bd6b-4e5e-4c58-bfec-b9716bee09ff`, `bae3ccd0-5b31-473e-b108-3029581ba658` and `0716a000-11aa-4988-82d5-bdc412ddb6e1` use the existing account bearer and approved origin. Supply the exact tenant UUID and local subscription ID. Approved HTTPS preview, CORS, a commissioned test account, a pending test subscription and an actual browser replay are separate commissioning steps. Keep production mutation controls disabled. No production publication or backup-project edit occurred.
 
+Use the existing scoped Pantheon worker and Prime reassessment for the recurring paid-period observation. Njord, Mimir, Norns, Tyr, Loki and Prime can inspect held agreements, current verified paid periods and adjacent paid renewals. A reversal or integrity conflict forces review. Test periods remain rehearsal evidence. CAC, churn/LTV calibration and recurring bank-booked cash still need their exact source links.
+
 ### Isolated operating trial acceptance
 
 Use a pinned draft build and disposable PostgreSQL database in separately authorized staging. Seed synthetic grants, demand exports, one registered Legacy scope and a deliberately unapproved adjacent scope. Keep external providers, outreach, real money movement and production storage disabled. After preflight, schedule the existing discovery, Pantheon, Prime schedule, deterministic Loki and Factory workers using their current staging-only toggles. Read the private owner briefing and worker logs without exporting private inputs.

@@ -490,3 +490,49 @@ def paid_module_access(db, tenant_id, module_key, principal, *, live):
                     "expires_at": datetime.fromtimestamp(evidence["paid_until"], timezone.utc),
                     "basis": "STRIPE_PAID_PERIOD", "payment_verified": True, "has_access": True}
     return None
+
+
+def scoped_subscription_outcomes(db, scope, *, live):
+    """Aggregate exact verified paid periods without returning subscriber identities."""
+    if not inspect(db.connection()).has_table(StripeSaaSBinding.__tablename__):
+        return None
+    stored_scope = StripeSaaSBinding.binding["scope"]
+    candidates = db.scalars(select(StripeSaaSBinding).where(
+        StripeSaaSBinding.livemode == live,
+        *(stored_scope[key].as_string() == value for key, value in scope.items()),
+    ).order_by(StripeSaaSBinding.id).limit(101)).all()
+    if not candidates:
+        return None
+    _ready(db)
+    current = int(_now().timestamp())
+    observation = {
+        "basis": "STRIPE_LIVE_PAID_PERIODS" if live else "STRIPE_TEST_PAID_PERIODS",
+        "status": "OBSERVED", "verified_current_periods": 0, "verified_adjacent_renewals": 0,
+        "scheduled_cancellations": 0, "held_agreements": 0,
+        "recognized_revenue_minor": None, "available_cash_minor": None, "external_authority": False,
+    }
+    if len(candidates) > 100:
+        return {**observation, "status": "REVIEW_REQUIRED"}
+    for candidate in candidates:
+        try:
+            row, data, _ = _binding(db, candidate.id, live)
+            if data["scope"] != scope:
+                raise HTTPException(409, "Recurring outcome scope differs from its agreement")
+            periods = db.scalars(select(StripePaidPeriod).where(
+                StripePaidPeriod.binding_id == row.id,
+                StripePaidPeriod.period_start <= current,
+            ).order_by(StripePaidPeriod.period_start.desc()).limit(2)).all()
+            evidence = [_period_value(row, period) for period in periods]
+            if any(_reversed(db, row, period) for period in evidence):
+                observation["held_agreements"] += 1
+                continue
+            if periods and periods[0].period_end > current:
+                observation["verified_current_periods"] += 1
+                observation["scheduled_cancellations"] += int(row.cancel_scheduled)
+            if len(periods) == 2 and periods[1].period_end == periods[0].period_start:
+                observation["verified_adjacent_renewals"] += 1
+        except (HTTPException, KeyError, TypeError):
+            observation["held_agreements"] += 1
+    if observation["held_agreements"]:
+        observation["status"] = "REVIEW_REQUIRED"
+    return observation
