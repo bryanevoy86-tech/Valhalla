@@ -103,6 +103,18 @@
           "independent_financial_or_operational_evidence": "Scoped governed worker logs, emergency-stop receipt and recovery without unauthorized effects.",
           "qualified_professional_review": null,
           "conditional_future_expansion": null
+        },
+        "january_2027_launch_gates": {
+          "implemented_and_tested": "SQLite Factory, replay, containment, emergency stop and scoped policy tests.",
+          "january_core": "Require shared mandate, audit, deny-by-default and stop/recovery for enabled adapters.",
+          "first_one_time_cad": "Gate listing activation, payment intake, fulfillment, refund and owner intervention.",
+          "first_recurring_cad": "Also gate renewals, cancellation, entitlement changes and financial adverse events.",
+          "other_initial_legacies": "Prove each enabled adapter against that Legacy's separate authority and budget.",
+          "after_launch": "Finish controls for adapters still disabled for launch.",
+          "external_commissioning": "Isolated staged workers and scoped provider keys.",
+          "owner_or_professional": "Owner approves exact action, scope, budget and rollback authority.",
+          "launch_acceptance_evidence": "Withhold and revoke an approval in staging. Prove denial, stop during a durable task, restart and observe one executed receipt with no cross-scope effects.",
+          "next_action": "Trace each enabled dispatch route to persisted authority, hold and recovery."
         }
       }
     },
@@ -314,6 +326,18 @@
           "independent_financial_or_operational_evidence": "Independent outcome for each commissioned adapter, with mandate and exact action identity.",
           "qualified_professional_review": null,
           "conditional_future_expansion": null
+        },
+        "january_2027_launch_gates": {
+          "implemented_and_tested": "Durable Factory queue, receipt, retry and disposable PostgreSQL worker tests.",
+          "january_core": "Prove one queue and recovery path for the selected core scope.",
+          "first_one_time_cad": "Bind one approved offer and fulfillment/retry queue to its exact Legacy.",
+          "first_recurring_cad": "Add invoice, failed renewal and entitlement recovery to the same scope.",
+          "other_initial_legacies": "Bind each selected activity to its own adapter, workers and receipts.",
+          "after_launch": "Expand delivery and external execution to deferred or unselected adapters.",
+          "external_commissioning": "Staged workers, PostgreSQL and the authorized adapter per activity.",
+          "owner_or_professional": "Owner enrolls the exact Legacy mandate and responsible operator.",
+          "launch_acceptance_evidence": "Two workers and a restarted worker act on one approved staged job. Capture one effect and receipt and a refused foreign-scope job.",
+          "next_action": "Run the selected offer's work item across staged workers and a restart."
         }
       }
     },
@@ -427,6 +451,18 @@
           "independent_financial_or_operational_evidence": "GitHub readback matching exact reviewed commit, candidate digest and separate reviewer.",
           "qualified_professional_review": null,
           "conditional_future_expansion": null
+        },
+        "january_2027_launch_gates": {
+          "implemented_and_tested": "Governed assignment, immutable source snapshot, materialization, test sandbox and exact draft readback are tested.",
+          "january_core": "Require scoped Builder review, regression and rollback for the candidate that will ship.",
+          "first_one_time_cad": "Require the governed release path for the one-time offer. Expanded automated recipes can continue later.",
+          "first_recurring_cad": "Apply the same release and migration checks to subscription code.",
+          "other_initial_legacies": "Use the same release procedure and scoped approval for each independently enabled adapter.",
+          "after_launch": "Expand candidate recipes and supported repositories.",
+          "external_commissioning": "Approved GitHub review identity and isolated CI runner.",
+          "owner_or_professional": "Owner authorizes the repository, exact scope and staged reviewer.",
+          "launch_acceptance_evidence": "Show a scoped changed-file list, verified test logs, matching reviewed commit and successful staged rollback.",
+          "next_action": "Run a real governed staging candidate through reviewed commit and rollback."
         }
       }
     },
@@ -499,6 +535,18 @@
           "independent_financial_or_operational_evidence": "Rights and consent provenance, provider receipt, and independently observed attributed conversion.",
           "qualified_professional_review": null,
           "conditional_future_expansion": "Paid campaigns require separate budget."
+        },
+        "january_2027_launch_gates": {
+          "implemented_and_tested": "Consent, containment, experiment attribution and channel receipt rehearsals pass with fixtures.",
+          "january_core": "Keep marketing off until a channel's consent, scope and evidence checks are verified.",
+          "first_one_time_cad": "A separately authorized direct or inbound acquisition path can serve the first buyer. Provider publishing is required only if selected.",
+          "first_recurring_cad": "Same channel gate plus truthful recurring terms and verified attribution where used.",
+          "other_initial_legacies": "Commission each selected channel by business, audience, budget and jurisdiction.",
+          "after_launch": "Additional connectors, optimization and broad campaign automation.",
+          "external_commissioning": "Only the selected channel/provider, using its least-privilege staging identity.",
+          "owner_or_professional": "Owner approves channel, audience and budget. Obtain qualified consent or advertising review when applicable.",
+          "launch_acceptance_evidence": "Record authorized acquisition to the exact order. If outbound, also prove suppression, dry run, authorized publish receipt and kill switch.",
+          "next_action": "Bind the chosen launch acquisition path to consent and buyer/order evidence."
         }
       }
     },
@@ -609,6 +657,18 @@
           "independent_financial_or_operational_evidence": "Independent payment capture, buyer receipt, item entitlement, payout and correction documents.",
           "qualified_professional_review": "Qualified accounting or legal review of revenue and obligations when required by the chosen offer, jurisdiction or reliance decision.",
           "conditional_future_expansion": "Real sales follow commercial approval."
+        },
+        "january_2027_launch_gates": {
+          "implemented_and_tested": "Buyer-bound one-time delivery/refund and recurring checkout, entitlement, cancellation, acknowledgment and refund fixtures pass.",
+          "january_core": "Require private owner status, exact order and buyer isolation, verified delivery and support recovery for enabled products.",
+          "first_one_time_cad": "Approve one fixed CAD offer, terms, buyer journey, exact delivery and refund.",
+          "first_recurring_cad": "Prove repeat invoices, revocation, cancellation, credit disputes and accounting for the actual period pattern.",
+          "other_initial_legacies": "Stage each approved customer journey with product, access, support and pricing evidence.",
+          "after_launch": "Additional storefronts, currencies, catalogs and unsupported payment models.",
+          "external_commissioning": "Stripe sandbox and signed-in isolated buyer and owner sessions.",
+          "owner_or_professional": "Owner approves offer and rights, price, terms and support. Have qualified professionals review activity-specific obligations.",
+          "launch_acceptance_evidence": "Sandbox purchase through a real callback, independent capture, delivery digest, denied foreign buyer, refund and replay, plus accepted staged owner and buyer screens.",
+          "next_action": "Exercise the complete selected CAD product in a pinned authenticated staging release."
         }
       }
     },
@@ -649,6 +709,18 @@
           "independent_financial_or_operational_evidence": "Authenticated provider and bank records for capture, reversal and payout reconciliation.",
           "qualified_professional_review": "Qualified accountant reviews the applicable chart, liability and correction posting rules before relying on live entries.",
           "conditional_future_expansion": null
+        },
+        "january_2027_launch_gates": {
+          "implemented_and_tested": "Signed intake, recurring and one-time refunds, bounded lost and won corrections, and duplicate handling have CI fixtures.",
+          "january_core": "Require signature/mode gating, idempotent readback and fail-closed handling for enabled event shapes.",
+          "first_one_time_cad": "Exercise signed CAD capture, refund and hold for supported dispute and payout cases.",
+          "first_recurring_cad": "Also prove paid invoice, failed renewal, precise entitlement and reversal linkage.",
+          "other_initial_legacies": "Verify native event shapes for every enabled merchant account or provider.",
+          "after_launch": "Unsupported multi-movement, cross-invoice, mixed corrections and other providers unless the selected activity needs them.",
+          "external_commissioning": "Stripe sandbox signing secret, read-only provider identity, approved event subscription and explicit test mode.",
+          "owner_or_professional": "Owner approves credential scopes and activation. Accountant approves selected journal treatment.",
+          "launch_acceptance_evidence": "Provider-native sandbox deliveries and independent reads match exact account, charge or invoice, currency, balances, scope and replay.",
+          "next_action": "Commission the actual sandbox callback and record matched receipts for the selected event lane."
         }
       }
     },
@@ -685,6 +757,18 @@
           "independent_financial_or_operational_evidence": "Independent processor payout and account-specific bank trace, liabilities and authorized funding receipt.",
           "qualified_professional_review": "Qualified banking or accounting review verifies bank authority, funds restrictions and applicable posting treatment.",
           "conditional_future_expansion": "Live payouts require reconciled funds and distinct consent."
+        },
+        "january_2027_launch_gates": {
+          "implemented_and_tested": "Scoped automatic CAD payout membership, independent bank trace matching, guardrails and full reversal fixtures exist.",
+          "january_core": "Freeze available-cash and transfer authority until scoped bank evidence and holds are verified.",
+          "first_one_time_cad": "The checkout proves a sale after approved payment and delivery. Any booked or spendable proceeds need distinct bank evidence.",
+          "first_recurring_cad": "Also match recurring invoice members, with exact adjustments and reversals held until supported.",
+          "other_initial_legacies": "Establish independently reconciled receiving accounts per activated business.",
+          "after_launch": "Additional payout shapes can continue while excluded from enabled settlement.",
+          "external_commissioning": "Exact approved Stripe payout and independent bank read-only feed that exposes payout trace.",
+          "owner_or_professional": "Owner approves receiving account and scope. Accountant approves fees, reversals and cash treatment.",
+          "launch_acceptance_evidence": "Match processor payout members and exact independent bank credit. Refuse duplicates, wrong accounts and unresolved adjustments.",
+          "next_action": "Prove bank trace availability on the selected institution before enabling its payout reconciliation."
         }
       }
     },
@@ -957,6 +1041,18 @@
           "independent_financial_or_operational_evidence": "Independent backup restoration and disposition verification, and independent financial sources when used for startup reliance.",
           "qualified_professional_review": null,
           "conditional_future_expansion": null
+        },
+        "january_2027_launch_gates": {
+          "implemented_and_tested": "Private owner bearer, isolation and scoped operating/finance UI have API and saved-script replay tests.",
+          "january_core": "Require owner-only Prime, secure preview, truthful status, audit and intervention.",
+          "first_one_time_cad": "Show owner the exact order, delivery, refund, holds and audit without buyer access to Prime.",
+          "first_recurring_cad": "Also expose invoice, entitlement, delinquency and accounting status to the owner.",
+          "other_initial_legacies": "Apply the same private control plane to each activated scope.",
+          "after_launch": "Broader attachment analysis and richer startup analytics outside the approved release.",
+          "external_commissioning": "Authorized HTTPS staging, exact origin/CORS and separate authenticated test identities.",
+          "owner_or_professional": "Owner approves the precise staging origin, operator roles and retention policy.",
+          "launch_acceptance_evidence": "Owner sees authorized scope and can invoke stop. Signed-out and cross-tenant actors receive denial and zero data in real browser.",
+          "next_action": "Commission the currently blank preview origin and run owner, subscriber and wrong-tenant checks."
         }
       }
     },
@@ -995,6 +1091,18 @@
           "independent_financial_or_operational_evidence": "Scoped work receipts and independently reviewed conflicting advice.",
           "qualified_professional_review": null,
           "conditional_future_expansion": null
+        },
+        "january_2027_launch_gates": {
+          "implemented_and_tested": "Canonical route coverage and isolated decision/disagreement gates are tested.",
+          "january_core": "Require five role decisions and an independent objection path for enabled high-risk dispatch.",
+          "first_one_time_cad": "Run the exact offer and policy through approvals, with a recorded decision and hard-stop proof.",
+          "first_recurring_cad": "Include recurring terms, recovery, consumer harms and treasury risk.",
+          "other_initial_legacies": "Scope evaluator evidence to each business and its activity-specific risks.",
+          "after_launch": "Broaden decision integration to disabled adapter categories.",
+          "external_commissioning": "Use approved model identities only for the staged evaluations that need them.",
+          "owner_or_professional": "Owner ratifies policy and authorized activities. Qualified legal judgment for applicable hard stops.",
+          "launch_acceptance_evidence": "Stage a disagreement and a blocking finding. Prove neither can be bypassed and record the resulting Prime decision and audit.",
+          "next_action": "Prove unresolved disagreement blocks the selected commercial dispatch path."
         }
       }
     },
@@ -1038,6 +1146,18 @@
           "independent_financial_or_operational_evidence": "Independent domain evidence and scoped specialist worker receipts.",
           "qualified_professional_review": null,
           "conditional_future_expansion": null
+        },
+        "january_2027_launch_gates": {
+          "implemented_and_tested": "Scoped specialist schedules, event-driven queues, durable reports and multiple evidence lenses are tested.",
+          "january_core": "Run proactive specialists required for enabled domains, with scoped sources and durable decisions.",
+          "first_one_time_cad": "Require the specialists and evidence lenses for the selected offer, sales and accounting.",
+          "first_recurring_cad": "Include subscription recovery, dispute evidence and customer lifecycle analysis.",
+          "other_initial_legacies": "Select and commission the relevant proactive role coverage per mandate.",
+          "after_launch": "Specialists for unrelated or future domains remain in the full contract.",
+          "external_commissioning": "Staging scheduling/runtime and separately permitted domain connectors.",
+          "owner_or_professional": "Owner ratifies role mapping and sources. No mandate expands through report generation.",
+          "launch_acceptance_evidence": "Exercise schedule and trigger through durable scoped reports, missing-evidence hold, independent Loki and a verified Prime decision.",
+          "next_action": "Run one scheduled and one event-driven commercial evidence cycle in staging."
         }
       }
     },
@@ -1142,6 +1262,18 @@
           "independent_financial_or_operational_evidence": "Five distinct approved operating scopes and independent execution and economic receipts.",
           "qualified_professional_review": "Qualified review only for a selected mandate involving regulated or otherwise review-dependent activity.",
           "conditional_future_expansion": "Expansion follows viable units."
+        },
+        "january_2027_launch_gates": {
+          "implemented_and_tested": "Scoped registry and fixture mandates exist. Repository proof does not establish five real activations.",
+          "january_core": "Prove shared onboarding, strict isolation and per-scope audit and stop.",
+          "first_one_time_cad": "One explicitly enrolled and authorized scope is sufficient for the actual one-time offer.",
+          "first_recurring_cad": "Require a separate explicit recurring-billing mandate for its selected scope.",
+          "other_initial_legacies": "Show a separate pending, staged or activated decision with evidence for each of five operating slots.",
+          "after_launch": "Unselected activities, clones and international mirrors can follow independent approval.",
+          "external_commissioning": "Per-scope worker, merchant, bank and activity-specific approved provider.",
+          "owner_or_professional": "Owner selects each business, legal entity, mandate, controls and activation. Obtain relevant professional review.",
+          "launch_acceptance_evidence": "Five governed and isolated workspaces can be staged independently. Activate each only against its own approved mandate and operating evidence.",
+          "next_action": "Record which scopes the owner actually selects and stage each candidate separately."
         }
       }
     },
@@ -1326,6 +1458,18 @@
           "independent_financial_or_operational_evidence": "Exact independently issued bank and accounting records, reconciled liabilities, reserve evidence and reversals.",
           "qualified_professional_review": "Qualified banking and accounting review of classified funds and actual posting scope.",
           "conditional_future_expansion": "Actual allocations depend on reconciled funds. The reverse commercial target and private independence linkage use scoped reconciliation fixtures until an actual-provider evidence path is accepted."
+        },
+        "january_2027_launch_gates": {
+          "implemented_and_tested": "Scoped bank and cash-close fixtures, simulated balances, ledger holds and single-period service release are implemented.",
+          "january_core": "Prove truthful bank and clearing separation, hold and independent cash close.",
+          "first_one_time_cad": "Review liability, delivery release and refund treatment. Cash remains held until independently reconciled.",
+          "first_recurring_cad": "Validate accounting across actual service periods and correction shapes before enabling recurring ledger reliance.",
+          "other_initial_legacies": "Commission chart, receiving account and evidence scope separately per business.",
+          "after_launch": "Broader treasury cases and transfer lanes remain disabled pending full authority and evidence.",
+          "external_commissioning": "Independently reconciled CAD account and read-only bank evidence for allowed scope.",
+          "owner_or_professional": "Accountant approves chart, periods and recognition. Owner separately approves any authority or standing limit.",
+          "launch_acceptance_evidence": "Show posted bank trace, balanced ledger and signed, scoped close. Prove restricted funds remain unavailable and stop blocks unauthorized action.",
+          "next_action": "Obtain eligible proof of the selected chart and accounting period treatment."
         }
       }
     },
@@ -1708,6 +1852,18 @@
           "independent_financial_or_operational_evidence": "Distinct credentials, input digest, independent challenge and material conflict disposition.",
           "qualified_professional_review": null,
           "conditional_future_expansion": null
+        },
+        "january_2027_launch_gates": {
+          "implemented_and_tested": "Digest-scoped objections, distinct credentials and targeted fail-closed/replay fixtures exist.",
+          "january_core": "Verify independent reviewer identity, outages, stale-object rejection and durable dissent.",
+          "first_one_time_cad": "Bind the exact commercial proposal to Loki's report and require a matching disposition at activation.",
+          "first_recurring_cad": "Also challenge recurring terms, recovery, disputed funds and access changes.",
+          "other_initial_legacies": "Add mandated risk domains for each selected business and preserve separate objection records.",
+          "after_launch": "Long-tail specialist domains can continue with adapters disabled.",
+          "external_commissioning": "Independent staged identity and approved model/readback sources.",
+          "owner_or_professional": "Owner commissions independence and approves evidence scopes. Professional escalation remains independently governed.",
+          "launch_acceptance_evidence": "Withhold Loki, then mutate a reviewed proposal. Both refuse high-risk dispatch. Preserve a sourced objection and Prime response on the exact accepted version.",
+          "next_action": "Run independent Loki against the selected live-shaped offer and a version change."
         }
       }
     },
@@ -1829,6 +1985,18 @@
           "independent_financial_or_operational_evidence": "Independently reconciled actual cash, restricted funds, liabilities and operating reserves.",
           "qualified_professional_review": "Qualified accounting or banking review of actual reserve, liability and distribution treatment as applicable.",
           "conditional_future_expansion": "Expansion follows demonstrated economics and capital availability."
+        },
+        "january_2027_launch_gates": {
+          "implemented_and_tested": "Scoped calculations, cash holds, fixture isolation, limits, reassessment and Mimir evidence have tests.",
+          "january_core": "Fail closed on stale evidence, aggregate risk and protected cash, including across Legacy scopes.",
+          "first_one_time_cad": "Zero authorized automatic capital movements is sufficient for a manually approved bounded first offer.",
+          "first_recurring_cad": "Reserve for refunds and disputes. Permit new incremental exposure only inside independent caps.",
+          "other_initial_legacies": "Apply common business-wide exposure protection and explicit scope budgets.",
+          "after_launch": "Advanced alternatives, strategic exits and redeployment can follow initial operation.",
+          "external_commissioning": "Independently sourced balances and evidence only where real capital decisions are enabled.",
+          "owner_or_professional": "Owner approves limits, reserves and actions. Accountant or qualified adviser approves relevant classifications.",
+          "launch_acceptance_evidence": "Stage shared-business exposures and breach an aggregate limit. Verify a recorded hold and zero movement, then observe approved recovery.",
+          "next_action": "Test the selected business and alternate scope against the same cumulative cap."
         }
       }
     }

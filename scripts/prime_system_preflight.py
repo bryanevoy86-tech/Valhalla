@@ -34,6 +34,11 @@ REMAINING_WORK_CLASSES = (
     "qualified_professional_review",
     "conditional_future_expansion",
 )
+JANUARY_LAUNCH_FIELDS = {
+    "implemented_and_tested", "january_core", "first_one_time_cad", "first_recurring_cad",
+    "other_initial_legacies", "after_launch", "external_commissioning", "owner_or_professional",
+    "launch_acceptance_evidence", "next_action",
+}
 MANDATORY_KEYS = {
     "id",
     "priority",
@@ -90,6 +95,10 @@ def inspect_matrix(root: Path = REPO_ROOT, matrix_path: str = MATRIX_PATH) -> di
                         remaining_counts[kind] += 1
             if row["priority"] == "P0" and isinstance(work["internal_coding"], str) and work["internal_coding"].strip():
                 p0_coding_count += 1
+                gates = continuation.get("january_2027_launch_gates")
+                if (not isinstance(gates, dict) or gates.keys() != JANUARY_LAUNCH_FIELDS
+                        or any(not isinstance(value, str) or not value.strip() for value in gates.values())):
+                    issues.append(f"{identifier}: every January launch gate requires explicit evidence and scope")
         if row["priority"] not in ALLOWED_PRIORITIES:
             issues.append(f"{identifier}: invalid priority")
         if row["evidence_level"] not in EVIDENCE_LEVELS:

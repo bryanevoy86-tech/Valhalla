@@ -60,6 +60,14 @@ class PrimeSystemPreflightTests(unittest.TestCase):
         report = self._altered_report(alter)
         self.assertTrue(any("seven separate remaining-work classes" in issue for issue in report["issues"]))
 
+    def test_open_p0_requires_separate_core_and_business_launch_gates(self):
+        def alter(doc):
+            runtime = next(row for row in doc["capabilities"] if row["id"] == "runtime_governance")
+            del runtime["continuation"]["january_2027_launch_gates"]["first_recurring_cad"]
+
+        report = self._altered_report(alter)
+        self.assertTrue(any("runtime_governance: every January launch gate" in issue for issue in report["issues"]))
+
     def test_missing_sources_are_not_treated_as_complete(self):
         report = self._altered_report(lambda doc: None)
         self.assertFalse(report["ok"])

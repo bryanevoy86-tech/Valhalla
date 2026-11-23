@@ -18,7 +18,7 @@ Local evidence for this batch: 405 backend regression tests passed under SQLite,
 
 The inventory and launch-gates batch is `b532b50ba0a808d0fa5786a4226686bd4151263d`, with hosted run [45203532997](https://github.com/bryanevoy86-tech/Valhalla/actions/runs/45203532997). The primary monthly billing panel now has a completed-service history button and an explicit acknowledgment button per displayed invoice. Saved workflows `d5323c80-f3f3-42bf-940d-07608e2b84b9` and `0bf9dfc6-bb6e-470a-b959-82eb132d5cf9` use volatile state `dd262d09-6ef3-4c77-bf38-fc4a6454adbe` and the existing approved HTTPS origin. History and results are visible only for the matching session, tenant and contract. No pending editor save remains for these controls. Saved tenant and subscription change workflows `ef6f1114-2f2b-46ea-b212-c2410ecef51d` and `5b13676c-5c40-439e-8691-ebddcbc9de0a` passed three fixture checks and clear mismatched results and pending requests. Actual signed-in browser acceptance, repeat-row interaction, input-trigger ordering and staging CORS remain to be verified. The protected backup and publish settings were untouched.
 
-The 14 P0 internal gaps across 50 criteria, 53 tasks and seven packages remain tracked below. The January 1 first-sale gate still requires a separately authorized selected CAD product, owner and buyer staging sessions, provider onboarding and signed intake. Independent traceable bank settlement and a qualified accounting close gate reliance on proceeds. Unsupported disputes, adjustments, cross-period accounting and staged Legacy operating trials remain launch dependencies for the applicable scopes. Next executable batch is independently read back one exact reinstatement against its matched debit and post a balanced scoped correction while keeping bank and cash holds.
+The 14 P0 internal gaps across 50 criteria, 53 tasks and seven packages remain tracked below. The January 1 first-sale gate still requires a separately authorized selected CAD product, owner and buyer staging sessions, provider onboarding and signed intake. Independent traceable bank settlement and a qualified accounting close gate reliance on proceeds. Unsupported disputes, adjustments, cross-period accounting and staged Legacy operating trials remain launch dependencies for the applicable scopes. The exact CAD reinstatement correction is implemented above. Continue from the January commissioning and gate evidence below.
 
 ## January launch continuation
 
@@ -193,6 +193,49 @@ The saved primary WeWeb owner operating-scope workflow `8df72133-f027-4dd6-8eaa-
 | Rely on proceeds or recommend an allocation | Apply `payouts_and_funds` and `treasury_banking_controls` to the same scope and receiving account. Require independent bank trace, balanced current books, qualified accounting classifications and the signed cash close. Apply `dynamic_capital_allocation_loss_containment_and_strategic_redeployment` before any standing allocation authority. |
 | Additional initial businesses | Onboard each exact scope under `five_initial_legacies` and `legacy_execution`. Demonstrate durable supervised operation, recovery, the applicable specialist and independent Loki challenge, and a buyer or operator evidence chain for each selected adapter. Add `subscription_saas` and recurring recovery for recurring offers. Add `marketing`, signing or real estate controls only where used. Record a separate activation decision for every scope. |
 | Conditional expansion | Retain international mirrors, acquisitions, estate and master trusts, insurance strategies and residency work in the full acceptance register. Bring only an activity-specific prerequisite into the launch path when independently established. |
+
+### January readiness decisions
+
+| Target | Status | Positive evidence | Missing acceptance |
+|---|---|---|---|
+| Core Heimdall platform | BLOCKED | Hosted canonical routes, isolated worker recovery, reviewed Builder, scoped Prime/Pantheon/Loki/Mimir and saved WeWeb workflows. | Pinned isolated staging, authorized preview and HTTPS/CORS, observed staged specialist-to-Prime-to-execution round trip, actual restart/recovery and rollback, independent Loki and signed-in operator/intervention proof. |
+| First one-time CAD business | BLOCKED | Local end-to-end order, delivery and authorization fixtures, signed event handling, guarded refund and processor settlement, A direct or inbound route can be selected. | One explicitly approved offer and legal seller, approved acquisition path, scoped Stripe sandbox with real callbacks and browser-accepted fulfillment and support, independently matched receiving account, and separate live decision. |
+| First recurring CAD business | BLOCKED | Local fixed CAD plan, renewal, period-end cancellation, refund, entitlement, service release and exact reinstatement fixtures. | Everything applicable to the one-time operating path plus approved subscription terms and cycle, native invoice and recovery acceptance, and approved accounting across the actual service period pattern. Hold unsupported recovery or adjustment shapes. |
+
+The [canonical matrix](../ops/prime_system_integration_matrix.json) adds ten launch-gate fields to each of the 14 open P0 criteria. The existing internal coding notes and full acceptance contracts remain authoritative. Each field records exact requirements for the core, first one-time or recurring business, other Legacies, deferred work, external commissioning, owner/professional action, evidence and next action.
+
+### Initial business selection and authority
+
+The Product and Venture Foundries and the shape of five independent Legacies are approved architecture. The repository evidence reviewed for this checkpoint does not identify an owner-signed concrete offer, entity, bank scope and launch authorization for any of the five slots. Examples such as one-time Foundry products, a selected subscription subsystem, real estate experiments and other ventures remain candidate or fixture evidence unless a signed activation record establishes otherwise. The slot numbers below are planning slots and carry no operational identity.
+
+| Slot | Selection and authorization | Commissioning disposition |
+|---|---|---|
+| 1 | No admitted selection or activation evidence. One fixed-price CAD digital offer is the proposed shortest path. | Blocked on exact product, seller, terms, rights, acquisition path, sandbox and separate decision. |
+| 2 | No admitted selection or activation evidence. A scoped CAD subscription is a candidate. | Blocked on exact subsystem, paid terms, renewal/refund/support and accounting commissioning. |
+| 3 | No admitted selection or activation evidence. | Blocked on separate mandate, applicable adapter, economics and testable customer journey. |
+| 4 | No admitted selection or activation evidence. | Same evidence gates, recorded independently for the selected activity. |
+| 5 | No admitted selection or activation evidence. | Same evidence gates, recorded independently for the selected activity. |
+
+For every selected slot, record the exact registry identity, seller and mandate version, allowed activity and territory, operator and intervention path, evidence from specialists and independent Loki, approved offer and acquisition route, customer-to-fulfillment/refund path, costs and contribution, receiving account and accounting treatment, provider identity and staging receipts. Store the approval and scope in the existing reviewed registry or private authority record. Keep credentials and private signed documents outside Git.
+
+### Ordered commissioning checklist
+
+**Before December 1**
+
+1. Continue draft-only CI, update the matrix, replay saved WeWeb functions, exercise migration and rollback using disposable data, and prepare redacted accounting and legal questions.
+2. Identify the proposed first fixed-price CAD offer and gather exact written offer rights, by-scope economic assumptions, pricing, fulfillment, refund and customer support evidence for the owner to review privately.
+3. Prepare the existing startup cost comparison and review packets. Accountant packet includes event IDs, examples of debit and reinstatement, chart mapping, fees, liability and recognition, and actual service-period boundaries for subscriptions. Bank packet requires an independent trace, settlement and account readback. Counsel packet covers the actual seller, rights, customer terms, privacy, acquisition consent and any applicable activity-specific obligations.
+
+**December, in order**
+
+1. Obtain explicit authority for the selected offer and Legacy scope, staging window and cost, private preview, appropriately distinct identities and provider operations. Preserve owner decisions as scoped records.
+2. Pin the reviewed Git commit and provision only the authorized isolated Render API/worker and disposable PostgreSQL. Verify migrations, restore, health and worker interruption, single-effect retry and rollback. Keep production credentials and writes disabled.
+3. Commission the exact HTTPS staging API origin. Enter it in existing primary WeWeb variable `OWNER_ATTENTION_PREVIEW_ORIGIN` and the approved preview API base. Put the actual HTTPS preview browser origin in backend `CORS_ALLOWED_ORIGINS` using a JSON array or comma-separated exact origins. Leave the app's stored variable blank until approved. Keep credentials and webhook keys server-side. Use isolated owner and buyer identities via the existing login. Verify negative CORS preflight for an unapproved origin, successful permitted bearer preflight, expired/revoked and cross-tenant denial, logout clearing, no-store responses, delivery-grant visibility, mobile navigation and operator stop. Save redacted receipts.
+4. Commission the minimum transaction services for the selected first business. Use a Stripe sandbox with approved account identity, staged signed webhook, limited readback and only explicitly approved test checkout scope. Verify delivery and support end to end in the staging browser, deliberate failure and recovery, one verified receipt for replay, focused Prime and proactive specialist decision flow, independent Loki and Mimir provenance.
+5. Independently match one exact candidate payout to the approved receiving account and have the accountant sign the relevant chart, expense, fee, refund, recognition and close or hold procedures. Keep unverified funds unavailable. Bank or statement evidence and qualified review are needed before relying on commercial proceeds.
+6. Record a separate go/no-go decision per approved business. Authorize recurring terms and period-specific accounting before enabling a recurring lane. Real customer activity and live credentials require separate explicit authority. Publish only after that decision and a staged rollback test.
+
+Essential services are the private staging hosting and database, WeWeb preview and authentication, Stripe sandbox and signed callback/readback, reviewed Git/CI, independently evidenced bank receiving capability for proceeds, and required professional review tied to the chosen scope. A marketing platform is required only for the selected acquisition path. QuickBooks, DocuSign, Google Workspace, additional model vendors, transport, data feeds and expanded reporting stay conditional on the approved activities.
 
 ### P0 construction boundary at this checkpoint
 
