@@ -1203,6 +1203,7 @@
         "services/api/app/services/wealth_scenario.py",
         "services/api/app/services/commercial_targets.py",
         "services/api/app/services/startup_independence.py",
+        "services/api/app/services/startup_funding.py",
         "services/api/app/services/treasury_reconciliation.py",
         "services/api/app/routers/foundry_checkout.py",
         "services/api/app/services/owner_startup.py",
@@ -1225,7 +1226,7 @@
         "remaining": {
           "internal_coding": "Extend governed cash release and liability linkage beyond fixture statements. Scheduled Prime advice now holds on contradictory statement-head evidence.",
           "insufficient_test_evidence": "Prove reconciliation using independent readback and reversal edge cases.",
-          "external_commissioning": "Connect approved banking and accounting sandboxes.",
+          "external_commissioning": "Connect approved banking and accounting sandboxes. Verify approved funding feeds and authority separately.",
           "owner_or_professional_action": "Approve read-only scope and professional integration.",
           "conditional_expansion": "Actual allocations depend on reconciled funds. The reverse commercial target and private independence linkage use scoped reconciliation fixtures until an actual-provider evidence path is accepted."
         }

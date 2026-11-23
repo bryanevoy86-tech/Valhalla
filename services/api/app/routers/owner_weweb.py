@@ -20,6 +20,7 @@ from app.services.prime_business_execution import require_owner_mandate_key
 from app.services.owner_startup import StartupPlanIn, prepare_startup
 from app.services.startup_independence import StartupIndependenceIn, review_startup_independence
 from app.services.commercial_targets import CommercialTargetsIn, review_commercial_targets
+from app.services.startup_funding import FundingReviewIn, FundingSourceIn, review_funding, stage_funding_source
 from app.services.acquisition_comparison import ComparisonIn
 from app.services.wealth_scenario import PersonalAllocationIn, recommend_personal_allocation
 from app.services.owner_conversation import (
@@ -94,6 +95,23 @@ def owner_commercial_targets(payload: CommercialTargetsIn, db: Session = Depends
     from datetime import datetime, timezone
 
     return private_owner_response(review_commercial_targets(db, payload, datetime.now(timezone.utc).date()))
+
+
+@startup_router.post("/funding-evidence", status_code=201)
+def owner_stage_funding(payload: FundingSourceIn, db: Session = Depends(get_db),
+                        owner_id: int = Depends(require_owner_session)):
+    from datetime import datetime, timezone
+
+    return private_owner_response(stage_funding_source(db, payload, owner_id, datetime.now(timezone.utc).date()),
+                                  status_code=201)
+
+
+@startup_router.post("/funding-review")
+def owner_review_funding(payload: FundingReviewIn, db: Session = Depends(get_db),
+                         owner_id: int = Depends(require_owner_session)):
+    from datetime import datetime, timezone
+
+    return private_owner_response(review_funding(db, payload, owner_id, datetime.now(timezone.utc).date()))
 
 
 @router.post("/owner-personal-allocation")

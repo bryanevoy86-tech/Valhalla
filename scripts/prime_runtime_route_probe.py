@@ -19,6 +19,8 @@ API_ROOT = REPO_ROOT / "services/api"
 # Exact backend API contracts as authored in the working branch. These
 # checks establish registration, NOT successful execution or authorization.
 MANDATORY_ENDPOINTS = {
+    "weweb_owner_funding_source": ("POST", "/api/weweb/owner-startup/funding-evidence"),
+    "weweb_owner_funding_review": ("POST", "/api/weweb/owner-startup/funding-review"),
     "weweb_owner_commercial_targets": ("POST", "/api/weweb/owner-startup/commercial-targets"),
     "pantheon_assign": ("POST", "/api/prime/pantheon/assignments"),
     "pantheon_challenge": ("POST", "/api/prime/pantheon/reports/{event_id}/challenge"),

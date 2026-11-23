@@ -180,7 +180,7 @@ def _event(
     db: Session,
     *,
     event_id: str,
-    legacy_instance_id: str,
+    legacy_instance_id: str | None,
     event_type: str,
     message: str,
     payload: dict[str, Any],
