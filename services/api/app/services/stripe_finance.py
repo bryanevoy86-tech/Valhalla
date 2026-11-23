@@ -58,6 +58,22 @@ def event_snapshot(payload, live):
             or not stripe_id(payload.get("id"), "evt") or not isinstance(item, dict)
             or ("livemode" in item and item["livemode"] is not live)):
         raise HTTPException(422, "Unsupported Stripe account, mode or event identity")
+    if kind in {"invoice.paid", "invoice.payment_failed", "customer.subscription.updated", "customer.subscription.deleted"}:
+        paid_invoice = kind.startswith("invoice.")
+        object_type, prefix = ("invoice", "in") if paid_invoice else ("subscription", "sub")
+        parent = item.get("parent")
+        details = parent.get("subscription_details") if isinstance(parent, dict) else None
+        subscription = details.get("subscription") if paid_invoice and isinstance(details, dict) else item.get("id")
+        amount = item.get("amount_paid") if paid_invoice else 0
+        if (item.get("object") != object_type or not stripe_id(item.get("id"), prefix)
+                or not stripe_id(subscription, "sub") or not stripe_id(item.get("customer"), "cus")
+                or not isinstance(item.get("currency"), str) or not re.fullmatch("[a-z]{3}", item["currency"])
+                or not isinstance(item.get("status"), str) or not minor_amount(amount)
+                or (kind == "invoice.paid" and (item["status"] != "paid" or amount <= 0))):
+            raise HTTPException(422, "Unsupported Stripe recurring financial object")
+        return {"kind": kind, "livemode": live, "object_id": item["id"], "subscription_id": subscription,
+                "stripe_customer_id": item["customer"], "amount_minor": amount, "currency": item["currency"],
+                "native_status": item["status"], "cancel_at_period_end": item.get("cancel_at_period_end") is True}
     if kind.startswith("payment_intent."):
         object_type, prefix, intent = "payment_intent", "pi", item.get("id")
         amount = item.get("amount_received") if kind.endswith(".succeeded") else item.get("amount")

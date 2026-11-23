@@ -19,6 +19,11 @@ API_ROOT = REPO_ROOT / "services/api"
 # Exact backend API contracts as authored in the working branch. These
 # checks establish registration, NOT successful execution or authorization.
 MANDATORY_ENDPOINTS = {
+    "stripe_recurring_binding": ("POST", "/api/governance/floor/stripe-subscriptions/{local_id}/bind"),
+    "stripe_recurring_paid_period": ("POST", "/api/governance/floor/stripe-subscriptions/{local_id}/paid-period"),
+    "weweb_recurring_checkout": ("POST", "/api/weweb/stripe-subscriptions/{tenant_id}/{local_id}/checkout"),
+    "weweb_recurring_status": ("GET", "/api/weweb/stripe-subscriptions/{tenant_id}/{local_id}"),
+    "weweb_recurring_cancel": ("POST", "/api/weweb/stripe-subscriptions/{tenant_id}/{local_id}/cancel-at-period-end"),
     "stripe_refund_correction": ("POST", "/api/governance/floor/stripe-orders/{order_id}/refund-correction"),
     "stripe_delivery_liability_release": ("POST", "/api/governance/floor/stripe-orders/{order_id}/delivery/release-liability"),
     "stripe_delivery_revoke": ("POST", "/api/governance/floor/stripe-orders/{order_id}/delivery/revoke"),

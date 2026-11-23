@@ -1,4 +1,5 @@
 """Canonical provider event ingress and owner-controlled readback."""
+import os
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Response
@@ -18,6 +19,10 @@ from app.services.stripe_bank_booking import BankBatchIn, configured_bank_batch
 from app.services.stripe_orders import OrderBindingIn, inspect_binding, register_binding
 from app.services.stripe_revenue_release import DeliveryReleaseIn, recognize_delivery
 from app.services.stripe_refund_correction import RefundCorrectionIn, configured_refund_correction
+from app.services.stripe_recurring import (
+    InvoiceProofIn, RecurringBindingIn, apply_paid_invoice, bind_recurring, recurring_clients, schedule_cancellation,
+    start_checkout, subscription_status,
+)
 from app.webhooks.stripe import router as stripe_webhooks
 
 router = APIRouter()
@@ -104,3 +109,44 @@ def release_paid_delivery_liability(order_id: UUID, payload: DeliveryReleaseIn, 
 @router.post("/api/governance/floor/stripe-orders/{order_id}/refund-correction", dependencies=owner_keys)
 def correct_stripe_refund(order_id: UUID, payload: RefundCorrectionIn, db: Session = Depends(get_db)):
     return private_owner_response(configured_refund_correction(db, order_id, payload, live=is_live()))
+
+
+
+@router.post("/api/governance/floor/stripe-subscriptions/{local_id}/bind", status_code=201, dependencies=owner_keys)
+def commission_recurring_binding(local_id: int, payload: RecurringBindingIn, db: Session = Depends(get_db)):
+    return private_owner_response(bind_recurring(db, local_id, payload, live=is_live()), status_code=201)
+
+
+@router.post("/api/governance/floor/stripe-subscriptions/{local_id}/paid-period", dependencies=owner_keys)
+def verify_paid_period(local_id: int, payload: InvoiceProofIn, db: Session = Depends(get_db)):
+    live = is_live()
+    with recurring_clients(live=live) as (reader, _):
+        return private_owner_response(apply_paid_invoice(db, local_id, payload, live=live, client=reader))
+
+
+@router.post("/api/weweb/stripe-subscriptions/{tenant_id}/{local_id}/checkout")
+def subscriber_checkout(tenant_id: UUID, local_id: int, principal: dict = Depends(get_current_user),
+                        db: Session = Depends(get_db)):
+    live = is_live()
+    with recurring_clients(live=live, write=True) as (reader, writer):
+        return private_owner_response(start_checkout(
+            db, local_id, tenant_id, principal, live=live, reader=reader, writer=writer,
+            success_url=os.getenv("VALHALLA_STRIPE_RECURRING_SUCCESS_URL"),
+            cancel_url=os.getenv("VALHALLA_STRIPE_RECURRING_CANCEL_URL"),
+        ))
+
+
+@router.get("/api/weweb/stripe-subscriptions/{tenant_id}/{local_id}")
+def subscriber_recurring_status(tenant_id: UUID, local_id: int, principal: dict = Depends(get_current_user),
+                                db: Session = Depends(get_db)):
+    return private_owner_response(subscription_status(db, local_id, tenant_id, principal, live=is_live()))
+
+
+@router.post("/api/weweb/stripe-subscriptions/{tenant_id}/{local_id}/cancel-at-period-end")
+def subscriber_end_recurring(tenant_id: UUID, local_id: int, principal: dict = Depends(get_current_user),
+                             db: Session = Depends(get_db)):
+    live = is_live()
+    with recurring_clients(live=live, write=True) as (reader, writer):
+        return private_owner_response(schedule_cancellation(
+            db, local_id, tenant_id, principal, live=live, reader=reader, writer=writer,
+        ))

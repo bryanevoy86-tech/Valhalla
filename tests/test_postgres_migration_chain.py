@@ -60,6 +60,7 @@ SPECIALIST_BACKLOG = load("alembic/versions/20261123_specialist_backlog.py")
 TUNING_PROFILE = load("alembic/versions/20261123_tuning_profile_identity.py")
 STRIPE_FINANCE = load("alembic/versions/20261123_stripe_finance.py")
 STRIPE_ORDER = load("alembic/versions/20261123_stripe_order_binding.py")
+STRIPE_RECURRING = load("alembic/versions/20261123_stripe_recurring.py")
 OWNER_DISPOSITION = load("alembic/versions/20261123_owner_disposition.py")
 BUILDER_LEASE_CAP = load("alembic/versions/20261123_builder_lease_cap.py")
 FIXTURE_SETTLEMENT = load("alembic/versions/20261123_fixture_settlement.py")
@@ -126,9 +127,11 @@ class PostgresMigrationChainTests(unittest.TestCase):
                 try:
                     conn.execute(text("CREATE SCHEMA stripe_finance_ci"))
                     conn.execute(text("SET LOCAL search_path TO stripe_finance_ci"))
+                    conn.execute(text("CREATE TABLE subscriptions (id INTEGER PRIMARY KEY)"))
                     with Operations.context(MigrationContext.configure(conn)):
                         STRIPE_FINANCE.upgrade()
                         STRIPE_ORDER.upgrade()
+                        STRIPE_RECURRING.upgrade()
                     inspector = inspect(conn)
                     names = {unique["name"] for unique in inspector.get_unique_constraints("stripe_balance_evidence")}
                     self.assertEqual(names, {"uq_stripe_balance_transaction", "uq_stripe_balance_capture"})
@@ -136,6 +139,10 @@ class PostgresMigrationChainTests(unittest.TestCase):
                                      "stripe_financial_events")
                     self.assertEqual(inspector.get_unique_constraints("stripe_order_bindings")[0]["name"],
                                      "uq_stripe_order_intent")
+                    names = {tuple(item["column_names"]) for item in inspector.get_unique_constraints("stripe_paid_periods")}
+                    self.assertEqual(names, {("binding_id", "period_start"), ("payment_intent_id",)})
+                    self.assertEqual(inspector.get_foreign_keys("stripe_saas_bindings")[0]["referred_table"],
+                                     "subscriptions")
                 finally:
                     transaction.rollback()
         finally:

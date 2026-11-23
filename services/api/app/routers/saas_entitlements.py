@@ -119,4 +119,10 @@ def access(tenant_id: UUID, module_key: Module, principal: dict = Depends(get_cu
     for row in candidates:
         if module_key in row.modules:
             return {**_trial(row), "has_access": True, "module_key": module_key}
+    from app.heimdall.authority import is_live
+    from app.services.stripe_recurring import paid_module_access
+
+    paid = paid_module_access(db, tenant_id, module_key, principal, live=is_live())
+    if paid is not None:
+        return paid
     raise HTTPException(404, "Tenant module entitlement not found")
