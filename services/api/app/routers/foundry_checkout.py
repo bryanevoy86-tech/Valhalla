@@ -68,7 +68,7 @@ def _listing(db, action_id):
         raise HTTPException(409, "A verified internal listing with product bytes is required")
     item = db.scalar(select(LegacyInstanceWorkItem).where(LegacyInstanceWorkItem.action_id == action_id))
     scope = {key: getattr(item, key) for key in ("legacy_instance_id", "business_id", "engine_id", "jurisdiction")}
-    _check_legacy(db, **scope)
+    _check_legacy(db, **scope, lock=True)
     require_no_containment(db, scope)
     data = _json(item.payload_json, {})
     artifact = load_artifact(db, UUID(asset["artifact_id"]), lock=True)
@@ -342,6 +342,14 @@ def _view(db, row):
     }
 
 
+def _require_current_campaign_plan(db: Session, campaign_id: int, plan: dict) -> None:
+    recorded = AcquisitionPlanIn.model_validate(plan["request"])
+    current = make_plan(db, campaign_id, recorded, datetime.now(timezone.utc).date())
+    if (plan["demand_sha256"] != current["demand_sha256"]
+            or plan.get("consumer_research") != current.get("consumer_research")):
+        raise HTTPException(409, "Campaign demand evidence has changed")
+
+
 @router.post("/orders", status_code=201, dependencies=owner)
 def create_order(payload: OrderIn, db: Session = Depends(get_db)):
     previous = db.get(FoundryRehearsalOrder, payload.order_id, with_for_update=True)
@@ -360,6 +368,14 @@ def create_order(payload: OrderIn, db: Session = Depends(get_db)):
         visit = db.get(FoundryCampaignVisit, payload.visit_id, with_for_update=True)
         if visit is None or visit.scope_key != outcome_scope_key(scope) or visit.order_id is not None:
             raise HTTPException(409, "Campaign visit is unavailable to this order scope")
+        plan = read_plan(db, visit.campaign_id, scope)
+        if plan is not None:
+            _require_current_campaign_plan(db, visit.campaign_id, plan)
+            if plan["request"]["channel"] == "DIRECT_OPT_IN":
+                receipt = verify_consent(journal_event(db, consent_event_id(visit.id)), scope, visit.campaign_id, visit.id)
+                suppression_key, _ = customer_reference(scope, UUID(receipt["consent_fixture_id"]))
+                if journal_event(db, suppression_key) is not None:
+                    raise HTTPException(409, "Synthetic customer opt-in was withdrawn before order attribution")
     order = FoundryRehearsalOrder(id=payload.order_id, action_id=payload.action_id, listing_sha256=receipt["sha256"],
                                   artifact_id=artifact.id, artifact_sha256=artifact.sha256,
                                   amount_minor=amount, payment_reference=payload.payment_reference)
@@ -495,6 +511,9 @@ def record_campaign_visit(payload: VisitIn, db: Session = Depends(get_db)):
     _attribution_schema(db)
     scope = payload.model_dump(exclude={"visit_id", "campaign_id", "consent_fixture_id"})
     _check_legacy(db, **scope, lock=True)
+    visit = db.get(FoundryCampaignVisit, payload.visit_id)
+    if visit is None:
+        require_no_containment(db, scope)
     if db.get(MarketingCampaign, payload.campaign_id, with_for_update=True) is None:
         raise HTTPException(404, "Campaign record not found")
     key = outcome_scope_key(scope)
@@ -502,7 +521,6 @@ def record_campaign_visit(payload: VisitIn, db: Session = Depends(get_db)):
     direct = plan is not None and plan["request"]["channel"] == "DIRECT_OPT_IN"
     if direct != (payload.consent_fixture_id is not None):
         raise HTTPException(409, "Direct acquisition visits require scoped synthetic opt-in evidence")
-    visit = db.get(FoundryCampaignVisit, payload.visit_id)
     if visit is not None:
         if (visit.campaign_id, visit.scope_key) != (payload.campaign_id, key):
             raise HTTPException(409, "Visit ID already used")
@@ -515,11 +533,12 @@ def record_campaign_visit(payload: VisitIn, db: Session = Depends(get_db)):
         if plan is not None:
             if _emergency_stop_active(db):
                 raise HTTPException(503, "Campaign attribution paused by emergency stop")
-            recorded = AcquisitionPlanIn.model_validate(plan["request"])
-            current = make_plan(db, payload.campaign_id, recorded, datetime.now(timezone.utc).date())
-            if (plan["demand_sha256"] != current["demand_sha256"]
-                    or plan.get("consumer_research") != current.get("consumer_research")):
-                raise HTTPException(409, "Campaign demand evidence has changed")
+            _require_current_campaign_plan(db, payload.campaign_id, plan)
+            count = db.scalar(select(func.count()).select_from(FoundryCampaignVisit).filter_by(
+                campaign_id=payload.campaign_id, scope_key=key,
+            ))
+            if count >= plan["request"]["stop_after_visits"]:
+                raise HTTPException(409, "Campaign reached its approved fixture visit limit")
         if direct:
             suppress_key, _ = customer_reference(scope, payload.consent_fixture_id)
             if journal_event(db, suppress_key) is not None:
@@ -619,7 +638,7 @@ def record_acquisition_plan(campaign_id: int, payload: AcquisitionPlanIn, db: Se
     if not inspect(db.connection()).has_table(LegacyOrchestrationEvent.__tablename__):
         raise HTTPException(503, "Campaign plan journal unavailable")
     scope = payload.scope.model_dump()
-    _check_legacy(db, **scope)
+    _check_legacy(db, **scope, lock=True)
     if _emergency_stop_active(db):
         raise HTTPException(503, "Campaign planning paused by emergency stop")
     require_no_containment(db, scope)

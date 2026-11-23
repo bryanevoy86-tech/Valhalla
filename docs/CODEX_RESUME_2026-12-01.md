@@ -20,6 +20,8 @@ The independence route optionally accepts `reconciled_allocation`, an existing `
 
 Next, attach independently read-back provider, accounting and settlement evidence when separately authorized. Prepare dated funding-source intake and verify official reporting rules. Case-specific confirmation and authorization are required before relying on or submitting any real report. Keep owner records, benefits and evidence references out of Git.
 
+The existing Foundry checkout rehearsal now enforces the planned fixture visit limit and economic containment when adding new visits. Creating a new attributed order rechecks the current plan and rejects an already withdrawn direct opt-in. Repeating the exact recorded visit or order remains idempotent. The isolated test covers intake, withdrawal, order capture, delivery, refund, settlement and verified evidence. Keep provider-side dispatch, independently read-back settlement and commercial entitlement provisioning as commissioning and implementation dependencies.
+
 ## Current workstream index and startup order
 
 For tasks 04–53, follow the workstream ID in the task register to the corresponding row in `ops/prime_system_integration_matrix.json`. Each row provides exact `source_paths`, `depends_on`, implementation state and an evidence level. Read the `continuation` fields for existing test evidence, next implementation and the owner action, then use the unchanged `acceptance_test` as the proof contract. `production_verified` remains false where real operation has not been established.

@@ -1065,3 +1065,5 @@ The acceptance matrix retains 13 P0 and 39 total criteria requiring internal cod
 
 - Prior checkpoint `46ea731273c9230548d0303bce4e480c18f7e276` passed all four hosted jobs in run 45082571023.
 - Added same-month scoped statement and checkout evidence to the private independence review. Added an owner-only reverse planning route that applies existing allocation caps and anchors to current digest-checked Foundry scenarios, exposing required units, customers, in-month receipts, acquisition spend and capacity blockers. The new projections preserve fixture and assumption classifications. Canonical CI covers linked evidence, zero-contribution separation, cap inversion, authorization and revoked evidence. Actual-provider settlement and funding intake remain open.
+
+- The customer acquisition-to-settlement rehearsal now stops new visits at the configured cap, applies economic containment to new visits, rereads current scoped demand at order attribution and refuses a new direct attribution after opt-in withdrawal. These checks preserve exact replay and existing refund and reconciliation paths. Browser and provider-facing dispatch remain separately controlled.

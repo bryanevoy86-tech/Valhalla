@@ -458,6 +458,7 @@
         "commerce"
       ],
       "owner_external_authorization_required": true,
+      "commercial_rehearsal_boundary": "New scoped visits stop at the configured cap and obey economic containment. New attributed orders recheck current evidence and direct opt-in withdrawal while repeat receipts remain readable.",
       "continuation": {
         "next_implementation": "Verify consent, targeting and demand using an approved channel and independently sourced attribution.",
         "existing_test_evidence": "See SQLITE_INTEGRATION_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
@@ -487,6 +488,7 @@
         "auth"
       ],
       "owner_external_authorization_required": true,
+      "commercial_rehearsal_boundary": "New scoped visits stop at the configured cap and obey economic containment. New attributed orders recheck current evidence and direct opt-in withdrawal while repeat receipts remain readable.",
       "continuation": {
         "next_implementation": "Bind reviewed content to an independently verified authorized publishing receipt.",
         "existing_test_evidence": "See SOURCE_INSPECTED_ONLY and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
@@ -519,6 +521,7 @@
         "finance_webhooks"
       ],
       "owner_external_authorization_required": true,
+      "commercial_rehearsal_boundary": "New scoped visits stop at the configured cap and obey economic containment. New attributed orders recheck current evidence and direct opt-in withdrawal while repeat receipts remain readable.",
       "continuation": {
         "next_implementation": "Prove tenant scoping, billing events, entitlements, activation and revocation in the chosen modules.",
         "existing_test_evidence": "See SQLITE_INTEGRATION_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md. SaaS, service and real-estate rehearsal covers shared stress rules, projection differences and simulated review. A repeated withdrawal queues one digest-bound event for opted-in Prime schedules and participating specialists. Prime switches to HOLD before cadence and the source is excluded from allocation.",

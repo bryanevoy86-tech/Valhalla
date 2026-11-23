@@ -761,6 +761,10 @@ def rehearse_checkout(client, engine, monkeypatch, owner, action_id, price, scop
                            json={**details, "consent_fixture_id": str(uuid4())}).status_code == 409
         assert client.post(f"{root}/campaign-visits", headers=owner,
                            json={**details, "visit_id": str(uuid4())}).status_code == 409
+    capped = client.post(f"{root}/campaign-visits", headers=owner, json={
+        **scope, "campaign_id": 1, "visit_id": str(uuid4()), "consent_fixture_id": str(uuid4()),
+    })
+    assert capped.status_code == 409 and "visit limit" in capped.json()["detail"]
     rehearse_channel_intent(client, engine, monkeypatch, owner, scope, visit_ids)
     suppression = {"consent_fixture_id": details["consent_fixture_id"], **scope}
     endpoint = f"{root}/consent-suppressions"
@@ -781,6 +785,10 @@ def rehearse_checkout(client, engine, monkeypatch, owner, action_id, price, scop
     payment = "pi_fixture_verified_order"
     payload = {"order_id": order_id, "action_id": action_id, "payment_reference": payment, "visit_id": visit_ids[0]}
     assert client.post(f"{root}/orders", json=payload).status_code == 401
+    withdrawn = client.post(f"{root}/orders", headers=owner, json={
+        **payload, "visit_id": visit_ids[1],
+    })
+    assert withdrawn.status_code == 409 and "opt-in was withdrawn" in withdrawn.json()["detail"]
     created = client.post(f"{root}/orders", headers=owner, json=payload)
     assert created.status_code == 201, created.text
     assert created.json()["price_minor"] == price
