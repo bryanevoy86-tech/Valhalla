@@ -563,7 +563,7 @@
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
-          "internal_coding": "One-time scoped Stripe capture can authorize exact buyer/product delivery independently of payout. Complete reconciled liability release, subscriptions, renewal/cancellation, and live subscriber commissioning.",
+          "internal_coding": "One-time scoped capture authorizes exact buyer/product delivery independently of payout. Reconciled and buyer-acknowledged orders have a guarded exact liability release path. Complete subscriptions, renewal/cancellation, corrections and live subscriber commissioning.",
           "insufficient_test_evidence": "Test disputed cost corrections, verified external settlements and separately authorized cross-product entitlement changes.",
           "external_commissioning": "Run approved storefront lifecycle in staging.",
           "owner_or_professional_action": "Approve listings, rights, support and merchant scope.",

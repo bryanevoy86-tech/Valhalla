@@ -148,10 +148,13 @@ def owner_stripe_order(order_id: UUID, db: Session = Depends(get_db)):
     from app.services.stripe_orders import inspect_binding
 
     from app.services.stripe_bank_booking import bank_batch_summary
+    from app.services.stripe_revenue_release import delivery_evidence_summary
 
     live = is_live()
     projection = inspect_binding(db, order_id, live=live)
-    return private_owner_response({**projection, "bank_batch": bank_batch_summary(db, order_id, projection, live=live)})
+    bank = bank_batch_summary(db, order_id, projection, live=live)
+    delivery = delivery_evidence_summary(db, order_id, projection, bank, live=live)
+    return private_owner_response({**projection, "bank_batch": bank, "delivery_evidence": delivery})
 
 
 @router.post("/owner-operating-scope")

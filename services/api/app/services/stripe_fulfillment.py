@@ -1,5 +1,6 @@
 """One-time paid product access guarded by an exact buyer and capture."""
 import os
+from datetime import datetime, timezone
 from uuid import UUID
 
 from fastapi import HTTPException
@@ -209,10 +210,12 @@ def acknowledge_delivery(db, tenant_id, order_id, principal, request, *, live):
              "grant_sha256": grant["sha256"], "subscriber_id": principal["user_id"], "basis": grant["basis"],
              "buyer_acknowledged": True, "recognized_revenue_minor": None, "available_cash_minor": None}
     if prior is not None:
-        if {k: v for k, v in prior.items() if k != "sha256"} != value:
+        if {k: v for k, v in prior.items() if k not in {"sha256", "acknowledged_on"}} != value:
             raise HTTPException(409, "Delivery acknowledgment differs from the recorded acceptance")
         return prior
-    return _write_record(db, key, ACCEPTANCE, value)
+    return _write_record(db, key, ACCEPTANCE, {
+        **value, "acknowledged_on": datetime.now(timezone.utc).date().isoformat(),
+    })
 
 
 

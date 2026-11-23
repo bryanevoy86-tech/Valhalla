@@ -50,6 +50,12 @@ test("checks exact owner Stripe lookup and separates processor evidence from acc
         batch_minor:1920,order_contribution_minor:960,ledger_entry_id:null,available_cash_minor:null};
     const reconciled = await runOwnerStripeOrder(params,respond({...projection,bank_batch:bank}));
     assert.match(reconciled.text,/Bank reconciliation rehearsal recorded[\s\S]*CAD\s19\.20[\s\S]*CAD\s9\.60/);
+    const delivery = {basis:"SYNTHETIC_DELIVERY_REHEARSAL",status:"LIABILITY_RELEASE_REHEARSED",
+        recognized_revenue_minor:null,available_cash_minor:null};
+    const rehearsed = await runOwnerStripeOrder(params,respond({...projection,bank_batch:bank,delivery_evidence:delivery}));
+    assert.match(rehearsed.text,/Delivery liability release rehearsed/);
+    assert.equal((await runOwnerStripeOrder(params,respond({...projection,
+        delivery_evidence:{...delivery,recognized_revenue_minor:1000}}))).status,"unavailable");
     assert.equal((await runOwnerStripeOrder(params,respond({...projection,
         bank_batch:{...bank,ledger_entry_id:1}}))).status,"unavailable");
     assert.equal((await runOwnerStripeOrder(params,respond({...projection,entitlement_granted:true}))).status,"unavailable");

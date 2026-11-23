@@ -63,6 +63,13 @@ def _payout_receipt(db, order, projection):
     return {**data, "sha256": digest}
 
 
+def require_open_period(db, posted_on):
+    period = db.scalars(select(Period).where(Period.start_date <= posted_on, Period.end_date >= posted_on)
+                        .order_by(Period.id).limit(2).with_for_update()).all()
+    if len(period) != 1 or period[0].closed:
+        raise HTTPException(409, "Exactly one open accounting period must cover the bank posting")
+
+
 def _journal(db, reference, posted_on, scope, amounts):
     # The chart of accounts is explicitly configured for this authorized receiving scope.
     accounts_env = {
@@ -75,10 +82,7 @@ def _journal(db, reference, posted_on, scope, amounts):
         raise HTTPException(503, "Canonical accounting tables are unavailable")
     if db.scalar(select(JournalEntry.id).filter_by(source=LEDGER_SOURCE, source_ref=reference).limit(1)) is not None:
         raise HTTPException(409, "Accounting source already exists without matched booking receipt")
-    period = db.scalars(select(Period).where(Period.start_date <= posted_on, Period.end_date >= posted_on)
-                        .order_by(Period.id).limit(2).with_for_update()).all()
-    if len(period) != 1 or period[0].closed:
-        raise HTTPException(409, "Exactly one open accounting period must cover the bank posting")
+    require_open_period(db, posted_on)
     accounts = {}
     for name, (variable, account_type) in accounts_env.items():
         account = db.scalar(select(Account).filter_by(code=os.getenv(variable), type=account_type,
@@ -267,6 +271,7 @@ def bank_batch_summary(db: Session, order_id: UUID, projection: dict, *, live: b
         "basis": expected_basis, "status": "CORRECTION_REVIEW_REQUIRED" if held else "RECONCILIATION_RECORDED",
         "currency": "CAD", "batch_minor": value["payout_minor"], "order_contribution_minor": member["net_minor"],
         "booked_on": value["bank"]["posted_on"], "ledger_entry_id": ledger_id, "available_cash_minor": None,
+        "batch_liability_minor": value["gross_customer_obligation_minor"], "sha256": receipt["sha256"],
     }
 
 

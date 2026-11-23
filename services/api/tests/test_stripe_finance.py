@@ -188,6 +188,10 @@ def test_registered_stripe_finance_replays_and_reconciles_only_matching_capture(
         assert accepted.status_code == 200, accepted.text
         assert accepted.json()["recognized_revenue_minor"] is None
         assert client.post(purchase + "/acknowledge", headers=buyer_headers, json=payload).json() == accepted.json()
+        release_url = gate + "/release-liability"
+        release_request = {"acknowledgment_sha256": accepted.json()["sha256"]}
+        assert client.post(release_url, headers=keys, json=release_request).status_code == 409
+
 
         balance["status"] = "available"
         receipt = read()
@@ -259,6 +263,15 @@ def test_registered_stripe_finance_replays_and_reconciles_only_matching_capture(
         preview = bank_batch_summary(db, UUID(order_id), matched.json(), live=False)
         assert preview["order_contribution_minor"] == 960 and preview["batch_minor"] == 1920
         assert preview["status"] == "RECONCILIATION_RECORDED"
+        assert client.post(release_url, json=release_request).status_code == 401
+        wrong_ack = client.post(release_url, headers=keys, json={"acknowledgment_sha256": "0" * 64})
+        assert wrong_ack.status_code == 409
+        release = client.post(release_url, headers=keys, json=release_request)
+        assert release.status_code == 200, release.text
+        assert release.json()["eligible_liability_minor"] == 1000
+        assert release.json()["recognized_revenue_minor"] is None and release.json()["ledger_entry_id"] is None
+        assert client.post(release_url, headers=keys, json=release_request).json() == release.json()
+
         assert scoped_bank_blockers(db, scope, live=False) == set()
         bank_item["transaction_id"] = "different_bank_tx"
         with pytest.raises(HTTPException, match="changed after reconciliation"):
@@ -268,6 +281,7 @@ def test_registered_stripe_finance_replays_and_reconciles_only_matching_capture(
             "id": "po_ValhallaTest", "object": "payout", "amount": 1920, "currency": "cad",
         }}}
         assert deliver(failure).status_code == 200
+        assert client.post(release_url, headers=keys, json=release_request).status_code == 409
         assert bank_batch_summary(db, UUID(order_id), matched.json(), live=False
                                   )["status"] == "CORRECTION_REVIEW_REQUIRED"
         assert scoped_bank_blockers(db, scope, live=False) == {"STRIPE_BANK_CORRECTION_REQUIRED"}
@@ -287,6 +301,21 @@ def test_registered_stripe_finance_replays_and_reconciles_only_matching_capture(
         lines = db.query(JournalLine).filter_by(entry_id=entry_id).all()
         assert sum(line.credit for line in lines) == sum(line.debit for line in lines)
         assert len(lines) == 5
+        from app.services.specialist_triggers import outcome_scope_key
+        from app.services.stripe_revenue_release import _release_posting
+
+        monkeypatch.setenv("VALHALLA_STRIPE_BANK_BOOKING_ENABLED", "1")
+        monkeypatch.setenv("VALHALLA_STRIPE_BANK_BOOKING_SCOPE", outcome_scope_key(scope))
+        monkeypatch.setenv("VALHALLA_STRIPE_BOOK_DELIVERY_INCOME", "DELIVERY")
+        db.add(Account(code="DELIVERY", name="Paid delivery", type="income", currency="CAD", active=True))
+        db.flush()
+        posting = _release_posting(db, "isolated-release", scope, posting_date,
+                                   {"ledger_entry_id": entry_id, "batch_liability_minor": 2000}, 1000)
+        db.flush()
+        release_lines = db.query(JournalLine).filter_by(entry_id=posting).all()
+        assert len(release_lines) == 2
+        assert sum(line.debit for line in release_lines) == sum(line.credit for line in release_lines) == 10
+
         db.rollback()
         assert db.query(JournalEntry).count() == 0
 

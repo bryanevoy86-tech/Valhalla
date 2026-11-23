@@ -160,6 +160,25 @@ export async function runOwnerStripeOrder(input, transport = fetch) {
                 "Entire payout batch · " + amount(bank.batch_minor, bank.currency),
                 "This order’s contribution · " + amount(bank.order_contribution_minor, bank.currency));
         }
+        const delivery = body.delivery_evidence;
+        if (delivery != null) {
+            const testOrder = !body.order.livemode;
+            const stages = {
+                DELIVERY_AUTHORIZED: "Delivery authorized",
+                BUYER_ACKNOWLEDGED: "Buyer acknowledged delivery",
+                DELIVERY_REVIEW_REQUIRED: "Delivery held for review",
+                LIABILITY_RELEASE_RECORDED: "Delivery liability release recorded",
+                LIABILITY_RELEASE_REHEARSED: "Delivery liability release rehearsed",
+            };
+            const recorded = delivery.status === "LIABILITY_RELEASE_RECORDED";
+            if (!Object.hasOwn(stages, delivery.status) || delivery.available_cash_minor !== null
+                || delivery.basis !== (testOrder ? "SYNTHETIC_DELIVERY_REHEARSAL" : "PAID_ONE_TIME_PRODUCT")
+                || (recorded ? testOrder || delivery.recognized_revenue_minor !== body.order.amount_minor
+                    : delivery.recognized_revenue_minor !== null)
+                || (!testOrder && delivery.status === "LIABILITY_RELEASE_REHEARSED")) return result("unavailable");
+            rows.push(stages[delivery.status]);
+            if (recorded) rows.push("Recognized revenue · " + amount(delivery.recognized_revenue_minor, "CAD"));
+        }
         return result("ready", {text:rows.map(escapeOwnerReviewText).join("\n")});
     } catch {
         return result("unavailable");
