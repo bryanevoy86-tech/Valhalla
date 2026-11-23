@@ -1,6 +1,10 @@
 """DocuSign client - production-safe, gated signature integration."""
 import uuid
 
+from fastapi import HTTPException
+
+from app.integrations.commissioning import approved_reader, commissioning_receipt, read_json
+
 from app.core.engines.actions import CONTRACT_SEND
 from app.core.engines.guard_runtime import enforce_engine
 from app.core.runtime_flags import is_live
@@ -38,46 +42,40 @@ def send_envelope(contract_id: str, recipient_email: str, document_url: str) -> 
             "message": "DocuSign sandbox - no real signature request"
         }
     
-    # REAL SDK CALL GOES HERE
-    # from docusign_esign import ApiClient, EnvelopesApi
-    # api_client = ApiClient()
-    # envelopes_api = EnvelopesApi(api_client)
-    # response = envelopes_api.create_envelope(...)
-    
-    return {
-        "status": "sent",
-        "envelope_id": envelope_id,
-        "contract_id": contract_id,
-        "recipient_email": recipient_email,
-        "message": "Envelope sent for signature"
-    }
+    raise HTTPException(503, "DocuSign sending has not been commissioned")
 
 
 def get_envelope_status(envelope_id: str) -> dict:
-    """Get the status of a DocuSign envelope."""
-    if not is_live():
-        return {
-            "status": "sandbox",
-            "envelope_id": envelope_id,
-            "message": "Sandbox mode"
-        }
-    
-    # TODO: Implement real DocuSign API call
-    return {
-        "status": "pending",
-        "envelope_id": envelope_id,
-        "message": "Envelope status (stub)"
-    }
+    """Inspect the exact DocuSign fixture envelope without sending or downloading it."""
+    if not is_live() and envelope_id.startswith("docusign_"):
+        return {"status": "sandbox", "envelope_id": envelope_id, "message": "Simulated envelope"}
+    return read_envelope_fixture(envelope_id=envelope_id)
 
 
-def webhook_handler(event_data: dict) -> dict:
-    """
-    Handle DocuSign webhook events.
-    
-    Called when envelope status changes (sent, viewed, signed, completed)
-    """
-    return {
-        "status": "processed",
-        "event": event_data.get("eventType"),
-        "message": "Webhook received"
-    }
+def read_envelope_fixture(*, envelope_id=None, transport=None):
+    with approved_reader("DOCUSIGN", "https://demo.docusign.net", "ACCOUNT_ID", "ENVELOPE_ID", "SIGNER_EMAIL",
+                         transport=transport) as (client, config):
+        account, reference, email = config
+        try:
+            if any(str(uuid.UUID(value)) != value for value in (account, reference)):
+                raise ValueError
+        except ValueError:
+            raise HTTPException(503, "Exact DocuSign test account and envelope configuration required") from None
+        if envelope_id is not None and envelope_id != reference:
+            raise HTTPException(409, "Envelope differs from the approved commissioning scope")
+        path = f"/restapi/v2.1/accounts/{account}/envelopes/{reference}"
+        envelope = read_json(client, path)
+        status = envelope.get("status")
+        if envelope.get("envelopeId") != reference or status not in {
+            "created", "sent", "delivered", "completed", "declined", "voided",
+        }:
+            raise HTTPException(409, "DocuSign envelope evidence did not match the configured resource")
+        recipients = read_json(client, path + "/recipients")
+        signers = recipients.get("signers")
+        if (not isinstance(signers, list) or len(signers) != 1 or not isinstance(signers[0], dict)
+                or not isinstance(signers[0].get("email"), str) or signers[0]["email"].casefold() != email.casefold()
+                or str(recipients.get("recipientCount")) != "1"
+                or (status == "completed" and signers[0].get("status") != "completed")):
+            raise HTTPException(409, "DocuSign test signer or completed status did not reconcile")
+    return commissioning_receipt("DOCUSIGN", f"{account}/{reference}", envelope_status=status,
+                                 document_downloaded=False, legal_reliance_authorized=False)

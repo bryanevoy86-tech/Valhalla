@@ -691,6 +691,7 @@
         "services/api/app/routers/contracts.py",
         "services/api/app/models/contracts.py",
         "services/api/app/services/owner_startup.py",
+        "services/api/app/services/startup_dependencies.py",
         "services/api/tests/test_saas_tenant_entitlements.py"
       ],
       "source_observation": "Contract template and document routes exist; actual external signature/legal approvals unproven",
@@ -710,7 +711,7 @@
         "remaining": {
           "internal_coding": "Finish scoped review intake and bind approved terms to internal drafts.",
           "internally_achievable_testing": "Exercise unsigned, wrong-party and superseded terms.",
-          "external_api_and_provider_commissioning": "Verify approved signing sandbox receipts.",
+          "external_api_and_provider_commissioning": "Commission exact DocuSign test envelope and recipient readback. Callback authentication and write authority remain separate.",
           "owner_authorization_or_account_establishment": "Choose the agreement, qualified reviewer and exact approved test signing scope.",
           "independent_financial_or_operational_evidence": "Independent envelope readback, parties and audited signing receipt.",
           "qualified_professional_review": "Licensed counsel reviews actual terms and filings when the selected activity requires it.",
@@ -834,6 +835,7 @@
         "services/api/tests/test_saas_tenant_entitlements.py",
         "services/api/app/routers/owner_weweb.py",
         "services/api/app/services/owner_startup.py",
+        "services/api/app/services/startup_dependencies.py",
         "web/weweb-datasources/owner_attention.collection.json",
         "web/weweb-widgets/owner-attention.mjs",
         "tests/test-weweb-owner-attention.test.mjs",
@@ -923,6 +925,7 @@
         "services/api/app/services/owner_attachment_retention.py",
         "services/api/tools/cron/owner_attachment_retention_worker.py",
         "services/api/app/services/owner_startup.py",
+        "services/api/app/services/startup_dependencies.py",
         "services/api/app/services/startup_independence.py",
         "services/api/tests/test_startup_independence.py",
         "services/api/tests/test_saas_tenant_entitlements.py",
@@ -1293,6 +1296,7 @@
         "services/api/app/services/treasury_reconciliation.py",
         "services/api/app/routers/foundry_checkout.py",
         "services/api/app/services/owner_startup.py",
+        "services/api/app/services/startup_dependencies.py",
         "services/api/tests/test_saas_tenant_entitlements.py"
       ],
       "source_observation": "Statement fixtures reconcile segregated balances and unique transaction references. A signed checkout delta can be matched once to an exact business statement fixture. Historical quarantined FX records and actual bank verification remain separate.",
@@ -1312,7 +1316,7 @@
         "remaining": {
           "internal_coding": "Complete independently evidenced recurring bank and accounting linkage plus spendable cash after liabilities, restrictions and reserves. The scoped owner dashboard can show paid-period counts without making a cash claim.",
           "internally_achievable_testing": "Exercise reversal, restrictive reserve and double-counted obligation scenarios in isolated accounting fixtures.",
-          "external_api_and_provider_commissioning": "Connect approved banking and accounting sandboxes. Verify approved funding feeds and authority separately.",
+          "external_api_and_provider_commissioning": "Commission approved bank readback and exact QuickBooks sandbox account metadata. Verify financial evidence, approved funding feeds and posting authority separately.",
           "owner_authorization_or_account_establishment": "Approve read-only scope and professional integration.",
           "independent_financial_or_operational_evidence": "Exact independently issued bank and accounting records, reconciled liabilities, reserve evidence and reversals.",
           "qualified_professional_review": "Qualified banking and accounting review of classified funds and actual posting scope.",
@@ -1394,6 +1398,7 @@
         "docs/VALHALLA_DOCTRINE_CONFLICT_MAP.md",
         "services/api/app/models/bahamas_plan.py",
         "services/api/app/services/owner_startup.py",
+        "services/api/app/services/startup_dependencies.py",
         "services/api/tests/test_saas_tenant_entitlements.py"
       ],
       "source_observation": "International residency and departure concepts are advisory documents; legal/tax outcomes and exact timing unverified.",
@@ -1462,6 +1467,7 @@
         "legal/TRUST_RESIDENCY_OVERVIEW.md",
         "services/api/app/routers/governance_tyr.py",
         "services/api/app/services/owner_startup.py",
+        "services/api/app/services/startup_dependencies.py",
         "services/api/tests/test_saas_tenant_entitlements.py",
         "services/api/app/services/tax_opinion_provenance.py",
         "services/api/tests/test_tax_opinion_provenance.py"

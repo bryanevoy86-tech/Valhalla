@@ -1133,3 +1133,7 @@ The acceptance matrix retains 13 P0 and 39 total criteria requiring internal cod
 
 - Reclassified all 50 acceptance rows using distinct columns for software, isolated testing, provider commissioning, owner/account authority, independent evidence, qualified review and conditional growth. Existing acceptance text, dependencies and 14 P0 internal gaps are preserved.
 - Extended the private startup dependency checklist for the selected one-time or recurring CAD lane. Owner conversation, no-store owner route and startup compare share the same guide. Updated the primary WeWeb comparison workflow and checked exact readback with synthetic renderer checks. Owner/browser commissioning and independent provider receipts remain outstanding.
+
+- Added exact read-only commissioning for QuickBooks sandbox account classification, DocuSign test envelope plus one matching recipient and Google Drive metadata for one preselected test file. All three require a separate owner mandate, owner session, disabled-by-default provider configuration and non-live runtime. Responses omit personal data and cash claims. Native response replays cover disabled settings, wrong resource or signer, rejected credentials and incomplete status. Closed the legacy QuickBooks journal, DocuSign send and uncommissioned DocuSign webhook success paths that lacked actual provider evidence.
+
+- The classification, private conversation and WeWeb checklist batch passed all four hosted jobs in run 45113701443 at `4d88c578dc21f0bdf39d3a8143943edc1c96ec16`.
