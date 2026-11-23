@@ -74,3 +74,21 @@ test("fails closed on revoked and subscriber sessions, cross-origin routing and 
     assert.equal(corrupted.status, "unavailable");
     assert.equal(corrupted.turns, undefined);
 });
+
+test("allows correction after the server rejects an incomplete startup checkpoint", async () => {
+    const draft = {...input, operation: "send", prior: {session: "owner", selected: thread.conversation_id},
+        message: "Record startup name"};
+    const invalid = await runOwnerConversations(draft, async () => response(422), () => turnId);
+    assert.equal(invalid.status, "invalid_message");
+    assert.equal(invalid.pending, null);
+    const message = "Record startup name | 2026-11-23 | fixture | Compare Manitoba";
+    const saved = await runOwnerConversations({...draft, message, prior: invalid}, async (url, options) => {
+        if (options.method === "POST") {
+            assert.equal(JSON.parse(options.body).turn_id, decision);
+            return response(201, {...turn, turn_id: decision, message});
+        }
+        return readFixtures(url, options);
+    }, () => decision);
+    assert.equal(saved.status, "ready");
+    assert.equal(saved.pending, null);
+});

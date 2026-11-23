@@ -451,3 +451,82 @@ def test_trial_is_bound_to_authenticated_subscriber_and_tenant(deal_client, monk
     assert client.post(path, headers=bearer, json=plan).status_code == 401
     assert client.get(history, headers=bearer).status_code == 401
     assert client.get(f"{inbox}/attachments", headers=bearer).status_code == 401
+
+
+def test_owner_guided_startup_walkthrough_resumes_and_keeps_evidence_advisory(deal_client, monkeypatch):
+    from app.models.owner_conversation import OwnerConversation, OwnerTurn
+    from app.services import owner_startup, startup_walkthrough
+
+    client, engine = deal_client
+    today = datetime.now(timezone.utc).date()
+    monkeypatch.setattr(owner_startup, "FEE_CHECKED_ON", today)
+    monkeypatch.setenv("VALHALLA_OWNER_EMAIL", "startup-owner@example.invalid")
+    for model in (UserProfile, AccountSettings, RevokedAccessToken, OwnerConversation, OwnerTurn):
+        model.__table__.create(engine, checkfirst=True)
+    with Session(engine) as db:
+        profiles = [UserProfile(first_name="Startup", last_name=role, email=f"startup-{role}@example.invalid")
+                    for role in ("owner", "buyer")]
+        db.add_all(profiles)
+        db.flush()
+        db.add_all([AccountSettings(user_id=profile.user_id, account_locked=False, password_hash="unused-fixture")
+                    for profile in profiles])
+        db.commit()
+        owner, buyer = ({"Authorization": f"Bearer {_issue_access_token(_auth_runtime(), profile)}"}
+                        for profile in profiles)
+
+    base = "/api/weweb/owner-conversations"
+    conversation = str(uuid4())
+    assert client.post(base, headers=owner, json={"conversation_id": conversation, "title": "Synthetic startup"}).status_code == 201
+    path = f"{base}/{conversation}/turns"
+
+    def request(message, headers=owner, turn_id=None):
+        return client.post(path, headers=headers, json={"turn_id": turn_id or str(uuid4()), "message": message})
+
+    def walkthrough(message, turn_id=None):
+        response = request(message, turn_id=turn_id)
+        assert response.status_code == 201, response.text
+        assert response.headers["cache-control"] == "no-store"
+        result = response.json()
+        assert result["external_effects"] == 0 and not result["execution_authorized"]
+        if message in {startup_walkthrough.COMMAND, "Startup professionals"}:
+            print(f"OWNER {message}\nHEIMDALL {result['reply']}")
+        evidence = result["evidence"]
+        assert not evidence["activation_authorized"] and not evidence["government_or_professional_verification"]
+        return evidence
+
+    assert request(startup_walkthrough.COMMAND, buyer).status_code == 403
+    first = walkthrough(startup_walkthrough.COMMAND)
+    assert first["next_step"] == "name"
+    assert len(first["progress"]) == 8
+    assert [option["government_minor"] for option in first["filing_estimates"]] == [39500, 59500]
+    assert all(row["current_registry_status"] == "UNVERIFIED" for row in first["professional_candidates"])
+    assert walkthrough("Startup professionals")["professional_candidates"] == first["professional_candidates"]
+    service_audit = {row["key"] for row in first["dependencies"]["dependencies"] if row.get("integration_readiness")}
+    assert service_audit == {"bank", "accounting", "stripe", "signing", "workspace", "weweb"}
+    assert request("record startup name").status_code == 422
+    assert request("record startup invalid | 2026-11-23 | fixture | no").status_code == 422
+    assert request(f"record startup name | {today + timedelta(days=1)} | fixture | no").status_code == 422
+
+    evidence_message = f"Record startup name | {today} | fixture:scope | Compare Manitoba first"
+    turn_id = str(uuid4())
+    saved = walkthrough(evidence_message, turn_id)
+    assert saved["startup_record"]["statement"] == "Compare Manitoba first"
+    assert walkthrough(evidence_message, turn_id) == saved
+    assert request(evidence_message + " changed", turn_id=turn_id).status_code == 409
+    assert walkthrough("Startup progress")["next_step"] == "structure"
+
+    old = today - timedelta(days=91)
+    assert walkthrough(f"Record startup reporting | {old} | fixture:eia | Owner-reported notification and reporting")[
+        "progress"][3]["status"] == "RECHECK"
+    assert walkthrough(f"Reopen startup name | {today} | fixture:written-change | Requirements changed")["next_step"] == "name"
+    for key in startup_walkthrough.STEPS:
+        if key != "launch":
+            progress = walkthrough(f"Record startup {key} | {today} | fixture:{key} | Synthetic owner checkpoint")
+    assert progress["next_step"] == "launch"
+    complete = walkthrough(f"Record startup launch | {today} | fixture:launch | Synthetic approval review")
+    assert complete["next_step"] is None and not complete["activation_authorized"]
+    with monkeypatch.context() as changed_guide:
+        changed_guide.setattr(startup_walkthrough, "GUIDE_VERSION", startup_walkthrough.GUIDE_VERSION + 1)
+        assert walkthrough("Startup progress")["next_step"] == "name"
+    assert client.post("/api/weweb/logout", headers=owner).status_code == 200
+    assert request("Startup progress").status_code == 401

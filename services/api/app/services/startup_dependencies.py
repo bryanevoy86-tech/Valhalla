@@ -142,6 +142,29 @@ PRICE_REFERENCE = {
 }
 
 
+# Repository implementation evidence. Account availability and permissions must be verified separately.
+INTEGRATION_READINESS = {
+    "bank": ("CAD payout and deposit trace, cash holds and Plaid readback.",
+             "Confirm the bank account and approved read-only Item. Match a synthetic payout to one exact bank trace.",
+             "Revoke read scope and pause reconciliation. Keep unsettled balances on hold."),
+    "accounting": ("Internal ledger and QuickBooks isolated account readback.",
+                   "Confirm a qualified reviewer, fiscal period and chart. If using QuickBooks, approve a sandbox realm and read scope. Production posting remains a separate gate.",
+                   "Revoke provider access and stop exports. Preserve existing ledger and reconciliation receipts."),
+    "stripe": ("Signed event journal, restricted readback, sandbox access holds and bounded corrections.",
+               "Confirm a sandbox account, test callback and restricted read key. Replay one CAD capture and refund and verify no entitlements or funds are released.",
+               "Pause the staging callback and readback and retain redacted evidence."),
+    "signing": ("Isolated DocuSign envelope readback.",
+                "Approve a developer tenant and synthetic envelope. Confirm exact signer, status and provider permissions. Document sending requires its own scope.",
+                "Revoke test OAuth and stop signing operations. Retain the envelope evidence."),
+    "workspace": ("Isolated Google Drive metadata readback. Business email remains a separate operation.",
+                  "Confirm a business domain, mailboxes and an approved Drive test resource. Verify narrow Drive access and revoke it. Mail send/receive acceptance remains pending.",
+                  "Revoke Drive OAuth and disable staging mail sending. Keep artifacts in approved private storage."),
+    "weweb": ("Private owner routes, startup widgets, session revocation and exact-origin CORS tests.",
+              "Confirm the isolated API and actual browser origin. Test distinct owner, buyer and foreign-scope sessions and the stop procedure.",
+              "Stop the preview and restore the prior approved configuration. Revoke staging sessions."),
+}
+
+
 def startup_dependency_checklist(lane: LaunchLane = "ONE_TIME_CAD") -> dict:
     items = []
     for key, service, gate, why, when, setup, ongoing, access, alternative, action, verify, requires in DEPENDENCIES:
@@ -156,6 +179,11 @@ def startup_dependency_checklist(lane: LaunchLane = "ONE_TIME_CAD") -> dict:
             "price_basis": "PUBLIC_TARIFF_REFERENCE" if key == "stripe" else "CONFIRM_EXISTING_PLAN_OR_OBTAIN_QUOTE",
             "price_observed_on": "2026-11-22" if key == "stripe" else None,
         })
+    by_key = {item["key"]: item for item in items}
+    for key, (implemented, commissioning, rollback) in INTEGRATION_READINESS.items():
+        by_key[key]["integration_readiness"] = {
+            "implemented": implemented, "commissioning": commissioning, "rollback": rollback,
+        }
     order = {"REGISTRATION": 0, "FIRST_REVENUE": 1, "IF_APPLICABLE": 2, "LATER": 3}
     items.sort(key=lambda item: order[item["gate"]])
     return {"lane": lane, "basis": "PRIVATE_STARTUP_DEPENDENCY_GUIDANCE", "activation_authorized": False,

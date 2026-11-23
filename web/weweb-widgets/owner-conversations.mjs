@@ -39,6 +39,7 @@ export async function runOwnerConversations(input, transport = fetch, createId =
         if (response.status === 401) throw new Error("signed_out");
         if (response.status === 403) throw new Error("denied");
         if (response.status === 404 || response.status === 409) throw new Error("conflict");
+        if (body && response.status === 422) throw new Error("invalid_message");
         if (!response.ok) throw new Error("unavailable");
         return response.json();
     };
@@ -131,6 +132,7 @@ export async function runOwnerConversations(input, transport = fetch, createId =
     } catch (error) {
         if (["signed_out", "denied"].includes(error.message)) return failure(error.message);
         if (error.message === "retry_original") return {...prior, status: "retry_original", session};
+        if (error.message === "invalid_message") return {...prior, status: "invalid_message", session, pending: null};
         return {status: writeRecorded ? "saved_refresh_required" : error.message === "conflict" ? "conflict" : "unavailable",
             session, threads: prior.threads ?? [], selected, pending: error.message === "conflict" ? null : pending, sent};
     }

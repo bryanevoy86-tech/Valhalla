@@ -1059,6 +1059,8 @@
         "services/api/app/services/owner_attachment_retention.py",
         "services/api/tools/cron/owner_attachment_retention_worker.py",
         "services/api/app/services/owner_startup.py",
+        "services/api/app/services/startup_walkthrough.py",
+        "docs/HEIMDALL_GUIDED_STARTUP.md",
         "services/api/app/services/startup_dependencies.py",
         "services/api/app/services/startup_independence.py",
         "services/api/tests/test_startup_independence.py",
@@ -1089,7 +1091,7 @@
           "conditional_future_expansion": null
         },
         "january_2027_launch_gates": {
-          "implemented_and_tested": "Private owner bearer, isolation and scoped operating/finance UI have API and saved-script replay tests.",
+          "implemented_and_tested": "Private owner bearer, isolation and scoped operating/finance UI have API and saved-script replay tests. Guided startup stages and dated owner records are exercised through the isolated WeWeb API, including revocation, replay, expiry, reopening and advisory-only completion.",
           "january_core": "Require owner-only Prime, secure preview, truthful status, audit and intervention.",
           "first_one_time_cad": "Show owner the exact order, delivery, refund, holds and audit without buyer access to Prime.",
           "first_recurring_cad": "Also expose invoice, entitlement, delinquency and accounting status to the owner.",

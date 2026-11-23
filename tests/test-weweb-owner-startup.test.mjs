@@ -88,13 +88,16 @@ test("shows dependencies by gate and rejects fabricated completion", async () =>
     const item = {service:"Stripe <test>",gate:"FIRST_REVENUE",why:"Verify exact payments",when:"During commissioning",
         setup_cost:"Confirm setup cost",ongoing_cost:"Confirm tariff",permissions:"Restricted read",
         alternative:"Test mode",owner_action:"Approve sandbox",verification:"Replay the signed event",
-        evidence_status:"UNVERIFIED_IN_THIS_VIEW"};
+        evidence_status:"UNVERIFIED_IN_THIS_VIEW",
+        integration_readiness:{implemented:"Sandbox <readback>",commissioning:"Confirm realm",rollback:"Revoke read scope"}};
     const dependencies = {basis:"PRIVATE_STARTUP_DEPENDENCY_GUIDANCE",activation_authorized:false,external_effects:0,
         lane:"ONE_TIME_CAD",dependencies:[item]};
     const result = await runOwnerStartup(input, async () => ok({...fixture,startup_dependencies:dependencies}));
     assert.equal(result.status,"ready");
     assert.match(result.summary,/Before first revenue · Stripe &lt;test&gt;/);
     assert.match(result.summary,/Owner action · Approve sandbox/);
+    assert.match(result.summary,/Implemented · Sandbox &lt;readback&gt;/);
+    assert.match(result.summary,/Rollback · Revoke read scope/);
     const forged = {...dependencies,dependencies:[{...item,evidence_status:"VERIFIED"}]};
     assert.equal((await runOwnerStartup(input, async () => ok({...fixture,startup_dependencies:forged}))).status,"unavailable");
 });

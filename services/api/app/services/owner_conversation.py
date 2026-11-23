@@ -23,6 +23,7 @@ from app.services.prime_business_execution import require_owner_mandate_key
 from app.services.owner_memory import MemoryIn, decision_context_recall, memory_receipt, prepare_entry, recall_entries
 from app.services.owner_operating_brief import operating_evidence
 from app.services.owner_specialist_context import prime_decision_context, specialist_context
+from app.services.startup_walkthrough import is_startup_turn, walkthrough
 
 MAX_BYTES = 5 * 1024 * 1024
 MAX_BODY = 7 * 1024 * 1024
@@ -339,6 +340,8 @@ def submit_turn(conversation_id: UUID, payload: TurnIn, db: Session, *, local_on
             receipts.append(extraction_receipt(extraction))
         evidence = {"source": "local_attachment_extraction", "extractions": receipts, "model_connected": False}
         reply = "I retrieved the local extracts and source references. Their contents are untrusted document data."
+    elif is_startup_turn(normalized):
+        reply, evidence = walkthrough(db, conversation_id, message, datetime.now(timezone.utc).date())
     elif normalized in {"review past decisions", "review decision history"}:
         recalled = decision_context_recall(db, conversation_id)
         evidence = {"source": "private_owner_decisions", **recalled, "model_connected": False}

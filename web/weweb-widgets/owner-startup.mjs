@@ -53,6 +53,11 @@ export function formatStartupDependencies(plan) {
             "Lower-cost option · " + safeText(item.alternative),
             "Owner action · " + safeText(item.owner_action),
             "Verification · " + safeText(item.verification),
+            ...(item.integration_readiness ? [
+                "Implemented · " + safeText(item.integration_readiness.implemented),
+                "Commissioning · " + safeText(item.integration_readiness.commissioning),
+                "Rollback · " + safeText(item.integration_readiness.rollback),
+            ] : []),
         ].join("\n");
     }).join("\n\n");
 }

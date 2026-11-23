@@ -63,6 +63,37 @@ TABLES = [
 
 @unittest.skipUnless(url, "Disposable Postgres database is not configured")
 class FactoryPostgresTests(unittest.TestCase):
+    def test_startup_checkpoint_survives_reconnect_and_ignores_other_conversations(self):
+        from app.models.owner_conversation import OwnerConversation, OwnerTurn
+        from app.services.startup_walkthrough import walkthrough
+
+        for model in (OwnerConversation, OwnerTurn):
+            model.__table__.create(self.engine)
+            self.addCleanup(model.__table__.drop, self.engine)
+        owner, other = uuid4(), uuid4()
+        today = datetime.now(timezone.utc).date()
+        with self.sessions.begin() as db:
+            db.add_all([OwnerConversation(id=owner, title="Owner fixture"),
+                        OwnerConversation(id=other, title="Separate fixture")])
+
+        def record(db, conversation, message):
+            reply, evidence = walkthrough(db, conversation, message, today)
+            db.add(OwnerTurn(id=uuid4(), conversation_id=conversation, message=message,
+                             reply=reply, evidence=evidence, attachment_ids=[]))
+
+        with self.sessions.begin() as db:
+            record(db, owner, f"Record startup name | {today} | fixture:owner | Consider Manitoba")
+            record(db, other, f"Record startup structure | {today} | fixture:other | Separate structure")
+        with self.sessions() as interrupted:
+            record(interrupted, owner, f"Reopen startup name | {today} | fixture:retry | Interrupted change")
+            interrupted.flush()
+            interrupted.rollback()
+        self.engine.dispose()
+        with self.sessions() as resumed:
+            _, evidence = walkthrough(resumed, owner, "Startup progress", today)
+            self.assertEqual(evidence["next_step"], "structure")
+            self.assertFalse(evidence["activation_authorized"])
+
     def test_stripe_reinstatement_credit_has_one_winner_across_postgres_sessions(self):
         from concurrent.futures import ThreadPoolExecutor
         from types import SimpleNamespace

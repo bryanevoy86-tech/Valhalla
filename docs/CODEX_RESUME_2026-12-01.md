@@ -118,6 +118,10 @@ done
 6. Exercise the one approved test checkout and replay via the [Stripe sandbox settings](#stripe-event-and-processor-readback-commissioning). Record checkout/order ID, signed event, independent capture and balance-transaction IDs, exact amounts and currency, sandbox label, denied bytes/acknowledgment, scoped support/refund and continuing holds. A simulated dispute can exercise existing supported correction fixtures separately. Independent bank and accountant records have separate acceptance.
 7. End after at least 24 elapsed hours from the first recorded tick. Sign the result with the operator identity and exact commit. Record any missed cadence, outage, intervention, exception and remaining blocker. Stop and preserve evidence on a cross-scope effect, duplicate posting, scope or commit mismatch, irreconcilable receipt, live-mode signal, or incomplete restore. A stopped or incomplete run stays open.
 
+## Guided business startup
+
+The [Heimdall guided startup runbook](HEIMDALL_GUIDED_STARTUP.md) links the private walkthrough, shortlist, incorporation and support-reporting evidence, integration permissions, and repeatable synthetic session. The owner can resume a private conversation after interruption and record or reopen dated checkpoints. Staging, actual registration, professional confirmation and all commercial authority remain separate gates.
+
 ## Private startup dependency checklist
 
 Use `GET /api/weweb/owner-startup/dependencies?lane=ONE_TIME_CAD` with an owner session, or choose `RECURRING_CAD` when the first approved offer actually requires recurring billing. A private Heimdall turn such as “What do I need before first revenue?” returns the same structured checklist without model or provider contact. Existing startup comparison attaches the one-time checklist. The saved primary editor workflow `8f542e20-f080-4e63-bdb2-e820f662a7d9` renders the dependency section after the existing registration budget; the exact saved action passed synthetic owner, subscriber denial and wrong-origin tests. Actual authorized browser and staging verification remains separate.
