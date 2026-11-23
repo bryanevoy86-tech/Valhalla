@@ -54,6 +54,14 @@ def event_snapshot(payload, live):
     elif kind == "charge.refunded":
         object_type, prefix, intent = "charge", "ch", item.get("payment_intent")
         amount, charge = item.get("amount_refunded"), item.get("id")
+    elif kind == "charge.dispute.created":
+        object_type, prefix, intent = "dispute", "dp", item.get("payment_intent")
+        amount, charge = item.get("amount"), item.get("charge")
+        if not stripe_id(charge, "ch"):
+            raise HTTPException(422, "Stripe dispute charge identity is required")
+    elif kind in {"payout.failed", "payout.canceled"}:
+        object_type, prefix, intent = "payout", "po", None
+        amount, charge = item.get("amount"), None
     else:
         object_type, prefix, intent = "checkout.session", "cs", item.get("payment_intent")
         amount, charge = item.get("amount_total"), None

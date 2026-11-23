@@ -86,13 +86,13 @@ def register_binding(db: Session, request: OrderBindingIn, *, live: bool):
     return {**value, "sha256": digest}
 
 
-def _refund_pending(db: Session, order: StripeOrderBinding, charge_id: str | None = None) -> bool:
+def _reversal_pending(db: Session, order: StripeOrderBinding, charge_id: str | None = None) -> bool:
     snapshot = StripeFinancialEvent.snapshot
     matches = snapshot["payment_intent_id"].as_string() == order.payment_intent_id
     if charge_id is not None:
         matches = or_(matches, snapshot["charge_id"].as_string() == charge_id)
     row = db.scalar(select(StripeFinancialEvent).where(
-        StripeFinancialEvent.livemode == order.livemode, snapshot["kind"].as_string() == "charge.refunded", matches,
+        StripeFinancialEvent.livemode == order.livemode, snapshot["kind"].as_string().in_(("charge.refunded", "charge.dispute.created")), matches,
     ).limit(1))
     if row is None:
         return False
@@ -116,7 +116,7 @@ def inspect_binding(db: Session, order_id: UUID, *, live: bool):
                   "status": "AWAITING_PROCESSOR_EVIDENCE", "bank_settlement_verified": False,
                   "available_cash_minor": None, "fulfillment_authorized": False, "entitlement_granted": False}
     if balance is None:
-        if _refund_pending(db, order):
+        if _reversal_pending(db, order):
             projection["status"] = "REFUND_REVIEW_REQUIRED"
         return projection
     row = db.get(StripeFinancialEvent, balance.event_id)
@@ -134,7 +134,7 @@ def inspect_binding(db: Session, order_id: UUID, *, live: bool):
                 evidence.get("gross_minor"), evidence.get("currency")) != (
                     account_id, order.payment_intent_id, value["amount_minor"], value["currency"])):
         raise HTTPException(409, "Stripe processor and order evidence differ")
-    if _refund_pending(db, order, evidence["charge_id"]):
+    if _reversal_pending(db, order, evidence["charge_id"]):
         return {**projection, "status": "REFUND_REVIEW_REQUIRED"}
     return {**projection, "status": "MATCHED_PROCESSOR_EVIDENCE",
             "processor_evidence": {**evidence, "sha256": balance.evidence_sha256}}

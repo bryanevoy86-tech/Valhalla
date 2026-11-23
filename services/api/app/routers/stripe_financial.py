@@ -10,6 +10,7 @@ from app.heimdall.authority import is_live
 from app.routers.auth_weweb import private_owner_response
 from app.services.prime_business_execution import require_owner_mandate_key
 from app.services.stripe_finance import configured_readback
+from app.services.stripe_bank_booking import BankBatchIn, configured_bank_batch
 from app.services.stripe_orders import OrderBindingIn, inspect_binding, register_binding
 from app.webhooks.stripe import router as stripe_webhooks
 
@@ -40,3 +41,9 @@ def read_checkout_payout(order_id: UUID, payout_id: str, db: Session = Depends(g
     from app.services.stripe_payout_evidence import configured_payout_readback
 
     return private_owner_response(configured_payout_readback(db, order_id, payout_id, live=is_live()))
+
+
+
+@router.post("/api/governance/floor/stripe-bank-batches/reconcile", dependencies=owner_keys)
+def confirm_bank_batch(payload: BankBatchIn, db: Session = Depends(get_db)):
+    return private_owner_response(configured_bank_batch(db, payload, live=is_live()))

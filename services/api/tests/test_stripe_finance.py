@@ -4,17 +4,21 @@ import hmac
 import json
 import time
 from types import SimpleNamespace
-from uuid import uuid4
+from uuid import UUID, uuid4
+from datetime import date, timedelta
 
 import httpx
 import pytest
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
+from app.accounting.models import Account, JournalEntry, JournalLine, Period
+from app.banking.plaid_transactions import posted_credit
 from app.core import db as database
 from app.models.completion_registry import LegacyOrchestrationEvent
 from app.models.stripe_finance import StripeBalanceEvidence, StripeFinancialEvent, StripeOrderBinding
 from app.services.stripe_finance import read_processor_balance
+from app.services.stripe_bank_booking import BankBatchIn, _journal, reconcile_bank_batch
 from app.services.stripe_payout_evidence import record_payout_evidence
 
 
@@ -23,7 +27,8 @@ def test_registered_stripe_finance_replays_and_reconciles_only_matching_capture(
     StripeFinancialEvent.__table__.create(engine)
     StripeBalanceEvidence.__table__.create(engine)
     StripeOrderBinding.__table__.create(engine)
-    LegacyOrchestrationEvent.__table__.create(engine, checkfirst=True)
+    for model in (LegacyOrchestrationEvent, Account, Period, JournalEntry, JournalLine):
+        model.__table__.create(engine, checkfirst=True)
     monkeypatch.setattr(database, "SessionLocal", lambda: Session(engine))
     monkeypatch.setattr("app.webhooks.stripe.is_live", lambda: False)
     monkeypatch.setattr("app.routers.stripe_financial.is_live", lambda: False)
@@ -87,9 +92,19 @@ def test_registered_stripe_finance_replays_and_reconciles_only_matching_capture(
                "currency": "cad", "amount": 1000, "fee": 40, "net": 960,
                "available_on": int(time.time()) - 5, "status": "pending"}
 
+    other_id = str(uuid4())
+    assert client.post(binding_url, headers=keys, json={**binding, "order_id": other_id,
+                       "payment_intent_id": "pi_CaptureB"}).status_code == 201
+    event_b = {**event, "id": "evt_CaptureB", "data": {"object": {**event["data"]["object"], "id": "pi_CaptureB",
+        "latest_charge": "ch_CaptureB", "metadata": {"valhalla_order_id": other_id}}}}
+    assert deliver(event_b).status_code == 200
+    charge_b = {**charge, "id": "ch_CaptureB", "payment_intent": "pi_CaptureB",
+                "balance_transaction": "txn_CaptureB", "metadata": {"valhalla_order_id": other_id}}
+    balance_b = {**balance, "id": "txn_CaptureB", "source": "ch_CaptureB", "status": "available"}
     payout = {"id": "po_ValhallaTest", "object": "payout", "livemode": False, "automatic": True,
               "method": "standard", "type": "bank_account", "destination": "ba_ApprovedTest",
-              "status": "paid", "reconciliation_status": "completed", "currency": "cad", "amount": 2100,
+              "status": "paid", "reconciliation_status": "completed", "currency": "cad", "amount": 1920,
+              "trace_id": {"value": "BANKREF-88397", "status": "supported"},
               "arrival_date": int(time.time())}
     listed = {"object": "list", "has_more": False, "data": []}
 
@@ -97,10 +112,15 @@ def test_registered_stripe_finance_replays_and_reconciles_only_matching_capture(
         assert request.method == "GET"
         if request.url.path == "/v1/balance_transactions":
             assert request.url.params["payout"] == "po_ValhallaTest"
-            assert request.url.params["source"] == "ch_CaptureA"
-            return httpx.Response(200, json=listed)
+            source = request.url.params.get("source")
+            if source == "ch_CaptureA":
+                return httpx.Response(200, json=listed)
+            if source == "ch_CaptureB":
+                return httpx.Response(200, json={**listed, "data": [balance_b]})
+            return httpx.Response(200, json={**listed, "data": [balance, balance_b]})
         responses = {"/v1/payouts/po_ValhallaTest": payout, "/v1/account": {"id": "acct_ValhallaTest", "object": "account"},
-                     "/v1/charges/ch_CaptureA": charge, "/v1/balance_transactions/txn_CaptureA": balance}
+                     "/v1/charges/ch_CaptureA": charge, "/v1/balance_transactions/txn_CaptureA": balance,
+                     "/v1/charges/ch_CaptureB": charge_b, "/v1/balance_transactions/txn_CaptureB": balance_b}
         return httpx.Response(200, json=responses[request.url.path])
 
     with Session(engine) as db, httpx.Client(base_url="https://example.invalid",
@@ -142,8 +162,71 @@ def test_registered_stripe_finance_replays_and_reconciles_only_matching_capture(
         payout_receipt = read_payout()
         assert read_payout() == payout_receipt
         assert payout_receipt["capture_net_minor"] == 960
-        assert payout_receipt["processor_reported_payout_minor"] == 2100
+        assert payout_receipt["processor_reported_payout_minor"] == 1920
         assert payout_receipt["confirmed_bank_amount_minor"] is None and not payout_receipt["bank_settlement_verified"]
+        read("evt_CaptureB")
+        record_payout_evidence(db, UUID(other_id), "po_ValhallaTest", client=adapter,
+                               account_id="acct_ValhallaTest", destination_id="ba_ApprovedTest", live=False)
+        posting_date = date.fromtimestamp(payout["arrival_date"])
+        bank_item = {"account_id": "bank_test", "transaction_id": "test_tx_exact", "pending": False,
+                     "amount": -19.20, "iso_currency_code": "CAD", "date": posting_date.isoformat(),
+                     "payment_meta": {"reference_number": "BANKREF-88397"}}
+
+        def bank_upstream(request):
+            assert request.url.path == "/transactions/get" and request.method == "POST"
+            assert json.loads(request.content)["options"]["account_ids"] == ["bank_test"]
+            return httpx.Response(200, json={"transactions": [bank_item], "total_transactions": 1})
+
+        def verify_bank(**args):
+            with httpx.Client(base_url="https://bank.example.invalid",
+                              transport=httpx.MockTransport(bank_upstream)) as bank_client:
+                return posted_credit(bank_client, token="isolated", account_id="bank_test", trace=args["trace"],
+                                     arrival=args["arrival"], amount_minor=args["amount_minor"],
+                                     today=args["arrival"] + timedelta(days=1))
+
+        def reconcile(orders):
+            return reconcile_bank_batch(db, BankBatchIn(payout_id="po_ValhallaTest", order_ids=orders),
+                                        client=adapter, account_id="acct_ValhallaTest", destination="ba_ApprovedTest",
+                                        live=False, bank_credit=verify_bank)
+
+        with pytest.raises(HTTPException, match="full payout"):
+            reconcile([order_id])
+        bank_item["pending"] = True
+        with pytest.raises(HTTPException, match="pending"):
+            reconcile([order_id, other_id])
+        bank_item["pending"] = False
+        batch = reconcile([order_id, other_id])
+        assert reconcile([other_id, order_id]) == batch
+        assert batch["value"]["payout_minor"] == 1920 and batch["value"]["processor_fee_minor"] == 80
+        assert batch["value"]["gross_customer_obligation_minor"] == 2000
+        assert batch["value"]["available_cash_minor"] is None and batch["ledger_entry_id"] is None
+        assert batch["value"]["basis"] == "SYNTHETIC_BANK_REHEARSAL"
+        assert db.query(JournalEntry).count() == 0
+        bank_item["transaction_id"] = "different_bank_tx"
+        with pytest.raises(HTTPException, match="changed after reconciliation"):
+            reconcile([order_id, other_id])
+        bank_item["transaction_id"] = "test_tx_exact"
+        failure = {"id": "evt_PayoutFailedA", "type": "payout.failed", "livemode": False, "data": {"object": {
+            "id": "po_ValhallaTest", "object": "payout", "amount": 1920, "currency": "cad",
+        }}}
+        assert deliver(failure).status_code == 200
+        with pytest.raises(HTTPException, match="signed payout failure"):
+            reconcile([order_id, other_id])
+
+        for label, type_ in (("BANK", "asset"), ("CLEARING", "asset"), ("FEES", "expense"),
+                             ("OBLIGATIONS", "liability")):
+            monkeypatch.setenv("VALHALLA_STRIPE_BOOK_" + label, label)
+            db.add(Account(code=label, name=label, type=type_, currency="CAD", active=True))
+        db.add(Period(label="test-month", start_date=posting_date, end_date=posting_date, closed=False))
+        db.commit()
+        entry_id = _journal(db, "isolated-fixture-booking", posting_date, scope, (1920, 80, 2000))
+        db.flush()
+        lines = db.query(JournalLine).filter_by(entry_id=entry_id).all()
+        assert sum(line.credit for line in lines) == sum(line.debit for line in lines)
+        assert len(lines) == 5
+        db.rollback()
+        assert db.query(JournalEntry).count() == 0
+
         payout["reversed_by"] = "po_Reversal"
         with pytest.raises(HTTPException, match="reversed"):
             read_payout()
@@ -170,7 +253,7 @@ def test_registered_stripe_finance_replays_and_reconciles_only_matching_capture(
         assert hold["status"] == "REFUND_REVIEW_REQUIRED" and hold["processor_evidence"] is None
         with pytest.raises(HTTPException, match="already has a receipt"):
             read("evt_CaptureReplay")
-        assert db.query(StripeBalanceEvidence).count() == 1
+        assert db.query(StripeBalanceEvidence).count() == 2
         charge["amount_refunded"] = 50
         with pytest.raises(HTTPException, match="refunded"):
             read()

@@ -1,0 +1,224 @@
+"""Reconcile one independent bank deposit to its complete governed payout batch."""
+from datetime import date, datetime, timezone
+from decimal import Decimal
+import os
+import re
+from uuid import UUID
+
+from fastapi import HTTPException
+from pydantic import Field, field_validator
+from sqlalchemy import inspect, select
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
+
+from app.accounting.models import Account, JournalEntry, JournalLine, Period
+from app.banking.plaid_transactions import configured_bank_credit
+from app.loki.evidence import artifact_digest
+from app.models.completion_registry import LegacyOrchestrationEvent
+from app.models.stripe_finance import StripeFinancialEvent, StripeOrderBinding
+from app.schemas.market_intelligence import StrictModel
+from app.services.prime_business_execution import _event, _json
+from app.services.stripe_finance import _event_receipt, _provider_object, minor_amount, provider_json, stripe_id, stripe_readback_client
+from app.services.stripe_orders import inspect_binding
+from app.services.stripe_payout_evidence import EVENT
+
+SETTLEMENT = "STRIPE_BANK_BATCH_RECONCILED"
+LEDGER_SOURCE = "stripe_bank_reconciliation"
+
+
+class BankBatchIn(StrictModel):
+    payout_id: str
+    order_ids: list[UUID] = Field(min_length=1, max_length=100)
+
+    @field_validator("payout_id")
+    @classmethod
+    def native_payout(cls, value):
+        if not stripe_id(value, "po"):
+            raise ValueError("A native Stripe payout is required")
+        return value
+
+    @field_validator("order_ids")
+    @classmethod
+    def unique_orders(cls, value):
+        if len(value) != len(set(value)):
+            raise ValueError("Order identities must be distinct")
+        return sorted(value)
+
+
+def _payout_receipt(db, order, projection):
+    key = "STRIPE-PAYOUT-" + artifact_digest("stripe_order_payout_key", str(order.id),
+                                             {"livemode": order.livemode})[:40]
+    row = db.scalar(select(LegacyOrchestrationEvent).filter_by(event_id=key))
+    if row is None or row.event_type != EVENT or row.legacy_instance_id != projection["order"]["scope"]["legacy_instance_id"]:
+        raise HTTPException(409, "Current scoped processor payout receipt required")
+    data = _json(row.payload_json, {})
+    if not isinstance(data, dict):
+        raise HTTPException(409, "Processor payout receipt failed integrity")
+    digest = data.pop("sha256", None)
+    if (digest != artifact_digest("stripe_order_payout", key, data)
+            or data.get("order_id") != str(order.id) or data.get("order_sha256") != order.binding_sha256
+            or data.get("scope") != projection["order"]["scope"]
+            or data.get("balance_evidence_sha256") != projection["processor_evidence"]["sha256"]):
+        raise HTTPException(409, "Processor payout receipt differs from current order evidence")
+    return {**data, "sha256": digest}
+
+
+def _journal(db, reference, posted_on, scope, amounts):
+    # The chart of accounts is explicitly configured for this authorized receiving scope.
+    accounts_env = {
+        "bank": ("VALHALLA_STRIPE_BOOK_BANK", "asset"),
+        "clearing": ("VALHALLA_STRIPE_BOOK_CLEARING", "asset"),
+        "fees": ("VALHALLA_STRIPE_BOOK_FEES", "expense"),
+        "obligations": ("VALHALLA_STRIPE_BOOK_OBLIGATIONS", "liability"),
+    }
+    if any(not inspect(db.connection()).has_table(model.__tablename__) for model in (Account, Period, JournalEntry, JournalLine)):
+        raise HTTPException(503, "Canonical accounting tables are unavailable")
+    if db.scalar(select(JournalEntry.id).filter_by(source=LEDGER_SOURCE, source_ref=reference).limit(1)) is not None:
+        raise HTTPException(409, "Accounting source already exists without matched booking receipt")
+    period = db.scalars(select(Period).where(Period.start_date <= posted_on, Period.end_date >= posted_on)
+                        .order_by(Period.id).limit(2).with_for_update()).all()
+    if len(period) != 1 or period[0].closed:
+        raise HTTPException(409, "Exactly one open accounting period must cover the bank posting")
+    accounts = {}
+    for name, (variable, account_type) in accounts_env.items():
+        account = db.scalar(select(Account).filter_by(code=os.getenv(variable), type=account_type,
+                                                        active=True, currency="CAD"))
+        if account is None:
+            raise HTTPException(503, "Authorized CAD chart of accounts is incomplete")
+        accounts[name] = account.id
+    if len(set(accounts.values())) != len(accounts):
+        raise HTTPException(409, "Distinct accounting accounts are required")
+    bank, fee, gross = amounts
+    entry = JournalEntry(entry_date=posted_on, memo="Matched Stripe bank batch and open delivery obligations",
+                         source=LEDGER_SOURCE, source_ref=reference)
+    db.add(entry)
+    db.flush()
+    tag = artifact_digest("stripe_booking_scope", reference, scope)
+    # Keep the clearing movements explicit while the batch settles to a single bank posting.
+    for key, debit, credit in (("clearing", bank, 0), ("fees", fee, 0), ("obligations", 0, gross),
+                               ("bank", bank, 0), ("clearing", 0, bank)):
+        if debit or credit:
+            db.add(JournalLine(entry_id=entry.id, account_id=accounts[key], debit=Decimal(debit) / 100,
+                               credit=Decimal(credit) / 100, tag=tag))
+    return entry.id
+
+
+def reconcile_bank_batch(db: Session, request: BankBatchIn, *, client, account_id, destination, live,
+                         bank_credit=configured_bank_credit):
+    for model in (StripeOrderBinding, LegacyOrchestrationEvent):
+        if not inspect(db.connection()).has_table(model.__tablename__):
+            raise HTTPException(503, "Stripe bank reconciliation schema unavailable")
+    receipts, projections = [], []
+    for order_id in request.order_ids:
+        row = db.get(StripeOrderBinding, order_id, with_for_update=True)
+        if row is None:
+            raise HTTPException(404, "Stripe order binding unavailable")
+        projection = inspect_binding(db, order_id, live=live)
+        if projection["status"] != "MATCHED_PROCESSOR_EVIDENCE":
+            raise HTTPException(409, "Every order requires intact processor evidence without a refund hold")
+        receipt = _payout_receipt(db, row, projection)
+        if receipt.get("payout_id") != request.payout_id or projection["processor_evidence"]["stripe_account_id"] != account_id:
+            raise HTTPException(409, "All orders must match the same scoped processor payout")
+        receipts.append(receipt)
+        projections.append(projection)
+    scope = projections[0]["order"]["scope"]
+    if any(projection["order"]["scope"] != scope for projection in projections):
+        raise HTTPException(409, "Mixed-scope payout booking requires explicit allocation")
+    _provider_object(client, "/v1/account", account_id, "account")
+    payout = _provider_object(client, f"/v1/payouts/{request.payout_id}", request.payout_id, "payout")
+    amount, arrival = payout.get("amount"), payout.get("arrival_date")
+    trace = payout.get("trace_id")
+    trace_value = trace.get("value") if isinstance(trace, dict) else None
+    if (payout.get("livemode") is not live or payout.get("destination") != destination
+            or not stripe_id(destination, "ba") or payout.get("automatic") is not True or payout.get("method") != "standard"
+            or payout.get("type") != "bank_account" or payout.get("currency") != "cad" or payout.get("status") != "paid"
+            or payout.get("reconciliation_status") != "completed" or payout.get("reversed_by")
+            or payout.get("original_payout") or payout.get("failure_balance_transaction") or payout.get("failure_code")
+            or not minor_amount(amount) or amount == 0 or type(arrival) is not int or not 0 < arrival < 4_102_444_800
+            or not isinstance(trace_value, str) or not re.fullmatch(r"[A-Za-z0-9-]{4,128}", trace_value)):
+        raise HTTPException(409, "Current payout is ineligible or lacks an independently matchable bank trace")
+    evidence = [projection["processor_evidence"] for projection in projections]
+    net = sum(row["net_minor"] for row in evidence)
+    gross = sum(row["gross_minor"] for row in evidence)
+    fees = sum(row["fee_minor"] for row in evidence)
+    if (net != amount or gross != net + fees or len({row["balance_transaction_id"] for row in evidence}) != len(evidence)
+            or any(row["currency"] != "cad" for row in evidence)
+            or any((r["processor_reported_payout_minor"], r["processor_arrival_on"], r["capture_net_minor"])
+                   != (amount, arrival, e["net_minor"]) for r, e in zip(receipts, evidence))):
+        raise HTTPException(409, "Exact order contributions must reconcile to the full payout before booking")
+    remote = provider_json(client, "/v1/balance_transactions", params={"payout": request.payout_id, "limit": 100})
+    members = remote.get("data")
+    if (remote.get("object") != "list" or remote.get("has_more") is not False
+            or not isinstance(members, list) or len(members) != len(evidence)
+            or any(not isinstance(member, dict) or not stripe_id(member.get("id"), "txn") for member in members)):
+        raise HTTPException(409, "Full payout membership is incomplete or includes unsupported adjustments")
+    actual = {member["id"]: (member.get("source"), member.get("currency"), member.get("amount"),
+                            member.get("fee"), member.get("net")) for member in members}
+    expected = {row["balance_transaction_id"]: (row["charge_id"], "cad", row["gross_minor"],
+                                                row["fee_minor"], row["net_minor"]) for row in evidence}
+    if (actual != expected or any(not minor_amount(member.get(key))
+                                  for member in members for key in ("amount", "fee", "net"))):
+        raise HTTPException(409, "Payout member values differ from approved order captures")
+    bank = bank_credit(trace=trace_value, arrival=datetime.fromtimestamp(arrival, timezone.utc).date(),
+                       amount_minor=amount, today=datetime.now(timezone.utc).date(), live=live,
+                       stripe_destination=destination)
+    reference = "STRIPE-BANK-" + artifact_digest("stripe_bank_batch", request.payout_id,
+                                                  {"account": account_id, "live": live})[:40]
+    failed = db.scalar(select(StripeFinancialEvent).where(
+        StripeFinancialEvent.livemode == live,
+        StripeFinancialEvent.snapshot["kind"].as_string().in_(("payout.failed", "payout.canceled")),
+        StripeFinancialEvent.snapshot["object_id"].as_string() == request.payout_id,
+    ).limit(1))
+    if failed is not None:
+        _event_receipt(failed, True)
+        raise HTTPException(409, "A signed payout failure requires accounting review")
+    value = {"source_ref": reference, "scope": scope, "payout_id": request.payout_id,
+             "orders": [{"order_id": r["order_id"], "payout_sha256": r["sha256"], "net_minor": e["net_minor"]}
+                        for r, e in zip(receipts, evidence)],
+             "bank": bank, "gross_customer_obligation_minor": gross, "processor_fee_minor": fees,
+             "payout_minor": net, "basis": "INDEPENDENT_CAD_BANK_READBACK" if live else "SYNTHETIC_BANK_REHEARSAL",
+             "bank_settlement_verified": live, "available_cash_minor": None, "fulfillment_authorized": False}
+    digest = artifact_digest("stripe_bank_reconciliation", reference, value)
+    previous = db.scalar(select(LegacyOrchestrationEvent).filter_by(event_id=reference))
+    if previous is not None:
+        recorded = _json(previous.payload_json, {})
+        if (previous.event_type != SETTLEMENT or previous.legacy_instance_id != scope["legacy_instance_id"]
+                or not isinstance(recorded, dict) or recorded.get("value") != value or recorded.get("sha256") != digest):
+            raise HTTPException(409, "Payout or bank evidence changed after reconciliation")
+        stored_id = recorded.get("ledger_entry_id")
+        if live:
+            entry = db.get(JournalEntry, stored_id) if type(stored_id) is int else None
+            if entry is None or entry.source != LEDGER_SOURCE or entry.source_ref != reference:
+                raise HTTPException(409, "Stored accounting entry differs from reconciled evidence")
+        elif stored_id is not None:
+            raise HTTPException(409, "Sandbox reconciliation cannot have an accounting entry")
+        return recorded
+    check = os.getenv("VALHALLA_STRIPE_BANK_BOOKING_SCOPE")
+    from app.services.specialist_triggers import outcome_scope_key
+
+    journal_id = None
+    try:
+        if live:
+            if os.getenv("VALHALLA_STRIPE_BANK_BOOKING_ENABLED") != "1" or check != outcome_scope_key(scope):
+                raise HTTPException(503, "Bank ledger booking is not authorized for this scope")
+            journal_id = _journal(db, reference, date.fromisoformat(bank["posted_on"]), scope, (net, fees, gross))
+        result = {"value": value, "sha256": digest, "ledger_entry_id": journal_id}
+        consumed_ids = ["STRIPE-BANK-TX-" + artifact_digest("stripe_bank_credit_key", bank["transaction_sha256"],
+                                                              {"live": live})[:48],
+                        *("STRIPE-BANK-ORDER-" + str(order_id) for order_id in request.order_ids)]
+        for identity in consumed_ids:
+            _event(db, event_id=identity, legacy_instance_id=scope["legacy_instance_id"], event_type=SETTLEMENT,
+                   message="Bank batch evidence consumed", payload={"bundle": reference, "sha256": digest})
+        _event(db, event_id=reference, legacy_instance_id=scope["legacy_instance_id"], event_type=SETTLEMENT,
+               message="Stripe bank batch reconciled", payload=result)
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(409, "Bank transaction, payout, or order already reconciled; reload the exact batch") from None
+    return result
+
+
+def configured_bank_batch(db, request, *, live):
+    destination = os.getenv("VALHALLA_STRIPE_PAYOUT_DESTINATION_ID")
+    with stripe_readback_client(live=live) as (client, account_id):
+        return reconcile_bank_batch(db, request, client=client, account_id=account_id, destination=destination, live=live)

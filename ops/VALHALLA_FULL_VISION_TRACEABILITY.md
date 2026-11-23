@@ -198,3 +198,5 @@ The canonical Stripe event journal and restricted processor adapter preserve sig
 The one-time Stripe order projection associates an existing governed Foundry listing and product evidence with an owner-scoped native payment intent. The order match also requires independent charge corroboration of the same merchant UUID. It remains an evidence-only projection and withholds processor evidence when a signed refund is recorded.
 
 The provider payment path can now evidence that a known capture is part of an exact automatic payout at the Stripe processor. The journal distinguishes order contribution from batch payout amount and carries no independently confirmed bank credit or spendable balance.
+
+The CAD payment path now supports an independently read bank credit joined to the exact automatic payout trace and its complete single-scope order membership. One batch creates one bank posting under separate authority; the gross proceeds remain delivery obligations pending fulfillment. Sandbox verification carries no actual settlement, spendable cash or tenant access.
