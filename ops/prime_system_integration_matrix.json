@@ -582,7 +582,7 @@
         "services/api/app/webhooks/stripe.py",
         "services/api/tests/test_product_artifact_workflow.py"
       ],
-      "source_observation": "Signed local capture and refund deltas can reconcile with unique scoped statement-fixture entries. Mismatches show the exact difference and cannot attach a settlement receipt. Live payment and bank settlement remain pending. The existing Stripe ingress rejects financial events with a 503 until a verified consumer is wired.",
+      "source_observation": "Signed local capture and refund deltas can reconcile with unique scoped statement-fixture entries. Mismatches show the exact difference and cannot attach a settlement receipt. The canonical Stripe ingress can journal signed events in an explicitly enabled matching mode. Restricted readback can correlate exact product, capture, processor balance and payout membership. Independent bank settlement and ledger booking remain pending.",
       "evidence_level": "SQLITE_INTEGRATION_TESTED",
       "production_verified": false,
       "acceptance_test": "Signed timestamped webhooks idempotently persist, settle, reverse, reconcile Stripe/Payhip events; provider receipt",
@@ -593,7 +593,7 @@
       "owner_external_authorization_required": true,
       "continuation": {
         "next_implementation": "Connect the canonical Stripe financial event consumer to exact order, entitlement and ledger receipts, then verify the authorized sandbox event stream and separately sourced settlement.",
-        "existing_test_evidence": "test_product_artifact_workflow.py exercises exact matches, difference reporting and bound-receipt replay in an integrated checkout.",
+        "existing_test_evidence": "test_product_artifact_workflow.py exercises exact matches, difference reporting and bound-receipt replay in an integrated checkout. test_stripe_finance.py exercises signed canonical ingress and exact account, order, charge and balance linkage with synthetic upstream transport.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
@@ -614,8 +614,8 @@
         "services/api/app/integrations/stripe/payouts.py",
         "services/api/app/core/runtime_flags.py"
       ],
-      "source_observation": "Old Stripe payout returned generated fake IDs; new code blocks unimplemented live provider action",
-      "evidence_level": "SOURCE_INSPECTED_ONLY",
+      "source_observation": "Unimplemented payout creation fails closed. Read-only Stripe payout membership can bind an independently retrieved processor receipt to an exact scoped capture.",
+      "evidence_level": "SQLITE_INTEGRATION_TESTED",
       "production_verified": false,
       "acceptance_test": "No transfer without owner limit; provider payout id and settlement reconciled; no fabricated in_transit state",
       "depends_on": [
@@ -625,7 +625,7 @@
       "owner_external_authorization_required": true,
       "continuation": {
         "next_implementation": "Prepare verified settlement adapters and owner-mandate validation before any payout.",
-        "existing_test_evidence": "See SOURCE_INSPECTED_ONLY and source observations above, with exact releases in ops/CHANGE_LEDGER.md.",
+        "existing_test_evidence": "test_stripe_finance.py rechecks signed orders and exact automatic payout membership with isolated HTTP and SQLite. It refuses a wrong destination, absent or altered membership, and a reversed payout. This verifies the processor readback slice only.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
