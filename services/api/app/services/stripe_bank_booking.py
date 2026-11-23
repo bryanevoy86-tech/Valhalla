@@ -103,6 +103,17 @@ def _journal(db, reference, posted_on, scope, amounts):
     return entry.id
 
 
+def _payout_failed(db, payout_id, live):
+    failed = db.scalar(select(StripeFinancialEvent).where(
+        StripeFinancialEvent.livemode == live,
+        StripeFinancialEvent.snapshot["kind"].as_string().in_(("payout.failed", "payout.canceled")),
+        StripeFinancialEvent.snapshot["object_id"].as_string() == payout_id,
+    ).limit(1))
+    if failed is not None:
+        _event_receipt(failed, True)
+    return failed is not None
+
+
 def reconcile_bank_batch(db: Session, request: BankBatchIn, *, client, account_id, destination, live,
                          bank_credit=configured_bank_credit):
     for model in (StripeOrderBinding, LegacyOrchestrationEvent):
@@ -164,13 +175,7 @@ def reconcile_bank_batch(db: Session, request: BankBatchIn, *, client, account_i
                        stripe_destination=destination)
     reference = "STRIPE-BANK-" + artifact_digest("stripe_bank_batch", request.payout_id,
                                                   {"account": account_id, "live": live})[:40]
-    failed = db.scalar(select(StripeFinancialEvent).where(
-        StripeFinancialEvent.livemode == live,
-        StripeFinancialEvent.snapshot["kind"].as_string().in_(("payout.failed", "payout.canceled")),
-        StripeFinancialEvent.snapshot["object_id"].as_string() == request.payout_id,
-    ).limit(1))
-    if failed is not None:
-        _event_receipt(failed, True)
+    if _payout_failed(db, request.payout_id, live):
         raise HTTPException(409, "A signed payout failure requires accounting review")
     value = {"source_ref": reference, "scope": scope, "payout_id": request.payout_id,
              "orders": [{"order_id": r["order_id"], "payout_sha256": r["sha256"], "net_minor": e["net_minor"]}
@@ -222,3 +227,44 @@ def configured_bank_batch(db, request, *, live):
     destination = os.getenv("VALHALLA_STRIPE_PAYOUT_DESTINATION_ID")
     with stripe_readback_client(live=live) as (client, account_id):
         return reconcile_bank_batch(db, request, client=client, account_id=account_id, destination=destination, live=live)
+
+
+
+def bank_batch_summary(db: Session, order_id: UUID, projection: dict, *, live: bool):
+    journal = LegacyOrchestrationEvent
+    if not inspect(db.connection()).has_table(journal.__tablename__):
+        return None
+    scope = projection["order"]["scope"]
+    claim = db.scalar(select(journal).filter_by(event_id=f"STRIPE-BANK-ORDER-{order_id}"))
+    if claim is None:
+        return None
+    index = _json(claim.payload_json, {})
+    if (claim.event_type != SETTLEMENT or claim.legacy_instance_id != scope["legacy_instance_id"]
+            or not isinstance(index, dict) or not isinstance(index.get("bundle"), str)):
+        raise HTTPException(409, "Bank order booking index differs from its scope")
+    entry = db.scalar(select(journal).filter_by(event_id=index["bundle"]))
+    if entry is None or entry.event_type != SETTLEMENT or entry.legacy_instance_id != scope["legacy_instance_id"]:
+        raise HTTPException(409, "Bank booking receipt unavailable")
+    receipt = _json(entry.payload_json, {})
+    value = receipt.get("value") if isinstance(receipt, dict) else None
+    expected_basis = "INDEPENDENT_CAD_BANK_READBACK" if live else "SYNTHETIC_BANK_REHEARSAL"
+    if (not isinstance(value, dict) or value.get("scope") != scope or value.get("basis") != expected_basis
+            or receipt.get("sha256") != index.get("sha256")
+            or receipt["sha256"] != artifact_digest("stripe_bank_reconciliation", entry.event_id, value)):
+        raise HTTPException(409, "Bank booking receipt integrity failed")
+    member = next((order for order in value["orders"] if order["order_id"] == str(order_id)), None)
+    if member is None:
+        raise HTTPException(409, "Bank booking receipt does not include this order")
+    ledger_id = receipt.get("ledger_entry_id")
+    if live:
+        account_entry = db.get(JournalEntry, ledger_id) if type(ledger_id) is int else None
+        if account_entry is None or account_entry.source != LEDGER_SOURCE or account_entry.source_ref != entry.event_id:
+            raise HTTPException(409, "Matched accounting entry is unavailable")
+    elif ledger_id is not None:
+        raise HTTPException(409, "Synthetic evidence cannot have a ledger posting")
+    held = projection["status"] != "MATCHED_PROCESSOR_EVIDENCE" or _payout_failed(db, value["payout_id"], live)
+    return {
+        "basis": expected_basis, "status": "CORRECTION_REVIEW_REQUIRED" if held else "RECONCILIATION_RECORDED",
+        "currency": "CAD", "batch_minor": value["payout_minor"], "order_contribution_minor": member["net_minor"],
+        "booked_on": value["bank"]["posted_on"], "ledger_entry_id": ledger_id, "available_cash_minor": None,
+    }

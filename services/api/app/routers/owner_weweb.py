@@ -147,7 +147,11 @@ def owner_stripe_order(order_id: UUID, db: Session = Depends(get_db)):
     from app.heimdall.authority import is_live
     from app.services.stripe_orders import inspect_binding
 
-    return private_owner_response(inspect_binding(db, order_id, live=is_live()))
+    from app.services.stripe_bank_booking import bank_batch_summary
+
+    live = is_live()
+    projection = inspect_binding(db, order_id, live=live)
+    return private_owner_response({**projection, "bank_batch": bank_batch_summary(db, order_id, projection, live=live)})
 
 
 @router.post("/owner-operating-scope")

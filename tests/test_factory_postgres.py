@@ -501,6 +501,58 @@ class FactoryPostgresTests(unittest.TestCase):
             EconomicPool.__table__.drop(bind=self.engine)
 
 
+    def test_conflicting_stripe_batches_leave_only_one_accounting_entry(self):
+        from concurrent.futures import ThreadPoolExecutor
+        from datetime import date
+        from decimal import Decimal
+        from unittest.mock import patch
+
+        from sqlalchemy.exc import IntegrityError
+        from app.accounting.models import Account, JournalEntry, JournalLine, Period
+        from app.services.prime_business_execution import _event
+        from app.services.stripe_bank_booking import _journal
+
+        models = (Account, Period, JournalEntry, JournalLine)
+        for model in models:
+            model.__table__.create(bind=self.engine)
+        today = date.today()
+        try:
+            with self.sessions.begin() as db:
+                for code, type_ in (("BANK", "asset"), ("CLEARING", "asset"), ("FEES", "expense"),
+                                    ("OBLIGATIONS", "liability")):
+                    db.add(Account(code=code, name=code, type=type_, currency="CAD", active=True))
+                db.add(Period(label="isolated", start_date=today, end_date=today, closed=False))
+            start = threading.Barrier(2)
+            scope = {"legacy_instance_id": "bank-race-fixture"}
+
+            def write(batch):
+                with self.sessions() as db:
+                    start.wait(timeout=5)
+                    try:
+                        entry = _journal(db, batch, today, scope, (1920, 80, 2000))
+                        _event(db, event_id="STRIPE-BANK-TX-SAME", legacy_instance_id="bank-race-fixture",
+                               event_type="STRIPE_BANK_BATCH_RECONCILED", message="Synthetic contention",
+                               payload={"bundle": batch})
+                        db.commit()
+                        return entry
+                    except IntegrityError:
+                        db.rollback()
+                        return None
+
+            env = {"VALHALLA_STRIPE_BOOK_" + key: key for key in ("BANK", "CLEARING", "FEES", "OBLIGATIONS")}
+            with patch.dict(os.environ, env), ThreadPoolExecutor(max_workers=2) as pool:
+                results = list(pool.map(write, ("test-batch-1", "test-batch-2"), timeout=12))
+            self.assertEqual(results.count(None), 1)
+            with self.sessions() as db:
+                self.assertEqual(db.query(JournalEntry).count(), 1)
+                lines = db.scalars(select(JournalLine)).all()
+                self.assertEqual(len(lines), 5)
+                self.assertEqual(sum(line.debit for line in lines), Decimal("39.20"))
+                self.assertEqual(sum(line.credit for line in lines), Decimal("39.20"))
+        finally:
+            for model in reversed(models):
+                model.__table__.drop(bind=self.engine)
+
     def test_competing_economic_release_requests_restore_only_one_reservation(self):
         from concurrent.futures import ThreadPoolExecutor
         from datetime import date, timedelta

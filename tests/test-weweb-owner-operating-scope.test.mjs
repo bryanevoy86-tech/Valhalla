@@ -45,7 +45,13 @@ test("checks exact owner Stripe lookup and separates processor evidence from acc
         return respond(projection)();
     });
     assert.equal(result.status,"ready");
-    assert.match(result.text,/Test order[\s\S]*Bank settlement outstanding[\s\S]*CAD\s9\.60/);
+    assert.match(result.text,/Test order[\s\S]*CAD\s9\.60[\s\S]*Bank settlement outstanding/);
+    const bank = {basis:"SYNTHETIC_BANK_REHEARSAL",status:"RECONCILIATION_RECORDED",currency:"CAD",
+        batch_minor:1920,order_contribution_minor:960,ledger_entry_id:null,available_cash_minor:null};
+    const reconciled = await runOwnerStripeOrder(params,respond({...projection,bank_batch:bank}));
+    assert.match(reconciled.text,/Bank reconciliation rehearsal recorded[\s\S]*CAD\s19\.20[\s\S]*CAD\s9\.60/);
+    assert.equal((await runOwnerStripeOrder(params,respond({...projection,
+        bank_batch:{...bank,ledger_entry_id:1}}))).status,"unavailable");
     assert.equal((await runOwnerStripeOrder(params,respond({...projection,entitlement_granted:true}))).status,"unavailable");
     assert.equal((await runOwnerStripeOrder(params,respond({...projection,order:{order_id:"wrong"}}))).status,"unavailable");
     assert.equal((await runOwnerStripeOrder({...params,isOwner:false},()=>assert.fail("subscriber transport"))).status,"denied");

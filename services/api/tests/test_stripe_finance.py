@@ -18,7 +18,7 @@ from app.core import db as database
 from app.models.completion_registry import LegacyOrchestrationEvent
 from app.models.stripe_finance import StripeBalanceEvidence, StripeFinancialEvent, StripeOrderBinding
 from app.services.stripe_finance import read_processor_balance
-from app.services.stripe_bank_booking import BankBatchIn, _journal, reconcile_bank_batch
+from app.services.stripe_bank_booking import BankBatchIn, _journal, bank_batch_summary, reconcile_bank_batch
 from app.services.stripe_payout_evidence import record_payout_evidence
 
 
@@ -202,6 +202,9 @@ def test_registered_stripe_finance_replays_and_reconciles_only_matching_capture(
         assert batch["value"]["available_cash_minor"] is None and batch["ledger_entry_id"] is None
         assert batch["value"]["basis"] == "SYNTHETIC_BANK_REHEARSAL"
         assert db.query(JournalEntry).count() == 0
+        preview = bank_batch_summary(db, UUID(order_id), matched.json(), live=False)
+        assert preview["order_contribution_minor"] == 960 and preview["batch_minor"] == 1920
+        assert preview["status"] == "RECONCILIATION_RECORDED"
         bank_item["transaction_id"] = "different_bank_tx"
         with pytest.raises(HTTPException, match="changed after reconciliation"):
             reconcile([order_id, other_id])
@@ -210,6 +213,8 @@ def test_registered_stripe_finance_replays_and_reconciles_only_matching_capture(
             "id": "po_ValhallaTest", "object": "payout", "amount": 1920, "currency": "cad",
         }}}
         assert deliver(failure).status_code == 200
+        assert bank_batch_summary(db, UUID(order_id), matched.json(), live=False
+                                  )["status"] == "CORRECTION_REVIEW_REQUIRED"
         with pytest.raises(HTTPException, match="signed payout failure"):
             reconcile([order_id, other_id])
 

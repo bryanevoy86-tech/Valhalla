@@ -126,7 +126,7 @@ export async function runOwnerStripeOrder(input, transport = fetch) {
         };
         if (!Object.hasOwn(labels, body.status)) return result("unavailable");
         const rows = [labels[body.status], body.order.livemode === false ? "Test order" : "Live order",
-            "Bank settlement outstanding"];
+            "Available cash · Unverified"];
         const proof = body.processor_evidence;
         if (body.status === "MATCHED_PROCESSOR_EVIDENCE") {
             const expected = body.order.livemode === false
@@ -141,6 +141,24 @@ export async function runOwnerStripeOrder(input, transport = fetch) {
                 "Processor net · " + amount(proof.net_minor, currency));
         } else if (proof !== null) {
             return result("unavailable");
+        }
+        const bank = body.bank_batch;
+        if (bank == null) {
+            rows.push("Bank settlement outstanding");
+        } else {
+            const isTest = !body.order.livemode;
+            if (bank.basis !== (isTest ? "SYNTHETIC_BANK_REHEARSAL" : "INDEPENDENT_CAD_BANK_READBACK")
+                || !["RECONCILIATION_RECORDED", "CORRECTION_REVIEW_REQUIRED"].includes(bank.status)
+                || bank.currency !== "CAD" || bank.available_cash_minor !== null
+                || (isTest ? bank.ledger_entry_id !== null : !Number.isSafeInteger(bank.ledger_entry_id))
+                || !Number.isSafeInteger(bank.order_contribution_minor) || bank.order_contribution_minor < 0
+                || !Number.isSafeInteger(bank.batch_minor) || bank.batch_minor < bank.order_contribution_minor) {
+                return result("unavailable");
+            }
+            rows.push(bank.status === "CORRECTION_REVIEW_REQUIRED" ? "Correction review required"
+                : isTest ? "Bank reconciliation rehearsal recorded" : "Bank reconciliation recorded",
+                "Entire payout batch · " + amount(bank.batch_minor, bank.currency),
+                "This order’s contribution · " + amount(bank.order_contribution_minor, bank.currency));
         }
         return result("ready", {text:rows.map(escapeOwnerReviewText).join("\n")});
     } catch {
