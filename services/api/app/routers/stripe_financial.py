@@ -21,7 +21,7 @@ from app.services.stripe_revenue_release import DeliveryReleaseIn, recognize_del
 from app.services.stripe_refund_correction import RefundCorrectionIn, configured_refund_correction
 from app.services.stripe_recurring import (
     InvoiceProofIn, RecurringBindingIn, apply_paid_invoice, bind_recurring, recurring_clients, schedule_cancellation,
-    start_checkout, subscription_status,
+    start_checkout, subscription_status, verify_period_processor_balance,
 )
 from app.webhooks.stripe import router as stripe_webhooks
 
@@ -122,6 +122,17 @@ def verify_paid_period(local_id: int, payload: InvoiceProofIn, db: Session = Dep
     live = is_live()
     with recurring_clients(live=live) as (reader, _):
         return private_owner_response(apply_paid_invoice(db, local_id, payload, live=live, client=reader))
+
+
+@router.post("/api/governance/floor/stripe-subscriptions/{local_id}/paid-period/{invoice_id}/processor-balance",
+             dependencies=owner_keys)
+def verify_recurring_processor_balance(local_id: int, invoice_id: str, payload: InvoiceProofIn,
+                                       db: Session = Depends(get_db)):
+    live = is_live()
+    with recurring_clients(live=live) as (reader, _):
+        return private_owner_response(verify_period_processor_balance(
+            db, local_id, invoice_id, payload.event_id, live=live, client=reader,
+        ))
 
 
 @router.post("/api/weweb/stripe-subscriptions/{tenant_id}/{local_id}/checkout")

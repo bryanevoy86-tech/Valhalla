@@ -62,6 +62,8 @@ Use the existing scoped Pantheon worker and Prime reassessment for the recurring
 
 The existing private operating-scope API and checked-in client also expose the recurring aggregate without subscriber identifiers, amounts or execution authority. The live editor’s owner workflow `8df72133-f027-4dd6-8eaa-7a10abfe4944` still needs its renderer update from `web/weweb-widgets/owner-operating-scope.mjs`. The subscriber editor bindings above are already saved. Validate both with separate authorized owner and subscriber test sessions before publication.
 
+Owner and Prime controls can independently read the exact recurring charge’s processor balance through `POST /api/governance/floor/stripe-subscriptions/{local_id}/paid-period/{invoice_id}/processor-balance`. Provide the journaled `payment_intent.succeeded` event ID. Verify Stripe account, customer, charge, gross, fee, net and the original paid-period digest. A pending balance does not remove an already verified paid access interval. A one-time order match, refund, dispute, amount contradiction or pending balance holds processor evidence. The receipt uses the canonical unique capture and balance ledger for processor evidence only. Production booking and recurring bank reconciliation remain separate.
+
 ### Isolated operating trial acceptance
 
 Use a pinned draft build and disposable PostgreSQL database in separately authorized staging. Seed synthetic grants, demand exports, one registered Legacy scope and a deliberately unapproved adjacent scope. Keep external providers, outreach, real money movement and production storage disabled. After preflight, schedule the existing discovery, Pantheon, Prime schedule, deterministic Loki and Factory workers using their current staging-only toggles. Read the private owner briefing and worker logs without exporting private inputs.
@@ -734,7 +736,7 @@ Editor readback and fixture execution verified the exact saved network action an
 
 Legacy SaaS records with provider references enter `pending_verification`. Manual records without provider references keep the existing local behavior. Editing an external label cannot activate access, and previously stored unverified active records are excluded from the access query. Cancellation remains available. The tenant-bound internal trial path stays separate and returns no payment verification.
 
-The Stripe ingress journals authenticated financial deliveries only when explicitly enabled for the matching mode. A separate readback checks the processor balance and the governed order projection confirms the exact merchant reference and verified product. Finance remains open for actual bank reconciliation, ledger booking, fulfillment and subscription lifecycle.
+The Stripe ingress journals authenticated financial deliveries only when explicitly enabled for the matching mode. A separate readback checks the processor balance and the governed order projection confirms the exact merchant reference and verified product. The one-time CAD bank and accounting path and bounded recurring paid-access lifecycle are implemented and rehearsed. Live commissioning, recurring bank reconciliation and the remaining financial control gates are tracked above.
 
 ### Owner policy update — Dynamic personal allocation and acquisition
 

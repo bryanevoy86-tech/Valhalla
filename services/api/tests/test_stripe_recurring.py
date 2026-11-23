@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 from app.core import db as database
 from app.models.auth_revocations import RevokedAccessToken
 from app.models.saas_access import SaaSPlan, SaaSPlanModule, Subscription
-from app.models.stripe_finance import StripeFinancialEvent
+from app.models.stripe_finance import StripeBalanceEvidence, StripeFinancialEvent, StripeOrderBinding
 from app.models.stripe_recurring import StripePaidPeriod, StripeRecurringAttempt, StripeSaaSBinding
 from app.routers.auth_weweb import _auth_runtime, _issue_access_token
 from app.services.stripe_recurring import scoped_subscription_outcomes
@@ -25,7 +25,8 @@ from app.users.models import AccountSettings, UserProfile
 def test_recurring_checkout_renewal_cancellation_and_payment_holds(deal_client, monkeypatch):
     client, engine = deal_client
     for model in (UserProfile, AccountSettings, RevokedAccessToken, SaaSPlan, SaaSPlanModule,
-                  Subscription, StripeFinancialEvent, StripeSaaSBinding, StripePaidPeriod, StripeRecurringAttempt):
+                  Subscription, StripeFinancialEvent, StripeOrderBinding, StripeBalanceEvidence,
+                  StripeSaaSBinding, StripePaidPeriod, StripeRecurringAttempt):
         model.__table__.create(engine, checkfirst=True)
     monkeypatch.setattr(database, "SessionLocal", lambda: Session(engine))
     monkeypatch.setattr("app.webhooks.stripe.is_live", lambda: False)
@@ -187,6 +188,31 @@ def test_recurring_checkout_renewal_cancellation_and_payment_holds(deal_client, 
     assert paid.status_code == 200, paid.text
     assert client.post(root + "/paid-period", headers=owner, json=proof).json() == paid.json()
     assert client.get(url, headers=buyer).json()["paid_until"] == end
+    event_capture = {"id": "pi_First", "object": "payment_intent", "status": "succeeded", "currency": "cad",
+                     "amount_received": 1200, "latest_charge": "ch_First", "customer": "cus_Recurring"}
+    capture_proof = webhook("payment_intent.succeeded", "CaptureFirst", event_capture)
+    wrong_capture = webhook("payment_intent.succeeded", "CaptureWrong", {**event_capture, "customer": "cus_Other"})
+    processor_url = root + "/paid-period/in_First/processor-balance"
+    assert client.post(processor_url, headers=buyer, json=capture_proof).status_code == 401
+    assert client.post(processor_url, headers=owner, json=wrong_capture).status_code == 409
+    fixtures["/v1/charges/ch_First"]["balance_transaction"] = "txn_First"
+    clearing = {"id": "txn_First", "object": "balance_transaction", "source": "ch_First", "type": "charge",
+                "currency": "cad", "amount": 1200, "fee": 60, "net": 1140, "status": "pending",
+                "available_on": start}
+    fixtures["/v1/balance_transactions/txn_First"] = clearing
+    assert client.post(processor_url, headers=owner, json=capture_proof).status_code == 409
+    assert client.get(url, headers=buyer).json()["status"] == "PAID"
+    clearing["status"] = "available"
+    receipt = client.post(processor_url, headers=owner, json=capture_proof)
+    assert receipt.status_code == 200, receipt.text
+    book = receipt.json()
+    assert (book["gross_minor"], book["fee_minor"], book["net_minor"]) == (1200, 60, 1140)
+    assert book["paid_period_sha256"] == paid.json()["sha256"]
+    assert book["bank_settlement_verified"] is False and book["available_cash_minor"] is None
+    assert client.post(processor_url, headers=owner, json=capture_proof).json() == book
+    with Session(engine) as db:
+        assert db.query(StripeBalanceEvidence).count() == 1
+
     failed_invoice = {**first, "id": "in_Renewal", "status": "open", "amount_paid": 0}
     webhook("invoice.payment_failed", "FailedRenewal", failed_invoice)
     recovery = client.get(url, headers=buyer).json()

@@ -20,6 +20,7 @@ API_ROOT = REPO_ROOT / "services/api"
 # checks establish registration, NOT successful execution or authorization.
 MANDATORY_ENDPOINTS = {
     "stripe_recurring_binding": ("POST", "/api/governance/floor/stripe-subscriptions/{local_id}/bind"),
+    "stripe_recurring_processor_balance": ("POST", "/api/governance/floor/stripe-subscriptions/{local_id}/paid-period/{invoice_id}/processor-balance"),
     "stripe_recurring_paid_period": ("POST", "/api/governance/floor/stripe-subscriptions/{local_id}/paid-period"),
     "weweb_recurring_checkout": ("POST", "/api/weweb/stripe-subscriptions/{tenant_id}/{local_id}/checkout"),
     "weweb_recurring_status": ("GET", "/api/weweb/stripe-subscriptions/{tenant_id}/{local_id}"),

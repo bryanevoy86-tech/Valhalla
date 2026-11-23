@@ -150,6 +150,16 @@ def journal_event(db: Session, payload, raw, live):
             or_(StripeOrderBinding.payment_intent_id == snapshot["payment_intent_id"],
                 StripeOrderBinding.payment_intent_id.in_(matches)),
         ).order_by(StripeOrderBinding.id).with_for_update()).all()
+    if snapshot["kind"] in {"charge.refunded", "charge.dispute.created"}:
+        from app.models.stripe_recurring import StripePaidPeriod, StripeSaaSBinding
+
+        inspector = inspect(db.connection())
+        if all(inspector.has_table(model.__tablename__) for model in (StripePaidPeriod, StripeSaaSBinding)):
+            db.scalars(select(StripeSaaSBinding).join(StripePaidPeriod, StripePaidPeriod.binding_id == StripeSaaSBinding.id)
+                       .where(StripeSaaSBinding.livemode == live, or_(
+                           StripePaidPeriod.payment_intent_id == snapshot["payment_intent_id"],
+                           StripePaidPeriod.evidence["charge_id"].as_string() == snapshot["charge_id"],
+                       )).order_by(StripeSaaSBinding.id).with_for_update(of=StripeSaaSBinding)).all()
     previous = db.get(StripeFinancialEvent, event_id)
     if previous is None:
         row = StripeFinancialEvent(event_id=event_id, livemode=live, snapshot=snapshot, payload_sha256=body_hash,

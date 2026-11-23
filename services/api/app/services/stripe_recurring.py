@@ -14,13 +14,14 @@ from sqlalchemy.exc import IntegrityError
 
 from app.loki.evidence import artifact_digest
 from app.models.saas_access import SaaSPlan, SaaSPlanModule, Subscription
-from app.models.stripe_finance import StripeFinancialEvent
+from app.models.stripe_finance import StripeFinancialEvent, StripeOrderBinding
 from app.models.stripe_recurring import StripePaidPeriod, StripeSaaSBinding
 from app.schemas.market_intelligence import MarketScope, StrictModel
 from app.services.economic_control import require_no_containment
 from app.services.prime_business_execution import _check_legacy, _emergency_stop_active
 from app.services.stripe_finance import (
-    _event_receipt, _provider_object, minor_amount, provider_json, read_captured_charge, stripe_id, stripe_readback_client,
+    _event_receipt, _provider_object, minor_amount, provider_json, read_captured_charge, read_processor_balance,
+    stripe_id, stripe_readback_client,
 )
 from app.services.stripe_fulfillment import _buyer
 from app.services.stripe_orders import _require_configured_mode
@@ -397,6 +398,38 @@ def apply_paid_invoice(db, local_id, request, *, live, client):
                             evidence=value, evidence_sha256=digest))
     _commit(db, "Invoice, capture or paid period already belongs to a subscription")
     return {**value, "sha256": digest}
+
+
+def verify_period_processor_balance(db, local_id, invoice_id, capture_event_id, *, live, client):
+    """Attach canonical processor evidence to an exact recurring capture."""
+    if not stripe_id(invoice_id, "in") or not stripe_id(capture_event_id, "evt"):
+        raise HTTPException(422, "Native invoice and capture event identities required")
+    row, data, _ = _binding(db, local_id, live, lock=True)
+    period = db.get(StripePaidPeriod, invoice_id)
+    if period is None or period.binding_id != row.id:
+        raise HTTPException(404, "Paid invoice unavailable for this subscription")
+    value = _period_value(row, period)
+    event = db.get(StripeFinancialEvent, capture_event_id)
+    if event is None or event.livemode is not live:
+        raise HTTPException(404, "Signed capture unavailable")
+    _event_receipt(event, True)
+    signed = event.snapshot
+    expected = {
+        "kind": "payment_intent.succeeded", "payment_intent_id": value["payment_intent_id"],
+        "charge_id": value["charge_id"], "currency": "cad", "amount_minor": value["captured_minor"],
+        "stripe_customer_id": data["stripe_customer_id"], "merchant_order_id": None,
+    }
+    if any(signed.get(key) != field for key, field in expected.items()) or _reversed(db, row, value):
+        raise HTTPException(409, "Signed capture differs from the exact paid period or requires reversal review")
+    if not inspect(db.connection()).has_table(StripeOrderBinding.__tablename__):
+        raise HTTPException(503, "The canonical one-time order index is unavailable")
+    if db.scalar(select(StripeOrderBinding.id).filter_by(
+        livemode=live, payment_intent_id=value["payment_intent_id"],
+    )) is not None:
+        raise HTTPException(409, "The exact capture is already bound to a one-time order")
+    result = read_processor_balance(db, capture_event_id, client=client, account_id=data["stripe_account_id"], live=live)
+    return {**result, "invoice_id": invoice_id, "paid_period_sha256": period.evidence_sha256,
+            "recognized_revenue_minor": None, "available_cash_minor": None}
 
 
 def subscription_status(db, local_id, tenant_id, principal, *, live, now=None):
