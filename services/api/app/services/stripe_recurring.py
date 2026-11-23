@@ -13,18 +13,21 @@ from sqlalchemy import inspect, select
 from sqlalchemy.exc import IntegrityError
 
 from app.loki.evidence import artifact_digest
+from app.models.completion_registry import LegacyOrchestrationEvent
 from app.models.saas_access import SaaSPlan, SaaSPlanModule, Subscription
-from app.models.stripe_finance import StripeFinancialEvent, StripeOrderBinding
+from app.models.stripe_finance import StripeBalanceEvidence, StripeFinancialEvent, StripeOrderBinding
 from app.models.stripe_recurring import StripePaidPeriod, StripeSaaSBinding
 from app.schemas.market_intelligence import MarketScope, StrictModel
 from app.services.economic_control import require_no_containment
-from app.services.prime_business_execution import _check_legacy, _emergency_stop_active
+from app.services.prime_business_execution import _check_legacy, _emergency_stop_active, _event, _json
 from app.services.stripe_finance import (
-    _event_receipt, _provider_object, minor_amount, provider_json, read_captured_charge, read_processor_balance,
+    _event_receipt, _provider_object, capture_evidence, minor_amount, provider_json, read_captured_charge,
+    read_processor_balance,
     stripe_id, stripe_readback_client,
 )
 from app.services.stripe_fulfillment import _buyer
 from app.services.stripe_orders import _require_configured_mode
+from app.services.stripe_payout_evidence import payout_membership
 
 ALLOWED_MODULES = {"wholesale_engine", "dispo_engine"}
 STRIPE_VERSION = "2025-03-31.basil"
@@ -400,8 +403,7 @@ def apply_paid_invoice(db, local_id, request, *, live, client):
     return {**value, "sha256": digest}
 
 
-def verify_period_processor_balance(db, local_id, invoice_id, capture_event_id, *, live, client):
-    """Attach canonical processor evidence to an exact recurring capture."""
+def _period_capture(db, local_id, invoice_id, capture_event_id, *, live):
     if not stripe_id(invoice_id, "in") or not stripe_id(capture_event_id, "evt"):
         raise HTTPException(422, "Native invoice and capture event identities required")
     row, data, _ = _binding(db, local_id, live, lock=True)
@@ -427,9 +429,68 @@ def verify_period_processor_balance(db, local_id, invoice_id, capture_event_id, 
         livemode=live, payment_intent_id=value["payment_intent_id"],
     )) is not None:
         raise HTTPException(409, "The exact capture is already bound to a one-time order")
+    return row, data, period, event
+
+
+def verify_period_processor_balance(db, local_id, invoice_id, capture_event_id, *, live, client):
+    """Attach canonical processor evidence to an exact recurring capture."""
+    _, data, period, _ = _period_capture(db, local_id, invoice_id, capture_event_id, live=live)
     result = read_processor_balance(db, capture_event_id, client=client, account_id=data["stripe_account_id"], live=live)
     return {**result, "invoice_id": invoice_id, "paid_period_sha256": period.evidence_sha256,
             "recognized_revenue_minor": None, "available_cash_minor": None}
+
+
+def verify_period_payout(db, local_id, invoice_id, payout_id, *, live, client, destination_id):
+    """Record exact recurring payout membership before separate bank reconciliation."""
+    if not stripe_id(invoice_id, "in") or not stripe_id(payout_id, "po"):
+        raise HTTPException(422, "Native invoice and payout identities required")
+    if not stripe_id(destination_id, "ba"):
+        raise HTTPException(503, "Stripe payout destination is unconfigured")
+    inspector = inspect(db.connection())
+    _ready(db)
+    if not all(inspector.has_table(model.__tablename__) for model in (StripeBalanceEvidence, LegacyOrchestrationEvent)):
+        raise HTTPException(503, "Payout evidence journal unavailable")
+    candidate = db.get(StripePaidPeriod, invoice_id)
+    if candidate is None or candidate.binding_id != local_id:
+        raise HTTPException(404, "Paid invoice unavailable for this subscription")
+    recorded = db.scalar(select(StripeBalanceEvidence).filter_by(
+        payment_intent_id=candidate.payment_intent_id, livemode=live,
+    ))
+    if recorded is None:
+        raise HTTPException(409, "Recurring processor balance must be verified first")
+    row, data, period, event = _period_capture(db, local_id, invoice_id, recorded.event_id, live=live)
+    capture = capture_evidence(client, data["stripe_account_id"], event.snapshot, _now())
+    balance = {**capture, "event_snapshot_sha256": event.snapshot_sha256}
+    if (recorded.evidence != balance or recorded.balance_transaction_id != capture["balance_transaction_id"]
+            or recorded.evidence_sha256 != artifact_digest("stripe_balance_evidence", event.event_id, balance)):
+        raise HTTPException(409, "Current capture differs from recorded processor evidence")
+    from app.services.stripe_bank_booking import _payout_failed
+
+    if _payout_failed(db, payout_id, live):
+        raise HTTPException(409, "Signed payout failure requires separate correction")
+    match = payout_membership(client, payout_id, destination_id, capture, live=live)
+    scope = data["scope"]
+    value = {
+        "scope": scope, "subscription_binding_sha256": row.binding_sha256,
+        "invoice_id": invoice_id, "paid_period_sha256": period.evidence_sha256,
+        "balance_evidence_sha256": recorded.evidence_sha256, "capture_net_minor": capture["net_minor"],
+        "currency": "CAD", **match,
+        "basis": "STRIPE_LIVE_RECURRING_PAYOUT_MEMBERSHIP" if live else "STRIPE_TEST_RECURRING_PAYOUT_MEMBERSHIP",
+        "bank_settlement_verified": False, "available_cash_minor": None, "ledger_posting_created": False,
+    }
+    kind = "STRIPE_RECURRING_PROCESSOR_PAYOUT_MATCHED"
+    reference = "STRIPE-RECURRING-PAYOUT-" + artifact_digest(kind, invoice_id, {"livemode": live})[:40]
+    receipt = {**value, "sha256": artifact_digest(kind, reference, value)}
+    prior = db.scalar(select(LegacyOrchestrationEvent).filter_by(event_id=reference))
+    if prior is not None:
+        if (prior.event_type != kind or prior.legacy_instance_id != scope["legacy_instance_id"]
+                or _json(prior.payload_json, {}) != receipt):
+            raise HTTPException(409, "Paid period already has different payout evidence")
+        return receipt
+    _event(db, event_id=reference, legacy_instance_id=scope["legacy_instance_id"], event_type=kind,
+           message="Recurring capture matched exact Stripe processor payout", payload=receipt)
+    _commit(db, "Payout evidence already exists; retry the exact readback")
+    return receipt
 
 
 def subscription_status(db, local_id, tenant_id, principal, *, live, now=None):

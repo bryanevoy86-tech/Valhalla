@@ -1137,3 +1137,7 @@ The acceptance matrix retains 13 P0 and 39 total criteria requiring internal cod
 - Added exact read-only commissioning for QuickBooks sandbox account classification, DocuSign test envelope plus one matching recipient and Google Drive metadata for one preselected test file. All three require a separate owner mandate, owner session, disabled-by-default provider configuration and non-live runtime. Responses omit personal data and cash claims. Native response replays cover disabled settings, wrong resource or signer, rejected credentials and incomplete status. Closed the legacy QuickBooks journal, DocuSign send and uncommissioned DocuSign webhook success paths that lacked actual provider evidence.
 
 - The classification, private conversation and WeWeb checklist batch passed all four hosted jobs in run 45113701443 at `4d88c578dc21f0bdf39d3a8143943edc1c96ec16`.
+
+- Reused the canonical Stripe payout readback for the exact recurring paid invoice and charge. Added immutable membership readback and isolated checks for wrong destination, ambiguous member, replay and signed payout failure. The matched contribution stays distinct from the full payout. There is no new payout, funds authority or bank confirmation.
+
+- Hosted run 45114020058 identified a test fixture leaking its commissioning mandate key into the existing document workflow. The commissioning test now restores the original key and runtime immediately. No runtime authorization rule was loosened.

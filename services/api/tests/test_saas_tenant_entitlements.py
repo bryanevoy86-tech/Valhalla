@@ -132,16 +132,17 @@ def test_trial_is_bound_to_authenticated_subscriber_and_tenant(deal_client, monk
     invalid_lane = client.get(dependency_path, headers=bearer, params={"lane": "secret-fixture"})
     assert invalid_lane.status_code == 422 and "secret-fixture" not in invalid_lane.text
     readback_path = "/api/weweb/owner-startup/provider-readback/google-drive"
-    monkeypatch.setenv("VALHALLA_OWNER_MANDATE_KEY", "commissioning-test-mandate")
-    mandate = {"X-Owner-Mandate-Key": "commissioning-test-mandate"}
-    monkeypatch.delenv("VALHALLA_GOOGLE_DRIVE_COMMISSIONING_ENABLED", raising=False)
-    assert client.post(readback_path, headers=outsider | mandate).status_code == 403
-    assert client.post(readback_path, headers=bearer).status_code == 401
-    unavailable = client.post(readback_path, headers=bearer | mandate)
-    assert unavailable.status_code == 503 and unavailable.headers["cache-control"] == "no-store"
-    with monkeypatch.context() as live:
-        live.setattr("app.heimdall.authority.is_live", lambda: True)
-        assert client.post(readback_path, headers=bearer | mandate).status_code == 409
+    with monkeypatch.context() as commissioning:
+        commissioning.setenv("VALHALLA_OWNER_MANDATE_KEY", "commissioning-test-mandate")
+        mandate = {"X-Owner-Mandate-Key": "commissioning-test-mandate"}
+        commissioning.delenv("VALHALLA_GOOGLE_DRIVE_COMMISSIONING_ENABLED", raising=False)
+        assert client.post(readback_path, headers=outsider | mandate).status_code == 403
+        assert client.post(readback_path, headers=bearer).status_code == 401
+        unavailable = client.post(readback_path, headers=bearer | mandate)
+        assert unavailable.status_code == 503 and unavailable.headers["cache-control"] == "no-store"
+        with commissioning.context() as live:
+            live.setattr("app.heimdall.authority.is_live", lambda: True)
+            assert client.post(readback_path, headers=bearer | mandate).status_code == 409
     review_path = "/api/weweb/owner-startup/independence-review"
     review_payload = {
         "monthly_essentials_minor": 100000, "reserve_months": 3, "reserve_balance_minor": 0,

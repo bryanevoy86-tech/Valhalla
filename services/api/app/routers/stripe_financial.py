@@ -21,7 +21,7 @@ from app.services.stripe_revenue_release import DeliveryReleaseIn, recognize_del
 from app.services.stripe_refund_correction import RefundCorrectionIn, configured_refund_correction
 from app.services.stripe_recurring import (
     InvoiceProofIn, RecurringBindingIn, apply_paid_invoice, bind_recurring, recurring_clients, schedule_cancellation,
-    start_checkout, subscription_status, verify_period_processor_balance,
+    start_checkout, subscription_status, verify_period_payout, verify_period_processor_balance,
 )
 from app.webhooks.stripe import router as stripe_webhooks
 
@@ -132,6 +132,17 @@ def verify_recurring_processor_balance(local_id: int, invoice_id: str, payload: 
     with recurring_clients(live=live) as (reader, _):
         return private_owner_response(verify_period_processor_balance(
             db, local_id, invoice_id, payload.event_id, live=live, client=reader,
+        ))
+
+
+@router.post("/api/governance/floor/stripe-subscriptions/{local_id}/paid-period/{invoice_id}/payout/{payout_id}",
+             dependencies=owner_keys)
+def verify_recurring_payout(local_id: int, invoice_id: str, payout_id: str, db: Session = Depends(get_db)):
+    live = is_live()
+    with recurring_clients(live=live) as (reader, _):
+        return private_owner_response(verify_period_payout(
+            db, local_id, invoice_id, payout_id, live=live, client=reader,
+            destination_id=os.getenv("VALHALLA_STRIPE_PAYOUT_DESTINATION_ID"),
         ))
 
 

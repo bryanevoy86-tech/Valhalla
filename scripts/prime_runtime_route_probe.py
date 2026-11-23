@@ -22,6 +22,7 @@ MANDATORY_ENDPOINTS = {
     "weweb_startup_provider_readback": ("POST", "/api/weweb/owner-startup/provider-readback/{provider}"),
     "weweb_startup_dependencies": ("GET", "/api/weweb/owner-startup/dependencies"),
     "stripe_recurring_binding": ("POST", "/api/governance/floor/stripe-subscriptions/{local_id}/bind"),
+    "stripe_recurring_payout": ("POST", "/api/governance/floor/stripe-subscriptions/{local_id}/paid-period/{invoice_id}/payout/{payout_id}"),
     "stripe_recurring_processor_balance": ("POST", "/api/governance/floor/stripe-subscriptions/{local_id}/paid-period/{invoice_id}/processor-balance"),
     "stripe_recurring_paid_period": ("POST", "/api/governance/floor/stripe-subscriptions/{local_id}/paid-period"),
     "weweb_recurring_checkout": ("POST", "/api/weweb/stripe-subscriptions/{tenant_id}/{local_id}/checkout"),

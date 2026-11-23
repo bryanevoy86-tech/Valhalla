@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 
 from app.core import db as database
 from app.models.auth_revocations import RevokedAccessToken
+from app.models.completion_registry import LegacyOrchestrationEvent
 from app.models.saas_access import SaaSPlan, SaaSPlanModule, Subscription
 from app.models.stripe_finance import StripeBalanceEvidence, StripeFinancialEvent, StripeOrderBinding
 from app.models.stripe_recurring import StripePaidPeriod, StripeRecurringAttempt, StripeSaaSBinding
@@ -26,7 +27,7 @@ def test_recurring_checkout_renewal_cancellation_and_payment_holds(deal_client, 
     client, engine = deal_client
     for model in (UserProfile, AccountSettings, RevokedAccessToken, SaaSPlan, SaaSPlanModule,
                   Subscription, StripeFinancialEvent, StripeOrderBinding, StripeBalanceEvidence,
-                  StripeSaaSBinding, StripePaidPeriod, StripeRecurringAttempt):
+                  StripeSaaSBinding, StripePaidPeriod, StripeRecurringAttempt, LegacyOrchestrationEvent):
         model.__table__.create(engine, checkfirst=True)
     monkeypatch.setattr(database, "SessionLocal", lambda: Session(engine))
     monkeypatch.setattr("app.webhooks.stripe.is_live", lambda: False)
@@ -38,6 +39,7 @@ def test_recurring_checkout_renewal_cancellation_and_payment_holds(deal_client, 
     monkeypatch.setenv("VALHALLA_STRIPE_EVENT_MODE", "test")
     monkeypatch.setenv("VALHALLA_STRIPE_TEST_WEBHOOK_SECRET", secret)
     monkeypatch.setenv("VALHALLA_STRIPE_ACCOUNT_ID", "acct_Recurring")
+    monkeypatch.setenv("VALHALLA_STRIPE_PAYOUT_DESTINATION_ID", "ba_Recurring")
     monkeypatch.setenv("VALHALLA_OWNER_MANDATE_KEY", "owner-recurring-fixture")
     origin = "https://editor.example.invalid"
     monkeypatch.setenv("VALHALLA_STRIPE_RECURRING_SUCCESS_URL", origin + "/return")
@@ -104,6 +106,7 @@ def test_recurring_checkout_renewal_cancellation_and_payment_holds(deal_client, 
         "/v1/subscriptions/sub_Recurring": native,
     }
     payments = {}
+    membership = {"object": "list", "has_more": False, "data": []}
     posts = []
     renewals_available = False
 
@@ -124,6 +127,10 @@ def test_recurring_checkout_renewal_cancellation_and_payment_holds(deal_client, 
             return httpx.Response(200, json=native)
         if path == "/v1/invoices/in_Renewal" and not renewals_available:
             return httpx.Response(503)
+        if path == "/v1/balance_transactions":
+            assert request.url.params["payout"] == "po_Recurring"
+            assert request.url.params["source"] == "ch_First"
+            return httpx.Response(200, json=membership)
         if path == "/v1/invoice_payments":
             return httpx.Response(200, json={"has_more": False, "data": [payments[request.url.params["invoice"]]]})
         return httpx.Response(200, json=fixtures[path])
@@ -210,6 +217,28 @@ def test_recurring_checkout_renewal_cancellation_and_payment_holds(deal_client, 
     assert book["paid_period_sha256"] == paid.json()["sha256"]
     assert book["bank_settlement_verified"] is False and book["available_cash_minor"] is None
     assert client.post(processor_url, headers=owner, json=capture_proof).json() == book
+    payout_url = root + "/paid-period/in_First/payout/po_Recurring"
+    payout = {"id": "po_Recurring", "object": "payout", "livemode": False, "automatic": True,
+              "method": "standard", "type": "bank_account", "destination": "ba_Different", "status": "paid",
+              "reconciliation_status": "completed", "currency": "cad", "amount": 2280, "arrival_date": start + 240}
+    fixtures["/v1/payouts/po_Recurring"] = payout
+    assert client.post(payout_url, headers=buyer).status_code == 401
+    assert client.post(payout_url, headers=owner).status_code == 409
+    payout["destination"] = "ba_Recurring"
+    assert client.post(payout_url, headers=owner).status_code == 409
+    membership["data"] = [clearing.copy(), clearing.copy()]
+    assert client.post(payout_url, headers=owner).status_code == 409
+    membership["data"].pop()
+    matched = client.post(payout_url, headers=owner)
+    assert matched.status_code == 200, matched.text
+    payout_proof = matched.json()
+    assert (payout_proof["capture_net_minor"], payout_proof["processor_reported_payout_minor"]) == (1140, 2280)
+    assert payout_proof["balance_evidence_sha256"] == book["sha256"]
+    assert payout_proof["bank_settlement_verified"] is False and payout_proof["available_cash_minor"] is None
+    assert client.post(payout_url, headers=owner).json() == payout_proof
+    webhook("payout.failed", "RecurringPayoutFailed", payout)
+    assert client.post(payout_url, headers=owner).status_code == 409
+
     with Session(engine) as db:
         assert db.query(StripeBalanceEvidence).count() == 1
 
