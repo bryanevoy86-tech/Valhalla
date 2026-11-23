@@ -1141,3 +1141,7 @@ The acceptance matrix retains 13 P0 and 39 total criteria requiring internal cod
 - Reused the canonical Stripe payout readback for the exact recurring paid invoice and charge. Added immutable membership readback and isolated checks for wrong destination, ambiguous member, replay and signed payout failure. The matched contribution stays distinct from the full payout. There is no new payout, funds authority or bank confirmation.
 
 - Hosted run 45114020058 identified a test fixture leaking its commissioning mandate key into the existing document workflow. The commissioning test now restores the original key and runtime immediately. No runtime authorization rule was loosened.
+
+- Added seven-class schema validation and open-work counts to the existing token-free Prime preflight. Missing, conflated or empty classes fail the local gate. Production-evidence assertions and source checks remain in force.
+
+- The recurring payout, commissioning adapter and authorization-fixture fixes passed all four hosted jobs together at `c09e483f268801ad8ec78525980e092e614af480` in run 45114231675. Replayed the exact saved startup comparison action with authorized owner, unauthorized subscriber and wrong-origin fixture cases. These results do not claim an authorized external account, deployed host or browser preview.

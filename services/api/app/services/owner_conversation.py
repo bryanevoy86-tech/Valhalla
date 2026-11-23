@@ -210,6 +210,7 @@ def answer(db, message, attachments, turn_id=None, provider_data_class="PRIVATE"
         reply += f" Discovery intake has {pending} queued job(s). Scoped health evidence is attached."
     if operating["financials"]["available"]:
         reply += " Recorded unreconciled revenue entries are attached by currency."
+    reply += " Ask what you need before registration or first revenue for the private commissioning checklist."
     if signals:
         reply += " Attention: " + "; ".join(signals.values()) + "."
     if attachments:

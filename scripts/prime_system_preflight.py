@@ -25,6 +25,15 @@ EVIDENCE_LEVELS = {
     "LIVE_OPERATION_VERIFIED",
 }
 ALLOWED_PRIORITIES = {"P0", "P1", "P2"}
+REMAINING_WORK_CLASSES = (
+    "internal_coding",
+    "internally_achievable_testing",
+    "external_api_and_provider_commissioning",
+    "owner_authorization_or_account_establishment",
+    "independent_financial_or_operational_evidence",
+    "qualified_professional_review",
+    "conditional_future_expansion",
+)
 MANDATORY_KEYS = {
     "id",
     "priority",
@@ -43,6 +52,8 @@ def inspect_matrix(root: Path = REPO_ROOT, matrix_path: str = MATRIX_PATH) -> di
     matrix_file = root / matrix_path
     issues: list[str] = []
     examined_files = set()
+    remaining_counts = dict.fromkeys(REMAINING_WORK_CLASSES, 0)
+    p0_coding_count = 0
     try:
         doc = json.loads(matrix_file.read_text(encoding="utf-8"))
     except (OSError, ValueError) as exc:
@@ -66,6 +77,19 @@ def inspect_matrix(root: Path = REPO_ROOT, matrix_path: str = MATRIX_PATH) -> di
         if missing:
             issues.append(f"{identifier}: missing keys {missing}")
             continue
+        continuation = row.get("continuation")
+        work = continuation.get("remaining") if isinstance(continuation, dict) else None
+        if not isinstance(work, dict) or work.keys() != set(REMAINING_WORK_CLASSES):
+            issues.append(f"{identifier}: expected all seven separate remaining-work classes")
+        else:
+            for kind, note in work.items():
+                if note is not None:
+                    if not isinstance(note, str) or not note.strip():
+                        issues.append(f"{identifier}: {kind} must be a nonempty note or null")
+                    else:
+                        remaining_counts[kind] += 1
+            if row["priority"] == "P0" and isinstance(work["internal_coding"], str) and work["internal_coding"].strip():
+                p0_coding_count += 1
         if row["priority"] not in ALLOWED_PRIORITIES:
             issues.append(f"{identifier}: invalid priority")
         if row["evidence_level"] not in EVIDENCE_LEVELS:
@@ -111,6 +135,8 @@ def inspect_matrix(root: Path = REPO_ROOT, matrix_path: str = MATRIX_PATH) -> di
         "ok": not issues,
         "capability_count": len(rows),
         "source_file_count": len(examined_files),
+        "remaining_work_counts": remaining_counts,
+        "p0_internal_coding_count": p0_coding_count,
         "issues": issues,
         "warning": (
             "Source inspection only. This cannot prove route registration, "

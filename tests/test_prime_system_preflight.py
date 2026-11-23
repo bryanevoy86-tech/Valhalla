@@ -21,7 +21,9 @@ class PrimeSystemPreflightTests(unittest.TestCase):
     def test_current_manifest_has_all_source_anchors_and_no_false_production_claims(self):
         report = inspect_matrix(ROOT)
         self.assertTrue(report["ok"], report["issues"])
-        self.assertGreaterEqual(report["capability_count"], 20)
+        self.assertEqual(report["capability_count"], 50)
+        self.assertEqual(len(report["remaining_work_counts"]), 7)
+        self.assertGreaterEqual(report["remaining_work_counts"]["internal_coding"], report["p0_internal_coding_count"])
         self.assertEqual(report["production_verified_count"], 0)
         self.assertIn("cannot prove", report["warning"])
 
@@ -49,6 +51,14 @@ class PrimeSystemPreflightTests(unittest.TestCase):
             doc["capabilities"][0]["depends_on"].append("imaginary_engine_not_built")
         report = self._altered_report(alter)
         self.assertTrue(any("unknown dependency" in x for x in report["issues"]))
+
+    def test_provider_commissioning_and_qualified_review_cannot_be_collapsed(self):
+        def alter(doc):
+            work = doc["capabilities"][0]["continuation"]["remaining"]
+            del work["qualified_professional_review"]
+            work["owner_or_professional_action"] = "Combined older class"
+        report = self._altered_report(alter)
+        self.assertTrue(any("seven separate remaining-work classes" in issue for issue in report["issues"]))
 
     def test_missing_sources_are_not_treated_as_complete(self):
         report = self._altered_report(lambda doc: None)

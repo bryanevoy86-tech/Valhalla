@@ -206,3 +206,7 @@ One-time paid product fulfillment separately matches scoped Stripe payment authe
 ### Native CAD recurring and corrections source anchors
 
 The bounded recurring path in `services/api/app/services/stripe_recurring.py` and `services/api/app/services/stripe_recurring_worker.py` links a fixed approved plan to exact provider identity, independently checks each paid interval and keeps cancellation distinct from the end of contracted access. The existing subscriber Home panel binds the three recurring actions through the approved origin and authenticated account. `services/api/app/services/stripe_refund_correction.py` records native one-time CAD refund clearing corrections with a cumulative signed sequence. Finance and commerce acceptance still need independent reversal, recurring bank reconciliation and available-cash coverage, followed by authorized provider and preview commissioning.
+
+### Commissioning and independent evidence
+
+The canonical integration matrix retains all 50 acceptance contracts and identifies seven kinds of remaining work for each. The 53 development tasks and seven construction packages continue to use the existing workstream IDs. `services/api/app/services/startup_dependencies.py` supplies private owner guidance that separates registration, selected first-revenue dependencies, activity-specific review and future expansion. The existing private startup and Heimdall views consume it. The December handoff records the endpoint, approved credential boundary and independent evidence still needed for each commissioning phase.

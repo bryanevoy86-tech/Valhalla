@@ -133,6 +133,14 @@ DEPENDENCIES = (
      "Verify the scoped signed opinion, policy or registration as applicable before any reliance or transfer.", ()),
 )
 
+# These are public reference pages, not owner-approved quotes.
+PRICE_REFERENCE = {
+    "render": "https://render.com/pricing",
+    "stripe": "https://stripe.com/en-ca/pricing",
+    "weweb": "https://www.weweb.io/pricing",
+    "workspace": "https://workspace.google.com/pricing?hl=en_ca",
+}
+
 
 def startup_dependency_checklist(lane: LaunchLane = "ONE_TIME_CAD") -> dict:
     items = []
@@ -144,7 +152,9 @@ def startup_dependency_checklist(lane: LaunchLane = "ONE_TIME_CAD") -> dict:
             "setup_cost": setup, "ongoing_cost": ongoing, "permissions": access, "alternative": alternative,
             "expected_functionality": why, "owner_action": action, "verification": verify, "depends_on": list(requires),
             "evidence_status": "UNVERIFIED_IN_THIS_VIEW",
-            "public_price_source": "https://stripe.com/en-ca/pricing" if key == "stripe" else None,
+            "public_price_source": PRICE_REFERENCE.get(key),
+            "price_basis": "PUBLIC_TARIFF_REFERENCE" if key == "stripe" else "CONFIRM_EXISTING_PLAN_OR_OBTAIN_QUOTE",
+            "price_observed_on": "2026-11-22" if key == "stripe" else None,
         })
     order = {"REGISTRATION": 0, "FIRST_REVENUE": 1, "IF_APPLICABLE": 2, "LATER": 3}
     items.sort(key=lambda item: order[item["gate"]])

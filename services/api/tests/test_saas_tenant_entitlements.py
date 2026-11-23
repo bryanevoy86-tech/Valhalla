@@ -124,6 +124,12 @@ def test_trial_is_bound_to_authenticated_subscriber_and_tenant(deal_client, monk
     assert dependencies.status_code == 200 and dependencies.headers["cache-control"] == "no-store"
     plan_only = dependencies.json()
     assert quote.json()["startup_dependencies"] == plan_only
+    ordered = [item["key"] for item in plan_only["dependencies"]]
+    assert len(ordered) == len(set(ordered))
+    assert all(ordered.index(ref) < ordered.index(item["key"])
+               for item in plan_only["dependencies"] for ref in item["depends_on"])
+    stripe_cost = next(item for item in plan_only["dependencies"] if item["key"] == "stripe")
+    assert stripe_cost["price_basis"] == "PUBLIC_TARIFF_REFERENCE" and stripe_cost["price_observed_on"]
     gates = {item["key"]: item["gate"] for item in plan_only["dependencies"]}
     assert gates["registration"] == "REGISTRATION" and gates["bank"] == "FIRST_REVENUE"
     assert gates["expansion"] == gates["recurring_settlement"] == "LATER"
