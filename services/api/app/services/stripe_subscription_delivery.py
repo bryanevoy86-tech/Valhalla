@@ -139,3 +139,67 @@ def recognize_service(db, local_id, invoice_id, request, *, live):
         db.rollback()
         raise HTTPException(409, "Concurrent recurring release; replay the exact receipt") from None
     return {**value, "sha256": digest}
+
+
+def scoped_service_settlement(db, scope, *, live):
+    """Read bounded, intact settlement and release evidence for the owner."""
+    from app.models.stripe_finance import StripeFinancialEvent
+    from app.models.stripe_recurring import StripeSaaSBinding
+
+    schema = inspect(db.connection())
+    if any(not schema.has_table(model.__tablename__) for model in (
+        LegacyOrchestrationEvent, StripeFinancialEvent, StripeSaaSBinding, StripePaidPeriod,
+    )):
+        return None
+    stored_scope = StripeSaaSBinding.binding["scope"]
+    periods = db.scalars(select(StripePaidPeriod).join(
+        StripeSaaSBinding, StripePaidPeriod.binding_id == StripeSaaSBinding.id,
+    ).where(StripeSaaSBinding.livemode == live,
+            *(stored_scope[key].as_string() == item for key, item in scope.items()))
+      .order_by(StripePaidPeriod.period_end.desc(), StripePaidPeriod.invoice_id).limit(101)).all()
+    if not periods:
+        return None
+    report = {"basis": "VERIFIED_CAD_SERVICE_RECEIPTS" if live else "SYNTHETIC_CAD_SERVICE_RECEIPTS",
+              "paid_receipt_count": min(len(periods), 100), "bank_batch_member_count": 0,
+              "acknowledged_count": 0, "liability_release_count": 0, "held_count": 0,
+              "recognized_unheld_minor": None, "available_cash_minor": None, "scope_truncated": len(periods) > 100,
+              "execution_authorized": False}
+    recognized = 0
+    for period in periods[:100]:
+        try:
+            row, binding, _ = _binding(db, period.binding_id, live)
+            if binding["scope"] != scope:
+                raise HTTPException(409, "Invoice escaped owner reporting scope")
+            paid = _period_value(row, period)
+            ref = artifact_digest(ACK, period.invoice_id, {"live": live})[:32]
+            ack = _read_record(db, f"STRIPE-SERVICE-ACK-{period.binding_id}-{ref}", ACK, scope)
+            key = f"STRIPE-SERVICE-REVENUE-{period.binding_id}-{ref}"
+            release = _read_record(db, key, RELEASE, scope)
+            reversed_payment = _reversed(db, row, paid)
+            bank = invoice_bank_summary(db, period.invoice_id, scope, held=reversed_payment, live=live)
+            if (reversed_payment or (bank is not None and bank["status"] != "RECONCILIATION_RECORDED")
+                    or (ack is not None and (ack["paid_period_sha256"] != period.evidence_sha256
+                                            or ack["invoice_id"] != period.invoice_id))):
+                raise HTTPException(409, "Provider or acknowledgment evidence requires review")
+            if release is not None:
+                if (ack is None or bank is None or release["acknowledgment_sha256"] != ack["sha256"]
+                        or release["batch_sha256"] != bank["sha256"]
+                        or release["paid_period_sha256"] != period.evidence_sha256):
+                    raise HTTPException(409, "Recognition evidence no longer matches")
+                ledger_id = release["ledger_entry_id"]
+                if live:
+                    entry = db.get(JournalEntry, ledger_id) if type(ledger_id) is int else None
+                    if (entry is None or entry.source != SOURCE or entry.source_ref != key
+                            or release["recognized_revenue_minor"] != paid["captured_minor"]):
+                        raise HTTPException(409, "Recognition journal no longer matches")
+                    recognized += release["recognized_revenue_minor"]
+                elif ledger_id is not None or release["recognized_revenue_minor"] is not None:
+                    raise HTTPException(409, "Synthetic service contains a recognition claim")
+            report["bank_batch_member_count"] += int(bank is not None)
+            report["acknowledged_count"] += int(ack is not None)
+            report["liability_release_count"] += int(release is not None)
+        except (HTTPException, KeyError, TypeError, ValueError):
+            report["held_count"] += 1
+    if live and not report["scope_truncated"] and not report["held_count"] and report["liability_release_count"]:
+        report["recognized_unheld_minor"] = recognized
+    return report

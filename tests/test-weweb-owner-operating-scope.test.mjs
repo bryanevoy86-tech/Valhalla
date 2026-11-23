@@ -69,9 +69,25 @@ test("owner sees recurring payment evidence separately from recognized income an
         available_cash_minor:null, recognized_revenue_minor:null, external_authority:false};
     const ready = await runOwnerOperatingScope(input, respond({...body,recurring_paid_periods:recurring}));
     assert.match(ready.text, /Test subscription evidence[\s\S]*requires review[\s\S]*Adjacent paid renewals · 1/);
-    assert.match(ready.text, /available cash · Unverified/);
+    assert.match(ready.text, /Available cash · Unverified/);
     const rejected = await runOwnerOperatingScope(input, respond({
         ...body,recurring_paid_periods:{...recurring,available_cash_minor:100},
     }));
     assert.equal(rejected.status, "unavailable");
+});
+
+test("recurring settlement receipts are scoped and never expose synthetic recognition", async () => {
+    const service = {basis:"SYNTHETIC_CAD_SERVICE_RECEIPTS", paid_receipt_count:2, bank_batch_member_count:2,
+        acknowledged_count:1, liability_release_count:1, held_count:0, recognized_unheld_minor:null,
+        available_cash_minor:null, scope_truncated:false, execution_authorized:false};
+    const sample = {...body,recurring_service_settlement:service};
+    const ready = await runOwnerOperatingScope(input, respond(sample));
+    assert.equal(ready.status,"ready");
+    assert.match(ready.text,/Recurring service rehearsal[\s\S]+Intact liability releases · 1/);
+    for (const patch of [{recognized_unheld_minor:500},{bank_batch_member_count:0},{available_cash_minor:5}]) {
+        const invalid = await runOwnerOperatingScope(input,respond({
+            ...sample,recurring_service_settlement:{...service,...patch},
+        }));
+        assert.equal(invalid.status,"unavailable");
+    }
 });

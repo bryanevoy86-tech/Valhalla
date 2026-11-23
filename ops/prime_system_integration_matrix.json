@@ -584,7 +584,8 @@
         "services/api/app/routers/foundry_checkout.py",
         "services/api/app/routers/prime_business_factory.py",
         "services/api/app/models/media_engine.py",
-        "services/api/tests/test_product_artifact_workflow.py"
+        "services/api/tests/test_product_artifact_workflow.py",
+        "services/api/app/services/stripe_subscription_delivery.py"
       ],
       "source_observation": "The native CAD one-time and fixed monthly recurring paths use independently checked Stripe identities under existing scope and buyer controls. The isolated recurring worker reconciles signed paid invoices, retries unavailable readback and preserves contracted access on failed renewals or period-end cancellation. The primary editor has a session-bound subscriber billing panel. One-time CAD partial refund corrections enforce a strictly increasing signed cumulative amount and unique processor transaction. Scoped Pantheon and Prime observations carry intact recurring periods and Loki challenges contradictions. Recurring gross, fees, net and exact payout membership use canonical independently checked processor receipts. Exact recurring invoice members use the existing whole-payout bank reconciliation and guarded liability posting path. Recurring recognition, correction, cash and external commissioning remain open. Recurring accounting, disputes, bank reversals and real browser commissioning remain open.",
       "evidence_level": "SQLITE_INTEGRATION_TESTED",
@@ -601,7 +602,7 @@
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
-          "internal_coding": "One-time buyer-bound delivery and guarded liability release are implemented. The bounded fixed-price CAD subscription lane implements native Checkout, paid periods, retry and cancellation. Complete autonomous payout-to-bank reconciliation, recurring accounting, unsupported adjustment/correction lifecycle and broader fulfillment/entitlement coverage.",
+          "internal_coding": "One-time buyer-bound delivery and guarded liability release are implemented. The bounded fixed-price CAD subscription lane implements native Checkout, paid periods, retry and cancellation. Completed recurring paid service can release an exact settled liability within one open period; the subscriber inventory and completed-service API are implemented. Complete autonomous payout-to-bank reconciliation, cross-period accrual, recurring refunds and broader fulfillment/entitlement and recovery coverage.",
           "internally_achievable_testing": "Exercise disputed cost fixtures, duplicate provider events, recurring account reversal and cross-product entitlement denial.",
           "external_api_and_provider_commissioning": "Run approved storefront lifecycle in staging.",
           "owner_authorization_or_account_establishment": "Approve listings, rights, support and merchant scope.",
@@ -622,7 +623,8 @@
         "services/api/app/models/foundry_checkout.py",
         "services/api/app/providers/stripe_adapter.py",
         "services/api/app/webhooks/stripe.py",
-        "services/api/tests/test_product_artifact_workflow.py"
+        "services/api/tests/test_product_artifact_workflow.py",
+        "services/api/app/services/stripe_subscription_delivery.py"
       ],
       "source_observation": "Signed local capture and refund deltas can reconcile with unique scoped statement-fixture entries. Mismatches show the exact difference and cannot attach a settlement receipt. The canonical Stripe ingress can journal signed events in an explicitly enabled matching mode. Restricted readback can correlate exact product, capture, processor balance and payout membership. The same-scope CAD positive-capture path supports independent bank trace matching and guarded liability booking. Exceptions, actual commissioning and lifecycle accounting remain pending.",
       "evidence_level": "SQLITE_INTEGRATION_TESTED",
@@ -639,7 +641,7 @@
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
-          "internal_coding": "Signed event journaling, one-time CAD full and ordered partial corrections, and exact recurring processor balance are implemented. Full terminal one-time CAD chargebacks with one exact principal and fee movement have a guarded correction path. Paired readback of a supported full CAD payout reversal and independent bank debit has a guarded correction path. Finish unsupported failure/reversal and dispute patterns and recurring recognition/correction.",
+          "internal_coding": "Signed event journaling, one-time CAD full and ordered partial corrections, and exact recurring processor balance are implemented. Full terminal one-time and recurring CAD chargebacks with one exact principal and fee movement have a guarded correction path, including after recognition. Paired readback of a supported full CAD payout reversal and independent bank debit has a guarded correction path. Finish failed/adjusted payout paths, recurring refunds, partial/reopened/won disputes and multi-adjustment corrections.",
           "internally_achievable_testing": "Replay signed commissioning fixtures for adjustments, disputes and settlement reversal with atomic evidence checks.",
           "external_api_and_provider_commissioning": "Verify named sandbox event stream and separately sourced settlement.",
           "owner_authorization_or_account_establishment": "Approve sandbox credentials, callbacks and side effects.",
@@ -1298,7 +1300,8 @@
         "services/api/app/routers/foundry_checkout.py",
         "services/api/app/services/owner_startup.py",
         "services/api/app/services/startup_dependencies.py",
-        "services/api/tests/test_saas_tenant_entitlements.py"
+        "services/api/tests/test_saas_tenant_entitlements.py",
+        "services/api/app/services/stripe_subscription_delivery.py"
       ],
       "source_observation": "Statement fixtures reconcile segregated balances and unique transaction references. A signed checkout delta can be matched once to an exact business statement fixture. Historical quarantined FX records and actual bank verification remain separate.",
       "evidence_level": "SQLITE_INTEGRATION_TESTED",
@@ -1315,7 +1318,7 @@
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
-          "internal_coding": "Exact same-scope recurring bank booking and separately gated Plaid CAD balance observation have implementation. A bounded CAD cash close joins independent bank observations, balanced journal and distinct enrolled accounting evidence to the existing allocation preview. Completed subscriber-acknowledged recurring service can release exact settled liabilities for a single open accounting period. Complete cross-period recurring recognition, unsupported corrections and broader business-scope cash evidence. The scoped owner dashboard can show paid-period counts without making a cash claim.",
+          "internal_coding": "Exact same-scope recurring bank booking and separately gated Plaid CAD balance observation have implementation. A bounded CAD cash close joins independent bank observations, balanced journal and distinct enrolled accounting evidence to the existing allocation preview. Completed subscriber-acknowledged recurring service can release exact settled liabilities for a single open accounting period. Complete cross-period recurring recognition, unsupported corrections and broader business-scope cash evidence. The scoped owner dashboard exposes bank match, acknowledged service, liability release and held counts. Rehearsals, holds and incomplete evidence cannot supply recognized income or cash.",
           "internally_achievable_testing": "Exercise reversal, restrictive reserve and double-counted obligation scenarios in isolated accounting fixtures.",
           "external_api_and_provider_commissioning": "Commission approved bank readback and exact QuickBooks sandbox account metadata. Verify financial evidence, approved funding feeds and posting authority separately.",
           "owner_authorization_or_account_establishment": "Approve read-only scope and professional integration.",

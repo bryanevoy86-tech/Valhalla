@@ -185,6 +185,7 @@ def owner_operating_scope(payload: MarketScope, db: Session = Depends(get_db)):
     from app.routers.economic_control import assess, require_schema
     from app.services.prime_business_execution import _check_legacy
     from app.services.stripe_recurring import scoped_subscription_outcomes
+    from app.services.stripe_subscription_delivery import scoped_service_settlement
     from app.services.treasury_reconciliation import observe_statement_heads
 
     if not inspect(db.connection()).has_table(LegacyInstanceRegistryItem.__tablename__):
@@ -211,6 +212,7 @@ def owner_operating_scope(payload: MarketScope, db: Session = Depends(get_db)):
             for purpose in ("BUSINESS", "HOUSEHOLD", "OPERATING_RESERVE")
         },
         "recurring_paid_periods": scoped_subscription_outcomes(db, scope, live=is_live()),
+        "recurring_service_settlement": scoped_service_settlement(db, scope, live=is_live()),
         "actual_accessible_funds_minor": None, "execution_authorized": False,
     })
 

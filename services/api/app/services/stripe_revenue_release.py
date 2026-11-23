@@ -15,7 +15,7 @@ from app.services.stripe_bank_booking import bank_batch_summary, require_open_pe
 from app.services.stripe_fulfillment import ACCEPTANCE, GRANT, OFFERED, REVOKED, _locked_order, _read_record
 from app.services.stripe_orders import inspect_binding
 from app.services.specialist_triggers import outcome_scope_key
-from app.services.prime_business_execution import _event
+from app.services.prime_business_execution import _emergency_stop_active, _event
 
 RELEASE = "STRIPE_DELIVERY_LIABILITY_RELEASED"
 SOURCE = "stripe_delivery_liability_release"
@@ -29,6 +29,8 @@ def _release_posting(db, key, scope, posted_on, bank, gross, *, served_from=None
     if (os.getenv("VALHALLA_STRIPE_BANK_BOOKING_ENABLED") != "1"
             or os.getenv("VALHALLA_STRIPE_BANK_BOOKING_SCOPE") != outcome_scope_key(scope)):
         raise HTTPException(503, "Revenue posting is not authorized for this scope")
+    if _emergency_stop_active(db):
+        raise HTTPException(409, "Emergency stop holds new revenue postings")
     require_open_period(db, posted_on)
     liability = db.scalar(select(Account).filter_by(code=os.getenv("VALHALLA_STRIPE_BOOK_OBLIGATIONS"),
                                                     type="liability", active=True, currency="CAD"))

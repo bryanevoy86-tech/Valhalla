@@ -13,7 +13,7 @@ function amount(value, currency) {
 function formatOperatingScope(body, scope) {
     if (body?.execution_authorized !== false || body.actual_accessible_funds_minor !== null
         || !scopeKeys.every(key => body.scope?.[key] === scope[key])) throw new Error("Invalid scope receipt");
-    const lines = [body.legacy.display_name + " · " + body.legacy.status, "Fixture evidence only"];
+    const lines = [body.legacy.display_name + " · " + body.legacy.status, "Treasury planning · Fixture measures"];
     const capital = body.capital_fixture;
     if (capital === null) {
         lines.push("No economic mandate is enrolled for this scope.");
@@ -42,7 +42,32 @@ function formatOperatingScope(body, scope) {
             "Adjacent paid renewals · " + recurring.verified_adjacent_renewals,
             "Scheduled cancellations · " + recurring.scheduled_cancellations,
             "Agreements held · " + recurring.held_agreements,
-            "Recurring recognized revenue and available cash · Unverified");
+            "Available cash · Unverified");
+    }
+    const service = body.recurring_service_settlement;
+    if (service != null) {
+        const live = service.basis === "VERIFIED_CAD_SERVICE_RECEIPTS";
+        const countFields = ["paid_receipt_count", "bank_batch_member_count", "acknowledged_count",
+            "liability_release_count", "held_count"];
+        if ((!live && service.basis !== "SYNTHETIC_CAD_SERVICE_RECEIPTS")
+            || service.available_cash_minor !== null || service.execution_authorized !== false
+            || typeof service.scope_truncated !== "boolean"
+            || !countFields.every(key => Number.isSafeInteger(service[key]) && service[key] >= 0 && service[key] <= 100)
+            || countFields.slice(1).some(key => service[key] > service.paid_receipt_count)
+            || service.liability_release_count > Math.min(service.acknowledged_count, service.bank_batch_member_count)
+            || (service.recognized_unheld_minor !== null && (!live || service.held_count || service.scope_truncated
+                || !service.liability_release_count || !Number.isSafeInteger(service.recognized_unheld_minor)
+                || service.recognized_unheld_minor < 0))) {
+            throw new Error("Invalid recurring settlement evidence");
+        }
+        lines.push("", live ? "Recurring service receipts" : "Recurring service rehearsal",
+            "Checked paid receipts · " + service.paid_receipt_count,
+            "Matched bank batch members · " + service.bank_batch_member_count,
+            "Acknowledged periods · " + service.acknowledged_count,
+            "Intact liability releases · " + service.liability_release_count,
+            "Receipts held for correction or review · " + service.held_count,
+            "Recognized on intact receipts · " + amount(service.recognized_unheld_minor, "CAD"));
+        if (service.scope_truncated) lines.push("Showing a bounded receipt sample.");
     }
     for (const [key, label] of Object.entries(purposes)) {
         const sample = body.statement_fixtures[key];

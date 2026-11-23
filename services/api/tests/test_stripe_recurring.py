@@ -333,6 +333,14 @@ def test_recurring_checkout_renewal_cancellation_and_payment_holds(deal_client, 
     assert recognition.json()["eligible_liability_minor"] == 1200
     assert all(recognition.json()[field] is None for field in ("ledger_entry_id", "available_cash_minor", "recognized_revenue_minor"))
     assert client.post(release_url, headers=owner, json=inputs).json() == recognition.json()
+    from app.services.stripe_subscription_delivery import scoped_service_settlement
+
+    with Session(engine) as db:
+        settlement = scoped_service_settlement(db, params["scope"], live=False)
+        assert settlement["paid_receipt_count"] == settlement["bank_batch_member_count"] == 2
+        assert settlement["acknowledged_count"] == settlement["liability_release_count"] == 1
+        assert settlement["recognized_unheld_minor"] is None and settlement["available_cash_minor"] is None
+        assert scoped_service_settlement(db, {**params["scope"], "business_id": "business-other"}, live=False) is None
     if terminal_chargeback:
         dispute = {"id": "du_First", "object": "dispute", "livemode": False, "charge": "ch_First",
                    "payment_intent": "pi_First", "currency": "cad", "amount": 1200, "status": "lost",
@@ -371,6 +379,7 @@ def test_recurring_checkout_renewal_cancellation_and_payment_holds(deal_client, 
         assert client.get(history, headers=buyer).json()["completed_paid_periods"] == []
         with Session(engine) as db:
             assert scoped_bank_blockers(db, params["scope"], live=False) == {"STRIPE_BANK_CORRECTION_REQUIRED"}
+            assert scoped_service_settlement(db, params["scope"], live=False)["held_count"] == 1
         return
     webhook("payout.failed", "RecurringPayoutFailed", payout)
     assert client.post(release_url, headers=owner, json=inputs).status_code == 409
