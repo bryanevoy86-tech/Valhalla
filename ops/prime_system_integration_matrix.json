@@ -540,6 +540,8 @@
       "id": "commerce",
       "priority": "P0",
       "source_paths": [
+        "services/api/app/services/stripe_orders.py",
+        "web/weweb-widgets/owner-operating-scope.mjs",
         "services/api/app/routers/foundry_checkout.py",
         "services/api/app/routers/prime_business_factory.py",
         "services/api/app/models/media_engine.py",

@@ -441,6 +441,26 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
     assert resolved.json()["observed_outcome"] == 1
     assert resolved.json()["evidence_ref"].startswith("BF-RECEIPT-")
     closed_order = rehearse_checkout(client, engine, monkeypatch, owner, action_id, listing["price_cents_cad"], scope)
+    from app.models.stripe_finance import StripeBalanceEvidence, StripeFinancialEvent, StripeOrderBinding
+
+    for model in (StripeFinancialEvent, StripeBalanceEvidence, StripeOrderBinding):
+        model.__table__.create(engine)
+    monkeypatch.setenv("VALHALLA_STRIPE_EVENT_MODE", "test")
+    monkeypatch.setenv("VALHALLA_STRIPE_ACCOUNT_ID", "acct_FoundryTest")
+    monkeypatch.setattr("app.routers.stripe_financial.is_live", lambda: False)
+    order_bind = {"order_id": str(uuid4()), "action_id": action_id, "scope": scope,
+                  "payment_intent_id": "pi_ProductApprovalTest"}
+    binding_path = "/api/governance/floor/stripe-orders"
+    wrong_scope = {**scope, "business_id": "another-business"}
+    assert client.post(binding_path, headers=owner, json={**order_bind, "scope": wrong_scope}).status_code == 409
+    bind = client.post(binding_path, headers=owner, json=order_bind)
+    assert bind.status_code == 201, bind.text
+    assert bind.json()["amount_minor"] == listing["price_cents_cad"]
+    assert bind.json()["product_asset_id"] == str(asset_id)
+    assert bind.json()["payment_created"] is False
+    assert client.post(binding_path, headers=owner, json={**order_bind,
+                       "order_id": str(uuid4()), "payment_intent_id": "pi_fixture_product"}).status_code == 422
+
     acquisition_review = client.post(f"{acquisition}/settled-review", json=scope)
     assert acquisition_review.status_code == 200, acquisition_review.text
     review = acquisition_review.json()

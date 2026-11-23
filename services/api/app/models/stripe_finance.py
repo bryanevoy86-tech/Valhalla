@@ -1,5 +1,5 @@
 """Durable Stripe ingress and independent processor-balance evidence."""
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, JSON, String, UniqueConstraint, func
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, JSON, String, UniqueConstraint, Uuid, func
 
 from app.core.db import Base
 
@@ -29,3 +29,16 @@ class StripeBalanceEvidence(Base):
     evidence = Column(JSON, nullable=False)
     evidence_sha256 = Column(String(64), nullable=False)
     observed_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+
+class StripeOrderBinding(Base):
+    __tablename__ = "stripe_order_bindings"
+    __table_args__ = (
+        UniqueConstraint("livemode", "payment_intent_id", name="uq_stripe_order_intent"),
+    )
+
+    id = Column(Uuid(), primary_key=True)
+    livemode = Column(Boolean, nullable=False)
+    payment_intent_id = Column(String(128), nullable=False)
+    binding = Column(JSON, nullable=False)
+    binding_sha256 = Column(String(64), nullable=False)

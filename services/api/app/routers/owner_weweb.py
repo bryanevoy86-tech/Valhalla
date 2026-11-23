@@ -142,6 +142,14 @@ def owner_acquisition_comparison(payload: ComparisonIn, db: Session = Depends(ge
     return private_owner_response(compare_acquisition_campaigns(payload, db))
 
 
+@router.get("/owner-stripe-orders/{order_id}")
+def owner_stripe_order(order_id: UUID, db: Session = Depends(get_db)):
+    from app.heimdall.authority import is_live
+    from app.services.stripe_orders import inspect_binding
+
+    return private_owner_response(inspect_binding(db, order_id, live=is_live()))
+
+
 @router.post("/owner-operating-scope")
 def owner_operating_scope(payload: MarketScope, db: Session = Depends(get_db)):
     from sqlalchemy import inspect

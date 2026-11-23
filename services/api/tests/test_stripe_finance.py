@@ -3,6 +3,8 @@ import hashlib
 import hmac
 import json
 import time
+from types import SimpleNamespace
+from uuid import uuid4
 
 import httpx
 import pytest
@@ -10,7 +12,7 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.core import db as database
-from app.models.stripe_finance import StripeBalanceEvidence, StripeFinancialEvent
+from app.models.stripe_finance import StripeBalanceEvidence, StripeFinancialEvent, StripeOrderBinding
 from app.services.stripe_finance import read_processor_balance
 
 
@@ -18,6 +20,7 @@ def test_registered_stripe_finance_replays_and_reconciles_only_matching_capture(
     client, engine = deal_client
     StripeFinancialEvent.__table__.create(engine)
     StripeBalanceEvidence.__table__.create(engine)
+    StripeOrderBinding.__table__.create(engine)
     monkeypatch.setattr(database, "SessionLocal", lambda: Session(engine))
     monkeypatch.setattr("app.webhooks.stripe.is_live", lambda: False)
     monkeypatch.setattr("app.routers.stripe_financial.is_live", lambda: False)
@@ -26,10 +29,27 @@ def test_registered_stripe_finance_replays_and_reconciles_only_matching_capture(
     monkeypatch.setenv("VALHALLA_STRIPE_EVENT_MODE", "test")
     monkeypatch.setenv("VALHALLA_STRIPE_TEST_WEBHOOK_SECRET", secret)
     monkeypatch.delenv("VALHALLA_STRIPE_READBACK_ENABLED", raising=False)
+    monkeypatch.setenv("VALHALLA_STRIPE_ACCOUNT_ID", "acct_ValhallaTest")
+    order_id = str(uuid4())
+    scope = {"legacy_instance_id": "stripe-test-legacy", "business_id": "stripe-test-business",
+             "engine_id": "stripe-test-engine", "jurisdiction": "CA-MB"}
+    asset = SimpleNamespace(id=uuid4(), product_id="sample-product", sha256="b" * 64)
+    monkeypatch.setattr("app.routers.foundry_checkout._listing", lambda *args: ({"sha256": "a" * 64}, asset, 1000, scope))
+    binding_url = "/api/governance/floor/stripe-orders"
+    keys = {"X-Owner-Mandate-Key": "fixture-owner-readback"}
+    binding = {"order_id": order_id, "scope": scope, "action_id": "bfd_" + "1" * 32,
+               "payment_intent_id": "pi_CaptureA"}
+    assert client.post(binding_url, json=binding).status_code == 401
+    assert client.post(binding_url, headers=keys, json=binding).status_code == 201
+    assert client.post(binding_url, headers=keys, json={**binding, "order_id": str(uuid4())}).status_code == 409
+    review_url = f"{binding_url}/{order_id}"
+    assert client.get(f"/api/weweb/owner-stripe-orders/{order_id}", headers=keys).status_code == 401
+    assert client.get(review_url, headers=keys).json()["status"] == "AWAITING_PROCESSOR_EVIDENCE"
 
     event = {"id": "evt_CaptureA", "type": "payment_intent.succeeded", "livemode": False, "data": {"object": {
         "id": "pi_CaptureA", "object": "payment_intent", "status": "succeeded", "latest_charge": "ch_CaptureA",
-        "amount_received": 1000, "currency": "cad", "metadata": {"private": "do not retain this"},
+        "amount_received": 1000, "currency": "cad",
+        "metadata": {"private": "do not retain this", "valhalla_order_id": order_id},
     }}}
 
     def deliver(payload, *, key=secret):
@@ -56,7 +76,7 @@ def test_registered_stripe_finance_replays_and_reconciles_only_matching_capture(
     charge = {"id": "ch_CaptureA", "object": "charge", "payment_intent": "pi_CaptureA", "livemode": False,
               "currency": "cad", "amount_captured": 1000, "status": "succeeded", "paid": True,
               "captured": True, "disputed": False, "refunded": False, "amount_refunded": 0,
-              "balance_transaction": "txn_CaptureA"}
+              "balance_transaction": "txn_CaptureA", "metadata": {"valhalla_order_id": order_id}}
     balance = {"id": "txn_CaptureA", "object": "balance_transaction", "source": charge["id"], "type": "charge",
                "currency": "cad", "amount": 1000, "fee": 40, "net": 960,
                "available_on": int(time.time()) - 5, "status": "pending"}
@@ -85,6 +105,22 @@ def test_registered_stripe_finance_replays_and_reconciles_only_matching_capture(
         assert receipt["basis"] == "STRIPE_TEST_PROCESSOR_BALANCE"
         assert not receipt["bank_settlement_verified"] and not receipt["ledger_posting_created"]
         assert not receipt["entitlement_granted"]
+        matched = client.get(review_url, headers=keys)
+        assert matched.status_code == 200, matched.text
+        assert matched.json()["status"] == "MATCHED_PROCESSOR_EVIDENCE"
+        assert matched.json()["available_cash_minor"] is None
+        wrong_order = str(uuid4())
+        assert deliver({"id": "evt_CaptureWrongOrder", **{k: v for k, v in event.items() if k not in {"id", "data"}},
+                        "data": {"object": {**event["data"]["object"],
+                                             "metadata": {"valhalla_order_id": wrong_order}}}}).status_code == 200
+        with pytest.raises(HTTPException, match="merchant order differs"):
+            read("evt_CaptureWrongOrder")
+        refund = {"id": "evt_RefundA", "type": "charge.refunded", "livemode": False, "data": {"object": {
+            "id": "ch_CaptureA", "object": "charge", "payment_intent": "pi_CaptureA", "currency": "cad",
+            "amount_refunded": 50,
+        }}}
+        assert deliver(refund).status_code == 200
+        assert client.get(review_url, headers=keys).json()["status"] == "REFUND_REVIEW_REQUIRED"
         with pytest.raises(HTTPException, match="already has a receipt"):
             read("evt_CaptureReplay")
         assert db.query(StripeBalanceEvidence).count() == 1

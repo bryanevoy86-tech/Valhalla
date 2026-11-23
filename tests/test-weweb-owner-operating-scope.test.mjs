@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {runOwnerOperatingScope} from "../web/weweb-widgets/owner-operating-scope.mjs";
+import {runOwnerOperatingScope,runOwnerStripeOrder} from "../web/weweb-widgets/owner-operating-scope.mjs";
 
 const origin = "https://staging.example.invalid";
 const token = "a." + Buffer.from(JSON.stringify({jti:"owner",exp:Math.floor(Date.now()/1000)+300})).toString("base64url") + ".b";
@@ -28,4 +28,25 @@ test("the owner view refuses an authority claim, a scope mismatch or subscriber 
     assert.equal((await runOwnerOperatingScope(input,respond({...body,actual_accessible_funds_minor:1}))).status,"unavailable");
     assert.equal((await runOwnerOperatingScope(input,respond({...body,scope:{...scope,jurisdiction:"CA-ON"}}))).status,"unavailable");
     assert.equal((await runOwnerOperatingScope({...input,isOwner:false},()=>assert.fail("subscriber transport"))).status,"denied");
+});
+
+test("checks exact owner Stripe lookup and separates processor evidence from accessible cash",async()=>{
+    const orderId = "59411e80-50d4-475f-b210-c20d07528154";
+    const params = {...input,orderId};
+    const projection = {order:{order_id:orderId,livemode:false,currency:"cad",amount_minor:1000},
+        status:"MATCHED_PROCESSOR_EVIDENCE",bank_settlement_verified:false,available_cash_minor:null,
+        fulfillment_authorized:false,entitlement_granted:false,
+        processor_evidence:{basis:"STRIPE_TEST_PROCESSOR_BALANCE",bank_settlement_verified:false,
+            ledger_posting_created:false,entitlement_granted:false,currency:"cad",gross_minor:1000,fee_minor:40,net_minor:960}};
+    const result = await runOwnerStripeOrder(params,async(url,opts)=>{
+        assert.equal(url,origin+"/api/weweb/owner-stripe-orders/"+orderId);
+        assert.equal(opts.method,"GET");
+        assert.equal(opts.cache,"no-store");
+        return respond(projection)();
+    });
+    assert.equal(result.status,"ready");
+    assert.match(result.text,/Test order[\s\S]*Bank settlement outstanding[\s\S]*CAD\s9\.60/);
+    assert.equal((await runOwnerStripeOrder(params,respond({...projection,entitlement_granted:true}))).status,"unavailable");
+    assert.equal((await runOwnerStripeOrder(params,respond({...projection,order:{order_id:"wrong"}}))).status,"unavailable");
+    assert.equal((await runOwnerStripeOrder({...params,isOwner:false},()=>assert.fail("subscriber transport"))).status,"denied");
 });

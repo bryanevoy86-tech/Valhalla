@@ -88,3 +88,62 @@ export async function runOwnerOperatingScope(input, transport = fetch) {
         return result("unavailable");
     }
 }
+
+export async function runOwnerStripeOrder(input, transport = fetch) {
+    const session = ownerAttentionSession(input.bearer);
+    if (!session) return {status: "signed_out"};
+    const result = (status, data = {}) => ({status, session, ...data});
+    if (input.isOwner !== true) return result("denied");
+    const orderId = typeof input.orderId === "string" ? input.orderId.trim().toLowerCase() : "";
+    if (!/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(orderId)) return result("invalid_scope");
+    let endpoint;
+    try {
+        const api = new URL(input.apiBase);
+        const approved = new URL(input.previewOrigin);
+        if (api.protocol !== "https:" || api.username || api.password || approved.origin !== input.previewOrigin
+            || approved.origin !== api.origin) return result("unconfigured");
+        endpoint = approved.origin + "/api/weweb/owner-stripe-orders/" + orderId;
+    } catch {
+        return result("unconfigured");
+    }
+    try {
+        const response = await transport(endpoint, {
+            method:"GET", headers:{Authorization:"Bearer "+input.bearer}, cache:"no-store", credentials:"omit",
+            redirect:"error", signal:AbortSignal.timeout(15000),
+        });
+        if (response.status === 401) return result("signed_out");
+        if (response.status === 403) return result("denied");
+        if (response.status === 409) return result("scope_held");
+        if (!response.ok) return result("unavailable");
+        const body = await response.json();
+        if (body?.order?.order_id !== orderId || typeof body.order.livemode !== "boolean" || body.available_cash_minor !== null
+            || body.bank_settlement_verified !== false || body.fulfillment_authorized !== false
+            || body.entitlement_granted !== false) return result("unavailable");
+        const labels = {
+            AWAITING_PROCESSOR_EVIDENCE: "Awaiting processor evidence",
+            REFUND_REVIEW_REQUIRED: "Refund review required",
+            MATCHED_PROCESSOR_EVIDENCE: "Processor evidence matched",
+        };
+        if (!Object.hasOwn(labels, body.status)) return result("unavailable");
+        const rows = [labels[body.status], body.order.livemode === false ? "Test order" : "Live order",
+            "Bank settlement outstanding"];
+        const proof = body.processor_evidence;
+        if (body.status === "MATCHED_PROCESSOR_EVIDENCE") {
+            const expected = body.order.livemode === false
+                ? "STRIPE_TEST_PROCESSOR_BALANCE" : "STRIPE_LIVE_PROCESSOR_BALANCE";
+            if (!proof || proof.basis !== expected || proof.bank_settlement_verified !== false
+                || proof.ledger_posting_created !== false || proof.entitlement_granted !== false
+                || proof.currency !== body.order.currency || proof.gross_minor !== body.order.amount_minor) {
+                return result("unavailable");
+            }
+            const currency = proof.currency.toUpperCase();
+            rows.push("Gross · " + amount(proof.gross_minor, currency), "Processor fee · " + amount(proof.fee_minor, currency),
+                "Processor net · " + amount(proof.net_minor, currency));
+        } else if (proof !== null) {
+            return result("unavailable");
+        }
+        return result("ready", {text:rows.map(escapeOwnerReviewText).join("\n")});
+    } catch {
+        return result("unavailable");
+    }
+}

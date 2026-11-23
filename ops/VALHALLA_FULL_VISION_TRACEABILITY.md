@@ -194,3 +194,5 @@ The private review can recheck a same-month scoped checkout-linked allocation fi
 Existing grants catalog records can now be associated with private dated funding observations and scoped draft eligibility reviews through `services/api/app/services/startup_funding.py`. Authoritative refresh, independent confirmation, submissions and cash recognition remain separate acceptance boundaries.
 
 The canonical Stripe event journal and restricted processor adapter preserve signed delivery and independently read capture, fee and processor-availability evidence. Processor availability has no bank, ledger, fulfillment or entitlement effect. Remaining proof includes scoped commercial order linkage, bank-side reconciliation, reversals, paid subscriptions and authorized staging operation.
+
+The one-time Stripe order projection associates an existing governed Foundry listing and product evidence with an owner-scoped native payment intent. The order match also requires independent charge corroboration of the same merchant UUID. It remains an evidence-only projection and withholds processor evidence when a signed refund is recorded.

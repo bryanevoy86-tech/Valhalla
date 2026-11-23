@@ -3,6 +3,7 @@ import hashlib
 import os
 import re
 from datetime import datetime, timezone
+from uuid import UUID
 
 import httpx
 from fastapi import HTTPException
@@ -21,6 +22,17 @@ def stripe_id(value, prefix):
 
 def minor_amount(value):
     return type(value) is int and 0 <= value <= 999_999_999_999
+
+
+def merchant_order_reference(item):
+    metadata = item.get("metadata")
+    value = metadata.get("valhalla_order_id") if isinstance(metadata, dict) else None
+    if value is None:
+        return None
+    try:
+        return str(UUID(value))
+    except (ValueError, TypeError, AttributeError):
+        raise HTTPException(422, "Invalid Stripe merchant order reference") from None
 
 
 def event_snapshot(payload, live):
@@ -52,11 +64,12 @@ def event_snapshot(payload, live):
             or not minor_amount(amount)):
         raise HTTPException(422, "Unsupported Stripe financial object")
     return {"kind": kind, "livemode": live, "object_id": item["id"], "payment_intent_id": intent,
-            "charge_id": charge, "amount_minor": amount, "currency": currency}
+            "charge_id": charge, "amount_minor": amount, "currency": currency,
+            "merchant_order_id": merchant_order_reference(item) if object_type == "payment_intent" else None}
 
 
 def _event_receipt(row, duplicate):
-    if (row.snapshot.get("livemode") is not row.livemode
+    if (not isinstance(row.snapshot, dict) or row.snapshot.get("livemode") is not row.livemode
             or row.snapshot_sha256 != artifact_digest("stripe_event_snapshot", row.event_id, row.snapshot)):
         raise HTTPException(409, "Stripe event journal integrity check failed")
     return {"event_id": row.event_id, "status": "journaled", "duplicate": duplicate,
@@ -123,6 +136,9 @@ def capture_evidence(client: httpx.Client, account_id, snapshot, now: datetime):
             or charge.get("disputed") is not False or charge.get("amount_refunded") != 0
             or not stripe_id(transaction_id, "txn")):
         raise HTTPException(409, "Stripe charge is unmatched, refunded, disputed or missing balance evidence")
+    order_reference = snapshot.get("merchant_order_id")
+    if order_reference is not None and merchant_order_reference(charge) != order_reference:
+        raise HTTPException(409, "Stripe charge merchant order differs from signed evidence")
     transaction = _provider_object(client, f"/v1/balance_transactions/{transaction_id}", transaction_id,
                                    "balance_transaction")
     fee, net, available = transaction.get("fee"), transaction.get("net"), transaction.get("available_on")
@@ -135,6 +151,7 @@ def capture_evidence(client: httpx.Client, account_id, snapshot, now: datetime):
         raise HTTPException(409, "Stripe balance evidence is pending or does not match the capture")
     return {"stripe_account_id": account_id, "payment_intent_id": snapshot["payment_intent_id"],
             "charge_id": charge_id, "balance_transaction_id": transaction_id, "currency": currency,
+            "merchant_order_id": order_reference,
             "gross_minor": gross, "fee_minor": fee, "net_minor": net, "available_on": available,
             "basis": "STRIPE_LIVE_PROCESSOR_BALANCE" if snapshot["livemode"] else "STRIPE_TEST_PROCESSOR_BALANCE",
             "bank_settlement_verified": False, "ledger_posting_created": False, "entitlement_granted": False}

@@ -22,6 +22,8 @@ Next, attach independently read-back provider, accounting and settlement evidenc
 
 The existing Foundry checkout rehearsal now enforces the planned fixture visit limit and economic containment when adding new visits. Creating a new attributed order rechecks the current plan and rejects an already withdrawn direct opt-in. Repeating the exact recorded visit or order remains idempotent. The isolated test covers intake, withdrawal, order capture, delivery, refund, settlement and verified evidence. Keep provider-side dispatch, independently read-back settlement and commercial entitlement provisioning as commissioning and implementation dependencies.
 
+Approved one-time product checkout can bind a distinct merchant order UUID to the existing reviewed Foundry listing with `POST /api/governance/floor/stripe-orders`. The intended provider PaymentIntent must carry `metadata.valhalla_order_id` at creation so the signed intent and independently retrieved charge can match the same exact merchant order. Internally review `GET /api/governance/floor/stripe-orders/{order_id}` or the owner-bearer `GET /api/weweb/owner-stripe-orders/{order_id}`. This is a read-only evidence view. A journaled refund puts the order into review. Bank proof, order fulfillment and paid entitlement transitions remain unavailable at this checkpoint.
+
 ### Isolated operating trial acceptance
 
 Use a pinned draft build and disposable PostgreSQL database in separately authorized staging. Seed synthetic grants, demand exports, one registered Legacy scope and a deliberately unapproved adjacent scope. Keep external providers, outreach, real money movement and production storage disabled. After preflight, schedule the existing discovery, Pantheon, Prime schedule, deterministic Loki and Factory workers using their current staging-only toggles. Read the private owner briefing and worker logs without exporting private inputs.
@@ -694,7 +696,7 @@ Editor readback and fixture execution verified the exact saved network action an
 
 Legacy SaaS records with provider references enter `pending_verification`. Manual records without provider references keep the existing local behavior. Editing an external label cannot activate access, and previously stored unverified active records are excluded from the access query. Cancellation remains available. The tenant-bound internal trial path stays separate and returns no payment verification.
 
-The Stripe ingress still returns 503 for financial events after signature verification in live mode because the idempotent financial consumer is absent. This is both an internal requirement and a later authorized commissioning task. Next implementation must persist immutable signed provider events, bind exact tenant/customer/product, then correlate capture, refund and reversal to an independently verified settlement and entitlement lifecycle. Do not use fixture IDs or operator-entered references as paid proof. The matrix restores this unfinished coding under the existing P0 finance webhook criterion.
+The Stripe ingress journals authenticated financial deliveries only when explicitly enabled for the matching mode. A separate readback checks the processor balance and the governed order projection confirms the exact merchant reference and verified product. Finance remains open for actual bank reconciliation, ledger booking, fulfillment and subscription lifecycle.
 
 ### Owner policy update — Dynamic personal allocation and acquisition
 
