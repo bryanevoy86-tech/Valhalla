@@ -12,7 +12,7 @@ from app.loki.evidence import artifact_digest
 from app.models.completion_registry import LegacyOrchestrationEvent
 from app.models.stripe_finance import StripeFinancialEvent, StripeOrderBinding
 from app.schemas.market_intelligence import StrictModel
-from app.services.prime_business_execution import _event, _json
+from app.services.prime_business_execution import _emergency_stop_active, _event, _json
 from app.services.stripe_finance import _event_receipt, read_captured_charge, stripe_id, stripe_readback_client
 from app.services.stripe_orders import _require_configured_mode, _require_tables, _reversal_pending, _snapshot
 from app.services.specialist_triggers import outcome_scope_key
@@ -53,8 +53,12 @@ def _key(order_id):
     return f"STRIPE-DELIVERY-{order_id}"
 
 
-def _scope_active(scope, *, live):
-    if live and (os.getenv("VALHALLA_STRIPE_DELIVERY_ENABLED") != "1"
+def _scope_active(db, scope, *, live):
+    if not live:
+        return
+    if _emergency_stop_active(db):
+        raise HTTPException(409, "Paid product delivery is held by the emergency stop")
+    if (os.getenv("VALHALLA_STRIPE_DELIVERY_ENABLED") != "1"
                  or os.getenv("VALHALLA_STRIPE_DELIVERY_SCOPE") != outcome_scope_key(scope)):
         raise HTTPException(503, "Paid product delivery is not authorized for this scope")
 
@@ -144,7 +148,7 @@ def _check_capture(db, order, binding, event_id, customer, tenant_id, subscriber
 def authorize_delivery(db, order_id, request: FulfillmentIn, *, client, account_id, live):
     order, binding = _locked_order(db, order_id, live)
     scope = binding["scope"]
-    _scope_active(scope, live=live)
+    _scope_active(db, scope, live=live)
     if account_id != binding["stripe_account_id"] or _buyer(db, request.subscriber_id) is None:
         raise HTTPException(409, "Exact Stripe account and active subscriber required")
     _check_product(db, binding)
@@ -178,7 +182,7 @@ def delivery_access(db, tenant_id, order_id, principal, *, live):
     profile = _buyer(db, principal["user_id"])
     if profile is None or profile.email != principal.get("sub"):
         raise HTTPException(401, "Subscriber identity unavailable")
-    _scope_active(scope, live=live)
+    _scope_active(db, scope, live=live)
     if _read_record(db, f"STRIPE-DELIVERY-REVOKE-{order_id}", REVOKED, scope):
         raise HTTPException(409, "Paid delivery authorization has been revoked")
     event = _check_capture(db, order, binding, grant["signed_event_id"], grant["stripe_customer_id"],

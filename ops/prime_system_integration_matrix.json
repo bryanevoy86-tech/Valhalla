@@ -694,7 +694,7 @@
         },
         "january_internal_rehearsal": {
           "command": "python scripts/january_core_readiness.py --postgres",
-          "evidence": "Internal first-sale sequence rehearsal passes for an exact verified Factory artifact, signed Stripe fixture capture, authenticated buyer acknowledgment, refund-held access, support fixture and no booked or available cash.",
+          "evidence": "Internal first-sale sequence rehearsal passes for an exact verified Factory artifact, signed Stripe fixture capture, authenticated buyer delivery and acknowledgment, refund-held access, support fixture and no booked or available cash. The simulated live-mode branch serves only the exact synthetic bytes and obeys the same persisted stop.",
           "external_authority": false
         }
       }

@@ -522,6 +522,15 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
     assert bind.json()["payment_created"] is False
     rehearse_bound_stripe_delivery(client, engine, monkeypatch, owner, owner_session, buyer_session,
                                   buyer_email, order_bind, bind.json()["amount_minor"])
+    with monkeypatch.context() as isolated_live_checks:
+        # Only the in-process branch selector and a local transport change. No real provider is used.
+        isolated_live_checks.setenv("VALHALLA_STRIPE_EVENT_MODE", "live")
+        isolated_live_checks.setattr("app.routers.stripe_financial.is_live", lambda: True)
+        live_binding = {**order_bind, "order_id": str(uuid4()), "payment_intent_id": "pi_JanuaryLiveContract"}
+        live_bind = client.post(binding_path, headers=owner, json=live_binding)
+        assert live_bind.status_code == 201, live_bind.text
+        rehearse_bound_stripe_delivery(client, engine, isolated_live_checks, owner, owner_session, buyer_session,
+                                       buyer_email, live_binding, live_bind.json()["amount_minor"], expected_bytes=content)
     assert client.post(binding_path, headers=owner, json={**order_bind,
                        "order_id": str(uuid4()), "payment_intent_id": "pi_fixture_product"}).status_code == 422
 
@@ -880,7 +889,7 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
 
 
 def rehearse_bound_stripe_delivery(client, engine, monkeypatch, owner, owner_session, buyer_session,
-                                   buyer_email, binding, price):
+                                   buyer_email, binding, price, *, expected_bytes=None):
     from contextlib import contextmanager
     import hmac
     import time
@@ -888,24 +897,27 @@ def rehearse_bound_stripe_delivery(client, engine, monkeypatch, owner, owner_ses
     import httpx
 
     from app.core import db as database
+    from app.services.specialist_triggers import outcome_scope_key
     from app.services.stripe_fulfillment import delivery_buyer_reference
     from app.users.models import UserProfile
 
     order_id, tenant_id = binding["order_id"], str(uuid4())
     intent_id = binding["payment_intent_id"]
-    account_id, charge_id, customer_id = "acct_FoundryTest", "ch_JanuaryCore", "cus_JanuaryBuyer"
+    live = expected_bytes is not None
+    mode = "LiveContract" if live else "Rehearsal"
+    account_id, charge_id, customer_id = "acct_FoundryTest", "ch_January" + mode, "cus_JanuaryBuyer"
     with Session(engine) as db:
         buyer_id = db.query(UserProfile.user_id).filter_by(email=buyer_email).scalar()
     metadata = {"valhalla_order_id": order_id, "valhalla_tenant_id": tenant_id,
                 "valhalla_buyer_ref": delivery_buyer_reference(order_id, tenant_id, buyer_id)}
     secret = "isolated-january-signature"
-    monkeypatch.setenv("VALHALLA_STRIPE_TEST_WEBHOOK_SECRET", secret)
+    monkeypatch.setenv("STRIPE_WEBHOOK_SECRET" if live else "VALHALLA_STRIPE_TEST_WEBHOOK_SECRET", secret)
     monkeypatch.setattr(database, "SessionLocal", lambda: Session(engine))
-    monkeypatch.setattr("app.webhooks.stripe.is_live", lambda: False)
-    event_id = "evt_JanuaryCoreCapture"
+    monkeypatch.setattr("app.webhooks.stripe.is_live", lambda: live)
+    event_id = "evt_JanuaryCapture" + mode
 
     def journal(event, kind, item):
-        body = json.dumps({"id": event, "type": kind, "livemode": False, "data": {"object": item}}).encode()
+        body = json.dumps({"id": event, "type": kind, "livemode": live, "data": {"object": item}}).encode()
         stamp = str(int(time.time()))
         digest = hmac.new(secret.encode(), stamp.encode() + b"." + body, hashlib.sha256).hexdigest()
         response = client.post("/webhooks/stripe", content=body, headers={"Stripe-Signature": f"t={stamp},v1={digest}"})
@@ -917,7 +929,7 @@ def rehearse_bound_stripe_delivery(client, engine, monkeypatch, owner, owner_ses
                "customer": customer_id, "metadata": metadata}
     assert journal(event_id, "payment_intent.succeeded", payment)["verified_financial_effect"] is False
     assert journal(event_id, "payment_intent.succeeded", payment)["duplicate"] is True
-    charge = {"id": charge_id, "object": "charge", "payment_intent": intent_id, "livemode": False,
+    charge = {"id": charge_id, "object": "charge", "payment_intent": intent_id, "livemode": live,
               "currency": "cad", "amount_captured": price, "status": "succeeded", "paid": True, "captured": True,
               "disputed": False, "refunded": False, "amount_refunded": 0, "balance_transaction": "txn_JanuaryCore",
               "customer": customer_id, "metadata": metadata}
@@ -927,9 +939,11 @@ def rehearse_bound_stripe_delivery(client, engine, monkeypatch, owner, owner_ses
         fixtures = {"/v1/account": {"id": account_id, "object": "account"}, f"/v1/charges/{charge_id}": charge}
         return httpx.Response(200, json=fixtures[request.url.path])
 
+    expected_mode = live
+
     @contextmanager
     def isolated_stripe(*, live):
-        assert live is False
+        assert live is expected_mode
         with httpx.Client(base_url="https://stripe.example.invalid", transport=httpx.MockTransport(readback)) as adapter:
             yield adapter, account_id
 
@@ -939,22 +953,47 @@ def rehearse_bound_stripe_delivery(client, engine, monkeypatch, owner, owner_ses
     authorization = {"tenant_id": tenant_id, "subscriber_id": buyer_id, "stripe_customer_id": customer_id,
                      "signed_event_id": event_id, "commercial_rights_reference": "january-isolated-fixture",
                      "attestation": "OWNER_AUTHORIZES_EXACT_PAID_PRODUCT_DELIVERY"}
+    if live:
+        monkeypatch.delenv("VALHALLA_STRIPE_DELIVERY_ENABLED", raising=False)
+        assert client.post(gate, headers=owner, json=authorization).status_code == 503
+        monkeypatch.setenv("VALHALLA_STRIPE_DELIVERY_ENABLED", "1")
+        monkeypatch.setenv("VALHALLA_STRIPE_DELIVERY_SCOPE", outcome_scope_key(binding["scope"]))
+        stop = "/governance/go-live/kill-switch"
+        control = {"changed_by": "january-delivery-fixture", "reason": "Verify paid delivery hold"}
+        assert client.post(stop + "/engage", headers=owner, json=control).json()["kill_switch_engaged"] is True
+        assert client.post(gate, headers=owner, json=authorization).status_code == 409
+        assert client.post(stop + "/release", headers=owner, json=control).json()["go_live_enabled"] is False
+
     grant = client.post(gate, headers=owner, json=authorization)
     assert grant.status_code == 200, grant.text
     assert client.post(gate, headers=owner, json=authorization).json() == grant.json()
     assert client.get(purchase, headers=owner_session).status_code == 404
+    if live:
+        assert client.post(purchase + "/acknowledge", headers=buyer_session,
+                           json={"grant_sha256": grant.json()["grant_sha256"]}).status_code == 409
+        assert client.post(stop + "/engage", headers=owner, json=control).status_code == 200
+        assert client.get(purchase, headers=buyer_session).status_code == 409
+        assert client.post(stop + "/release", headers=owner, json=control).status_code == 200
     entitlement = client.get(purchase, headers=buyer_session)
-    assert entitlement.status_code == 200 and entitlement.json()["download_enabled"] is False
+    assert entitlement.status_code == 200
+    if live:
+        assert entitlement.content == expected_bytes
+        assert entitlement.headers["Cache-Control"] == "no-store"
+        assert entitlement.headers["X-Delivery-Grant"] == grant.json()["grant_sha256"]
+    else:
+        assert entitlement.json()["download_enabled"] is False
     acceptance = client.post(purchase + "/acknowledge", headers=buyer_session,
                              json={"grant_sha256": grant.json()["grant_sha256"]})
     assert acceptance.status_code == 200 and acceptance.json()["recognized_revenue_minor"] is None
     assert client.post(gate + "/release-liability", headers=owner,
                        json={"acknowledgment_sha256": acceptance.json()["sha256"]}).status_code == 409
+    if live:
+        monkeypatch.setattr("app.heimdall.authority.is_live", lambda: True)
     review = client.get(f"/api/weweb/owner-stripe-orders/{order_id}", headers=owner_session)
     assert review.status_code == 200 and review.json()["available_cash_minor"] is None
     assert review.json()["bank_batch"] is None
     refund = {**charge, "refunded": True, "amount_refunded": price}
-    assert journal("evt_JanuaryCoreRefund", "charge.refunded", refund)["verified_financial_effect"] is False
+    assert journal("evt_JanuaryRefund" + mode, "charge.refunded", refund)["verified_financial_effect"] is False
     assert client.get(purchase, headers=buyer_session).status_code == 409
 
 
