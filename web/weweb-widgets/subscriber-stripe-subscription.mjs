@@ -1,16 +1,23 @@
 import {ownerAttentionSession} from "./owner-attention.mjs";
 
 const tenantId = /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/;
-const actions = {load:"", checkout:"/checkout", cancel:"/cancel-at-period-end"};
+const actions = {list:"", load:"", checkout:"/checkout", cancel:"/cancel-at-period-end"};
+const states = ["PAID", "EVIDENCE_HELD", "NO_CURRENT_PAID_PERIOD"];
+const bases = ["STRIPE_TEST_SUBSCRIPTION", "STRIPE_LIVE_SUBSCRIPTION"];
+const collections = ["PAYMENT_RECOVERY", "NO_UNRESOLVED_FAILURE"];
+const validId = value => typeof value === "number" && Number.isSafeInteger(value) && value > 0;
+const listFields = ["subscription_id", "status", "basis", "paid_until", "cancel_at_period_end", "collection_status"];
 
 export async function runSubscriberStripeSubscription(input, transport = fetch) {
     const session = ownerAttentionSession(input.bearer);
     if (!session) return {status:"signed_out"};
     const tenant = String(input.tenant ?? "").trim().toLowerCase();
-    const subscription = Number(input.subscription);
+    const listing = input.action === "list";
+    const subscription = listing ? null : Number(input.subscription);
     const result = (status, detail = {}) => ({status, session, tenant, subscription, ...detail});
-    if (!tenantId.test(tenant) || !/^[1-9][0-9]*$/.test(String(input.subscription))
-        || !Number.isSafeInteger(subscription) || !Object.hasOwn(actions, input.action)) return result("invalid");
+    if (!tenantId.test(tenant) || !Object.hasOwn(actions, input.action)
+        || (!listing && (!/^[1-9][0-9]*$/.test(String(input.subscription)) || !validId(subscription)))
+        || (listing && input.before != null && !validId(input.before))) return result("invalid");
     if (input.action === "cancel" && (input.confirm !== true || input.prior?.session !== session
         || input.prior?.subscription !== subscription || input.prior?.tenant !== tenant
         || input.prior?.status !== "PAID")) return result("confirm");
@@ -20,13 +27,15 @@ export async function runSubscriberStripeSubscription(input, transport = fetch) 
         const approved = new URL(input.previewOrigin);
         if (approved.protocol !== "https:" || approved.origin !== input.previewOrigin
             || base.origin !== approved.origin || base.username || base.password) return result("unconfigured");
-        endpoint = approved.origin + "/api/weweb/stripe-subscriptions/" + tenant + "/" + subscription + actions[input.action];
+        endpoint = approved.origin + "/api/weweb/stripe-subscriptions/" + tenant;
+        if (listing && input.before != null) endpoint += "?before=" + input.before;
+        if (!listing) endpoint += "/" + subscription + actions[input.action];
     } catch {
         return result("unconfigured");
     }
     try {
         const response = await transport(endpoint, {
-            method: input.action === "load" ? "GET" : "POST",
+            method: listing || input.action === "load" ? "GET" : "POST",
             headers: {Authorization:"Bearer " + input.bearer},
             cache:"no-store", credentials:"omit", redirect:"error", signal:AbortSignal.timeout(15000),
         });
@@ -35,6 +44,22 @@ export async function runSubscriberStripeSubscription(input, transport = fetch) 
         if (response.status === 409) return result("held");
         if (!response.ok || response.headers.get("content-type")?.split(";")[0] !== "application/json") return result("unavailable");
         const body = await response.json();
+        if (listing) {
+            const items = body.subscriptions;
+            if (body.tenant_id !== tenant || body.external_effects !== 0
+                || !Array.isArray(items) || items.length > 20
+                || !items.every((item, index) => item && validId(item.subscription_id)
+                    && (index ? item.subscription_id < items[index - 1].subscription_id
+                        : input.before == null || item.subscription_id < input.before)
+                    && Object.keys(item).length === listFields.length
+                    && listFields.every(field => Object.hasOwn(item, field))
+                    && states.includes(item.status) && bases.includes(item.basis)
+                    && collections.includes(item.collection_status) && typeof item.cancel_at_period_end === "boolean"
+                    && (item.status !== "PAID" && item.paid_until === null || validId(item.paid_until)))
+                || (body.next_before !== null && (items.length !== 20
+                    || body.next_before !== items.at(-1).subscription_id))) return result("unavailable");
+            return result("listed", {subscriptions:items, nextBefore:body.next_before});
+        }
         if (body.subscription_id !== subscription) return result("unavailable");
         if (input.action === "checkout") {
             if (!["STRIPE_TEST_CHECKOUT", "STRIPE_LIVE_CHECKOUT"].includes(body.basis)
@@ -47,10 +72,10 @@ export async function runSubscriberStripeSubscription(input, transport = fetch) 
                 || url.username || url.password) return result("unavailable");
             return result("checkout_ready", {basis:body.basis, checkoutUrl:url.href});
         }
-        if (body.tenant_id !== tenant || !["PAID", "EVIDENCE_HELD", "NO_CURRENT_PAID_PERIOD"].includes(body.status)
-            || !["STRIPE_TEST_SUBSCRIPTION", "STRIPE_LIVE_SUBSCRIPTION"].includes(body.basis)
+        if (body.tenant_id !== tenant || !states.includes(body.status)
+            || !bases.includes(body.basis)
             || body.available_cash_minor !== null || body.recognized_revenue_minor !== null
-            || !["PAYMENT_RECOVERY", "NO_UNRESOLVED_FAILURE"].includes(body.collection_status)
+            || !collections.includes(body.collection_status)
             || (input.action === "cancel" && body.cancel_at_period_end !== true)) return result("unavailable");
         const paidUntil = body.status === "PAID" && Number.isSafeInteger(body.paid_until) ? body.paid_until : null;
         if (body.status === "PAID" && !paidUntil) return result("unavailable");

@@ -2,7 +2,7 @@
 import os
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
@@ -24,7 +24,7 @@ from app.services.stripe_dispute_correction import ChargebackIn, configured_char
 from app.services.stripe_refund_correction import RefundCorrectionIn, configured_refund_correction
 from app.services.stripe_recurring import (
     InvoiceProofIn, RecurringBindingIn, apply_paid_invoice, bind_recurring, recurring_clients, schedule_cancellation,
-    start_checkout, subscription_status, verify_period_payout, verify_period_processor_balance,
+    start_checkout, subscriber_recurring_list, subscription_status, verify_period_payout, verify_period_processor_balance,
 )
 from app.webhooks.stripe import router as stripe_webhooks
 
@@ -184,6 +184,12 @@ def subscriber_checkout(tenant_id: UUID, local_id: int, principal: dict = Depend
             success_url=os.getenv("VALHALLA_STRIPE_RECURRING_SUCCESS_URL"),
             cancel_url=os.getenv("VALHALLA_STRIPE_RECURRING_CANCEL_URL"),
         ))
+
+
+@router.get("/api/weweb/stripe-subscriptions/{tenant_id}")
+def subscriber_recurring_accounts(tenant_id: UUID, before: int | None = Query(None, gt=0),
+                                  principal: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+    return private_owner_response(subscriber_recurring_list(db, tenant_id, principal, live=is_live(), before=before))
 
 
 @router.get("/api/weweb/stripe-subscriptions/{tenant_id}/{local_id}")

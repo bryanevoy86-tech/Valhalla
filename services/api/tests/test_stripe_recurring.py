@@ -309,6 +309,18 @@ def test_recurring_checkout_renewal_cancellation_and_payment_holds(deal_client, 
     assert [item["invoice_id"] for item in booked["value"]["invoices"]] == ["in_First", "in_Renewal"]
     webhook("payout.failed", "RecurringPayoutFailed", payout)
     assert client.post(payout_url, headers=owner).status_code == 409
+    listing = url.rsplit("/", 1)[0]
+    assert client.get(listing).status_code == 401
+    own = client.get(listing, headers=buyer)
+    assert own.status_code == 200 and own.headers["cache-control"] == "no-store"
+    [listed] = own.json()["subscriptions"]
+    assert listed["subscription_id"] == local_id and listed["status"] == "PAID"
+    assert listed["basis"] == "STRIPE_TEST_SUBSCRIPTION"
+    assert "available_cash_minor" not in listed and "modules" not in listed
+    assert client.get(listing, headers=outsider).json()["subscriptions"] == []
+    assert client.get(listing.rsplit("/", 1)[0] + "/" + str(uuid4()), headers=buyer).json()["subscriptions"] == []
+    assert client.get(listing, headers=buyer, params={"before": local_id}).json()["subscriptions"] == []
+
     with Session(engine) as db:
         assert scoped_bank_blockers(db, params["scope"], live=False) == {"STRIPE_BANK_CORRECTION_REQUIRED"}
     clock = datetime.fromtimestamp(end + 1, timezone.utc)

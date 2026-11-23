@@ -533,6 +533,31 @@ def subscription_status(db, local_id, tenant_id, principal, *, live, now=None):
             "available_cash_minor": None, "recognized_revenue_minor": None}
 
 
+def subscriber_recurring_list(db, tenant_id, principal, *, live, before=None):
+    """Return only the current subscriber's own contracts for the selected tenant."""
+    actor = principal.get("user_id")
+    profile = _buyer(db, actor) if type(actor) is int else None
+    if profile is None or profile.email != principal.get("sub"):
+        raise HTTPException(404, "Stripe subscription unavailable")
+    _require_configured_mode(live)
+    _ready(db)
+    query = (select(StripeSaaSBinding.id).join(Subscription, Subscription.id == StripeSaaSBinding.id)
+             .where(Subscription.user_id == actor, StripeSaaSBinding.tenant_id == tenant_id,
+                    StripeSaaSBinding.livemode == live))
+    if before is not None:
+        query = query.where(StripeSaaSBinding.id < before)
+    ids = db.scalars(query.order_by(StripeSaaSBinding.id.desc()).limit(21)).all()
+    statuses = []
+    fields = ("subscription_id", "status", "basis", "paid_until", "cancel_at_period_end", "collection_status")
+    for local_id in ids[:20]:
+        # Revalidate each immutable buyer binding and use the exact same effective-state
+        # computation as the individually addressed status route.
+        status = subscription_status(db, local_id, tenant_id, principal, live=live)
+        statuses.append({key: status[key] for key in fields})
+    return {"tenant_id": str(tenant_id), "subscriptions": statuses,
+            "next_before": ids[19] if len(ids) == 21 else None, "external_effects": 0}
+
+
 def schedule_cancellation(db, local_id, tenant_id, principal, *, live, reader, writer):
     row, data, _ = _binding(db, local_id, live, lock=True)
     _subscriber(db, data, tenant_id, principal)

@@ -52,3 +52,24 @@ test("checkout is an explicit hosted link and cancellation requires same-session
     assert.equal(canceled.cancellationScheduled, true);
     assert.equal(canceled.paidUntil, paid.paid_until);
 });
+
+test("owned-subscription inventory is read-only, session bound, and rejects extra financial fields", async () => {
+    const listing = {...input, action:"list", subscription:null};
+    const {tenant_id, available_cash_minor, recognized_revenue_minor, ...item} = paid;
+    const record = {tenant_id, subscriptions:[item], external_effects:0, next_before:null};
+    const read = await runSubscriberStripeSubscription(listing, async (url, options) => {
+        assert.equal(url, input.apiBase + "/api/weweb/stripe-subscriptions/" + input.tenant);
+        assert.equal(options.method, "GET");
+        assert.equal(options.cache, "no-store");
+        return reply(record);
+    });
+    assert.equal(read.status, "listed");
+    assert.equal(read.session, "stripe-test-session");
+    assert.equal(read.subscriptions[0].subscription_id, 7);
+    assert.equal((await runSubscriberStripeSubscription(listing, async () => reply({
+        ...record, subscriptions:[{...item, available_cash_minor}],
+    }))).status, "unavailable");
+    assert.equal((await runSubscriberStripeSubscription(listing, async () => reply({
+        ...record, tenant_id:"elsewhere",
+    }))).status, "unavailable");
+});
