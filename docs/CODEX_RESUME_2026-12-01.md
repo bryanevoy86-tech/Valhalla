@@ -22,6 +22,14 @@ Next, attach independently read-back provider, accounting and settlement evidenc
 
 The existing Foundry checkout rehearsal now enforces the planned fixture visit limit and economic containment when adding new visits. Creating a new attributed order rechecks the current plan and rejects an already withdrawn direct opt-in. Repeating the exact recorded visit or order remains idempotent. The isolated test covers intake, withdrawal, order capture, delivery, refund, settlement and verified evidence. Keep provider-side dispatch, independently read-back settlement and commercial entitlement provisioning as commissioning and implementation dependencies.
 
+### Isolated operating trial acceptance
+
+Use a pinned draft build and disposable PostgreSQL database in separately authorized staging. Seed synthetic grants, demand exports, one registered Legacy scope and a deliberately unapproved adjacent scope. Keep external providers, outreach, real money movement and production storage disabled. After preflight, schedule the existing discovery, Pantheon, Prime schedule, deterministic Loki and Factory workers using their current staging-only toggles. Read the private owner briefing and worker logs without exporting private inputs.
+
+Start the clock on the first successful recorded staging tick. Collect UTC timestamped records of expected and observed runs, missed slots, recovery, duplicate events, refused authority, owner prompts and reconciled fixtures. Record readiness and heartbeat gaps using `/readyz`. Include one planned worker restart and a deliberately refused cross-scope request. Retain the actual worker and checkout receipt IDs and verify that recovery does not create a second event or financial posting. Attach ledger reconciliation and a negative check for external actions. Record real elapsed time, missing coverage and any permitted interventions.
+
+Run the 24-hour trial first and repeat for 72 hours after reviewing the first evidence. The seven-, fourteen- and thirty-day trials are follow-on commissioning observations. Keep the first revenue authorization decision scoped to its own evidence and controls. No elapsed staging trial has been run at this checkpoint.
+
 ## Current workstream index and startup order
 
 For tasks 04–53, follow the workstream ID in the task register to the corresponding row in `ops/prime_system_integration_matrix.json`. Each row provides exact `source_paths`, `depends_on`, implementation state and an evidence level. Read the `continuation` fields for existing test evidence, next implementation and the owner action, then use the unchanged `acceptance_test` as the proof contract. `production_verified` remains false where real operation has not been established.
