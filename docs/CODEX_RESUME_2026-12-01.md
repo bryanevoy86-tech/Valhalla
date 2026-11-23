@@ -80,6 +80,8 @@ In this continuation, the local backend regression passed 409 tests and prefligh
 
 The internal baseline at `def8c7fa3a7e7402b738a4e0fecb1440edd69505` passed all nine January gates on disposable PostgreSQL. The [baseline hosted run](https://github.com/bryanevoy86-tech/Valhalla/actions/runs/45230788989) passed all four jobs. Use the current draft checks for the reviewed candidate. The integration matrix records an internal evidence path and blocked staging status on each of the 14 P0 rows. Their existing acceptance tests, seven remaining-work fields and scope decisions still apply.
 
+The [isolated provisioning proposal](VALHALLA_STAGING_PROVISIONING.md) contains the staged resource names, current costs, exact pre-deploy and worker commands, and the separate approvals for provisioning and the trial. The offline staging guard is required before migrations or worker launch in that configuration. Neither approval is recorded.
+
 #### Owner approval record
 
 Record this decision in the private staging change record. Keep secret values in the authorized secret store. An empty field blocks its affected step.

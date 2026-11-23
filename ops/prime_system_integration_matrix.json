@@ -75,6 +75,10 @@
       "id": "runtime_governance",
       "priority": "P0",
       "source_paths": [
+        "scripts/staging_preflight.py",
+        "scripts/staging_workers.sh",
+        "tests/test_staging_preflight.py",
+        "docs/VALHALLA_STAGING_PROVISIONING.md",
         "services/api/app/core/runtime_flags.py",
         "services/api/app/routers/completion_registry.py",
         "services/api/app/core/autonomy_governor.py",
@@ -82,7 +86,7 @@
         "services/api/app/services/prime_business_execution.py",
         "tests/test_business_factory_pilot.py"
       ],
-      "source_observation": "One internal draft execution lane uses persisted standing owner mandates, separate grant/worker authorization, exact scope, usage/expiry and revocation checks. Isolated SQLite and PostgreSQL one-use concurrency tests passed. Other dispatch paths, continuous full-system specialist coverage and provider effects remain unverified.",
+      "source_observation": "Offline staging preflight checks approved private database binding, exact CORS, test-only Stripe and separation of Loki credentials. The worker launcher stays held by default. One internal draft execution lane uses persisted standing owner mandates, separate grant/worker authorization, exact scope, usage/expiry and revocation checks. Isolated SQLite and PostgreSQL one-use concurrency tests passed. Other dispatch paths, continuous full-system specialist coverage and provider effects remain unverified.",
       "evidence_level": "POSTGRES_INTEGRATION_TESTED",
       "production_verified": false,
       "acceptance_test": "Governance unit cases and internal SQLite Factory killswitch pass; full production acceptance requires every external adapter using trusted persisted approval/consent/budget gates, adversarial agent tests, durable circuit breakers, and real Postgres worker failure injection.",

@@ -18,6 +18,8 @@ on:
       - 'scripts/builder_assignment_worker.py'
       - 'scripts/prime_runtime_route_probe.py'
       - 'scripts/january_core_readiness.py'
+      - 'scripts/staging_preflight.py'
+      - 'scripts/staging_workers.sh'
       - 'web/weweb-widgets/owner-*.mjs'
       - 'tests/test-weweb-owner-*.test.mjs'
       - 'web/weweb-widgets/subscriber-*.mjs'
@@ -101,6 +103,8 @@ jobs:
           python -m unittest discover -s tests -p test_builder_path_security.py -v
           python -m unittest discover -s tests -p test_builder_materialize_review.py -v
           python -m unittest discover -s tests -p test_prime_system_preflight.py -v
+          python -m unittest discover -s tests -p test_staging_preflight.py -v
+          bash -n scripts/staging_workers.sh
           python -m unittest discover -s tests -p test_route_integrity.py -v
           python -m unittest discover -s tests -p test_prime_runtime_route_probe.py -v
           python -m unittest discover -s tests -p test_autonomy_governor.py -v
