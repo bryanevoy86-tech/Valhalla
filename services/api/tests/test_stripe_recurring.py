@@ -9,6 +9,8 @@ from urllib.parse import parse_qs
 from uuid import uuid4
 
 import httpx
+import pytest
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.core import db as database
@@ -107,6 +109,7 @@ def test_recurring_checkout_renewal_cancellation_and_payment_holds(deal_client, 
     }
     payments = {}
     membership = {"object": "list", "has_more": False, "data": []}
+    payout_members = []
     posts = []
     renewals_available = False
 
@@ -129,8 +132,11 @@ def test_recurring_checkout_renewal_cancellation_and_payment_holds(deal_client, 
             return httpx.Response(503)
         if path == "/v1/balance_transactions":
             assert request.url.params["payout"] == "po_Recurring"
-            assert request.url.params["source"] == "ch_First"
-            return httpx.Response(200, json=membership)
+            source = request.url.params.get("source")
+            if source == "ch_First":
+                return httpx.Response(200, json=membership)
+            return httpx.Response(200, json={**membership, "data": [item for item in payout_members
+                                                                   if source is None or item["source"] == source]})
         if path == "/v1/invoice_payments":
             return httpx.Response(200, json={"has_more": False, "data": [payments[request.url.params["invoice"]]]})
         return httpx.Response(200, json=fixtures[path])
@@ -220,7 +226,8 @@ def test_recurring_checkout_renewal_cancellation_and_payment_holds(deal_client, 
     payout_url = root + "/paid-period/in_First/payout/po_Recurring"
     payout = {"id": "po_Recurring", "object": "payout", "livemode": False, "automatic": True,
               "method": "standard", "type": "bank_account", "destination": "ba_Different", "status": "paid",
-              "reconciliation_status": "completed", "currency": "cad", "amount": 2280, "arrival_date": start + 240}
+              "reconciliation_status": "completed", "currency": "cad", "amount": 2280, "arrival_date": start + 240,
+              "trace_id": {"value": "RECURRING-TEST-TRACE"}}
     fixtures["/v1/payouts/po_Recurring"] = payout
     assert client.post(payout_url, headers=buyer).status_code == 401
     assert client.post(payout_url, headers=owner).status_code == 409
@@ -236,8 +243,6 @@ def test_recurring_checkout_renewal_cancellation_and_payment_holds(deal_client, 
     assert payout_proof["balance_evidence_sha256"] == book["sha256"]
     assert payout_proof["bank_settlement_verified"] is False and payout_proof["available_cash_minor"] is None
     assert client.post(payout_url, headers=owner).json() == payout_proof
-    webhook("payout.failed", "RecurringPayoutFailed", payout)
-    assert client.post(payout_url, headers=owner).status_code == 409
 
     with Session(engine) as db:
         assert db.query(StripeBalanceEvidence).count() == 1
@@ -259,6 +264,53 @@ def test_recurring_checkout_renewal_cancellation_and_payment_holds(deal_client, 
     renewal = client.post(root + "/paid-period", headers=owner, json=proof)
     assert renewal.status_code == 200, renewal.text
     assert client.get(url, headers=buyer).json()["collection_status"] == "NO_UNRESOLVED_FAILURE"
+    from app.services.stripe_bank_booking import BankBatchIn, reconcile_bank_batch, scoped_bank_blockers
+
+    renewal_capture = webhook("payment_intent.succeeded", "CaptureRenewal", {
+        **event_capture, "id": "pi_Renewal", "latest_charge": "ch_Renewal",
+    })
+    renewal_balance = {**clearing, "id": "txn_Renewal", "source": "ch_Renewal"}
+    fixtures["/v1/charges/ch_Renewal"]["balance_transaction"] = "txn_Renewal"
+    fixtures["/v1/balance_transactions/txn_Renewal"] = renewal_balance
+    payout_members.extend([clearing, renewal_balance])
+    assert client.post(root + "/paid-period/in_Renewal/processor-balance", headers=owner,
+                       json=renewal_capture).status_code == 200
+    assert client.post(root + "/paid-period/in_Renewal/payout/po_Recurring", headers=owner).status_code == 200
+
+    expected_bank_net = 2280
+
+    def bank_credit(**expected):
+        assert expected["amount_minor"] == 2280 and expected["trace"] == "RECURRING-TEST-TRACE"
+        assert expected["live"] is False
+        return {"transaction_sha256": "a" * 64, "posted_on": expected["arrival"].isoformat(),
+                "amount_minor": expected_bank_net, "currency": "CAD"}
+
+    def reconcile(invoice_ids):
+        with Session(engine) as db, clients(live=False) as (reader, _):
+            return reconcile_bank_batch(db, BankBatchIn(payout_id="po_Recurring", invoice_ids=invoice_ids),
+                                        client=reader, account_id="acct_Recurring", destination="ba_Recurring",
+                                        live=False, bank_credit=bank_credit)
+
+    with pytest.raises(HTTPException, match="full payout"):
+        reconcile(["in_First"])
+    expected_bank_net = 2279
+    with pytest.raises(HTTPException, match="Independent bank credit differs"):
+        reconcile(["in_First", "in_Renewal"])
+    expected_bank_net = 2280
+    payout_members[1] = {**renewal_balance, "amount": 1201}
+    with pytest.raises(HTTPException):
+        reconcile(["in_First", "in_Renewal"])
+    payout_members[1] = renewal_balance
+    booked = reconcile(["in_Renewal", "in_First"])
+    assert booked == reconcile(["in_First", "in_Renewal"])
+    assert booked["ledger_entry_id"] is None and booked["value"]["orders"] == []
+    assert booked["value"]["bank_settlement_verified"] is False and booked["value"]["available_cash_minor"] is None
+    assert booked["value"]["gross_customer_obligation_minor"] == 2400
+    assert [item["invoice_id"] for item in booked["value"]["invoices"]] == ["in_First", "in_Renewal"]
+    webhook("payout.failed", "RecurringPayoutFailed", payout)
+    assert client.post(payout_url, headers=owner).status_code == 409
+    with Session(engine) as db:
+        assert scoped_bank_blockers(db, params["scope"], live=False) == {"STRIPE_BANK_CORRECTION_REQUIRED"}
     clock = datetime.fromtimestamp(end + 1, timezone.utc)
     canceled = client.post(url + "/cancel-at-period-end", headers=buyer)
     assert canceled.status_code == 200, canceled.text

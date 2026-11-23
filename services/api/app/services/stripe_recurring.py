@@ -440,7 +440,7 @@ def verify_period_processor_balance(db, local_id, invoice_id, capture_event_id, 
             "recognized_revenue_minor": None, "available_cash_minor": None}
 
 
-def verify_period_payout(db, local_id, invoice_id, payout_id, *, live, client, destination_id):
+def _period_payout_evidence(db, local_id, invoice_id, payout_id, *, live, client, destination_id):
     """Record exact recurring payout membership before separate bank reconciliation."""
     if not stripe_id(invoice_id, "in") or not stripe_id(payout_id, "po"):
         raise HTTPException(422, "Native invoice and payout identities required")
@@ -482,14 +482,20 @@ def verify_period_payout(db, local_id, invoice_id, payout_id, *, live, client, d
     reference = "STRIPE-RECURRING-PAYOUT-" + artifact_digest(kind, invoice_id, {"livemode": live})[:40]
     receipt = {**value, "sha256": artifact_digest(kind, reference, value)}
     prior = db.scalar(select(LegacyOrchestrationEvent).filter_by(event_id=reference))
-    if prior is not None:
-        if (prior.event_type != kind or prior.legacy_instance_id != scope["legacy_instance_id"]
-                or _json(prior.payload_json, {}) != receipt):
-            raise HTTPException(409, "Paid period already has different payout evidence")
-        return receipt
-    _event(db, event_id=reference, legacy_instance_id=scope["legacy_instance_id"], event_type=kind,
-           message="Recurring capture matched exact Stripe processor payout", payload=receipt)
-    _commit(db, "Payout evidence already exists; retry the exact readback")
+    if prior is not None and (prior.event_type != kind or prior.legacy_instance_id != scope["legacy_instance_id"]
+                              or _json(prior.payload_json, {}) != receipt):
+        raise HTTPException(409, "Paid period already has different payout evidence")
+    return reference, kind, receipt, capture, prior
+
+
+def verify_period_payout(db, local_id, invoice_id, payout_id, *, live, client, destination_id):
+    reference, kind, receipt, _, prior = _period_payout_evidence(
+        db, local_id, invoice_id, payout_id, live=live, client=client, destination_id=destination_id,
+    )
+    if prior is None:
+        _event(db, event_id=reference, legacy_instance_id=receipt["scope"]["legacy_instance_id"], event_type=kind,
+               message="Recurring capture matched exact Stripe processor payout", payload=receipt)
+        _commit(db, "Payout evidence already exists; retry the exact readback")
     return receipt
 
 

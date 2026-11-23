@@ -6,7 +6,7 @@ import re
 from uuid import UUID
 
 from fastapi import HTTPException
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 from sqlalchemy import inspect, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -28,7 +28,16 @@ LEDGER_SOURCE = "stripe_bank_reconciliation"
 
 class BankBatchIn(StrictModel):
     payout_id: str
-    order_ids: list[UUID] = Field(min_length=1, max_length=100)
+    order_ids: list[UUID] = Field(default_factory=list, max_length=100)
+    invoice_ids: list[str] = Field(default_factory=list, max_length=100)
+
+    @model_validator(mode="after")
+    def bounded_membership(self):
+        if not 1 <= len(self.order_ids) + len(self.invoice_ids) <= 100:
+            raise ValueError("Provide 1 to 100 exact payout members")
+        if len(set(self.invoice_ids)) != len(self.invoice_ids) or not all(stripe_id(x, "in") for x in self.invoice_ids):
+            raise ValueError("Provide distinct native invoice identities")
+        return self
 
     @field_validator("payout_id")
     @classmethod
@@ -136,8 +145,36 @@ def reconcile_bank_batch(db: Session, request: BankBatchIn, *, client, account_i
             raise HTTPException(409, "All orders must match the same scoped processor payout")
         receipts.append(receipt)
         projections.append(projection)
-    scope = projections[0]["order"]["scope"]
-    if any(projection["order"]["scope"] != scope for projection in projections):
+    evidence = [projection["processor_evidence"] for projection in projections]
+    scopes = [projection["order"]["scope"] for projection in projections]
+    invoices = []
+    if request.invoice_ids:
+        from app.models.stripe_recurring import StripePaidPeriod, StripeSaaSBinding
+        from app.services.stripe_recurring import _period_payout_evidence, _ready
+
+        _ready(db)
+        periods = db.scalars(select(StripePaidPeriod).where(StripePaidPeriod.invoice_id.in_(request.invoice_ids))
+                             .order_by(StripePaidPeriod.binding_id, StripePaidPeriod.invoice_id)).all()
+        if len(periods) != len(request.invoice_ids):
+            raise HTTPException(404, "One or more paid invoice periods are unavailable")
+        # Hold the binding locks in the same order as the signed refund/dispute intake.
+        db.scalars(select(StripeSaaSBinding).where(StripeSaaSBinding.id.in_(
+            {period.binding_id for period in periods}
+        )).order_by(StripeSaaSBinding.id).with_for_update()).all()
+        for period in periods:
+            _, _, receipt, capture, prior = _period_payout_evidence(
+                db, period.binding_id, period.invoice_id, request.payout_id,
+                client=client, destination_id=destination, live=live,
+            )
+            if prior is None or capture["stripe_account_id"] != account_id:
+                raise HTTPException(409, "Every invoice needs existing recurring payout evidence for this account")
+            receipts.append(receipt)
+            evidence.append(capture)
+            scopes.append(receipt["scope"])
+            invoices.append({"invoice_id": period.invoice_id, "payout_sha256": receipt["sha256"],
+                             "net_minor": capture["net_minor"]})
+    scope = scopes[0]
+    if any(member_scope != scope for member_scope in scopes):
         raise HTTPException(409, "Mixed-scope payout booking requires explicit allocation")
     _provider_object(client, "/v1/account", account_id, "account")
     payout = _provider_object(client, f"/v1/payouts/{request.payout_id}", request.payout_id, "payout")
@@ -152,7 +189,6 @@ def reconcile_bank_batch(db: Session, request: BankBatchIn, *, client, account_i
             or not minor_amount(amount) or amount == 0 or type(arrival) is not int or not 0 < arrival < 4_102_444_800
             or not isinstance(trace_value, str) or not re.fullmatch(r"[A-Za-z0-9-]{4,128}", trace_value)):
         raise HTTPException(409, "Current payout is ineligible or lacks an independently matchable bank trace")
-    evidence = [projection["processor_evidence"] for projection in projections]
     net = sum(row["net_minor"] for row in evidence)
     gross = sum(row["gross_minor"] for row in evidence)
     fees = sum(row["fee_minor"] for row in evidence)
@@ -160,7 +196,7 @@ def reconcile_bank_batch(db: Session, request: BankBatchIn, *, client, account_i
             or any(row["currency"] != "cad" for row in evidence)
             or any((r["processor_reported_payout_minor"], r["processor_arrival_on"], r["capture_net_minor"])
                    != (amount, arrival, e["net_minor"]) for r, e in zip(receipts, evidence))):
-        raise HTTPException(409, "Exact order contributions must reconcile to the full payout before booking")
+        raise HTTPException(409, "Exact payout contributions must reconcile to the full payout before booking")
     remote = provider_json(client, "/v1/balance_transactions", params={"payout": request.payout_id, "limit": 100})
     members = remote.get("data")
     if (remote.get("object") != "list" or remote.get("has_more") is not False
@@ -177,16 +213,21 @@ def reconcile_bank_batch(db: Session, request: BankBatchIn, *, client, account_i
     bank = bank_credit(trace=trace_value, arrival=datetime.fromtimestamp(arrival, timezone.utc).date(),
                        amount_minor=amount, today=datetime.now(timezone.utc).date(), live=live,
                        stripe_destination=destination)
+    if (not isinstance(bank, dict) or bank.get("currency") != "CAD" or
+            type(bank.get("amount_minor")) is not int or bank["amount_minor"] != net):
+        raise HTTPException(409, "Independent bank credit differs from the exact payout")
     reference = "STRIPE-BANK-" + artifact_digest("stripe_bank_batch", request.payout_id,
                                                   {"account": account_id, "live": live})[:40]
     if _payout_failed(db, request.payout_id, live):
         raise HTTPException(409, "A signed payout failure requires accounting review")
     value = {"source_ref": reference, "scope": scope, "payout_id": request.payout_id,
              "orders": [{"order_id": r["order_id"], "payout_sha256": r["sha256"], "net_minor": e["net_minor"]}
-                        for r, e in zip(receipts, evidence)],
+                        for r, e in zip(receipts, evidence) if "order_id" in r],
              "bank": bank, "gross_customer_obligation_minor": gross, "processor_fee_minor": fees,
              "payout_minor": net, "basis": "INDEPENDENT_CAD_BANK_READBACK" if live else "SYNTHETIC_BANK_REHEARSAL",
              "bank_settlement_verified": live, "available_cash_minor": None, "fulfillment_authorized": False}
+    if invoices:
+        value["invoices"] = invoices
     digest = artifact_digest("stripe_bank_reconciliation", reference, value)
     previous = db.scalar(select(LegacyOrchestrationEvent).filter_by(event_id=reference))
     if previous is not None:
@@ -214,7 +255,9 @@ def reconcile_bank_batch(db: Session, request: BankBatchIn, *, client, account_i
         result = {"value": value, "sha256": digest, "ledger_entry_id": journal_id}
         consumed_ids = ["STRIPE-BANK-TX-" + artifact_digest("stripe_bank_credit_key", bank["transaction_sha256"],
                                                               {"live": live})[:48],
-                        *("STRIPE-BANK-ORDER-" + str(order_id) for order_id in request.order_ids)]
+                        *("STRIPE-BANK-ORDER-" + str(order_id) for order_id in request.order_ids),
+                        *("STRIPE-BANK-INVOICE-" + artifact_digest("stripe_bank_invoice_key", member["invoice_id"],
+                                                                  {"live": live})[:40] for member in invoices)]
         for identity in consumed_ids:
             _event(db, event_id=identity, legacy_instance_id=scope["legacy_instance_id"], event_type=SETTLEMENT,
                    message="Bank batch evidence consumed", payload={"bundle": reference, "sha256": digest})
@@ -284,7 +327,7 @@ def scoped_bank_blockers(db: Session, scope: dict, *, live: bool) -> set[str]:
     entries = db.scalars(select(journal).where(
         journal.event_type == SETTLEMENT, journal.legacy_instance_id == scope["legacy_instance_id"],
         journal.event_id.startswith("STRIPE-BANK-"), ~journal.event_id.startswith("STRIPE-BANK-ORDER-"),
-        ~journal.event_id.startswith("STRIPE-BANK-TX-"),
+        ~journal.event_id.startswith("STRIPE-BANK-TX-"), ~journal.event_id.startswith("STRIPE-BANK-INVOICE-"),
     ).execution_options(yield_per=100))
     expected_basis = "INDEPENDENT_CAD_BANK_READBACK" if live else "SYNTHETIC_BANK_REHEARSAL"
     blockers = set()
@@ -302,6 +345,21 @@ def scoped_bank_blockers(db: Session, scope: dict, *, live: bool) -> set[str]:
         if value.get("basis") != expected_basis:
             continue
         try:
+            if _payout_failed(db, value["payout_id"], live):
+                blockers.add("STRIPE_BANK_CORRECTION_REQUIRED")
+            if value.get("invoices"):
+                from app.models.stripe_recurring import StripePaidPeriod
+                from app.services.stripe_recurring import _binding, _period_value, _reversed
+
+                for member in value["invoices"]:
+                    period = db.get(StripePaidPeriod, member["invoice_id"])
+                    if period is None:
+                        raise HTTPException(409, "Reconciled paid period missing")
+                    binding, data, _ = _binding(db, period.binding_id, live)
+                    if data["scope"] != scope:
+                        raise HTTPException(409, "Reconciled invoice escaped operating scope")
+                    if _reversed(db, binding, _period_value(binding, period)):
+                        blockers.add("STRIPE_BANK_CORRECTION_REQUIRED")
             for member in value["orders"]:
                 order_id = UUID(member["order_id"])
                 projection = inspect_binding(db, order_id, live=live)
