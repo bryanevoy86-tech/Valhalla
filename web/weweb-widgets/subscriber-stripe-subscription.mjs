@@ -1,12 +1,19 @@
 import {ownerAttentionSession} from "./owner-attention.mjs";
 
 const tenantId = /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/;
-const actions = {list:"", load:"", checkout:"/checkout", cancel:"/cancel-at-period-end"};
+const actions = {list:"", load:"", checkout:"/checkout", cancel:"/cancel-at-period-end",
+    history:"/service-history", acknowledge:""};
 const states = ["PAID", "EVIDENCE_HELD", "NO_CURRENT_PAID_PERIOD"];
 const bases = ["STRIPE_TEST_SUBSCRIPTION", "STRIPE_LIVE_SUBSCRIPTION"];
 const collections = ["PAYMENT_RECOVERY", "NO_UNRESOLVED_FAILURE"];
 const validId = value => typeof value === "number" && Number.isSafeInteger(value) && value > 0;
 const listFields = ["subscription_id", "status", "basis", "paid_until", "cancel_at_period_end", "collection_status"];
+const digest = /^[0-9a-f]{64}$/;
+const invoiceId = /^in_[A-Za-z0-9_]{1,120}$/;
+const completion = period => period && Object.keys(period).length === 4
+    && typeof period.invoice_id === "string" && invoiceId.test(period.invoice_id)
+    && typeof period.paid_period_sha256 === "string" && digest.test(period.paid_period_sha256)
+    && validId(period.period_start) && validId(period.period_end) && period.period_start < period.period_end;
 
 export async function runSubscriberStripeSubscription(input, transport = fetch) {
     const session = ownerAttentionSession(input.bearer);
@@ -21,6 +28,15 @@ export async function runSubscriberStripeSubscription(input, transport = fetch) 
     if (input.action === "cancel" && (input.confirm !== true || input.prior?.session !== session
         || input.prior?.subscription !== subscription || input.prior?.tenant !== tenant
         || input.prior?.status !== "PAID")) return result("confirm");
+    let confirmedPeriod;
+    if (input.action === "acknowledge") {
+        const prior = input.prior;
+        if (input.confirm !== true || prior?.status !== "service_history" || prior.session !== session
+            || prior.subscription !== subscription || prior.tenant !== tenant || !bases.includes(prior.basis)
+            || !Array.isArray(prior.periods)) return result("confirm");
+        confirmedPeriod = prior.periods.find(period => period?.invoice_id === input.invoice);
+        if (!completion(confirmedPeriod)) return result("confirm");
+    }
     let endpoint;
     try {
         const base = new URL(input.apiBase);
@@ -30,13 +46,16 @@ export async function runSubscriberStripeSubscription(input, transport = fetch) 
         endpoint = approved.origin + "/api/weweb/stripe-subscriptions/" + tenant;
         if (listing && input.before != null) endpoint += "?before=" + input.before;
         if (!listing) endpoint += "/" + subscription + actions[input.action];
+        if (confirmedPeriod) endpoint += "/paid-period/" + confirmedPeriod.invoice_id + "/acknowledge";
     } catch {
         return result("unconfigured");
     }
     try {
         const response = await transport(endpoint, {
-            method: listing || input.action === "load" ? "GET" : "POST",
-            headers: {Authorization:"Bearer " + input.bearer},
+            method: listing || input.action === "load" || input.action === "history" ? "GET" : "POST",
+            headers: {Authorization:"Bearer " + input.bearer,
+                ...(confirmedPeriod ? {"Content-Type":"application/json"} : {})},
+            ...(confirmedPeriod ? {body:JSON.stringify({paid_period_sha256:confirmedPeriod.paid_period_sha256})} : {}),
             cache:"no-store", credentials:"omit", redirect:"error", signal:AbortSignal.timeout(15000),
         });
         if (response.status === 401) return result("signed_out");
@@ -61,6 +80,25 @@ export async function runSubscriberStripeSubscription(input, transport = fetch) 
             return result("listed", {subscriptions:items, nextBefore:body.next_before});
         }
         if (body.subscription_id !== subscription) return result("unavailable");
+        if (input.action === "history") {
+            const periods = body.completed_paid_periods;
+            if (body.tenant_id !== tenant || !bases.includes(body.basis) || body.external_effects !== 0
+                || Object.keys(body).length !== 5 || !Array.isArray(periods) || periods.length > 20
+                || !periods.every(completion) || new Set(periods.map(period => period.invoice_id)).size !== periods.length) {
+                return result("unavailable");
+            }
+            return result("service_history", {basis:body.basis, periods});
+        }
+        if (confirmedPeriod) {
+            const expectedBasis = input.prior.basis === "STRIPE_TEST_SUBSCRIPTION"
+                ? "SYNTHETIC_SERVICE_ACK" : "BUYER_SERVICE_ASSERTION";
+            if (body.tenant_id !== tenant || body.invoice_id !== confirmedPeriod.invoice_id
+                || body.paid_period_sha256 !== confirmedPeriod.paid_period_sha256 || body.basis !== expectedBasis
+                || typeof body.sha256 !== "string" || !digest.test(body.sha256)
+                || !Number.isFinite(Date.parse(body.acknowledged_at))) return result("unavailable");
+            return result("service_acknowledged", {basis:body.basis, invoice:body.invoice_id,
+                acknowledgedAt:body.acknowledged_at});
+        }
         if (input.action === "checkout") {
             if (!["STRIPE_TEST_CHECKOUT", "STRIPE_LIVE_CHECKOUT"].includes(body.basis)
                 || body.payment_verified !== false) return result("unavailable");

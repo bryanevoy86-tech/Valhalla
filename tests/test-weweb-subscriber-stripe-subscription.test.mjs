@@ -73,3 +73,40 @@ test("owned-subscription inventory is read-only, session bound, and rejects extr
         ...record, tenant_id:"elsewhere",
     }))).status, "unavailable");
 });
+
+test("completed service acknowledgment requires an exact session-bound invoice and prior digest", async () => {
+    const period = {invoice_id:"in_paid", period_start:1770000000, period_end:1772419200,
+        paid_period_sha256:"a".repeat(64)};
+    const body = {tenant_id:input.tenant, subscription_id:7, basis:paid.basis, external_effects:0,
+        completed_paid_periods:[period]};
+    const history = await runSubscriberStripeSubscription({...input, action:"history"}, async (url, options) => {
+        assert.match(url, /\/7\/service-history$/);
+        assert.equal(options.method, "GET");
+        assert.equal(options.cache, "no-store");
+        return reply(body);
+    });
+    assert.equal(history.status, "service_history");
+    assert.deepEqual(history.periods, [period]);
+    const action = {...input, action:"acknowledge", invoice:"in_paid", prior:history};
+    assert.equal((await runSubscriberStripeSubscription(action, () => assert.fail())).status, "confirm");
+    const confirmed = {...action, confirm:true};
+    assert.equal((await runSubscriberStripeSubscription({...confirmed, invoice:"in_other"},
+        () => assert.fail())).status, "confirm");
+    assert.equal((await runSubscriberStripeSubscription({...confirmed, prior:{...history, session:"changed"}},
+        () => assert.fail())).status, "confirm");
+    const receipt = {tenant_id:input.tenant, subscription_id:7, invoice_id:period.invoice_id,
+        paid_period_sha256:period.paid_period_sha256, basis:"SYNTHETIC_SERVICE_ACK",
+        sha256:"b".repeat(64), acknowledged_at:"2026-11-21T18:00:00Z"};
+    const acknowledgment = await runSubscriberStripeSubscription(confirmed, async (url, options) => {
+        assert.match(url, /\/7\/paid-period\/in_paid\/acknowledge$/);
+        assert.equal(options.method, "POST");
+        assert.deepEqual(JSON.parse(options.body), {paid_period_sha256:period.paid_period_sha256});
+        return reply(receipt);
+    });
+    assert.equal(acknowledgment.status, "service_acknowledged");
+    assert.equal(acknowledgment.basis, "SYNTHETIC_SERVICE_ACK");
+    assert.equal((await runSubscriberStripeSubscription(confirmed, async () => reply({
+        ...receipt, basis:"BUYER_SERVICE_ASSERTION",
+    }))).status, "unavailable");
+    assert.equal((await runSubscriberStripeSubscription(confirmed, async () => reply({}, 409))).status, "held");
+});
