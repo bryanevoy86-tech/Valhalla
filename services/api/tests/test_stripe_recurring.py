@@ -25,8 +25,9 @@ from app.services.stripe_recurring_worker import reconcile_due_invoice
 from app.users.models import AccountSettings, UserProfile
 
 
-@pytest.mark.parametrize("terminal_chargeback", [False, True], ids=["lifecycle", "after-recognition-chargeback"])
-def test_recurring_checkout_renewal_cancellation_and_payment_holds(deal_client, monkeypatch, terminal_chargeback):
+@pytest.mark.parametrize("terminal_chargeback_minor", [0, 1200, 475],
+                         ids=["lifecycle", "full-chargeback", "partial-chargeback"])
+def test_recurring_checkout_renewal_cancellation_and_payment_holds(deal_client, monkeypatch, terminal_chargeback_minor):
     client, engine = deal_client
     for model in (UserProfile, AccountSettings, RevokedAccessToken, SaaSPlan, SaaSPlanModule,
                   Subscription, StripeFinancialEvent, StripeOrderBinding, StripeBalanceEvidence,
@@ -341,15 +342,16 @@ def test_recurring_checkout_renewal_cancellation_and_payment_holds(deal_client, 
         assert settlement["acknowledged_count"] == settlement["liability_release_count"] == 1
         assert settlement["recognized_unheld_minor"] is None and settlement["available_cash_minor"] is None
         assert scoped_service_settlement(db, {**params["scope"], "business_id": "business-other"}, live=False) is None
-    if terminal_chargeback:
+    if terminal_chargeback_minor:
         dispute = {"id": "du_First", "object": "dispute", "livemode": False, "charge": "ch_First",
-                   "payment_intent": "pi_First", "currency": "cad", "amount": 1200, "status": "lost",
+                   "payment_intent": "pi_First", "currency": "cad", "amount": terminal_chargeback_minor, "status": "lost",
                    "balance_transactions": [{"id": "txn_ServiceDispute"}]}
         fixtures["/v1/charges/ch_First"]["disputed"] = True
         fixtures["/v1/disputes/du_First"] = dispute
         txn = {"id": "txn_ServiceDispute", "object": "balance_transaction", "source": "du_First",
                "currency": "cad", "type": "adjustment", "reporting_category": "dispute", "status": "available",
-               "amount": -1200, "net": -1350, "fee": 150, "available_on": start + 300}
+               "amount": -terminal_chargeback_minor, "net": -terminal_chargeback_minor - 150,
+               "fee": 150, "available_on": start + 300}
         fixtures["/v1/balance_transactions/txn_ServiceDispute"] = txn
 
         @contextmanager
@@ -365,13 +367,16 @@ def test_recurring_checkout_renewal_cancellation_and_payment_holds(deal_client, 
         assert client.post(correction, headers=buyer, json=signed).status_code == 401
         wrong_invoice = root + "/paid-period/in_Renewal/chargeback-correction"
         assert client.post(wrong_invoice, headers=owner, json=signed).status_code == 409
-        txn["net"] = -1349
+        over_capture = webhook("charge.dispute.closed", "FirstServiceOverCapture", {**dispute, "amount": 1201})
+        assert client.post(correction, headers=owner, json={"signed_event_id": over_capture["event_id"]}).status_code == 409
+        txn["net"] += 1
         assert client.post(correction, headers=owner, json=signed).status_code == 409
-        txn["net"] = -1350
+        txn["net"] -= 1
         result = client.post(correction, headers=owner, json=signed)
         assert result.status_code == 200, result.text
         corrected = result.json()
         assert corrected["corrects_delivery_income"] is True
+        assert corrected["debit_minor"] == terminal_chargeback_minor
         assert corrected["basis"] == "SYNTHETIC_CHARGEBACK" and corrected["fee_minor"] == 150
         assert corrected["bank_debit_confirmed"] is False and corrected["ledger_entry_id"] is None
         assert client.post(correction, headers=owner, json=signed).json() == corrected

@@ -605,22 +605,23 @@ def test_correction_journals_keep_original_liability_and_balance_separate_effect
     from app.services.stripe_bank_booking import _journal
     from app.services.stripe_bank_reversal import _book_reversal
     from app.services.stripe_refund_correction import _post_correction
-    from app.services.stripe_dispute_correction import SOURCE
+    from app.services.stripe_dispute_correction import SOURCE, _record_chargeback
+    from app.services.stripe_revenue_release import SOURCE as RELEASE_SOURCE
 
     _, engine = deal_client
-    for model in (Account, Period, JournalEntry, JournalLine):
+    for model in (Account, Period, JournalEntry, JournalLine, LegacyOrchestrationEvent):
         model.__table__.create(engine, checkfirst=True)
     scope = {"legacy_instance_id": "legacy-books", "business_id": "accounting-fixture",
              "engine_id": "finance-books", "jurisdiction": "CA-MB"}
     monkeypatch.setenv("VALHALLA_STRIPE_BANK_BOOKING_ENABLED", "1")
     monkeypatch.setenv("VALHALLA_STRIPE_BANK_BOOKING_SCOPE", outcome_scope_key(scope))
-    for name in ("BANK", "CLEARING", "FEES", "OBLIGATIONS"):
+    for name in ("BANK", "CLEARING", "FEES", "OBLIGATIONS", "REFUND_CONTRA_INCOME"):
         monkeypatch.setenv("VALHALLA_STRIPE_BOOK_" + name, name)
     booked_on = date(2026, 11, 20)
     with Session(engine) as db:
         accounts = {key: Account(code=key, name=key, type=value, currency="CAD", active=True)
                     for key, value in {"BANK": "asset", "CLEARING": "asset", "FEES": "expense",
-                                       "OBLIGATIONS": "liability"}.items()}
+                                       "OBLIGATIONS": "liability", "REFUND_CONTRA_INCOME": "income"}.items()}
         period = Period(label="isolated correction", start_date=booked_on, end_date=booked_on, closed=False)
         db.add_all([period, *accounts.values()])
         db.flush()
@@ -642,6 +643,25 @@ def test_correction_journals_keep_original_liability_and_balance_separate_effect
         assert amounts(chargeback) == {(accounts["OBLIGATIONS"].id, Decimal("12.00"), 0),
                                        (accounts["CLEARING"].id, 0, Decimal("13.50")),
                                        (accounts["FEES"].id, Decimal("1.50"), 0)}
+        release_posting = JournalEntry(entry_date=booked_on, source=RELEASE_SOURCE, source_ref="release_fixture")
+        db.add(release_posting)
+        db.flush()
+        released = {"ledger_entry_id": release_posting.id, "recognized_revenue_minor": 1200,
+                    "posting_date": booked_on.isoformat()}
+        effect = {"scope": scope, "debit_minor": 475, "fee_minor": 150, "processor_balance_id": "txn_Partial",
+                  "processor_posted_on": booked_on.isoformat()}
+        bank = {**receipt, "booked_on": booked_on.isoformat()}
+        corrected = _record_chargeback(
+            db, "partial_fixture", dict(effect), bank, "release_fixture", released, captured_minor=1200, live=True,
+        )
+        assert amounts(corrected["ledger_entry_id"]) == {
+            (accounts["REFUND_CONTRA_INCOME"].id, Decimal("4.75"), 0),
+            (accounts["CLEARING"].id, 0, Decimal("6.25")),
+            (accounts["FEES"].id, Decimal("1.50"), 0),
+        }
+        assert _record_chargeback(
+            db, "partial_fixture", dict(effect), bank, "release_fixture", released, captured_minor=1200, live=True,
+        ) == corrected
         period.closed = True
         with pytest.raises(HTTPException, match="open accounting period"):
             _book_reversal(db, "book_fixture", "late_fixture", scope, receipt, 1140, booked_on)

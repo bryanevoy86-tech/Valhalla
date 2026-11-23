@@ -27,11 +27,13 @@ class ChargebackIn(StrictModel):
 
 def _debit(client, snapshot, order, charge_id, now):
     gross, dispute_id = order["amount_minor"], snapshot["object_id"]
-    expected = (charge_id, order["payment_intent_id"], "cad", gross)
-    if ((snapshot.get("charge_id"), snapshot.get("payment_intent_id"), snapshot.get("currency"),
-         snapshot.get("amount_minor")) != expected or snapshot.get("native_status") != "lost"
+    disputed = snapshot.get("amount_minor")
+    expected = (charge_id, order["payment_intent_id"], "cad")
+    if (not minor_amount(disputed) or not 0 < disputed <= gross
+            or (snapshot.get("charge_id"), snapshot.get("payment_intent_id"), snapshot.get("currency")) != expected
+            or snapshot.get("native_status") != "lost"
             or snapshot.get("kind") != "charge.dispute.closed" or not stripe_id(dispute_id, "du")):
-        raise HTTPException(409, "An exact signed full lost dispute is required")
+        raise HTTPException(409, "An exact signed lost dispute within the captured amount is required")
     _provider_object(client, "/v1/account", order["stripe_account_id"], "account")
     charge = _provider_object(client, f"/v1/charges/{charge_id}", charge_id, "charge")
     if (charge.get("livemode") is not order["livemode"] or charge.get("disputed") is not True
@@ -41,8 +43,9 @@ def _debit(client, snapshot, order, charge_id, now):
     dispute = _provider_object(client, f"/v1/disputes/{dispute_id}", dispute_id, "dispute")
     members = dispute.get("balance_transactions")
     if (dispute.get("livemode") is not order["livemode"] or dispute.get("status") != "lost"
+            or not minor_amount(dispute.get("amount"))
             or (dispute.get("charge"), dispute.get("payment_intent"), dispute.get("currency"),
-                dispute.get("amount")) != expected
+                dispute.get("amount")) != (*expected, disputed)
             or not isinstance(members, list) or len(members) != 1 or not isinstance(members[0], dict)
             or not stripe_id(members[0].get("id"), "txn")):
         raise HTTPException(409, "Only one exact terminal dispute debit is supported")
@@ -51,11 +54,12 @@ def _debit(client, snapshot, order, charge_id, now):
     fee, posted = remote.get("fee"), remote.get("available_on")
     if (remote.get("source") not in {dispute_id, charge_id} or remote.get("currency") != "cad"
             or remote.get("type") != "adjustment" or remote.get("reporting_category") != "dispute"
-            or remote.get("status") != "available" or remote.get("amount") != -gross
-            or not minor_amount(fee) or type(remote.get("net")) is not int or remote["net"] != -gross - fee
+            or remote.get("status") != "available"
+            or type(remote.get("amount")) is not int or remote["amount"] != -disputed
+            or not minor_amount(fee) or type(remote.get("net")) is not int or remote["net"] != -disputed - fee
             or type(posted) is not int or not 0 < posted <= int(now.timestamp())):
         raise HTTPException(409, "Processor dispute debit or fee did not reconcile")
-    return {"dispute_id": dispute_id, "processor_balance_id": txn, "debit_minor": gross, "fee_minor": fee,
+    return {"dispute_id": dispute_id, "processor_balance_id": txn, "debit_minor": disputed, "fee_minor": fee,
             "processor_posted_on": datetime.fromtimestamp(posted, timezone.utc).date().isoformat()}
 
 
@@ -83,7 +87,9 @@ def configured_chargeback(db, order_id, request, *, live):
                  "signed_dispute_sha256": event.snapshot_sha256, **effect,
                  "corrects_delivery_income": release is not None, "bank_debit_confirmed": False,
                  "available_cash_minor": None, "basis": "STRIPE_CAD_CHARGEBACK" if live else "SYNTHETIC_CHARGEBACK"}
-        return _record_chargeback(db, key, value, bank, release_key, release, live=live)
+        return _record_chargeback(
+            db, key, value, bank, release_key, release, captured_minor=binding["amount_minor"], live=live,
+        )
 
 
 def _deny_prior_refund(db, charge_id, live):
@@ -96,12 +102,12 @@ def _deny_prior_refund(db, charge_id, live):
         raise HTTPException(409, "A prior refund requires separate adjustment review")
 
 
-def _record_chargeback(db, key, value, bank, release_key, release, *, live):
+def _record_chargeback(db, key, value, bank, release_key, release, *, captured_minor, live):
     scope = value["scope"]
     if live and release is not None:
         posting = db.get(JournalEntry, release["ledger_entry_id"])
         if (posting is None or posting.source != RELEASE_SOURCE or posting.source_ref != release_key
-                or release["recognized_revenue_minor"] != value["debit_minor"]):
+                or release["recognized_revenue_minor"] != captured_minor):
             raise HTTPException(409, "Prior recognition is contradictory")
     previous = _read_record(db, key, KIND, scope)
     if previous is not None:
@@ -167,4 +173,6 @@ def configured_subscription_chargeback(db, local_id, invoice_id, request, *, liv
                  "signed_dispute_sha256": event.snapshot_sha256, **effect,
                  "corrects_delivery_income": release is not None, "bank_debit_confirmed": False,
                  "available_cash_minor": None, "basis": "STRIPE_CAD_CHARGEBACK" if live else "SYNTHETIC_CHARGEBACK"}
-        return _record_chargeback(db, key, value, bank, release_key, release, live=live)
+        return _record_chargeback(
+            db, key, value, bank, release_key, release, captured_minor=paid["captured_minor"], live=live,
+        )
