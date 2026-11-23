@@ -143,3 +143,42 @@ def delivery_evidence_summary(db, order_id, projection, bank, *, live):
     return {"basis": basis, "status": status,
             "recognized_revenue_minor": release["recognized_revenue_minor"] if release else None,
             "available_cash_minor": None}
+
+
+def scoped_delivery_outcomes(db, scope, *, live):
+    """Read current release outcomes for specialist evidence, without issuing cash authority."""
+    from uuid import UUID
+
+    from sqlalchemy import inspect
+    from app.models.completion_registry import LegacyOrchestrationEvent
+    from app.services.prime_business_execution import _json
+
+    journal = LegacyOrchestrationEvent
+    if not inspect(db.connection()).has_table(journal.__tablename__):
+        return []
+    basis = "ACKNOWLEDGED_CAD_DELIVERY" if live else "SYNTHETIC_LIABILITY_RELEASE_PREVIEW"
+    rows = db.scalars(select(journal).where(
+        journal.event_type == RELEASE, journal.legacy_instance_id == scope["legacy_instance_id"],
+    ).order_by(journal.id.desc()).execution_options(yield_per=20))
+    result = []
+    for row in rows:
+        receipt = _json(row.payload_json, {})
+        data = receipt.get("value") if isinstance(receipt, dict) else None
+        if not isinstance(data, dict) or data.get("scope") != scope or data.get("basis") != basis:
+            continue
+        try:
+            order_id = UUID(data["order_id"])
+            if row.event_id != f"STRIPE-DELIVERY-REVENUE-{order_id}":
+                raise ValueError
+            projection = inspect_binding(db, order_id, live=live)
+            bank = bank_batch_summary(db, order_id, projection, live=live)
+            summary = delivery_evidence_summary(db, order_id, projection, bank, live=live)
+            if summary is None:
+                raise ValueError
+        except (HTTPException, ValueError, KeyError, TypeError):
+            summary = {"status": "DELIVERY_EVIDENCE_CONFLICT", "recognized_revenue_minor": None,
+                       "available_cash_minor": None}
+        result.append({**summary, "receipt_id": row.event_id, "basis": basis, "external_authority": False})
+        if len(result) == 10:
+            break
+    return result

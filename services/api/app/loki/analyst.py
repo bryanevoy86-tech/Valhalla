@@ -165,6 +165,19 @@ def challenge(item: dict) -> IndependentReviewIn:
                     "checkout_review_pending", "observations/checkout_learning",
                     "Resolve the held fulfillment or refund support before material reliance.", critical=True,
                 ))
+            paid_deliveries = sources.get("paid_delivery_outcomes")
+            if isinstance(paid_deliveries, list) and any(
+                not isinstance(item, dict) or item.get("status") in {
+                    "DELIVERY_REVIEW_REQUIRED", "DELIVERY_EVIDENCE_CONFLICT",
+                } or item.get("external_authority") is not False or item.get("available_cash_minor") is not None
+                or (item.get("basis") == "SYNTHETIC_LIABILITY_RELEASE_PREVIEW"
+                    and item.get("recognized_revenue_minor") is not None)
+                for item in paid_deliveries
+            ):
+                findings.append(_finding(
+                    "paid_delivery_evidence_review", "observations/paid_delivery_outcomes",
+                    "Resolve the exact delivery or correction receipts before relying on this outcome.", critical=True,
+                ))
             factory = sources.get("factory_evidence_reconciliation")
             if isinstance(factory, dict) and factory.get("contradictions"):
                 findings.append(_finding(

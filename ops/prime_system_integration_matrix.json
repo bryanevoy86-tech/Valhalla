@@ -541,6 +541,8 @@
       "priority": "P0",
       "source_paths": [
         "services/api/app/services/stripe_fulfillment.py",
+        "services/api/app/services/stripe_revenue_release.py",
+        "web/weweb-widgets/subscriber-paid-product.mjs",
         "services/api/app/services/stripe_orders.py",
         "web/weweb-widgets/owner-operating-scope.mjs",
         "services/api/app/routers/foundry_checkout.py",
@@ -577,6 +579,7 @@
       "source_paths": [
         "services/api/app/routers/stripe_financial.py",
         "services/api/app/services/stripe_finance.py",
+        "services/api/app/services/stripe_refund_correction.py",
         "services/api/tests/test_stripe_finance.py",
         "services/api/app/models/foundry_checkout.py",
         "services/api/app/providers/stripe_adapter.py",

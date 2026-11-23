@@ -279,6 +279,13 @@ def test_registered_stripe_finance_replays_and_reconciles_only_matching_capture(
         assert release.json()["recognized_revenue_minor"] is None and release.json()["ledger_entry_id"] is None
         assert client.post(release_url, headers=keys, json=release_request).json() == release.json()
 
+        from app.services.stripe_revenue_release import scoped_delivery_outcomes
+
+        [outcome] = scoped_delivery_outcomes(db, scope, live=False)
+        assert outcome["status"] == "LIABILITY_RELEASE_REHEARSED" and outcome["external_authority"] is False
+        assert outcome["recognized_revenue_minor"] is None and scoped_delivery_outcomes(db, scope, live=True) == []
+
+
         assert scoped_bank_blockers(db, scope, live=False) == set()
         bank_item["transaction_id"] = "different_bank_tx"
         with pytest.raises(HTTPException, match="changed after reconciliation"):
@@ -312,6 +319,21 @@ def test_registered_stripe_finance_replays_and_reconciles_only_matching_capture(
             "id": "po_ValhallaTest", "object": "payout", "amount": 1920, "currency": "cad",
         }}}
         assert deliver(failure).status_code == 200
+        [held_delivery] = scoped_delivery_outcomes(db, scope, live=False)
+        assert held_delivery["status"] == "DELIVERY_REVIEW_REQUIRED"
+        from app.loki.analyst import challenge
+        from app.loki.evidence import artifact_digest
+
+        report = {"status": "observed", "external_authority": False,
+                  "observations": {"paid_delivery_outcomes": [held_delivery]}}
+        verdict = challenge({"artifact_type": "pantheon_report", "reference": "stripe-held-delivery",
+                             "raw_input": report, "artifact_sha256": artifact_digest(
+                                 "pantheon_report", "stripe-held-delivery", report,
+                             )})
+        assert any(finding.category == "paid_delivery_evidence_review" and finding.severity == "critical"
+                   for finding in verdict.findings)
+
+
         assert client.post(release_url, headers=keys, json=release_request).status_code == 409
         assert bank_batch_summary(db, UUID(order_id), matched.json(), live=False
                                   )["status"] == "CORRECTION_REVIEW_REQUIRED"
@@ -345,6 +367,16 @@ def test_registered_stripe_finance_replays_and_reconciles_only_matching_capture(
         release_lines = db.query(JournalLine).filter_by(entry_id=posting).all()
         assert len(release_lines) == 2
         assert sum(line.debit for line in release_lines) == sum(line.credit for line in release_lines) == 10
+
+        from app.services.stripe_refund_correction import _post_correction
+
+        reversal = _post_correction(db, scope, "isolated-unrecognized-refund", posting_date, 1000,
+                                    {"ledger_entry_id": entry_id, "batch_liability_minor": 2000}, None)
+        db.flush()
+        correction_lines = db.query(JournalLine).filter_by(entry_id=reversal).all()
+        assert len(correction_lines) == 2
+        assert sum(line.debit for line in correction_lines) == sum(line.credit for line in correction_lines) == 10
+        assert {db.get(Account, line.account_id).code for line in correction_lines} == {"CLEARING", "OBLIGATIONS"}
 
         db.rollback()
         assert db.query(JournalEntry).count() == 0
