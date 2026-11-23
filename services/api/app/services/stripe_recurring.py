@@ -337,7 +337,7 @@ def _reversed(db, row, receipt):
     snapshot = StripeFinancialEvent.snapshot
     event = db.scalar(select(StripeFinancialEvent).where(
         StripeFinancialEvent.livemode == row.livemode,
-        snapshot["kind"].as_string().in_(("charge.refunded", "charge.dispute.created")),
+        snapshot["kind"].as_string().in_(("charge.refunded", "charge.dispute.created", "charge.dispute.closed")),
         (snapshot["payment_intent_id"].as_string() == receipt["payment_intent_id"])
         | (snapshot["charge_id"].as_string() == receipt["charge_id"]),
     ).limit(1))

@@ -27,7 +27,7 @@ from app.services.stripe_bank_booking import BankBatchIn, _journal, bank_batch_s
 from app.services.stripe_payout_evidence import record_payout_evidence
 
 
-@pytest.mark.parametrize("partial_refunds", [False, True], ids=["payout-and-delivery", "ordered-partial-refunds"])
+@pytest.mark.parametrize("partial_refunds", [False, True, None], ids=["payout-and-delivery", "ordered-partial-refunds", "terminal-chargeback"])
 def test_registered_stripe_finance_replays_and_reconciles_only_matching_capture(deal_client, monkeypatch, partial_refunds):
     client, engine = deal_client
     StripeFinancialEvent.__table__.create(engine)
@@ -148,6 +148,12 @@ def test_registered_stripe_finance_replays_and_reconciles_only_matching_capture(
             **refund_balance, "id": txn_id, "source": refund_id, "amount": -amount, "net": -amount,
         }
 
+    dispute = {"id": "du_LostA", "object": "dispute", "livemode": False, "charge": "ch_CaptureA",
+               "payment_intent": "pi_CaptureA", "currency": "cad", "amount": 1000, "status": "lost",
+               "balance_transactions": [{"id": "txn_DisputeA"}]}
+    dispute_tx = {**refund_balance, "id": "txn_DisputeA", "source": "du_LostA", "type": "adjustment",
+                  "reporting_category": "dispute", "fee": 150, "net": -1150}
+
     def upstream(request):
         assert request.method == "GET"
         if request.url.path == "/v1/balance_transactions":
@@ -161,6 +167,7 @@ def test_registered_stripe_finance_replays_and_reconciles_only_matching_capture(
         responses = {"/v1/payouts/po_ValhallaTest": payout, "/v1/account": {"id": "acct_ValhallaTest", "object": "account"},
                      "/v1/charges/ch_CaptureA": charge, "/v1/balance_transactions/txn_CaptureA": balance,
                      "/v1/charges/ch_CaptureB": charge_b, "/v1/balance_transactions/txn_CaptureB": balance_b}
+        responses.update({"/v1/disputes/du_LostA": dispute, "/v1/balance_transactions/txn_DisputeA": dispute_tx})
         responses.update({"/v1/refunds/re_FullB": native_refund, "/v1/balance_transactions/txn_RefundB": refund_balance})
         return httpx.Response(200, json=(responses | adjustments)[request.url.path])
 
@@ -303,6 +310,32 @@ def test_registered_stripe_finance_replays_and_reconciles_only_matching_capture(
         with pytest.raises(HTTPException, match="changed after reconciliation"):
             reconcile([order_id, other_id])
         bank_item["transaction_id"] = "test_tx_exact"
+
+        if partial_refunds is None:
+            charge["disputed"] = True
+            created = {"id": "evt_DisputeOpened", "type": "charge.dispute.created", "livemode": False,
+                       "data": {"object": {**dispute, "status": "needs_response"}}}
+            closed = {**created, "id": "evt_DisputeLost", "type": "charge.dispute.closed", "data": {"object": dispute}}
+            assert deliver(created).status_code == 200
+            assert deliver(closed).status_code == 200
+            monkeypatch.setattr("app.services.stripe_dispute_correction.stripe_readback_client", read_only_fixture)
+            route = f"{binding_url}/{order_id}/chargeback-correction"
+            body = {"signed_event_id": closed["id"]}
+            assert client.post(route, json=body).status_code == 401
+            assert client.post(route, headers=keys, json={"signed_event_id": created["id"]}).status_code == 409
+            dispute_tx["net"] = -1151
+            assert client.post(route, headers=keys, json=body).status_code == 409
+            dispute_tx["net"] = -1150
+            response = client.post(route, headers=keys, json=body)
+            assert response.status_code == 200, response.text
+            effect = response.json()
+            assert effect["debit_minor"] == 1000 and effect["fee_minor"] == 150
+            assert effect["basis"] == "SYNTHETIC_CHARGEBACK" and effect["bank_debit_confirmed"] is False
+            assert effect["ledger_entry_id"] is None and effect["available_cash_minor"] is None
+            assert client.post(route, headers=keys, json=body).json() == effect
+            assert db.query(JournalEntry).count() == 0
+            assert scoped_bank_blockers(db, scope, live=False) == {"STRIPE_BANK_CORRECTION_REQUIRED"}
+            return
 
         charge_b["refunded"], charge_b["amount_refunded"] = True, 1000
         signed_full_refund = {"id": "evt_FullRefundB", "type": "charge.refunded", "livemode": False, "data": {"object": {

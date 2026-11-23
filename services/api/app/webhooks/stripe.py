@@ -17,6 +17,7 @@ FINANCIAL_EVENTS = {
     "payment_intent.payment_failed",
     "charge.refunded",
     "charge.dispute.created",
+    "charge.dispute.closed",
     "payout.failed",
     "payout.canceled",
     "invoice.paid",

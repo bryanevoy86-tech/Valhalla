@@ -92,7 +92,7 @@ def _reversal_pending(db: Session, order: StripeOrderBinding, charge_id: str | N
     if charge_id is not None:
         matches = or_(matches, snapshot["charge_id"].as_string() == charge_id)
     row = db.scalar(select(StripeFinancialEvent).where(
-        StripeFinancialEvent.livemode == order.livemode, snapshot["kind"].as_string().in_(("charge.refunded", "charge.dispute.created")), matches,
+        StripeFinancialEvent.livemode == order.livemode, snapshot["kind"].as_string().in_(("charge.refunded", "charge.dispute.created", "charge.dispute.closed")), matches,
     ).limit(1))
     if row is None:
         return False
@@ -100,7 +100,7 @@ def _reversal_pending(db: Session, order: StripeOrderBinding, charge_id: str | N
     return True
 
 
-def inspect_binding(db: Session, order_id: UUID, *, live: bool):
+def inspect_binding(db: Session, order_id: UUID, *, live: bool, include_held_evidence=False):
     account_id = _require_configured_mode(live)
     _require_tables(db)
     order = db.get(StripeOrderBinding, order_id)
@@ -135,6 +135,8 @@ def inspect_binding(db: Session, order_id: UUID, *, live: bool):
                     account_id, order.payment_intent_id, value["amount_minor"], value["currency"])):
         raise HTTPException(409, "Stripe processor and order evidence differ")
     if _reversal_pending(db, order, evidence["charge_id"]):
+        if include_held_evidence:
+            projection["processor_evidence"] = {**evidence, "sha256": balance.evidence_sha256}
         return {**projection, "status": "REFUND_REVIEW_REQUIRED"}
     return {**projection, "status": "MATCHED_PROCESSOR_EVIDENCE",
             "processor_evidence": {**evidence, "sha256": balance.evidence_sha256}}

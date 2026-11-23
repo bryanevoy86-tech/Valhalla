@@ -1149,3 +1149,5 @@ The acceptance matrix retains 13 P0 and 39 total criteria requiring internal cod
 - The prior WeWeb owner operating-scope renderer was saved successfully in the primary draft. Exact script readback rendered a scoped recurring hold and rejected a fabricated accessible-cash payload in isolated replay. The authorized browser preview and live evidence gates remain open.
 
 - Reused the existing bank batch route and atomic journal for recurring invoice members. The isolated two-invoice fixture checks total and exact Stripe membership, independent CAD bank credit, deterministic replay, no sandbox booking or cash, and payout failure holds. Original deposits and customer-delivery liabilities retain their existing treatment.
+
+- Recurring whole-payout settlement passed all four hosted jobs in run 45115496626 at `13fd75ea6b536e59cfdab3b90681db32939ae38b`. Added signed terminal one-time CAD full chargeback intake and independent Stripe readback of principal, fee and net debit. The new correction is scoped to the original booking and journals only under the existing live chart authority. Partial, reopened, won, recurring and bank-side correction cases remain open.

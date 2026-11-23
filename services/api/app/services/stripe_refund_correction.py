@@ -75,7 +75,7 @@ def refund_evidence(client, account_id, order, event, refund_id, now, prior_mino
             "refund_minor": refunded, "processor_posted_on": datetime.fromtimestamp(stamp, timezone.utc).date().isoformat()}
 
 
-def _post_correction(db, scope, key, posted, gross, bank, prior_release):
+def _post_correction(db, scope, key, posted, gross, bank, prior_release, *, fee=0, source=SOURCE):
     if (os.getenv("VALHALLA_STRIPE_BANK_BOOKING_ENABLED") != "1"
             or os.getenv("VALHALLA_STRIPE_BANK_BOOKING_SCOPE") != outcome_scope_key(scope)):
         raise HTTPException(503, "Processor refund accounting is not authorized for this scope")
@@ -96,17 +96,23 @@ def _post_correction(db, scope, key, posted, gross, bank, prior_release):
         if (len(original_liability) != 1 or original_liability[0].debit != 0
                 or original_liability[0].credit != Decimal(bank["batch_liability_minor"]) / 100):
             raise HTTPException(409, "Refund liability account differs from the original bank booking")
-    if db.scalar(select(JournalEntry.id).filter_by(source=SOURCE, source_ref=key).limit(1)) is not None:
+    if db.scalar(select(JournalEntry.id).filter_by(source=source, source_ref=key).limit(1)) is not None:
         raise HTTPException(409, "Refund correction exists without an exact evidence receipt")
-    entry = JournalEntry(entry_date=posted, memo="Stripe refund in processor clearing", source=SOURCE, source_ref=key)
+    entry = JournalEntry(entry_date=posted, memo="Stripe correction in processor clearing", source=source, source_ref=key)
     db.add(entry)
     db.flush()
     amount = Decimal(gross) / 100
     tag = artifact_digest("stripe_refund_scope", key, scope)
     db.add_all([
         JournalLine(entry_id=entry.id, account_id=debit.id, debit=amount, credit=0, tag=tag),
-        JournalLine(entry_id=entry.id, account_id=clearing.id, debit=0, credit=amount, tag=tag),
+        JournalLine(entry_id=entry.id, account_id=clearing.id, debit=0, credit=amount + Decimal(fee) / 100, tag=tag),
     ])
+    if fee:
+        expense = db.scalar(select(Account).filter_by(code=os.getenv("VALHALLA_STRIPE_BOOK_FEES"),
+                                                       type="expense", active=True, currency="CAD"))
+        if expense is None:
+            raise HTTPException(503, "Approved processor fee expense account is required")
+        db.add(JournalLine(entry_id=entry.id, account_id=expense.id, debit=Decimal(fee) / 100, credit=0, tag=tag))
     return entry.id
 
 
@@ -128,7 +134,7 @@ def record_refund_correction(db, order_id, request, *, client, account_id, live)
         raise HTTPException(409, "Refund charge differs from the originally reconciled capture")
     dispute = db.scalar(select(StripeFinancialEvent).where(
         StripeFinancialEvent.livemode == live,
-        StripeFinancialEvent.snapshot["kind"].as_string() == "charge.dispute.created",
+        StripeFinancialEvent.snapshot["kind"].as_string().in_(("charge.dispute.created", "charge.dispute.closed")),
         StripeFinancialEvent.snapshot["charge_id"].as_string() == event.snapshot["charge_id"],
     ).limit(1))
     if dispute is not None:

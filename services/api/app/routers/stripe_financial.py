@@ -18,6 +18,7 @@ from app.services.stripe_fulfillment import (
 from app.services.stripe_bank_booking import BankBatchIn, configured_bank_batch
 from app.services.stripe_orders import OrderBindingIn, inspect_binding, register_binding
 from app.services.stripe_revenue_release import DeliveryReleaseIn, recognize_delivery
+from app.services.stripe_dispute_correction import ChargebackIn, configured_chargeback
 from app.services.stripe_refund_correction import RefundCorrectionIn, configured_refund_correction
 from app.services.stripe_recurring import (
     InvoiceProofIn, RecurringBindingIn, apply_paid_invoice, bind_recurring, recurring_clients, schedule_cancellation,
@@ -104,6 +105,11 @@ def revoke_paid_delivery(order_id: UUID, payload: RevokeDeliveryIn, db: Session 
 def release_paid_delivery_liability(order_id: UUID, payload: DeliveryReleaseIn, db: Session = Depends(get_db)):
     return private_owner_response(recognize_delivery(db, order_id, payload, live=is_live()))
 
+
+
+@router.post("/api/governance/floor/stripe-orders/{order_id}/chargeback-correction", dependencies=owner_keys)
+def reconcile_chargeback(order_id: UUID, payload: ChargebackIn, db: Session = Depends(get_db)):
+    return private_owner_response(configured_chargeback(db, order_id, payload, live=is_live()))
 
 
 @router.post("/api/governance/floor/stripe-orders/{order_id}/refund-correction", dependencies=owner_keys)

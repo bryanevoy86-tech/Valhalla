@@ -91,8 +91,8 @@ def event_snapshot(payload, live):
     elif kind == "charge.refunded":
         object_type, prefix, intent = "charge", "ch", item.get("payment_intent")
         amount, charge = item.get("amount_refunded"), item.get("id")
-    elif kind == "charge.dispute.created":
-        object_type, prefix, intent = "dispute", "dp", item.get("payment_intent")
+    elif kind in {"charge.dispute.created", "charge.dispute.closed"}:
+        object_type, prefix, intent = "dispute", "du", item.get("payment_intent")
         amount, charge = item.get("amount"), item.get("charge")
         if not stripe_id(charge, "ch"):
             raise HTTPException(422, "Stripe dispute charge identity is required")
@@ -112,6 +112,10 @@ def event_snapshot(payload, live):
     snapshot = {"kind": kind, "livemode": live, "object_id": item["id"], "payment_intent_id": intent,
             "charge_id": charge, "amount_minor": amount, "currency": currency,
             "merchant_order_id": merchant_order_reference(item) if object_type == "payment_intent" else None}
+    if kind == "charge.dispute.closed":
+        if item.get("status") not in {"won", "lost", "warning_closed"}:
+            raise HTTPException(422, "A terminal dispute status is required")
+        snapshot["native_status"] = item["status"]
     if object_type == "payment_intent" and item.get("customer") is not None:
         if not stripe_id(item["customer"], "cus"):
             raise HTTPException(422, "Unsupported Stripe customer identity")
@@ -136,7 +140,7 @@ def journal_event(db: Session, payload, raw, live):
         raise HTTPException(503, "Stripe event journal unavailable")
     event_id = payload["id"]
     body_hash = hashlib.sha256(raw).hexdigest()
-    if snapshot["kind"] in {"charge.refunded", "charge.dispute.created"} and inspect(db.connection()).has_table(
+    if snapshot["kind"] in {"charge.refunded", "charge.dispute.created", "charge.dispute.closed"} and inspect(db.connection()).has_table(
         StripeOrderBinding.__tablename__,
     ):
         captures = StripeFinancialEvent.snapshot
@@ -150,7 +154,7 @@ def journal_event(db: Session, payload, raw, live):
             or_(StripeOrderBinding.payment_intent_id == snapshot["payment_intent_id"],
                 StripeOrderBinding.payment_intent_id.in_(matches)),
         ).order_by(StripeOrderBinding.id).with_for_update()).all()
-    if snapshot["kind"] in {"charge.refunded", "charge.dispute.created"}:
+    if snapshot["kind"] in {"charge.refunded", "charge.dispute.created", "charge.dispute.closed"}:
         from app.models.stripe_recurring import StripePaidPeriod, StripeSaaSBinding
 
         inspector = inspect(db.connection())
