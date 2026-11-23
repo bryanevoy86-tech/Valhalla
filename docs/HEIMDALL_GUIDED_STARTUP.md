@@ -27,7 +27,7 @@ Government sources for the checklist. [Federal filing steps](https://ised-isde.c
 
 ## Proposed professional shortlist
 
-**Research checked November 23, 2026. Owner approval pending.** Firm biographies establish reported service areas. The Law Society lookup returned a verification-service quota error during the search. Individual practising status, restrictions and conflicts remain open. CPA firm and named-practitioner standing also need a direct regulator check. Retain the exact results, date and most recent quote before approval or engagement.
+**Research checked November 23, 2026. Owner approval pending.** The four firm biographies were rechecked and establish reported service areas. The Law Society lookup returned a verification-service quota error during the search. Individual practising status, restrictions and conflicts remain open. CPA firm and named-practitioner standing also need a direct regulator check. Retain the exact results, date and most recent quote before approval or engagement.
 
 | Candidate | Preliminary fit and scope to confirm |
 |---|---|
@@ -47,6 +47,14 @@ Government sources for the checklist. [Federal filing steps](https://ised-isde.c
 |---|---|
 | Lawyer | Which route and legal structure suit the first offer? How should existing IP be documented, licensed or transferred? Which records, customer terms and registrations are needed for this offer? Which group, acquisition and trust decisions can wait? What is included in the quote? |
 | Accountant | What is the chart, year-end and monthly close workflow? What tax registrations apply to the facts? How do refunds, deferred delivery, processor holds and payouts reconcile? How much does each entity and reporting obligation add? What records are needed from the owner and bank? |
+
+## Consultation packets for owner approval
+
+**Counsel packet.** Prepare the proposed and alternate names, the first operating jurisdiction, an ownership and director outline, a high-level product and IP inventory, and decisions requiring review. Ask for a written recommendation on the Manitoba versus federal route, the simplest workable entity structure, IP licensing, customer terms and the filing sequence. Ask for separate estimates for first-year formation, annual maintenance and any later HoldCo, trust or cross-border work.
+
+**Accounting packet.** Prepare an illustrative first-offer transaction flow, proposed banking and Stripe settlement evidence, expected receipts and costs by category, a provisional fiscal calendar, and the outstanding reporting questions. Ask for a written scope covering bookkeeping setup, corporate accounts, applicable tax registrations, deferred delivery, refunds, bank reconciliation, tax returns and the cost per entity. Ask which case-specific records the owner should take to the EIA contact. Record those instructions separately once confirmed.
+
+**Shared intake procedure.** First verify the named professional and any restrictions in the regulator register. Record the exact name, firm, status, scope limits, source link, and check date. Confirm conflicts, an approved secure intake channel and whom the engagement will cover. Ask for itemized fees, assumptions, taxes, disbursements, timing, excluded work and written deliverables. Use an anonymized outline until the owner authorizes the exact recipient and disclosure. Leave the shortlist pending while licensing, conflicts or engagement scope remain unresolved.
 
 ## Service commissioning and rollback
 

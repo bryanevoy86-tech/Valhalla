@@ -172,8 +172,12 @@ def test_local_analyst_process_publishes_material_and_hash_bound_findings(deal_c
     review = client.post("/loki/reviews", json={**artifact, "input_source": "isolated-local-process"}).json()
     loopback_api.headers.clear()
     loopback_api.headers["X-Loki-Reviewer-Key"] = key
-    assert worker(loopback_api, "universal_opportunity")["status"] == "reviewed"
-    assert worker(loopback_api, "universal_opportunity")["status"] == "idle"
+    observed = worker(loopback_api, "universal_opportunity", "isolated-running-analyst")
+    assert observed["status"] == "reviewed" and observed["verified"] is True
+    assert observed["review_id"] == review["id"]
+    assert observed["artifact_sha256"] == artifact["artifact_sha256"]
+    assert observed["reviewer_id"] == "isolated-running-analyst"
+    assert worker(loopback_api, "universal_opportunity", "isolated-running-analyst") == {"status": "idle"}
     assert loopback_api.get(f"/loki/reviews/{review['id']}").status_code == 401
 
     findings = client.get(f"/loki/reviews/{review['id']}/findings").json()
@@ -189,7 +193,7 @@ def test_local_analyst_process_publishes_material_and_hash_bound_findings(deal_c
     with Session(engine) as db:
         receipt = db.get(LokiIndependentReceipt, UUID(review["id"]))
         assert receipt.reviewer_id == "isolated-running-analyst"
-        assert len(receipt.result_sha256) == 64
+        assert receipt.result_sha256 == observed["result_sha256"]
         db.get(LokiFinding, UUID(findings[0]["id"])).message = "Altered after publication"
         db.commit()
     assert client.get(verdict_url).status_code == 409
@@ -227,3 +231,41 @@ def test_local_analyst_retains_material_findings_for_unbound_specialist_claims()
         "economic_fixture_contradiction": "artifact:/observations/economic_reassessment",
         "treasury_statement_conflict": "artifact:/observations/treasury_statement_evidence",
     }
+
+
+def test_independent_worker_rejects_mismatched_publication_receipts(monkeypatch):
+    from pathlib import Path
+    import runpy
+    from uuid import uuid4
+
+    import httpx
+    import pytest
+
+    from app.loki.analyst import challenge
+    from app.loki.evidence import artifact_digest
+
+    worker_root = Path(__file__).resolve().parents[1] / "tools" / "cron"
+    monkeypatch.syspath_prepend(str(worker_root))
+    worker = runpy.run_path(str(worker_root / "loki_analyst_worker.py"))["tick"]
+    kind = "pantheon_report"
+    proposal = {"status": "observed", "external_authority": False, "observations": {}}
+    item = {"artifact_type": kind, "reference": "fixture", "review_id": str(uuid4()), "raw_input": proposal,
+            "artifact_sha256": artifact_digest(kind, "fixture", proposal)}
+    receipt = {"review_id": item["review_id"], "artifact_sha256": item["artifact_sha256"],
+               "result_sha256": "e" * 64, "analysis_ref": challenge(item).analysis_ref, "reviewer_id": "expected"}
+
+    def run(overrides, status=201):
+        def send(request):
+            if request.method == "GET":
+                return httpx.Response(200, json=[item])
+            return httpx.Response(status, json={**receipt, **overrides})
+        with httpx.Client(base_url="https://fixture.invalid", transport=httpx.MockTransport(send)) as client:
+            return worker(client, kind, "expected")
+
+    for changes in ({"review_id": str(uuid4())}, {"artifact_sha256": "f" * 64},
+                    {"reviewer_id": "another"}, {"analysis_ref": "another"}, {"result_sha256": "malformed"}):
+        with pytest.raises(RuntimeError, match="does not match"):
+            run(changes)
+    with pytest.raises(RuntimeError, match="does not match"):
+        run({}, status=200)
+    assert run({}, status=409) == {"status": "blocked", "verified": False}

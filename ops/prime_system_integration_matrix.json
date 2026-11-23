@@ -1905,7 +1905,7 @@
         "alembic/versions/20261123_loki_disposition_binding.py",
         "tests/test_january_release_restore.py"
       ],
-      "source_observation": "Independent Loki receipts and reconsideration remain required for reviewed specialist material. Staging advice excludes the active Prime model across providers. Findings and decision clearance require a digest-bound completed independent receipt. Legacy unbound history remains readable. A separate staged model, reviewer process and transport proof remain pending.",
+      "source_observation": "Independent Loki receipts and reconsideration remain required for reviewed specialist material. Staging advice excludes the active Prime model across providers. Findings and decision clearance require a digest-bound completed independent receipt. Legacy unbound history remains readable. The analyst worker checks the publication acknowledgement against the requested review, artifact, analysis reference and configured reviewer identity. Run-stamped UTC logs expose the receipt digests for staging comparison. A separate staged model, reviewer process and transport proof remain pending.",
       "evidence_level": "SQLITE_INTEGRATION_TESTED",
       "production_verified": false,
       "acceptance_test": "Independently audit immutable Heimdall proposals with contrary evidence and sourced objection ledger, prove re-audit after changes, equal-standing owner dissent, lawful professional escalation, and mandatory fail-closed high-risk dispatch; realistic adversarial cases and reviewer outage tested in Postgres/staging. Prove proactive cross-system coverage, reports to Prime, immutable independent dissent and recorded Prime response. Owner receives exceptions rather than approving every routine decision.",
@@ -1931,7 +1931,7 @@
           "conditional_future_expansion": null
         },
         "january_2027_launch_gates": {
-          "implemented_and_tested": "Digest-scoped objections, separate reviewer authentication, intact findings display and fail-closed clearance for unbound historical receipts have isolated fixture evidence. Owner dispositions bind the original findings digest. Prime, specialist references and governed listing evidence carry the binding and old unbound decisions are held.",
+          "implemented_and_tested": "Digest-scoped objections, separate reviewer authentication, intact findings display and fail-closed clearance for unbound historical receipts have isolated fixture evidence. Owner dispositions bind the original findings digest. Prime, specialist references and governed listing evidence carry the binding and old unbound decisions are held. Local worker tests reject mismatched publication acknowledgements and preserve a correlatable receipt for verified results.",
           "january_core": "Verify independent reviewer identity, outages, stale-object rejection and durable dissent.",
           "first_one_time_cad": "Bind the exact commercial proposal to Loki's report and require a matching disposition at activation.",
           "first_recurring_cad": "Also challenge recurring terms, recovery, disputed funds and access changes.",
