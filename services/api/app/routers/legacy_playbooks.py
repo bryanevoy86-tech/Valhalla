@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 import hashlib
 import json
 import re
+from statistics import median
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -223,8 +224,19 @@ def _workflow_proofs(db, scope, refs, max_age_days):
                 observed = observed.replace(tzinfo=timezone.utc)
             if not now - timedelta(days=max_age_days) <= observed <= now:
                 raise ValueError
-            proofs.append({"outcome_event_id": ref, "artifact_sha256": item["artifact_sha256"],
-                           "observed_at": item["observed_at"]})
+            proof = {"outcome_event_id": ref, "artifact_sha256": item["artifact_sha256"],
+                     "observed_at": item["observed_at"]}
+            observation = item.get("execution_observation")
+            if observation is not None:
+                if (not isinstance(observation, dict)
+                        or observation.get("kind") != "INTERNAL_DETERMINISTIC_DRAFT"
+                        or type(observation.get("elapsed_ms")) is not int or observation["elapsed_ms"] < 0
+                        or type(observation.get("provider_calls")) is not int or observation["provider_calls"] != 0
+                        or type(observation.get("provider_cost_minor_cad")) is not int
+                        or observation["provider_cost_minor_cad"] != 0):
+                    raise ValueError
+                proof["execution_observation"] = observation
+            proofs.append(proof)
         except (ValueError, KeyError, TypeError):
             raise HTTPException(409, "Workflow outcome is missing, stale or outside its approved scope") from None
     return proofs
@@ -274,12 +286,15 @@ def assess_workflow_reuse(payload: WorkflowReuseIn, db: Session = Depends(get_db
         reasons.append("DATA_CLASS_CHANGED")
     if _workflow_record(db, source, payload.name, payload.version + 1) is not None:
         reasons.append("WORKFLOW_SUPERSEDED")
+    current_proofs = []
     try:
         if _source_workflow_policy(db, source) != record["source_policy"]:
             reasons.append("POLICY_CHANGED")
         proofs = _workflow_proofs(db, source, record["outcome_ids"], record["maximum_evidence_age_days"])
         if proofs != record["verified_internal_outcomes"]:
             reasons.append("OPERATING_EVIDENCE_CHANGED")
+        else:
+            current_proofs = proofs
         require_no_containment(db, source)
     except HTTPException as error:
         if error.status_code != 409:
@@ -287,7 +302,14 @@ def assess_workflow_reuse(payload: WorkflowReuseIn, db: Session = Depends(get_db
         reasons.append("SOURCE_EVIDENCE_POLICY_OR_CONTAINMENT_HOLD")
     if _emergency_stop_active(db):
         reasons.append("EMERGENCY_STOP")
+    baseline = [proof["execution_observation"]["elapsed_ms"]
+                for proof in current_proofs if "execution_observation" in proof]
     return {"status": "REUSE_REVIEW_REQUIRED" if reasons else "DETERMINISTIC_CANDIDATE",
-            "review_reasons": reasons, "playbook_sha256": record["sha256"],
+            "review_reasons": reasons,
+            "historical_draft_baseline": {
+                "sample_count": len(baseline), "median_elapsed_ms": median(baseline) if baseline else None,
+                "provider_cost_minor_cad": 0 if baseline else None,
+                "includes_failed_attempts": False,
+            }, "playbook_sha256": record["sha256"],
             "verified_internal_outcome_count": len(record["verified_internal_outcomes"]),
             "external_authority": False, "execution_authorized": False}

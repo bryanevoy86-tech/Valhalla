@@ -780,18 +780,29 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
     assert reusable.status_code == 201, reusable.text
     evidence = reusable.json()
     assert evidence["verified_internal_outcomes"][0]["artifact_sha256"] == claim["artifact_sha256"]
-    advice = client.post(path + "/assess", headers=admin, json={
+    measurement = evidence["verified_internal_outcomes"][0]["execution_observation"]
+    assert measurement["kind"] == "INTERNAL_DETERMINISTIC_DRAFT"
+    assert measurement["elapsed_ms"] >= 0 and measurement["provider_calls"] == 0
+    assessment = {
         "source": scope, "target": scope, "name": "exact-product-draft", "version": 1,
         "expected_sha256": evidence["sha256"], "data_class": "SYNTHETIC",
-    })
+    }
+    advice = client.post(path + "/assess", headers=admin, json=assessment)
     assert advice.status_code == 200 and advice.json()["status"] == "REUSE_REVIEW_REQUIRED"
     assert advice.json()["execution_authorized"] is False
+    assert advice.json()["historical_draft_baseline"] == {
+        "sample_count": 1, "median_elapsed_ms": measurement["elapsed_ms"],
+        "provider_cost_minor_cad": 0, "includes_failed_attempts": False,
+    }
 
     with Session(engine) as db:
         db.delete(db.get(NornsHoldout, UUID(forecast_id)))
         event = db.query(LegacyOrchestrationEvent).filter_by(event_id=claim["outcome_event_id"]).one()
         event.payload_json = "{}"
         db.commit()
+    stale_baseline = client.post(path + "/assess", headers=admin, json=assessment).json()
+    assert stale_baseline["status"] == "REUSE_REVIEW_REQUIRED"
+    assert stale_baseline["historical_draft_baseline"]["sample_count"] == 0
     refused = client.post(f"{FACTORY}/listing-drafts", headers=admin, json=followup_listing)
     assert refused.status_code == 409
     assert refused.json()["detail"]["outcome_event_id"] == claim["outcome_event_id"]

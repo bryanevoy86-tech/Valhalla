@@ -118,6 +118,10 @@ def test_clone_and_regional_mirror_have_distinct_reproducible_registry_receipts(
               "expected_sha256": first["sha256"], "data_class": "SYNTHETIC"}
     candidate = client.post(assess_url, json=assess).json()
     assert candidate["status"] == "DETERMINISTIC_CANDIDATE" and candidate["execution_authorized"] is False
+    assert candidate["historical_draft_baseline"] == {
+        "sample_count": 0, "median_elapsed_ms": None, "provider_cost_minor_cad": None,
+        "includes_failed_attempts": False,
+    }
     cross = client.post(assess_url, json={**assess, "target": {**scope, "jurisdiction": "CA-ON"}}).json()
     assert cross["review_reasons"] == ["CROSS_SCOPE_LOKI_AND_LOCAL_REVIEW_REQUIRED"]
     assert client.post(record_url, json={**request, "version": 2}, headers=owner).status_code == 409

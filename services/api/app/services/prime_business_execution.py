@@ -107,6 +107,8 @@ def _mimir_outcome(item: LegacyInstanceWorkItem, receipt: dict) -> dict:
         "evidence_scope": "INTERNAL_ARTIFACT_ONLY",
         "sales_verified": False,
     }
+    if "execution_observation" in receipt:
+        outcome["execution_observation"] = receipt["execution_observation"]
     if "product_asset" in receipt:
         outcome["product_asset"] = receipt["product_asset"]
     if "prime_decision" in receipt:
@@ -652,6 +654,7 @@ def approval_matches_action(item: LegacyInstanceWorkItem, approval: LegacyOrches
 
 def _execute_locked_draft(db: Session, item: LegacyInstanceWorkItem) -> dict | None:
     """Execute a single locked row; caller rolls back unsuccessful attempts."""
+    started = time.monotonic_ns()
     payload = _json(item.payload_json, {})
     if not isinstance(payload, dict) or payload.get("action_type") != ACTION_TYPE or payload.get("mode") != "INTERNAL_DRAFT_ONLY":
         return None
@@ -752,6 +755,12 @@ def _execute_locked_draft(db: Session, item: LegacyInstanceWorkItem) -> dict | N
         "external_effects": 0,
         "sales_verified": False,
         "verification_scope": "database_artifact_only",
+        "execution_observation": {
+            "kind": "INTERNAL_DETERMINISTIC_DRAFT",
+            "elapsed_ms": (time.monotonic_ns() - started) // 1_000_000,
+            "provider_calls": 0,
+            "provider_cost_minor_cad": 0,
+        },
         "policy_verdict": policy.verdict,
         "policy_reason": policy.reason,
         "authority_mode": authority,
