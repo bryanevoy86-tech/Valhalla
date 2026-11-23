@@ -30,10 +30,12 @@
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
           "internal_coding": null,
-          "insufficient_test_evidence": "Add registered-route behavior coverage where only import routing is proven.",
-          "external_commissioning": "Run the route probe with migrated staging PostgreSQL.",
-          "owner_or_professional_action": "Approve the staging runtime.",
-          "conditional_expansion": null
+          "internally_achievable_testing": "Add registered-route behavior coverage where only import routing is proven.",
+          "external_api_and_provider_commissioning": "Run the route probe with migrated staging PostgreSQL.",
+          "owner_authorization_or_account_establishment": "Approve the staging runtime.",
+          "independent_financial_or_operational_evidence": "Exact commit, route probe and health receipts from the authorized staging runtime.",
+          "qualified_professional_review": null,
+          "conditional_future_expansion": null
         }
       }
     },
@@ -60,10 +62,12 @@
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
           "internal_coding": null,
-          "insufficient_test_evidence": "Test every private write lane and role isolation with actual revocation.",
-          "external_commissioning": "Exercise fresh login, revocation and owner bypass-denial in staging.",
-          "owner_or_professional_action": "Approve test accounts and credential rotation.",
-          "conditional_expansion": null
+          "internally_achievable_testing": "Test every private write lane and role isolation with actual revocation.",
+          "external_api_and_provider_commissioning": "Exercise fresh login, revocation and owner bypass-denial in staging.",
+          "owner_authorization_or_account_establishment": "Approve test accounts and credential rotation.",
+          "independent_financial_or_operational_evidence": "Independently observed owner versus subscriber access denial and revoked sessions.",
+          "qualified_professional_review": null,
+          "conditional_future_expansion": null
         }
       }
     },
@@ -93,10 +97,12 @@
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
           "internal_coding": "Apply the canonical gates to remaining dispatch lanes. Factory, fulfillment and economic booking share business-wide holds across operating roots and currencies.",
-          "insufficient_test_evidence": "Exercise denial, rollback and emergency recovery on each path.",
-          "external_commissioning": "Rehearse long-running governance recovery.",
-          "owner_or_professional_action": "Authorize scoped worker activation.",
-          "conditional_expansion": null
+          "internally_achievable_testing": "Exercise denial, rollback and emergency recovery on each path.",
+          "external_api_and_provider_commissioning": "Rehearse long-running governance recovery.",
+          "owner_authorization_or_account_establishment": "Authorize scoped worker activation.",
+          "independent_financial_or_operational_evidence": "Scoped governed worker logs, emergency-stop receipt and recovery without unauthorized effects.",
+          "qualified_professional_review": null,
+          "conditional_future_expansion": null
         }
       }
     },
@@ -126,10 +132,12 @@
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
           "internal_coding": "Extend independent comparison across licensed source types.",
-          "insufficient_test_evidence": "Verify expiry, rights and low-sample coverage for each connector.",
-          "external_commissioning": "Use an approved outbound-free staging export.",
-          "owner_or_professional_action": "Approve source rights and data scope.",
-          "conditional_expansion": "Scale connector coverage after proven demand."
+          "internally_achievable_testing": "Verify expiry, rights and low-sample coverage for each connector.",
+          "external_api_and_provider_commissioning": "Use an approved outbound-free staging export.",
+          "owner_authorization_or_account_establishment": "Approve source rights and data scope.",
+          "independent_financial_or_operational_evidence": "Original dated source, terms or data rights, coverage, and independently observable demand.",
+          "qualified_professional_review": null,
+          "conditional_future_expansion": "Scale connector coverage after proven demand."
         }
       }
     },
@@ -160,10 +168,12 @@
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
           "internal_coding": "Extend source-weighted comparisons and typed claims beyond current artifacts and statements.",
-          "insufficient_test_evidence": "Compare decisions across supported engines and missing or contradictory evidence.",
-          "external_commissioning": "Validate with externally sourced scoped evidence.",
-          "owner_or_professional_action": "Approve permitted inputs and test limits.",
-          "conditional_expansion": null
+          "internally_achievable_testing": "Compare decisions across supported engines and missing or contradictory evidence.",
+          "external_api_and_provider_commissioning": "Validate with externally sourced scoped evidence.",
+          "owner_authorization_or_account_establishment": "Approve permitted inputs and test limits.",
+          "independent_financial_or_operational_evidence": "Comparable source-backed price, cost, capital and demand evidence.",
+          "qualified_professional_review": null,
+          "conditional_future_expansion": null
         }
       }
     },
@@ -189,10 +199,12 @@
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
           "internal_coding": "Propagate source lifecycle changes through each actual consumer.",
-          "insufficient_test_evidence": "Verify freshness, revocation and contradiction with independent sources.",
-          "external_commissioning": "Re-read licensed staged sources.",
-          "owner_or_professional_action": "Approve sources and evidence rights.",
-          "conditional_expansion": null
+          "internally_achievable_testing": "Verify freshness, revocation and contradiction with independent sources.",
+          "external_api_and_provider_commissioning": "Re-read licensed staged sources.",
+          "owner_authorization_or_account_establishment": "Approve sources and evidence rights.",
+          "independent_financial_or_operational_evidence": "Authoritative source copy, retrieval date and independent contradiction or revocation evidence.",
+          "qualified_professional_review": null,
+          "conditional_future_expansion": null
         }
       }
     },
@@ -226,10 +238,12 @@
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
           "internal_coding": "Extend structured claim verification beyond Factory, scoped statements and the Economic Control performance journal.",
-          "insufficient_test_evidence": "Exercise damaged, superseded and delayed proof per class.",
-          "external_commissioning": "Rehearse backlog recovery and independent outcome lineage.",
-          "owner_or_professional_action": "Authorize commissioned evidence scope.",
-          "conditional_expansion": null
+          "internally_achievable_testing": "Exercise damaged, superseded and delayed proof per class.",
+          "external_api_and_provider_commissioning": "Rehearse backlog recovery and independent outcome lineage.",
+          "owner_authorization_or_account_establishment": "Authorize commissioned evidence scope.",
+          "independent_financial_or_operational_evidence": "Independently generated outcome receipts for production evidence classes.",
+          "qualified_professional_review": null,
+          "conditional_future_expansion": null
         }
       }
     },
@@ -259,10 +273,12 @@
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
           "internal_coding": null,
-          "insufficient_test_evidence": "Run prolonged multi-Legacy restart and registry-isolation commissioning on migrated PostgreSQL.",
-          "external_commissioning": "Enroll the selected startup scopes in staging, commission authorized Legacy workers and record scoped recovery and execution receipts.",
-          "owner_or_professional_action": "Select initial mandates and jurisdictions, approve mandate limits, and authorize staging.",
-          "conditional_expansion": "Additional regions follow viable operation."
+          "internally_achievable_testing": "Rehearse restart and registry segregation on disposable migrated PostgreSQL.",
+          "external_api_and_provider_commissioning": "Enroll the selected startup scopes in staging, commission authorized Legacy workers and record scoped recovery and execution receipts.",
+          "owner_authorization_or_account_establishment": "Select initial mandates and jurisdictions, approve mandate limits, and authorize staging.",
+          "independent_financial_or_operational_evidence": "Owner-approved mandate identity and real isolated restart, restore and registry receipts.",
+          "qualified_professional_review": null,
+          "conditional_future_expansion": "Additional regions follow viable operation."
         }
       }
     },
@@ -291,10 +307,12 @@
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
           "internal_coding": "Extend execution proof and independent receipts to approved operating adapters.",
-          "insufficient_test_evidence": "Exercise each new adapter and emergency hold.",
-          "external_commissioning": "Commission first authorized operating lane.",
-          "owner_or_professional_action": "Approve adapter and authority limits.",
-          "conditional_expansion": null
+          "internally_achievable_testing": "Exercise each new adapter and emergency hold.",
+          "external_api_and_provider_commissioning": "Commission first authorized operating lane.",
+          "owner_authorization_or_account_establishment": "Approve adapter and authority limits.",
+          "independent_financial_or_operational_evidence": "Independent outcome for each commissioned adapter, with mandate and exact action identity.",
+          "qualified_professional_review": null,
+          "conditional_future_expansion": null
         }
       }
     },
@@ -322,10 +340,12 @@
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
           "internal_coding": null,
-          "insufficient_test_evidence": "Exercise complete chain and backup restoration with representative data.",
-          "external_commissioning": "Run full migration and restore drill in staging.",
-          "owner_or_professional_action": "Approve disposable staging and backup policy.",
-          "conditional_expansion": null
+          "internally_achievable_testing": "Exercise complete chain and backup restoration with representative data.",
+          "external_api_and_provider_commissioning": "Run full migration and restore drill in staging.",
+          "owner_authorization_or_account_establishment": "Approve disposable staging and backup policy.",
+          "independent_financial_or_operational_evidence": "Exact revision and authorized staging backup/restore receipt.",
+          "qualified_professional_review": null,
+          "conditional_future_expansion": null
         }
       }
     },
@@ -360,10 +380,12 @@
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
           "internal_coding": null,
-          "insufficient_test_evidence": "Rehearse long outage, expiry and restart under sustained multirole workload.",
-          "external_commissioning": "Run authorized persistent workers with real host and credentials.",
-          "owner_or_professional_action": "Approve staging workers and run window.",
-          "conditional_expansion": null
+          "internally_achievable_testing": "Rehearse long outage, expiry and restart under sustained multirole workload.",
+          "external_api_and_provider_commissioning": "Run authorized persistent workers with real host and credentials.",
+          "owner_authorization_or_account_establishment": "Approve staging workers and run window.",
+          "independent_financial_or_operational_evidence": "Observed scheduled slots and measured recovery over an actual staging window.",
+          "qualified_professional_review": null,
+          "conditional_future_expansion": null
         }
       }
     },
@@ -398,10 +420,12 @@
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
           "internal_coding": "Extend governed candidate recipes. The exact read-only GitHub submission verifier is implemented and needs the commissioned reviewer and a separately approved real candidate.",
-          "insufficient_test_evidence": "Verify failure, stale base and review handoff for each recipe.",
-          "external_commissioning": "Commission a distinct runner and submission identity.",
-          "owner_or_professional_action": "Approve exact repository, branch, reviewer and write scope.",
-          "conditional_expansion": null
+          "internally_achievable_testing": "Verify failure, stale base and review handoff for each recipe.",
+          "external_api_and_provider_commissioning": "Commission a distinct runner and submission identity.",
+          "owner_authorization_or_account_establishment": "Approve exact repository, branch, reviewer and write scope.",
+          "independent_financial_or_operational_evidence": "GitHub readback matching exact reviewed commit, candidate digest and separate reviewer.",
+          "qualified_professional_review": null,
+          "conditional_future_expansion": null
         }
       }
     },
@@ -432,10 +456,12 @@
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
           "internal_coding": "Complete cross-role provider evidence and quota coverage where missing.",
-          "insufficient_test_evidence": "Exercise quota, failure, independent identity and receipt verification.",
-          "external_commissioning": "Run individually authorized synthetic staging requests.",
-          "owner_or_professional_action": "Approve endpoint, model scope and limits.",
-          "conditional_expansion": "Provider expansion follows funded quotas."
+          "internally_achievable_testing": "Exercise quota, failure, independent identity and receipt verification.",
+          "external_api_and_provider_commissioning": "Run individually authorized synthetic staging requests.",
+          "owner_authorization_or_account_establishment": "Approve endpoint, model scope and limits.",
+          "independent_financial_or_operational_evidence": "Provider-issued isolated request, usage and cost evidence and independent Loki identity.",
+          "qualified_professional_review": null,
+          "conditional_future_expansion": "Provider expansion follows funded quotas."
         }
       }
     },
@@ -466,10 +492,12 @@
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
           "internal_coding": "Extend consent- and scope-bound rehearsal paths.",
-          "insufficient_test_evidence": "Prove deduplication, suppression and attribution recovery.",
-          "external_commissioning": "Verify one approved channel with independently sourced attribution.",
-          "owner_or_professional_action": "Approve channel, recipients and consent basis.",
-          "conditional_expansion": "Paid campaigns require separate budget."
+          "internally_achievable_testing": "Prove deduplication, suppression and attribution recovery.",
+          "external_api_and_provider_commissioning": "Verify one approved channel with independently sourced attribution.",
+          "owner_authorization_or_account_establishment": "Approve channel, recipients and consent basis.",
+          "independent_financial_or_operational_evidence": "Rights and consent provenance, provider receipt, and independently observed attributed conversion.",
+          "qualified_professional_review": null,
+          "conditional_future_expansion": "Paid campaigns require separate budget."
         }
       }
     },
@@ -496,10 +524,12 @@
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
           "internal_coding": "Bind reviewed content to exact publishing intent and returned receipt.",
-          "insufficient_test_evidence": "Test denied, replayed and withdrawn publication evidence.",
-          "external_commissioning": "Verify one authorized provider sandbox receipt.",
-          "owner_or_professional_action": "Approve rights, destination and publication scope.",
-          "conditional_expansion": null
+          "internally_achievable_testing": "Test denied, replayed and withdrawn publication evidence.",
+          "external_api_and_provider_commissioning": "Verify one authorized provider sandbox receipt.",
+          "owner_authorization_or_account_establishment": "Approve rights, destination and publication scope.",
+          "independent_financial_or_operational_evidence": "Dated rights and approved destination; exact external publish receipt only for authorized actions.",
+          "qualified_professional_review": null,
+          "conditional_future_expansion": null
         }
       }
     },
@@ -529,10 +559,12 @@
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
           "internal_coding": "Finish module-specific entitlement renewal and revocation gaps.",
-          "insufficient_test_evidence": "Prove billing event replay and tenant isolation for chosen modules.",
-          "external_commissioning": "Verify approved sandbox billing events.",
-          "owner_or_professional_action": "Select modules and approved merchant sandbox.",
-          "conditional_expansion": "Paid rollout follows operating approval."
+          "internally_achievable_testing": "Prove billing event replay and tenant isolation for chosen modules.",
+          "external_api_and_provider_commissioning": "Verify approved sandbox billing events.",
+          "owner_authorization_or_account_establishment": "Select modules and approved merchant sandbox.",
+          "independent_financial_or_operational_evidence": "Exact signed invoices, processor readback, and independently observed entitlement and cancellation receipts.",
+          "qualified_professional_review": null,
+          "conditional_future_expansion": "Paid rollout follows operating approval."
         }
       }
     },
@@ -568,11 +600,13 @@
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
-          "internal_coding": "One-time scoped capture authorizes exact buyer/product delivery independently of payout. Reconciled and buyer-acknowledged orders have a guarded exact liability release path. The bounded fixed-price CAD monthly subscriber lane implements hosted checkout, exact paid periods, renewal and period-end cancellation. Complete autonomous reconciliation, recurring settlement accounting, correction lifecycle and live subscriber commissioning.",
-          "insufficient_test_evidence": "Test disputed cost corrections, verified external settlements and separately authorized cross-product entitlement changes.",
-          "external_commissioning": "Run approved storefront lifecycle in staging.",
-          "owner_or_professional_action": "Approve listings, rights, support and merchant scope.",
-          "conditional_expansion": "Real sales follow commercial approval."
+          "internal_coding": "One-time buyer-bound delivery and guarded liability release are implemented. The bounded fixed-price CAD subscription lane implements native Checkout, paid periods, retry and cancellation. Complete autonomous payout-to-bank reconciliation, recurring accounting, unsupported adjustment/correction lifecycle and broader fulfillment/entitlement coverage.",
+          "internally_achievable_testing": "Exercise disputed cost fixtures, duplicate provider events, recurring account reversal and cross-product entitlement denial.",
+          "external_api_and_provider_commissioning": "Run approved storefront lifecycle in staging.",
+          "owner_authorization_or_account_establishment": "Approve listings, rights, support and merchant scope.",
+          "independent_financial_or_operational_evidence": "Independent payment capture, buyer receipt, item entitlement, payout and correction documents.",
+          "qualified_professional_review": "Qualified accounting or legal review of revenue and obligations when required by the chosen offer, jurisdiction or reliance decision.",
+          "conditional_future_expansion": "Real sales follow commercial approval."
         }
       }
     },
@@ -604,11 +638,13 @@
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
-          "internal_coding": "Signed event journaling and processor capture readback are implemented. Complete governed partial refund, dispute, renewal and bank-side reversal posting. Same-scope full CAD processor refund correction and guarded delivery liability release have bounded implementation. Ordinary same-scope CAD batch matching and guarded liability booking have implementation.",
-          "insufficient_test_evidence": "Extend provider-specific event and settlement reconciliation evidence.",
-          "external_commissioning": "Verify named sandbox event stream and separately sourced settlement.",
-          "owner_or_professional_action": "Approve sandbox credentials, callbacks and side effects.",
-          "conditional_expansion": null
+          "internal_coding": "Signed event journaling, one-time CAD full and ordered partial corrections, and exact recurring processor balance are implemented. Finish dispute and payout/bank reversal postings and recurring settlement accounting.",
+          "internally_achievable_testing": "Replay signed commissioning fixtures for adjustments, disputes and settlement reversal with atomic evidence checks.",
+          "external_api_and_provider_commissioning": "Verify named sandbox event stream and separately sourced settlement.",
+          "owner_authorization_or_account_establishment": "Approve sandbox credentials, callbacks and side effects.",
+          "independent_financial_or_operational_evidence": "Authenticated provider and bank records for capture, reversal and payout reconciliation.",
+          "qualified_professional_review": "Qualified accountant reviews the applicable chart, liability and correction posting rules before relying on live entries.",
+          "conditional_future_expansion": null
         }
       }
     },
@@ -639,10 +675,12 @@
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
           "internal_coding": "Processor payout membership is checked for exact automatic Stripe payout and capture. Bank trace matching and guarded same-scope batch booking are implemented for CAD with no payout adjustments. Complete adjustment and reversal accounting, available cash and owner-mandate enforcement for actual funds.",
-          "insufficient_test_evidence": "Exercise bank-side correction and authorized payout-intent provider proof. Integrated evidence covers wrong payout destination, bank mismatch, failed payout hold and atomic contention rollback.",
-          "external_commissioning": "Commission approved sandbox with reusable receipt proof.",
-          "owner_or_professional_action": "Approve provider and allowed authority.",
-          "conditional_expansion": "Live payouts require reconciled funds and distinct consent."
+          "internally_achievable_testing": "Extend contention and closed-period rehearsals for same-scope bank adjustments, duplicate correction and payout-intent denial.",
+          "external_api_and_provider_commissioning": "Commission approved sandbox with reusable receipt proof.",
+          "owner_authorization_or_account_establishment": "Approve provider and allowed authority.",
+          "independent_financial_or_operational_evidence": "Independent processor payout and account-specific bank trace, liabilities and authorized funding receipt.",
+          "qualified_professional_review": "Qualified banking or accounting review verifies bank authority, funds restrictions and applicable posting treatment.",
+          "conditional_future_expansion": "Live payouts require reconciled funds and distinct consent."
         }
       }
     },
@@ -671,10 +709,12 @@
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
           "internal_coding": "Finish scoped review intake and bind approved terms to internal drafts.",
-          "insufficient_test_evidence": "Exercise unsigned, wrong-party and superseded terms.",
-          "external_commissioning": "Verify approved signing sandbox receipts.",
-          "owner_or_professional_action": "Licensed counsel reviews actual terms and filings.",
-          "conditional_expansion": "Live agreements need separate approval."
+          "internally_achievable_testing": "Exercise unsigned, wrong-party and superseded terms.",
+          "external_api_and_provider_commissioning": "Verify approved signing sandbox receipts.",
+          "owner_authorization_or_account_establishment": "Choose the agreement, qualified reviewer and exact approved test signing scope.",
+          "independent_financial_or_operational_evidence": "Independent envelope readback, parties and audited signing receipt.",
+          "qualified_professional_review": "Licensed counsel reviews actual terms and filings when the selected activity requires it.",
+          "conditional_future_expansion": "Live agreements need separate approval."
         }
       }
     },
@@ -704,10 +744,12 @@
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
           "internal_coding": "Complete legally scoped practice stages and exact evidence linkage.",
-          "insufficient_test_evidence": "Exercise approvals, adverse outcomes and jurisdiction denials.",
-          "external_commissioning": "Run authorized provider sandbox where selected.",
-          "owner_or_professional_action": "Owner and qualified professionals confirm jurisdiction and transaction boundaries.",
-          "conditional_expansion": "Acquisition requires viability, capital and approval."
+          "internally_achievable_testing": "Exercise approvals, adverse outcomes and jurisdiction denials.",
+          "external_api_and_provider_commissioning": "Run authorized provider sandbox where selected.",
+          "owner_authorization_or_account_establishment": "Select the jurisdiction and authorize the exact practice scope.",
+          "independent_financial_or_operational_evidence": "Current listing or comparables, rights, due diligence and actual practice transaction evidence when authorized.",
+          "qualified_professional_review": "Qualified jurisdictional review of transaction boundaries and applicable duties.",
+          "conditional_future_expansion": "Acquisition requires viability, capital and approval."
         }
       }
     },
@@ -738,10 +780,12 @@
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
           "internal_coding": "Complete governed external-intent staging, consent and retry workflow.",
-          "insufficient_test_evidence": "Private acknowledgment is tested. Exercise concurrent outbox replay, opt-out and provider outage.",
-          "external_commissioning": "Verify independently authorized provider receipt.",
-          "owner_or_professional_action": "Approve sender, recipients, channel and cost.",
-          "conditional_expansion": null
+          "internally_achievable_testing": "Private acknowledgment is tested. Exercise concurrent outbox replay, opt-out and provider outage.",
+          "external_api_and_provider_commissioning": "Verify independently authorized provider receipt.",
+          "owner_authorization_or_account_establishment": "Approve sender, recipients, channel and cost.",
+          "independent_financial_or_operational_evidence": "Provider delivery receipt tied to exact approved intent, endpoint and recipient.",
+          "qualified_professional_review": null,
+          "conditional_future_expansion": null
         }
       }
     },
@@ -772,10 +816,12 @@
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
           "internal_coding": null,
-          "insufficient_test_evidence": "Prove sustained restart, alert continuity and exact repair receipts.",
-          "external_commissioning": "Commission controlled always-on staging observation.",
-          "owner_or_professional_action": "Approve runtime and monitoring scope.",
-          "conditional_expansion": null
+          "internally_achievable_testing": "Prove sustained restart, alert continuity and exact repair receipts.",
+          "external_api_and_provider_commissioning": "Commission controlled always-on staging observation.",
+          "owner_authorization_or_account_establishment": "Approve runtime and monitoring scope.",
+          "independent_financial_or_operational_evidence": "Timestamped actual uptime, alert, restart and recovery receipts.",
+          "qualified_professional_review": null,
+          "conditional_future_expansion": null
         }
       }
     },
@@ -817,10 +863,12 @@
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
           "internal_coding": "Bind device-local voice, Legacy mutation controls, broader treasury and household workflows, full domain evidence drill-down and remaining owner/subscriber surfaces. The read-only Legacy operating view exposes economic holds and segregated fixture statements. Document, decision, startup comparison, draft professional review and bounded Pantheon report directory are installed for preview.",
-          "insufficient_test_evidence": "Exercise revocation, protected state and device outcomes end to end.",
-          "external_commissioning": "Configure an authorized matching staging API origin and preview CORS. Test owner/subscriber denials, logout and revocation, exact acknowledgment receipt, responsive layout and local voice devices.",
-          "owner_or_professional_action": "Approve preview access and local speech consent.",
-          "conditional_expansion": null
+          "internally_achievable_testing": "Exercise revocation, protected state and device outcomes end to end.",
+          "external_api_and_provider_commissioning": "Configure an authorized matching staging API origin and preview CORS. Test owner/subscriber denials, logout and revocation, exact acknowledgment receipt, responsive layout and local voice devices.",
+          "owner_authorization_or_account_establishment": "Approve preview access and local speech consent.",
+          "independent_financial_or_operational_evidence": "Observed isolated HTTPS previews with real owner/subscriber separation and device consent.",
+          "qualified_professional_review": null,
+          "conditional_future_expansion": null
         }
       }
     },
@@ -849,10 +897,12 @@
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
           "internal_coding": null,
-          "insufficient_test_evidence": "Run reviewed candidate through backup and rollback gates.",
-          "external_commissioning": "Verify staging build and rollback receipts.",
-          "owner_or_professional_action": "Approve staging release candidate and window.",
-          "conditional_expansion": null
+          "internally_achievable_testing": "Run reviewed candidate through backup and rollback gates.",
+          "external_api_and_provider_commissioning": "Verify staging build and rollback receipts.",
+          "owner_authorization_or_account_establishment": "Approve staging release candidate and window.",
+          "independent_financial_or_operational_evidence": "Hosted CI, independent staged backup and rollback receipt for exact release candidate.",
+          "qualified_professional_review": null,
+          "conditional_future_expansion": null
         }
       }
     },
@@ -894,10 +944,12 @@
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
           "internal_coding": "Complete remaining scoped attachment-analysis coverage where approved. Bind private registration-based startup review to reconciled financial evidence.",
-          "insufficient_test_evidence": "Prove restore quarantine, independent disposition receipts and revocation.",
-          "external_commissioning": "Verify authorized private staging backup recovery and the owner startup independence workflow on WeWeb preview.",
-          "owner_or_professional_action": "Approve retention and test restore scope.",
-          "conditional_expansion": null
+          "internally_achievable_testing": "Prove restore quarantine, independent disposition receipts and revocation.",
+          "external_api_and_provider_commissioning": "Verify authorized private staging backup recovery and the owner startup independence workflow on WeWeb preview.",
+          "owner_authorization_or_account_establishment": "Approve retention and test restore scope.",
+          "independent_financial_or_operational_evidence": "Independent backup restoration and disposition verification, and independent financial sources when used for startup reliance.",
+          "qualified_professional_review": null,
+          "conditional_future_expansion": null
         }
       }
     },
@@ -930,10 +982,12 @@
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
           "internal_coding": "Connect independent disagreements through each canonical decision gate.",
-          "insufficient_test_evidence": "Exercise all five roles with material conflict, refusal and reproducible audit.",
-          "external_commissioning": "Prove governed dispatch in authorized staging.",
-          "owner_or_professional_action": "Approve scoped worker and reviewer identity.",
-          "conditional_expansion": null
+          "internally_achievable_testing": "Exercise all five roles with material conflict, refusal and reproducible audit.",
+          "external_api_and_provider_commissioning": "Prove governed dispatch in authorized staging.",
+          "owner_authorization_or_account_establishment": "Approve scoped worker and reviewer identity.",
+          "independent_financial_or_operational_evidence": "Scoped work receipts and independently reviewed conflicting advice.",
+          "qualified_professional_review": null,
+          "conditional_future_expansion": null
         }
       }
     },
@@ -971,10 +1025,12 @@
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
           "internal_coding": "Extend domain coverage beyond Factory, checkout, treasury, economic performance and other current evidence lenses.",
-          "insufficient_test_evidence": "Exercise missing evidence, tenant isolation and end-to-end independent review for each domain.",
-          "external_commissioning": "Verify separate model and worker behavior in approved staging.",
-          "owner_or_professional_action": "Ratify role conflicts and authorize specifically scoped operation.",
-          "conditional_expansion": null
+          "internally_achievable_testing": "Exercise missing evidence, tenant isolation and end-to-end independent review for each domain.",
+          "external_api_and_provider_commissioning": "Verify separate model and worker behavior in approved staging.",
+          "owner_authorization_or_account_establishment": "Ratify role conflicts and authorize specifically scoped operation.",
+          "independent_financial_or_operational_evidence": "Independent domain evidence and scoped specialist worker receipts.",
+          "qualified_professional_review": null,
+          "conditional_future_expansion": null
         }
       }
     },
@@ -1005,10 +1061,12 @@
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
           "internal_coding": null,
-          "insufficient_test_evidence": "Measure sustained recovery and calibrate against genuine independently observed outcomes.",
-          "external_commissioning": "Commission scoped Norns worker and controlled outcome stream.",
-          "owner_or_professional_action": "Approve worker and outcome data scope.",
-          "conditional_expansion": null
+          "internally_achievable_testing": "Replay out-of-order outcomes and sustained recovery using fixtures; prove fixture outcomes never calibrate the observed result.",
+          "external_api_and_provider_commissioning": "Commission scoped Norns worker and controlled outcome stream.",
+          "owner_authorization_or_account_establishment": "Approve worker and outcome data scope.",
+          "independent_financial_or_operational_evidence": "Genuine independently observed and dated outcomes with calibration denominators.",
+          "qualified_professional_review": null,
+          "conditional_future_expansion": null
         }
       }
     },
@@ -1038,10 +1096,12 @@
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
           "internal_coding": "Bind parked dictation and finish owner decision-option interactions in the preview.",
-          "insufficient_test_evidence": "Simulated capture and playback passed. Exercise handset fallback, revocation and review of a transcript.",
-          "external_commissioning": "Verify approved physical devices and preview app.",
-          "owner_or_professional_action": "Approve test device and grant per-session microphone consent.",
-          "conditional_expansion": null
+          "internally_achievable_testing": "Rehearse permission denial, fallback and simulated microphone revocation.",
+          "external_api_and_provider_commissioning": "Verify approved physical devices and preview app.",
+          "owner_authorization_or_account_establishment": "Approve test device and grant per-session microphone consent.",
+          "independent_financial_or_operational_evidence": "Owner-approved physical device results for fallback, playback and microphone revocation.",
+          "qualified_professional_review": null,
+          "conditional_future_expansion": null
         }
       }
     },
@@ -1069,10 +1129,12 @@
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
           "internal_coding": "Complete remaining mandate-specific onboarding and proof paths.",
-          "insufficient_test_evidence": "Demonstrate five separate scopes, worker receipts and economics.",
-          "external_commissioning": "Commission each approved Legacy independently.",
-          "owner_or_professional_action": "Select five startup mandates and legal authority.",
-          "conditional_expansion": "Expansion follows viable units."
+          "internally_achievable_testing": "Demonstrate five separate scopes, worker receipts and economics.",
+          "external_api_and_provider_commissioning": "Commission each approved Legacy independently.",
+          "owner_authorization_or_account_establishment": "Select five startup mandates and legal authority.",
+          "independent_financial_or_operational_evidence": "Five distinct approved operating scopes and independent execution and economic receipts.",
+          "qualified_professional_review": "Qualified review only for a selected mandate involving regulated or otherwise review-dependent activity.",
+          "conditional_future_expansion": "Expansion follows viable units."
         }
       }
     },
@@ -1101,10 +1163,12 @@
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
           "internal_coding": "Close uncovered capability and isolation gaps in the existing rehearsal.",
-          "insufficient_test_evidence": "Exercise repeatable clone and regional mirror recovery on independent hosts.",
-          "external_commissioning": "Commission staged runtimes with shared governance.",
-          "owner_or_professional_action": "Approve selected territories and processing scopes.",
-          "conditional_expansion": "Replication follows proven playbooks."
+          "internally_achievable_testing": "Rehearse clone and regional-mirror replay, isolation and restore in disposable local runtimes.",
+          "external_api_and_provider_commissioning": "Commission staged runtimes with shared governance.",
+          "owner_authorization_or_account_establishment": "Approve selected territories and processing scopes.",
+          "independent_financial_or_operational_evidence": "Separate host and regional execution, isolation and restore receipts.",
+          "qualified_professional_review": null,
+          "conditional_future_expansion": "Replication follows proven playbooks."
         }
       }
     },
@@ -1135,10 +1199,12 @@
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
           "internal_coding": "Complete supported entitlement and repeatable delivery flows.",
-          "insufficient_test_evidence": "Prove refunds, support and multi-tenant fulfillment continuity.",
-          "external_commissioning": "Commission approved storefront and subscription sandbox.",
-          "owner_or_professional_action": "Approve rights, product, merchant scope and launch gates.",
-          "conditional_expansion": "Scale from viable subscription economics."
+          "internally_achievable_testing": "Prove refunds, support and multi-tenant fulfillment continuity.",
+          "external_api_and_provider_commissioning": "Commission approved storefront and subscription sandbox.",
+          "owner_authorization_or_account_establishment": "Approve rights, product, merchant scope and launch gates.",
+          "independent_financial_or_operational_evidence": "Authorized provider payment, participant receipt and support/revocation events.",
+          "qualified_professional_review": null,
+          "conditional_future_expansion": "Scale from viable subscription economics."
         }
       }
     },
@@ -1171,10 +1237,12 @@
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
           "internal_coding": "Extend independently sourced demand selection and governed pilot preparation.",
-          "insufficient_test_evidence": "Exercise authority-bound pilot and contradictory demand evidence.",
-          "external_commissioning": "Stage approved proof for one selected candidate.",
-          "owner_or_professional_action": "Approve pilot, source rights and scope.",
-          "conditional_expansion": "Expand only when a better justified opportunity appears."
+          "internally_achievable_testing": "Exercise authority-bound pilot and contradictory demand evidence.",
+          "external_api_and_provider_commissioning": "Stage approved proof for one selected candidate.",
+          "owner_authorization_or_account_establishment": "Approve pilot, source rights and scope.",
+          "independent_financial_or_operational_evidence": "Independent demand, cost and scope-bound pilot outcomes.",
+          "qualified_professional_review": null,
+          "conditional_future_expansion": "Expand only when a better justified opportunity appears."
         }
       }
     },
@@ -1202,10 +1270,12 @@
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
           "internal_coding": "Complete remaining distinct portfolio-branch rehearsals.",
-          "insufficient_test_evidence": "Ground comparable, cost and recovery evidence in each jurisdiction.",
-          "external_commissioning": "Stage authorized data and practice transaction.",
-          "owner_or_professional_action": "Select target jurisdiction and qualified reviewers.",
-          "conditional_expansion": "Asset purchases depend on capital and viability."
+          "internally_achievable_testing": "Exercise stale comparable, inconsistent cost and recovery evidence using fixtures.",
+          "external_api_and_provider_commissioning": "Stage authorized data and practice transaction.",
+          "owner_authorization_or_account_establishment": "Select target jurisdiction and qualified reviewers.",
+          "independent_financial_or_operational_evidence": "Independent current comparable, recovery and costs in each selected jurisdiction.",
+          "qualified_professional_review": "Qualified property, legal and accounting review as applicable before acquisition.",
+          "conditional_future_expansion": "Asset purchases depend on capital and viability."
         }
       }
     },
@@ -1240,11 +1310,13 @@
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
-          "internal_coding": "Extend governed cash release and liability linkage beyond fixture statements. Scheduled Prime advice now holds on contradictory statement-head evidence.",
-          "insufficient_test_evidence": "Prove reconciliation using independent readback and reversal edge cases.",
-          "external_commissioning": "Connect approved banking and accounting sandboxes. Verify approved funding feeds and authority separately.",
-          "owner_or_professional_action": "Approve read-only scope and professional integration.",
-          "conditional_expansion": "Actual allocations depend on reconciled funds. The reverse commercial target and private independence linkage use scoped reconciliation fixtures until an actual-provider evidence path is accepted."
+          "internal_coding": "Complete independently evidenced recurring bank and accounting linkage plus spendable cash after liabilities, restrictions and reserves. The scoped owner dashboard can show paid-period counts without making a cash claim.",
+          "internally_achievable_testing": "Exercise reversal, restrictive reserve and double-counted obligation scenarios in isolated accounting fixtures.",
+          "external_api_and_provider_commissioning": "Connect approved banking and accounting sandboxes. Verify approved funding feeds and authority separately.",
+          "owner_authorization_or_account_establishment": "Approve read-only scope and professional integration.",
+          "independent_financial_or_operational_evidence": "Exact independently issued bank and accounting records, reconciled liabilities, reserve evidence and reversals.",
+          "qualified_professional_review": "Qualified banking and accounting review of classified funds and actual posting scope.",
+          "conditional_future_expansion": "Actual allocations depend on reconciled funds. The reverse commercial target and private independence linkage use scoped reconciliation fixtures until an actual-provider evidence path is accepted."
         }
       }
     },
@@ -1272,10 +1344,12 @@
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
           "internal_coding": "Prepare the existing source-backed scenario and compare alternatives.",
-          "insufficient_test_evidence": "Test assumptions, fees and stress against sourced illustrations.",
-          "external_commissioning": "Obtain independently supplied policy illustrations.",
-          "owner_or_professional_action": "Insurance professional and owner review suitability and approve any policy.",
-          "conditional_expansion": "Funding depends on viability and available capital."
+          "internally_achievable_testing": "Rehearse assumptions, fee omissions and sensitivity using clearly synthetic illustrations.",
+          "external_api_and_provider_commissioning": "Obtain independently supplied policy illustrations.",
+          "owner_authorization_or_account_establishment": "Approve whether to request an illustration or later pursue a reviewed policy.",
+          "independent_financial_or_operational_evidence": "Carrier illustrations and terms with current effective dates.",
+          "qualified_professional_review": "Licensed insurance professional reviews suitability, costs and terms.",
+          "conditional_future_expansion": "Funding depends on viability and available capital."
         }
       }
     },
@@ -1303,10 +1377,12 @@
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
           "internal_coding": "Prepare comparative fact packet and jurisdiction requirements.",
-          "insufficient_test_evidence": "Check assumptions and contradictions against independent professional input.",
-          "external_commissioning": "Verify approved document workflow using fixtures.",
-          "owner_or_professional_action": "Licensed counsel validates trust structure and owner approves changes.",
-          "conditional_expansion": "Asset transfer and settlement require separate authorization and viable funding."
+          "internally_achievable_testing": "Verify contradictory fact sources and reliance holds with synthetic opinions.",
+          "external_api_and_provider_commissioning": "Verify approved document workflow using fixtures.",
+          "owner_authorization_or_account_establishment": "Select the objectives and approve any proposed trust action separately.",
+          "independent_financial_or_operational_evidence": "Official title/entity documents and dated signed scoped opinions.",
+          "qualified_professional_review": "Licensed counsel validates the selected trust before reliance.",
+          "conditional_future_expansion": "Asset transfer and settlement require separate authorization and viable funding."
         }
       }
     },
@@ -1336,10 +1412,12 @@
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
           "internal_coding": "Build scoped timing, residency and obligations evidence packet.",
-          "insufficient_test_evidence": "Test conflicting residence and obligation assumptions with independent evidence.",
-          "external_commissioning": "Obtain authorized official records if required.",
-          "owner_or_professional_action": "Owner and qualified advisers decide departure timing and tax duties.",
-          "conditional_expansion": "Execution is conditional on personal and business readiness."
+          "internally_achievable_testing": "Test conflicting residence and obligation assumptions with independent evidence.",
+          "external_api_and_provider_commissioning": "Obtain authorized official records if required.",
+          "owner_authorization_or_account_establishment": "Select departure timing only after reviewing applicable duties.",
+          "independent_financial_or_operational_evidence": "Current official records and substantiated residence and reporting evidence.",
+          "qualified_professional_review": "Qualified cross-border tax and legal review before departure or filing reliance.",
+          "conditional_future_expansion": "Execution is conditional on personal and business readiness."
         }
       }
     },
@@ -1366,10 +1444,12 @@
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
           "internal_coding": "Structure jurisdiction and eligibility evidence for requested options.",
-          "insufficient_test_evidence": "Verify current official requirements and independent eligibility.",
-          "external_commissioning": "Collect authorized records and validate applicable official processes.",
-          "owner_or_professional_action": "Owner chooses jurisdictions and qualified professional reviews eligibility.",
-          "conditional_expansion": "Pursue options when mobility plan and financing justify them."
+          "internally_achievable_testing": "Exercise expired evidence and incomplete eligibility packets with fixtures.",
+          "external_api_and_provider_commissioning": "Collect authorized records and validate applicable official processes.",
+          "owner_authorization_or_account_establishment": "Choose the jurisdictions to evaluate and approve document access.",
+          "independent_financial_or_operational_evidence": "Official requirements and actual owner eligibility documents for the selected option.",
+          "qualified_professional_review": "Qualified immigration or tax adviser verifies eligibility and implications when the option is pursued.",
+          "conditional_future_expansion": "Pursue options when mobility plan and financing justify them."
         }
       }
     },
@@ -1402,10 +1482,12 @@
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
           "internal_coding": null,
-          "insufficient_test_evidence": "Exercise real qualification receipts, expiration, separate opinions and revocation in approved staging.",
-          "external_commissioning": "Independently verify the author and reviewer qualifications, enroll distinct scoped public keys and commission a private signed file and reviewed reliance grant.",
-          "owner_or_professional_action": "Qualified professionals author and review the opinion. The owner approves the exact internal decision scope and may revoke it.",
-          "conditional_expansion": null
+          "internally_achievable_testing": "Repeat synthetic wrong-party, expiry, revocation and cross-scope reliance cases for any newly provided decision template.",
+          "external_api_and_provider_commissioning": "Independently verify the author and reviewer qualifications, enroll distinct scoped public keys and commission a private signed file and reviewed reliance grant.",
+          "owner_authorization_or_account_establishment": "Approve the exact internal decision scope and retain the ability to revoke reliance.",
+          "independent_financial_or_operational_evidence": "Verification of independent author and reviewer qualifications, signed opinion and scope.",
+          "qualified_professional_review": "Qualified independent professionals author and review the exact scoped opinion.",
+          "conditional_future_expansion": null
         }
       }
     },
@@ -1434,10 +1516,12 @@
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
           "internal_coding": "Link reviewed allocations to exact reconciled cash and obligations.",
-          "insufficient_test_evidence": "Prove reserve, payroll, cap and withdrawal edge cases with independent records.",
-          "external_commissioning": "Exercise approved treasury and accounting sandbox.",
-          "owner_or_professional_action": "Approve policy parameters and real withdrawal authority.",
-          "conditional_expansion": "Withdrawals depend on reconciled funds and applicable policy."
+          "internally_achievable_testing": "Rehearse conflicting reserves, payroll, caps and withdrawal denials with fixtures.",
+          "external_api_and_provider_commissioning": "Exercise approved treasury and accounting sandbox.",
+          "owner_authorization_or_account_establishment": "Approve policy parameters and real withdrawal authority.",
+          "independent_financial_or_operational_evidence": "Independently reconciled cash, taxes, payroll, reserves and licensed accounting evidence as applicable.",
+          "qualified_professional_review": "Qualified accounting review for payout, payroll and tax basis as applicable.",
+          "conditional_future_expansion": "Withdrawals depend on reconciled funds and applicable policy."
         }
       }
     },
@@ -1464,10 +1548,12 @@
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
           "internal_coding": "Complete scoped role and succession documentation flows.",
-          "insufficient_test_evidence": "Test authority, payroll and handover evidence.",
-          "external_commissioning": "Verify approved payroll workflow if commissioned.",
-          "owner_or_professional_action": "Owner confirms roles, qualified advisers approve payroll and succession documents.",
-          "conditional_expansion": "Hiring and payouts depend on sustainable operating funds."
+          "internally_achievable_testing": "Test authority, payroll and handover evidence.",
+          "external_api_and_provider_commissioning": "Verify approved payroll workflow if commissioned.",
+          "owner_authorization_or_account_establishment": "Confirm roles and approve the exact scoped payroll or succession changes.",
+          "independent_financial_or_operational_evidence": "Role, payroll and authority handover records when implemented.",
+          "qualified_professional_review": "Qualified payroll and succession advisers review the applicable records and authority.",
+          "conditional_future_expansion": "Hiring and payouts depend on sustainable operating funds."
         }
       }
     },
@@ -1494,10 +1580,12 @@
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
           "internal_coding": null,
-          "insufficient_test_evidence": null,
-          "external_commissioning": null,
-          "owner_or_professional_action": "Owner selects and authorizes a viable acquisition only after evidence and advice.",
-          "conditional_expansion": "Property and hospitality work depends on viability, sufficient capital and professional approval."
+          "internally_achievable_testing": null,
+          "external_api_and_provider_commissioning": null,
+          "owner_authorization_or_account_establishment": "Select and approve a viable acquisition only after evidence and advice.",
+          "independent_financial_or_operational_evidence": "Independent property, financing, diligence and cash-flow evidence when justified.",
+          "qualified_professional_review": "Qualified property, local legal, banking and tax review before acquisition.",
+          "conditional_future_expansion": "Property and hospitality work depends on viability, sufficient capital and professional approval."
         }
       }
     },
@@ -1525,10 +1613,12 @@
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
           "internal_coding": "Extend defensive safeguards for the remaining scoped failures.",
-          "insufficient_test_evidence": "Rehearse restoration, containment and locked access with durable proof.",
-          "external_commissioning": "Commission a controlled recovery exercise.",
-          "owner_or_professional_action": "Approve environment, incident authority and recovery boundaries.",
-          "conditional_expansion": null
+          "internally_achievable_testing": "Rehearse restoration, containment and locked access with durable proof.",
+          "external_api_and_provider_commissioning": "Commission a controlled recovery exercise.",
+          "owner_authorization_or_account_establishment": "Approve environment, incident authority and recovery boundaries.",
+          "independent_financial_or_operational_evidence": "Observed scoped incident, containment and restore receipt.",
+          "qualified_professional_review": null,
+          "conditional_future_expansion": null
         }
       }
     },
@@ -1555,10 +1645,12 @@
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
           "internal_coding": "Build scoped delegation acceptance and privacy checks.",
-          "insufficient_test_evidence": "Verify human review, revocation and least-privilege work access.",
-          "external_commissioning": "Exercise approved personnel workflow where selected.",
-          "owner_or_professional_action": "Owner approves hiring and qualified review where needed.",
-          "conditional_expansion": "Hiring follows operating workload and capital."
+          "internally_achievable_testing": "Verify human review, revocation and least-privilege work access.",
+          "external_api_and_provider_commissioning": "Exercise approved personnel workflow where selected.",
+          "owner_authorization_or_account_establishment": "Approve hiring and role scope before delegating access.",
+          "independent_financial_or_operational_evidence": "Approved agreement, delegated access and observed revocation receipt.",
+          "qualified_professional_review": null,
+          "conditional_future_expansion": "Hiring follows operating workload and capital."
         }
       }
     },
@@ -1599,10 +1691,12 @@
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
           "internal_coding": "Extend domain-specific contradiction checks with provenance beyond current evidence lenses.",
-          "insufficient_test_evidence": "Exercise exact artifact review and disagreement isolation for new domains.",
-          "external_commissioning": "Validate distinct credentials and approved staged model challenges.",
-          "owner_or_professional_action": "Approve model scope, independent identity and data class.",
-          "conditional_expansion": null
+          "internally_achievable_testing": "Exercise exact artifact review and disagreement isolation for new domains.",
+          "external_api_and_provider_commissioning": "Validate distinct credentials and approved staged model challenges.",
+          "owner_authorization_or_account_establishment": "Approve model scope, independent identity and data class.",
+          "independent_financial_or_operational_evidence": "Distinct credentials, input digest, independent challenge and material conflict disposition.",
+          "qualified_professional_review": null,
+          "conditional_future_expansion": null
         }
       }
     },
@@ -1635,10 +1729,12 @@
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
           "internal_coding": "Extend advisory outcome and exposure evidence beyond current replay.",
-          "insufficient_test_evidence": "Measure calibration on independent eligible evidence.",
-          "external_commissioning": "Verify licensed market sources read-only.",
-          "owner_or_professional_action": "Approve data rights and advisor scope.",
-          "conditional_expansion": "Transactions or increased exposure require separate authority."
+          "internally_achievable_testing": "Exercise simulated calibration and exclusion of unsupported securities.",
+          "external_api_and_provider_commissioning": "Verify licensed market sources read-only.",
+          "owner_authorization_or_account_establishment": "Approve data rights and advisor scope.",
+          "independent_financial_or_operational_evidence": "Licensed historical and independently observed advisory outcome evidence.",
+          "qualified_professional_review": "Qualified review when regulated activity or actual reliance is proposed.",
+          "conditional_future_expansion": "Transactions or increased exposure require separate authority."
         }
       }
     },
@@ -1671,10 +1767,12 @@
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
           "internal_coding": "Extend settlement delay and reconciliation coverage for approved venues.",
-          "insufficient_test_evidence": "Measure independent calibration and compare against paper replay.",
-          "external_commissioning": "Verify read-only licensed quotes, venue delays and real reconciliation evidence.",
-          "owner_or_professional_action": "Approve provider access and data terms.",
-          "conditional_expansion": "Live FX, transfers and risk increases require separate authority."
+          "internally_achievable_testing": "Exercise paper replay with stale quotes, fees, delayed settlement and provider mismatch.",
+          "external_api_and_provider_commissioning": "Verify read-only licensed quotes, venue delays and real reconciliation evidence.",
+          "owner_authorization_or_account_establishment": "Approve provider access and data terms.",
+          "independent_financial_or_operational_evidence": "Independent time-stamped venue quotes, account terms and reconciliation outcomes.",
+          "qualified_professional_review": "Qualified review before any regulated, transfer or live funds authority is proposed.",
+          "conditional_future_expansion": "Live FX, transfers and risk increases require separate authority."
         }
       }
     },
@@ -1714,13 +1812,16 @@
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
           "internal_coding": "Apply the containment proof to remaining adapters and non-fixture capital evidence. Existing funding and dispatch gates now span all registered scopes for the same business ID.",
-          "insufficient_test_evidence": "Exercise staggered loss, restart and reserve evidence across lanes.",
-          "external_commissioning": "Reconcile independently supplied liabilities and reserves in approved staging.",
-          "owner_or_professional_action": "Approve scoped funding, review obligations and any release.",
-          "conditional_expansion": "Expansion follows demonstrated economics and capital availability."
+          "internally_achievable_testing": "Exercise staggered loss, restart and reserve evidence across lanes.",
+          "external_api_and_provider_commissioning": "Reconcile independently supplied liabilities and reserves in approved staging.",
+          "owner_authorization_or_account_establishment": "Approve scoped funding, review obligations and any release.",
+          "independent_financial_or_operational_evidence": "Independently reconciled actual cash, restricted funds, liabilities and operating reserves.",
+          "qualified_professional_review": "Qualified accounting or banking review of actual reserve, liability and distribution treatment as applicable.",
+          "conditional_future_expansion": "Expansion follows demonstrated economics and capital availability."
         }
       }
     }
   ],
-  "current_task_index": "docs/CODEX_RESUME_2026-12-01.md#current-workstream-index-and-startup-order"
+  "current_task_index": "docs/CODEX_RESUME_2026-12-01.md#current-workstream-index-and-startup-order",
+  "remaining_work_policy": "Each criterion has seven independently assessed remaining-work classes. Null denotes no currently identified item in that class. An isolated test is not independent external evidence; P0 priority does not make a conditional activity a first-revenue gate."
 }

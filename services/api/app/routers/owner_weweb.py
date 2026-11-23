@@ -18,6 +18,7 @@ from app.schemas.market_intelligence import MarketScope
 from app.services.owner_specialist_context import pantheon_report_index, prime_decision_context, specialist_context
 from app.services.prime_business_execution import require_owner_mandate_key
 from app.services.owner_startup import StartupPlanIn, prepare_startup
+from app.services.startup_dependencies import LaunchLane, startup_dependency_checklist
 from app.services.startup_independence import StartupIndependenceIn, review_startup_independence
 from app.services.commercial_targets import CommercialTargetsIn, review_commercial_targets
 from app.services.startup_funding import FundingReviewIn, FundingSourceIn, review_funding, stage_funding_source
@@ -76,6 +77,11 @@ def owner_extract_attachment(conversation_id: UUID, attachment_id: UUID, db: Ses
 @router.get("/owner-conversations/{conversation_id}/attachments")
 def owner_list_attachments(conversation_id: UUID, limit: int = 50, db: Session = Depends(get_db)):
     return private_owner_response(attachment_summaries(conversation_id, limit, db))
+
+
+@startup_router.get("/dependencies")
+def owner_startup_dependencies(lane: LaunchLane = "ONE_TIME_CAD"):
+    return private_owner_response(startup_dependency_checklist(lane))
 
 
 @startup_router.post("/compare")

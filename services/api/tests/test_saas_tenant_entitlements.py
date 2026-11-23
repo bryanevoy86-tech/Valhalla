@@ -117,6 +117,20 @@ def test_trial_is_bound_to_authenticated_subscriber_and_tenant(deal_client, monk
     quote = client.post(path, headers=bearer, json=plan)
     assert quote.status_code == 200, quote.text
     assert quote.headers["cache-control"] == "no-store"
+    dependency_path = "/api/weweb/owner-startup/dependencies"
+    assert client.get(dependency_path).status_code == 401
+    assert client.get(dependency_path, headers=outsider).status_code == 403
+    dependencies = client.get(dependency_path, headers=bearer)
+    assert dependencies.status_code == 200 and dependencies.headers["cache-control"] == "no-store"
+    plan_only = dependencies.json()
+    assert quote.json()["startup_dependencies"] == plan_only
+    gates = {item["key"]: item["gate"] for item in plan_only["dependencies"]}
+    assert gates["registration"] == "REGISTRATION" and gates["bank"] == "FIRST_REVENUE"
+    assert gates["expansion"] == gates["recurring_settlement"] == "LATER"
+    recurring = client.get(dependency_path, headers=bearer, params={"lane": "RECURRING_CAD"}).json()
+    assert next(item for item in recurring["dependencies"] if item["key"] == "recurring_settlement")["gate"] == "FIRST_REVENUE"
+    invalid_lane = client.get(dependency_path, headers=bearer, params={"lane": "secret-fixture"})
+    assert invalid_lane.status_code == 422 and "secret-fixture" not in invalid_lane.text
     review_path = "/api/weweb/owner-startup/independence-review"
     review_payload = {
         "monthly_essentials_minor": 100000, "reserve_months": 3, "reserve_balance_minor": 0,
@@ -259,6 +273,14 @@ def test_trial_is_bound_to_authenticated_subscriber_and_tenant(deal_client, monk
     assert client.post(threads, headers=outsider, json={"conversation_id": fresh, "title": "Fixture"}).status_code == 403
     assert client.post(threads, headers=bearer, json={"conversation_id": fresh, "title": "Fixture"}).status_code == 201
     inbox = f"{threads}/{fresh}"
+    dependency_turn = {"turn_id": str(uuid4()), "message": "What do I need before first revenue?"}
+    response = client.post(f"{inbox}/turns", headers=bearer, json=dependency_turn)
+    assert response.status_code == 201 and response.headers["cache-control"] == "no-store"
+    result = response.json()
+    assert result["evidence"]["source"] == "private_startup_dependency_guidance"
+    assert result["evidence"]["startup_dependencies"] == plan_only
+    assert result["evidence"]["model_connected"] is False
+    assert client.post(f"{inbox}/turns", headers=bearer, json=dependency_turn).json() == result
     payload = {"turn_id": str(uuid4()), "message": "Review my operating options"}
     submitted = client.post(f"{inbox}/turns", headers=bearer, json=payload)
     assert submitted.status_code == 201, submitted.text

@@ -240,6 +240,8 @@ def professional_review_packets(request: StartupPlanIn, today: date) -> list[dic
 
 
 def prepare_startup(request: StartupPlanIn, *, today=None):
+    from app.services.startup_dependencies import startup_dependency_checklist
+
     today = today or datetime.now(timezone.utc).date()
     return {
         "currency": "CAD", "as_of": today.isoformat(),
@@ -251,5 +253,6 @@ def prepare_startup(request: StartupPlanIn, *, today=None):
         "professional_review_packets": professional_review_packets(request, today),
         "checklist": [{"sequence": index, "step": step, "requires": requires}
                       for index, (step, requires) in enumerate(CHECKLIST, 1)],
+        "startup_dependencies": startup_dependency_checklist(),
         "selected_jurisdiction": None, "activation_authorized": False, "external_effects": 0,
     }

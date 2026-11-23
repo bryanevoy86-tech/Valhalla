@@ -8,6 +8,19 @@ DO NOT restart the project, regenerate completed packs, or treat API presence as
 
 Use the current head of draft PR #4 and confirm the latest required CI run. Use the current workstream index, integration matrix and latest ledger verification to choose unfinished work. Dated checkpoints and original prompts are historical records. The same index supersedes earlier execution orders in the root start page and the finish passes. There are 50 acceptance contracts, 53 task entries and seven construction packages.
 
+## Private startup dependency checklist
+
+Use `GET /api/weweb/owner-startup/dependencies?lane=ONE_TIME_CAD` with an owner session, or choose `RECURRING_CAD` when the first approved offer actually requires recurring billing. A private Heimdall turn such as “What do I need before first revenue?” returns the same structured checklist without model or provider contact. Existing startup comparison attaches the one-time checklist. The saved primary editor workflow `8f542e20-f080-4e63-bdb2-e820f662a7d9` renders the dependency section after the existing registration budget; the exact saved formatter was replayed with synthetic data. Actual authorized browser and staging verification remains separate.
+
+For commissioning, use the seven distinct classes in [the existing matrix](../ops/prime_system_integration_matrix.json). Track each independent receipt in its own scoped record; an owner-reported account, CI pass, configured secret, or sandbox report cannot stand in for settlement, legal authority or live readiness.
+
+1. Verify the intended operating entity and applicable specific filings or permits. Compare the dated filing references in startup comparison. Have the owner or qualified professional confirm any activity-specific obligation before relying on it.
+2. Reuse existing GitHub, approved hosting and WeWeb where feasible. Verify the pinned candidate, CI results, migrations, rollback and authorized browser identities. Use disposable PostgreSQL for remaining internal work.
+3. Confirm the approved bank destination, documented business account, accounting chart and opening balances. Follow the exact Stripe and bank-readback settings below. Require a separate bank trace and qualified review of classifications where applicable.
+4. Commission the single approved CAD offer and receipt chain before adding recurring settlement or channels. A recurring launch also needs the unimplemented recurring bank/ledger path and exact onboarding, settlement and withdrawal checks.
+5. Enable the approved publishing, signing, accounting-export or Google connector only when the scope actually uses it. Preserve local manual review, internal accounting and existing private documents when adequate.
+6. Keep trust, insurance and international arrangements outside the first-revenue checklist unless a specific applicable obligation requires them. Preserve their acceptance criteria. Provider estimates without current quotes remain unpriced.
+
 ## Private startup independence review
 
 The existing owner-session API now accepts `POST /api/weweb/owner-startup/independence-review`. The request contract is `StartupIndependenceIn` in `services/api/app/services/startup_independence.py`. Use synthetic data for tests. The planning response is no-store and unpersisted. It starts six 15-day checkpoints at evidenced registration, keeps the commissioning date separate and always includes a zero-extra-contribution scenario. Funding records retain status without counting as spendable cash. The optional `financing_scenario` compares stressed debt service and reserves, with six months and 1.5× as configurable fixture defaults. Include existing repayments and upfront fees. Loan proceeds and new revenue are excluded from reserve and coverage calculations. A passing fixture carries no authority to apply or borrow. Monthly draft reporting preserves source classes and does not estimate benefits. Existing proof requirements remain open.
@@ -89,7 +102,7 @@ For tasks 04–53, follow the workstream ID in the task register to the correspo
 | Cross-cutting 03 | `services/api/tests/test_economic_control.py` and `services/api/tests/test_product_artifact_workflow.py` exercise scoped research, owner decisions, internal execution, and fixture settlement. | Connect one separately authorized staged provider and extend worker interruption and proof over an end-to-end run. | Authorize the named staging providers and test scope separately. Acceptance requires independent receipts and scoped Mimir outcome lineage. |
 
 
-The canonical matrix now distinguishes five remaining-work fields per criterion under `continuation.remaining`. A blank field means no separate item was identified in that category at this checkpoint. Test levels describe verified evidence slices and can coexist with unfinished acceptance requirements.
+The canonical matrix now distinguishes seven remaining-work fields per criterion under `continuation.remaining`. A blank field means no separate item was identified in that category at this checkpoint. Test levels describe verified evidence slices and can coexist with unfinished acceptance requirements.
 
 - Startup-critical coding includes broader Pantheon source lifecycle and contradiction coverage, additional structured Mimir evidence, remaining containment boundaries, governed notification consent and retries, and owner interaction bindings. Builder review packaging and commercial fulfillment exceptions also remain internal work.
 - Internal test gaps include extended multirole scheduler recovery, denied paths, and representative backup restore. The durable scheduler queue implementation already has PostgreSQL conflict and rollback evidence.

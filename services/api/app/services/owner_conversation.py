@@ -141,6 +141,19 @@ def decode_upload(payload):
 
 def answer(db, message, attachments, turn_id=None, provider_data_class="PRIVATE"):
     text = " ".join(message.casefold().strip().rstrip("?! .").split())
+    from app.services.startup_dependencies import startup_dependency_checklist
+
+    if text in {"startup dependencies", "commissioning checklist", "recurring startup dependencies",
+                "what do i need before first revenue", "what do i need before registration"}:
+        lane = "RECURRING_CAD" if text == "recurring startup dependencies" else "ONE_TIME_CAD"
+        plan = startup_dependency_checklist(lane)
+        gate = "REGISTRATION" if text.endswith("before registration") else "FIRST_REVENUE"
+        steps = [item["service"] for item in plan["dependencies"] if item["gate"] == gate]
+        reply = ("Check the required steps for this launch path: " + ", ".join(steps)
+                 + ". The checklist includes owner actions, cost assumptions and verification steps. "
+                 "Account or evidence completion needs separate verification.")
+        return reply, {"source": "private_startup_dependency_guidance", "model_connected": False,
+                       "startup_dependencies": plan}
     # Exact allowlisted conversational queries, not substring-triggered actions.
     questions = {"status", "what's happening with valhalla today", "what is happening with valhalla today",
                  "is anything preventing us from operating", "is there anything that needs my attention",
@@ -205,6 +218,7 @@ def answer(db, message, attachments, turn_id=None, provider_data_class="PRIVATE"
                    "live_flag": release.go_live_enabled if release is not None else None,
                    "active_advisory_schedules": schedules, "schedules_with_report_reference": reports,
                    "operating_evidence": operating,
+                   "startup_guidance_prompt": "Ask what do I need before registration or first revenue.",
                    "model_connected": False}
 
 def conversation_summaries(db: Session, limit: int):

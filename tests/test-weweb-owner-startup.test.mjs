@@ -83,3 +83,18 @@ test("binds the private startup independence form and refuses unsupported cash a
     assert.equal((await runOwnerIndependence({...form,previewOrigin:""},none)).status,"unconfigured");
     assert.equal((await runOwnerIndependence({...form,details:"[]"},none)).status,"invalid");
 });
+
+test("shows dependencies by gate and rejects fabricated completion", async () => {
+    const item = {service:"Stripe <test>",gate:"FIRST_REVENUE",why:"Verify exact payments",when:"During commissioning",
+        setup_cost:"Confirm setup cost",ongoing_cost:"Confirm tariff",permissions:"Restricted read",
+        alternative:"Test mode",owner_action:"Approve sandbox",verification:"Replay the signed event",
+        evidence_status:"UNVERIFIED_IN_THIS_VIEW"};
+    const dependencies = {basis:"PRIVATE_STARTUP_DEPENDENCY_GUIDANCE",activation_authorized:false,external_effects:0,
+        lane:"ONE_TIME_CAD",dependencies:[item]};
+    const result = await runOwnerStartup(input, async () => ok({...fixture,startup_dependencies:dependencies}));
+    assert.equal(result.status,"ready");
+    assert.match(result.summary,/Before first revenue · Stripe &lt;test&gt;/);
+    assert.match(result.summary,/Owner action · Approve sandbox/);
+    const forged = {...dependencies,dependencies:[{...item,evidence_status:"VERIFIED"}]};
+    assert.equal((await runOwnerStartup(input, async () => ok({...fixture,startup_dependencies:forged}))).status,"unavailable");
+});

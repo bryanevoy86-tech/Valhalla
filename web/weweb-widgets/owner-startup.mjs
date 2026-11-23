@@ -32,6 +32,31 @@ function formatLine(item) {
         + (sources.length ? " · " + sources.join(" · ") : "");
 }
 
+export function formatStartupDependencies(plan) {
+    const gates = {REGISTRATION: "Before registration", FIRST_REVENUE: "Before first revenue",
+        IF_APPLICABLE: "Only if applicable", LATER: "Later or optional"};
+    if (plan?.basis !== "PRIVATE_STARTUP_DEPENDENCY_GUIDANCE" || plan.activation_authorized !== false
+        || plan.external_effects !== 0 || !["ONE_TIME_CAD", "RECURRING_CAD"].includes(plan.lane)
+        || !Array.isArray(plan.dependencies) || !plan.dependencies.length || plan.dependencies.length > 20) {
+        throw new Error("Unexpected dependency evidence");
+    }
+    return plan.dependencies.map(item => {
+        if (!Object.hasOwn(gates, item.gate) || item.evidence_status !== "UNVERIFIED_IN_THIS_VIEW") {
+            throw new Error("Unexpected commissioning status");
+        }
+        return [
+            gates[item.gate] + " · " + safeText(item.service),
+            safeText(item.why), safeText(item.when),
+            "Setup · " + safeText(item.setup_cost),
+            "Ongoing · " + safeText(item.ongoing_cost),
+            "Permissions · " + safeText(item.permissions),
+            "Lower-cost option · " + safeText(item.alternative),
+            "Owner action · " + safeText(item.owner_action),
+            "Verification · " + safeText(item.verification),
+        ].join("\n");
+    }).join("\n\n");
+}
+
 export function formatStartupComparison(data, candidate, expectedPackets) {
     if (data?.currency !== "CAD" || data.activation_authorized !== false || data.external_effects !== 0
         || data.selected_jurisdiction !== null || !Array.isArray(data.options)
@@ -79,8 +104,11 @@ export function formatStartupComparison(data, candidate, expectedPackets) {
     });
     const checklist = data.checklist.map(step => step.sequence + ". " + safeText(step.step)
         + " · " + step.requires.map(safeText).join(", "));
+    const dependencies = data.startup_dependencies == null ? [] : [
+        "Commissioning dependencies for the one-time CAD lane\n" + formatStartupDependencies(data.startup_dependencies),
+    ];
     return {
-        summary: ["Compared as of " + safeText(data.as_of), ...summary, "Startup checklist\n" + checklist.join("\n")].join("\n\n"),
+        summary: ["Compared as of " + safeText(data.as_of), ...summary, "Startup checklist\n" + checklist.join("\n"), ...dependencies].join("\n\n"),
         professional: packets.length ? packets.join("\n\n") : "No professional review packet was requested.",
     };
 }
