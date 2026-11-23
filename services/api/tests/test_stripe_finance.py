@@ -27,7 +27,8 @@ from app.services.stripe_bank_booking import BankBatchIn, _journal, bank_batch_s
 from app.services.stripe_payout_evidence import record_payout_evidence
 
 
-@pytest.mark.parametrize("partial_refunds", [False, True, None], ids=["payout-and-delivery", "ordered-partial-refunds", "terminal-chargeback"])
+@pytest.mark.parametrize("partial_refunds", [False, True, None, "reversal"],
+                         ids=["payout-and-delivery", "ordered-partial-refunds", "terminal-chargeback", "bank-reversal"])
 def test_registered_stripe_finance_replays_and_reconciles_only_matching_capture(deal_client, monkeypatch, partial_refunds):
     client, engine = deal_client
     StripeFinancialEvent.__table__.create(engine)
@@ -148,6 +149,13 @@ def test_registered_stripe_finance_replays_and_reconciles_only_matching_capture(
             **refund_balance, "id": txn_id, "source": refund_id, "amount": -amount, "net": -amount,
         }
 
+    reversing_payout = {"id": "po_ReverseA", "object": "payout", "livemode": False,
+                        "destination": "ba_ApprovedTest", "type": "bank_account", "currency": "cad",
+                        "amount": -1920, "original_payout": "po_ValhallaTest", "status": "paid",
+                        "arrival_date": payout["arrival_date"], "balance_transaction": "txn_ReverseA",
+                        "trace_id": {"value": "BANK-DEBIT-TEST"}}
+    reversal_tx = {"id": "txn_ReverseA", "object": "balance_transaction", "source": "po_ReverseA",
+                   "currency": "cad", "type": "payout", "status": "available", "amount": 1920, "net": 1920, "fee": 0}
     dispute = {"id": "du_LostA", "object": "dispute", "livemode": False, "charge": "ch_CaptureA",
                "payment_intent": "pi_CaptureA", "currency": "cad", "amount": 1000, "status": "lost",
                "balance_transactions": [{"id": "txn_DisputeA"}]}
@@ -167,6 +175,8 @@ def test_registered_stripe_finance_replays_and_reconciles_only_matching_capture(
         responses = {"/v1/payouts/po_ValhallaTest": payout, "/v1/account": {"id": "acct_ValhallaTest", "object": "account"},
                      "/v1/charges/ch_CaptureA": charge, "/v1/balance_transactions/txn_CaptureA": balance,
                      "/v1/charges/ch_CaptureB": charge_b, "/v1/balance_transactions/txn_CaptureB": balance_b}
+        responses.update({"/v1/payouts/po_ReverseA": reversing_payout,
+                          "/v1/balance_transactions/txn_ReverseA": reversal_tx})
         responses.update({"/v1/disputes/du_LostA": dispute, "/v1/balance_transactions/txn_DisputeA": dispute_tx})
         responses.update({"/v1/refunds/re_FullB": native_refund, "/v1/balance_transactions/txn_RefundB": refund_balance})
         return httpx.Response(200, json=(responses | adjustments)[request.url.path])
@@ -310,6 +320,46 @@ def test_registered_stripe_finance_replays_and_reconciles_only_matching_capture(
         with pytest.raises(HTTPException, match="changed after reconciliation"):
             reconcile([order_id, other_id])
         bank_item["transaction_id"] = "test_tx_exact"
+
+        if partial_refunds == "reversal":
+            from app.banking.plaid_transactions import _posted_movement
+            from app.services.stripe_bank_reversal import BankReversalIn, record_bank_reversal
+
+            path = "/api/governance/floor/stripe-bank-batches/reversal"
+            assert client.post(path, json={"payout_id": payout["id"], "reversal_id": reversing_payout["id"]}).status_code == 401
+            bank_item.update(transaction_id="debit_exact", amount=19.20, payment_meta={"reference_number": "BANK-DEBIT-TEST"})
+            req = BankReversalIn(payout_id=payout["id"], reversal_id=reversing_payout["id"])
+
+            def independent_debit(**args):
+                with httpx.Client(base_url="https://bank.example.invalid",
+                                  transport=httpx.MockTransport(bank_upstream)) as bank_client:
+                    return _posted_movement(bank_client, token="isolated", account_id="bank_test", trace=args["trace"],
+                                            arrival=args["arrival"], amount_minor=args["amount_minor"],
+                                            today=args["today"], debit=True)
+
+            def correct():
+                return record_bank_reversal(db, req, live=False, client=adapter, account="acct_ValhallaTest",
+                                            destination="ba_ApprovedTest", bank_debit=independent_debit)
+
+            with pytest.raises(HTTPException, match="Exact paid full"):
+                correct()
+            payout["reversed_by"] = reversing_payout["id"]
+            bank_item["amount"] = -19.20
+            with pytest.raises(HTTPException, match="differs"):
+                correct()
+            bank_item["amount"] = 19.20
+            reversal_tx["net"] = 1919
+            with pytest.raises(HTTPException, match="processor clearing"):
+                correct()
+            reversal_tx["net"] = 1920
+            corrected = correct()
+            assert corrected == correct()
+            assert corrected["original_sha256"] == batch["sha256"]
+            assert corrected["basis"] == "SYNTHETIC_BANK_REVERSAL"
+            assert corrected["available_cash_minor"] is None and corrected["ledger_entry_id"] is None
+            assert corrected["bank_debit_verified"] is False and db.query(JournalEntry).count() == 0
+            assert scoped_bank_blockers(db, scope, live=False) == {"STRIPE_BANK_CORRECTION_REQUIRED"}
+            return
 
         if partial_refunds is None:
             charge["disputed"] = True

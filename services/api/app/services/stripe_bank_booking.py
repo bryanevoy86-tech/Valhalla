@@ -277,6 +277,11 @@ def configured_bank_batch(db, request, *, live):
 
 
 
+def _bank_reversal_recorded(db, reference):
+    key = "STRIPE-BANK-REVERSAL-" + reference.removeprefix("STRIPE-BANK-")
+    return db.scalar(select(LegacyOrchestrationEvent.id).filter_by(event_id=key)) is not None
+
+
 def bank_batch_summary(db: Session, order_id: UUID, projection: dict, *, live: bool):
     journal = LegacyOrchestrationEvent
     if not inspect(db.connection()).has_table(journal.__tablename__):
@@ -309,7 +314,8 @@ def bank_batch_summary(db: Session, order_id: UUID, projection: dict, *, live: b
             raise HTTPException(409, "Matched accounting entry is unavailable")
     elif ledger_id is not None:
         raise HTTPException(409, "Synthetic evidence cannot have a ledger posting")
-    held = projection["status"] != "MATCHED_PROCESSOR_EVIDENCE" or _payout_failed(db, value["payout_id"], live)
+    held = (projection["status"] != "MATCHED_PROCESSOR_EVIDENCE" or _payout_failed(db, value["payout_id"], live)
+            or _bank_reversal_recorded(db, entry.event_id))
     return {
         "basis": expected_basis, "status": "CORRECTION_REVIEW_REQUIRED" if held else "RECONCILIATION_RECORDED",
         "currency": "CAD", "batch_minor": value["payout_minor"], "order_contribution_minor": member["net_minor"],
@@ -345,7 +351,7 @@ def scoped_bank_blockers(db: Session, scope: dict, *, live: bool) -> set[str]:
         if value.get("basis") != expected_basis:
             continue
         try:
-            if _payout_failed(db, value["payout_id"], live):
+            if _payout_failed(db, value["payout_id"], live) or _bank_reversal_recorded(db, entry.event_id):
                 blockers.add("STRIPE_BANK_CORRECTION_REQUIRED")
             if value.get("invoices"):
                 from app.models.stripe_recurring import StripePaidPeriod

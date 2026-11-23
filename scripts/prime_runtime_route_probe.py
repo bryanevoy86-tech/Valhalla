@@ -35,6 +35,7 @@ MANDATORY_ENDPOINTS = {
     "stripe_delivery_authorize": ("POST", "/api/governance/floor/stripe-orders/{order_id}/delivery"),
     "weweb_paid_product": ("GET", "/api/weweb/paid-products/{tenant_id}/{order_id}"),
     "weweb_acknowledge_paid_product": ("POST", "/api/weweb/paid-products/{tenant_id}/{order_id}/acknowledge"),
+    "stripe_bank_reversal": ("POST", "/api/governance/floor/stripe-bank-batches/reversal"),
     "stripe_bank_batch": ("POST", "/api/governance/floor/stripe-bank-batches/reconcile"),
     "stripe_payout_readback": ("POST", "/api/governance/floor/stripe-orders/{order_id}/payout-readback/{payout_id}"),
     "weweb_owner_stripe_order": ("GET", "/api/weweb/owner-stripe-orders/{order_id}"),

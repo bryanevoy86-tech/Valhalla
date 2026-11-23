@@ -15,6 +15,7 @@ from app.services.stripe_fulfillment import (
     DeliveryAcceptanceIn, FulfillmentIn, RevokeDeliveryIn, acknowledge_delivery, configured_delivery, delivery_access,
     record_delivery_offer, revoke_delivery,
 )
+from app.services.stripe_bank_reversal import BankReversalIn, configured_bank_reversal
 from app.services.stripe_bank_booking import BankBatchIn, configured_bank_batch
 from app.services.stripe_orders import OrderBindingIn, inspect_binding, register_binding
 from app.services.stripe_revenue_release import DeliveryReleaseIn, recognize_delivery
@@ -54,6 +55,11 @@ def read_checkout_payout(order_id: UUID, payout_id: str, db: Session = Depends(g
 
     return private_owner_response(configured_payout_readback(db, order_id, payout_id, live=is_live()))
 
+
+
+@router.post("/api/governance/floor/stripe-bank-batches/reversal", dependencies=owner_keys)
+def reconcile_bank_reversal(payload: BankReversalIn, db: Session = Depends(get_db)):
+    return private_owner_response(configured_bank_reversal(db, payload, live=is_live()))
 
 
 @router.post("/api/governance/floor/stripe-bank-batches/reconcile", dependencies=owner_keys)

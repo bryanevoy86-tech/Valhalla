@@ -8,7 +8,7 @@ import httpx
 from fastapi import HTTPException
 
 
-def posted_credit(client, *, token, account_id, trace, arrival, amount_minor, today):
+def _posted_movement(client, *, token, account_id, trace, arrival, amount_minor, today, debit):
     start, end = arrival - timedelta(days=1), min(today, arrival + timedelta(days=7))
     if end < start:
         raise HTTPException(409, "Payout is outside the bank posting window")
@@ -31,13 +31,13 @@ def posted_credit(client, *, token, account_id, trace, arrival, amount_minor, to
         if (item.get("account_id") == account_id and isinstance(meta, dict) and meta.get("reference_number") == trace):
             candidates.append(item)
     if len(candidates) != 1:
-        raise HTTPException(409, "A single bank credit with the exact payout trace is required")
+        raise HTTPException(409, "A single bank entry with the exact payout trace is required")
     item = candidates[0]
     identity = item.get("transaction_id")
     try:
         posted_on = date.fromisoformat(item.get("date"))
         amount = item.get("amount")
-        minor = -Decimal(amount) * 100 if type(amount) in (int, Decimal) else None
+        minor = (1 if debit else -1) * Decimal(amount) * 100 if type(amount) in (int, Decimal) else None
     except (ValueError, TypeError, InvalidOperation):
         raise HTTPException(409, "Malformed bank posting evidence") from None
     if (not isinstance(identity, str) or not 1 <= len(identity) <= 160 or item.get("pending") is not False
@@ -48,7 +48,12 @@ def posted_credit(client, *, token, account_id, trace, arrival, amount_minor, to
             "posted_on": posted_on.isoformat(), "amount_minor": amount_minor, "currency": "CAD"}
 
 
-def configured_bank_credit(*, trace, arrival, amount_minor, today, live, stripe_destination):
+def posted_credit(client, *, token, account_id, trace, arrival, amount_minor, today):
+    return _posted_movement(client, token=token, account_id=account_id, trace=trace, arrival=arrival,
+                            amount_minor=amount_minor, today=today, debit=False)
+
+
+def _configured_bank_movement(*, trace, arrival, amount_minor, today, live, stripe_destination, debit):
     mode = "production" if live else "sandbox"
     scope = os.getenv("VALHALLA_PLAID_STRIPE_DESTINATION")
     account = os.getenv("VALHALLA_PLAID_BANK_ACCOUNT_ID")
@@ -61,5 +66,13 @@ def configured_bank_credit(*, trace, arrival, amount_minor, today, live, stripe_
     host = "https://production.plaid.com" if live else "https://sandbox.plaid.com"
     with httpx.Client(base_url=host, headers={"PLAID-CLIENT-ID": client_id, "PLAID-SECRET": secret},
                       follow_redirects=False, trust_env=False, timeout=5.0) as client:
-        return posted_credit(client, token=token, account_id=account, trace=trace, arrival=arrival,
-                             amount_minor=amount_minor, today=today)
+        return _posted_movement(client, token=token, account_id=account, trace=trace, arrival=arrival,
+                                amount_minor=amount_minor, today=today, debit=debit)
+
+
+def configured_bank_credit(**kwargs):
+    return _configured_bank_movement(**kwargs, debit=False)
+
+
+def configured_bank_debit(**kwargs):
+    return _configured_bank_movement(**kwargs, debit=True)
