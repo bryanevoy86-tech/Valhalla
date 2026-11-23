@@ -17,6 +17,7 @@ on:
       - 'scripts/builder_test_review.py'
       - 'scripts/builder_assignment_worker.py'
       - 'scripts/prime_runtime_route_probe.py'
+      - 'scripts/january_core_readiness.py'
       - 'web/weweb-widgets/owner-*.mjs'
       - 'tests/test-weweb-owner-*.test.mjs'
       - 'web/weweb-widgets/subscriber-*.mjs'
@@ -196,6 +197,13 @@ jobs:
         run: |
           python -m unittest discover -s tests -p test_factory_postgres.py -v
           python -m unittest discover -s tests -p test_postgres_migration_chain.py -v
+      - name: Rehearse the canonical Alembic release and PostgreSQL snapshot restore
+        env:
+          FACTORY_TEST_POSTGRES_URL: postgresql+psycopg2://factory_ci:local_ci_test_only@127.0.0.1:5432/valhalla_factory_ci
+        run: |
+          sed '/^win32_setctime/d' services/api/requirements.txt > prime-release-requirements.txt
+          python -m pip install -r prime-release-requirements.txt
+          python -m unittest discover -s tests -p test_january_release_restore.py -v
 
 
   full-app-diagnostic:
@@ -258,6 +266,15 @@ jobs:
           VALHALLA_EMERGENCY_STOP: "true"
         run: |
           python -m pytest -q services/api/tests
+      - name: Run the executable January core operating rehearsal
+        run: python scripts/january_core_readiness.py --report january-core-readiness.json
+      - name: Archive the January core operating rehearsal
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: january-core-readiness
+          path: january-core-readiness.json
+          if-no-files-found: ignore
       - name: Archive backend test collection report
         if: always()
         uses: actions/upload-artifact@v4

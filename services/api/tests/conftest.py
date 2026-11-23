@@ -15,7 +15,7 @@ from sqlalchemy.pool import StaticPool
 
 
 @pytest.fixture
-def deal_client(monkeypatch):
+def deal_client(monkeypatch, request, tmp_path):
     from app.core.db import get_db
     from app.leads.models import Lead
     from app.main import app
@@ -32,7 +32,10 @@ def deal_client(monkeypatch):
 
     key = "historical-deal-test-prime-key"
     monkeypatch.setenv("VALHALLA_PRIME_CONTROL_KEY", key)
-    engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
+    if getattr(request, "param", None) == "disk":
+        engine = create_engine(f"sqlite:///{tmp_path / 'valhalla-rehearsal.db'}")
+    else:
+        engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
     for model in (Lead, Deal, DealBrief, DealBriefLink, Buyer, FreezeEvent, Offer, AuditLog, FollowupTask,
                   KPIEvent, BuyerLiquidityNode, BuyerFeedbackEvent, OfferPolicy, OfferEvidence):
         model.__table__.create(engine)

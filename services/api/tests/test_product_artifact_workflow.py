@@ -34,6 +34,7 @@ ASSETS = f"{FACTORY}/product-artifacts"
 PHASE3 = "/api/completion/phase3/universal-opportunity"
 
 
+@pytest.mark.parametrize("deal_client", ["disk"], indirect=True)
 def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkeypatch):
     client, engine = deal_client
     admin = {"X-Business-Factory-Key": "ci-factory-for-product-assets"}
@@ -41,8 +42,32 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
     monkeypatch.setenv("VALHALLA_FACTORY_KEY", admin["X-Business-Factory-Key"])
     monkeypatch.setenv("VALHALLA_OWNER_MANDATE_KEY", owner["X-Owner-Mandate-Key"])
     monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "false")
-    for model in (LegacyInstanceRegistryItem, LegacyInstanceWorkItem, LegacyOrchestrationEvent, MediaContent):
-        model.__table__.create(engine)
+    from app.models.auth_revocations import RevokedAccessToken
+    from app.routers.auth_weweb import _auth_runtime
+    from app.users.models import AccountSettings, UserProfile
+
+    for model in (LegacyInstanceRegistryItem, LegacyInstanceWorkItem, LegacyOrchestrationEvent, MediaContent,
+                  GoLiveState, UserProfile, AccountSettings, RevokedAccessToken):
+        model.__table__.create(engine, checkfirst=True)
+    owner_email, buyer_email = "january-owner@example.invalid", "january-buyer@example.invalid"
+    password = "synthetic-January-password"
+    monkeypatch.setenv("VALHALLA_OWNER_EMAIL", owner_email)
+    monkeypatch.setenv("VALHALLA_OWNER_PASSWORD", password)
+    with Session(engine) as db:
+        for email in (owner_email, buyer_email):
+            profile = UserProfile(first_name="January", last_name="Fixture", email=email)
+            db.add(profile)
+            db.flush()
+            db.add(AccountSettings(user_id=profile.user_id, account_locked=False,
+                                   password_hash=_auth_runtime().pbkdf2_hash_password(password)))
+        db.commit()
+
+    def login(email):
+        result = client.post("/api/weweb/login", json={"email": email, "password": password})
+        assert result.status_code == 200, result.text
+        return {"Authorization": f"Bearer {result.json()['access_token']}"}
+
+    owner_session, buyer_session = login(owner_email), login(buyer_email)
 
     scope = {"legacy_instance_id": "legacy-north", "business_id": "workshop", "engine_id": "micro_saas", "jurisdiction": "CA-MB"}
     with Session(engine) as db:
@@ -53,6 +78,18 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
             synchronization_status="SYNCED", status="PASS",
         ))
         db.commit()
+
+    registry = "/api/completion/legacy-instances"
+    for number in range(2, 6):
+        staged_slot = client.post(registry, json={
+            "legacy_instance_id": f"january-slot-{number}", "display_name": f"Fixture slot {number}",
+            "status": "EXTERNAL_OWNER_ACTION_REQUIRED",
+        })
+        assert staged_slot.status_code == 200, staged_slot.text
+        assert staged_slot.json()["status"] == "EXTERNAL_OWNER_ACTION_REQUIRED"
+    slots = client.get(registry).json()
+    assert len(slots) == 5
+    assert sum(slot["status"] == "EXTERNAL_OWNER_ACTION_REQUIRED" for slot in slots) == 4
 
     content = b"Valhalla owns this product test file.\n"
     checksum = hashlib.sha256(content).hexdigest()
@@ -91,6 +128,10 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
         "price_cents_cad": 2500, "request_key": "workshop-listing-01",
     }
     assert client.post(f"{FACTORY}/listing-drafts", headers=admin, json={**listing, "product_id": "other-product"}).status_code == 409
+    for number in range(2, 6):
+        assert client.post(f"{FACTORY}/listing-drafts", headers=admin, json={
+            **listing, "legacy_instance_id": f"january-slot-{number}",
+        }).status_code == 409
 
     def submit_and_approve(body):
         accepted = client.post(f"{FACTORY}/listing-drafts", headers=admin, json=body)
@@ -104,7 +145,7 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
 
     for model in (GodReviewCase, GodReviewEvent, GodVerdict, GovernanceDecision, LokiReview,
                   LokiFinding, LokiIndependentReceipt, LokiReconsideration):
-        model.__table__.create(engine)
+        model.__table__.create(engine, checkfirst=True)
 
     worker = {"X-Loki-Reviewer-Key": "independent-product-test-reviewer"}
     monkeypatch.setenv("VALHALLA_LOKI_REVIEWER_KEY", worker["X-Loki-Reviewer-Key"])
@@ -129,7 +170,7 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
         },
     }
     for model in (KnowledgeRegistryItem, SourceRegistryItem, LearningFeedbackRecord, PrimeSpecialistSchedule, PrimeScheduleTrigger, OwnerConversation, OwnerTurn, SpecialistAssignment, SpecialistTrigger):
-        model.__table__.create(engine)
+        model.__table__.create(engine, checkfirst=True)
     from app.models.economic_control import EconomicOperation, EconomicPool, EconomicRecord
     from app.models.foundry_evidence import FoundryEvidence
     from app.models.foundry_intake import FoundryIntakeJob
@@ -137,7 +178,7 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
     for model in (FoundryEvidence, FoundryIntakeJob, EconomicPool, EconomicOperation, EconomicRecord):
-        model.__table__.create(engine)
+        model.__table__.create(engine, checkfirst=True)
 
     at = foundry_intake.current_time()
     today = at.date()
@@ -224,7 +265,7 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
     assert proposal["specialist_inputs"]["discovery_demand"]["sample_demand_bp"] == 7500
     assert proposal["specialist_inputs"]["consumer_research"] == aggregate
     for model in (MarketingCampaign, FoundryRehearsalOrder, FoundryRehearsalPayment, FoundryCampaignVisit):
-        model.__table__.create(engine)
+        model.__table__.create(engine, checkfirst=True)
     with Session(engine) as db:
         db.add(MarketingCampaign(id=1, name="Private rehearsal", strategy_payload="{}"))
         db.add(MarketingCampaign(id=2, name="Comparable rehearsal control", strategy_payload="{}"))
@@ -415,7 +456,7 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
     from app.models.norns_forecast import NornsForecast, NornsHoldout
 
     for model in (NornsForecast, NornsHoldout):
-        model.__table__.create(engine)
+        model.__table__.create(engine, checkfirst=True)
     forecast_id = str(uuid4())
     forecast = client.post("/api/prime/norns/forecasts", headers=owner, json={
         "forecast_id": forecast_id, "action_id": action_id, "probability_bp": 8000, "horizon_seconds": 120,
@@ -423,8 +464,29 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
     assert forecast.status_code == 201, forecast.text
     approved_capital = economic("assessment", scope, 200)
     assert approved_capital["period_net_minor"] == 150 and approved_capital["new_exposure_available_minor"] >= 500
+    stop_path = "/governance/go-live/kill-switch"
+    intervention = {"changed_by": "january-fixture-operator", "reason": "Verify stop and recovery on a queued draft"}
+    assert client.post(stop_path + "/engage", headers=owner_session, json=intervention).status_code == 401
+    halted = client.post(stop_path + "/engage", headers=owner, json=intervention)
+    assert halted.status_code == 200 and halted.json()["kill_switch_engaged"] is True
+    engine.dispose()
+    briefing = "/api/weweb/owner-briefing?mode=driving"
+    assert client.get(briefing, headers=buyer_session).status_code == 403
+    observed_stop = client.get(briefing, headers=owner_session)
+    assert observed_stop.status_code == 200 and observed_stop.headers["cache-control"] == "no-store"
+    assert observed_stop.json()["emergency_stop"] is True
+    held = client.post(f"{FACTORY}/actions/run-once", headers=admin).json()
+    assert held["status"] == "blocked" and held["reason"] == "EMERGENCY_STOP_ACTIVE"
+    assert client.get(f"{FACTORY}/actions/{action_id}", headers=admin).json()["receipt"] is None
+    assert client.post(stop_path + "/release", headers=buyer_session, json=intervention).status_code == 401
+    released = client.post(stop_path + "/release", headers=owner, json=intervention)
+    assert released.status_code == 200 and released.json()["go_live_enabled"] is False
+    engine.dispose()
+    assert client.get(briefing, headers=owner_session).json()["emergency_stop"] is False
     executed = client.post(f"{FACTORY}/actions/run-once", headers=admin).json()
     assert executed["status"] == "completed"
+    engine.dispose()
+    assert client.get(f"{FACTORY}/actions/{action_id}", headers=admin).json()["receipt"] == executed["receipt"]
     assert executed["receipt"]["sales_verified"] is False
     assert executed["receipt"]["authority_mode"] == "STANDING_MANDATE"
     assert executed["receipt"]["product_asset"]["sha256"] == checksum
@@ -444,7 +506,7 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
     from app.models.stripe_finance import StripeBalanceEvidence, StripeFinancialEvent, StripeOrderBinding
 
     for model in (StripeFinancialEvent, StripeBalanceEvidence, StripeOrderBinding):
-        model.__table__.create(engine)
+        model.__table__.create(engine, checkfirst=True)
     monkeypatch.setenv("VALHALLA_STRIPE_EVENT_MODE", "test")
     monkeypatch.setenv("VALHALLA_STRIPE_ACCOUNT_ID", "acct_FoundryTest")
     monkeypatch.setattr("app.routers.stripe_financial.is_live", lambda: False)
@@ -458,6 +520,8 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
     assert bind.json()["amount_minor"] == listing["price_cents_cad"]
     assert bind.json()["product_asset_id"] == str(asset_id)
     assert bind.json()["payment_created"] is False
+    rehearse_bound_stripe_delivery(client, engine, monkeypatch, owner, owner_session, buyer_session,
+                                  buyer_email, order_bind, bind.json()["amount_minor"])
     assert client.post(binding_path, headers=owner, json={**order_bind,
                        "order_id": str(uuid4()), "payment_intent_id": "pi_fixture_product"}).status_code == 422
 
@@ -544,12 +608,10 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
     assert after["suggested_action"] == "EXIT"
 
     owner_operating_route = "/api/weweb/owner-operating-scope"
-    from app.routers.auth_weweb import require_owner_session
-
     assert client.post(owner_operating_route, json=scope).status_code == 401
+    assert client.post(owner_operating_route, headers=buyer_session, json=scope).status_code == 403
     with monkeypatch.context() as owner_fixture:
-        owner_fixture.setitem(client.app.dependency_overrides, require_owner_session, lambda: 1)
-        operating = client.post(owner_operating_route, json=scope)
+        operating = client.post(owner_operating_route, headers=owner_session, json=scope)
         assert operating.status_code == 200 and operating.headers["cache-control"] == "no-store"
         view = operating.json()
         assert view["execution_authorized"] is False and view["actual_accessible_funds_minor"] is None
@@ -558,7 +620,7 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
         assert view["statement_fixtures"]["BUSINESS"]["accounts"][0]["status"] == "MATCHED_FIXTURE"
         assert view["statement_fixtures"]["HOUSEHOLD"]["accounts"] == []
         assert view["statement_fixtures"]["OPERATING_RESERVE"]["accounts"] == []
-        assert client.post(owner_operating_route, json={**scope, "jurisdiction": "CA-ON"}).status_code == 409
+        assert client.post(owner_operating_route, headers=owner_session, json={**scope, "jurisdiction": "CA-ON"}).status_code == 409
         recurring = {"basis": "STRIPE_TEST_PAID_PERIODS", "status": "OBSERVED",
                      "verified_current_periods": 2, "verified_adjacent_renewals": 1,
                      "scheduled_cancellations": 0, "held_agreements": 0,
@@ -569,7 +631,7 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
             return recurring
 
         owner_fixture.setattr("app.services.stripe_recurring.scoped_subscription_outcomes", recurring_fixture)
-        scoped = client.post(owner_operating_route, json=scope)
+        scoped = client.post(owner_operating_route, headers=owner_session, json=scope)
         assert scoped.status_code == 200 and scoped.headers["cache-control"] == "no-store"
         assert scoped.json()["recurring_paid_periods"] == recurring
         assert scoped.json()["actual_accessible_funds_minor"] is None
@@ -597,11 +659,10 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
     assert follow_up["evidence"]["operating_reassessment"] == reassessment
     assert follow_up["evidence"]["verified_internal_outcome_ids"] == [report["trigger_outcome_event_id"]]
     assert len(client.get(turns).json()) == 4
-    for model in (LearningTaskQueueItem, RevenueLedger, GoLiveState):
-        model.__table__.create(engine)
+    for model in (LearningTaskQueueItem, RevenueLedger):
+        model.__table__.create(engine, checkfirst=True)
     with Session(engine) as db:
         db.add(AuditLog(event_type="integrity_alert", event_source="rehearsal", message="Fixture recorded alert"))
-        db.add(GoLiveState(id=1, go_live_enabled=False, kill_switch_engaged=False))
         db.add(RevenueLedger(engine_code="micro_saas", currency="CAD", gross_amount=50, as_of_date=date.today()))
         db.commit()
     brief = owner_turn("Morning briefing")["evidence"]["operating_evidence"]
@@ -735,9 +796,7 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
     assert fresh_context["evidence"]["reviewed_mimir_outcomes"] == next_advice["independent_loki"]["reviewed_mimir_outcomes"]
     assert fresh_context["execution_authorized"] is False
     decision_route = f"/api/weweb/owner-prime-decisions/{followup_listing['prime_verdict_id']}"
-    with monkeypatch.context() as route_fixture:
-        route_fixture.setitem(client.app.dependency_overrides, require_owner_session, lambda: 1)
-        direct = client.get(decision_route)
+    direct = client.get(decision_route, headers=owner_session)
     assert direct.status_code == 200, direct.text
     assert direct.headers["cache-control"] == "no-store"
     assert direct.json()["independent_loki"]["review_id"] == claim_review
@@ -815,6 +874,88 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
     assert client.delete(f"{ASSETS}/{asset_id}", headers=admin).status_code == 401
     assert client.delete(f"{ASSETS}/{asset_id}", headers=owner).json()["revoked"]
     assert client.get(download_url, headers=owner).status_code == 409
+    assert client.post("/api/weweb/logout", headers=owner_session).status_code == 200
+    engine.dispose()
+    assert client.get(briefing, headers=owner_session).status_code == 401
+
+
+def rehearse_bound_stripe_delivery(client, engine, monkeypatch, owner, owner_session, buyer_session,
+                                   buyer_email, binding, price):
+    from contextlib import contextmanager
+    import hmac
+    import time
+
+    import httpx
+
+    from app.core import db as database
+    from app.services.stripe_fulfillment import delivery_buyer_reference
+    from app.users.models import UserProfile
+
+    order_id, tenant_id = binding["order_id"], str(uuid4())
+    intent_id = binding["payment_intent_id"]
+    account_id, charge_id, customer_id = "acct_FoundryTest", "ch_JanuaryCore", "cus_JanuaryBuyer"
+    with Session(engine) as db:
+        buyer_id = db.query(UserProfile.user_id).filter_by(email=buyer_email).scalar()
+    metadata = {"valhalla_order_id": order_id, "valhalla_tenant_id": tenant_id,
+                "valhalla_buyer_ref": delivery_buyer_reference(order_id, tenant_id, buyer_id)}
+    secret = "isolated-january-signature"
+    monkeypatch.setenv("VALHALLA_STRIPE_TEST_WEBHOOK_SECRET", secret)
+    monkeypatch.setattr(database, "SessionLocal", lambda: Session(engine))
+    monkeypatch.setattr("app.webhooks.stripe.is_live", lambda: False)
+    event_id = "evt_JanuaryCoreCapture"
+
+    def journal(event, kind, item):
+        body = json.dumps({"id": event, "type": kind, "livemode": False, "data": {"object": item}}).encode()
+        stamp = str(int(time.time()))
+        digest = hmac.new(secret.encode(), stamp.encode() + b"." + body, hashlib.sha256).hexdigest()
+        response = client.post("/webhooks/stripe", content=body, headers={"Stripe-Signature": f"t={stamp},v1={digest}"})
+        assert response.status_code == 200, response.text
+        return response.json()
+
+    payment = {"id": intent_id, "object": "payment_intent", "status": "succeeded",
+               "latest_charge": charge_id, "amount_received": price, "currency": "cad",
+               "customer": customer_id, "metadata": metadata}
+    assert journal(event_id, "payment_intent.succeeded", payment)["verified_financial_effect"] is False
+    assert journal(event_id, "payment_intent.succeeded", payment)["duplicate"] is True
+    charge = {"id": charge_id, "object": "charge", "payment_intent": intent_id, "livemode": False,
+              "currency": "cad", "amount_captured": price, "status": "succeeded", "paid": True, "captured": True,
+              "disputed": False, "refunded": False, "amount_refunded": 0, "balance_transaction": "txn_JanuaryCore",
+              "customer": customer_id, "metadata": metadata}
+
+    def readback(request):
+        assert request.method == "GET"
+        fixtures = {"/v1/account": {"id": account_id, "object": "account"}, f"/v1/charges/{charge_id}": charge}
+        return httpx.Response(200, json=fixtures[request.url.path])
+
+    @contextmanager
+    def isolated_stripe(*, live):
+        assert live is False
+        with httpx.Client(base_url="https://stripe.example.invalid", transport=httpx.MockTransport(readback)) as adapter:
+            yield adapter, account_id
+
+    monkeypatch.setattr("app.services.stripe_fulfillment.stripe_readback_client", isolated_stripe)
+    gate = f"/api/governance/floor/stripe-orders/{order_id}/delivery"
+    purchase = f"/api/weweb/paid-products/{tenant_id}/{order_id}"
+    authorization = {"tenant_id": tenant_id, "subscriber_id": buyer_id, "stripe_customer_id": customer_id,
+                     "signed_event_id": event_id, "commercial_rights_reference": "january-isolated-fixture",
+                     "attestation": "OWNER_AUTHORIZES_EXACT_PAID_PRODUCT_DELIVERY"}
+    grant = client.post(gate, headers=owner, json=authorization)
+    assert grant.status_code == 200, grant.text
+    assert client.post(gate, headers=owner, json=authorization).json() == grant.json()
+    assert client.get(purchase, headers=owner_session).status_code == 404
+    entitlement = client.get(purchase, headers=buyer_session)
+    assert entitlement.status_code == 200 and entitlement.json()["download_enabled"] is False
+    acceptance = client.post(purchase + "/acknowledge", headers=buyer_session,
+                             json={"grant_sha256": grant.json()["grant_sha256"]})
+    assert acceptance.status_code == 200 and acceptance.json()["recognized_revenue_minor"] is None
+    assert client.post(gate + "/release-liability", headers=owner,
+                       json={"acknowledgment_sha256": acceptance.json()["sha256"]}).status_code == 409
+    review = client.get(f"/api/weweb/owner-stripe-orders/{order_id}", headers=owner_session)
+    assert review.status_code == 200 and review.json()["available_cash_minor"] is None
+    assert review.json()["bank_batch"] is None
+    refund = {**charge, "refunded": True, "amount_refunded": price}
+    assert journal("evt_JanuaryCoreRefund", "charge.refunded", refund)["verified_financial_effect"] is False
+    assert client.get(purchase, headers=buyer_session).status_code == 409
 
 
 def rehearse_checkout(client, engine, monkeypatch, owner, action_id, price, scope):
@@ -999,7 +1140,7 @@ def rehearse_checkout(client, engine, monkeypatch, owner, action_id, price, scop
     from app.models.treasury_reconciliation import StatementAccount, StatementEntry, StatementImport
 
     for model in (StatementAccount, StatementEntry, StatementImport, FoundryFixtureSettlement):
-        model.__table__.create(engine)
+        model.__table__.create(engine, checkfirst=True)
     statement_id = str(uuid4())
     today = date.today().isoformat()
     entries = [
@@ -1048,7 +1189,7 @@ def rehearse_channel_intent(client, engine, monkeypatch, owner, scope, visit_ids
     from app.models.media_engine import MediaChannel, MediaPublishLog
 
     for model in (MediaChannel, MediaPublishLog):
-        model.__table__.create(engine)
+        model.__table__.create(engine, checkfirst=True)
     key = "isolated-channel-fixture-only"
     monkeypatch.setenv("VALHALLA_ACQUISITION_CHANNEL_FIXTURE_KEY", key)
     with Session(engine) as db:

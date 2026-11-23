@@ -115,6 +115,11 @@
           "owner_or_professional": "Owner approves exact action, scope, budget and rollback authority.",
           "launch_acceptance_evidence": "Withhold and revoke an approval in staging. Prove denial, stop during a durable task, restart and observe one executed receipt with no cross-scope effects.",
           "next_action": "Trace each enabled dispatch route to persisted authority, hold and recovery."
+        },
+        "january_internal_rehearsal": {
+          "command": "python scripts/january_core_readiness.py --postgres",
+          "evidence": "Internal connected proof passed for persisted dual-key stop, buyer denial, stopped zero-effect execution, reconnect, and authorized release without enabling live mode.",
+          "external_authority": false
         }
       }
     },
@@ -257,6 +262,11 @@
           "independent_financial_or_operational_evidence": "Independently generated outcome receipts for production evidence classes.",
           "qualified_professional_review": null,
           "conditional_future_expansion": null
+        },
+        "january_internal_rehearsal": {
+          "command": "python scripts/january_core_readiness.py --postgres",
+          "evidence": "Internal connected proof uses fresh connections to recover the exact verified outcome and retrieve the measured Mimir playbook baseline through Prime.",
+          "external_authority": false
         }
       }
     },
@@ -338,6 +348,11 @@
           "owner_or_professional": "Owner enrolls the exact Legacy mandate and responsible operator.",
           "launch_acceptance_evidence": "Two workers and a restarted worker act on one approved staged job. Capture one effect and receipt and a refused foreign-scope job.",
           "next_action": "Run the selected offer's work item across staged workers and a restart."
+        },
+        "january_internal_rehearsal": {
+          "command": "python scripts/january_core_readiness.py --postgres",
+          "evidence": "Internal connected proof uses an exact approved fixture mandate, verified draft receipt after reconnect, and four separately denied pending slots. PostgreSQL restart and transaction-retry proof is separate.",
+          "external_authority": false
         }
       }
     },
@@ -348,7 +363,9 @@
         "alembic/versions/20261119_factory_legacy_work_schema.py",
         "alembic/env.py",
         "alembic/versions/20261119_persistent_auth_revocation.py",
-        "alembic/versions/20261123_owner_disposition.py"
+        "alembic/versions/20261123_owner_disposition.py",
+        "scripts/january_core_readiness.py",
+        "tests/test_january_release_restore.py"
       ],
       "source_observation": "Prepared additive Factory and JWT revocation migrations; both upgraded and reran idempotently on disposable PostgreSQL with preexisting data preserved. Not complete historical chain or Render staging migration.",
       "evidence_level": "POSTGRES_INTEGRATION_TESTED",
@@ -371,6 +388,11 @@
           "independent_financial_or_operational_evidence": "Exact revision and authorized staging backup/restore receipt.",
           "qualified_professional_review": null,
           "conditional_future_expansion": null
+        },
+        "january_internal_rehearsal": {
+          "command": "python scripts/january_core_readiness.py --postgres",
+          "evidence": "Cold canonical Alembic upgrade and PostgreSQL pre-release snapshot restore/reapply are executable in the disposable release test.",
+          "external_authority": false
         }
       }
     },
@@ -669,6 +691,11 @@
           "owner_or_professional": "Owner approves offer and rights, price, terms and support. Have qualified professionals review activity-specific obligations.",
           "launch_acceptance_evidence": "Sandbox purchase through a real callback, independent capture, delivery digest, denied foreign buyer, refund and replay, plus accepted staged owner and buyer screens.",
           "next_action": "Exercise the complete selected CAD product in a pinned authenticated staging release."
+        },
+        "january_internal_rehearsal": {
+          "command": "python scripts/january_core_readiness.py --postgres",
+          "evidence": "Internal first-sale sequence rehearsal passes for an exact verified Factory artifact, signed Stripe fixture capture, authenticated buyer acknowledgment, refund-held access, support fixture and no booked or available cash.",
+          "external_authority": false
         }
       }
     },
@@ -721,6 +748,11 @@
           "owner_or_professional": "Owner approves credential scopes and activation. Accountant approves selected journal treatment.",
           "launch_acceptance_evidence": "Provider-native sandbox deliveries and independent reads match exact account, charge or invoice, currency, balances, scope and replay.",
           "next_action": "Commission the actual sandbox callback and record matched receipts for the selected event lane."
+        },
+        "january_internal_rehearsal": {
+          "command": "python scripts/january_core_readiness.py --postgres",
+          "evidence": "Internal connected proof links a signed, replayed and independently reread Stripe-shaped fixture capture to the actual Factory artifact and buyer identity. Provider commissioning remains open.",
+          "external_authority": false
         }
       }
     },
@@ -1053,6 +1085,11 @@
           "owner_or_professional": "Owner approves the precise staging origin, operator roles and retention policy.",
           "launch_acceptance_evidence": "Owner sees authorized scope and can invoke stop. Signed-out and cross-tenant actors receive denial and zero data in real browser.",
           "next_action": "Canonical CORS now denies an unset or wildcard-only allowlist. Commission the currently blank WeWeb preview origin and run owner, subscriber and wrong-tenant checks."
+        },
+        "january_internal_rehearsal": {
+          "command": "python scripts/january_core_readiness.py --postgres",
+          "evidence": "Internal connected proof exercises canonical owner and buyer login, distinct bearer authority, visible stop, no-store owner projection and persisted revocation across reconnect.",
+          "external_authority": false
         }
       }
     },
@@ -1158,6 +1195,11 @@
           "owner_or_professional": "Owner ratifies role mapping and sources. No mandate expands through report generation.",
           "launch_acceptance_evidence": "Exercise schedule and trigger through durable scoped reports, missing-evidence hold, independent Loki and a verified Prime decision.",
           "next_action": "Run one scheduled and one event-driven commercial evidence cycle in staging."
+        },
+        "january_internal_rehearsal": {
+          "command": "python scripts/january_core_readiness.py --postgres",
+          "evidence": "Internal connected proof exercises proactive sourced specialist cadence, independently challenged report and Prime disposition for one exact fixture scope.",
+          "external_authority": false
         }
       }
     },
@@ -1274,6 +1316,11 @@
           "owner_or_professional": "Owner selects each business, legal entity, mandate, controls and activation. Obtain relevant professional review.",
           "launch_acceptance_evidence": "Five governed and isolated workspaces can be staged independently. Activate each only against its own approved mandate and operating evidence.",
           "next_action": "Record which scopes the owner actually selects and stage each candidate separately."
+        },
+        "january_internal_rehearsal": {
+          "command": "python scripts/january_core_readiness.py --postgres",
+          "evidence": "The internal connected rehearsal proves one selected fixture scope and four independently denied pending registry slots. Real onboarding requires a separate owner decision and scoped authorization for every slot.",
+          "external_authority": false
         }
       }
     },
@@ -1864,6 +1911,11 @@
           "owner_or_professional": "Owner commissions independence and approves evidence scopes. Professional escalation remains independently governed.",
           "launch_acceptance_evidence": "Withhold Loki, then mutate a reviewed proposal. Both refuse high-risk dispatch. Preserve a sourced objection and Prime response on the exact accepted version.",
           "next_action": "Run independent Loki against the selected live-shaped offer and a version change."
+        },
+        "january_internal_rehearsal": {
+          "command": "python scripts/january_core_readiness.py --postgres",
+          "evidence": "Internal connected proof binds distinct reviewer credentials, findings, owner reconsideration and executed Prime disposition to the same artifact.",
+          "external_authority": false
         }
       }
     },

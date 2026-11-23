@@ -38,6 +38,34 @@ def _drop_column_if_exists(table_name: str, column_name: str) -> None:
 
 def upgrade() -> None:
     table = "source_registry_items"
+    inspector = sa.inspect(op.get_bind())
+    if inspector.has_table("alembic_version"):
+        version_type = next(column["type"] for column in inspector.get_columns("alembic_version")
+                            if column["name"] == "version_num")
+        if isinstance(version_type, sa.String) and version_type.length and version_type.length < len(revision):
+            op.alter_column("alembic_version", "version_num", existing_type=version_type, type_=sa.String(80))
+
+    # Older databases may already have this registry from the application bootstrap.
+    if not inspector.has_table(table):
+        op.create_table(
+            table,
+            sa.Column("id", sa.Integer(), primary_key=True),
+            sa.Column("source_id", sa.String(80), nullable=False),
+            sa.Column("canonical_name", sa.String(180), nullable=False),
+            sa.Column("source_type", sa.String(80), nullable=False),
+            sa.Column("data_class", sa.String(40), nullable=False),
+            sa.Column("owner", sa.String(120)),
+            sa.Column("jurisdiction", sa.String(80)),
+            sa.Column("market", sa.String(120)),
+            sa.Column("citation_ref", sa.String(255)),
+            sa.Column("mode_allowlist_json", sa.Text()),
+            sa.Column("active", sa.Boolean(), nullable=False, server_default=sa.true()),
+            sa.Column("terminal_state", sa.String(64), nullable=False),
+            sa.Column("notes", sa.Text()),
+            sa.Column("created_at", sa.DateTime(), nullable=False, server_default=sa.func.now()),
+            sa.Column("updated_at", sa.DateTime(), nullable=False, server_default=sa.func.now()),
+        )
+        op.create_index("ix_source_registry_items_source_id", table, ["source_id"], unique=True)
 
     _add_column_if_missing(table, sa.Column("permission_status", sa.String(length=80), nullable=True))
     _add_column_if_missing(table, sa.Column("license_status", sa.String(length=80), nullable=True))
