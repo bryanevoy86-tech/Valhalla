@@ -15,15 +15,16 @@ from app.core import db as database
 from app.models.auth_revocations import RevokedAccessToken
 from app.models.saas_access import SaaSPlan, SaaSPlanModule, Subscription
 from app.models.stripe_finance import StripeFinancialEvent
-from app.models.stripe_recurring import StripePaidPeriod, StripeSaaSBinding
+from app.models.stripe_recurring import StripePaidPeriod, StripeRecurringAttempt, StripeSaaSBinding
 from app.routers.auth_weweb import _auth_runtime, _issue_access_token
+from app.services.stripe_recurring_worker import reconcile_due_invoice
 from app.users.models import AccountSettings, UserProfile
 
 
 def test_recurring_checkout_renewal_cancellation_and_payment_holds(deal_client, monkeypatch):
     client, engine = deal_client
     for model in (UserProfile, AccountSettings, RevokedAccessToken, SaaSPlan, SaaSPlanModule,
-                  Subscription, StripeFinancialEvent, StripeSaaSBinding, StripePaidPeriod):
+                  Subscription, StripeFinancialEvent, StripeSaaSBinding, StripePaidPeriod, StripeRecurringAttempt):
         model.__table__.create(engine, checkfirst=True)
     monkeypatch.setattr(database, "SessionLocal", lambda: Session(engine))
     monkeypatch.setattr("app.webhooks.stripe.is_live", lambda: False)
@@ -102,6 +103,7 @@ def test_recurring_checkout_renewal_cancellation_and_payment_holds(deal_client, 
     }
     payments = {}
     posts = []
+    renewals_available = False
 
     def stripe(request):
         path = request.url.path
@@ -118,6 +120,8 @@ def test_recurring_checkout_renewal_cancellation_and_payment_holds(deal_client, 
             assert parse_qs(request.content.decode()) == {"cancel_at_period_end": ["true"]}
             native["cancel_at_period_end"] = True
             return httpx.Response(200, json=native)
+        if path == "/v1/invoices/in_Renewal" and not renewals_available:
+            return httpx.Response(503)
         if path == "/v1/invoice_payments":
             return httpx.Response(200, json={"has_more": False, "data": [payments[request.url.params["invoice"]]]})
         return httpx.Response(200, json=fixtures[path])
@@ -153,7 +157,7 @@ def test_recurring_checkout_renewal_cancellation_and_payment_holds(deal_client, 
         invoice_object = {"id": invoice_id, "object": "invoice", "customer": "cus_Recurring", "currency": "cad",
                           "livemode": False, "status": "paid", "collection_method": "charge_automatically",
                           "total": 1200, "amount_due": 1200, "amount_paid": 1200, "amount_remaining": 0,
-                          "parent": {"subscription_details": {"subscription": "sub_Recurring"}},
+                          "parent": {"subscription_details": {"subscription": "sub_Recurring", "metadata": metadata}},
                           "lines": {"has_more": False, "data": [{
                               "quantity": 1, "amount": 1200, "currency": "cad",
                               "parent": {"type": "subscription_item_details",
@@ -187,7 +191,16 @@ def test_recurring_checkout_renewal_cancellation_and_payment_holds(deal_client, 
     recovery = client.get(url, headers=buyer).json()
     assert recovery["status"] == "PAID" and recovery["collection_status"] == "PAYMENT_RECOVERY"
     renewed = invoice("Renewal", end, end + 30 * 86400)
-    renewal = client.post(root + "/paid-period", headers=owner, json=webhook("invoice.paid", "Renewed", renewed))
+    proof = webhook("invoice.paid", "Renewed", renewed)
+    with Session(engine) as db, clients(live=False) as (reader, _):
+        assert reconcile_due_invoice(db, reader, live=False, now=clock) == {"status": "retry_pending", "attempts": 1}
+        assert reconcile_due_invoice(db, reader, live=False, now=clock) == {"status": "idle"}
+        renewals_available = True
+        assert reconcile_due_invoice(db, reader, live=False, now=clock + timedelta(seconds=31)) == {
+            "status": "recorded", "basis": "STRIPE_TEST_PAID_PERIOD",
+        }
+        assert reconcile_due_invoice(db, reader, live=False, now=clock + timedelta(seconds=31)) == {"status": "idle"}
+    renewal = client.post(root + "/paid-period", headers=owner, json=proof)
     assert renewal.status_code == 200, renewal.text
     assert client.get(url, headers=buyer).json()["collection_status"] == "NO_UNRESOLVED_FAILURE"
     clock = datetime.fromtimestamp(end + 1, timezone.utc)

@@ -1,0 +1,54 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import {runSubscriberStripeSubscription} from "../web/weweb-widgets/subscriber-stripe-subscription.mjs";
+
+const claims = Buffer.from(JSON.stringify({jti:"stripe-test-session", exp:Math.floor(Date.now() / 1000) + 3600})).toString("base64url");
+const input = {bearer:"example." + claims + ".mock", tenant:"a7ddd860-2e74-4e31-82c5-2376f817eff4", subscription:"7",
+    apiBase:"https://preview.example.invalid", previewOrigin:"https://preview.example.invalid", action:"load"};
+const reply = (body, status = 200) => new Response(JSON.stringify(body), {
+    status, headers:{"Content-Type":"application/json", "Cache-Control":"no-store"},
+});
+const paid = {subscription_id:7, tenant_id:input.tenant, status:"PAID", basis:"STRIPE_TEST_SUBSCRIPTION",
+    paid_until:1800000000, cancel_at_period_end:false, collection_status:"PAYMENT_RECOVERY",
+    available_cash_minor:null, recognized_revenue_minor:null};
+
+test("subscription status is private, scoped, and reports the existing paid period during recovery", async () => {
+    const fixture = await runSubscriberStripeSubscription(input, async (url, options) => {
+        assert.equal(url, input.apiBase + "/api/weweb/stripe-subscriptions/" + input.tenant + "/7");
+        assert.equal(options.cache, "no-store");
+        assert.equal(options.credentials, "omit");
+        assert.equal(options.redirect, "error");
+        return reply(paid);
+    });
+    assert.equal(fixture.status, "PAID");
+    assert.equal(fixture.paymentRecovery, true);
+    assert.equal(fixture.paidUntil, paid.paid_until);
+    assert.equal((await runSubscriberStripeSubscription(input, async () => reply({...paid, tenant_id:"other"}))).status, "unavailable");
+    assert.equal((await runSubscriberStripeSubscription(input, async () => reply({}, 404))).status, "denied");
+    assert.equal((await runSubscriberStripeSubscription({...input, apiBase:"https://stolen.example.invalid"}, () => assert.fail())).status, "unconfigured");
+});
+
+test("checkout is an explicit hosted link and cancellation requires same-session confirmation", async () => {
+    const checkout = {subscription_id:7, checkout_status:"open", checkout_url:"https://checkout.stripe.com/c/pay/demo",
+        basis:"STRIPE_TEST_CHECKOUT", payment_verified:false};
+    const starting = {...input, action:"checkout"};
+    const opened = await runSubscriberStripeSubscription(starting, async (url, options) => {
+        assert.match(url, /\/checkout$/);
+        assert.equal(options.method, "POST");
+        return reply(checkout);
+    });
+    assert.equal(opened.checkoutUrl, checkout.checkout_url);
+    assert.equal((await runSubscriberStripeSubscription(starting, async () => reply({
+        ...checkout, checkout_url:"https://checkout.stripe.com.example.invalid/c/pay/demo",
+    }))).status, "unavailable");
+    const prior = await runSubscriberStripeSubscription(input, async () => reply(paid));
+    const cancel = {...input, action:"cancel", prior};
+    assert.equal((await runSubscriberStripeSubscription(cancel, () => assert.fail())).status, "confirm");
+    const canceled = await runSubscriberStripeSubscription({...cancel, confirm:true}, async (url, options) => {
+        assert.match(url, /\/cancel-at-period-end$/);
+        assert.equal(options.method, "POST");
+        return reply({...paid, cancel_at_period_end:true});
+    });
+    assert.equal(canceled.cancellationScheduled, true);
+    assert.equal(canceled.paidUntil, paid.paid_until);
+});

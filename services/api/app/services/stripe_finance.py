@@ -71,9 +71,16 @@ def event_snapshot(payload, live):
                 or not isinstance(item.get("status"), str) or not minor_amount(amount)
                 or (kind == "invoice.paid" and (item["status"] != "paid" or amount <= 0))):
             raise HTTPException(422, "Unsupported Stripe recurring financial object")
-        return {"kind": kind, "livemode": live, "object_id": item["id"], "subscription_id": subscription,
+        result = {"kind": kind, "livemode": live, "object_id": item["id"], "subscription_id": subscription,
                 "stripe_customer_id": item["customer"], "amount_minor": amount, "currency": item["currency"],
                 "native_status": item["status"], "cancel_at_period_end": item.get("cancel_at_period_end") is True}
+        meta = details.get("metadata") if isinstance(details, dict) else None
+        if paid_invoice and isinstance(meta, dict):
+            ref, sha = meta.get("valhalla_subscription"), meta.get("valhalla_binding_sha256")
+            if (isinstance(ref, str) and re.fullmatch("[1-9][0-9]{0,9}", ref) and 0 < int(ref) < 2_147_483_648
+                    and isinstance(sha, str) and re.fullmatch("[a-f0-9]{64}", sha)):
+                result.update(local_subscription_id=int(ref), subscription_binding_sha256=sha)
+        return result
     if kind.startswith("payment_intent."):
         object_type, prefix, intent = "payment_intent", "pi", item.get("id")
         amount = item.get("amount_received") if kind.endswith(".succeeded") else item.get("amount")

@@ -36,3 +36,12 @@ class StripePaidPeriod(Base):
     period_end = Column(Integer, nullable=False)
     evidence = Column(JSON, nullable=False)
     evidence_sha256 = Column(String(64), nullable=False)
+
+
+class StripeRecurringAttempt(Base):
+    __tablename__ = "stripe_recurring_attempts"
+
+    event_id = Column(String(128), ForeignKey("stripe_financial_events.event_id"), primary_key=True)
+    attempts = Column(Integer, nullable=False, default=0)
+    state = Column(String(32), nullable=False)
+    retry_at = Column(DateTime(timezone=True))

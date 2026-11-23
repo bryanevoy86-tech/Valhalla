@@ -541,6 +541,8 @@
       "priority": "P0",
       "source_paths": [
         "services/api/app/services/stripe_recurring.py",
+        "services/api/app/services/stripe_recurring_worker.py",
+        "web/weweb-widgets/subscriber-stripe-subscription.mjs",
         "services/api/app/services/stripe_fulfillment.py",
         "services/api/app/services/stripe_revenue_release.py",
         "web/weweb-widgets/subscriber-paid-product.mjs",
@@ -551,7 +553,7 @@
         "services/api/app/models/media_engine.py",
         "services/api/tests/test_product_artifact_workflow.py"
       ],
-      "source_observation": "Capture revalidates listing evidence and emergency/containment gates. Owner support closure is bound to a delivered order and its exact cumulative fixture refund. Additional refunds reopen follow-up. Settlement remains fixture-based.",
+      "source_observation": "The native CAD one-time and fixed monthly recurring paths use independently checked Stripe identities under existing scope and buyer controls. The isolated recurring worker reconciles signed paid invoices, retries unavailable readback and preserves contracted access on failed renewals or period-end cancellation. The primary editor has a session-bound subscriber billing panel. Recurring accounting, adjustments and real browser commissioning remain open.",
       "evidence_level": "SQLITE_INTEGRATION_TESTED",
       "production_verified": false,
       "acceptance_test": "Real approved listing/checkout/delivery/refund, buyer rights and content-hash verified, receipt tied to business",
