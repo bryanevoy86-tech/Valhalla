@@ -1052,7 +1052,7 @@
           "external_commissioning": "Authorized HTTPS staging, exact origin/CORS and separate authenticated test identities.",
           "owner_or_professional": "Owner approves the precise staging origin, operator roles and retention policy.",
           "launch_acceptance_evidence": "Owner sees authorized scope and can invoke stop. Signed-out and cross-tenant actors receive denial and zero data in real browser.",
-          "next_action": "Commission the currently blank preview origin and run owner, subscriber and wrong-tenant checks."
+          "next_action": "Canonical CORS now denies an unset or wildcard-only allowlist. Commission the currently blank WeWeb preview origin and run owner, subscriber and wrong-tenant checks."
         }
       }
     },

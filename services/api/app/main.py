@@ -202,8 +202,8 @@ log.info("Valhalla startup complete. Loaded %s router modules.", loaded_router_c
 # ============================================================================
 from app.core.settings import settings
 
-# Add CORS middleware - use configured origins or wildcard if not configured
-cors_origins = settings.cors_allowed_origins if settings.cors_allowed_origins else ["*"]
+# Browser requests require explicitly approved origins.
+cors_origins = settings.cors_allowed_origins
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
