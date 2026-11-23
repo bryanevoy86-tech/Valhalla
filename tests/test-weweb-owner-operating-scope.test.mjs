@@ -62,3 +62,16 @@ test("checks exact owner Stripe lookup and separates processor evidence from acc
     assert.equal((await runOwnerStripeOrder(params,respond({...projection,order:{order_id:"wrong"}}))).status,"unavailable");
     assert.equal((await runOwnerStripeOrder({...params,isOwner:false},()=>assert.fail("subscriber transport"))).status,"denied");
 });
+
+test("owner sees recurring payment evidence separately from recognized income and cash", async () => {
+    const recurring = {basis:"STRIPE_TEST_PAID_PERIODS", status:"REVIEW_REQUIRED", verified_current_periods:2,
+        verified_adjacent_renewals:1, scheduled_cancellations:0, held_agreements:1,
+        available_cash_minor:null, recognized_revenue_minor:null, external_authority:false};
+    const ready = await runOwnerOperatingScope(input, respond({...body,recurring_paid_periods:recurring}));
+    assert.match(ready.text, /Test subscription evidence[\s\S]*requires review[\s\S]*Adjacent paid renewals · 1/);
+    assert.match(ready.text, /available cash · Unverified/);
+    const rejected = await runOwnerOperatingScope(input, respond({
+        ...body,recurring_paid_periods:{...recurring,available_cash_minor:100},
+    }));
+    assert.equal(rejected.status, "unavailable");
+});

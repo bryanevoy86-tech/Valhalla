@@ -26,6 +26,24 @@ function formatOperatingScope(body, scope) {
             "Simulated exposure headroom · " + amount(capital.new_exposure_available_minor, capital.currency),
             ...capital.blockers.map(code => "Hold · " + code));
     }
+    const recurring = body.recurring_paid_periods;
+    if (recurring != null) {
+        const counts = ["verified_current_periods", "verified_adjacent_renewals", "scheduled_cancellations", "held_agreements"];
+        if (!["STRIPE_TEST_PAID_PERIODS", "STRIPE_LIVE_PAID_PERIODS"].includes(recurring.basis)
+            || !["OBSERVED", "REVIEW_REQUIRED"].includes(recurring.status)
+            || recurring.external_authority !== false || recurring.available_cash_minor !== null
+            || recurring.recognized_revenue_minor !== null
+            || !counts.every(key => Number.isSafeInteger(recurring[key]) && recurring[key] >= 0)) {
+            throw new Error("Invalid recurring evidence");
+        }
+        lines.push("", recurring.basis === "STRIPE_TEST_PAID_PERIODS" ? "Test subscription evidence" : "Verified paid periods");
+        if (recurring.status === "REVIEW_REQUIRED") lines.push("Subscription evidence requires review.");
+        lines.push("Current paid periods · " + recurring.verified_current_periods,
+            "Adjacent paid renewals · " + recurring.verified_adjacent_renewals,
+            "Scheduled cancellations · " + recurring.scheduled_cancellations,
+            "Agreements held · " + recurring.held_agreements,
+            "Recurring recognized revenue and available cash · Unverified");
+    }
     for (const [key, label] of Object.entries(purposes)) {
         const sample = body.statement_fixtures[key];
         if (sample.actual_accessible_funds_minor !== null) throw new Error("Unexpected funds claim");

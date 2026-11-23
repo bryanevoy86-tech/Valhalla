@@ -60,6 +60,8 @@ The primary editor Home page `05ce39c3-5a5f-4e26-892b-3aa82fff3051` has monthly 
 
 Use the existing scoped Pantheon worker and Prime reassessment for the recurring paid-period observation. Njord, Mimir, Norns, Tyr, Loki and Prime can inspect held agreements, current verified paid periods and adjacent paid renewals. A reversal or integrity conflict forces review. Test periods remain rehearsal evidence. CAC, churn/LTV calibration and recurring bank-booked cash still need their exact source links.
 
+The existing private operating-scope API and checked-in client also expose the recurring aggregate without subscriber identifiers, amounts or execution authority. The live editor’s owner workflow `8df72133-f027-4dd6-8eaa-7a10abfe4944` still needs its renderer update from `web/weweb-widgets/owner-operating-scope.mjs`. The subscriber editor bindings above are already saved. Validate both with separate authorized owner and subscriber test sessions before publication.
+
 ### Isolated operating trial acceptance
 
 Use a pinned draft build and disposable PostgreSQL database in separately authorized staging. Seed synthetic grants, demand exports, one registered Legacy scope and a deliberately unapproved adjacent scope. Keep external providers, outreach, real money movement and production storage disabled. After preflight, schedule the existing discovery, Pantheon, Prime schedule, deterministic Loki and Factory workers using their current staging-only toggles. Read the private owner briefing and worker logs without exporting private inputs.

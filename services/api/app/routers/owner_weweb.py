@@ -161,9 +161,11 @@ def owner_stripe_order(order_id: UUID, db: Session = Depends(get_db)):
 def owner_operating_scope(payload: MarketScope, db: Session = Depends(get_db)):
     from sqlalchemy import inspect
 
+    from app.heimdall.authority import is_live
     from app.models.completion_registry import LegacyInstanceRegistryItem
     from app.routers.economic_control import assess, require_schema
     from app.services.prime_business_execution import _check_legacy
+    from app.services.stripe_recurring import scoped_subscription_outcomes
     from app.services.treasury_reconciliation import observe_statement_heads
 
     if not inspect(db.connection()).has_table(LegacyInstanceRegistryItem.__tablename__):
@@ -189,6 +191,7 @@ def owner_operating_scope(payload: MarketScope, db: Session = Depends(get_db)):
             purpose: observe_statement_heads(db, scope, purpose=purpose, detailed=True)
             for purpose in ("BUSINESS", "HOUSEHOLD", "OPERATING_RESERVE")
         },
+        "recurring_paid_periods": scoped_subscription_outcomes(db, scope, live=is_live()),
         "actual_accessible_funds_minor": None, "execution_authorized": False,
     })
 

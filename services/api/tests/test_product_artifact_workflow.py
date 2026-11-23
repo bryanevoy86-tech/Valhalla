@@ -553,11 +553,26 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
         assert operating.status_code == 200 and operating.headers["cache-control"] == "no-store"
         view = operating.json()
         assert view["execution_authorized"] is False and view["actual_accessible_funds_minor"] is None
+        assert view["recurring_paid_periods"] is None
         assert view["capital_fixture"]["period_net_minor"] == -175
         assert view["statement_fixtures"]["BUSINESS"]["accounts"][0]["status"] == "MATCHED_FIXTURE"
         assert view["statement_fixtures"]["HOUSEHOLD"]["accounts"] == []
         assert view["statement_fixtures"]["OPERATING_RESERVE"]["accounts"] == []
         assert client.post(owner_operating_route, json={**scope, "jurisdiction": "CA-ON"}).status_code == 409
+        recurring = {"basis": "STRIPE_TEST_PAID_PERIODS", "status": "OBSERVED",
+                     "verified_current_periods": 2, "verified_adjacent_renewals": 1,
+                     "scheduled_cancellations": 0, "held_agreements": 0,
+                     "available_cash_minor": None, "recognized_revenue_minor": None, "external_authority": False}
+
+        def recurring_fixture(db, selected_scope, *, live):
+            assert selected_scope == scope
+            return recurring
+
+        owner_fixture.setattr("app.services.stripe_recurring.scoped_subscription_outcomes", recurring_fixture)
+        scoped = client.post(owner_operating_route, json=scope)
+        assert scoped.status_code == 200 and scoped.headers["cache-control"] == "no-store"
+        assert scoped.json()["recurring_paid_periods"] == recurring
+        assert scoped.json()["actual_accessible_funds_minor"] is None
 
     with Session(engine) as db:
         triggered = run_due_schedule(db, now=slot_time + timedelta(seconds=1))
