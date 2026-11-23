@@ -58,6 +58,7 @@ BUILDER_ASSIGNMENTS = load("alembic/versions/20261121_builder_assignments.py")
 NORNS_HISTORY = load("alembic/versions/20261121_norns_scoped_history.py")
 SPECIALIST_BACKLOG = load("alembic/versions/20261123_specialist_backlog.py")
 TUNING_PROFILE = load("alembic/versions/20261123_tuning_profile_identity.py")
+STRIPE_FINANCE = load("alembic/versions/20261123_stripe_finance.py")
 OWNER_DISPOSITION = load("alembic/versions/20261123_owner_disposition.py")
 BUILDER_LEASE_CAP = load("alembic/versions/20261123_builder_lease_cap.py")
 FIXTURE_SETTLEMENT = load("alembic/versions/20261123_fixture_settlement.py")
@@ -115,6 +116,26 @@ class PostgresMigrationChainTests(unittest.TestCase):
         # The dedicated Postgres service is discarded after this job.
         # Never drop a DB simply because this schema test completed.
 
+
+    def test_stripe_finance_migration_preserves_unique_capture_and_balance_bindings(self):
+        engine = create_engine(url)
+        try:
+            with engine.connect() as conn:
+                transaction = conn.begin()
+                try:
+                    conn.execute(text("CREATE SCHEMA stripe_finance_ci"))
+                    conn.execute(text("SET LOCAL search_path TO stripe_finance_ci"))
+                    with Operations.context(MigrationContext.configure(conn)):
+                        STRIPE_FINANCE.upgrade()
+                    inspector = inspect(conn)
+                    names = {unique["name"] for unique in inspector.get_unique_constraints("stripe_balance_evidence")}
+                    self.assertEqual(names, {"uq_stripe_balance_transaction", "uq_stripe_balance_capture"})
+                    self.assertEqual(inspector.get_foreign_keys("stripe_balance_evidence")[0]["referred_table"],
+                                     "stripe_financial_events")
+                finally:
+                    transaction.rollback()
+        finally:
+            engine.dispose()
 
     def test_tuning_profile_identity_preserves_legacy_rule_names(self):
         engine = create_engine(url)

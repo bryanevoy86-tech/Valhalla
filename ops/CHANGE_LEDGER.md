@@ -1074,3 +1074,7 @@ The acceptance matrix retains 13 P0 and 39 total criteria requiring internal cod
 - The integrated signed-capture check in run 45089919567 caught an order attribution regression: the newly verified consent receipt replaced the listing receipt used to identify the order. Corrected the distinct evidence variables and kept the full capture-to-settlement regression as the acceptance check.
 
 - The corrected checkout and dated funding intake passed all four hosted jobs on `27b8804605266078d0689f1e645ba29ddd26287f` in run 45090204236. Counts: 389 backend tests, 22 disposable PostgreSQL checks and 128 required route contracts. The local owner interface and simulated-device suite passed 23 tests. The handoff records 24- and 72-hour real-time staging acceptance steps. These trials have not been run.
+
+### Canonical Stripe delivery and processor readback
+
+- Registered the signed Stripe webhook in the canonical application. Added bounded ingress and immutable, digest-checked delivery snapshots. A duplicate must match exact signed bytes, mode and identity. Test-mode evidence is separately labeled. The opt-in restricted readback checks the Stripe account, capture and independently retrieved balance transaction, with unique capture and balance evidence. The snapshot contains no customer metadata and does not book cash or grant access. The integrated test uses signed synthetic events and an isolated HTTP transport. Order, ledger, bank settlement, refund, renewal and entitlement processing are separate remaining dependencies.

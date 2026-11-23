@@ -30,6 +30,12 @@ Start the clock on the first successful recorded staging tick. Collect UTC times
 
 Run the 24-hour trial first and repeat for 72 hours after reviewing the first evidence. The seven-, fourteen- and thirty-day trials are follow-on commissioning observations. Keep the first revenue authorization decision scoped to its own evidence and controls. No elapsed staging trial has been run at this checkpoint.
 
+### Stripe event and processor readback commissioning
+
+Migration `20261123_stripe_finance` adds a durable signed delivery journal and a balance-evidence store. The canonical app exposes `POST /webhooks/stripe` and the Prime plus owner-key protected `POST /api/governance/floor/stripe-events/{event_id}/processor-readback`. Default mode preserves fail-closed live ingress and no-effect uncommissioned sandbox behavior. The capture adapter calls Stripe's authenticated account, charge and balance transaction read endpoints. Test-mode rows remain test evidence.
+
+Before any commissioning, use an authorized disposable database, a platform-account test listener with a separate `VALHALLA_STRIPE_TEST_WEBHOOK_SECRET`, `VALHALLA_STRIPE_EVENT_MODE=test`, expected `VALHALLA_STRIPE_ACCOUNT_ID` and a test restricted read-only `VALHALLA_STRIPE_READBACK_KEY` with account, charges and balance transaction access. Set `VALHALLA_STRIPE_READBACK_ENABLED=1` only for the approved window. Expected evidence is one durable event identity, one independently read balance transaction identity and matching gross, fee and net. Observe the processor-available transition, replay and a denied mismatch. No provider charge or payment creation is part of readback. The receipt does not verify a bank posting, release an allocation or grant an entitlement. Keep live mode off pending separate authorization and the remaining exact-order, renewal/refund, bank-ledger and entitlement bindings.
+
 ## Current workstream index and startup order
 
 For tasks 04–53, follow the workstream ID in the task register to the corresponding row in `ops/prime_system_integration_matrix.json`. Each row provides exact `source_paths`, `depends_on`, implementation state and an evidence level. Read the `continuation` fields for existing test evidence, next implementation and the owner action, then use the unchanged `acceptance_test` as the proof contract. `production_verified` remains false where real operation has not been established.

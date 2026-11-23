@@ -35,6 +35,7 @@ REQUIRED_ROUTER_NAMES = frozenset({
     "foundry_discovery",       # source-bound research candidates
     "foundry_checkout",        # isolated signed fixture journal
     "saas_entitlements",       # subscriber identity and tenant boundaries
+    "stripe_financial",       # authenticated provider journal and readback
     "floor_control",           # private currency-scoped operator ledger
     "saas_access",            # subordinate subscription access
     "governance_king",        # original valuation/mission evaluator

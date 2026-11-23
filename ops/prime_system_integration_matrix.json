@@ -572,6 +572,9 @@
       "id": "finance_webhooks",
       "priority": "P0",
       "source_paths": [
+        "services/api/app/routers/stripe_financial.py",
+        "services/api/app/services/stripe_finance.py",
+        "services/api/tests/test_stripe_finance.py",
         "services/api/app/models/foundry_checkout.py",
         "services/api/app/providers/stripe_adapter.py",
         "services/api/app/webhooks/stripe.py",
@@ -592,7 +595,7 @@
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {
-          "internal_coding": "Implement the live financial event consumer and exact order-to-ledger linkage while preserving current fail-closed ingress.",
+          "internal_coding": "Signed event journaling and processor capture readback are implemented. Complete governed order-to-ledger linkage, refund and renewal processing, and independent bank settlement matching.",
           "insufficient_test_evidence": "Extend provider-specific event and settlement reconciliation evidence.",
           "external_commissioning": "Verify named sandbox event stream and separately sourced settlement.",
           "owner_or_professional_action": "Approve sandbox credentials, callbacks and side effects.",

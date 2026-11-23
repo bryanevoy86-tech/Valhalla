@@ -1,14 +1,11 @@
-"""Stripe webhook ingress: authenticate before parsing or acknowledging business outcomes.
-
-No payment or refund is booked here until a real idempotent financial-ledger
-consumer is wired in. A 503 causes Stripe to retry rather than losing a paid
-event while returning fictional "payment_recorded" success.
-"""
+"""Authenticate Stripe deliveries and acknowledge only durable journal receipts."""
 from __future__ import annotations
 
 import json
+import os
 
 from fastapi import APIRouter, HTTPException, Request
+from starlette.concurrency import run_in_threadpool
 
 from app.heimdall.authority import is_live
 from app.providers.stripe_adapter import StripeAdapter
@@ -27,30 +24,39 @@ FINANCIAL_EVENTS = {
 
 @router.post("")
 async def stripe_webhook(req: Request):
-    if not is_live():
-        # Shadow/sandbox must have NO financial side effects.
+    live = is_live()
+    mode = os.getenv("VALHALLA_STRIPE_EVENT_MODE")
+    if not live and mode is None:
         return {"status": "sandbox_ignored", "verified_financial_effect": False}
 
-    raw_body = await req.body()
-    if not StripeAdapter().validate_signature(raw_body, req.headers.get("Stripe-Signature")):
-        raise HTTPException(status_code=400, detail="invalid Stripe signature")
+    raw = bytearray()
+    async for chunk in req.stream():
+        if len(raw) + len(chunk) > 1024 * 1024:
+            raise HTTPException(413, "Stripe event exceeds supported size")
+        raw.extend(chunk)
+    body = bytes(raw)
+    signature = req.headers.get("Stripe-Signature")
+    if live:
+        authenticated = StripeAdapter().validate_signature(body, signature)
+    else:
+        from app.providers.stripe_adapter import verify_stripe_signature
 
+        secret = os.getenv("VALHALLA_STRIPE_TEST_WEBHOOK_SECRET")
+        authenticated = (mode == "test" and secret != os.getenv("STRIPE_WEBHOOK_SECRET")
+                         and verify_stripe_signature(body, signature, secret))
+    if not authenticated:
+        raise HTTPException(400, "invalid Stripe signature")
     try:
-        payload = json.loads(raw_body)
-    except (json.JSONDecodeError, UnicodeDecodeError):
-        raise HTTPException(status_code=400, detail="invalid Stripe event payload") from None
-
-    if not isinstance(payload, dict) or not isinstance(payload.get("id"), str):
-        raise HTTPException(status_code=400, detail="missing Stripe event identity")
-
-    kind = payload.get("type")
-    if kind not in FINANCIAL_EVENTS:
+        payload = json.loads(body)
+    except (ValueError, RecursionError):
+        raise HTTPException(400, "invalid Stripe event payload") from None
+    if not isinstance(payload, dict) or not isinstance(payload.get("id"), str) or not isinstance(payload.get("type"), str):
+        raise HTTPException(400, "missing Stripe event identity")
+    if payload["type"] not in FINANCIAL_EVENTS:
         return {"status": "ignored", "verified_financial_effect": False}
+    if mode != ("live" if live else "test"):
+        raise HTTPException(503, "STRIPE_FINANCIAL_EVENT_CONSUMER_NOT_VERIFIED")
 
-    # Not safe to acknowledge a payment before the event is persistently
-    # deduplicated, reconciled, and applied to a ledger with provider evidence.
-    # Codex must connect the canonical payment/receipt pipeline first.
-    raise HTTPException(
-        status_code=503,
-        detail="STRIPE_FINANCIAL_EVENT_CONSUMER_NOT_VERIFIED",
-    )
+    from app.services.stripe_finance import persist_delivery
+
+    return await run_in_threadpool(persist_delivery, payload, body, live)
