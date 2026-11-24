@@ -11,8 +11,20 @@ import httpx
 from business_factory_worker import poll
 
 
-def tick(client, run_id):
-    reply = client.post(f"/api/foundry/operating-rehearsal/{run_id}/advance")
+def tick(client, run_id, *, source_to_outcome=False):
+    if source_to_outcome:
+        reply = client.post(f"/api/foundry/source-rehearsal/{run_id}/advance")
+        if reply.is_success:
+            data = reply.json()
+            if data.get("status") == "waiting":
+                return {"status": "waiting", "reason": data["reason"]}
+            if data.get("status") == "advanced" and data.get("receipt_sha256"):
+                return {key: data[key] for key in ("status", "phase", "receipt_sha256")}
+            if data.get("status") != "handoff":
+                raise RuntimeError("Unrecognized source-run worker receipt")
+            reply = client.post(f"/api/foundry/operating-rehearsal/{run_id}/advance")
+    else:
+        reply = client.post(f"/api/foundry/operating-rehearsal/{run_id}/advance")
     if reply.status_code in (409, 503):
         return {"status": "blocked", "http_status": reply.status_code, "emergency_stop": reply.status_code == 503}
     reply.raise_for_status()
@@ -30,6 +42,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--port", type=int, required=True, choices=range(1024, 65536), metavar="PORT")
     parser.add_argument("--run-id", type=UUID, required=True)
+    parser.add_argument("--source-to-outcome", action="store_true")
     parser.add_argument("--once", action="store_true")
     args = parser.parse_args()
     key = os.environ.get("VALHALLA_PRIME_CONTROL_KEY")
@@ -42,7 +55,7 @@ def main():
     with httpx.Client(base_url=f"http://127.0.0.1:{args.port}", headers={"X-Prime-Control-Key": key},
                       timeout=10, trust_env=False, follow_redirects=False) as client:
         def run():
-            result = tick(client, args.run_id)
+            result = tick(client, args.run_id, source_to_outcome=args.source_to_outcome)
             if result["status"] == "completed":
                 stop.set()
             return result

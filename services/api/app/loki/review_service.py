@@ -117,7 +117,7 @@ def _decision_digest(decision: LokiReconsideration, receipt: LokiIndependentRece
     })
 
 
-def record_reconsideration(db: Session, review_id: UUID, payload: OwnerReconsiderationIn) -> LokiReconsideration:
+def record_reconsideration(db: Session, review_id: UUID, payload: OwnerReconsiderationIn, *, durable=True) -> LokiReconsideration:
     receipt = db.get(LokiIndependentReceipt, review_id, with_for_update=True)
     if receipt is None:
         raise HTTPException(status_code=409, detail="Independent review receipt required")
@@ -140,7 +140,7 @@ def record_reconsideration(db: Session, review_id: UUID, payload: OwnerReconside
     )
     decision.decision_sha256 = _decision_digest(decision, receipt)
     db.add(decision)
-    db.commit()
+    db.commit() if durable else db.flush()
     return decision
 
 

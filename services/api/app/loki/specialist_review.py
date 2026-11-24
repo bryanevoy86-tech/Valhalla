@@ -14,7 +14,7 @@ from app.models.specialist_assignment import SpecialistAssignment
 from app.pantheon.monitor import report_matches_assignment, utc_now, verified_report
 
 
-def enqueue_report(db: Session, event_id: str) -> LokiReview:
+def enqueue_report(db: Session, event_id: str, *, durable=True) -> LokiReview:
     report = verified_report(db, event_id)
     digest = report.pop("report_sha256")
     prior = db.scalar(select(LokiReview).filter_by(artifact_sha256=digest))
@@ -26,7 +26,7 @@ def enqueue_report(db: Session, event_id: str) -> LokiReview:
     )
     db.add(review)
     try:
-        db.commit()
+        db.commit() if durable else db.flush()
     except IntegrityError:
         db.rollback()
         prior = db.scalar(select(LokiReview).filter_by(artifact_sha256=digest))

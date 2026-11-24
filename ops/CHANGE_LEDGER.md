@@ -1247,3 +1247,8 @@ The acceptance matrix retains 13 P0 and 39 total criteria requiring internal cod
 
 - Added off-by-default Prime polling for one already reviewed and mandated fixed-price fixture. Reuses native listing, acquisition, order, signed payment, delivery, support, statement, settlement and economic/Mimir evidence. The signed statement and payment peers are separate, and the buyer is session-bound. The worker commits each effect with an actor receipt and refuses to adopt effects made outside the run.
 - The executable proof, manual-input inventory and remaining barriers are in the [first operating loop evidence](../docs/VALHALLA_FIRST_OPERATING_LOOP.md). Pre-mandate owner dispositions and explicit Prime evaluation remain outside routine worker operation. No acceptance contract or deployment approval is closed.
+
+## November 24 signed source-to-outcome rehearsal
+
+- Connected one current signed publisher observation to the existing scoped intake queue, ODIN and NJORD event-driven reports, separately authenticated Loki worker, explicit owner dispositions of material findings, automatic Prime evaluation, and a hash-linked final checkout mandate. A replacement observation triggers fresh reviews. Worker restart preserves completed actions. No owner action stands in for routine dispatch after authorization.
+- The [reproducible proof and actor ledger](../docs/VALHALLA_FIRST_OPERATING_LOOP.md#connected-source-to-outcome-proof) identify setup, denied probes, material exceptions, final authority, fixture peers and the retained Mimir outcome. [Stripe sandbox refund and independent bank/accounting acceptance](../docs/VALHALLA_REFUND_BANK_COMMISSIONING.md) remain uncommissioned. Preserve all holds and the canonical contracts.

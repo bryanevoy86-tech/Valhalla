@@ -93,7 +93,7 @@ def observations(db: Session, lens: str, scope: dict, outcomes: list[dict], now,
                              "basis": "AGE_SINCE_LAST_RECORDED_WORK_UPDATE"}}
 
 
-def run_assignment(db: Session, role: str, *, now=None) -> dict:
+def run_assignment(db: Session, role: str, *, now=None, assignment_id=None, exact_trigger=None, durable=True) -> dict:
     if role not in LENSES:
         raise ValueError("Unknown specialist role")
     assignment_schema(db)
@@ -106,18 +106,33 @@ def run_assignment(db: Session, role: str, *, now=None) -> dict:
     ).scalar_subquery()
     assignment = db.scalar(select(SpecialistAssignment).where(
         SpecialistAssignment.role == role,
+        *((SpecialistAssignment.id == assignment_id,) if assignment_id is not None else ()),
         SpecialistAssignment.state == "active", SpecialistAssignment.expires_at > now,
-        or_(SpecialistAssignment.next_due_at <= now, SpecialistAssignment.pending_event_id.is_not(None), oldest_queued.is_not(None)),
+        or_(exact_trigger is not None, SpecialistAssignment.next_due_at <= now,
+            SpecialistAssignment.pending_event_id.is_not(None), oldest_queued.is_not(None)),
     ).order_by((SpecialistAssignment.next_due_at <= now).desc(),
                func.coalesce(oldest_queued, SpecialistAssignment.next_due_at), SpecialistAssignment.id)
         .with_for_update(skip_locked=True, key_share=True).limit(1))
     if assignment is None:
         return {"status": "idle"}
-    legacy_event = assignment.pending_event_id
+    legacy_event = assignment.pending_event_id if exact_trigger is None else None
     queued = db.scalar(select(SpecialistTrigger).where(
         SpecialistTrigger.assignment_id == assignment.id, SpecialistTrigger.failure_code.is_(None),
+        *((SpecialistTrigger.event_id == exact_trigger,) if exact_trigger is not None else ()),
     ).order_by(SpecialistTrigger.queued_at, SpecialistTrigger.event_id).limit(1)) if legacy_event is None else None
     event = legacy_event or (queued.event_id if queued is not None else None)
+    if exact_trigger is not None and event != exact_trigger:
+        event_id = "GOD-" + hashlib.sha256(f"{assignment.id}/{exact_trigger}".encode()).hexdigest()
+        try:
+            previous = verified_report(db, event_id)
+        except HTTPException as exc:
+            if exc.status_code != 404:
+                raise
+            return {"status": "idle"}
+        if (previous.get("assignment_id"), previous.get("role"), previous.get("scope"),
+                previous.get("trigger_event_id")) != (str(assignment.id), role, assignment.scope, exact_trigger):
+            raise HTTPException(409, "Specialist event replay scope does not match")
+        return {"status": "replayed", "report_event_id": event_id}
     due = assignment.next_due_at <= now
     economic_event = bool(event and event.startswith("ECON-"))
     discovery_event = bool(event and event.startswith("DISCOVERY-"))
@@ -135,7 +150,7 @@ def run_assignment(db: Session, role: str, *, now=None) -> dict:
                 if exc.status_code != 409 or queued is None:
                     raise
                 queued.failure_code = "EXISTING_REPORT_INTEGRITY_FAILED"
-                db.commit()
+                db.commit() if durable else db.flush()
                 return {"status": "blocked", "failure_code": queued.failure_code}
         else:
             if (previous.get("assignment_id"), previous.get("role"), previous.get("scope"),
@@ -145,13 +160,13 @@ def run_assignment(db: Session, role: str, *, now=None) -> dict:
                 if queued is None:
                     raise HTTPException(409, "Specialist event replay scope does not match")
                 queued.failure_code = "EXISTING_REPORT_SCOPE_MISMATCH"
-                db.commit()
+                db.commit() if durable else db.flush()
                 return {"status": "blocked", "failure_code": queued.failure_code}
             if queued is not None:
                 db.delete(queued)
             else:
                 assignment.pending_event_id = None
-            db.commit()
+            db.commit() if durable else db.flush()
             return {"status": "replayed", "report_event_id": event_id}
 
     cadence = timedelta(seconds=assignment.cadence_seconds)
@@ -249,7 +264,7 @@ def run_assignment(db: Session, role: str, *, now=None) -> dict:
         assignment.pending_event_id = None
     if due:
         assignment.next_due_at += cadence * elapsed_slots
-    db.commit()
+    db.commit() if durable else db.flush()
     return {"status": report["status"], "report_event_id": event_id}
 
 

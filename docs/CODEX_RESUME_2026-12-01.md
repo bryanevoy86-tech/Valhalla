@@ -8,9 +8,13 @@ DO NOT restart the project, regenerate completed packs, or treat API presence as
 
 Use the current head of draft PR #4 and confirm the latest required CI run. Use the current workstream index, integration matrix and latest ledger verification to choose unfinished work. Dated checkpoints and original prompts are historical records. The same index supersedes earlier execution orders in the root start page and the finish passes. There are 50 acceptance contracts, 53 task entries and seven construction packages.
 
+## Signed source-to-outcome disposable rehearsal — November 24
+
+Use the [current worker proof and actor ledger](VALHALLA_FIRST_OPERATING_LOOP.md#connected-source-to-outcome-proof). One authorized incoming publisher stream, ODIN and NJORD, a separately keyed Loki worker, material exception disposition, automatic Prime evaluation, and one final mandate now lead into the existing disposable commerce and Mimir run. The [refund and bank commissioning contract](VALHALLA_REFUND_BANK_COMMISSIONING.md) remains behind separate authority. Continue broader hosted/provider evidence and upstream discovery coverage only within the existing workstreams. No production or provider gate closed.
+
 ## Connected disposable operating rehearsal — November 24
 
-Use the [actor-by-actor evidence and reproduction](VALHALLA_FIRST_OPERATING_LOOP.md). After a final disposable mandate, the Prime worker dispatched the exact listing, purchase, delivery, refund intent, reconciled support and Mimir evidence without another owner call. The reviewed candidate was prepared before the run. The next dependency is automatic source intake, specialist/Prime case preparation and independent review routing under an initial standing mandate, with a hard hold for unresolved material findings. Genuine providers, hosted WeWeb and the elapsed trial remain held.
+Use the [actor-by-actor evidence and reproduction](VALHALLA_FIRST_OPERATING_LOOP.md). After a final disposable mandate, the Prime worker dispatched the exact listing, purchase, delivery, refund intent, reconciled support and Mimir evidence without another owner call. The reviewed candidate was prepared before the run. The subsequent signed source-to-outcome case addresses that dependency for the disposable approved stream. Genuine providers, hosted WeWeb and the elapsed trial remain held.
 
 ## Operational autonomy audit — November 24
 

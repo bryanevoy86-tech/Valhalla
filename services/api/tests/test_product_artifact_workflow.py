@@ -37,7 +37,7 @@ ASSETS = f"{FACTORY}/product-artifacts"
 PHASE3 = "/api/completion/phase3/universal-opportunity"
 
 
-@pytest.mark.parametrize("operating_loop", (False, True), ids=("product", "operating-loop"))
+@pytest.mark.parametrize("operating_loop", (False, True, "source"), ids=("product", "operating-loop", "source-to-outcome"))
 @pytest.mark.parametrize("deal_client", ["disk"], indirect=True)
 def test_internal_product_asset_stage_bind_verify_and_revoke(
     deal_client, monkeypatch, browser_acceptance, disposable_http_server, operating_loop,
@@ -45,6 +45,20 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(
     client, engine = deal_client
     admin = {"X-Business-Factory-Key": "ci-factory-for-product-assets"}
     owner = {**admin, "X-Owner-Mandate-Key": "ci-owner-for-product-assets"}
+    owner_http = []
+    owner_sessions = []
+    if operating_loop == "source":
+        send = client.request
+
+        def observe_owner(method, url, **kwargs):
+            reply = send(method, url, **kwargs)
+            if (kwargs.get("headers") or {}).get("X-Owner-Mandate-Key") == owner["X-Owner-Mandate-Key"]:
+                owner_http.append((method, url, reply.status_code))
+            if url == "/api/weweb/login" and (kwargs.get("json") or {}).get("email") == "january-owner@example.invalid":
+                owner_sessions.append((method, url, reply.status_code))
+            return reply
+
+        monkeypatch.setattr(client, "request", observe_owner)
     monkeypatch.setenv("VALHALLA_FACTORY_KEY", admin["X-Business-Factory-Key"])
     monkeypatch.setenv("VALHALLA_OWNER_MANDATE_KEY", owner["X-Owner-Mandate-Key"])
     monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "false")
@@ -209,12 +223,14 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(
         db.commit()
 
     def enroll(role):
+        assignment_id = str(uuid4())
         response = client.post("/api/prime/pantheon/assignments", headers=owner, json={
-            **scope, "assignment_id": str(uuid4()), "role": role, "cadence_seconds": 600, "duration_seconds": 7200,
+            **scope, "assignment_id": assignment_id, "role": role, "cadence_seconds": 600, "duration_seconds": 7200,
         })
         assert response.status_code == 201, response.text
+        return assignment_id
 
-    enroll("ODIN")
+    odin_id = enroll("ODIN")
     key = Ed25519PrivateKey.generate()
     intake = "/api/prime/foundry/intake"
     source = "workshop-demand-fixture"
@@ -240,6 +256,30 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(
         registry = db.query(SourceRegistryItem).filter_by(source_id=source).one()
         registry.governance_status = "approved"
         db.commit()
+    if operating_loop == "source":
+        from .operating_rehearsal_case import run_operating_rehearsal
+
+        njord_id = enroll("NJORD")
+        for model in (MarketingCampaign, FoundryRehearsalOrder, FoundryRehearsalPayment, FoundryCampaignVisit):
+            model.__table__.create(engine, checkfirst=True)
+        with Session(engine) as db:
+            db.add(MarketingCampaign(id=1, name="Private source-run rehearsal", strategy_payload="{}"))
+            db.commit()
+        economic("mandates", {
+            "id": str(uuid4()), "scope": scope, "currency": "CAD", "max_exposure": 5000,
+            "max_cumulative_loss": 175, "max_additional_funding": 1000, "min_operating_reserve": 200,
+            "review_by": (today + timedelta(days=10)).isoformat(), "minimum_period_net": 0,
+            "continuation_criteria": "Preserve positive fixture unit economics.",
+            "suspension_criteria": "Contain at the fixture loss limit.",
+            "exit_criteria": "Archive failed demand experiments.", "obligations": ["Review fixture receipts"],
+        })
+        run_operating_rehearsal(client, engine, monkeypatch, disposable_http_server, owner, owner_session,
+                               buyer_session, buyer_email, listing, scope, checksum, today,
+                               upstream={"export": export, "key": key, "scenario": proposal,
+                                         "assignment_ids": [odin_id, njord_id], "owner_http": owner_http,
+                                         "owner_sessions": owner_sessions})
+        return
+
     unsigned = {name: value for name, value in export.items() if name not in {"source_signature", "source_signed_at"}}
     assert client.post(intake, json=unsigned, headers=owner).status_code == 409
     received = client.post(intake, json=export, headers=owner)

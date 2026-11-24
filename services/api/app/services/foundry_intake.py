@@ -136,7 +136,7 @@ def materialize(db, job, now):
     db.flush()
 
 
-def run_intake(db, *, now=None):
+def run_intake(db, *, now=None, job_id=None, durable=True):
     """Claim one row atomically, leaving it available after process death before commit."""
     now = now or current_time()
     if not intake_ready(db):
@@ -145,6 +145,7 @@ def run_intake(db, *, now=None):
         return {"status": "paused", "error_code": "EMERGENCY_STOP"}
     job = db.scalar(select(FoundryIntakeJob).where(
         FoundryIntakeJob.status == "QUEUED", FoundryIntakeJob.next_attempt_at <= now,
+        *((FoundryIntakeJob.id == job_id,) if job_id is not None else ()),
     ).order_by(FoundryIntakeJob.next_attempt_at, FoundryIntakeJob.id).limit(1).with_for_update(skip_locked=True))
     if job is None:
         return {"status": "idle"}
@@ -161,7 +162,7 @@ def run_intake(db, *, now=None):
         job.error_code = "ADAPTER_RETRY_EXHAUSTED" if job.status == "FAILED" else "ADAPTER_RETRY_PENDING"
     else:
         job.status, job.error_code = "COMPLETED", None
-    db.commit()
+    db.commit() if durable else db.flush()
     return job_view(job)
 
 

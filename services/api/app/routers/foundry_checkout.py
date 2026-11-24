@@ -691,6 +691,10 @@ def record_reviewed_comparison(payload: ReviewedComparisonIn, db: Session = Depe
 
 @router.post("/campaigns/{campaign_id}/acquisition-plan", status_code=201, dependencies=owner)
 def record_acquisition_plan(campaign_id: int, payload: AcquisitionPlanIn, db: Session = Depends(get_db)):
+    return _record_acquisition_plan(campaign_id, payload, db)
+
+
+def _record_acquisition_plan(campaign_id: int, payload: AcquisitionPlanIn, db: Session, *, durable=True):
     _attribution_schema(db)
     if not inspect(db.connection()).has_table(LegacyOrchestrationEvent.__tablename__):
         raise HTTPException(503, "Campaign plan journal unavailable")
@@ -714,7 +718,7 @@ def record_acquisition_plan(campaign_id: int, payload: AcquisitionPlanIn, db: Se
     _event(db, event_id=ref, legacy_instance_id=scope["legacy_instance_id"], event_type=ACQUISITION_PLAN_EVENT,
            message="Demand-backed acquisition rehearsal planned", payload=result)
     try:
-        db.commit()
+        db.commit() if durable else db.flush()
     except IntegrityError:
         db.rollback()
         raise HTTPException(409, "Concurrent campaign plan already recorded") from None

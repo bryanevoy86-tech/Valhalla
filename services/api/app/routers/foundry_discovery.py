@@ -127,6 +127,10 @@ def record_consumer_research(evidence_id: UUID, request: ConsumerEvidence, db: S
 
 @router.post("/intake", status_code=202, dependencies=owner)
 def queue_intake(request: Intake, db: Session = Depends(get_db)):
+    return queue_signed_intake(request, db)
+
+
+def queue_signed_intake(request: Intake, db: Session, *, durable=True):
     if not intake_ready(db):
         raise HTTPException(503, "Discovery intake not migrated")
     now = current_time()
@@ -147,7 +151,7 @@ def queue_intake(request: Intake, db: Session = Depends(get_db)):
                            status="QUEUED", attempts=0, next_attempt_at=now)
     db.add(job)
     try:
-        db.commit()
+        db.commit() if durable else db.flush()
     except IntegrityError:
         db.rollback()
         raise HTTPException(409, "Discovery job or source observation already used") from None

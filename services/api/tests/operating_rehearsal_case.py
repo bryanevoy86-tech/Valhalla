@@ -1,4 +1,5 @@
 """Disposable continuation of the shared independently reviewed product fixture."""
+from datetime import datetime, timedelta
 import hashlib
 import hmac
 import json
@@ -25,7 +26,7 @@ from app.users.models import AccountSettings, UserProfile
 
 
 def run_operating_rehearsal(client, engine, monkeypatch, serve, owner, owner_session, buyer_session,
-                            buyer_email, listing, scope, checksum, today):
+                            buyer_email, listing, scope, checksum, today, *, upstream=None):
     for model in (FoundryFixtureSettlement, StatementAccount, StatementEntry, StatementImport, RevenueLedger):
         model.__table__.create(engine, checkfirst=True)
     with Session(engine) as db:
@@ -38,15 +39,22 @@ def run_operating_rehearsal(client, engine, monkeypatch, serve, owner, owner_ses
     terms = hashlib.sha256(b"Disposable CAD offer. No sale or money. Full fixture refund on request.").hexdigest()
     request = {"listing": listing, "buyer_id": buyer_id, "campaign_id": 1, "terms_sha256": terms,
                "cost_minor": 175, "ttl_seconds": 900}
-    assert client.post(root + "/mandate", headers=owner, json=request).status_code == 503
+    if upstream:
+        source_root = f"/api/foundry/source-rehearsal/{run_id}"
+        before = {**request, "source_id": upstream["export"]["source_id"], "external_key": upstream["export"]["external_key"],
+                  "scenario": upstream["scenario"], "assignment_ids": upstream["assignment_ids"], "experiment_budget_minor": 100}
+        assert client.post(source_root + "/authority", headers=owner, json=before).status_code == 503
+    else:
+        assert client.post(root + "/mandate", headers=owner, json=request).status_code == 503
     monkeypatch.setenv("VALHALLA_FOUNDRY_OPERATING_REHEARSAL", "1")
     monkeypatch.setenv("VALHALLA_FOUNDRY_FIXTURE_SECRET", "disposable-payment-signing-peer")
-    assert client.post(root + "/mandate", json=request).status_code == 401
-    with monkeypatch.context() as hosted:
-        hosted.setenv("APP_ENV", "staging")
-        assert client.post(root + "/mandate", headers=owner, json=request).status_code == 503
-    created = client.post(root + "/mandate", headers=owner, json=request)
-    assert created.status_code == 200, created.text
+    if not upstream:
+        assert client.post(root + "/mandate", json=request).status_code == 401
+        with monkeypatch.context() as hosted:
+            hosted.setenv("APP_ENV", "staging")
+            assert client.post(root + "/mandate", headers=owner, json=request).status_code == 503
+        created = client.post(root + "/mandate", headers=owner, json=request)
+        assert created.status_code == 200, created.text
     worker_file = Path(__file__).resolve().parents[1] / "tools" / "cron" / "foundry_operating_worker.py"
     authorized_worker_env = {key: os.environ[key] for key in (
         "PATH", "ENV", "APP_ENV", "VALHALLA_FOUNDRY_OPERATING_REHEARSAL", "VALHALLA_PRIME_CONTROL_KEY",
@@ -54,16 +62,28 @@ def run_operating_rehearsal(client, engine, monkeypatch, serve, owner, owner_ses
     authorized_worker_env["DATABASE_URL"] = "sqlite://"
     authorized_worker_env["VALHALLA_JWT_SECRET"] = "fixture-worker-import-only"
     authorized_worker_env["PYTHON_DOTENV_DISABLED"] = "1"
+    authorized_worker_env["PYTHONUNBUFFERED"] = "1"
+
+    def command(network, once=True):
+        return [
+            sys.executable, str(worker_file), "--port", str(network.base_url.port), "--run-id", str(run_id),
+            *(["--source-to-outcome"] if upstream else []), *(["--once"] if once else []),
+        ]
 
     def worker(network, *expected, code=0):
-        result = subprocess.run(
-            [sys.executable, str(worker_file), "--port", str(network.base_url.port), "--run-id", str(run_id), "--once"],
-            env=authorized_worker_env, capture_output=True, text=True, timeout=20, check=False,
-        )
+        result = subprocess.run(command(network), env=authorized_worker_env, capture_output=True,
+                                text=True, timeout=20, check=False)
         assert result.returncode == code, (result.stdout, result.stderr)
         data = json.loads(result.stdout)
-        assert (data["status"], data.get("phase", data.get("reason"))) == expected, data
+        if expected:
+            assert (data["status"], data.get("phase", data.get("reason"))) == expected, data
         return data
+
+    if upstream:
+        with serve(client, app=app) as server:
+            listing = source_chain(client, server, engine, monkeypatch, before, owner, upstream, worker, command,
+                                   authorized_worker_env, source_root, today, owner_session, buyer_session)
+        engine.dispose()
 
     def signed(http, suffix, doc, key, header):
         raw = json.dumps(doc, sort_keys=True).encode()
@@ -104,8 +124,11 @@ def run_operating_rehearsal(client, engine, monkeypatch, serve, owner, owner_ses
                 db.get(GodVerdict, UUID(listing["prime_verdict_id"])).metadata_json = original
                 db.commit()
             worker(first, "advanced", "listing")
-            assert peer.post(root + "/buyer", headers=owner_session,
-                             json={"action": "enrolled", "sha256": terms}).status_code == 403
+            owner_probe = peer.post(root + "/buyer", headers=owner_session,
+                                    json={"action": "enrolled", "sha256": terms})
+            assert owner_probe.status_code == 403
+            if upstream:
+                upstream["owner_sessions"].append(("POST", root + "/buyer", owner_probe.status_code))
             assert buyer(peer, "enrolled", terms).status_code == 200
             assert buyer(peer, "purchase", "0" * 64).status_code == 409
             accepted = buyer(peer, "purchase", terms)
@@ -177,6 +200,30 @@ def run_operating_rehearsal(client, engine, monkeypatch, serve, owner, owner_ses
             assert evidence["uncommitted_cash_minor"] == evidence["outstanding_obligation_minor"] == 0
             assert evidence["mimir_claim"]["period_net_minor"] == -175
             assert evidence["mimir_claim"]["verified_real_world_outcome"] is False
+            if upstream:
+                trace = second.get(source_root)
+                assert trace.status_code == 200, trace.text
+                full = trace.json()
+                source_rows = full["source_receipts"]
+                assert full["operating_receipts"] == receipts
+                assert receipts[0]["evidence"]["upstream_sha256"] == receipts[0]["previous_sha256"] == source_rows[-1]["sha256"]
+                assert all(x.get("recorded_at") for x in [*source_rows, *receipts])
+                types = [x["actor"] for x in source_rows if x["actor"].startswith("OWNER")]
+                assert types[0] == "OWNER_INITIAL_AUTHORITY" and types[-1] == "OWNER_FINAL_MANDATE"
+                assert types[1:-1] and set(types[1:-1]) == {"OWNER_MATERIAL_DISPOSITION"}
+                approved = [(method, path, status) for method, path, status in upstream["owner_http"] if status < 300]
+                assert approved[-1][1].endswith("/mandate")
+                assert sum(path.endswith("/disposition") for _, path, _ in approved) == len(types) - 2
+                assert sum(path.endswith("/mandate") for _, path, _ in approved if "/source-rehearsal/" in path) == 1
+                print("FOUNDRY_SOURCE_TO_OUTCOME", json.dumps({
+                    "source_transitions": [{k: r[k] for k in ("action_id", "actor", "recorded_at", "sha256", "previous_sha256")}
+                                           for r in source_rows],
+                    "review_receipts": [{k: r[k] for k in ("id", "reviewer_id", "artifact_sha256", "result_sha256", "disposition")}
+                                        for r in full["review_briefing"]],
+                    "owner_key_requests": upstream["owner_http"], "owner_key_success_count": len(approved),
+                    "owner_session_requests": upstream["owner_sessions"],
+                    "routine_owner_actions_after_final_mandate": 0,
+                }, sort_keys=True))
             with Session(engine) as db:
                 assert db.query(FoundryRehearsalOrder).count() == 1
                 assert db.query(FoundryRehearsalPayment).count() == db.query(FoundryFixtureSettlement).count() == 2
@@ -186,9 +233,143 @@ def run_operating_rehearsal(client, engine, monkeypatch, serve, owner, owner_ses
                 db.commit()
             worker(second, "blocked", None, code=2)
             print("FOUNDRY_OPERATING_REHEARSAL", json.dumps({
-                "transitions": [{key: r[key] for key in ("phase", "actor", "sha256", "previous_sha256")}
+                "transitions": [{key: r[key] for key in ("action_id", "phase", "actor", "recorded_at", "sha256", "previous_sha256")}
                                 for r in receipts],
                 "interruption_recovered": True, "failed_accounting_transaction_rolled_back": True,
                 "outcome_replay_denied_after_evidence_change": True,
                 "owner_routine_events_after_mandate": 0, "commercial_revenue_verified": False,
             }, sort_keys=True))
+
+
+def source_chain(client, network, engine, monkeypatch, authority, owner, upstream, worker, command, env, root, today,
+                 owner_session, buyer_session):
+    from app.models.foundry_evidence import FoundryEvidence
+    from app.services.foundry_intake import source_signature_message
+
+    start = client.post(root + "/authority", headers=owner, json=authority)
+    assert start.status_code == 200, start.text
+    worker(network, "waiting", "SIGNED_SOURCE")
+    cron = Path(__file__).resolve().parents[1] / "tools" / "cron"
+    reviewer = os.environ["VALHALLA_LOKI_REVIEWER_ID"]
+    key = os.environ["VALHALLA_LOKI_REVIEWER_KEY"]
+    publisher = httpx.Client(base_url=network.base_url, trust_env=False)
+    reviewer_env = {k: v for k, v in env.items() if k != "VALHALLA_PRIME_CONTROL_KEY"}
+    reviewer_env.update(VALHALLA_LOKI_ANALYST_ENABLED="1", VALHALLA_LOKI_QUEUE_URL=str(network.base_url),
+                        VALHALLA_LOKI_REVIEWER_ID=reviewer, VALHALLA_LOKI_REVIEWER_KEY=key)
+
+    def independent_review(kind):
+        result = subprocess.run([sys.executable, str(cron / "loki_analyst_worker.py"), "--artifact-type", kind, "--once"],
+                                env=reviewer_env, capture_output=True, text=True, timeout=20, check=False)
+        assert result.returncode == 0, (result.stdout, result.stderr)
+        assert json.loads(result.stdout)["status"] == "reviewed"
+
+    def export(observed):
+        document = upstream["export"]
+        document = {**document, "evidence": {**document["evidence"], "evidence_id": str(uuid4()),
+                                              "observed_on": observed.isoformat()}}
+        document["source_signature"] = upstream["key"].sign(source_signature_message(document)).hex()
+        return document
+
+    def signed_ingress(document):
+        reply = publisher.post(root + "/source", json=document)
+        assert reply.status_code == 200, reply.text
+        assert publisher.post(root + "/source", json=document).json() == reply.json()
+
+    def assess(document):
+        job = UUID(document["evidence"]["evidence_id"]).hex
+        worker(network, "advanced", f"intake-{job}")
+        worker(network, "advanced", f"rodin-{job}")
+        worker(network, "advanced", f"rnjord-{job}")
+        with monkeypatch.context() as missing:
+            missing.delenv("VALHALLA_LOKI_REVIEWER_KEY")
+            worker(network, "blocked", None, code=2)
+        worker(network, "advanced", f"review-{job}")
+        worker(network, "waiting", "INDEPENDENT_LOKI")
+        for kind in ("pantheon_report", "pantheon_report", "universal_opportunity"):
+            independent_review(kind)
+        worker(network, "advanced", f"loki-{job}")
+        worker(network, "waiting", "OWNER_MATERIAL_REVIEW")
+        brief = network.get(root).json()["review_briefing"]
+        assert all(r["reviewer_id"] == reviewer for r in brief)
+        return job, brief
+
+    try:
+        old = export(today - timedelta(days=1))
+        broken = {**old, "source_signature": "0" * 128}
+        assert publisher.post(root + "/source", json=broken).status_code == 409
+        signed_ingress(old)
+        old_job, old_brief = assess(old)
+        owner_view = publisher.get(root + "/owner-briefing", headers=owner_session)
+        upstream["owner_sessions"].append(("GET", root + "/owner-briefing", owner_view.status_code))
+        assert owner_view.status_code == 200 and owner_view.headers["Cache-Control"] == "no-store"
+        assert owner_view.json()["review_briefing"] == old_brief
+        assert publisher.get(root + "/owner-briefing", headers=buyer_session).status_code == 403
+
+        # Kill a polling process mid-wait and resume with a fresh process.
+        process = subprocess.Popen(command(network, once=False), env=env, stdout=subprocess.PIPE, text=True)
+        try:
+            assert json.loads(process.stdout.readline())["reason"] == "OWNER_MATERIAL_REVIEW"
+        finally:
+            process.kill()
+            process.communicate(timeout=10)
+        assert process.returncode != 0
+
+        latest = export(today)
+        signed_ingress(latest)
+        old_review = next(row for row in old_brief if row["kind"] == "universal_opportunity")
+        denied = client.post(root + f"/reviews/{old_review['id']}/disposition", headers=owner, json={
+            "artifact_sha256": old_review["artifact_sha256"], "disposition": "accept_risk", "reason": "Stale test.",
+            "material_finding_ids": [x["id"] for x in old_review["findings"]],
+        })
+        assert denied.status_code == 409
+        new_job, active = assess(latest)
+        assert new_job != old_job
+        assert {r["id"] for r in old_brief}.isdisjoint({r["id"] for r in active})
+        for review in active:
+            if review["ok_to_proceed"]:
+                continue
+            assert review["severity"] != "critical", review
+            result = client.post(root + f"/reviews/{review['id']}/disposition", headers=owner, json={
+                "artifact_sha256": review["artifact_sha256"],
+                "material_finding_ids": [x["id"] for x in review["findings"] if x["tags"].get("material")],
+                "disposition": "accept_risk", "reason": "Only reversible fixture work is permitted. No demand or live sale is inferred.",
+            })
+            assert result.status_code == 200, result.text
+        worker(network, "advanced", f"decision-{new_job}")
+        worker(network, "waiting", "FINAL_OWNER_MANDATE")
+        decision = network.get(root).json()["source_receipts"][-1]
+        aid = client.post(root + "/mandate", headers=owner, json={"decision_sha256": decision["sha256"]})
+        assert aid.status_code == 200, aid.text
+
+        # Controlled failure probes at the source-to-checkout boundary.
+        from app.routers import foundry_operating_rehearsal as operating
+        from app.services import economic_control
+
+        class ExpiredClock(datetime):
+            @classmethod
+            def now(cls, tz=None):
+                return datetime.now(tz) + timedelta(hours=1)
+
+        with monkeypatch.context() as stopped:
+            stopped.setattr(operating, "datetime", ExpiredClock)
+            worker(network, "blocked", None, code=2)
+        with monkeypatch.context() as contained:
+            contained.setattr(economic_control, "business_contained", lambda *_args, **_kwargs: True)
+            worker(network, "blocked", None, code=2)
+        with monkeypatch.context() as stopped:
+            stopped.setenv("VALHALLA_EMERGENCY_STOP", "true")
+            worker(network, "blocked", None, code=2)
+        with Session(engine) as db:
+            assert db.query(FoundryRehearsalOrder).count() == 0
+
+        # A withdrawn publisher observation must hold the source-to-checkout transition.
+        with Session(engine) as db:
+            db.get(FoundryEvidence, UUID(latest["evidence"]["evidence_id"])).revoked = True
+            db.commit()
+        worker(network, "blocked", None, code=2)
+        with Session(engine) as db:
+            db.get(FoundryEvidence, UUID(latest["evidence"]["evidence_id"])).revoked = False
+            db.commit()
+        return decision["evidence"]["listing"]
+    finally:
+        publisher.close()

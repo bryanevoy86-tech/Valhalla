@@ -79,7 +79,14 @@ def main():
     key = os.getenv("VALHALLA_LOKI_REVIEWER_KEY", "")
     reviewer_id = os.getenv("VALHALLA_LOKI_REVIEWER_ID", "").strip()
     parsed = urlsplit(url)
-    if (os.getenv("VALHALLA_LOKI_ANALYST_ENABLED") != "1" or not key or not 1 <= len(reviewer_id) <= 100 or parsed.scheme != "https"
+    local_rehearsal = (
+        parsed.scheme == "http" and parsed.hostname == "127.0.0.1" and parsed.port is not None
+        and os.getenv("VALHALLA_FOUNDRY_OPERATING_REHEARSAL") == "1"
+        and os.getenv("APP_ENV", "") in {"dev", "test", "sandbox"}
+        and not os.getenv("VALHALLA_PRIME_CONTROL_KEY") and not os.getenv("VALHALLA_OWNER_MANDATE_KEY")
+    )
+    if (os.getenv("VALHALLA_LOKI_ANALYST_ENABLED") != "1" or not key or not 1 <= len(reviewer_id) <= 100
+            or not (parsed.scheme == "https" or local_rehearsal)
             or not parsed.hostname or parsed.username or parsed.password or parsed.path or parsed.query or parsed.fragment):
         parser.exit(2, "Loki analyst disabled or queue configuration invalid.\n")
     run_id = str(uuid4())

@@ -6,7 +6,7 @@ First-business impact assumes the bounded one-time CAD lane. It does not presele
 
 ## First operating loop verification
 
-The [disposable operating proof](../docs/VALHALLA_FIRST_OPERATING_LOOP.md) advances Legacy execution, consent-bound acquisition, commerce, settlement and Mimir. An actual polling process dispatches the scoped work. The case records separate buyer, payment fixture, statement fixture and worker actors with zero routine owner calls after the final mandate. Current stage remains isolated integration proof. Selection inputs and material Loki dispositions precede the connected worker run. Production gates, commissioning and the 14 open P0 criteria are unchanged.
+The [disposable operating proof](../docs/VALHALLA_FIRST_OPERATING_LOOP.md) connects authorized signed source intake, exact event-driven ODIN and NJORD findings, independent Loki analysis and immutable material exceptions, Prime's automatic recommendation, one final mandate, and the acquisition/checkout/settlement/Mimir worker. A replacement source observation is re-reviewed. No routine owner action occurs after the final mandate. This is one scoped isolated integration case. Genuine external discovery, hosted recovery, provider operations and all production gates remain open. The [refund and bank acceptance contract](../docs/VALHALLA_REFUND_BANK_COMMISSIONING.md) records the next authorized provider steps.
 
 ## 04. `api_wiring` (P0)
 

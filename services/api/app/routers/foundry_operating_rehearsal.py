@@ -94,7 +94,8 @@ def run_ref(run_id, label):
 
 def add_receipt(db, run_id, phase, scope, evidence, previous):
     ref = event_key(run_id, phase)
-    body = jsonable_encoder({"scope": scope, "phase": phase, "actor": ACTORS[phase],
+    body = jsonable_encoder({"scope": scope, "action_id": ref, "phase": phase, "actor": ACTORS[phase],
+                             "recorded_at": datetime.now(timezone.utc).isoformat(),
                              "evidence": evidence, "previous_sha256": previous, "external_effects": 0})
     body["sha256"] = artifact_digest("foundry_operating_rehearsal", ref, body)
     _event(db, event_id=ref, legacy_instance_id=scope["legacy_instance_id"], event_type=EVENT, message=phase, payload=body)
@@ -114,7 +115,10 @@ def read_run(db, run_id):
             raise HTTPException(409, "Operating rehearsal receipt integrity failed")
         digest = body.pop("sha256", None)
         phase, scope = body.get("phase"), body.get("scope")
+        if not chain and phase == "mandate":
+            previous = body.get("evidence", {}).get("upstream_sha256")
         if (phase != phases[index] or row.event_id != event_key(run_id, phase)
+                or body.get("action_id", row.event_id) != row.event_id
                 or row.event_type != EVENT or not isinstance(scope, dict) or row.legacy_instance_id != scope.get("legacy_instance_id")
                 or body.get("actor") != ACTORS[phase] or body.get("external_effects") != 0
                 or body.get("previous_sha256") != previous
@@ -133,6 +137,9 @@ def active(db, run_id):
     chain = read_run(db, run_id)
     mandate = chain["mandate"]["evidence"]
     scope = chain["mandate"]["scope"]
+    if mandate.get("upstream_sha256"):
+        from app.routers.foundry_source_rehearsal import verify_handoff
+        verify_handoff(db, run_id, mandate["upstream_sha256"])
     grant = _lock_mandate(db, mandate["listing"]["mandate_id"])
     revoked = db.scalar(select(Event.id).filter_by(event_id=_mandate_revocation_id(mandate["listing"]["mandate_id"])))
     if (grant is None or revoked is not None or mandate["grant"] != _json(grant.payload_json, {})
@@ -181,6 +188,12 @@ def save(db, run_id, chain, phase, evidence):
 
 @router.post("/{run_id}/mandate", dependencies=[Depends(require_prime_control_key), Depends(require_owner_mandate_key)])
 def mandate(run_id: UUID, request: Mandate, db: Session = Depends(get_db)):
+    if db.scalar(select(Event.id).filter_by(event_id=f"FSO-{run_id.hex}-authority")) is not None:
+        raise HTTPException(409, "Use the reviewed source-run mandate")
+    return grant_mandate(run_id, request, db)
+
+
+def grant_mandate(run_id, request, db, *, upstream_sha256=None):
     guard(db)
     listing = request.listing
     if not listing.artifact_id or not listing.prime_verdict_id or listing.mandate_id:
@@ -204,7 +217,8 @@ def mandate(run_id: UUID, request: Mandate, db: Session = Depends(get_db)):
     result = add_receipt(db, run_id, "mandate", scope, {
         **request.model_dump(mode="json"), "listing": listing.model_dump(mode="json"), "grant": grant,
         "plan_sha256": plan["sha256"], "prime_decision": decision,
-    }, None)
+        **({"upstream_sha256": upstream_sha256} if upstream_sha256 else {}),
+    }, upstream_sha256)
     commit(db)
     return {"phase": result["phase"], "sha256": result["sha256"], "external_effects": 0}
 

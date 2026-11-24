@@ -2200,6 +2200,7 @@ def _persist_universal_pantheon_snapshot(
     result: dict[str, Any],
     loki_objections: list[dict[str, Any]],
     owner_envelope: dict[str, Any],
+    durable: bool = True,
 ) -> dict[str, Any]:
     _ensure_pantheon_tables(db)
 
@@ -2278,7 +2279,7 @@ def _persist_universal_pantheon_snapshot(
             )
         )
 
-    db.commit()
+    db.commit() if durable else db.flush()
     db.refresh(case)
     db.refresh(verdict)
     return {
@@ -2299,6 +2300,7 @@ def _evaluate_universal_opportunity(
     reveal_historical_outcomes: bool,
     outcome_class: str,
     independent_loki: dict | None = None,
+    durable: bool = True,
 ) -> dict[str, Any]:
     _validate_phase3_opportunity(payload)
     mimir_context = _build_mimir_context(db, payload, outcome_class)
@@ -2510,6 +2512,7 @@ def _evaluate_universal_opportunity(
             result=result,
             loki_objections=result["loki_objections"]["items"],
             owner_envelope=result["approval_envelope"],
+            durable=durable,
         )
         if result.get("outcome_contract"):
             result["outcome_contract"]["pantheon_snapshot_id"] = result["persistence"]["god_verdict_id"]
@@ -2730,6 +2733,10 @@ def _require_independent_review(db: Session, opportunity: UniversalOpportunityIn
 
 @router.post("/phase3/universal-opportunity/evaluate")
 def evaluate_universal_opportunities(payload: UniversalOpportunityBatchIn, db: Session = Depends(get_db)):
+    return evaluate_opportunity_batch(payload, db)
+
+
+def evaluate_opportunity_batch(payload: UniversalOpportunityBatchIn, db: Session, *, durable=True):
     if any("public_market_context" in opportunity.specialist_inputs for opportunity in payload.opportunities):
         raise HTTPException(409, "Public market context can be independently reviewed but cannot enter scored opportunity evaluation")
 
@@ -2776,6 +2783,7 @@ def evaluate_universal_opportunities(payload: UniversalOpportunityBatchIn, db: S
                     reveal_historical_outcomes=payload.reveal_historical_outcomes,
                     outcome_class=outcome_class,
                     independent_loki=checked_reviews.get(index),
+                    durable=durable,
                 )
             )
             if index in checked_reviews:

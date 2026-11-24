@@ -40,6 +40,10 @@ def create_loki_review(
     payload: LokiReviewCreate,
     db: Session = Depends(get_db),
 ) -> LokiReviewRead:
+    return queue_review(payload, db)
+
+
+def queue_review(payload: LokiReviewCreate, db: Session, *, durable=True):
     """Queue a versioned artifact for the independent worker."""
     reviewer_identity()
     digest = artifact_digest(payload.artifact_type, payload.heimdall_reference_id, payload.raw_input)
@@ -54,7 +58,7 @@ def create_loki_review(
     )
     db.add(review)
     try:
-        db.commit()
+        db.commit() if durable else db.flush()
     except IntegrityError:
         db.rollback()
         previous = db.query(LokiReview).filter_by(artifact_sha256=digest).one_or_none()
