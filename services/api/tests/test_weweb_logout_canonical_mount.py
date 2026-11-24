@@ -53,4 +53,4 @@ def test_weweb_preflight_uses_exact_origins_and_exposes_only_required_grant():
         denied = client.options("/fixture", headers={**preflight, "Origin": "https://other.example.invalid"})
         assert denied.status_code == 400 and "Access-Control-Allow-Origin" not in denied.headers
         response = client.get("/fixture", headers={"Origin": origin})
-        assert response.headers["Access-Control-Expose-Headers"] == "X-Delivery-Grant"
+        assert response.headers["Access-Control-Expose-Headers"] == "X-Delivery-Grant, Content-Disposition"

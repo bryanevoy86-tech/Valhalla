@@ -154,8 +154,11 @@ def paid_product(tenant_id: UUID, order_id: UUID, principal: dict = Depends(get_
                                        "basis": grant["basis"], "product_id": grant["product_id"],
                                        "grant_sha256": grant["sha256"], "download_enabled": False})
     record_delivery_offer(db, order_id, grant)
+    extension = {"application/pdf": "pdf", "application/zip": "zip", "text/plain": "txt"}.get(
+        artifact.media_type, "bin",
+    )
     return Response(content=artifact.data, media_type="application/octet-stream", headers={
-        "Content-Disposition": f'attachment; filename="{artifact.id}.bin"', "Cache-Control": "no-store",
+        "Content-Disposition": f'attachment; filename="{artifact.id}.{extension}"', "Cache-Control": "no-store",
         "Vary": "Authorization", "X-Content-Type-Options": "nosniff", "X-Delivery-Grant": grant["sha256"],
     })
 

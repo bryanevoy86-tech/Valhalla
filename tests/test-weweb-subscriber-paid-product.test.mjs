@@ -43,3 +43,18 @@ test("offers only verified binary content and rejects a cross-order acknowledgme
     assert.equal((await runSubscriberPaidProduct({...input,order:tenant,action:"acknowledge",prior:result},
         ()=>assert.fail("Cross-order request"))).status,"invalid");
 });
+
+
+test("uses only an allowed product extension and keeps the local name derived from the order", async () => {
+    for (const [filename, extension] of [[tenant + ".zip", ".zip"], ["../../unexpected.exe", ".bin"]]) {
+        const binary = new Response(new Blob(["fixture"]), {headers: {
+            "Content-Type": "application/octet-stream", "X-Delivery-Grant": grant,
+            "Content-Disposition": 'attachment; filename="' + filename + '"',
+        }});
+        const result = await runSubscriberPaidProduct(input, async () => binary, async (_bytes, name) => {
+            assert.equal(name, order + extension);
+            return true;
+        });
+        assert.equal(result.status, "offered");
+    }
+});

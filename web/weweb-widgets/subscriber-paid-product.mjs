@@ -44,7 +44,10 @@ export async function runSubscriberPaidProduct(input, transport = fetch, saveFil
             if (!digest.test(grant) || typeof saveFile !== "function") return result("unavailable");
             const bytes = await response.blob();
             if (bytes.size < 1 || bytes.size > 5 * 1024 * 1024) return result("unavailable");
-            if (await saveFile(bytes, order + ".bin") !== true) return result("unavailable");
+            const disposition = response.headers.get("Content-Disposition") ?? "";
+            const match = /^attachment; filename="[0-9a-f-]{36}\.(zip|pdf|txt)"$/.exec(disposition);
+            const extension = match?.[1] ?? "bin";
+            if (await saveFile(bytes, order + "." + extension) !== true) return result("unavailable");
             return result("offered", {tenant,order,grant});
         }
         if (type !== "application/json") return result("unavailable");

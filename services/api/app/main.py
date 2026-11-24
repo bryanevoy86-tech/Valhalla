@@ -210,7 +210,7 @@ app.add_middleware(
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["X-Delivery-Grant"],
+    expose_headers=["X-Delivery-Grant", "Content-Disposition"],
 )
 log.info("CORS enabled for origins: %s", cors_origins)
 

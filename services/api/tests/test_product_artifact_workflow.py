@@ -1013,6 +1013,10 @@ def rehearse_bound_stripe_delivery(client, engine, monkeypatch, owner, owner_ses
         assert entitlement.content == expected_bytes
         assert entitlement.headers["Cache-Control"] == "no-store"
         assert entitlement.headers["X-Delivery-Grant"] == grant.json()["grant_sha256"]
+        extension = "zip" if expected_bytes.startswith(b"PK") else "txt"
+        assert entitlement.headers["Content-Disposition"] == (
+            f'attachment; filename="{binding["product_asset_id"]}.{extension}"'
+        )
     else:
         assert entitlement.json()["download_enabled"] is False
         with monkeypatch.context() as staging:
