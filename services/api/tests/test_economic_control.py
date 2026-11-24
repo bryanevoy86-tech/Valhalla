@@ -1470,3 +1470,118 @@ def test_authenticated_research_participant_browser_and_retention(economic_clien
         assert state["purged"] and state["participants"] == {} and state["participant_grants"] == []
         assert db.query(LegacyOrchestrationEvent).filter_by(event_type="CUSTOMER_RESEARCH_JOIN_FIXTURE").count() == 0
         assert db.query(LegacyOrchestrationEvent).filter_by(event_type="CUSTOMER_RESEARCH_SUPPRESSION_FIXTURE").count() >= 1
+
+
+def test_industry_diligence_wakes_specialists_and_keeps_fleet_options_advisory(economic_client):
+    from app.models.completion_registry import SourceRegistryItem
+    from app.models.foundry_evidence import FoundryEvidence
+    from app.services.foundry_discovery import require_current_candidate
+    from app.services.foundry_intake import current_time
+
+    client, engine = economic_client
+    for model in (SourceRegistryItem, FoundryEvidence):
+        model.__table__.create(engine)
+    references = {
+        "mb-maintenance": "https://www.manitoba.ca/mti/mcd/audits_investigations/audits/maintenance.html",
+        "fleetio-pricing": "https://www.fleetio.com/pricing",
+        "mta-membership": "https://trucking.mb.ca/membership/member-categories/",
+    }
+    # Disposable source registry entries. No live connector, client or source account.
+    with Session(engine) as db:
+        for key, citation in references.items():
+            db.add(SourceRegistryItem(source_id=key, canonical_name=key, source_type="INDUSTRY_REFERENCE",
+                data_class="live", jurisdiction="CA-MB", citation_ref=citation, permission_status="public",
+                license_status="consented_internal_use", governance_status="approved", terminal_state="PASS",
+                mode_allowlist_json='["practice"]'))
+        db.commit()
+    today = current_time().date()
+    expires = (today + timedelta(days=15)).isoformat()
+    root = "/api/prime/foundry"
+    post(client, "mandates", mandate(today))
+    for role in ("ODIN", "NJORD"):
+        enrollment = client.post("/api/prime/pantheon/assignments", headers=OWNER, json={
+            **SCOPE, "assignment_id": str(uuid4()), "role": role, "cadence_seconds": 600, "duration_seconds": 3600,
+        })
+        assert enrollment.status_code == 201, enrollment.text
+    options = [
+        {"kind": "BUILD", "setup_minor": 30000, "monthly_minor": 3500, "setup_hours": 60,
+         "monthly_hours": 6, "loaded_hour_minor": 6000, "dependencies": ["Tenant-safe import and export", "Support delegate"],
+         "estimate_basis": "Scenario only. Build, maintain and support a narrow export tool."},
+        {"kind": "BUY", "setup_minor": 10000, "monthly_minor": 2500, "setup_hours": 6,
+         "monthly_hours": 2, "loaded_hour_minor": 6000, "dependencies": ["Customer-owned vendor account", "Scoped operator"],
+         "estimate_basis": "Scenario only. Customer carries the platform subscription; check access and data export."},
+    ]
+    study = {"scope": SCOPE, "execution_options": options, "findings": [
+        {"facet": facet, "source_id": src, "citation": references[src], "observed_on": today.isoformat(),
+         "valid_through": expires, "summary": summary}
+        for facet, src, summary in (
+            ("REGULATION", "mb-maintenance", "Manitoba describes scheduled vehicle maintenance and inspection records."),
+            ("FAILURE_MODES", "mb-maintenance", "Incomplete repair or inspection records can leave audit evidence gaps."),
+            ("COMPETITION", "fleetio-pricing", "An incumbent offers tiered per-asset subscriptions with annual commitment options."),
+            ("DISTRIBUTION", "mta-membership", "Industry association categories include for-hire and private fleet operators."),
+        )
+    ]}
+    ids = []
+    for key, kind in (("managed-fleet-setup", "SERVICE"), ("fleet-audit-export", "SAAS")):
+        evidence_id = str(uuid4())
+        ids.append(evidence_id)
+        evidence = {**SCOPE, "evidence_id": evidence_id, "kind": kind, "evidence_class": "OPERATOR_REPORTED",
+                    "title": key, "source_ref": key, "observed_on": today.isoformat(), "expires_on": expires,
+                    "currency": "CAD", "unit_price": 15000, "variable_cost_per_unit": 4000,
+                    "acquisition_cost_per_unit": 2000, "monthly_fixed_cost": 2000, "monthly_units": 4,
+                    "startup_capital": 15000, "test_cost": 0, "rights_attestation": "AUTHORIZED_INTERNAL_RESEARCH"}
+        assert client.post(root + "/evidence", json=evidence, headers=OWNER).status_code == 201
+        route = f"{root}/evidence/{evidence_id}/industry-diligence"
+        denied = client.post(route, json=study)
+        assert denied.status_code == 401
+        assert client.post(route, headers=OWNER, json={**study, "scope": MIRROR}).status_code == 409
+        wrong_citation = {**study, "findings": [{**study["findings"][0],
+            "citation": "https://example.invalid/other"}, *study["findings"][1:]]}
+        assert client.post(route, headers=OWNER, json=wrong_citation).status_code == 409
+        expired = {**study, "findings": [{**study["findings"][0],
+            "valid_through": (today - timedelta(days=1)).isoformat()}, *study["findings"][1:]]}
+        assert client.post(route, headers=OWNER, json=expired).status_code == 409
+        saved = client.post(route, headers=OWNER, json=study)
+        assert saved.status_code == 201, saved.text
+        result = saved.json()
+        assert result["research_status"] == "MORE_RESEARCH_REQUIRED"
+        assert "CUSTOMER_NEEDS" in result["missing_facets"] and result["customer_demand_verified"] is False
+        assert {x["kind"]: x["year_one_cost_minor"] for x in result["execution_options"]} == {"BUILD": 864000, "BUY": 220000}
+        reordered = {**study, "findings": study["findings"][::-1]}
+        assert client.post(route, headers=OWNER, json=reordered).json() == result
+        changed = {**study, "findings": [{**study["findings"][0], "summary": "A different source assertion to review."}, *study["findings"][1:]]}
+        assert client.post(route, headers=OWNER, json=changed).status_code == 409
+        post(client, "opportunities", option(today, key, origin="FOUNDRY", foundry_evidence_id=evidence_id))
+
+    with Session(engine) as db:
+        assert db.query(SpecialistTrigger).filter(SpecialistTrigger.event_id.startswith("FOUNDRY-INDUSTRY-")).count() == 4
+        for role in ("ODIN", "NJORD"):
+            report_id = run_assignment(db, role)["report_event_id"]
+            report = client.get(f"/api/prime/pantheon/reports/{report_id}").json()
+            assert report["trigger"] == "INDUSTRY_DILIGENCE"
+            assert {s["evidence_id"] for s in report["observations"]["foundry_signals"]} == set(ids)
+            focus = report["observations"]["foundry_signals"][0]["industry_research_focus"]
+            assert ("COMPETITION" if role == "ODIN" else "FAILURE_MODES") in focus["review_facets"]
+    candidate_url = f"{root}/reports/{report_id}/candidate/{ids[0]}"
+    candidate = client.get(candidate_url).json()["proposal"]
+    with Session(engine) as db:
+        require_current_candidate(db, candidate, SCOPE, today, advisory_only=True)
+        with pytest.raises(HTTPException, match="separately verified"):
+            require_current_candidate(db, candidate, SCOPE, today)
+    response = client.post(f"/api/prime/pantheon/reports/{report_id}/challenge")
+    assert response.status_code == 201, response.text
+    review_id = response.json()["review_id"]
+    queue = client.get("/loki/worker/reviews", headers=REVIEWER, params={"artifact_type": "pantheon_report"})
+    digest_bound = next(item for item in queue.json() if item["review_id"] == review_id)
+    findings = challenge(digest_bound).model_dump(mode="json")
+    receipt = client.post(f"/loki/worker/reviews/{review_id}/result", headers=REVIEWER, json=findings)
+    assert receipt.status_code == 201 and any(f["category"] == "industry_execution_uncertainty" for f in findings["findings"])
+    assessment = post(client, "assessment", SCOPE, 200)
+    assert assessment["opportunity_selection"]["decision"] == "ABSTAIN"
+    assert all("INDUSTRY_DEMAND_UNVERIFIED" in x["blockers"] for x in assessment["alternatives"])
+    with Session(engine) as db:
+        db.query(SourceRegistryItem).filter_by(source_id="mb-maintenance").one().active = False
+        db.commit()
+    assert client.get(candidate_url).status_code == 409
+    after = post(client, "assessment", SCOPE, 200)
+    assert all("FOUNDRY_SOURCE_UNAVAILABLE" in x["blockers"] for x in after["alternatives"])

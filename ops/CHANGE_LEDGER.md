@@ -1276,3 +1276,8 @@ The acceptance matrix retains 13 P0 and 39 total criteria requiring internal cod
 - Bound scoped scheduled ODIN and NJORD reports to separate worker signing identities and a pinned owner enrollment authority. The strict source regression retains Loki review, mandate and all existing receipt stages.
 - Applied the shared live hold to the identified direct transmission, provider checkout/cancellation, delivery and financial effects. Kept signed ingress and authorized observation available. Sandbox refund rechecks current scope and stop after readback, and preserves the single durable attempt on interruption.
 - Recorded provider gaps and exact tests in the dependency register. No providers were contacted and no release authority was granted.
+
+## November 24 industry diligence
+
+- Bound source-attributed operating diligence and build-or-buy cost assumptions to existing Foundry evidence. Enrolled specialist assignments receive the exact event. Prime rechecks the source and evidence versions. The independently authenticated Loki path challenges the assumptions. Declared costs and public references cannot authorize a business.
+- Rehearsed two Manitoba fleet operating approaches using public references and disposable records. Both remain commercially unvalidated. See the [investigation](../docs/UNIVERSAL_OPPORTUNITY_PIPELINE.md#operating-diligence-and-first-investigation).

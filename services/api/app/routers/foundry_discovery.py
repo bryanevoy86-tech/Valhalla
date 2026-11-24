@@ -18,6 +18,7 @@ from app.services.foundry_discovery import (
     DISCOVERY_ROLES, EvidenceIn, SCOPE_FIELDS, candidate_fields, checked_evidence, withdrawal_trigger,
 )
 from app.services.foundry_intake import FoundryIntakeJob, Intake, current_time, intake_ready, job_view, key_for, source_for
+from app.services import foundry_industry
 from app.services.prime_business_execution import _check_legacy, _event, _json, require_owner_mandate_key
 from app.services.consumer_evidence import ConsumerEvidence, EVENT, build_record, event_id, project, read_consumer_evidence
 from app.services.specialist_triggers import enqueue_prime, enqueue_research, outcome_scope_key
@@ -87,13 +88,45 @@ def prepare_candidate(report_id: str, evidence_id: UUID, db: Session = Depends(g
         raise HTTPException(404, "Report does not contain this research candidate")
     _check_legacy(db, **report["scope"])
     payload = checked_evidence(row, report["scope"], datetime.now(timezone.utc).date(), db=db)
-    research = read_consumer_evidence(db, row, payload, report["scope"], datetime.now(timezone.utc).date())
+    today = datetime.now(timezone.utc).date()
+    research = read_consumer_evidence(db, row, payload, report["scope"], today)
+    industry = foundry_industry.read_industry(db, row, payload, report["scope"], today)
     signal = next(signal for signal in report["observations"]["foundry_signals"]
                   if signal["evidence_id"] == str(evidence_id) and signal["sha256"] == row.digest)
-    if signal.get("consumer_research") != research:
-        raise HTTPException(409, "Run a current specialist report before using consumer research")
-    return {"proposal": {**candidate_fields(row, payload, report_id, consumer_research=research), "persist_decision": False},
+    if signal.get("consumer_research") != research or signal.get("industry_diligence") != industry:
+        raise HTTPException(409, "Run a current specialist report before using revised research")
+    return {"proposal": {**candidate_fields(row, payload, report_id, consumer_research=research,
+                                            industry_diligence=industry), "persist_decision": False},
             "state": "RESEARCH_CANDIDATE", "execution_authorized": False}
+
+
+@router.post("/evidence/{evidence_id}/industry-diligence", status_code=201, dependencies=owner)
+def record_industry(evidence_id: UUID, request: foundry_industry.IndustryDiligence, db: Session = Depends(get_db)):
+    scope = request.scope.model_dump()
+    _check_legacy(db, **scope)
+    if not inspect(db.connection()).has_table(LegacyOrchestrationEvent.__tablename__):
+        raise HTTPException(503, "Industry diligence journal unavailable")
+    row = db.get(FoundryEvidence, evidence_id, with_for_update=True)
+    if row is None:
+        raise HTTPException(404, "Foundry evidence not found")
+    today = current_time().date()
+    evidence = checked_evidence(row, scope, today, db=db)
+    result = foundry_industry.build_record(db, row, evidence, scope, request, today)
+    reference = foundry_industry.event_id(row.id)
+    prior = db.scalar(select(LegacyOrchestrationEvent).filter_by(event_id=reference))
+    if prior is not None:
+        if _json(prior.payload_json, {}) != result:
+            raise HTTPException(409, "Create a new Foundry evidence version to revise industry diligence")
+        return foundry_industry.read_industry(db, row, evidence, scope, today)
+    _event(db, event_id=reference, legacy_instance_id=scope["legacy_instance_id"], event_type=foundry_industry.EVENT,
+           message="Operating research and execution alternatives recorded", payload=result)
+    enqueue_research(db, row.scope_key, reference, current_time().replace(tzinfo=None), roles=DISCOVERY_ROLES)
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(409, "Concurrent industry diligence already recorded") from None
+    return foundry_industry.project(result, evidence)
 
 
 @router.post("/evidence/{evidence_id}/consumer-research", status_code=201, dependencies=owner)

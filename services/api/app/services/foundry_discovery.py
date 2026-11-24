@@ -219,6 +219,7 @@ def review_priority(role: str, metrics: dict) -> str:
 
 def discover(db: Session, role: str, scope: dict, today: date) -> dict:
     from app.services.consumer_evidence import read_consumer_evidence
+    from app.services.foundry_industry import read_industry, research_focus
 
     if not inspect(db.connection()).has_table(FoundryEvidence.__tablename__):
         return {"foundry_signal_status": "SOURCE_SCHEMA_UNAVAILABLE", "foundry_signals": []}
@@ -242,18 +243,26 @@ def discover(db: Session, role: str, scope: dict, today: date) -> dict:
             research = read_consumer_evidence(db, row, payload, scope, today)
         except HTTPException:
             research_holds.append(str(row.id))
+        try:
+            industry = read_industry(db, row, payload, scope, today)
+        except HTTPException:
+            rejected.append(str(row.id))
+            continue
         signals.append({
             "evidence_id": str(row.id), "sha256": row.digest, "source_ref": row.source_ref,
             "title": payload.title, "kind": payload.kind, "evidence_class": payload.evidence_class,
             "priority": review_priority(role, metrics), "economics": metrics, "demand_evidence": demand_evidence(payload),
             **({"consumer_research": research} if research is not None else {}),
+            **({"industry_diligence": industry, "industry_research_focus": research_focus(role, industry)}
+               if industry is not None else {}),
         })
     return {"foundry_signal_status": "OBSERVED" if signals else "NO_ELIGIBLE_SOURCE",
             "foundry_signals": signals, "invalid_foundry_evidence_ids": rejected,
             **({"consumer_research_holds": research_holds} if research_holds else {})}
 
 
-def candidate_fields(row: FoundryEvidence, payload: EvidenceIn, report_id: str, *, consumer_research=None) -> dict:
+def candidate_fields(row: FoundryEvidence, payload: EvidenceIn, report_id: str, *, consumer_research=None,
+                     industry_diligence=None) -> dict:
     return {
         "opportunity_id": f"foundry-{row.id}",
         "source": "scoped_foundry_evidence",
@@ -270,6 +279,7 @@ def candidate_fields(row: FoundryEvidence, payload: EvidenceIn, report_id: str, 
             "foundry_economics": economics(payload),
             **({"discovery_demand": demand_evidence(payload)} if payload.provenance else {}),
             **({"consumer_research": consumer_research} if consumer_research is not None else {}),
+            **({"industry_diligence": industry_diligence} if industry_diligence is not None else {}),
         },
     }
 
@@ -279,11 +289,12 @@ def require_current_candidate(db: Session, proposal: dict, scope: dict, today: d
     inputs = proposal.get("specialist_inputs", {})
     evidence = inputs.get("foundry_evidence")
     if evidence is None and proposal.get("source") != "scoped_foundry_evidence":
-        if "consumer_research" in inputs:
-            raise HTTPException(409, "Consumer research requires exact Foundry provenance")
+        if "consumer_research" in inputs or "industry_diligence" in inputs:
+            raise HTTPException(409, "Research requires exact Foundry provenance")
         return
     from app.pantheon.monitor import verified_report
     from app.services.consumer_evidence import read_consumer_evidence
+    from app.services.foundry_industry import read_industry
 
     try:
         row = db.get(FoundryEvidence, UUID(evidence["id"]), with_for_update=not advisory_only)
@@ -295,16 +306,21 @@ def require_current_candidate(db: Session, proposal: dict, scope: dict, today: d
         signal = next((signal for signal in report["observations"]["foundry_signals"]
                        if signal["evidence_id"] == str(row.id) and signal["sha256"] == row.digest), None)
         research = read_consumer_evidence(db, row, payload, scope, today)
-        if signal is None or signal.get("consumer_research") != research:
+        industry = read_industry(db, row, payload, scope, today, lock=not advisory_only)
+        if (report.get("scope") != scope or signal is None or signal.get("consumer_research") != research
+                or signal.get("industry_diligence") != industry):
             raise ValueError
-        canonical = candidate_fields(row, payload, report_id, consumer_research=research)
+        canonical = candidate_fields(row, payload, report_id, consumer_research=research, industry_diligence=industry)
         if canonical["simulation_fixture"] and not advisory_only:
             raise HTTPException(409, "Simulated Foundry evidence stays in shadow evaluation")
+        if industry is not None and not advisory_only:
+            raise HTTPException(409, "Industry diligence requires separately verified buyer outcomes before operating reliance")
         expected_inputs = canonical.pop("specialist_inputs")
         if (any(proposal.get(key) != value for key, value in canonical.items())
                 or inputs.get("foundry_economics") != expected_inputs["foundry_economics"]
                 or inputs.get("discovery_demand") != expected_inputs.get("discovery_demand")
-                or inputs.get("consumer_research") != expected_inputs.get("consumer_research")):
+                or inputs.get("consumer_research") != expected_inputs.get("consumer_research")
+                or inputs.get("industry_diligence") != expected_inputs.get("industry_diligence")):
             raise ValueError
         return payload
     except (AttributeError, KeyError, TypeError, ValueError):

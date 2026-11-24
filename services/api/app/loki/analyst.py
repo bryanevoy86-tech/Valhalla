@@ -29,6 +29,24 @@ def _consumer_findings(research, field):
                      "Check cohort selection, transparent terms, pricing uncertainty, and transfer to this market before reliance.")]
 
 
+def _industry_findings(research, field):
+    if (not isinstance(research, dict) or research.get("cost_basis") != "DECLARED_ASSUMPTIONS_ONLY"
+            or research.get("external_authority") is not False or research.get("customer_demand_verified") is not False):
+        return [_finding("industry_claim_overreach", field,
+                         "Operating references and assumptions cannot verify paid demand or authorize execution.", critical=True)]
+    options = research.get("execution_options")
+    cost_keys = ("setup_minor", "monthly_minor", "setup_hours", "monthly_hours", "loaded_hour_minor", "year_one_cost_minor")
+    if (not isinstance(options, list) or len(options) != 2
+            or any(not isinstance(item, dict) or any(type(item.get(key)) is not int or item[key] < 0 for key in cost_keys)
+                   or item["year_one_cost_minor"] != item["setup_minor"] + 12 * item["monthly_minor"]
+                   + (item["setup_hours"] + 12 * item["monthly_hours"]) * item["loaded_hour_minor"]
+                   for item in options)
+            or sorted(str(item.get("kind")) for item in options) != ["BUILD", "BUY"]):
+        return [_finding("industry_cost_conflict", field, "Build and buy costs must reconcile independently.", critical=True)]
+    return [_finding("industry_execution_uncertainty", field,
+                     "Verify buyer behavior, labor estimates, provider terms, failure handling and uncovered operating facets before reliance.")]
+
+
 def _commercial_findings(case):
     field = "specialist_inputs/commercial_validation"
     costs = ("labour_minor", "tools_and_fees_minor", "reserve_minor", "acquisition_minor")
@@ -124,6 +142,8 @@ def challenge(item: dict) -> IndependentReviewIn:
                                          "Independently verify comparability, source rights and buyer-level evidence. Public context is advisory."))
         if isinstance(specialist, dict) and "consumer_research" in specialist:
             findings.extend(_consumer_findings(specialist["consumer_research"], "specialist_inputs/consumer_research"))
+        if isinstance(specialist, dict) and "industry_diligence" in specialist:
+            findings.extend(_industry_findings(specialist["industry_diligence"], "specialist_inputs/industry_diligence"))
         if isinstance(specialist, dict) and "commercial_validation" in specialist:
             findings.extend(_commercial_findings(specialist["commercial_validation"]))
         lower = _number(proposal, "expected_margin_low")
@@ -250,6 +270,9 @@ def challenge(item: dict) -> IndependentReviewIn:
                     if isinstance(signal, dict) and "consumer_research" in signal:
                         findings.extend(_consumer_findings(signal["consumer_research"],
                                                            f"observations/foundry_signals/{index}/consumer_research"))
+                    if isinstance(signal, dict) and "industry_diligence" in signal:
+                        findings.extend(_industry_findings(signal["industry_diligence"],
+                                                          f"observations/foundry_signals/{index}/industry_diligence"))
             acquisition = sources.get("acquisition_rehearsal")
             if isinstance(acquisition, list) and any(
                 isinstance(item, dict) and (item.get("basis") == "EVIDENCE_HOLD"

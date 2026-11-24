@@ -157,9 +157,11 @@ def run_assignment(db: Session, role: str, *, now=None, assignment_id=None, exac
     due = assignment.next_due_at <= now
     economic_event = bool(event and event.startswith("ECON-"))
     discovery_event = bool(event and event.startswith("DISCOVERY-"))
+    industry_event = bool(event and event.startswith("FOUNDRY-INDUSTRY-"))
     withdrawal_event = bool(event and event.startswith(WITHDRAWAL_PREFIX))
     trigger_type = ("FOUNDRY_SOURCE_WITHDRAWN" if withdrawal_event else
                     "ECONOMIC_REASSESSMENT" if economic_event else "SOURCE_DISCOVERY" if discovery_event
+                    else "INDUSTRY_DILIGENCE" if industry_event
                     else "VERIFIED_OUTCOME" if event else "CADENCE")
     event_id = trigger_report_id(assignment.id, event or assignment.next_due_at.isoformat())
     if event:
@@ -205,7 +207,7 @@ def run_assignment(db: Session, role: str, *, now=None, assignment_id=None, exac
     }
     try:
         _check_legacy(db, **assignment.scope)
-        outcome_trigger = event if not (withdrawal_event or economic_event or discovery_event) else None
+        outcome_trigger = event if not (withdrawal_event or economic_event or discovery_event or industry_event) else None
         outcomes = verified_internal_outcomes(db, **assignment.scope, trigger_event_id=outcome_trigger)
         if economic_event and (not economic_ready(db) or not verify_trigger(db, assignment.scope, event)):
             raise HTTPException(409, "Economic evidence trigger could not be revalidated")
@@ -233,6 +235,11 @@ def run_assignment(db: Session, role: str, *, now=None, assignment_id=None, exac
                              forecast_after=forecast_after)
         if role in DISCOVERY_ROLES:
             facts.update(discover(db, role, assignment.scope, now.date()))
+        if industry_event and not any(
+            signal["evidence_id"] == event.removeprefix("FOUNDRY-INDUSTRY-") and "industry_diligence" in signal
+            for signal in facts.get("foundry_signals", ())
+        ):
+            raise HTTPException(409, "Industry diligence trigger could not be revalidated")
         if role in {"FREYJA", "BRAGI", "ODIN", "HUGINN", "NJORD", "NORNS", "TYR", "LOKI", "HEIMDALL", "MIMIR"}:
             from app.services.acquisition_comparison import observe_reviewed_comparisons
             from app.services.acquisition_rehearsal import observe_scoped_acquisition

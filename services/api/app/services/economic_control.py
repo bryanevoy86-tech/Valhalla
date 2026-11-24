@@ -12,6 +12,7 @@ from app.models.economic_control import EconomicOperation, EconomicPool, Economi
 from app.models.foundry_evidence import FoundryEvidence
 from app.schemas.economic_control import Containment, Liquidity, Mandate, Obligation, Opportunity, Performance, Plan
 from app.services.foundry_discovery import checked_evidence, demand_evidence, economic_blockers, economics
+from app.services.foundry_industry import read_industry
 from app.services.specialist_triggers import enqueue_prime, enqueue_research, outcome_scope_key
 from app.services.universal_opportunity_evaluator import rank_economic_options
 
@@ -230,6 +231,10 @@ def comparison(db, state, scope, currency, available, today, *, lock_sources=Fal
                 foundry = checked_evidence(row, scope, today, db=db)
                 if foundry.currency != currency:
                     raise HTTPException(409, "Foundry currency mismatch")
+                industry = read_industry(db, row, foundry, scope, today, lock=lock_sources)
+                if industry is not None:
+                    data["industry_diligence"] = industry
+                    blockers.append("INDUSTRY_DEMAND_UNVERIFIED")
                 measures = economics(foundry)
                 acquisition = measures.get("acquisition") or {}
                 blockers.extend(economic_blockers(foundry.kind, measures))
