@@ -8,6 +8,12 @@ DO NOT restart the project, regenerate completed packs, or treat API presence as
 
 Use the current head of draft PR #4 and confirm the latest required CI run. Use the current workstream index, integration matrix and latest ledger verification to choose unfinished work. Dated checkpoints and original prompts are historical records. The same index supersedes earlier execution orders in the root start page and the finish passes. There are 50 acceptance contracts, 53 task entries and seven construction packages.
 
+## Commercial opportunity comparison — November 23
+
+Incoming draft `9ab699850b71b7c01d3753c67733c8f8627b26e6` passed [hosted checks](https://github.com/bryanevoy86-tech/Valhalla/actions/runs/45295298439). The existing opportunity evaluator and separately keyed Loki review queue now have an executable rehearsal for six CAD offer hypotheses. A bounded local consistency check flags false authority, incomplete or invalid costs, nonpositive base contribution and downside loss. The checked-in test stores and verifies the independent receipts inside its disposable database. It authorizes no effects or commercial action.
+
+The proposed flagship is a fixed-scope quote-to-invoice setup for exterior contractors with optional bounded monthly support. No business selection is recorded. Keep the CA$29 kit on its independent fixture lane. Next obtain the scoped pilot decision, actual isolated Preview entitlement and origin pair, named operator and separate trial authorization. Keep the complete architecture and existing acceptance statuses in place.
+
 ## First CAD offer — sandbox checkout preparation
 
 Verified incoming head `1bc1f3c1030039bbb9340656e5c0ee89f0beb5fa` passed [hosted workflow 45293901326](https://github.com/bryanevoy86-tech/Valhalla/actions/runs/45293901326). Read the [current draft checks](https://github.com/bryanevoy86-tech/Valhalla/pull/4/checks) for the commit carrying this checkpoint and the reproducible local-gate artifacts.

@@ -1225,3 +1225,5 @@ The acceptance matrix retains 13 P0 and 39 total criteria requiring internal cod
 - The paid product source widget and API now preserve ZIP, PDF and TXT download extensions. The browser uses the exact order ID for the name and accepts only allowlisted types; malformed headers retain the legacy binary filename. Carry the source change into the separately authorized unpublished WeWeb Preview before a pilot.
 
 - Added a dual-key, read-only sandbox payment plan from the existing exact Foundry listing, disposable buyer and operator-approved tenant/order inputs. The candidate rehearsal feeds the computed metadata into the signed local Stripe fixture and verifies blocked or wrong-scope requests. Provider commissioning and all launch authorities remain open.
+
+- November 23 commercial readiness. Added independent CAD base/downside challenge to the existing Loki analyst and a six-case economic evaluator/receipt rehearsal. Each local receipt preserves objections and yields no external authority. No acceptance contract is closed, and all hosted, provider and owner commissioning holds remain.

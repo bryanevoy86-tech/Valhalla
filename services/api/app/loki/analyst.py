@@ -29,6 +29,35 @@ def _consumer_findings(research, field):
                      "Check cohort selection, transparent terms, pricing uncertainty, and transfer to this market before reliance.")]
 
 
+def _commercial_findings(case):
+    field = "specialist_inputs/commercial_validation"
+    costs = ("labour_minor", "tools_and_fees_minor", "reserve_minor", "acquisition_minor")
+    keys = ("price_minor", *costs, "stress_labour_minor", "stress_acquisition_minor")
+    if (not isinstance(case, dict) or case.get("basis") != "CAD_RESEARCH_HYPOTHESIS"
+            or case.get("currency") != "CAD" or case.get("verified_customer_outcomes") is not False
+            or case.get("external_action_authorized") is not False):
+        return [_finding("commercial_authority_conflict", field,
+                         "Market hypotheses cannot assert verified customer outcomes or action authority.", critical=True)]
+    if (any(type(case.get(key)) is not int or case[key] < 0 for key in keys)
+            or case["price_minor"] == 0 or case["stress_labour_minor"] < case["labour_minor"]
+            or case["stress_acquisition_minor"] < case["acquisition_minor"]):
+        return [_finding("commercial_cost_basis", field,
+                         "Provide a positive CAD price, complete base costs and a downside case with no lower labour or acquisition cost.",
+                         critical=True)]
+    base = case["price_minor"] - sum(case[key] for key in costs)
+    downside = base + case["labour_minor"] + case["acquisition_minor"] - (
+        case["stress_labour_minor"] + case["stress_acquisition_minor"]
+    )
+    findings = [_finding("customer_demand_unproven", field,
+                         "Check willingness to pay, actual acquisition cost and repeat demand in the target cohort before commercial reliance.")]
+    if base <= 0:
+        findings.append(_finding("commercial_base_loss", field, "Base contribution is nonpositive.", critical=True))
+    elif downside <= 0:
+        findings.append(_finding("commercial_stress_loss", field,
+                                 "Higher labour and acquisition costs eliminate contribution. Cap exposure and set a stop condition."))
+    return findings
+
+
 def challenge(item: dict) -> IndependentReviewIn:
     kind, proposal = item["artifact_type"], item["raw_input"]
     digest = artifact_digest(kind, item["reference"], proposal)
@@ -39,6 +68,8 @@ def challenge(item: dict) -> IndependentReviewIn:
         specialist = proposal.get("specialist_inputs")
         if isinstance(specialist, dict) and "consumer_research" in specialist:
             findings.extend(_consumer_findings(specialist["consumer_research"], "specialist_inputs/consumer_research"))
+        if isinstance(specialist, dict) and "commercial_validation" in specialist:
+            findings.extend(_commercial_findings(specialist["commercial_validation"]))
         lower = _number(proposal, "expected_margin_low")
         upper = _number(proposal, "expected_margin_high")
         cost = _number(proposal, "estimated_test_cost")

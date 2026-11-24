@@ -1901,6 +1901,7 @@
         "services/api/app/loki/analyst.py",
         "services/api/app/routers/loki_worker.py",
         "services/api/tests/test_loki_independent_receipt.py",
+        "services/api/tests/test_commercial_launch_rehearsal.py",
         "services/api/app/services/universal_opportunity_evaluator.py",
         "services/api/tests/test_loki_audit_fail_closed.py",
         "services/api/tests/test_prime_control_and_decision_integrity.py",
