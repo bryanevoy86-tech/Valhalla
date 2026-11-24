@@ -40,13 +40,23 @@ def main() -> int:
     if args.role in SIGNED_ROLES and stage_labels & production_labels:
         parser.exit(2, "Signed specialist production worker commissioning is unavailable.\n")
     staging = "staging" in stage_labels
+    restricted_login = None
     if staging:
+        if os.getenv("VALHALLA_STAGING_TRIAL_ENABLED") != "1":
+            parser.exit(2, "Staging worker hold is active.\n")
         sys.path.insert(0, str(Path(__file__).resolve().parents[4] / "scripts"))
         from staging_preflight import SPECIALISTS, check
         from app.pantheon.staging_access import require_restricted_session
 
         role = args.role.lower()
-        if role not in SPECIALISTS or check(os.environ, role):
+        if role in SPECIALISTS:
+            restricted_login = SPECIALISTS[role]
+            preflight_role = role
+        elif (args.role == "MIMIR" and os.getenv("VALHALLA_STAGING_PANTHEON_ROLE") == args.role):
+            preflight_role = "worker"
+        else:
+            parser.exit(2, "Role is not commissioned for staging.\n")
+        if check(os.environ, preflight_role):
             parser.exit(2, "Specialist staging environment did not pass restricted preflight.\n")
 
     stop = threading.Event()
@@ -55,8 +65,8 @@ def main() -> int:
 
     def tick() -> dict:
         with SessionLocal.session_factory() as db:
-            if staging:
-                require_restricted_session(db, SPECIALISTS[role])
+            if restricted_login is not None:
+                require_restricted_session(db, restricted_login)
             return run_scheduled_assignment(db, args.role, signing_key=signer)
 
     return poll(tick, stop, args.poll_seconds, once=args.once)

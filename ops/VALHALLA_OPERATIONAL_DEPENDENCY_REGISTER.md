@@ -58,6 +58,11 @@ These are assumed Canadian-dollar planning rates and time per handled pilot exce
 - The [commissioning preview](../services/api/app/services/release_preview.py) persists independently signed evidence references to the current scope, channel and authority digest. It verifies expiry and emergency stop. The positive result is owner scope review. The caller-supplied authority digest is an evidence binding and does not validate a standing effect mandate. The live gate remains held. Provider digest references still require independent native readback and a durable real-outcome record before reliance.
 - [Owner approval checklist](../docs/VALHALLA_COMMERCIAL_COMMISSIONING_SHEET.md#first-observable-pilot-approval-checklist) lists exactly who authorizes and runs each external test. Gmail profile readback uses a configured test mailbox without fetching content or sending. The actual identity, contracts, merchant and bank outcomes and customer evidence still require separately authorized external access.
 
+### Isolated staging execution checkpoint
+
+- Resolved the bundled MIMIR staging startup conflict without widening the signed-role startup path. The [launcher](../scripts/staging_workers.sh) holds all four process modes on the trial flag and uses separate ODIN and NJORD entry points. The [startup regression](../services/api/tests/test_staging_pantheon_worker.py) covers positive MIMIR, ODIN and NJORD wiring, incorrect role, missing trial authority and mismatched signed-role login.
+- The [operator handoff](../docs/VALHALLA_COMMERCIAL_COMMISSIONING_SHEET.md#operator-execution-order) adds explicit native read-only operations, a permission and cost boundary per test, and elapsed-trial reconciliation and shutdown. Staging is held pending the isolated resource and Preview entitlements and exact origins. Native observations, the hosted trial and all commercial activation remain externally gated.
+
 ## 04. `api_wiring` (P0)
 
 - **Mandated duty and operator boundary.** Register and check required APIs. Release integrator verifies deployed route and rollback.

@@ -1299,3 +1299,8 @@ The acceptance matrix retains 13 P0 and 39 total criteria requiring internal cod
 
 - Added staged ODIN and NJORD credential separation, exact assignment and report policies and runtime PostgreSQL credential checks. Kept enrollment and revocation in the controlled API and serialized current identity reliance without worker journal update privileges.
 - Added durable, signed, scoped commissioning evidence and positive owner-review preview with emergency-stop denial. The live commercial gate remains closed. Added a read-only exact test Gmail profile check and completed the operator/action checklist for external provider commissioning.
+
+## November 24 isolated staging handoff
+
+- Reconciled the worker launcher with the staging Pantheon guard. Bundled MIMIR and separate signed ODIN and NJORD startup share the explicit staging trial hold. Specialist database and signing boundaries remain in place.
+- Updated the canonical operator package with resource costs, clean CORS, provider-native read-only tests, elapsed trial, rollback, teardown and separate approvals. No external resources, permissions or provider state changed.

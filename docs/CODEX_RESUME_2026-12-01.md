@@ -8,6 +8,12 @@ DO NOT restart the project, regenerate completed packs, or treat API presence as
 
 Use the current head of draft PR #4 and confirm the latest required CI run. Use the current workstream index, integration matrix and latest ledger verification to choose unfinished work. Dated checkpoints and original prompts are historical records. The same index supersedes earlier execution orders in the root start page and the finish passes. There are 50 acceptance contracts, 53 task entries and seven construction packages.
 
+## Isolated staging handoff — November 24
+
+Start with the [operator execution order](VALHALLA_COMMERCIAL_COMMISSIONING_SHEET.md#operator-execution-order) and [provisioning settings](VALHALLA_STAGING_PROVISIONING.md#exact-proposed-configuration). Keep commercial effects held. The next external receipt is the assigned isolated HTTPS origin pair, positive and negative credential-free CORS results and three disposable browser sign-ins on the reviewed commit. The authorized operator and reviewer custodian, WeWeb entitlement, assigned origins, actual resource IDs and pricing still need confirmation. Separate approvals apply to provider-native observations, the elapsed trial, real research and commercial operation.
+
+The bundled MIMIR process now passes its intended staging startup guard. ODIN and NJORD launch independently with their original restricted identity checks. The common staging trial flag blocks each process until approved. No hosted trial or native provider test ran in this batch.
+
 ## First observable pilot commissioning — November 24
 
 Use the [owner commissioning checklist](VALHALLA_COMMERCIAL_COMMISSIONING_SHEET.md#first-observable-pilot-approval-checklist). Staging ODIN and NJORD startup validates separate login names, no enrollment/owner/provider secrets, expected effective database restrictions and row policies before polling. The isolated SQL permission setup needs the exact approved assignments. A signed acceptance packet can reach scoped owner review without authorizing any effect. The Gmail path verifies a test mailbox through read-only metadata. External entitlements, native receipts, genuine research and actual bank evidence remain pending. Production release, real writes and spending stay held.

@@ -8,6 +8,10 @@ if [[ "${VALHALLA_STAGING_TRIAL_ENABLED:-}" != 1 ]]; then
   printf '%s\n' 'Staging worker hold is active.' >&2
   exit 2
 fi
+case "$role" in
+  odin) exec python services/api/tools/cron/pantheon_worker.py --role ODIN ;;
+  njord) exec python services/api/tools/cron/pantheon_worker.py --role NJORD ;;
+esac
 jobs=()
 stop_children() {
   trap - EXIT
@@ -27,8 +31,12 @@ start_lane() {
 }
 case "$role" in
   worker)
+    if [[ "${VALHALLA_STAGING_PANTHEON_ROLE:-}" != MIMIR ]]; then
+      printf '%s\n' 'The bundled staging worker requires the MIMIR lane.' >&2
+      exit 2
+    fi
     start_lane foundry_discovery_worker.py
-    start_lane pantheon_worker.py --role "${VALHALLA_STAGING_PANTHEON_ROLE:?staging specialist required}"
+    start_lane pantheon_worker.py --role MIMIR
     start_lane specialist_schedule_worker.py
     start_lane business_factory_worker.py
     ;;
