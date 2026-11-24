@@ -214,9 +214,19 @@ def grant_mandate(run_id, request, db, *, upstream_sha256=None):
         **scope, mandate_id=listing.mandate_id, product_id=listing.product_id, ttl_seconds=request.ttl_seconds,
         max_uses=1, max_price_cents_cad=listing.price_cents_cad,
     ))
+    prediction = {
+        "basis": "DECLARED_NO_REFUND_SCENARIO", "cohort": "DISPOSABLE_OPERATING_FIXTURE", "currency": "CAD",
+        "playbook": listing.model_dump(mode="json", include={"product_id", "artifact_id", "price_cents_cad"}),
+        "expected_contribution_minor": listing.price_cents_cad - request.cost_minor,
+        "expected_cost_minor": request.cost_minor,
+        "alternative": {"name": "FULL_REFUND", "contribution_minor": -request.cost_minor},
+        "uncertainty": "REFUND_RATE_UNVERIFIED",
+        "deadline_at": datetime.fromtimestamp(grant["expires_at_epoch"], timezone.utc).isoformat(),
+    }
     result = add_receipt(db, run_id, "mandate", scope, {
         **request.model_dump(mode="json"), "listing": listing.model_dump(mode="json"), "grant": grant,
         "plan_sha256": plan["sha256"], "prime_decision": decision,
+        "prediction": prediction,
         **({"upstream_sha256": upstream_sha256} if upstream_sha256 else {}),
     }, upstream_sha256)
     commit(db)
@@ -362,9 +372,55 @@ def finish(db, run_id, chain, mandate, scope, order_id):
     ), db, durable=False)
     evidence = {"basis": "ECONOMIC_PERFORMANCE_FIXTURE", "record_id": str(performance["id"]),
                 "sha256": performance["sha256"], "period_net_minor": proof["fixture_contribution_minor"]}
-    return {"mimir_claim": verify_mimir_claims(db, scope, [evidence])[0],
+    result = {"mimir_claim": verify_mimir_claims(db, scope, [evidence])[0],
             "support_receipt": proof["support_resolution"]["event_id"], "checkout_sha256": proof["sha256"],
             "outstanding_obligation_minor": 0, "uncommitted_cash_minor": 0, "commercial_revenue_verified": False}
+    if "prediction" in mandate:
+        from app.pantheon.forecasts import operating_contribution_error
+
+        observed_at = datetime.now(timezone.utc).isoformat()
+        result["prediction_observed_at"] = observed_at
+        result["norns_contribution_error"] = operating_contribution_error(
+            mandate["prediction"], proof["fixture_contribution_minor"], observed_at,
+        )
+    return result
+
+
+def verify_operating_variance(db, scope, claim):
+    from app.pantheon.forecasts import operating_contribution_error
+
+    try:
+        if set(claim) != {"basis", "run_id", "sha256"}:
+            raise ValueError
+        run_id = UUID(claim["run_id"])
+        chain = read_run(db, run_id)
+        if chain["mandate"]["scope"] != scope or chain["outcome"]["sha256"] != claim["sha256"]:
+            raise ValueError
+        mandate = chain["mandate"]["evidence"]
+        outcome = chain["outcome"]["evidence"]
+        if mandate.get("upstream_sha256"):
+            from app.routers.foundry_source_rehearsal import source_evidence, history, head
+
+            source_chain = history(db, run_id)
+            handoff = source_chain["handoff"]
+            source = head(source_chain)
+            if handoff["sha256"] != mandate["upstream_sha256"] or handoff["evidence"]["source"] != source:
+                raise ValueError
+            source_evidence(db, source, scope)
+        proof = outcome["mimir_claim"]
+        confirmed = verify_mimir_claims(db, scope, [{key: proof[key] for key in (
+            "basis", "record_id", "sha256", "period_net_minor",
+        )}])[0]
+        prediction = mandate["prediction"]
+        observed_at = outcome["prediction_observed_at"]
+        variance = operating_contribution_error(prediction, confirmed["period_net_minor"], observed_at)
+        if (variance != outcome["norns_contribution_error"] or confirmed != proof
+                or not chain["statement"]["recorded_at"] <= observed_at <= chain["outcome"]["recorded_at"]):
+            raise ValueError
+    except (KeyError, TypeError, ValueError):
+        raise HTTPException(409, "Mimir operating variance lacks intact scoped evidence") from None
+    return {**claim, "run_id": str(run_id), "prediction": prediction, "variance": variance,
+            "evidence_scope": "DISPOSABLE_OPERATING_FIXTURE_ONLY"}
 
 
 @router.post("/{run_id}/advance", dependencies=[Depends(require_prime_control_key)])
@@ -374,6 +430,9 @@ def advance(run_id: UUID, db: Session = Depends(get_db)):
     if "outcome" in chain:
         claim = chain["outcome"]["evidence"]["mimir_claim"]
         verify_mimir_claims(db, scope, [{k: claim[k] for k in ("basis", "record_id", "sha256", "period_net_minor")}])
+        if "prediction" in mandate:
+            verify_operating_variance(db, scope, {"basis": "FOUNDRY_OPERATING_VARIANCE", "run_id": str(run_id),
+                                                  "sha256": chain["outcome"]["sha256"]})
         return {"status": "completed", "receipt": chain["outcome"]}
     if "listing" not in chain:
         listing = ListingDraftRequest.model_validate(mandate["listing"])

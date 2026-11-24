@@ -100,7 +100,8 @@ def shadow_report_digest(event_id: str, report: dict) -> str:
 def _describe(db: Session, row: PrimeSpecialistSchedule) -> dict:
     report = _report(db, row.id, row.last_report_event_id) if row.last_report_event_id else None
     economic = or_(PrimeScheduleTrigger.event_id.startswith("ECON-"),
-                   PrimeScheduleTrigger.event_id.startswith(WITHDRAWAL_PREFIX))
+                   PrimeScheduleTrigger.event_id.startswith(WITHDRAWAL_PREFIX),
+                   PrimeScheduleTrigger.event_id.startswith("DISCOVERY-"))
     queued = db.execute(select(economic, PrimeScheduleTrigger.failure_code, func.count()).where(
         PrimeScheduleTrigger.schedule_id == row.id,
     ).group_by(economic, PrimeScheduleTrigger.failure_code)).all()
@@ -189,6 +190,9 @@ def attach_operating_reassessment(db, payload, scope, today, outcomes, report):
     checkout = scoped_checkout_learning(db, scope, outcomes, artifact_id=artifact_id if isinstance(artifact_id, str) else None)
     capital = specialist_economics(db, "HEIMDALL", scope, today).get("economic_reassessment")
     blockers = set(capital["blockers"] if capital else ())
+    if any(row["opportunity_id"] == opportunity.opportunity_id
+           for row in report.get("source_revision", {}).get("affected_decisions", ())):
+        blockers.add("PRIOR_DECISION_SOURCE_REVISED")
     if capital is None:
         from app.heimdall.authority import is_live
         from app.services.stripe_bank_booking import scoped_bank_blockers
@@ -278,8 +282,10 @@ def run_due_schedule(db: Session, *, now: datetime | None = None) -> dict:
     event_id = legacy_outcome or (queued.event_id if queued is not None else None)
     economic_id = event_id if queued is not None and event_id.startswith("ECON-") else None
     withdrawal_id = event_id if queued is not None and event_id.startswith(WITHDRAWAL_PREFIX) else None
-    outcome_id = None if (economic_id or withdrawal_id) else event_id
+    revision_id = event_id if queued is not None and event_id.startswith("DISCOVERY-") else None
+    outcome_id = None if (economic_id or withdrawal_id or revision_id) else event_id
     trigger_field = ("trigger_source_withdrawal_id" if withdrawal_id else
+                     "trigger_source_revision_id" if revision_id else
                      "trigger_economic_event_id" if economic_id else "trigger_outcome_event_id")
     elapsed_slots = (now - row.next_due_at) // timedelta(seconds=row.cadence_seconds) if timed else 0
     slot = row.next_due_at.replace(tzinfo=timezone.utc).isoformat() if timed else None
@@ -324,6 +330,8 @@ def run_due_schedule(db: Session, *, now: datetime | None = None) -> dict:
         report.update(trigger="ECONOMIC_REASSESSMENT", trigger_economic_event_id=economic_id)
     if withdrawal_id:
         report.update(trigger="FOUNDRY_SOURCE_WITHDRAWN", trigger_source_withdrawal_id=withdrawal_id)
+    if revision_id:
+        report.update(trigger="FOUNDRY_SOURCE_REVISED", trigger_source_revision_id=revision_id)
     try:
         _check_legacy(db, **scope)
         if withdrawal_id and (not payload.on_economic_reassessment or not verify_withdrawal(db, scope, withdrawal_id)):
@@ -334,6 +342,12 @@ def run_due_schedule(db: Session, *, now: datetime | None = None) -> dict:
             if (not payload.on_economic_reassessment or not economic_ready(db)
                     or not verify_trigger(db, scope, economic_id)):
                 raise HTTPException(409, "Economic trigger evidence failed revalidation")
+        if revision_id:
+            from app.services.foundry_intake import source_revision
+
+            if not payload.on_economic_reassessment:
+                raise HTTPException(409, "Source reassessment is not enrolled")
+            report["source_revision"] = source_revision(db, revision_id, scope, now.date())
         outcomes = verified_internal_outcomes(db, **scope, trigger_event_id=outcome_id)
         if outcome_id and not any(item["outcome_event_id"] == outcome_id for item in outcomes):
             raise HTTPException(status_code=409, detail="Trigger outcome evidence failed revalidation")

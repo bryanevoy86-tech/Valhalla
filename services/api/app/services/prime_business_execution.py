@@ -979,6 +979,11 @@ def verify_mimir_claims(db: Session, scope: dict, claims: Any) -> list[dict]:
 
             proof = verify_forecast_claim(db, scope, claim)
             identity = ("norns_factory_deadline", proof["forecast_id"])
+        elif claim.get("basis") == "FOUNDRY_OPERATING_VARIANCE":
+            from app.routers.foundry_operating_rehearsal import verify_operating_variance
+
+            proof = verify_operating_variance(db, scope, claim)
+            identity = ("foundry_operating_variance", proof["run_id"])
         else:
             if (set(claim) != {"outcome_event_id", "artifact_sha256", "sales_verified"}
                     or not isinstance(claim["outcome_event_id"], str)

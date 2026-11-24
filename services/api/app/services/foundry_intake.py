@@ -19,7 +19,7 @@ from app.schemas.market_intelligence import StrictModel
 from app.services.foundry_discovery import EvidenceIn, SCOPE_FIELDS
 from app.services.market_intelligence import authorized_source
 from app.services.prime_business_execution import _check_legacy, _emergency_stop_active
-from app.services.specialist_triggers import enqueue_research, outcome_scope_key
+from app.services.specialist_triggers import enqueue_prime, enqueue_research, outcome_scope_key
 
 
 class Intake(StrictModel):
@@ -133,6 +133,11 @@ def materialize(db, job, now):
     from app.services.foundry_discovery import DISCOVERY_ROLES
 
     enqueue_research(db, row.scope_key, f"DISCOVERY-{job.id}", now, roles=DISCOVERY_ROLES)
+    if db.scalar(select(FoundryEvidence.id).where(
+        FoundryEvidence.scope_key == row.scope_key, FoundryEvidence.source_ref == source_ref,
+        FoundryEvidence.observed_on < row.observed_on,
+    ).limit(1)) is not None:
+        enqueue_prime(db, row.scope_key, f"DISCOVERY-{job.id}", now, subscription="on_economic_reassessment")
     db.flush()
 
 
@@ -176,3 +181,41 @@ def verify_intake_trigger(db, event, scope, today):
         return checked_evidence(row, scope, today, db=db).provenance is not None
     except (HTTPException, ValueError):
         return False
+
+
+def source_revision(db, event, scope, today):
+    """Identify which source-bound decisions require review; do not rewrite them."""
+    from app.models.god_verdicts import GodVerdict
+    from app.services.foundry_discovery import SCOPE_FIELDS, checked_evidence
+
+    if not verify_intake_trigger(db, event, scope, today):
+        raise HTTPException(409, "Source revision failed revalidation")
+    current = db.get(FoundryEvidence, UUID(event.removeprefix("DISCOVERY-")))
+    checked_evidence(current, scope, today, db=db)
+    prior_rows = db.scalars(select(FoundryEvidence).where(
+        FoundryEvidence.scope_key == current.scope_key, FoundryEvidence.source_ref == current.source_ref,
+        FoundryEvidence.observed_on < current.observed_on,
+    ).order_by(FoundryEvidence.observed_on.desc(), FoundryEvidence.id).limit(26)).all()
+    prior = {}
+    fields = ("unit_price", "variable_cost_per_unit", "acquisition_cost_per_unit",
+              "monthly_units", "monthly_fixed_cost", "startup_capital", "test_cost", "acquisition", "provenance")
+    for row in prior_rows[:25]:
+        if (not isinstance(row.payload, dict) or any(row.payload.get(key) != scope[key] for key in SCOPE_FIELDS)
+                or row.digest != artifact_digest("foundry_evidence", str(row.id), row.payload)):
+            raise HTTPException(409, "Previous source observation failed integrity")
+        prior[str(row.id)] = {"sha256": row.digest, "changed_fields": [
+            key for key in fields if row.payload.get(key) != current.payload.get(key)
+        ]}
+    affected = []
+    if prior and inspect(db.connection()).has_table(GodVerdict.__tablename__):
+        decisions = db.scalars(select(GodVerdict).where(
+            GodVerdict.metadata_json["foundry_evidence_id"].as_string().in_(prior),
+        ).order_by(GodVerdict.created_at.desc(), GodVerdict.id).limit(26)).all()
+        affected = [{"verdict_id": str(row.id), "opportunity_id": row.metadata_json["opportunity_id"],
+                     "previous_evidence_id": row.metadata_json["foundry_evidence_id"]}
+                    for row in decisions[:25] if row.metadata_json.get("foundry_evidence_sha256")
+                    == prior[row.metadata_json["foundry_evidence_id"]]["sha256"]]
+    else:
+        decisions = []
+    return {"new_evidence_id": str(current.id), "new_sha256": current.digest, "superseded": prior,
+            "affected_decisions": affected, "truncated": len(prior_rows) > 25 or len(decisions) > 25}

@@ -537,6 +537,7 @@ def evaluate_generic_opportunity(
     decision_model: str,
     reveal_historical_outcomes: bool,
     expected_outcome_class: str,
+    operating_lessons: tuple = (),
 ) -> dict[str, Any]:
     specialist = specialist_analysis(payload)
     loki_objections = universal_loki_objections(payload, specialist)
@@ -696,6 +697,11 @@ def evaluate_generic_opportunity(
             hard_gate_reasons.append("SURVIVAL_CAPITAL_UNDEFINED")
         if point_of_no_return_missing:
             final_decision = "research_more"
+
+    if operating_lessons:
+        hard_gate_reasons.append("REVIEW_SCOPED_OPERATING_FORECAST_SHORTFALL")
+        if final_decision in {"proceed", "research_more"}:
+            final_decision = "hold"
 
     current_exit_level = _infer_exit_level(payload, final_decision, point_of_no_return, blast_radius)
     recovery_exit_protocol["current_level"] = current_exit_level

@@ -1585,3 +1585,79 @@ def test_industry_diligence_wakes_specialists_and_keeps_fleet_options_advisory(e
     assert client.get(candidate_url).status_code == 409
     after = post(client, "assessment", SCOPE, 200)
     assert all("FOUNDRY_SOURCE_UNAVAILABLE" in x["blockers"] for x in after["alternatives"])
+
+
+def test_source_revision_wakes_prime_for_exact_prior_decision(economic_client):
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+    from app.models.completion_registry import KnowledgeRegistryItem, LearningFeedbackRecord, SourceRegistryItem
+    from app.models.foundry_evidence import FoundryEvidence
+    from app.models.foundry_intake import FoundryIntakeJob
+    from app.models.god_verdicts import GodVerdict
+    from app.models.media_engine import MediaContent
+    from app.models.prime_specialist_schedule import PrimeScheduleTrigger, PrimeSpecialistSchedule
+    from app.routers.prime_specialist_schedules import run_due_schedule
+    from app.services import foundry_intake
+
+    client, engine = economic_client
+    for model in (KnowledgeRegistryItem, LearningFeedbackRecord, SourceRegistryItem, FoundryEvidence, FoundryIntakeJob,
+                  GodVerdict, MediaContent, PrimeScheduleTrigger, PrimeSpecialistSchedule):
+        model.__table__.create(engine, checkfirst=True)
+    now = foundry_intake.current_time()
+    today = now.date()
+    publisher = Ed25519PrivateKey.generate()
+    with Session(engine) as db:
+        db.add(SourceRegistryItem(source_id="revised-fleet-source", canonical_name="Disposable fleet observation",
+            source_type="DEMAND_EXPORT", data_class="live", jurisdiction=SCOPE["jurisdiction"], terminal_state="PASS",
+            mode_allowlist_json='["practice"]', permission_status="authorized", license_status="consented_internal_use",
+            governance_status="approved", rights_statement_url="https://example.invalid/rights",
+            provenance_method="ed25519:" + publisher.public_key().public_bytes_raw().hex(), freshness_sla_hours=72))
+        db.commit()
+
+    def observation(day, cost):
+        evidence_id = str(uuid4())
+        body = {"source_id": "revised-fleet-source", "external_key": "fleet-study", "adapter": "DEMAND_EXPORT",
+                "buyer_segment": "Disposable fleet cohort", "sample_count": 30, "demand_count": 7,
+                "source_signed_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+                "evidence": {**SCOPE, "evidence_id": evidence_id, "title": "Scoped fleet research",
+                    "kind": "SERVICE", "evidence_class": "OPERATOR_REPORTED", "source_ref": "https://example.invalid/fleet",
+                    "observed_on": day.isoformat(), "expires_on": (today + timedelta(days=5)).isoformat(),
+                    "currency": "CAD", "unit_price": 100, "variable_cost_per_unit": cost,
+                    "acquisition_cost_per_unit": 10, "monthly_fixed_cost": 25, "monthly_units": 6,
+                    "startup_capital": 125, "test_cost": 50, "rights_attestation": "AUTHORIZED_INTERNAL_RESEARCH"}}
+        body["source_signature"] = publisher.sign(foundry_intake.source_signature_message(body)).hex()
+        response = client.post("/api/prime/foundry/intake", json=body, headers=OWNER)
+        assert response.status_code == 202, response.text
+        with Session(engine) as db:
+            assert foundry_intake.run_intake(db)["status"] == "COMPLETED"
+        return UUID(evidence_id)
+
+    prior = observation(today - timedelta(days=1), 15)
+    verdict_id = uuid4()
+    with Session(engine) as db:
+        old = db.get(FoundryEvidence, prior)
+        for sha, identifier in ((old.digest, verdict_id), ("a" * 64, uuid4())):
+            db.add(GodVerdict(id=identifier, case_id=uuid4(), metadata_json={"opportunity_id": "fleet-option",
+                "foundry_evidence_id": str(prior), "foundry_evidence_sha256": sha}))
+        db.commit()
+    schedule = client.post("/api/prime/specialist-schedules", headers=OWNER, json={
+        "schedule_id": str(uuid4()), "business_id": SCOPE["business_id"],
+        "cadence_seconds": 300, "duration_seconds": 3600,
+        "on_economic_reassessment": True,
+        "opportunity": {"opportunity_id": "fleet-option", "title": "Fleet option", "engine_id": SCOPE["engine_id"],
+            "summary": "Reassess a scoped fleet source revision.",
+            "legacy": SCOPE["legacy_instance_id"], "jurisdiction": SCOPE["jurisdiction"],
+            "specialist_inputs": {"business_id": SCOPE["business_id"]}},
+    })
+    assert schedule.status_code == 201, schedule.text
+    current = observation(today, 30)
+    with Session(engine) as db:
+        state = run_due_schedule(db)
+        result = json.loads(db.query(LegacyOrchestrationEvent).filter_by(event_id=state["report_event_id"]).one().payload_json)
+    assert result["trigger"] == "FOUNDRY_SOURCE_REVISED"
+    impact = result["source_revision"]
+    assert impact["new_evidence_id"] == str(current)
+    assert "variable_cost_per_unit" in impact["superseded"][str(prior)]["changed_fields"]
+    assert [x["verdict_id"] for x in impact["affected_decisions"]] == [str(verdict_id)]
+    assert "PRIOR_DECISION_SOURCE_REVISED" in result["operating_reassessment"]["blockers"]
+    assert result["recommendation"]["heimdall_decision"] == "HOLD"
+    assert result["external_authority"] is False

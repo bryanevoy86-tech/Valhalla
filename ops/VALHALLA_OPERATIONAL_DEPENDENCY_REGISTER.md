@@ -40,6 +40,12 @@ The first bounded one-time CAD lane needs the applicable slices of `runtime_gove
 
 These are assumed Canadian-dollar planning rates and time per handled pilot exception, with no quotes, staffing or spending approved. Confirm written rates, coverage and caps before activation. A missing delegate leaves its lane held. The owner receives the material briefing and keeps reserved decisions.
 
+## Verified learning checkpoint
+
+- A signed source refresh dispatches the existing scoped specialty and Prime queues. Independent Prime verdicts now pin exact Foundry evidence IDs and digests. A revision report identifies the superseded evidence, changed declared assumptions and matched earlier verdicts. A scoped verdict stays held for reconsideration. Older verdicts without the new binding remain outside this reverse lookup. [Source regression](../services/api/tests/test_economic_control.py)
+- The existing mandate and outcome records retain the forecast, deadline, costs, refund alternative and Norns contribution error. In the disposable full-refund run, expected contribution equals price less 175 CAD cents, observed contribution is negative 175 CAD cents, and the error equals negative price. Signed synthetic payment and bank receipts drive the calculation. The existing Mimir claim checks body digest, scope, source lineage and reconciled checkout evidence. [Connected regression](../services/api/tests/operating_rehearsal_case.py)
+- A subsequent evaluation citing that exact Mimir proof holds the unchanged product version and price, with no effect on another version. Separately authenticated Loki challenges refund timing, retained revenue and cost assumptions. The result proposes testing a refund-adjusted approach. A prospectively enrolled independent holdout comparison for that economic playbook and genuine observed outcomes remain open. Existing Norns Factory deadline holdouts and Brier scores remain separate. No production strategy, financial or provider permissions are promoted.
+
 ## 04. `api_wiring` (P0)
 
 - **Mandated duty and operator boundary.** Register and check required APIs. Release integrator verifies deployed route and rollback.

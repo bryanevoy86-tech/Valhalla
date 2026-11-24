@@ -201,6 +201,13 @@ def run_operating_rehearsal(client, engine, monkeypatch, serve, owner, owner_ses
             assert evidence["uncommitted_cash_minor"] == evidence["outstanding_obligation_minor"] == 0
             assert evidence["mimir_claim"]["period_net_minor"] == -175
             assert evidence["mimir_claim"]["verified_real_world_outcome"] is False
+            prediction = receipts[0]["evidence"]["prediction"]
+            variance = evidence["norns_contribution_error"]
+            assert prediction["expected_contribution_minor"] == price - 175
+            assert prediction["alternative"]["contribution_minor"] == -175
+            assert variance["classification"] == "BELOW_EXPECTATION" and variance["absolute_error_minor"] == price
+            assert variance["alternative_absolute_error_on_same_observation_minor"] == 0
+            assert variance["commercial_calibration_eligible"] is False
             if upstream:
                 trace = second.get(source_root)
                 assert trace.status_code == 200, trace.text
@@ -225,6 +232,54 @@ def run_operating_rehearsal(client, engine, monkeypatch, serve, owner, owner_ses
                     "owner_session_requests": upstream["owner_sessions"],
                     "routine_owner_actions_after_final_mandate": 0,
                 }, sort_keys=True))
+                from app.loki.analyst import challenge
+                from app.services.prime_business_execution import verify_mimir_claims
+                from app.routers.foundry_source_rehearsal import stage
+                import pytest
+
+                variance_claim = {"basis": "FOUNDRY_OPERATING_VARIANCE", "run_id": str(run_id),
+                                  "sha256": receipts[-1]["sha256"]}
+                source = next(r["evidence"] for r in reversed(source_rows) if "-source-" in r["action_id"])
+                change = next(r["evidence"] for r in source_rows
+                              if r["action_id"].endswith(stage(source, "review")))["proposal"]
+                followup = {**change, "opportunity_id": "operating-variance-followup", "source": "internal",
+                            "persist_decision": False}
+                followup["specialist_inputs"] = {key: value for key, value in change["specialist_inputs"].items()
+                    if key not in {"foundry_evidence", "foundry_economics", "pantheon_report_ids", "discovery_demand"}}
+                root_eval = "/api/completion/phase3/universal-opportunity/evaluate"
+                ordinary = client.post(root_eval, json={"opportunities": [followup], "shadow_mode": True})
+                assert ordinary.status_code == 200, ordinary.text
+                assert ordinary.json()["evaluations"][0]["final_decision"] in {"proceed", "research_more"}
+                followup["specialist_inputs"]["mimir_outcome_claims"] = [variance_claim]
+                reviewed = client.post(root_eval, json={"opportunities": [followup], "shadow_mode": True})
+                assert reviewed.status_code == 200, reviewed.text
+                decision = reviewed.json()["evaluations"][0]
+                assert decision["final_decision"] == "hold"
+                assert decision["verified_mimir_claims"][0]["variance"] == variance
+                assert decision["operating_learning"]["commercial_promotion_authorized"] is False
+                listing_version = followup["specialist_inputs"]["proposed_internal_listing"]
+                different_version = {**followup, "specialist_inputs": {**followup["specialist_inputs"],
+                    "proposed_internal_listing": {**listing_version, "price_cents_cad": price + 1}}}
+                unrelated = client.post(root_eval, json={"opportunities": [different_version], "shadow_mode": True})
+                assert unrelated.status_code == 200 and "operating_learning" not in unrelated.json()["evaluations"][0]
+                artifact = client.post(root_eval.replace("/evaluate", "/review-artifact"), json=followup).json()
+                queued = client.post("/loki/reviews", json={**artifact, "input_source": "operating-variance-fixture"})
+                assert queued.status_code == 201, queued.text
+                review_id = queued.json()["id"]
+                reviewer = {"X-Loki-Reviewer-Key": os.environ["VALHALLA_LOKI_REVIEWER_KEY"]}
+                queue = client.get("/loki/worker/reviews", headers=reviewer, params={"artifact_type": "universal_opportunity"})
+                signed_review = challenge(next(row for row in queue.json() if row["review_id"] == review_id))
+                assert any(f.category == "operating_forecast_assumption" for f in signed_review.findings)
+                receipt = client.post(f"/loki/worker/reviews/{review_id}/result", headers=reviewer,
+                                      json=signed_review.model_dump(mode="json"))
+                assert receipt.status_code == 201 and receipt.json()["result_sha256"]
+                with Session(engine) as db:
+                    with pytest.raises(HTTPException, match="intact scoped evidence"):
+                        verify_mimir_claims(db, {**scope, "business_id": "foreign-scope"}, [variance_claim])
+                    with pytest.raises(HTTPException, match="intact scoped evidence"):
+                        verify_mimir_claims(db, scope, [{**variance_claim, "sha256": "0" * 64}])
+                    with pytest.raises(HTTPException, match="Repeated Mimir claim"):
+                        verify_mimir_claims(db, scope, [variance_claim, variance_claim])
             with Session(engine) as db:
                 assert db.query(FoundryRehearsalOrder).count() == 1
                 assert db.query(FoundryRehearsalPayment).count() == db.query(FoundryFixtureSettlement).count() == 2

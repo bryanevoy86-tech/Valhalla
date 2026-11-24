@@ -1281,3 +1281,9 @@ The acceptance matrix retains 13 P0 and 39 total criteria requiring internal cod
 
 - Bound source-attributed operating diligence and build-or-buy cost assumptions to existing Foundry evidence. Enrolled specialist assignments receive the exact event. Prime rechecks the source and evidence versions. The independently authenticated Loki path challenges the assumptions. Declared costs and public references cannot authorize a business.
 - Rehearsed two Manitoba fleet operating approaches using public references and disposable records. Both remain commercially unvalidated. See the [investigation](../docs/UNIVERSAL_OPPORTUNITY_PIPELINE.md#operating-diligence-and-first-investigation).
+
+
+## November 24 verified operating variance and source revisions
+
+- Connected signed source refreshes to exact earlier decision references and scoped Prime reassessment. Preserved original evidence and verdicts.
+- Extended existing disposable operating receipts with pre-execution predictions and verified contribution error. A current scope-bound Mimir claim causes Prime to hold the same shortfall-producing playbook and routes the assumption through independent Loki. A separate economic playbook holdout remains open.

@@ -129,6 +129,11 @@ def challenge(item: dict) -> IndependentReviewIn:
     findings = []
     if kind == "universal_opportunity":
         specialist = proposal.get("specialist_inputs")
+        claims = specialist.get("mimir_outcome_claims") if isinstance(specialist, dict) else None
+        if isinstance(claims, list) and any(isinstance(row, dict) and row.get("basis") == "FOUNDRY_OPERATING_VARIANCE"
+                                          for row in claims):
+            findings.append(_finding("operating_forecast_assumption", "specialist_inputs/mimir_outcome_claims",
+                                     "Reconcile refund timing, retained revenue and cost assumptions with the original forecast. A single fixture cannot establish a population refund rate or prove the revised strategy."))
         if isinstance(specialist, dict) and "public_market_context" in specialist:
             context = specialist["public_market_context"]
             if (not isinstance(context, dict) or context.get("basis") != "PUBLIC_SECONDARY_CONTEXT"

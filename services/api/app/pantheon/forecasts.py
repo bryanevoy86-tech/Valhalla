@@ -15,6 +15,24 @@ from app.services.prime_business_execution import ACTION_TYPE, _json, _receipt_i
 SOURCE = "SCOPED_HISTORICAL_RATE"
 
 
+def operating_contribution_error(prediction, actual_minor, observed_at):
+    """Score the declared point forecast in the separate disposable cohort."""
+    expected = prediction["expected_contribution_minor"]
+    deadline = datetime.fromisoformat(prediction["deadline_at"])
+    observed = datetime.fromisoformat(observed_at)
+    error = actual_minor - expected
+    return {
+        "cohort": "DISPOSABLE_OPERATING_FIXTURE",
+        "expected_minor": expected, "actual_minor": actual_minor, "error_minor": error,
+        "absolute_error_minor": abs(error),
+        "alternative_absolute_error_on_same_observation_minor": abs(
+            actual_minor - prediction["alternative"]["contribution_minor"],
+        ),
+        "classification": "BELOW_EXPECTATION" if error < 0 else "ABOVE_EXPECTATION" if error > 0 else "MATCHED",
+        "observed_within_deadline": observed <= deadline, "commercial_calibration_eligible": False,
+    }
+
+
 def resolve_factory_outcome(db: Session, forecast, item, now) -> None:
     """Label an unresolved forecast with the forecast and work rows locked."""
     if not forecast.issued_at <= now or not forecast.issued_at < forecast.deadline_at:

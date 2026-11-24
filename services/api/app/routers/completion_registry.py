@@ -2255,6 +2255,9 @@ def _persist_universal_pantheon_snapshot(
             "external_effects_authorized": False,
         },
     )
+    source = payload.specialist_inputs.get("foundry_evidence")
+    if "independent_loki" in owner_envelope and isinstance(source, dict):
+        verdict.metadata_json.update(foundry_evidence_id=source["id"], foundry_evidence_sha256=source["sha256"])
     db.add(verdict)
 
     subject_int = (int(hashlib.sha1(payload.opportunity_id.encode("utf-8")).hexdigest()[:8], 16) & 0x7FFFFFFF) or 1
@@ -2300,12 +2303,15 @@ def _evaluate_universal_opportunity(
     reveal_historical_outcomes: bool,
     outcome_class: str,
     independent_loki: dict | None = None,
+    operating_lessons: tuple = (),
     durable: bool = True,
 ) -> dict[str, Any]:
     _validate_phase3_opportunity(payload)
     mimir_context = _build_mimir_context(db, payload, outcome_class)
 
     if svc_engine_routing_key(payload.engine_id) == "real_estate" and payload.specialist_inputs.get("real_estate_payload"):
+        if operating_lessons:
+            raise HTTPException(409, "Resolve the exact operating forecast shortfall before evaluation")
         real_payload = RealEstateIntelligenceIn(**payload.specialist_inputs["real_estate_payload"])
         real_payload.persist_decision = persist_decision
         real_result, real_loki, real_owner = _compose_real_estate_intelligence_result(real_payload)
@@ -2500,7 +2506,16 @@ def _evaluate_universal_opportunity(
         decision_model=decision_model,
         reveal_historical_outcomes=reveal_historical_outcomes,
         expected_outcome_class=outcome_class,
+        operating_lessons=operating_lessons,
     )
+
+    if operating_lessons:
+        result["operating_learning"] = {
+            "decision_effect": "HOLD_OR_PRESERVE_STRONGER_RESTRICTION",
+            "verified_variance_receipts": list(operating_lessons),
+            "next_validation": "TEST_REFUND_ADJUSTED_SCENARIO_ON_PROSPECTIVE_HOLDOUT",
+            "commercial_promotion_authorized": False,
+        }
 
     if independent_loki is not None:
         result["independent_loki"] = independent_loki
@@ -2774,6 +2789,12 @@ def evaluate_opportunity_batch(payload: UniversalOpportunityBatchIn, db: Session
     evaluated: list[dict[str, Any]] = []
     for index, opp in enumerate(payload.opportunities):
         try:
+            listing = opp.specialist_inputs.get("proposed_internal_listing")
+            losses = tuple(proof["sha256"] for proof in checked_mimir.get(index, ())
+                if proof.get("basis") == "FOUNDRY_OPERATING_VARIANCE"
+                and proof["variance"]["classification"] == "BELOW_EXPECTATION"
+                and isinstance(listing, dict)
+                and all(listing.get(key) == value for key, value in proof["prediction"]["playbook"].items()))
             row = (
                 _evaluate_universal_opportunity(
                     opp,
@@ -2783,6 +2804,7 @@ def evaluate_opportunity_batch(payload: UniversalOpportunityBatchIn, db: Session
                     reveal_historical_outcomes=payload.reveal_historical_outcomes,
                     outcome_class=outcome_class,
                     independent_loki=checked_reviews.get(index),
+                    operating_lessons=losses,
                     durable=durable,
                 )
             )
