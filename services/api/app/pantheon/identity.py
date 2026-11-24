@@ -8,7 +8,7 @@ from uuid import UUID
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey, Ed25519PublicKey
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlalchemy import select, text
 
 from app.loki.evidence import artifact_digest
 from app.models.completion_registry import LegacyOrchestrationEvent as Event
@@ -31,7 +31,11 @@ def _load(db, identity_id, *, lock=False):
     if not isinstance(identity_id, str) or not re.fullmatch(r"[0-9a-f]{64}", identity_id):
         raise HTTPException(409, "Specialist identity is invalid")
     query = select(Event).filter_by(event_id=f"GID-{identity_id}", event_type=KIND)
-    row = db.scalar(query.with_for_update() if lock else query)
+    if lock and db.get_bind().dialect.name == "postgresql":
+        # Serialize current reliance and revocation without granting workers UPDATE on the audit journal.
+        db.execute(text("SELECT pg_advisory_xact_lock(hashtextextended(:key, 0))"),
+                   {"key": f"pantheon-identity:{identity_id}"})
+    row = db.scalar(query)
     if row is None:
         raise HTTPException(409, "Specialist identity is not enrolled")
     record = _json(row.payload_json, {})

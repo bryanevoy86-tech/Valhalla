@@ -4,6 +4,8 @@ import argparse
 import os
 import signal
 import threading
+from pathlib import Path
+import sys
 
 from business_factory_worker import configuration_ready, poll
 
@@ -33,6 +35,19 @@ def main() -> int:
         parser.exit(2, "Specialist signing credential is invalid.\n")
     if args.role in SIGNED_ROLES and signer is None:
         parser.exit(2, "Specialist signing credential is required for this role.\n")
+    stage_labels = {os.getenv("APP_ENV", "").strip().lower(), os.getenv("ENV", "").strip().lower()}
+    production_labels = {"prod", "production", "live"}
+    if args.role in SIGNED_ROLES and stage_labels & production_labels:
+        parser.exit(2, "Signed specialist production worker commissioning is unavailable.\n")
+    staging = "staging" in stage_labels
+    if staging:
+        sys.path.insert(0, str(Path(__file__).resolve().parents[4] / "scripts"))
+        from staging_preflight import SPECIALISTS, check
+        from app.pantheon.staging_access import require_restricted_session
+
+        role = args.role.lower()
+        if role not in SPECIALISTS or check(os.environ, role):
+            parser.exit(2, "Specialist staging environment did not pass restricted preflight.\n")
 
     stop = threading.Event()
     for sig in (signal.SIGINT, signal.SIGTERM):
@@ -40,6 +55,8 @@ def main() -> int:
 
     def tick() -> dict:
         with SessionLocal.session_factory() as db:
+            if staging:
+                require_restricted_session(db, SPECIALISTS[role])
             return run_scheduled_assignment(db, args.role, signing_key=signer)
 
     return poll(tick, stop, args.poll_seconds, once=args.once)

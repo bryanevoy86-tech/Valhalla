@@ -13,6 +13,10 @@ LIVE_SETTINGS = ("STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET", "VALHALLA_STRIPE_
 KNOWN_EXISTING_DATABASE_HOSTS = {"dpg-d90l1mv7f7vs73cod580-a", "dpg-d9ek3oj7uimc73fooes0-a"}
 DISABLED_FLAGS = ("VALHALLA_STRIPE_DELIVERY_ENABLED", "VALHALLA_STRIPE_BANK_BOOKING_ENABLED",
                   "VALHALLA_STRIPE_RECURRING_WORKER_ENABLED", "RESET_OWNER_PASSWORD")
+SPECIALISTS = {"odin": "valhalla_stage_odin", "njord": "valhalla_stage_njord"}
+SPECIALIST_PRIVATE = "VALHALLA_PANTHEON_WORKER_PRIVATE_KEY"
+ENROLLMENT_PRIVATE = "VALHALLA_PANTHEON_ENROLLMENT_PRIVATE_KEY"
+ENROLLMENT_PUBLIC = "VALHALLA_PANTHEON_ENROLLMENT_PUBLIC_KEY"
 
 
 def _https_origin(value):
@@ -57,7 +61,8 @@ def check(env, role):
         env.get(key, "").lower() not in {"", "0", "false", "off"} for key in DISABLED_FLAGS
     ):
         failures.append("live effects or startup reset configuration must be absent")
-    if role in {"api", "worker", "refund-writer"} and not _matches_database(env):
+    database_matches = _matches_database(env)
+    if role in {"api", "worker", "refund-writer", *SPECIALISTS} and not database_matches:
         failures.append("staging database target does not match the approved private host and database")
     reviewer_key = env.get("VALHALLA_LOKI_REVIEWER_KEY")
     if role == "api":
@@ -77,7 +82,8 @@ def check(env, role):
                     or not env.get(STRIPE_SECRETS[1], "").startswith("rk_test_")
                     or not env.get("VALHALLA_STRIPE_ACCOUNT_ID", "").startswith("acct_")):
                 failures.append("sandbox signing secret, restricted test key and account identity are required")
-    if role != "api" and any(env.get(key) for key in (*STRIPE_SECRETS, "VALHALLA_STRIPE_READBACK_ENABLED")):
+    if role != "api" and any(env.get(key) for key in (*STRIPE_SECRETS, "VALHALLA_STRIPE_READBACK_ENABLED",
+                                                    "VALHALLA_GMAIL_COMMISSIONING_ACCESS_TOKEN")):
         failures.append("provider credentials and readback settings belong only on the staging API")
     if env.get("VALHALLA_STRIPE_SANDBOX_REFUND_ENABLED") == "1":
         if (role not in {"api", "refund-writer"}
@@ -98,6 +104,20 @@ def check(env, role):
             failures.append("refund writer requires separate test-only credentials and an approved enablement")
     if role == "worker" and (reviewer_key or any(env.get(key) for key in OPERATOR_KEYS)):
         failures.append("operating worker must have no reviewer, owner, Prime or Factory keys")
+    if role in SPECIALISTS:
+        if database_matches and urlsplit(env["DATABASE_URL"]).username != SPECIALISTS[role]:
+            failures.append("specialist database login must match the exact role")
+        if (any(env.get(key) for key in (*OPERATOR_KEYS, "VALHALLA_LOKI_REVIEWER_KEY", ENROLLMENT_PRIVATE,
+                                        "VALHALLA_OWNER_PASSWORD", "PLAID_SECRET", "VALHALLA_PLAID_READ_ACCESS_TOKEN",
+                                        "VALHALLA_PANTHEON_REGISTRAR_KEY", "VALHALLA_BUILDER_KEY",
+                                        "SMTP_PASS", "VALHALLA_STRIPE_SANDBOX_REFUND_ENABLED"))
+                or not re.fullmatch(r"[0-9a-f]{64}", env.get(SPECIALIST_PRIVATE, ""))
+                or not re.fullmatch(r"[0-9a-f]{64}", env.get(ENROLLMENT_PUBLIC, ""))):
+            failures.append("specialist requires its signing key and public enrollment verifier without privileged credentials")
+    elif env.get(SPECIALIST_PRIVATE):
+        failures.append("specialist signing keys belong only in the corresponding specialist worker")
+    if role != "api" and env.get(ENROLLMENT_PRIVATE):
+        failures.append("enrollment signing key belongs only on the staging API")
     if role == "reviewer":
         if env.get("VALHALLA_LOKI_QUEUE_URL") != api or not api:
             failures.append("reviewer queue must equal the approved staging API origin")
@@ -111,7 +131,7 @@ def check(env, role):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("role", choices=("api", "worker", "reviewer", "refund-writer"))
+    parser.add_argument("role", choices=("api", "worker", "reviewer", "refund-writer", *SPECIALISTS))
     args = parser.parse_args()
     failures = check(os.environ, args.role)
     for failure in failures:

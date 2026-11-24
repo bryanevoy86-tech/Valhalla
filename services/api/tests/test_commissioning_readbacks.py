@@ -6,10 +6,38 @@ from fastapi.testclient import TestClient
 import httpx
 import pytest
 
-from app.integrations.commissioning import read_drive_fixture
+from app.integrations.commissioning import read_drive_fixture, read_gmail_profile_fixture
 from app.integrations.docusign import client as signatures
 from app.integrations.quickbooks import client as books
 from app.webhooks import docusign
+
+
+def test_gmail_profile_readback_is_exact_and_sends_nothing(monkeypatch):
+    prefix = "VALHALLA_GMAIL_COMMISSIONING_"
+    mailbox = "test-mailbox@example.invalid"
+    monkeypatch.setenv("APP_ENV", "staging")
+    monkeypatch.setenv("ENV", "staging")
+    monkeypatch.setenv(prefix + "ENABLED", "1")
+    monkeypatch.setenv(prefix + "ACCESS_TOKEN", "test-mailbox-read-only")
+    monkeypatch.setenv(prefix + "TEST_MAILBOX", mailbox)
+    calls = []
+
+    def readback(req):
+        calls.append(req.method)
+        assert req.url == "https://gmail.googleapis.com/gmail/v1/users/me/profile"
+        return httpx.Response(200, json={"emailAddress": mailbox, "historyId": "private"})
+
+    transport = httpx.MockTransport(readback)
+    result = read_gmail_profile_fixture(transport=transport)
+    assert result["identity_verified"] and result["write_performed"] is False
+    assert mailbox not in str(result) and "private" not in str(result)
+    monkeypatch.setenv(prefix + "TEST_MAILBOX", "other@example.invalid")
+    with pytest.raises(HTTPException, match="approved test mailbox"):
+        read_gmail_profile_fixture(transport=transport)
+    monkeypatch.setenv("APP_ENV", "production")
+    with pytest.raises(HTTPException, match="isolated runtime"):
+        read_gmail_profile_fixture(transport=transport)
+    assert calls == ["GET", "GET"]
 
 
 @pytest.mark.parametrize("mode", ["disabled", "accepted", "denied"])

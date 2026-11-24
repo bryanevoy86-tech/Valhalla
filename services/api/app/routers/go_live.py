@@ -8,6 +8,7 @@ from app.core.dependencies import require_prime_control_key
 from app.services.prime_business_execution import require_owner_mandate_key
 from app.schemas.go_live import GoLiveStateOut, GoLiveToggleIn, GoLiveChecklistOut
 from app.services.go_live import read_state, checklist, set_go_live, set_kill_switch
+from app.services import release_preview
 
 router = APIRouter(prefix="/governance/go-live", tags=["Governance", "Go-Live"],
                    dependencies=[Depends(require_prime_control_key)])
@@ -22,6 +23,16 @@ def get_state(db: Session = Depends(get_db)) -> GoLiveStateOut:
 def get_checklist(db: Session = Depends(get_db)) -> GoLiveChecklistOut:
     data = checklist(db)
     return GoLiveChecklistOut(**data)
+
+
+@router.post("/commissioning-evidence", dependencies=[Depends(require_owner_mandate_key)])
+def record_commissioning_evidence(body: release_preview.Acceptance, db: Session = Depends(get_db)):
+    return release_preview.record(db, body)
+
+
+@router.post("/commissioning-preview", dependencies=[Depends(require_owner_mandate_key)])
+def preview_commissioning(body: release_preview.Request, db: Session = Depends(get_db)):
+    return release_preview.evaluate(db, body)
 
 
 @router.post("/enable", response_model=GoLiveStateOut,

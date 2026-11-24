@@ -8,6 +8,10 @@ DO NOT restart the project, regenerate completed packs, or treat API presence as
 
 Use the current head of draft PR #4 and confirm the latest required CI run. Use the current workstream index, integration matrix and latest ledger verification to choose unfinished work. Dated checkpoints and original prompts are historical records. The same index supersedes earlier execution orders in the root start page and the finish passes. There are 50 acceptance contracts, 53 task entries and seven construction packages.
 
+## First observable pilot commissioning — November 24
+
+Use the [owner commissioning checklist](VALHALLA_COMMERCIAL_COMMISSIONING_SHEET.md#first-observable-pilot-approval-checklist). Staging ODIN and NJORD startup validates separate login names, no enrollment/owner/provider secrets, expected effective database restrictions and row policies before polling. The isolated SQL permission setup needs the exact approved assignments. A signed acceptance packet can reach scoped owner review without authorizing any effect. The Gmail path verifies a test mailbox through read-only metadata. External entitlements, native receipts, genuine research and actual bank evidence remain pending. Production release, real writes and spending stay held.
+
 ## Prospective operating holdout and automatic lesson retrieval — November 24
 
 The existing Foundry operating rehearsal now freezes one prospective, paired economic holdout per training run. It pins the forecast and revised strategy digests, an independent observer public key, cohort and case IDs, deadline, comparison rule and downside ceiling before scoring. Loki independently challenges the exact plan and can challenge the result. A signed comparison that exceeds the fixture threshold still rejects production promotion. The authenticated observer is disposable and the records are scoped to this rehearsal.

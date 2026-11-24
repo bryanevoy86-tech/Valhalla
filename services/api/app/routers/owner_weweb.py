@@ -85,15 +85,16 @@ def owner_startup_dependencies(lane: LaunchLane = "ONE_TIME_CAD"):
 
 
 @startup_router.post("/provider-readback/{provider}", dependencies=[Depends(require_owner_mandate_key)])
-def owner_startup_provider_readback(provider: Literal["quickbooks", "docusign", "google-drive"]):
+def owner_startup_provider_readback(provider: Literal["quickbooks", "docusign", "google-drive", "gmail"]):
     from app.heimdall.authority import is_live
-    from app.integrations.commissioning import read_drive_fixture
+    from app.integrations.commissioning import read_drive_fixture, read_gmail_profile_fixture
     from app.integrations.docusign.client import read_envelope_fixture
     from app.integrations.quickbooks.client import read_account_fixture
 
     if is_live():
         raise HTTPException(409, "Commissioning readbacks require an isolated non-live environment")
-    readers = {"quickbooks": read_account_fixture, "docusign": read_envelope_fixture, "google-drive": read_drive_fixture}
+    readers = {"quickbooks": read_account_fixture, "docusign": read_envelope_fixture,
+               "google-drive": read_drive_fixture, "gmail": read_gmail_profile_fixture}
     return private_owner_response(readers[provider]())
 
 

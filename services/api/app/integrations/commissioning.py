@@ -46,6 +46,21 @@ def commissioning_receipt(provider, reference, **evidence):
             "production_verified": False, "external_action_authorized": False}
 
 
+def read_gmail_profile_fixture(*, transport=None):
+    labels = {os.getenv("APP_ENV", "").strip().lower(), os.getenv("ENV", "").strip().lower()} - {""}
+    if not labels or not labels <= {"dev", "test", "staging", "sandbox"}:
+        raise HTTPException(503, "Gmail readback is limited to an isolated runtime")
+    with approved_reader("GMAIL", "https://gmail.googleapis.com", "TEST_MAILBOX", transport=transport) as (client, config):
+        mailbox, = config
+        if not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", mailbox):
+            raise HTTPException(503, "Exact test mailbox configuration is required")
+        profile = read_json(client, "/gmail/v1/users/me/profile")
+        address = profile.get("emailAddress")
+        if not isinstance(address, str) or address.casefold() != mailbox.casefold():
+            raise HTTPException(409, "Provider profile differs from the approved test mailbox")
+    return commissioning_receipt("GMAIL", mailbox.casefold(), identity_verified=True, content_downloaded=False)
+
+
 def read_drive_fixture(*, transport=None):
     with approved_reader("GOOGLE_DRIVE", "https://www.googleapis.com", "FILE_ID", transport=transport) as (client, config):
         file_id, = config

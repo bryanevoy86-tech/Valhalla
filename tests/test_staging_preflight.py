@@ -82,6 +82,17 @@ class StagingPreflightTests(unittest.TestCase):
                        {"VALHALLA_PRIME_CONTROL_KEY": "prime"}):
             self.assertTrue(stage.check({**writer, **change}, "refund-writer"))
 
+    def test_signed_specialists_use_separate_logins_and_no_authority_keys(self):
+        for role, login in stage.SPECIALISTS.items():
+            env = {**self.worker, "DATABASE_URL": self.worker["DATABASE_URL"].replace("stage:", login + ":"),
+                   stage.SPECIALIST_PRIVATE: "a" * 64, stage.ENROLLMENT_PUBLIC: "b" * 64}
+            self.assertEqual(stage.check(env, role), [])
+            other = "njord" if role == "odin" else "odin"
+            self.assertTrue(stage.check(env, other))
+            for name in (stage.ENROLLMENT_PRIVATE, "VALHALLA_OWNER_MANDATE_KEY", "VALHALLA_STRIPE_READBACK_KEY"):
+                self.assertTrue(stage.check({**env, name: "dummy"}, role))
+            self.assertTrue(stage.check({**self.api, stage.SPECIALIST_PRIVATE: "a" * 64}, "api"))
+
     def test_worker_launcher_stops_at_hold_before_starting_any_lane(self):
         import os
         import subprocess

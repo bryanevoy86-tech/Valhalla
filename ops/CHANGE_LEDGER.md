@@ -1293,3 +1293,9 @@ The acceptance matrix retains 13 P0 and 39 total criteria requiring internal cod
 
 - Added a frozen paired economic holdout to the existing operating journal, independently reviewed by Loki and observed by a separate disposable signing key. Better fixture economics cannot promote a production playbook.
 - Added automatic exact-scope Mimir recall, prior-snapshot dispatch hold and an event-driven Prime reassessment with restart and replay verification. Kept all 31 operating receipts and all commercial holds.
+
+
+## November 24 first observable pilot commissioning
+
+- Added staged ODIN and NJORD credential separation, exact assignment and report policies and runtime PostgreSQL credential checks. Kept enrollment and revocation in the controlled API and serialized current identity reliance without worker journal update privileges.
+- Added durable, signed, scoped commissioning evidence and positive owner-review preview with emergency-stop denial. The live commercial gate remains closed. Added a read-only exact test Gmail profile check and completed the operator/action checklist for external provider commissioning.
