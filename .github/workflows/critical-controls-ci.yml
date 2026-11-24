@@ -24,6 +24,7 @@ on:
       - 'tests/run_heimdall_owner_demo.py'
       - 'tests/browser-acceptance/**'
       - 'scripts/staging_preflight.py'
+      - 'scripts/foundry_public_source.py'
       - 'scripts/staging_workers.sh'
       - 'web/weweb-widgets/owner-*.mjs'
       - 'tests/test-weweb-owner-*.test.mjs'
@@ -109,6 +110,7 @@ jobs:
           python -m unittest discover -s tests -p test_builder_materialize_review.py -v
           python -m unittest discover -s tests -p test_prime_system_preflight.py -v
           python -m unittest discover -s tests -p test_staging_preflight.py -v
+          python -m unittest discover -s tests -p test_foundry_public_source.py -v
           bash -n scripts/staging_workers.sh
           python -m unittest discover -s tests -p test_route_integrity.py -v
           python -m unittest discover -s tests -p test_prime_runtime_route_probe.py -v

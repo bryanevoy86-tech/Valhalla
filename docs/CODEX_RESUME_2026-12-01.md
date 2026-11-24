@@ -8,6 +8,12 @@ DO NOT restart the project, regenerate completed packs, or treat API presence as
 
 Use the current head of draft PR #4 and confirm the latest required CI run. Use the current workstream index, integration matrix and latest ledger verification to choose unfinished work. Dated checkpoints and original prompts are historical records. The same index supersedes earlier execution orders in the root start page and the finish passes. There are 50 acceptance contracts, 53 task entries and seven construction packages.
 
+## External business evidence — November 24
+
+Verified incoming draft `2efaadd89bf08c9b1d911f8155b64f5e0c9e5e10` passed [hosted checks](https://github.com/bryanevoy86-tech/Valhalla/actions/runs/45330238171). Public price, category and procurement context remains separate from buyer evidence. External Foundry exports now require affirmative practice source rights and a signed enrolled publisher. The local CanadaBuys command verifies fixed catalogue identities and licence before emitting a context-only snapshot. Native endpoint validation was blocked by executor DNS, with official public catalogue descriptions reviewed independently.
+
+The local independent reviewer challenged four citation-bearing fleet, contractor, workflow and acquisition research proposals. Prime refuses to score the public context. No pilot or flagship was selected. The next real evidence step is a separately authorized 14-day, nine-interview opt-in round with named operator, consent and retention, and zero direct cash. Preserve the complete architecture and current staging and production holds.
+
 ## Opportunity selection mandate — November 23
 
 Verified incoming draft `c1dc2ef415298bdd8a032e2274638f7d80616a17` passed [hosted checks](https://github.com/bryanevoy86-tech/Valhalla/actions/runs/45328121361). Keep the CA$29 product as a checkout validation case. The CA$1,490 service is an unapproved hypothesis. No flagship is selected.

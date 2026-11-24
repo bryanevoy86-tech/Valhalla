@@ -1,6 +1,7 @@
 """Normalize authorized local source exports with resumable transaction-bound jobs."""
 from datetime import datetime, timedelta, timezone
 from typing import Annotated, Literal
+from urllib.parse import urlsplit
 from uuid import UUID
 
 from cryptography.exceptions import InvalidSignature
@@ -65,6 +66,17 @@ def source_for(db, request, today, *, lock=False, verify_enrollment_time=False):
     if not today - timedelta(days=maximum_age) <= evidence.observed_on <= today <= evidence.expires_on:
         raise HTTPException(409, "Discovery observation is stale or future-dated")
     method = source.provenance_method or ""
+    if evidence.evidence_class == "OPERATOR_REPORTED":
+        try:
+            rights = urlsplit(source.rights_statement_url or "")
+        except ValueError:
+            raise HTTPException(409, "External discovery source rights URL is invalid") from None
+        if (source.governance_status != "approved"
+                or source.permission_status not in {"public", "licensed", "authorized"}
+                or source.license_status not in {"government_open_data", "open", "licensed", "consented_internal_use"}
+                or rights.scheme != "https" or not rights.hostname or rights.username or rights.password
+                or not method.startswith("ed25519:") or request.source_signature is None):
+            raise HTTPException(409, "External discovery export requires approved source rights and a signed publisher envelope")
     if method.startswith("ed25519:"):
         if request.source_signature is None:
             raise HTTPException(409, "Registered source requires a signed export")

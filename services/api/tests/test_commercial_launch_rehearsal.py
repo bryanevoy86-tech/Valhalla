@@ -115,6 +115,51 @@ def test_rank_and_independently_challenge_commercial_offers(deal_client, loopbac
         assert db.query(LokiIndependentReceipt).count() == len(offers)
     print("COMMERCIAL_REHEARSAL " + json.dumps({"receipts": receipts, "externally_authorized": False}))
 
+    public_cases = (
+        ("fleet-research", "micro_saas", "Managed fleet maintenance administration", "SUBSCRIPTION",
+         ["https://www.manitoba.ca/mti/mcd/audits_investigations/audits/maintenance.html",
+          "https://www.fleetio.com/pricing"]),
+        ("contractor-research", "ai_automation_services", "Contractor quoting automation", "SERVICE",
+         ["https://www.ised-isde.canada.ca/app/ixb/cis/businesses-entreprises/2381",
+          "https://quoteai.ca/pricing/"]),
+        ("workflow-research", "ai_automation_services", "Workflow implementation with measurable labour savings", "SERVICE",
+         ["https://www150.statcan.gc.ca/n1/pub/11-621-m/11-621-m2026010-eng.htm",
+          "https://www.upwork.com/hire/marketing-automation-freelancers/cost//"]),
+        ("acquisition-research", "business_acquisitions", "Acquisition of a recurring service operator", "ACQUISITION",
+         ["https://www.bdc.ca/en/articles-tools/start-buy-business/buy-business/buying-business-conducting-due-diligence"]),
+    )
+    public_reviews = []
+    for key, engine_id, title, model, citations in public_cases:
+        context = {
+            "basis": "PUBLIC_SECONDARY_CONTEXT", "citations": citations, "checked_on": "2026-11-24",
+            "first_party_demand_verified": False, "paid_outcomes_verified": False,
+            "external_action_authorized": False,
+        }
+        offer = {
+            "opportunity_id": key, "engine_id": engine_id, "title": title, "revenue_type": model,
+            "legacy": "synthetic-commercial-scope", "jurisdiction": "CA-MB", "persist_decision": False,
+            "summary": "Public context pending comparison with observed buyer evidence.",
+            "specialist_inputs": {"public_market_context": context},
+        }
+        response = client.post(f"{ROOT}/evaluate", json={
+            "opportunities": [offer], "shadow_mode": True, "persist_decision": False,
+        })
+        assert response.status_code == 409 and "cannot enter scored" in response.text
+        artifact = client.post(f"{ROOT}/review-artifact", json=offer)
+        assert artifact.status_code == 200, artifact.text
+        artifact = artifact.json()
+        response = client.post("/loki/reviews", json={**artifact, "input_source": "public-context-review"})
+        assert response.status_code == 201, response.text
+        review_id = response.json()["id"]
+        receipt = tick(loopback_api, "universal_opportunity", reviewer_id)
+        assert receipt["verified"] and receipt["review_id"] == review_id
+        assert receipt["artifact_sha256"] == artifact["artifact_sha256"]
+        findings = client.get(f"/loki/reviews/{review_id}/findings").json()
+        assert "public_context_requires_validation" in {finding["category"] for finding in findings}
+        assert not client.get(f"/loki/reviews/{review_id}/verdict").json()["ok_to_proceed"]
+        public_reviews.append({"opportunity": key, **receipt})
+    print("PUBLIC_CONTEXT_REVIEW " + json.dumps(public_reviews, sort_keys=True))
+
 
 def test_commercial_challenge_refuses_false_authority_and_invalid_costs():
     def review(case_changes):

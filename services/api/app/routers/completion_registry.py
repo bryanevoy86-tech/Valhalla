@@ -2730,6 +2730,9 @@ def _require_independent_review(db: Session, opportunity: UniversalOpportunityIn
 
 @router.post("/phase3/universal-opportunity/evaluate")
 def evaluate_universal_opportunities(payload: UniversalOpportunityBatchIn, db: Session = Depends(get_db)):
+    if any("public_market_context" in opportunity.specialist_inputs for opportunity in payload.opportunities):
+        raise HTTPException(409, "Public market context can be independently reviewed but cannot enter scored opportunity evaluation")
+
     if payload.decision_model == "CHALLENGER" and not payload.shadow_mode:
         raise HTTPException(status_code=409, detail="challenger model is shadow-only and cannot execute outside shadow_mode")
 

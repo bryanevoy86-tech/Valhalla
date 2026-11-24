@@ -199,7 +199,9 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
         db.add(SourceRegistryItem(source_id="workshop-demand-fixture", source_type="DEMAND_EXPORT",
                                   canonical_name="Isolated signed workshop survey", data_class="live",
                                   jurisdiction=scope["jurisdiction"], terminal_state="PASS",
-                                  mode_allowlist_json='["practice"]', freshness_sla_hours=72))
+                                  mode_allowlist_json='["practice"]', freshness_sla_hours=72,
+                                  permission_status="authorized", license_status="consented_internal_use",
+                                  rights_statement_url="https://example.invalid/fixture-rights"))
         db.commit()
 
     def enroll(role):
@@ -229,6 +231,13 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
                      "rights_attestation": "AUTHORIZED_INTERNAL_RESEARCH"},
     }
     export["source_signature"] = key.sign(foundry_intake.source_signature_message(export)).hex()
+    assert client.post(intake, json=export, headers=owner).status_code == 409
+    with Session(engine) as db:
+        registry = db.query(SourceRegistryItem).filter_by(source_id=source).one()
+        registry.governance_status = "approved"
+        db.commit()
+    unsigned = {name: value for name, value in export.items() if name not in {"source_signature", "source_signed_at"}}
+    assert client.post(intake, json=unsigned, headers=owner).status_code == 409
     received = client.post(intake, json=export, headers=owner)
     assert received.status_code == 202, received.text
     with Session(engine) as db:

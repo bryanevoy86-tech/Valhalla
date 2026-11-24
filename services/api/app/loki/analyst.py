@@ -111,6 +111,17 @@ def challenge(item: dict) -> IndependentReviewIn:
     findings = []
     if kind == "universal_opportunity":
         specialist = proposal.get("specialist_inputs")
+        if isinstance(specialist, dict) and "public_market_context" in specialist:
+            context = specialist["public_market_context"]
+            if (not isinstance(context, dict) or context.get("basis") != "PUBLIC_SECONDARY_CONTEXT"
+                    or any(context.get(flag) is not False for flag in (
+                        "first_party_demand_verified", "paid_outcomes_verified", "external_action_authorized",
+                    ))):
+                findings.append(_finding("public_context_overreach", "specialist_inputs/public_market_context",
+                                         "Public context cannot establish buyer validation or action authority.", critical=True))
+            else:
+                findings.append(_finding("public_context_requires_validation", "specialist_inputs/public_market_context",
+                                         "Independently verify comparability, source rights and buyer-level evidence. Public context is advisory."))
         if isinstance(specialist, dict) and "consumer_research" in specialist:
             findings.extend(_consumer_findings(specialist["consumer_research"], "specialist_inputs/consumer_research"))
         if isinstance(specialist, dict) and "commercial_validation" in specialist:
