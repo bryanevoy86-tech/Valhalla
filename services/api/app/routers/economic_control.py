@@ -84,10 +84,10 @@ def existing_record(db, operation, kind, request):
     return row
 
 
-def store(db, operation, kind, request, *, receipt_ref=None):
+def store(db, operation, kind, request, *, receipt_ref=None, durable=True):
     row = store_record(db, operation, kind, record_payload(request), receipt_ref=receipt_ref)
     trigger_reassessment(db, operation.scope, row.id, now().replace(tzinfo=None))
-    commit(db)
+    commit(db) if durable else db.flush()
     return {"id": row.id, "sha256": row.digest, "sequence": row.sequence, "external_authority": False}
 
 
@@ -144,6 +144,10 @@ def mandate(request: Mandate, db: Session = Depends(get_db)):
 
 @router.post("/performance", status_code=201, dependencies=owner)
 def performance(request: Performance, db: Session = Depends(get_db)):
+    return _performance(request, db)
+
+
+def _performance(request: Performance, db: Session, *, durable=True):
     # Match delivery's order-before-pool lock order.
     checkout = verify_checkout_performance(db, request, lock=True)
     operation, state, pool = context(db, request.scope)
@@ -154,7 +158,7 @@ def performance(request: Performance, db: Session = Depends(get_db)):
         return retry(row)
     if request.end > now().date() or (state.performance and request.start != state.performance.end + timedelta(days=1)):
         raise HTTPException(409, "Performance evidence must be chronological and gap-free")
-    return store(db, operation, "PERFORMANCE", request, receipt_ref=request.receipt_ref)
+    return store(db, operation, "PERFORMANCE", request, receipt_ref=request.receipt_ref, durable=durable)
 
 
 @router.post("/liquidity", status_code=201, dependencies=owner)

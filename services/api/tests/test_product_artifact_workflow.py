@@ -37,8 +37,11 @@ ASSETS = f"{FACTORY}/product-artifacts"
 PHASE3 = "/api/completion/phase3/universal-opportunity"
 
 
+@pytest.mark.parametrize("operating_loop", (False, True), ids=("product", "operating-loop"))
 @pytest.mark.parametrize("deal_client", ["disk"], indirect=True)
-def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkeypatch, browser_acceptance):
+def test_internal_product_asset_stage_bind_verify_and_revoke(
+    deal_client, monkeypatch, browser_acceptance, disposable_http_server, operating_loop,
+):
     client, engine = deal_client
     admin = {"X-Business-Factory-Key": "ci-factory-for-product-assets"}
     owner = {**admin, "X-Owner-Mandate-Key": "ci-owner-for-product-assets"}
@@ -383,8 +386,25 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
             "message": "Restrict this action to reversible internal testing.", "evidence_ref": "fixture:owner-attestation",
         }],
     }
-    result = client.post(f"/loki/worker/reviews/{review_id}/result", headers=worker, json=finding)
-    assert result.status_code == 201, result.text
+    if operating_loop:
+        import httpx
+        import runpy
+        from app.main import app
+
+        cron = Path(__file__).resolve().parents[1] / "tools" / "cron"
+        monkeypatch.syspath_prepend(str(cron))
+        analyst_tick = runpy.run_path(str(cron / "loki_analyst_worker.py"))["tick"]
+
+        def independent_review(kind, expected):
+            with disposable_http_server(client, app=app) as server:
+                with httpx.Client(base_url=server.base_url, headers=worker, trust_env=False) as independent:
+                    result = analyst_tick(independent, kind, "independent-product-review")
+                    assert result["status"] == "reviewed" and result["review_id"] == expected
+
+        independent_review("universal_opportunity", review_id)
+    else:
+        result = client.post(f"/loki/worker/reviews/{review_id}/result", headers=worker, json=finding)
+        assert result.status_code == 201, result.text
 
     def evaluate():
         return client.post(f"{PHASE3}/evaluate", json={
@@ -396,7 +416,7 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
     findings = client.get(f"/loki/reviews/{review_id}/findings").json()
     reconsider = client.post(f"/loki/reviews/{review_id}/reconsider", headers=owner, json={
         "artifact_sha256": review["artifact_sha256"], "disposition": "accept_risk",
-        "material_finding_ids": [findings[0]["id"]],
+        "material_finding_ids": [item["id"] for item in findings],
         "reason": "Owner confirms that reversible private testing stays within the internal attestation.",
     })
     assert reconsider.status_code == 200, reconsider.text
@@ -408,8 +428,11 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
     specialist_result = challenge(specialist_input).model_dump(mode="json")
     assert any(item["category"] == "consumer_evidence_limits" for item in specialist_result["findings"])
     specialist_path = f"/loki/reviews/{report_review['review_id']}"
-    published = client.post(f"/loki/worker/reviews/{report_review['review_id']}/result", headers=worker, json=specialist_result)
-    assert published.status_code == 201, published.text
+    if operating_loop:
+        independent_review("pantheon_report", report_review["review_id"])
+    else:
+        published = client.post(f"/loki/worker/reviews/{report_review['review_id']}/result", headers=worker, json=specialist_result)
+        assert published.status_code == 201, published.text
     assert evaluate().status_code == 409
     specialist_findings = client.get(f"{specialist_path}/findings").json()
     acknowledged = client.post(f"{specialist_path}/reconsider", headers=owner, json={
@@ -472,6 +495,13 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
         **listing, "price_cents_cad": listing["price_cents_cad"] + 1,
     })
     assert different_price.status_code == 409, different_price.text
+
+    if operating_loop:
+        from .operating_rehearsal_case import run_operating_rehearsal
+
+        run_operating_rehearsal(client, engine, monkeypatch, disposable_http_server, owner, owner_session,
+                               buyer_session, buyer_email, listing, scope, checksum, today)
+        return
 
     mandate = {
         **scope, "product_id": asset["product_id"], "mandate_id": "product-rehearsal-mandate",

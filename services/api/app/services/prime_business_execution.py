@@ -465,7 +465,7 @@ def _bound_prime_decision(db: Session, verdict_id: UUID, work: Any, listing: dic
     return reference
 
 
-def submit_listing_draft(db: Session, request: Any) -> dict:
+def submit_listing_draft(db: Session, request: Any, *, commit: bool = True) -> dict:
     """Persist an idempotent work assignment; NO action occurs at submission."""
     inputs = {
         "action_type": ACTION_TYPE,
@@ -545,7 +545,7 @@ def submit_listing_draft(db: Session, request: Any) -> dict:
         payload={"action_id": action_id, "action_type": ACTION_TYPE},
     )
     try:
-        db.commit()
+        db.commit() if commit else db.flush()
     except IntegrityError:
         # Another submitter may have won the unique-key race. Roll back both
         # work and queue event, then verify the winner's complete request.
@@ -655,7 +655,7 @@ def approval_matches_action(item: LegacyInstanceWorkItem, approval: LegacyOrches
     )
 
 
-def _execute_locked_draft(db: Session, item: LegacyInstanceWorkItem) -> dict | None:
+def _execute_locked_draft(db: Session, item: LegacyInstanceWorkItem, *, commit: bool = True) -> dict | None:
     """Execute a single locked row; caller rolls back unsuccessful attempts."""
     started = time.monotonic_ns()
     payload = _json(item.payload_json, {})
@@ -801,7 +801,7 @@ def _execute_locked_draft(db: Session, item: LegacyInstanceWorkItem) -> dict | N
                message="Standing mandate use committed with verified draft",
                payload={"mandate_id": mandate_id, "action_id": item.action_id, "sha256": digest})
     item.status = "completed"
-    db.commit()
+    db.commit() if commit else db.flush()
     return {"status": "completed", "verified": True, "receipt": evidence}
 
 

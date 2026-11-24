@@ -121,6 +121,10 @@ def _rehearsal_costs(db, order):
 
 @router.post("/orders/{order_id}/cost-fixtures", status_code=201, dependencies=owner)
 def record_cost(order_id: UUID, request: CostIn, db: Session = Depends(get_db)):
+    return _record_cost(order_id, request, db)
+
+
+def _record_cost(order_id: UUID, request: CostIn, db: Session, *, commit=True):
     order = db.get(FoundryRehearsalOrder, order_id, with_for_update=True)
     if order is None:
         raise HTTPException(404, "Rehearsal order not found")
@@ -146,7 +150,7 @@ def record_cost(order_id: UUID, request: CostIn, db: Session = Depends(get_db)):
            message="Private rehearsal expense fixture recorded", payload=payload)
     db.flush()
     result = _view(db, order)
-    db.commit()
+    db.commit() if commit else db.flush()
     return result
 
 
@@ -201,7 +205,7 @@ def resolve_refund_support(order_id: UUID, payload: SupportResolutionIn, db: Ses
 
 
 def _record_support_resolution(
-    db: Session, order: FoundryRehearsalOrder, resolution: str, *, routine_scope: dict | None = None,
+    db: Session, order: FoundryRehearsalOrder, resolution: str, *, routine_scope: dict | None = None, commit=True,
 ):
     work = db.scalar(select(LegacyInstanceWorkItem).filter_by(action_id=order.action_id))
     if work is None:
@@ -239,7 +243,7 @@ def _record_support_resolution(
            message=message, payload=evidence)
     db.flush()
     result = _view(db, order)
-    db.commit()
+    db.commit() if commit else db.flush()
     return result
 
 
@@ -387,6 +391,10 @@ def _require_current_campaign_plan(db: Session, campaign_id: int, plan: dict) ->
 
 @router.post("/orders", status_code=201, dependencies=owner)
 def create_order(payload: OrderIn, db: Session = Depends(get_db)):
+    return _create_order(payload, db)
+
+
+def _create_order(payload: OrderIn, db: Session, *, commit=True):
     previous = db.get(FoundryRehearsalOrder, payload.order_id, with_for_update=True)
     if previous is not None:
         if (previous.action_id, previous.payment_reference) != (payload.action_id, payload.payment_reference):
@@ -422,7 +430,7 @@ def create_order(payload: OrderIn, db: Session = Depends(get_db)):
         if visit is not None:
             visit.order_id = order.id
         result = _view(db, order)
-        db.commit()
+        db.commit() if commit else db.flush()
     except IntegrityError:
         db.rollback()
         raise HTTPException(409, "Order or payment reference already used") from None
@@ -439,6 +447,10 @@ def read_order(order_id: UUID, db: Session = Depends(get_db)):
 
 @router.post("/orders/{order_id}/delivery", dependencies=owner)
 def record_delivery(order_id: UUID, db: Session = Depends(get_db)):
+    return _record_delivery(order_id, db)
+
+
+def _record_delivery(order_id: UUID, db: Session, *, commit=True):
     order = db.get(FoundryRehearsalOrder, order_id, with_for_update=True)
     if order is None:
         raise HTTPException(404, "Rehearsal order not found")
@@ -451,7 +463,7 @@ def record_delivery(order_id: UUID, db: Session = Depends(get_db)):
     if order.delivered_at is None:
         order.delivered_at = datetime.now(timezone.utc)
     result = _view(db, order)
-    db.commit()
+    db.commit() if commit else db.flush()
     return result
 
 
@@ -485,6 +497,10 @@ async def _signed_fixture(request: Request):
 
 @router.post("/payment-fixtures")
 def apply_fixture(event: tuple = Depends(_signed_fixture), db: Session = Depends(get_db)):
+    return _apply_fixture(event, db)
+
+
+def _apply_fixture(event: tuple, db: Session, *, commit=True):
     kind, event_id, payment, amount, digest = event
     order = db.scalar(select(FoundryRehearsalOrder).filter_by(payment_reference=payment).with_for_update())
     if order is None:
@@ -512,7 +528,7 @@ def apply_fixture(event: tuple = Depends(_signed_fixture), db: Session = Depends
     try:
         db.flush()
         result = _view(db, order)
-        db.commit()
+        db.commit() if commit else db.flush()
     except IntegrityError:
         db.rollback()
         raise HTTPException(409, "Fixture event ID already used") from None
@@ -545,6 +561,10 @@ def _attribution_schema(db):
 
 @router.post("/campaign-visits", status_code=201, dependencies=owner)
 def record_campaign_visit(payload: VisitIn, db: Session = Depends(get_db)):
+    return _record_campaign_visit(payload, db)
+
+
+def _record_campaign_visit(payload: VisitIn, db: Session, *, commit=True):
     _attribution_schema(db)
     scope = payload.model_dump(exclude={"visit_id", "campaign_id", "consent_fixture_id"})
     _check_legacy(db, **scope, lock=True)
@@ -590,7 +610,7 @@ def record_campaign_visit(payload: VisitIn, db: Session = Depends(get_db)):
                    event_type=CONSENT_TYPE, message="Synthetic scoped opt-in recorded", payload=proof)
         db.add(FoundryCampaignVisit(id=payload.visit_id, campaign_id=payload.campaign_id, scope_key=key))
         try:
-            db.commit()
+            db.commit() if commit else db.flush()
         except IntegrityError:
             db.rollback()
             raise HTTPException(409, "Visit ID already used") from None
@@ -740,6 +760,10 @@ class SettlementIn(BaseModel):
 
 @router.post("/orders/{order_id}/settlement-fixtures", dependencies=owner)
 def reconcile_settlement(order_id: UUID, request: SettlementIn, db: Session = Depends(get_db)):
+    return _reconcile_settlement(order_id, request, db)
+
+
+def _reconcile_settlement(order_id: UUID, request: SettlementIn, db: Session, *, commit=True):
     if not statement_ready(db) or not inspect(db.connection()).has_table(FoundryFixtureSettlement.__tablename__):
         raise HTTPException(503, "Rehearsal settlement schema unavailable")
     order = db.get(FoundryRehearsalOrder, order_id, with_for_update=True)
@@ -783,7 +807,7 @@ def reconcile_settlement(order_id: UUID, request: SettlementIn, db: Session = De
                                         statement_id=statement.id, statement_sha256=statement.digest,
                                         payment_sha256=payment.sha256, amount_minor=amount))
         try:
-            db.commit()
+            db.commit() if commit else db.flush()
         except IntegrityError:
             db.rollback()
             raise HTTPException(409, "Statement posting or signed payment already reconciled") from None

@@ -4,6 +4,10 @@ Companion to the [operational audit](../docs/VALHALLA_AUTONOMY_OPERATIONAL_AUDIT
 
 First-business impact assumes the bounded one-time CAD lane. It does not preselect that offer, settle which legal duties apply, or change the January P0 gates. “First scoped” means prove the applicable slice before day one. “Conditional” means causal to the selected business or interface. “Later model” means the contract still gates its own business model or broader expansion. Effort ranges are estimates for one operator's verification or coordination of one scoped case, excluding engineering, service fees or elapsed evidence collection. Shared work overlaps and should be counted once. All records remain open for independent operational evidence.
 
+## First operating loop verification
+
+The [disposable operating proof](../docs/VALHALLA_FIRST_OPERATING_LOOP.md) advances Legacy execution, consent-bound acquisition, commerce, settlement and Mimir. An actual polling process dispatches the scoped work. The case records separate buyer, payment fixture, statement fixture and worker actors with zero routine owner calls after the final mandate. Current stage remains isolated integration proof. Selection inputs and material Loki dispositions precede the connected worker run. Production gates, commissioning and the 14 open P0 criteria are unchanged.
+
 ## 04. `api_wiring` (P0)
 
 - **Stage and source.** `FOCUSED_CI_TESTED`. Canonical FastAPI import registered 36 critical routers and all 95 required routes in the isolated runtime. [Primary source](../services/api/app/main.py).

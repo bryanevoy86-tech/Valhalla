@@ -8,9 +8,13 @@ DO NOT restart the project, regenerate completed packs, or treat API presence as
 
 Use the current head of draft PR #4 and confirm the latest required CI run. Use the current workstream index, integration matrix and latest ledger verification to choose unfinished work. Dated checkpoints and original prompts are historical records. The same index supersedes earlier execution orders in the root start page and the finish passes. There are 50 acceptance contracts, 53 task entries and seven construction packages.
 
+## Connected disposable operating rehearsal — November 24
+
+Use the [actor-by-actor evidence and reproduction](VALHALLA_FIRST_OPERATING_LOOP.md). After a final disposable mandate, the Prime worker dispatched the exact listing, purchase, delivery, refund intent, reconciled support and Mimir evidence without another owner call. The reviewed candidate was prepared before the run. The next dependency is automatic source intake, specialist/Prime case preparation and independent review routing under an initial standing mandate, with a hard hold for unresolved material findings. Genuine providers, hosted WeWeb and the elapsed trial remain held.
+
 ## Operational autonomy audit — November 24
 
-Use the [owner report](VALHALLA_AUTONOMY_OPERATIONAL_AUDIT.md) and [50-contract dependency register](../ops/VALHALLA_OPERATIONAL_DEPENDENCY_REGISTER.md). All five Legacy scopes lack a signed activation mandate. The connected fixture can now record the Prime actor for full-refund support closeout without a separate owner key. Genuine hosted acceptance and all provider holds remain in place. The next internal task is to join consent-bound acquisition, paid-order/fulfillment and routine support dispatch through the existing receipts, then assert exact tenant scope, stop, recovery, and no owner routine events in one disposable run. The latest tested revision and commands are in the [change ledger](../ops/CHANGE_LEDGER.md#november-24-operational-autonomy-audit).
+Use the [owner report](VALHALLA_AUTONOMY_OPERATIONAL_AUDIT.md) and [50-contract dependency register](../ops/VALHALLA_OPERATIONAL_DEPENDENCY_REGISTER.md). All five Legacy scopes lack a signed activation mandate. The connected fixture can now record the Prime actor for full-refund support closeout without a separate owner key. Genuine hosted acceptance and all provider holds remain in place. The next internal task from this audit led to the connected disposable operating rehearsal above. The latest tested revision and commands are in the [change ledger](../ops/CHANGE_LEDGER.md#november-24-operational-autonomy-audit).
 
 ## Participant research preview — November 24
 
