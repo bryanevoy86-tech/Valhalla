@@ -1252,3 +1252,9 @@ The acceptance matrix retains 13 P0 and 39 total criteria requiring internal cod
 
 - Connected one current signed publisher observation to the existing scoped intake queue, ODIN and NJORD event-driven reports, separately authenticated Loki worker, explicit owner dispositions of material findings, automatic Prime evaluation, and a hash-linked final checkout mandate. A replacement observation triggers fresh reviews. Worker restart preserves completed actions. No owner action stands in for routine dispatch after authorization.
 - The [reproducible proof and actor ledger](../docs/VALHALLA_FIRST_OPERATING_LOOP.md#connected-source-to-outcome-proof) identify setup, denied probes, material exceptions, final authority, fixture peers and the retained Mimir outcome. [Stripe sandbox refund and independent bank/accounting acceptance](../docs/VALHALLA_REFUND_BANK_COMMISSIONING.md) remain uncommissioned. Preserve all holds and the canonical contracts.
+
+
+## November 24 commercial commissioning preparation
+
+- Added an off-by-default one-attempt native Stripe sandbox refund writer, separate from the API and reviewer. An expiring exact-scope intent binds the independently checked capture, current listing and CAD amount. The attempt is durable before transport. Independent readback verifies a unique Refund, signed callback and clearing evidence with no delivery, cash, banking or ledger effect.
+- Updated account inventory and prepared the [commissioning sheet](../docs/VALHALLA_COMMERCIAL_COMMISSIONING_SHEET.md), private WeWeb origin proof, 24-hour hosted acceptance and an inbound opt-in research path. No external provider resources or entitlement changed. Banking and all hosted and commercial gates are open.

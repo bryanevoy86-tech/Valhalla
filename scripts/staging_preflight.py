@@ -57,7 +57,7 @@ def check(env, role):
         env.get(key, "").lower() not in {"", "0", "false", "off"} for key in DISABLED_FLAGS
     ):
         failures.append("live effects or startup reset configuration must be absent")
-    if role in {"api", "worker"} and not _matches_database(env):
+    if role in {"api", "worker", "refund-writer"} and not _matches_database(env):
         failures.append("staging database target does not match the approved private host and database")
     reviewer_key = env.get("VALHALLA_LOKI_REVIEWER_KEY")
     if role == "api":
@@ -79,6 +79,23 @@ def check(env, role):
                 failures.append("sandbox signing secret, restricted test key and account identity are required")
     if role != "api" and any(env.get(key) for key in (*STRIPE_SECRETS, "VALHALLA_STRIPE_READBACK_ENABLED")):
         failures.append("provider credentials and readback settings belong only on the staging API")
+    if env.get("VALHALLA_STRIPE_SANDBOX_REFUND_ENABLED") == "1":
+        if (role not in {"api", "refund-writer"}
+                or not re.fullmatch(r"[0-9a-f]{64}", env.get("VALHALLA_STRIPE_SANDBOX_REFUND_SCOPE", ""))
+                or not re.fullmatch(r"\d{4}-\d{2}-\d{2}(?:\.[a-z]+)?",
+                                    env.get("VALHALLA_STRIPE_SANDBOX_REFUND_API_VERSION", ""))):
+            failures.append("sandbox refund requires the exact authorized scope and API version")
+    if role != "refund-writer" and env.get("VALHALLA_STRIPE_SANDBOX_REFUND_WRITE_KEY"):
+        failures.append("the restricted refund writer key belongs only in its isolated process")
+    if role == "refund-writer":
+        if (not env.get("VALHALLA_STRIPE_SANDBOX_REFUND_WRITE_KEY", "").startswith("rk_test_")
+                or env.get("VALHALLA_STRIPE_SANDBOX_REFUND_ENABLED") != "1"
+                or env.get("VALHALLA_STRIPE_EVENT_MODE") != "test"
+                or not env.get("VALHALLA_STRIPE_ACCOUNT_ID", "").startswith("acct_")
+                or reviewer_key or any(env.get(key) for key in (
+                    *OPERATOR_KEYS, "PLAID_SECRET", "VALHALLA_PLAID_READ_ACCESS_TOKEN",
+                ))):
+            failures.append("refund writer requires separate test-only credentials and an approved enablement")
     if role == "worker" and (reviewer_key or any(env.get(key) for key in OPERATOR_KEYS)):
         failures.append("operating worker must have no reviewer, owner, Prime or Factory keys")
     if role == "reviewer":
@@ -94,7 +111,7 @@ def check(env, role):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("role", choices=("api", "worker", "reviewer"))
+    parser.add_argument("role", choices=("api", "worker", "reviewer", "refund-writer"))
     args = parser.parse_args()
     failures = check(os.environ, args.role)
     for failure in failures:

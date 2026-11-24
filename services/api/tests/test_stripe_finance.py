@@ -810,3 +810,155 @@ def test_signed_cash_close_reconciles_scoped_fixture_without_movement_authority(
         db.commit()
     assert client.post(path, headers=headers, json=body).status_code == 409
     assert len(calls) == 3
+
+
+@pytest.mark.parametrize("timeout", [False, True], ids=["native-response", "lost-response"])
+def test_sandbox_refund_attempt_is_single_and_callback_requires_separate_readback(deal_client, monkeypatch, timeout):
+    from urllib.parse import parse_qs
+
+    from app.models.go_live_state import GoLiveState
+    from app.services import stripe_sandbox_refund as refund_trial
+    from app.services.specialist_triggers import outcome_scope_key
+
+    client, engine = deal_client
+    for model in (StripeFinancialEvent, StripeBalanceEvidence, StripeOrderBinding, LegacyOrchestrationEvent,
+                  GoLiveState, Account, Period, JournalEntry, JournalLine):
+        model.__table__.create(engine, checkfirst=True)
+    monkeypatch.setattr(database, "SessionLocal", lambda: Session(engine))
+    monkeypatch.setattr("app.webhooks.stripe.is_live", lambda: False)
+    monkeypatch.setattr("app.routers.stripe_financial.is_live", lambda: False)
+    monkeypatch.setenv("APP_ENV", "staging")
+    monkeypatch.setenv("ENV", "staging")
+    monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "false")
+    monkeypatch.setenv("VALHALLA_OWNER_MANDATE_KEY", "refund-fixture-owner")
+    monkeypatch.setenv("VALHALLA_STRIPE_EVENT_MODE", "test")
+    monkeypatch.setenv("VALHALLA_STRIPE_ACCOUNT_ID", "acct_RefundTrialAcct")
+    secret = "independent-fixture-webhook"
+    monkeypatch.setenv("VALHALLA_STRIPE_TEST_WEBHOOK_SECRET", secret)
+    monkeypatch.setenv("VALHALLA_STRIPE_SANDBOX_REFUND_API_VERSION", "2025-02-24.acacia")
+    scope = {"legacy_instance_id": "refund-fixture", "business_id": "refund-business",
+             "engine_id": "digital-fixture", "jurisdiction": "CA-MB"}
+    monkeypatch.setenv("VALHALLA_STRIPE_SANDBOX_REFUND_SCOPE", outcome_scope_key(scope))
+    monkeypatch.delenv("VALHALLA_STRIPE_SANDBOX_REFUND_ENABLED", raising=False)
+    product = SimpleNamespace(id=uuid4(), product_id="test-product", sha256="a" * 64)
+    monkeypatch.setattr("app.routers.foundry_checkout._listing",
+                        lambda *args: ({"sha256": "b" * 64}, product, 1000, scope))
+    order_id = uuid4()
+    with Session(engine) as db:
+        db.add(GoLiveState(id=1, go_live_enabled=False, kill_switch_engaged=False))
+        db.commit()
+    owner = {"X-Owner-Mandate-Key": "refund-fixture-owner"}
+    root = "/api/governance/floor/stripe-orders"
+    order_url = f"{root}/{order_id}"
+    bind = {"order_id": str(order_id), "scope": scope, "action_id": "bfd_" + "3" * 32,
+            "payment_intent_id": "pi_RefundTrial"}
+    bound = client.post(root, json=bind, headers=owner)
+    assert bound.status_code == 201, bound.text
+
+    def signed(event_id, kind, item):
+        raw = json.dumps({"id": event_id, "type": kind, "livemode": False, "data": {"object": item}}).encode()
+        timestamp = str(int(time.time()))
+        digest = hmac.new(secret.encode(), timestamp.encode() + b"." + raw, hashlib.sha256).hexdigest()
+        return client.post("/webhooks/stripe", content=raw, headers={"Stripe-Signature": f"t={timestamp},v1={digest}"})
+
+    metadata = {"valhalla_order_id": str(order_id)}
+    capture = {"id": "pi_RefundTrial", "object": "payment_intent", "status": "succeeded", "latest_charge": "ch_RefundTrial",
+               "amount_received": 1000, "currency": "cad", "metadata": metadata}
+    assert signed("evt_RefundTrialCapture", "payment_intent.succeeded", capture).status_code == 200
+    charge = {"id": "ch_RefundTrial", "object": "charge", "payment_intent": "pi_RefundTrial", "livemode": False,
+              "currency": "cad", "amount_captured": 1000, "status": "succeeded", "paid": True, "captured": True,
+              "disputed": False, "refunded": False, "amount_refunded": 0,
+              "balance_transaction": "txn_RefundTrialSale", "metadata": metadata}
+    native_refund = {"id": "re_RefundTrial", "object": "refund", "payment_intent": "pi_RefundTrial",
+                     "charge": "ch_RefundTrial", "status": "succeeded", "currency": "cad", "amount": 1000,
+                     "balance_transaction": "txn_RefundTrialReturn",
+                     "metadata": {"valhalla_refund_intent": refund_trial.key(order_id, "intent")}}
+    writes = []
+
+    def provider(req, *, writer):
+        if req.method == "POST":
+            assert writer and req.url.path == "/v1/refunds"
+            writes.append(req.headers["Idempotency-Key"])
+            assert req.headers["Stripe-Version"] == "2025-02-24.acacia"
+            parameters = parse_qs(req.content.decode())
+            assert parameters == {"charge": ["ch_RefundTrial"], "amount": ["1000"],
+                                  "metadata[valhalla_refund_intent]": [refund_trial.key(order_id, "intent")]}
+            charge.update(refunded=True, amount_refunded=1000)
+            if timeout:
+                raise httpx.ReadTimeout("simulated lost response", request=req)
+            return httpx.Response(200, json=native_refund)
+        if req.url.path == "/v1/refunds":
+            assert not writer
+            return httpx.Response(200, json={"object": "list", "has_more": False,
+                                             "data": [native_refund] if writes else []})
+        balances = {
+            "/v1/balance_transactions/txn_RefundTrialSale": ("txn_RefundTrialSale", "ch_RefundTrial", "charge", 1000),
+            "/v1/balance_transactions/txn_RefundTrialReturn": ("txn_RefundTrialReturn", "re_RefundTrial", "refund", -1000),
+        }
+        if req.url.path in balances:
+            txn, source, kind, amount = balances[req.url.path]
+            return httpx.Response(200, json={"id": txn, "object": "balance_transaction", "source": source,
+                                             "type": kind, "currency": "cad", "amount": amount, "net": amount, "fee": 0,
+                                             "available_on": int(time.time()) - 1, "status": "available"})
+        return httpx.Response(200, json={"/v1/account": {"id": "acct_RefundTrialAcct", "object": "account"},
+                                         "/v1/charges/ch_RefundTrial": charge,
+                                         "/v1/refunds/re_RefundTrial": native_refund}[req.url.path])
+
+    authority = {"scope": scope, "charge_id": "ch_RefundTrial", "capture_event_id": "evt_RefundTrialCapture",
+                 "amount_minor": 1000, "ttl_seconds": 120}
+    endpoint = order_url + "/sandbox-refund-intent"
+    assert client.post(endpoint, headers=owner, json=authority).status_code == 503
+    monkeypatch.setenv("VALHALLA_STRIPE_SANDBOX_REFUND_ENABLED", "1")
+    with httpx.Client(base_url="https://stripe-read.invalid",
+                      transport=httpx.MockTransport(lambda x: provider(x, writer=False))) as reader:
+        with Session(engine) as db:
+            read_processor_balance(db, "evt_RefundTrialCapture", client=reader, account_id="acct_RefundTrialAcct", live=False)
+        assert client.post(endpoint, json=authority).status_code == 401
+        assert client.post(endpoint, headers=owner, json={**authority, "amount_minor": 999}).status_code == 409
+        planned = client.post(endpoint, headers=owner, json=authority)
+        assert planned.status_code == 200, planned.text
+        assert client.post(endpoint, headers=owner, json=authority).json() == planned.json()
+        stamp = refund_trial.now()
+        with monkeypatch.context() as expired:
+            expired.setattr(refund_trial, "now", lambda: stamp + timedelta(minutes=10))
+            with Session(engine) as db:
+                with pytest.raises(HTTPException, match="authority expired or changed"):
+                    refund_trial.dispatch(db, order_id, reader)
+        assert writes == []
+        for stopped in (True, False):
+            monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "true" if stopped else "false")
+            with Session(engine) as db, httpx.Client(base_url="https://stripe-writer.invalid",
+                                                     transport=httpx.MockTransport(lambda x: provider(x, writer=True))) as writer:
+                if stopped:
+                    with pytest.raises(HTTPException, match="operational hold"):
+                        refund_trial.dispatch(db, order_id, writer)
+                else:
+                    result = refund_trial.dispatch(db, order_id, writer)
+                    assert result["status"] == ("READBACK_REQUIRED" if timeout else "SUBMITTED_TEST_REFUND")
+        with Session(engine) as db, httpx.Client(base_url="https://stripe-writer.invalid",
+                                                 transport=httpx.MockTransport(lambda x: provider(x, writer=True))) as writer:
+            assert refund_trial.dispatch(db, order_id, writer)["status"] == "READBACK_REQUIRED"
+        assert writes == [f"valhalla-{planned.json()['request_sha256']}"]
+        with Session(engine) as db:
+            with pytest.raises(HTTPException, match="callback required"):
+                refund_trial.observe(db, order_id, reader, "acct_RefundTrialAcct")
+        assert signed("evt_RefundTrialDone", "charge.refunded", charge).status_code == 200
+        assert signed("evt_RefundTrialDone", "charge.refunded", charge).json()["duplicate"] is True
+        with Session(engine) as db:
+            result = refund_trial.observe(db, order_id, reader, "acct_RefundTrialAcct")
+            assert result["status"] == "VERIFIED_SANDBOX_PROCESSOR_REFUND"
+            assert result["available_cash_minor"] is None and result["ledger_posting_created"] is False
+            assert db.query(JournalEntry).count() == 0
+            assert refund_trial.observe(db, order_id, reader, "acct_RefundTrialAcct") == result
+
+        @contextmanager
+        def independent_reader(*, live):
+            assert live is False
+            yield reader, "acct_RefundTrialAcct"
+
+        monkeypatch.setattr(refund_trial, "stripe_readback_client", independent_reader)
+        endpoint = order_url + "/sandbox-refund-readback"
+        assert client.post(endpoint).status_code == 401
+        verified = client.post(endpoint, headers=owner)
+        assert verified.status_code == 200, verified.text
+        assert verified.json() == result

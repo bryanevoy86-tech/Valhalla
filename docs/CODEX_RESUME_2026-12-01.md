@@ -8,6 +8,10 @@ DO NOT restart the project, regenerate completed packs, or treat API presence as
 
 Use the current head of draft PR #4 and confirm the latest required CI run. Use the current workstream index, integration matrix and latest ledger verification to choose unfinished work. Dated checkpoints and original prompts are historical records. The same index supersedes earlier execution orders in the root start page and the finish passes. There are 50 acceptance contracts, 53 task entries and seven construction packages.
 
+## Commercial commissioning preparation — November 24
+
+Use the [consolidated commissioning sheet](VALHALLA_COMMERCIAL_COMMISSIONING_SHEET.md). Read-only account inventory confirmed both WeWeb projects are Free and unpublished, and no isolated Render stack was visible. Workspace quota, the actual Preview origin and approval are pending. The [refund and bank commissioning contract](VALHALLA_REFUND_BANK_COMMISSIONING.md) adds the guarded one-attempt sandbox writer and independent callback/readback gate. No paid, hosted, provider, bank or commercial acceptance has been performed.
+
 ## Signed source-to-outcome disposable rehearsal — November 24
 
 Use the [current worker proof and actor ledger](VALHALLA_FIRST_OPERATING_LOOP.md#connected-source-to-outcome-proof). One authorized incoming publisher stream, ODIN and NJORD, a separately keyed Loki worker, material exception disposition, automatic Prime evaluation, and one final mandate now lead into the existing disposable commerce and Mimir run. The [refund and bank commissioning contract](VALHALLA_REFUND_BANK_COMMISSIONING.md) remains behind separate authority. Continue broader hosted/provider evidence and upstream discovery coverage only within the existing workstreams. No production or provider gate closed.

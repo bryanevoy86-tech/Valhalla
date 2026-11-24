@@ -739,7 +739,7 @@
       "owner_external_authorization_required": true,
       "continuation": {
         "next_implementation": "Connect the canonical Stripe financial event consumer to exact order, entitlement and ledger receipts, then verify the authorized sandbox event stream and separately sourced settlement.",
-        "existing_test_evidence": "test_product_artifact_workflow.py exercises exact matches, difference reporting and bound-receipt replay in an integrated checkout. test_stripe_finance.py exercises signed canonical ingress and exact account, order, charge and balance linkage with synthetic upstream transport.",
+        "existing_test_evidence": "test_product_artifact_workflow.py exercises exact matches, difference reporting and bound-receipt replay in an integrated checkout. test_stripe_finance.py exercises signed canonical ingress and exact account, order, charge and balance linkage with synthetic upstream transport. Offline full-refund commissioning tests bind a signed test capture, durable single attempt, native-shaped signed callback, unique independent Refund and available clearing evidence. A lost response is recovered read-only. No real provider or ledger effect is verified.",
         "owner_action": "Separate owner authorization applies before external execution or staging activation.",
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {

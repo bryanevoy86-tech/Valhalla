@@ -66,6 +66,22 @@ class StagingPreflightTests(unittest.TestCase):
         self.assertTrue(stage.check({**self.reviewer, "VALHALLA_LOKI_QUEUE_URL": "https://foreign.invalid"}, "reviewer"))
         self.assertTrue(stage.check({**self.reviewer, "DATABASE_URL": self.worker["DATABASE_URL"]}, "reviewer"))
 
+    def test_refund_writer_isolated_settings(self):
+        writer = {
+            **self.worker, "VALHALLA_STRIPE_EVENT_MODE": "test", "VALHALLA_STRIPE_ACCOUNT_ID": "acct_fixture",
+            "VALHALLA_STRIPE_SANDBOX_REFUND_ENABLED": "1", "VALHALLA_STRIPE_SANDBOX_REFUND_WRITE_KEY": "rk_test_fixture",
+            "VALHALLA_STRIPE_SANDBOX_REFUND_API_VERSION": "2025-02-24.acacia",
+            "VALHALLA_STRIPE_SANDBOX_REFUND_SCOPE": "a" * 64,
+        }
+        self.assertEqual(stage.check(writer, "refund-writer"), [])
+        self.assertTrue(stage.check({**self.api, **writer}, "api"))
+        for change in ({"VALHALLA_STRIPE_SANDBOX_REFUND_WRITE_KEY": "rk_live_fixture"},
+                       {"VALHALLA_STRIPE_READBACK_KEY": "rk_test_other"},
+                       {"VALHALLA_STRIPE_SANDBOX_REFUND_SCOPE": ""},
+                       {"VALHALLA_LOKI_REVIEWER_KEY": "reviewer"},
+                       {"VALHALLA_PRIME_CONTROL_KEY": "prime"}):
+            self.assertTrue(stage.check({**writer, **change}, "refund-writer"))
+
     def test_worker_launcher_stops_at_hold_before_starting_any_lane(self):
         import os
         import subprocess

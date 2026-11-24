@@ -28,6 +28,7 @@ from app.services.stripe_dispute_correction import ChargebackIn, configured_char
 from app.services.stripe_refund_correction import (
     RefundCorrectionIn, configured_refund_correction, configured_subscription_refund,
 )
+from app.services.stripe_sandbox_refund import SandboxRefundAuthority, configured_observation, prepare as prepare_refund
 from app.services.stripe_recurring import (
     InvoiceProofIn, RecurringBindingIn, apply_paid_invoice, bind_recurring, recurring_clients, schedule_cancellation,
     start_checkout, subscriber_recurring_list, subscription_status, verify_period_payout, verify_period_processor_balance,
@@ -47,6 +48,16 @@ owner_keys = [Depends(require_prime_control_key), Depends(require_owner_mandate_
 def readback(event_id: str, db: Session = Depends(get_db)):
     return private_owner_response(configured_readback(db, event_id, live=is_live()))
 
+
+
+@router.post("/api/governance/floor/stripe-orders/{order_id}/sandbox-refund-intent", dependencies=owner_keys)
+def prepare_sandbox_refund(order_id: UUID, request: SandboxRefundAuthority, db: Session = Depends(get_db)):
+    return private_owner_response(prepare_refund(db, order_id, request))
+
+
+@router.post("/api/governance/floor/stripe-orders/{order_id}/sandbox-refund-readback", dependencies=owner_keys)
+def read_sandbox_refund(order_id: UUID, db: Session = Depends(get_db)):
+    return private_owner_response(configured_observation(db, order_id))
 
 
 @router.post("/api/governance/floor/stripe-orders/sandbox-payment-plan", dependencies=owner_keys)
