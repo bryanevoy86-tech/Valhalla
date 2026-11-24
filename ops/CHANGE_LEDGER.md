@@ -1264,3 +1264,9 @@ The acceptance matrix retains 13 P0 and 39 total criteria requiring internal cod
 
 - Added the [dossier](../docs/VALHALLA_FULL_GO_LIVE_READINESS.md) and explicit duty and fallback for every original acceptance contract. Cross-checked the 21 runtime roles and retained the complete doctrine, activation dependencies and exact acceptance text.
 - Added channel hold visibility to the existing private owner briefing and scoped operating view. These projections grant no execution or release authority and expose no unverified spend, outcome or accessible cash. Existing supported local, staging and professional boundaries remain in force.
+
+## November 24 launch-essential internal implementation
+
+- Closed the legacy acquisition dispatch discrepancy. The owner briefing reason and outbox hold agree, even on a database containing a historical global live flag. The worker neither opens SMTP/HTTP nor consumes queued evidence.
+- Added a strict disposable Prime handoff from exact scheduled ODIN and NJORD reports to the existing independent Loki review. The original receipt chain remains the end-to-end regression, and the new provider/process boundaries still require independent staging proof.
+- Recorded bounded role coverage and cost assumptions for the five delegated duty areas in the existing operational register. No external effects or release authority were granted.

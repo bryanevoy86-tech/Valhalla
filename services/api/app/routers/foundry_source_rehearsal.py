@@ -20,7 +20,7 @@ from app.models.completion_registry import LegacyOrchestrationEvent as Event
 from app.models.foundry_evidence import FoundryEvidence
 from app.models.foundry_intake import FoundryIntakeJob
 from app.models.specialist_assignment import SpecialistAssignment
-from app.pantheon.monitor import run_assignment, utc_now, verified_report
+from app.pantheon.monitor import SCHEDULED_WORKER, run_assignment, trigger_report_id, utc_now, verified_report
 from app.routers import foundry_checkout as checkout
 from app.routers import foundry_operating_rehearsal as operating
 from app.routers.auth_weweb import private_owner_response, require_owner_session
@@ -53,6 +53,7 @@ LENS_ASSUMPTIONS = {
 
 
 class Authority(operating.Mandate):
+    require_scheduled_specialists: bool = Field(default=False, strict=True)
     source_id: Annotated[str, Field(min_length=3, max_length=80)]
     external_key: Annotated[str, Field(pattern=r"^[a-zA-Z0-9_-]{3,80}$")]
     assignment_ids: Annotated[list[UUID], Field(min_length=2, max_length=5)]
@@ -272,6 +273,21 @@ def response(receipt):
             "receipt_sha256": receipt["sha256"]}
 
 
+def scheduled_source_report(db, assignment, trigger):
+    try:
+        report = verified_report(db, trigger_report_id(assignment.id, trigger))
+    except HTTPException as exc:
+        if exc.status_code == 404:
+            return None
+        raise
+    if (report.get("execution_path"), report.get("assignment_id"), report.get("role"), report.get("scope"),
+            report.get("trigger"), report.get("trigger_event_id"), report.get("status")) != (
+            SCHEDULED_WORKER, str(assignment.id), assignment.role, assignment.scope,
+            "SOURCE_DISCOVERY", trigger, "observed"):
+        raise HTTPException(409, "Scheduled specialist evidence does not match the authorized source assignment")
+    return report
+
+
 @router.post("/{run_id}/advance", dependencies=PRIME)
 def advance(run_id: UUID, db: Session = Depends(get_db)):
     # The downstream worker owns the loop after the checked handoff.
@@ -303,17 +319,24 @@ def advance(run_id: UUID, db: Session = Depends(get_db)):
     for assignment in assignments(db, policy["assignment_ids"], scope):
         name = stage(source, f"r{assignment.role.lower()}")
         if name not in chain:
-            state = run_assignment(db, assignment.role, assignment_id=assignment.id,
-                                   exact_trigger=f"DISCOVERY-{job_id}", durable=False)
-            if state["status"] not in {"observed", "replayed"}:
-                raise HTTPException(409, "Exact specialist evidence unavailable")
-            report = verified_report(db, state["report_event_id"])
+            trigger = f"DISCOVERY-{job_id}"
+            if policy.get("require_scheduled_specialists"):
+                report = scheduled_source_report(db, assignment, trigger)
+                if report is None:
+                    return {"status": "waiting", "reason": "SCHEDULED_SPECIALIST", "role": assignment.role}
+            else:
+                state = run_assignment(db, assignment.role, assignment_id=assignment.id,
+                                       exact_trigger=trigger, durable=False)
+                if state["status"] not in {"observed", "replayed"}:
+                    raise HTTPException(409, "Exact specialist evidence unavailable")
+                report = verified_report(db, state["report_event_id"])
             if not any(item["evidence_id"] == str(row.id) and item["sha256"] == row.digest
                        for item in report["observations"].get("foundry_signals", [])):
                 raise HTTPException(409, "Specialist omitted exact evidence")
             return response(add(db, run_id, chain, name, "PANTHEON_WORKER", scope, {
                 "role": assignment.role, "assignment_id": assignment.id, "report_id": report["report_event_id"],
                 "report_sha256": report["report_sha256"], "source_sha256": row.digest,
+                "execution_path": report.get("execution_path", "HISTORICAL_UNATTRIBUTED"),
             }))
         report_rows.append(chain[name])
     name = stage(source, "review")

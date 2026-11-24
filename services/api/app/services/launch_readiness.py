@@ -2,6 +2,7 @@
 from sqlalchemy import inspect
 
 from app.models.go_live_state import GoLiveState
+from app.services.go_live import DEFAULT_ROW_ID, RELEASE_EVIDENCE_BLOCKER
 from app.services.prime_business_execution import _emergency_stop_active
 
 
@@ -21,10 +22,18 @@ COMMON_REQUIREMENTS = ("EXACT_STANDING_AUTHORITY", "COST_LIMIT", "OPERATOR_FALLB
                        "CURRENT_INDEPENDENT_ACCEPTANCE")
 
 
+def channel_release_blocker(channel: str) -> str | None:
+    """Uncommissioned channels lack an independent release evidence verifier."""
+    if channel not in CHANNEL_REQUIREMENTS:
+        raise ValueError("Unknown external action channel")
+    return RELEASE_EVIDENCE_BLOCKER
+
+
 def capability_release_holds(db):
-    state = (db.get(GoLiveState, 1) if inspect(db.connection()).has_table(GoLiveState.__tablename__) else None)
+    state = (db.get(GoLiveState, DEFAULT_ROW_ID)
+             if inspect(db.connection()).has_table(GoLiveState.__tablename__) else None)
     stop = "ENGAGED" if _emergency_stop_active(db) else "CLEAR" if state is not None else "UNKNOWN"
-    blockers = ["OPERATIONAL_RELEASE_EVIDENCE_NOT_CONNECTED"]
+    blockers = [RELEASE_EVIDENCE_BLOCKER]
     if stop != "CLEAR":
         blockers.append("EMERGENCY_STOP_NOT_CLEAR")
     return {
@@ -32,7 +41,8 @@ def capability_release_holds(db):
         "emergency_stop": stop,
         "internal_scope": {"mode": "EXISTING_DISPOSABLE_CONTROLS", "standing_authority_required": True},
         "channels": {
-            name: {"status": "HELD", "requirements": [*COMMON_REQUIREMENTS, *required]}
+            name: {"status": "HELD", "release_blocker": channel_release_blocker(name),
+                   "requirements": [*COMMON_REQUIREMENTS, *required]}
             for name, required in CHANNEL_REQUIREMENTS.items()
         },
         "global_blockers": blockers,

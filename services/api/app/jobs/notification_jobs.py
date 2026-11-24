@@ -14,6 +14,7 @@ from app.core.engines.guard_runtime import enforce_engine
 from app.core.db import SessionLocal
 from app.core.settings import settings
 from app.models.notify import Outbox
+from app.services.launch_readiness import channel_release_blocker
 
 
 def _send_email(row: Outbox) -> None:
@@ -41,6 +42,10 @@ def _send_email(row: Outbox) -> None:
 
 def dispatch_pending(limit: int = 20) -> dict:
     """Process queued outbox items; returns counts."""
+    blocker = channel_release_blocker("customer_acquisition_and_sales")
+    if blocker:
+        return {"ok": False, "status": "held", "reason": blocker, "sent": 0, "error": 0}
+
     db: Session = SessionLocal()
     sent = 0
     errored = 0

@@ -24,6 +24,7 @@ from app.services.prime_business_execution import (
 
 
 REPORT_EVENT = "PANTHEON_ASSIGNMENT_REPORT"
+SCHEDULED_WORKER = "SCHEDULED_ROLE_WORKER"
 
 
 def utc_now():
@@ -93,7 +94,16 @@ def observations(db: Session, lens: str, scope: dict, outcomes: list[dict], now,
                              "basis": "AGE_SINCE_LAST_RECORDED_WORK_UPDATE"}}
 
 
-def run_assignment(db: Session, role: str, *, now=None, assignment_id=None, exact_trigger=None, durable=True) -> dict:
+def run_scheduled_assignment(db: Session, role: str) -> dict:
+    return run_assignment(db, role, execution_path=SCHEDULED_WORKER)
+
+
+def trigger_report_id(assignment_id, trigger: str) -> str:
+    return "GOD-" + hashlib.sha256(f"{assignment_id}/{trigger}".encode()).hexdigest()
+
+
+def run_assignment(db: Session, role: str, *, now=None, assignment_id=None, exact_trigger=None, durable=True,
+                   execution_path="IN_PROCESS") -> dict:
     if role not in LENSES:
         raise ValueError("Unknown specialist role")
     assignment_schema(db)
@@ -122,7 +132,7 @@ def run_assignment(db: Session, role: str, *, now=None, assignment_id=None, exac
     ).order_by(SpecialistTrigger.queued_at, SpecialistTrigger.event_id).limit(1)) if legacy_event is None else None
     event = legacy_event or (queued.event_id if queued is not None else None)
     if exact_trigger is not None and event != exact_trigger:
-        event_id = "GOD-" + hashlib.sha256(f"{assignment.id}/{exact_trigger}".encode()).hexdigest()
+        event_id = trigger_report_id(assignment.id, exact_trigger)
         try:
             previous = verified_report(db, event_id)
         except HTTPException as exc:
@@ -140,8 +150,7 @@ def run_assignment(db: Session, role: str, *, now=None, assignment_id=None, exac
     trigger_type = ("FOUNDRY_SOURCE_WITHDRAWN" if withdrawal_event else
                     "ECONOMIC_REASSESSMENT" if economic_event else "SOURCE_DISCOVERY" if discovery_event
                     else "VERIFIED_OUTCOME" if event else "CADENCE")
-    material = f"{assignment.id}/{event or assignment.next_due_at.isoformat()}"
-    event_id = "GOD-" + hashlib.sha256(material.encode()).hexdigest()
+    event_id = trigger_report_id(assignment.id, event or assignment.next_due_at.isoformat())
     if event:
         try:
             previous = verified_report(db, event_id)
@@ -181,6 +190,7 @@ def run_assignment(db: Session, role: str, *, now=None, assignment_id=None, exac
             "missed_slots": max(0, elapsed_slots - 1),
         },
         "model_used": False, "external_authority": False, "independent_review_authority": False,
+        "execution_path": execution_path,
     }
     try:
         _check_legacy(db, **assignment.scope)

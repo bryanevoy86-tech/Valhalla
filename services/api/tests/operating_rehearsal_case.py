@@ -43,6 +43,7 @@ def run_operating_rehearsal(client, engine, monkeypatch, serve, owner, owner_ses
         source_root = f"/api/foundry/source-rehearsal/{run_id}"
         before = {**request, "source_id": upstream["export"]["source_id"], "external_key": upstream["export"]["external_key"],
                   "scenario": upstream["scenario"], "assignment_ids": upstream["assignment_ids"], "experiment_budget_minor": 100}
+        before["require_scheduled_specialists"] = True
         assert client.post(source_root + "/authority", headers=owner, json=before).status_code == 503
     else:
         assert client.post(root + "/mandate", headers=owner, json=request).status_code == 503
@@ -244,6 +245,7 @@ def run_operating_rehearsal(client, engine, monkeypatch, serve, owner, owner_ses
 def source_chain(client, network, engine, monkeypatch, authority, owner, upstream, worker, command, env, root, today,
                  owner_session, buyer_session):
     from app.models.foundry_evidence import FoundryEvidence
+    from app.pantheon.monitor import SCHEDULED_WORKER, run_scheduled_assignment, trigger_report_id
     from app.services.foundry_intake import source_signature_message
 
     start = client.post(root + "/authority", headers=owner, json=authority)
@@ -278,8 +280,24 @@ def source_chain(client, network, engine, monkeypatch, authority, owner, upstrea
     def assess(document):
         job = UUID(document["evidence"]["evidence_id"]).hex
         worker(network, "advanced", f"intake-{job}")
-        worker(network, "advanced", f"rodin-{job}")
-        worker(network, "advanced", f"rnjord-{job}")
+        # Exercise the same role entry point as the cron process in separate
+        # fixture sessions. The hosted process/credential boundary is a separate gate.
+        for role, assignment_id in zip(("ODIN", "NJORD"), upstream["assignment_ids"], strict=True):
+            waiting = worker(network, "waiting", "SCHEDULED_SPECIALIST")
+            assert waiting["role"] == role
+            expected_report = trigger_report_id(assignment_id, f"DISCOVERY-{UUID(job)}")
+            for _ in range(10):
+                with Session(engine) as specialist_db:
+                    result = run_scheduled_assignment(specialist_db, role)
+                assert result["status"] == "observed", result
+                if result["report_event_id"] == expected_report:
+                    break
+            else:
+                raise AssertionError(f"{role} did not reach the exact source trigger")
+            worker(network, "advanced", f"r{role.lower()}-{job}")
+        source_receipts = network.get(root).json()["source_receipts"]
+        assert [row["evidence"]["execution_path"] for row in source_receipts
+                if row["action_id"].endswith((f"rodin-{job}", f"rnjord-{job}"))] == [SCHEDULED_WORKER] * 2
         with monkeypatch.context() as missing:
             missing.delenv("VALHALLA_LOKI_REVIEWER_KEY")
             worker(network, "blocked", None, code=2)

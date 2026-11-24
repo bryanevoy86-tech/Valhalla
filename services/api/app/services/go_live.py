@@ -21,6 +21,7 @@ from app.services.system_status import get_packs
 
 
 DEFAULT_ROW_ID = 1
+RELEASE_EVIDENCE_BLOCKER = "OPERATIONAL_RELEASE_EVIDENCE_NOT_CONNECTED"
 
 
 def _get_or_create(db: Session) -> GoLiveState:
@@ -71,7 +72,7 @@ def checklist(db: Session) -> Dict[str, Any]:
 
     # Historical flags are inventory only. No certified release evidence collector exists.
     required["operational_release_evidence"] = {
-        "ok": False, "detail": "OPERATIONAL_RELEASE_EVIDENCE_NOT_CONNECTED",
+        "ok": False, "detail": RELEASE_EVIDENCE_BLOCKER,
     }
     state = db.query(GoLiveState).filter(GoLiveState.id == DEFAULT_ROW_ID).first()
     required["emergency_stop_clear"] = {
@@ -87,7 +88,7 @@ def set_go_live(db: Session, enabled: bool, changed_by: str, reason: str | None)
     if type(enabled) is not bool:
         raise ValueError("enabled must be boolean")
     if enabled:
-        raise HTTPException(status_code=412, detail="OPERATIONAL_RELEASE_EVIDENCE_NOT_CONNECTED")
+        raise HTTPException(status_code=412, detail=RELEASE_EVIDENCE_BLOCKER)
     _get_or_create(db)
     row = db.query(GoLiveState).filter(GoLiveState.id == DEFAULT_ROW_ID).with_for_update().one()
     row.go_live_enabled = False

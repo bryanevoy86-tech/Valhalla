@@ -37,6 +37,35 @@ ASSETS = f"{FACTORY}/product-artifacts"
 PHASE3 = "/api/completion/phase3/universal-opportunity"
 
 
+def test_scheduled_handoff_rejects_inline_and_wrong_scope_reports(monkeypatch):
+    from app.pantheon.monitor import SCHEDULED_WORKER, trigger_report_id
+    from app.routers import foundry_source_rehearsal as source
+
+    scope = {"legacy_instance_id": "approved"}
+    assignment = SpecialistAssignment(id=uuid4(), role="ODIN", scope=scope)
+    trigger = f"DISCOVERY-{uuid4()}"
+    db = object()
+    report = {"assignment_id": str(assignment.id), "role": assignment.role, "scope": scope,
+              "trigger": "SOURCE_DISCOVERY", "trigger_event_id": trigger, "status": "observed",
+              "execution_path": "IN_PROCESS"}
+
+    def stored_report(session, event_id):
+        assert session is db and event_id == trigger_report_id(assignment.id, trigger)
+        return report
+
+    monkeypatch.setattr(source, "verified_report", stored_report)
+    with pytest.raises(HTTPException) as denied:
+        source.scheduled_source_report(db, assignment, trigger)
+    assert denied.value.status_code == 409
+    report["execution_path"] = SCHEDULED_WORKER
+    report["scope"] = {"legacy_instance_id": "foreign"}
+    with pytest.raises(HTTPException) as denied:
+        source.scheduled_source_report(db, assignment, trigger)
+    assert denied.value.status_code == 409
+    report["scope"] = scope
+    assert source.scheduled_source_report(db, assignment, trigger) == report
+
+
 @pytest.mark.parametrize("operating_loop", (False, True, "source"), ids=("product", "operating-loop", "source-to-outcome"))
 @pytest.mark.parametrize("deal_client", ["disk"], indirect=True)
 def test_internal_product_asset_stage_bind_verify_and_revoke(

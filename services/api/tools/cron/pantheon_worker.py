@@ -22,7 +22,7 @@ def main() -> int:
         parser.exit(2, "Specialist worker disabled or explicit PostgreSQL configuration missing.\n")
 
     from app.core.db import SessionLocal
-    from app.pantheon.monitor import run_assignment
+    from app.pantheon.monitor import run_scheduled_assignment
 
     stop = threading.Event()
     for sig in (signal.SIGINT, signal.SIGTERM):
@@ -30,7 +30,7 @@ def main() -> int:
 
     def tick() -> dict:
         with SessionLocal.session_factory() as db:
-            return run_assignment(db, args.role)
+            return run_scheduled_assignment(db, args.role)
 
     return poll(tick, stop, args.poll_seconds, once=args.once)
 

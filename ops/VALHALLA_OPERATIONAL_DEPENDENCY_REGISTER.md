@@ -12,6 +12,22 @@ The [owner readiness dossier](../docs/VALHALLA_FULL_GO_LIVE_READINESS.md) applie
 
 The [disposable operating proof](../docs/VALHALLA_FIRST_OPERATING_LOOP.md) connects authorized signed source intake, exact event-driven ODIN and NJORD findings, independent Loki analysis and immutable material exceptions, Prime's automatic recommendation, one final mandate, and the acquisition/checkout/settlement/Mimir worker. A replacement source observation is re-reviewed. No routine owner action occurs after the final mandate. This is one scoped isolated integration case. Genuine external discovery, hosted recovery, provider operations and all production gates remain open. The [refund and bank acceptance contract](../docs/VALHALLA_REFUND_BANK_COMMISSIONING.md) records the next authorized provider steps.
 
+### Launch-essential implementation checkpoint
+
+The legacy acquisition outbox now checks the same release blocker reported by the private briefing before opening SMTP or HTTP transports. Queued work remains available for audit with unchanged attempts and delivery state. A strict disposable source-run policy also makes Prime wait for exact ODIN and NJORD reports from the scheduled role entry point. It rejects records from inline execution when that policy is enabled. The report digest includes the execution path, and the exact report still requires independent Loki review. The recorded path identifies the code entry point. Independent hosted identities and process isolation require commissioning evidence.
+
+The first bounded one-time CAD lane needs the applicable slices of `runtime_governance`, `legacy_execution`, `marketing`, `commerce`, `finance_webhooks`, `payouts_and_funds`, `pantheon_five_evaluators`, `pantheon_expanded_bridge`, `five_initial_legacies` (one selected slot), `treasury_banking_controls`, `loki_independent_challenger` and `dynamic_capital_allocation_loss_containment_and_strategic_redeployment` (caps and containment). `builder_code` is required if the offer needs a new governed artifact or release recipe. `prime_private_owner` retains private supervision requirements. The remaining attachment-analysis and startup-to-finance extension is conditional on that reliance path. Subsequent Legacy slots, recurring accrual and unsupported financial corrections remain gated for their own scope. A defined hold and delegated exception path is necessary for an unresolved correction in the first lane.
+
+| Routine duty | Existing path and accountable fallback | Planning allowance for a bounded pilot exception |
+|---|---|---|
+| Acquisition and sales | Uncommissioned dispatch held. An approved partner or acquisition delegate executes only on an enrolled inbound channel after consent and channel acceptance. Record placement or prospect receipt and stop on suppression. | 1 h × CA$40–75 = CA$40–75 |
+| Signing | Fixed approved terms can use scoped assent where accepted by qualified review. If an actual signature is required, send stays held pending an enrolled signatory or contract administrator with verified delivery and status. | 0.5–1 h × CA$45–90 = CA$22.50–90, plus separately quoted provider and legal fees |
+| Fulfillment | Buyer-bound digital delivery and acknowledgment work in the disposable lane. A scoped fulfillment operator handles failed delivery and records the artifact digest, documented retry and buyer outcome. | 0.5–1 h × CA$35–75 = CA$17.50–75 |
+| Support and refunds | Disposable routine resolution has worker receipts. A scoped support delegate handles verified customer cases and exceptions without permission to authorize funds beyond approved policy. | 0.5–1 h × CA$35–75 = CA$17.50–75 |
+| Finance and reconciliation | Internal fixture reconciliation and cash holds work. An authorized bookkeeper reviews the processor/bank trace and escalates accounting treatment to an accountant. Cash stays held through unresolved differences. | 1–2 h × CA$55–100 = CA$55–200, plus separately quoted accountant and provider fees |
+
+These are assumed Canadian-dollar planning rates and time per handled pilot exception, with no quotes, staffing or spending approved. Confirm written rates, coverage and caps before activation. A missing delegate leaves its lane held. The owner receives the material briefing and keeps reserved decisions.
+
 ## 04. `api_wiring` (P0)
 
 - **Mandated duty and operator boundary.** Register and check required APIs. Release integrator verifies deployed route and rollback.

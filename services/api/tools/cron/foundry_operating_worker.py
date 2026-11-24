@@ -17,7 +17,7 @@ def tick(client, run_id, *, source_to_outcome=False):
         if reply.is_success:
             data = reply.json()
             if data.get("status") == "waiting":
-                return {"status": "waiting", "reason": data["reason"]}
+                return {key: data[key] for key in ("status", "reason", "role") if key in data}
             if data.get("status") == "advanced" and data.get("receipt_sha256"):
                 return {key: data[key] for key in ("status", "phase", "receipt_sha256")}
             if data.get("status") != "handoff":
