@@ -8,6 +8,14 @@ DO NOT restart the project, regenerate completed packs, or treat API presence as
 
 Use the current head of draft PR #4 and confirm the latest required CI run. Use the current workstream index, integration matrix and latest ledger verification to choose unfinished work. Dated checkpoints and original prompts are historical records. The same index supersedes earlier execution orders in the root start page and the finish passes. There are 50 acceptance contracts, 53 task entries and seven construction packages.
 
+## First CAD offer — sandbox checkout preparation
+
+Verified incoming head `1bc1f3c1030039bbb9340656e5c0ee89f0beb5fa` passed [hosted workflow 45293901326](https://github.com/bryanevoy86-tech/Valhalla/actions/runs/45293901326). Read the [current draft checks](https://github.com/bryanevoy86-tech/Valhalla/pull/4/checks) for the commit carrying this checkpoint and the reproducible local-gate artifacts.
+
+For the approved synthetic order lane, the dual-key sandbox plan derives the exact listing price, CAD currency and PaymentIntent scope metadata for one disposable buyer. It returns a stable digest without creating a payment or contacting Stripe. The exact private ZIP rehearsal supplies the derived metadata to mocked signed evidence and tests buyer isolation, emergency stop, acknowledgment, and refund revocation. The staging runbook records how to bind the native PaymentIntent when available and independently read back the resulting Charge.
+
+No business is selected. Next, record the owner’s offer decision, approve exact staging resources and identities, and rehearse the controlled native Stripe sandbox checkout with the test signer and separate read key. Verify exact-origin behavior in actual WeWeb Preview. The buyer-facing checkout integration, signed provider evidence, elapsed trial, and accountant-validated settlement remain open. Follow the existing January launch gates and the private launch dashboard.
+
 ## Owner desktop demonstration
 
 The [owner launch guide](HEIMDALL_OWNER_DEMO.md) gives a VS Code procedure for the private incorporation rehearsal. It starts a fresh loopback PostgreSQL cluster, applies the migration chain, seeds one owner and synthetic Loki and Mimir fixtures, and exposes only the existing owner login, conversation and evidence routes. The user can record all eight stages, sign back in, and recall the saved practice progress. Stop the foreground launcher to remove the database. The demo never supplies commercial activation authority.

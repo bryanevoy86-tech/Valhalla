@@ -539,13 +539,38 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
     binding_path = "/api/governance/floor/stripe-orders"
     wrong_scope = {**scope, "business_id": "another-business"}
     assert client.post(binding_path, headers=owner, json={**order_bind, "scope": wrong_scope}).status_code == 409
+    with Session(engine) as db:
+        buyer_id = db.query(UserProfile.user_id).filter_by(email=buyer_email).scalar()
+    plan_path = binding_path + "/sandbox-payment-plan"
+    plan_request = {"order_id": order_bind["order_id"], "action_id": action_id, "scope": scope,
+                    "tenant_id": str(uuid4()), "subscriber_id": buyer_id, "stripe_customer_id": "cus_JanuaryBuyer"}
+    assert client.post(plan_path, json=plan_request).status_code == 401
+    assert client.post(plan_path, headers=owner, json={**plan_request, "scope": wrong_scope}).status_code == 409
+    assert client.post(plan_path, headers=owner, json={**plan_request, "subscriber_id": 999999}).status_code == 409
+    with monkeypatch.context() as disabled:
+        disabled.setenv("VALHALLA_EMERGENCY_STOP", "true")
+        assert client.post(plan_path, headers=owner, json=plan_request).status_code == 503
+        disabled.setenv("APP_ENV", "production")
+        assert client.post(plan_path, headers=owner, json=plan_request).status_code == 409
+    prepared = client.post(plan_path, headers=owner, json=plan_request)
+    assert prepared.status_code == 200, prepared.text
+    assert prepared.headers["cache-control"] == "no-store"
+    plan = prepared.json()
+    assert client.post(plan_path, headers=owner, json=plan_request).json() == plan
+    assert plan["product_sha256"] == checksum and plan["payment_created"] is False
+    assert plan["provider_verified"] is False and plan["livemode"] is False
+    assert plan["payment_intent_parameters"]["amount"] == product_price
+    assert plan["payment_intent_parameters"]["currency"] == "cad"
+    assert plan["payment_intent_parameters"]["customer"] == plan_request["stripe_customer_id"]
+    assert plan["payment_intent_parameters"]["metadata"]["valhalla_tenant_id"] == plan_request["tenant_id"]
     bind = client.post(binding_path, headers=owner, json=order_bind)
     assert bind.status_code == 201, bind.text
     assert bind.json()["amount_minor"] == listing["price_cents_cad"]
     assert bind.json()["product_asset_id"] == str(asset_id)
     assert bind.json()["payment_created"] is False
+    assert client.post(plan_path, headers=owner, json=plan_request).status_code == 409
     rehearse_bound_stripe_delivery(client, engine, monkeypatch, owner, owner_session, buyer_session,
-                                  buyer_email, order_bind, bind.json()["amount_minor"])
+                                  buyer_email, order_bind, bind.json()["amount_minor"], payment_plan=plan)
     with monkeypatch.context() as isolated_live_checks:
         # Only the in-process branch selector and a local transport change. No real provider is used.
         isolated_live_checks.setenv("VALHALLA_STRIPE_EVENT_MODE", "live")
@@ -924,7 +949,7 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
 
 
 def rehearse_bound_stripe_delivery(client, engine, monkeypatch, owner, owner_session, buyer_session,
-                                   buyer_email, binding, price, *, expected_bytes=None, expected_asset_id=None):
+                                   buyer_email, binding, price, *, expected_bytes=None, expected_asset_id=None, payment_plan=None):
     from contextlib import contextmanager
     import hmac
     import time
@@ -936,7 +961,8 @@ def rehearse_bound_stripe_delivery(client, engine, monkeypatch, owner, owner_ses
     from app.services.stripe_fulfillment import delivery_buyer_reference
     from app.users.models import UserProfile
 
-    order_id, tenant_id = binding["order_id"], str(uuid4())
+    order_id = binding["order_id"]
+    tenant_id = payment_plan["payment_intent_parameters"]["metadata"]["valhalla_tenant_id"] if payment_plan else str(uuid4())
     intent_id = binding["payment_intent_id"]
     live = expected_bytes is not None
     mode = "LiveContract" if live else "Rehearsal"
@@ -945,6 +971,9 @@ def rehearse_bound_stripe_delivery(client, engine, monkeypatch, owner, owner_ses
         buyer_id = db.query(UserProfile.user_id).filter_by(email=buyer_email).scalar()
     metadata = {"valhalla_order_id": order_id, "valhalla_tenant_id": tenant_id,
                 "valhalla_buyer_ref": delivery_buyer_reference(order_id, tenant_id, buyer_id)}
+    if payment_plan:
+        assert payment_plan["payment_intent_parameters"]["metadata"] == metadata
+        metadata = payment_plan["payment_intent_parameters"]["metadata"]
     secret = "isolated-january-signature"
     monkeypatch.setenv("STRIPE_WEBHOOK_SECRET" if live else "VALHALLA_STRIPE_TEST_WEBHOOK_SECRET", secret)
     monkeypatch.setattr(database, "SessionLocal", lambda: Session(engine))

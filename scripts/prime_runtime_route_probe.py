@@ -48,6 +48,7 @@ MANDATORY_ENDPOINTS = {
     "stripe_payout_readback": ("POST", "/api/governance/floor/stripe-orders/{order_id}/payout-readback/{payout_id}"),
     "weweb_owner_stripe_order": ("GET", "/api/weweb/owner-stripe-orders/{order_id}"),
     "stripe_order_binding": ("POST", "/api/governance/floor/stripe-orders"),
+    "stripe_sandbox_payment_plan": ("POST", "/api/governance/floor/stripe-orders/sandbox-payment-plan"),
     "stripe_order_inspection": ("GET", "/api/governance/floor/stripe-orders/{order_id}"),
     "stripe_financial_webhook": ("POST", "/webhooks/stripe"),
     "stripe_processor_readback": ("POST", "/api/governance/floor/stripe-events/{event_id}/processor-readback"),

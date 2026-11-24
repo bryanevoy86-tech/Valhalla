@@ -15,17 +15,33 @@ from app.schemas.market_intelligence import MarketScope, StrictModel
 from app.services.stripe_finance import _event_receipt, stripe_id
 
 
-class OrderBindingIn(StrictModel):
+class ScopedOrderIn(StrictModel):
     order_id: UUID
     action_id: str = Field(pattern=r"^bfd_[a-f0-9]{32}$")
-    payment_intent_id: str
     scope: MarketScope
+
+
+class OrderBindingIn(ScopedOrderIn):
+    payment_intent_id: str
 
     @field_validator("payment_intent_id")
     @classmethod
     def native_reference(cls, value):
         if not stripe_id(value, "pi"):
             raise ValueError("A native Stripe intent identity is required")
+        return value
+
+
+class SandboxPaymentPlanIn(ScopedOrderIn):
+    tenant_id: UUID
+    subscriber_id: int = Field(gt=0, strict=True)
+    stripe_customer_id: str
+
+    @field_validator("stripe_customer_id")
+    @classmethod
+    def native_customer(cls, value):
+        if not stripe_id(value, "cus"):
+            raise ValueError("A native Stripe customer identity is required")
         return value
 
 
@@ -85,6 +101,49 @@ def register_binding(db: Session, request: OrderBindingIn, *, live: bool):
         db.rollback()
         raise HTTPException(409, "Stripe order or payment intent is already bound") from None
     return {**value, "sha256": digest}
+
+
+def sandbox_payment_plan(db: Session, request: SandboxPaymentPlanIn, *, live: bool):
+    from app.routers.foundry_checkout import _listing
+    from app.services.stripe_fulfillment import _buyer, delivery_buyer_reference
+
+    environments = {os.getenv(key, "").strip().lower() for key in ("APP_ENV", "ENV")} - {""}
+    if live or not environments or not environments <= {"dev", "development", "test", "staging", "sandbox"}:
+        raise HTTPException(409, "Payment preparation is restricted to the isolated sandbox")
+    account_id = _require_configured_mode(False)
+    _require_tables(db)
+    receipt, product, amount, scope = _listing(db, request.action_id)
+    if scope != request.scope.model_dump():
+        raise HTTPException(409, "Stripe order scope differs from the approved Foundry listing")
+    buyer = _buyer(db, request.subscriber_id)
+    if buyer is None or not buyer.email.lower().endswith(".invalid"):
+        raise HTTPException(409, "A disposable active buyer profile is required")
+    if db.get(StripeOrderBinding, request.order_id) is not None:
+        raise HTTPException(409, "Order already bound; inspect the existing native payment")
+    plan = {
+        "basis": "SYNTHETIC_STRIPE_PAYMENT_PREPARATION",
+        "order_id": str(request.order_id),
+        "action_id": request.action_id,
+        "scope": scope,
+        "stripe_account_id": account_id,
+        "listing_sha256": receipt["sha256"],
+        "product_asset_id": str(product.id),
+        "product_sha256": product.sha256,
+        "livemode": False,
+        "payment_created": False,
+        "provider_verified": False,
+        "payment_intent_parameters": {
+            "currency": "cad",
+            "amount": amount,
+            "customer": request.stripe_customer_id,
+            "metadata": {
+                "valhalla_order_id": str(request.order_id),
+                "valhalla_tenant_id": str(request.tenant_id),
+                "valhalla_buyer_ref": delivery_buyer_reference(request.order_id, request.tenant_id, request.subscriber_id),
+            },
+        },
+    }
+    return {**plan, "sha256": artifact_digest("stripe_sandbox_payment_plan", str(request.order_id), plan)}
 
 
 def _reversal_pending(db: Session, order: StripeOrderBinding, charge_id: str | None = None) -> bool:

@@ -18,7 +18,9 @@ from app.services.stripe_fulfillment import (
 )
 from app.services.stripe_bank_reversal import BankReversalIn, configured_bank_reversal
 from app.services.stripe_bank_booking import BankBatchIn, configured_bank_batch, scoped_bank_blockers
-from app.services.stripe_orders import OrderBindingIn, inspect_binding, register_binding
+from app.services.stripe_orders import (
+    OrderBindingIn, SandboxPaymentPlanIn, inspect_binding, register_binding, sandbox_payment_plan,
+)
 from app.services.stripe_revenue_release import DeliveryReleaseIn, recognize_delivery
 from app.schemas.market_intelligence import MarketScope
 from app.services.treasury_cash_position import CashPositionRequest, reconcile_cash_position, verify_cash_close, verify_journal_head
@@ -45,6 +47,11 @@ owner_keys = [Depends(require_prime_control_key), Depends(require_owner_mandate_
 def readback(event_id: str, db: Session = Depends(get_db)):
     return private_owner_response(configured_readback(db, event_id, live=is_live()))
 
+
+
+@router.post("/api/governance/floor/stripe-orders/sandbox-payment-plan", dependencies=owner_keys)
+def prepare_sandbox_payment(payload: SandboxPaymentPlanIn, db: Session = Depends(get_db)):
+    return private_owner_response(sandbox_payment_plan(db, payload, live=is_live()))
 
 
 @router.post("/api/governance/floor/stripe-orders", status_code=201, dependencies=owner_keys)
