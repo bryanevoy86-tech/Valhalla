@@ -147,6 +147,22 @@ def challenge(item: dict) -> IndependentReviewIn:
             "source_verification_required", "specialist_inputs",
             "Local coherence checks do not verify underlying source evidence. Reconsider the provenance and any material assumptions.",
         ))
+    elif kind == "customer_research":
+        counts = [proposal.get(key) for key in ("stated_interest", "qualified", "completed", "enrolled", "withdrawn")]
+        if (proposal.get("basis") != "DISPOSABLE_RESEARCH_FIXTURE"
+                or any(proposal.get(key) is not False for key in (
+                    "paid_outcomes_verified", "actual_customers_verified", "external_action_authorized",
+                )) or proposal.get("verified_cac_minor") is not None
+                or not all(type(value) is int and value >= 0 for value in counts)
+                or not counts[0] <= counts[1] <= counts[2] <= counts[3] - counts[4]
+                or proposal.get("disposition") != "ABSTAIN_PENDING_GENUINE_EVIDENCE"):
+            findings.append(_finding("research_evidence_overreach", "basis",
+                                     "Research counts or claimed authority exceed the evidence.", critical=True))
+        findings.extend([
+            _finding("selection_bias", "sample_source", "Voluntary enrollment can bias the sample. Confirm independent coverage and refusals."),
+            _finding("willingness_to_pay_unverified", "stated_interest", "Stated interest does not verify a buyer, purchase or payment."),
+            _finding("acquisition_economics_unverified", "verified_cac_minor", "Validate channel costs and retained paid buyers independently."),
+        ])
     elif kind == "economic_advice":
         plan, evidence = proposal["plan"], proposal["analysis"]
         if "opportunity_selection" in evidence:

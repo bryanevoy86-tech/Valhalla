@@ -231,6 +231,11 @@ def run_assignment(db: Session, role: str, *, now=None) -> dict:
 
             facts["treasury_statement_evidence"] = observe_statement_heads(db, assignment.scope)
         facts.update(specialist_economics(db, role, assignment.scope, now.date()))
+        from app.services.customer_research import observe as research_observation
+
+        research = research_observation(db, assignment.scope, role)
+        if research:
+            facts["customer_research"] = research
         report.update(status="observed", observations=facts)
     except HTTPException as exc:
         report.update(status="blocked", reason=exc.detail)

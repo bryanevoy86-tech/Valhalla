@@ -1203,3 +1203,127 @@ def test_scoped_bank_correction_blocks_new_exposure_and_prompts_independent_revi
     review = challenge({"artifact_type": "pantheon_report", "reference": reference, "raw_input": report,
                         "artifact_sha256": artifact_digest("pantheon_report", reference, report)})
     assert any(f.category == "bank_batch_correction_required" and f.severity == "critical" for f in review.findings)
+
+
+def test_autonomous_customer_research_fixture(economic_client, loopback_api, monkeypatch):
+    from pathlib import Path
+    import runpy
+    from app.models.go_live_state import GoLiveState
+
+    client, engine = economic_client
+    root = "/api/prime/customer-research/rehearsal"
+    round_id = str(uuid4())
+    token = str(uuid4())
+    with Session(engine) as db:
+        db.get(GoLiveState, 1).kill_switch_engaged = False
+        db.commit()
+    start = {"scope": SCOPE, "round_id": round_id, "topic": "fleet_records", "duration_hours": 24, "max_enrollments": 2,
+             "reference_price_minor": 19900}
+    scope = {"scope": SCOPE}
+    participant = {**scope, "token": token}
+    latest = f"{root}/{round_id}"
+
+    def call(path, body, code=200, headers=None):
+        response = client.post(path, json=body, headers=headers)
+        assert response.status_code == code, response.text
+        if code == 200:
+            assert response.headers["cache-control"] == "no-store"
+        return response.json()
+
+    monkeypatch.setenv("VALHALLA_CUSTOMER_RESEARCH_REHEARSAL", "0")
+    call(f"{root}/rounds", start, 503, OWNER)
+    monkeypatch.setenv("VALHALLA_CUSTOMER_RESEARCH_REHEARSAL", "1")
+    monkeypatch.setenv("APP_ENV", "test")
+    monkeypatch.setenv("ENV", "test")
+    call(f"{root}/rounds", start, 401)
+    call(f"{root}/rounds", start, headers=OWNER)
+    cron = Path(__file__).resolve().parents[1] / "tools" / "cron"
+    monkeypatch.syspath_prepend(str(cron))
+    advance = runpy.run_path(str(cron / "customer_research_worker.py"))["tick"]
+    assert advance(loopback_api, round_id, SCOPE) == {"status": "invitation_prepared", "sent": False}
+    assert call(f"{latest}/advance", scope)["status"] == "WAITING_FOR_VOLUNTARY_ANSWERS"
+    call(f"{latest}/invitation", {"scope": MIRROR}, 404)
+    enrollment = {**participant, "notice_version": "heimdall-structured-research-v1", "consent": True}
+    call(f"{latest}/enroll", {**enrollment, "consent": False}, 422)
+    call(f"{latest}/answer", {**participant, "step": "problem", "answer": "yes"}, 409)
+    assert call(f"{latest}/enroll", enrollment)["step"] == "problem"
+    call(f"{latest}/answer", {**participant, "step": "interest", "answer": "yes"}, 409)
+    for step, value, following in (("problem", "yes", "authority"), ("authority", "yes", "effort"),
+                                   ("effort", "1_to_4h", "interest"), ("interest", "yes", None)):
+        command = {**participant, "step": step, "answer": value}
+        reply = call(f"{latest}/answer", command)
+        assert reply.get("step") == following
+        assert call(f"{latest}/answer", command) == reply
+
+    second = {**enrollment, "token": str(uuid4())}
+    assert call(f"{latest}/enroll", second)["step"] == "problem"
+    assert call(f"{latest}/answer", {**participant, "token": second["token"], "step": "problem",
+                                     "answer": "no"})["status"] == "COMPLETED"
+    call(f"{latest}/enroll", {**enrollment, "token": str(uuid4())}, 409)
+    call(f"{latest}/decision", scope, 409)
+
+    queued = advance(loopback_api, round_id, SCOPE)
+    assert queued["status"] == "independent_review_queued"
+    review = call(f"{latest}/review", scope)
+    assert queued["artifact_sha256"] == review["artifact_sha256"]
+    assert review == call(f"{latest}/review", scope)
+    assert review["evidence"]["completed"] == 2
+    assert review["evidence"]["stated_interest"] == 1
+    assert review["evidence"]["verified_cac_minor"] is None
+    assert token not in json.dumps(review)
+    call(f"{latest}/decision", scope, 409)
+    assert call(f"{latest}/advance", scope)["status"] == "WAITING_FOR_INDEPENDENT_REVIEW"
+
+    worker = runpy.run_path(str(cron / "loki_analyst_worker.py"))["tick"]
+    prime_headers = dict(loopback_api.headers)
+    loopback_api.headers.clear()
+    loopback_api.headers.update(REVIEWER)
+    receipt = worker(loopback_api, "customer_research", "economic-independent-fixture")
+    assert receipt["verified"] and receipt["review_id"] == review["review_id"]
+    loopback_api.headers.clear()
+    loopback_api.headers.update(prime_headers)
+
+    for role in ("FREYJA", "NORNS", "NJORD", "TYR", "MIMIR"):
+        enrolled = client.post("/api/prime/pantheon/assignments", headers=OWNER, json={
+            **SCOPE, "assignment_id": str(uuid4()), "role": role, "cadence_seconds": 300, "duration_seconds": 1800,
+        })
+        assert enrolled.status_code == 201, enrolled.text
+        with Session(engine) as db:
+            report_id = run_assignment(db, role)["report_event_id"]
+        report = client.get(f"/api/prime/pantheon/reports/{report_id}").json()
+        observed = report["observations"]["customer_research"]
+        assert observed["study_sha256"] == review["evidence"]["study_sha256"]
+        assert "answers" not in observed
+
+    assert advance(loopback_api, round_id, SCOPE)["status"] == "abstained"
+    decision = call(f"{latest}/advance", scope)
+    assert decision == call(f"{latest}/decision", scope)
+    assert decision["decision"] == "ABSTAIN_PENDING_GENUINE_EVIDENCE"
+    assert decision["external_action_authorized"] is False
+    assert any("bias" in blocker for blocker in decision["blockers"])
+
+    monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "true")
+    call(f"{latest}/invitation", scope, 503)
+    assert call(f"{latest}/withdraw", participant)["answers_removed"]
+    assert call(f"{latest}/withdraw", participant)["suppressed"]
+    monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "false")
+    call(f"{latest}/decision", scope, 409)
+    call(f"{latest}/enroll", enrollment, 409)
+    second_round = str(uuid4())
+    call(f"{root}/rounds", {**start, "round_id": second_round}, headers=OWNER)
+    call(f"{root}/{second_round}/invitation", scope)
+    call(f"{root}/{second_round}/enroll", enrollment, 409)
+    updated = call(f"{latest}/review", scope)
+    assert updated["evidence"]["stated_interest"] == 0 and updated["evidence"]["withdrawn"] == 1
+    assert updated["artifact_sha256"] != review["artifact_sha256"]
+    from app.loki.evidence import artifact_digest
+
+    overclaim = {**updated["evidence"], "paid_outcomes_verified": True, "stated_interest": 99,
+                 "verified_cac_minor": 0}
+    rejected = challenge({"artifact_type": "customer_research", "reference": round_id,
+                          "raw_input": overclaim, "artifact_sha256": artifact_digest(
+                              "customer_research", round_id, overclaim)})
+    assert any(finding.category == "research_evidence_overreach" and finding.severity == "critical"
+               for finding in rejected.findings)
+    print("RESEARCH_REHEARSAL " + json.dumps({"initial_review": receipt, "decision": decision,
+                                             "withdrawal_recheck": updated["artifact_sha256"]}))
