@@ -397,9 +397,9 @@ def test_discovery_queue_sources_rank_and_do_not_claim_external_demand(economic_
         db.commit()
     at = foundry_intake.current_time()
     today = at.date()
-    post(client, "mandates", mandate(today))
+    post(client, "mandates", mandate(today, max_additional_funding=500))
     post(client, "performance", performance(today))
-    post(client, "liquidity", liquidity(today))
+    post(client, "liquidity", liquidity(today, unrestricted_pool_minor=450))
     post(client, "opportunities", option(today, "old-playbook", projected_annual_net=400))
     assignment = client.post("/api/prime/pantheon/assignments", headers=OWNER, json={
         **SCOPE, "assignment_id": str(uuid4()), "role": "ODIN", "cadence_seconds": 600, "duration_seconds": 3600,
@@ -410,14 +410,14 @@ def test_discovery_queue_sources_rank_and_do_not_claim_external_demand(economic_
     evidence = {
         **SCOPE, "evidence_id": str(uuid4()), "kind": "OTHER", "revenue_model": "RECURRING",
         "evidence_class": "SIMULATION", "title": "Mobile tool calibration service",
-        "source_ref": "fixture:workshop survey Nov", "observed_on": today.isoformat(),
+        "source_ref": "https://web.gov.mb.ca/DisclosureOfContracts/", "observed_on": today.isoformat(),
         "expires_on": (today + timedelta(days=3)).isoformat(), "currency": "CAD",
         "unit_price": 50, "variable_cost_per_unit": 10, "acquisition_cost_per_unit": 10,
         "monthly_fixed_cost": 75, "monthly_units": 10, "startup_capital": 120, "test_cost": 8,
         "rights_attestation": "AUTHORIZED_INTERNAL_RESEARCH",
     }
     job = {"evidence": evidence, "source_id": "regional-buyer-sample", "external_key": "CalibrationSurvey",
-           "adapter": "DEMAND_EXPORT", "buyer_segment": "Independent repair shops",
+           "adapter": "DEMAND_EXPORT", "buyer_segment": "Synthetic independent repair shops",
            "sample_count": 40, "demand_count": 24}
     url = "/api/prime/foundry/intake"
     stale = {**evidence, "observed_on": (today - timedelta(days=5)).isoformat()}
@@ -475,10 +475,92 @@ def test_discovery_queue_sources_rank_and_do_not_claim_external_demand(economic_
     approved = post(client, "decisions", review)
     assert approved["observed"]["alternatives"][0]["demand_evidence"]["independently_validated"] is False
     assert approved["execution_authorized"] is False
+    assert approved["observed"]["opportunity_selection"]["first_research_candidate_key"] == "mobile-calibration"
+    assert approved["observed"]["alternatives"][0]["ranking_basis"]["verified_monthly_owner_income_minor"] is None
+    sources = {
+        "fleet-subscription": ("SAAS", "SUBSCRIPTION", 80, "SATISFIED_IN_FIXTURE",
+                               "https://publications.gc.ca/collections/collection_2025/rncan-nrcan/M144-294-2025-eng.pdf"),
+        "shop-acquisition": ("ACQUISITION", "ACQUISITION", 100, "UNRESOLVED",
+                             "https://www.bdc.ca/en/articles-tools/start-buy-business/buy-business/buying-business-conducting-due-diligence"),
+    }
+    for key, (kind, model, price, compliance, citation) in sources.items():
+        new_source = {**job["evidence"], "evidence_id": str(uuid4()), "kind": kind, "revenue_model": model,
+                      "source_ref": citation, "unit_price": price, "title": key}
+        intake_response = client.post(url, headers=OWNER, json=signed({
+            **job, "source_signed_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+            "evidence": new_source, "external_key": key,
+        }))
+        assert intake_response.status_code == 202, intake_response.text
+        with Session(engine) as db:
+            assert foundry_intake.run_intake(db)["status"] == "COMPLETED"
+        post(client, "opportunities", option(today, key, origin="FOUNDRY", compliance=compliance,
+             foundry_evidence_id=new_source["evidence_id"]))
+
+    # An enticing, declaration-only projection can rank highly in the fixture
+    # without becoming the next research candidate, let alone a business selection.
+    post(client, "opportunities", option(today, "unverified-promise", projected_annual_net=90000))
+    ranked = post(client, "assessment", SCOPE, 200)
+    selection = ranked["opportunity_selection"]
+    assert ranked["best_eligible_alternative_key"] == "unverified-promise"
+    assert selection["decision"] == "RESEARCH_ONLY"
+    assert selection["first_research_candidate_key"] == "fleet-subscription"
+    assert selection["commercial_selection_key"] is None
+    assert selection["verified_monthly_owner_income_minor"] is None
+    evidence_by_key = {row["opportunity_key"]: row for row in ranked["alternatives"]}
+    assert "ACQUISITION_TERMS_MISSING" in evidence_by_key["shop-acquisition"]["blockers"]
+    assert "COMPLIANCE" in evidence_by_key["shop-acquisition"]["blockers"]
+    assert evidence_by_key["fleet-subscription"]["foundry_source"]["citation"] == sources["fleet-subscription"][4]
+
+    advice = plan(action="CONTINUE", requested_additional_minor=0)
+    request, result = queue_review(client, advice, reconsider=False)
+    assert "opportunity_ranking_evidence" in {finding["category"] for finding in result["findings"]}
+    denied = post(client, "decisions", request, 409)
+    assert "Exact independent Loki review" in denied["detail"]
+    snapshot = post(client, "review-artifact", advice, 200)
+    accepted_request, _ = queue_review_again(client, request)
+    recorded = post(client, "decisions", accepted_request)
+    assert recorded["observed"]["opportunity_selection"] == selection
+    assert recorded["artifact_sha256"] == snapshot["artifact_sha256"]
+    assert recorded["reserved_simulation_minor"] == 0 and not recorded["execution_authorized"]
+    readback = client.get(f"{ROOT}/records/{advice['id']}")
+    assert readback.status_code == 200
+    assert readback.json()["data"] == recorded
+
+    from app.services.economic_control import specialist_economics
+
+    with Session(engine) as db:
+        for role in ("NORNS", "ODIN", "HEIMDALL"):
+            observation = specialist_economics(db, role, SCOPE, today)["economic_reassessment"]
+            assert observation["opportunity_selection"] == selection
+        learning = specialist_economics(db, "MIMIR", SCOPE, today)["economic_reassessment"]
+        assert learning["last_internal_decision"] == recorded
+        assert learning["verified_real_world_outcome"] is False
+    alternate = snapshot["raw_input"]
+    alternate["analysis"]["opportunity_selection"]["first_research_candidate_key"] = "unverified-promise"
+    from app.loki.evidence import artifact_digest
+
+    artifact_type = snapshot["artifact_type"]
+    ref = snapshot["heimdall_reference_id"]
+    check = challenge({"artifact_type": artifact_type, "reference": ref, "raw_input": alternate,
+                       "artifact_sha256": artifact_digest(artifact_type, ref, alternate)})
+    assert any(f.category == "opportunity_ranking_conflict" and f.severity == "critical" for f in check.findings)
+    print("OPPORTUNITY_COMPARISON " + json.dumps({
+        "decision_id": advice["id"], "artifact_sha256": recorded["artifact_sha256"],
+        "review_id": recorded["independent_review_id"], "selection": selection,
+        "scores": {key: row["adjusted_forward_value_minor"] for key, row in evidence_by_key.items()},
+    }, sort_keys=True))
+
+    with monkeypatch.context() as stopped:
+        stopped.setenv("VALHALLA_EMERGENCY_STOP", "true")
+        held = post(client, "assessment", SCOPE, 200)["opportunity_selection"]
+        assert held["decision"] == "ABSTAIN" and "EMERGENCY_STOP" in held["scope_holds"]
     with Session(engine) as db:
         db.query(SourceRegistryItem).filter_by(source_id="regional-buyer-sample").one().active = False
         db.commit()
     assert client.get(f"/api/prime/foundry/reports/{report_id}/candidate/{evidence['evidence_id']}").status_code == 409
+    revoked = post(client, "assessment", SCOPE, 200)["opportunity_selection"]
+    assert revoked["decision"] == "ABSTAIN"
+    assert revoked["first_research_candidate_key"] is None
 
 
 def test_statement_continuity_quarantine_and_fixture_asset_recovery(economic_client, monkeypatch):

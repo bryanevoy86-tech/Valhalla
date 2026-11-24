@@ -339,6 +339,8 @@ def record_decision(request: Decision, db: Session = Depends(get_db)):
                 or record["artifact_sha256"] != request.expected_artifact_sha256):
             raise HTTPException(409, "Economic decision replay differs from the recorded review")
         return record
+    if _emergency_stop_active(db) and plan.action not in CONTAINMENT:
+        raise HTTPException(503, "Economic rehearsal paused by emergency stop")
     snapshot = prepare(db, operation, state, pool, plan, lock_sources=True)
     digest = snapshot["artifact_sha256"]
     if request.expected_artifact_sha256 != digest:
@@ -346,8 +348,6 @@ def record_decision(request: Decision, db: Session = Depends(get_db)):
     blockers = snapshot["raw_input"]["analysis"]["blockers"]
     if plan.cross_business_support or (blockers and plan.action not in CONTAINMENT):
         raise HTTPException(409, {"message": "Economic limits block this rehearsal", "blockers": blockers})
-    if _emergency_stop_active(db) and plan.action not in CONTAINMENT:
-        raise HTTPException(503, "Economic rehearsal paused by emergency stop")
     reviewer_identity()
     if not inspect(db.connection()).has_table(LokiReview.__tablename__):
         raise HTTPException(503, "Independent review unavailable")

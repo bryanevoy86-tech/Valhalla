@@ -247,6 +247,12 @@ def comparison(db, state, scope, currency, available, today, *, lock_sources=Fal
                 ]
                 data.update(assessed)
                 data["foundry_sha256"] = row.digest
+                data["foundry_source"] = {
+                    "evidence_id": str(row.id), "citation": (foundry.provenance.citation if foundry.provenance else foundry.source_ref),
+                    "kind": foundry.kind,
+                    "evidence_class": foundry.evidence_class,
+                    "observed_on": foundry.observed_on.isoformat(), "expires_on": foundry.expires_on.isoformat(),
+                }
                 demand = demand_evidence(foundry)
                 if demand:
                     data["demand_bp"] = demand["sample_demand_bp"]
@@ -260,8 +266,40 @@ def comparison(db, state, scope, currency, available, today, *, lock_sources=Fal
     return rank_economic_options(options, available)
 
 
+def opportunity_selection(ranked, blockers):
+    """Prioritize research without promoting declaration-only evidence into authority."""
+    research = []
+    for item in ranked:
+        source = item.get("foundry_source")
+        missing = {
+            "VERIFY_PAID_DEMAND", "VERIFY_REPEATABLE_NET_AND_OWNER_TIME", "VERIFY_LEGAL_AND_EXECUTION_SCOPE",
+        }
+        if not source:
+            missing.add("OBTAIN_CURRENT_SCOPED_SOURCE")
+        if not (item.get("demand_evidence") or {}).get("demand_count"):
+            missing.add("OBTAIN_POSITIVE_RELEVANT_BUYER_SAMPLE")
+        research.append({
+            "opportunity_key": item["opportunity_key"],
+            "scenario_blockers": item["blockers"],
+            "research_required": sorted(missing),
+        })
+    first = next((item["opportunity_key"] for item in ranked if item["eligible"] and item.get("foundry_source")
+                  and (item.get("demand_evidence") or {}).get("demand_count")), None)
+    return {
+        "decision": "RESEARCH_ONLY" if first and not blockers else "ABSTAIN",
+        "reason": ("SOURCE_BOUND_FIXTURE_CAN_GUIDE_RESEARCH_ONLY" if first and not blockers
+                   else "NO_CURRENT_ELIGIBLE_EVIDENCE_OR_SCOPE_HELD"),
+        "first_research_candidate_key": first if not blockers else None,
+        "commercial_selection_key": None,
+        "verified_monthly_owner_income_minor": None,
+        "scope_holds": sorted(set(blockers)),
+        "research": research,
+    }
+
+
 def assessment(db, operation, state, pool, today, plan: Plan | None = None, *, lock_sources=False):
     from app.heimdall.authority import is_live
+    from app.services.prime_business_execution import _emergency_stop_active
     from app.services.stripe_bank_booking import scoped_bank_blockers
 
     scope, mandate = operation.scope, state.mandate
@@ -350,6 +388,9 @@ def assessment(db, operation, state, pool, today, plan: Plan | None = None, *, l
         "new_exposure_available_minor": available, "comparison_budget_minor": comparison_budget, "blockers": sorted(set(blockers)), "alternatives": ranked,
         "suggested_action": suggested,
         "best_eligible_alternative_key": best["opportunity_key"] if best else None,
+        "opportunity_selection": opportunity_selection(
+            ranked, [*blockers, *(["EMERGENCY_STOP"] if _emergency_stop_active(db) else [])],
+        ),
         "last_performance_id": str(performance.id) if performance else None,
         "last_liquidity_id": str(liquidity.id) if liquidity else None,
         "basis": "RECONCILIATION_FIXTURE", "external_authority": False,
@@ -397,11 +438,12 @@ def specialist_economics(db, role, scope, today):
     common = {key: report[key] for key in ("mandate_id", "basis", "blockers", "suggested_action", "external_authority")}
     role_fields = {
         "NJORD": ("period_net_minor", "cumulative_loss_minor", "new_exposure_available_minor", "pool_committed_minor"),
-        "NORNS": ("period_net_minor", "alternatives"),
+        "NORNS": ("period_net_minor", "alternatives", "opportunity_selection"),
         "LOKI": ("cumulative_loss_minor", "effective_loss_ceiling_minor", "effective_funding_limit_minor"),
         "TYR": ("last_performance_id",),
-        "ODIN": ("alternatives",),
-        "HEIMDALL": ("period_net_minor", "alternatives", "new_exposure_available_minor", "cumulative_loss_minor", "last_performance_id"),
+        "ODIN": ("alternatives", "opportunity_selection"),
+        "HEIMDALL": ("period_net_minor", "alternatives", "new_exposure_available_minor", "cumulative_loss_minor",
+                     "last_performance_id", "opportunity_selection"),
         "MIMIR": ("last_performance_id", "cumulative_loss_minor"),
     }
     common.update({key: report[key] for key in role_fields[role]})

@@ -8,6 +8,14 @@ DO NOT restart the project, regenerate completed packs, or treat API presence as
 
 Use the current head of draft PR #4 and confirm the latest required CI run. Use the current workstream index, integration matrix and latest ledger verification to choose unfinished work. Dated checkpoints and original prompts are historical records. The same index supersedes earlier execution orders in the root start page and the finish passes. There are 50 acceptance contracts, 53 task entries and seven construction packages.
 
+## Opportunity selection mandate — November 23
+
+Verified incoming draft `c1dc2ef415298bdd8a032e2274638f7d80616a17` passed [hosted checks](https://github.com/bryanevoy86-tech/Valhalla/actions/runs/45328121361). Keep the CA$29 product as a checkout validation case. The CA$1,490 service is an unapproved hypothesis. No flagship is selected.
+
+Existing economic reassessment now records the current scoped source and the first-year value calculation. A separate research disposition selects only from modeled eligible options with current signed positive buyer-sample evidence or abstains, returning the missing research. It asserts neither commercial selection nor verified monthly owner income. The existing Loki economic artifact independently checks the ordering, disposition and disclosed arithmetic. The exact reviewed ranking is retained in the existing decision journal and Mimir's scoped fixture readback. New advice artifacts must be reviewed against their current digest. Previously committed receipts remain readable.
+
+The comparative regression uses signed service, subscription and acquisition hypotheses with public secondary-source references and synthetic numbers. It covers an inflated unsourced forecast, missing acquisition terms and compliance, emergency stop, digest-bound ranking disagreement and source revocation. It provides no evidence of real buyer demand or verified investable cash. Next verify rights-approved external discovery, separately controlled reviewer and worker operation, qualified demand evidence across scopes and outcome-based calibration. All 50 contracts, 53 task entries and seven packages remain open on their original terms.
+
 ## Commercial opportunity comparison — November 23
 
 Incoming draft `9ab699850b71b7c01d3753c67733c8f8627b26e6` passed [hosted checks](https://github.com/bryanevoy86-tech/Valhalla/actions/runs/45295298439). The existing opportunity evaluator and separately keyed Loki review queue now have an executable rehearsal for six CAD offer hypotheses. A bounded local consistency check flags false authority, incomplete or invalid costs, nonpositive base contribution and downside loss. The checked-in test stores and verifies the independent receipts inside its disposable database. It authorizes no effects or commercial action.

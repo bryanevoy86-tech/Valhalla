@@ -893,6 +893,13 @@ def rank_economic_options(options: list[dict], available_minor: int) -> list[dic
         ranked.append({
             **option, "blockers": blocked, "eligible": not blocked,
             "adjusted_forward_value_minor": adjusted_net - capital_charge,
+            "ranking_basis": {
+                "horizon_days": 365,
+                "days_after_estimated_first_revenue": usable_days,
+                "risk_adjusted_operating_net_minor": adjusted_net,
+                "capital_and_downside_charge_minor": capital_charge,
+                "verified_monthly_owner_income_minor": None,
+            },
         })
     ranked.sort(key=lambda item: (not item["eligible"], -item["adjusted_forward_value_minor"], item["opportunity_key"]))
     eligible = [item for item in ranked if item["eligible"]]

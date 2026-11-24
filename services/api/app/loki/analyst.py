@@ -58,6 +58,51 @@ def _commercial_findings(case):
     return findings
 
 
+def _opportunity_selection_findings(analysis):
+    field = "analysis/opportunity_selection"
+    selection, ranked = analysis["opportunity_selection"], analysis.get("alternatives")
+    if (not isinstance(selection, dict) or not isinstance(ranked, list) or any(
+        not isinstance(item, dict) or not isinstance(item.get("opportunity_key"), str)
+        or type(item.get("adjusted_forward_value_minor")) is not int
+        or type(item.get("eligible")) is not bool or not isinstance(item.get("blockers"), list)
+        for item in ranked
+    )):
+        return [_finding("opportunity_selection_invalid", field, "The ranking inputs are incomplete.", critical=True)]
+    ordered = sorted(ranked, key=lambda row: (
+        not row["eligible"], -row["adjusted_forward_value_minor"], row["opportunity_key"],
+    ))
+    expected = next((item["opportunity_key"] for item in ordered if item["eligible"]
+                     and isinstance(item.get("foundry_source"), dict) and isinstance(item.get("demand_evidence"), dict)
+                     and type(item["demand_evidence"].get("demand_count")) is int
+                     and item["demand_evidence"]["demand_count"] > 0), None)
+    selected = selection.get("first_research_candidate_key")
+    valid = selection.get("commercial_selection_key") is None and selection.get("verified_monthly_owner_income_minor") is None
+    holds = selection.get("scope_holds")
+    blockers = analysis.get("blockers")
+    valid = valid and isinstance(blockers, list) and all(isinstance(blocker, str) for blocker in blockers)
+    valid = valid and (holds == blockers or holds == sorted(set([*blockers, "EMERGENCY_STOP"])))
+    if expected is not None and not holds:
+        valid = valid and selection.get("decision") == "RESEARCH_ONLY" and selected == expected
+    else:
+        valid = valid and selection.get("decision") == "ABSTAIN" and selected is None
+    if (ranked != ordered or not valid or len({row["opportunity_key"] for row in ranked}) != len(ranked)
+            or any(row["eligible"] != (not row["blockers"]) for row in ranked)):
+        return [_finding("opportunity_ranking_conflict", field,
+                         "The proposed selection disagrees with the scoped ranking or asserts unverified commercial authority.",
+                         critical=True)]
+    for row in ranked:
+        basis = row.get("ranking_basis")
+        net = basis.get("risk_adjusted_operating_net_minor") if isinstance(basis, dict) else None
+        charge = basis.get("capital_and_downside_charge_minor") if isinstance(basis, dict) else None
+        if (type(net) is not int or type(charge) is not int or charge < 0
+                or net - charge != row["adjusted_forward_value_minor"]
+                or basis.get("verified_monthly_owner_income_minor") is not None):
+            return [_finding("opportunity_value_conflict", "analysis/alternatives",
+                             "The forward value does not reconcile to its disclosed components.", critical=True)]
+    return [_finding("opportunity_ranking_evidence", field,
+                     "Verify the buyer sample, sustainable net, owner hours, legal scope and relative ranking before reliance.")]
+
+
 def challenge(item: dict) -> IndependentReviewIn:
     kind, proposal = item["artifact_type"], item["raw_input"]
     digest = artifact_digest(kind, item["reference"], proposal)
@@ -93,6 +138,8 @@ def challenge(item: dict) -> IndependentReviewIn:
         ))
     elif kind == "economic_advice":
         plan, evidence = proposal["plan"], proposal["analysis"]
+        if "opportunity_selection" in evidence:
+            findings.extend(_opportunity_selection_findings(evidence))
         checks = set(evidence["blockers"])
         if plan["past_spend_minor"]:
             findings.append(_finding("sunk_cost", "plan/past_spend_minor",
