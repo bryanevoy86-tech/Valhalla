@@ -553,7 +553,8 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
         live_bind = client.post(binding_path, headers=owner, json=live_binding)
         assert live_bind.status_code == 201, live_bind.text
         rehearse_bound_stripe_delivery(client, engine, isolated_live_checks, owner, owner_session, buyer_session,
-                                       buyer_email, live_binding, live_bind.json()["amount_minor"], expected_bytes=content)
+                                       buyer_email, live_binding, live_bind.json()["amount_minor"],
+                                       expected_bytes=content, expected_asset_id=asset_id)
     assert client.post(binding_path, headers=owner, json={**order_bind,
                        "order_id": str(uuid4()), "payment_intent_id": "pi_fixture_product"}).status_code == 422
 
@@ -922,7 +923,7 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
 
 
 def rehearse_bound_stripe_delivery(client, engine, monkeypatch, owner, owner_session, buyer_session,
-                                   buyer_email, binding, price, *, expected_bytes=None):
+                                   buyer_email, binding, price, *, expected_bytes=None, expected_asset_id=None):
     from contextlib import contextmanager
     import hmac
     import time
@@ -1015,7 +1016,7 @@ def rehearse_bound_stripe_delivery(client, engine, monkeypatch, owner, owner_ses
         assert entitlement.headers["X-Delivery-Grant"] == grant.json()["grant_sha256"]
         extension = "zip" if expected_bytes.startswith(b"PK") else "txt"
         assert entitlement.headers["Content-Disposition"] == (
-            f'attachment; filename="{binding["product_asset_id"]}.{extension}"'
+            f'attachment; filename="{expected_asset_id}.{extension}"'
         )
     else:
         assert entitlement.json()["download_enabled"] is False
