@@ -252,7 +252,7 @@ def queue_assessments(db, policy, scope, source, report_rows):
     proposal = UniversalOpportunityIn.model_validate({
         **policy["scenario"], **grounded, "specialist_inputs": inputs, "persist_decision": True,
     })
-    request = universal_review_artifact(proposal)
+    request = universal_review_artifact(proposal, db)
     if request["raw_input"]["simulation_fixture"] is True:
         raise HTTPException(409, "Shadow-only evidence cannot receive operating authority")
     reviews = [enqueue_report(db, r["evidence"]["report_id"], durable=False) for r in report_rows]

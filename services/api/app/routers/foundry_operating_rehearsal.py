@@ -1,5 +1,5 @@
 """One disposable operating loop over existing Foundry and treasury operations."""
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 import hashlib
 import os
 from typing import Annotated, Literal
@@ -8,7 +8,8 @@ from uuid import UUID, uuid5
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.encoders import jsonable_encoder
 from pydantic import Field, ValidationError
-from sqlalchemy import inspect, select, update
+from sqlalchemy import exists, func, inspect, select, update
+from sqlalchemy.orm import aliased
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -28,7 +29,9 @@ from app.routers.prime_business_factory import DraftMandateRequest, ListingDraft
 from app.routers.research_participant import profile
 from app.schemas.economic_control import Performance
 from app.schemas.market_intelligence import MarketScope, StrictModel
+from app.services import foundry_holdout as holdout
 from app.services.economic_control import require_no_containment
+from app.services.specialist_triggers import enqueue_prime, outcome_scope_key
 from app.services.prime_business_execution import (
     _bound_prime_decision, _check_legacy, _emergency_stop_active, _event, _execute_locked_draft, _json,
     _lock_mandate, _mandate_revocation_id, _prepare_draft_mandate, action_status, submit_listing_draft,
@@ -153,17 +156,17 @@ def active(db, run_id):
         raise HTTPException(409, "Acquisition plan changed")
     checkout._require_current_campaign_plan(db, mandate["campaign_id"], plan)
     listing = ListingDraftRequest.model_validate(mandate["listing"])
-    reference = review_listing(db, listing)
+    reference = review_listing(db, listing, check_new_lessons="outcome" not in chain)
     if reference != mandate["prime_decision"]:
         raise HTTPException(409, "Prime decision evidence changed")
     return chain, mandate, scope
 
 
-def review_listing(db, listing):
+def review_listing(db, listing, *, check_new_lessons=True):
     asset = checkout.load_artifact(db, listing.artifact_id, lock=True)
     return _bound_prime_decision(db, listing.prime_verdict_id, listing, {
         **listing.model_dump(), "product_asset": {"artifact_id": str(asset.id), "sha256": asset.sha256},
-    })
+    }, check_new_lessons=check_new_lessons)
 
 
 def commit(db):
@@ -182,6 +185,9 @@ def save(db, run_id, chain, phase, evidence):
     if phase != tuple(ACTORS)[len(chain)]:
         raise HTTPException(409, "Operating transition is out of sequence")
     receipt = add_receipt(db, run_id, phase, chain["mandate"]["scope"], evidence, next(reversed(chain.values()))["sha256"])
+    if phase == "outcome" and "norns_contribution_error" in evidence:
+        enqueue_prime(db, outcome_scope_key(receipt["scope"]), f"FOL-{run_id.hex}",
+                      datetime.now(timezone.utc).replace(tzinfo=None), subscription="on_economic_reassessment")
     commit(db)
     return receipt
 
@@ -386,7 +392,7 @@ def finish(db, run_id, chain, mandate, scope, order_id):
     return result
 
 
-def verify_operating_variance(db, scope, claim):
+def verify_operating_variance(db, scope, claim, *, current=True):
     from app.pantheon.forecasts import operating_contribution_error
 
     try:
@@ -396,6 +402,10 @@ def verify_operating_variance(db, scope, claim):
         chain = read_run(db, run_id)
         if chain["mandate"]["scope"] != scope or chain["outcome"]["sha256"] != claim["sha256"]:
             raise ValueError
+        if current and (datetime.fromisoformat(chain["outcome"]["recorded_at"]) <
+                        datetime.now(timezone.utc) - timedelta(days=30)
+                        or db.scalar(select(Event.id).filter_by(event_id=f"FOL-{run_id.hex}-revoked"))):
+            raise HTTPException(409, "Operating lesson is revoked or stale")
         mandate = chain["mandate"]["evidence"]
         outcome = chain["outcome"]["evidence"]
         if mandate.get("upstream_sha256"):
@@ -423,6 +433,75 @@ def verify_operating_variance(db, scope, claim):
             "evidence_scope": "DISPOSABLE_OPERATING_FIXTURE_ONLY"}
 
 
+def current_operating_lessons(db, scope, listing):
+    """Retrieve current completed runs for this exact playbook, never across scopes."""
+    keys = ("product_id", "artifact_id", "price_cents_cad")
+    if (not isinstance(listing, dict) or any(listing.get(key) is None for key in keys)
+            or not all(isinstance(value, str) and value for value in scope.values())
+            or not inspect(db.connection()).has_table(Event.__tablename__)):
+        return ()
+    from sqlalchemy import JSON, cast
+
+    mandate, outcome = aliased(Event), aliased(Event)
+    # PostgreSQL casts text to JSON; SQLite's JSON functions already accept text.
+    body = (cast(mandate.payload_json, JSON) if db.get_bind().dialect.name == "postgresql"
+            else func.json(mandate.payload_json, type_=JSON))
+    playbook = body["evidence"]["prediction"]["playbook"]
+    rows = db.execute(select(mandate.event_id, outcome.payload_json).join(
+        outcome, outcome.event_id == func.substr(mandate.event_id, 1, 36) + "-outcome",
+    ).where(
+        mandate.event_type == EVENT, mandate.legacy_instance_id == scope["legacy_instance_id"],
+        mandate.event_id.like("FOP-%-mandate"), outcome.event_type == EVENT,
+        *(body["scope"][key].as_string() == value for key, value in scope.items()),
+        playbook["product_id"].as_string() == listing["product_id"],
+        playbook["artifact_id"].as_string() == listing["artifact_id"],
+        playbook["price_cents_cad"].as_integer() == listing["price_cents_cad"],
+        ~exists(select(Event.id).where(Event.event_id == "FOL-" + func.substr(mandate.event_id, 5, 32) + "-revoked")),
+    ).order_by(outcome.id.desc()).limit(20)).all()
+    cutoff = datetime.now(timezone.utc) - timedelta(days=30)
+    lessons = []
+    for ref, content in rows:
+        body = _json(content, {})
+        try:
+            if datetime.fromisoformat(body["recorded_at"]) < cutoff:
+                continue
+            proof = verify_operating_variance(db, scope, {
+                "basis": "FOUNDRY_OPERATING_VARIANCE", "run_id": ref[4:36], "sha256": body["sha256"],
+            })
+        except (KeyError, TypeError, ValueError):
+            raise HTTPException(409, "Automatic operating lesson failed integrity verification") from None
+        if proof["variance"]["classification"] == "BELOW_EXPECTATION":
+            lessons.append(proof["sha256"])
+    return tuple(lessons)
+
+
+def verify_operating_trigger(db, scope, event_id):
+    try:
+        run_id = UUID(event_id.removeprefix("FOL-"))
+    except ValueError:
+        raise HTTPException(409, "Operating learning trigger is invalid") from None
+    outcome = read_run(db, run_id).get("outcome")
+    if outcome is None:
+        raise HTTPException(409, "Operating learning trigger has no completed outcome")
+    return verify_operating_variance(db, scope, {"basis": "FOUNDRY_OPERATING_VARIANCE", "run_id": str(run_id),
+                                                 "sha256": outcome["sha256"]})
+
+
+@router.post("/{run_id}/learning-revocation",
+             dependencies=[Depends(require_prime_control_key), Depends(require_owner_mandate_key)])
+def revoke_operating_lesson(run_id: UUID, db: Session = Depends(get_db)):
+    chain = read_run(db, run_id)
+    if "outcome" not in chain:
+        raise HTTPException(409, "Operating lesson has no completed outcome")
+    ref = f"FOL-{run_id.hex}-revoked"
+    if not db.scalar(select(Event.id).filter_by(event_id=ref)):
+        _event(db, event_id=ref, legacy_instance_id=chain["mandate"]["scope"]["legacy_instance_id"],
+               event_type="FOUNDRY_LESSON_REVOKED", message="Owner revoked operating lesson",
+               payload={"outcome_sha256": chain["outcome"]["sha256"]})
+        commit(db)
+    return {"revoked": True, "outcome_sha256": chain["outcome"]["sha256"]}
+
+
 @router.post("/{run_id}/advance", dependencies=[Depends(require_prime_control_key)])
 def advance(run_id: UUID, db: Session = Depends(get_db)):
     chain, mandate, scope = active(db, run_id)
@@ -432,7 +511,7 @@ def advance(run_id: UUID, db: Session = Depends(get_db)):
         verify_mimir_claims(db, scope, [{k: claim[k] for k in ("basis", "record_id", "sha256", "period_net_minor")}])
         if "prediction" in mandate:
             verify_operating_variance(db, scope, {"basis": "FOUNDRY_OPERATING_VARIANCE", "run_id": str(run_id),
-                                                  "sha256": chain["outcome"]["sha256"]})
+                                                  "sha256": chain["outcome"]["sha256"]}, current=False)
         return {"status": "completed", "receipt": chain["outcome"]}
     if "listing" not in chain:
         listing = ListingDraftRequest.model_validate(mandate["listing"])
@@ -481,3 +560,86 @@ def receipts(run_id: UUID, db: Session = Depends(get_db)):
     if not enabled():
         raise HTTPException(503, "Disposable operating rehearsal disabled")
     return {"receipts": list(read_run(db, run_id).values()), "commercial_activation_authorized": False}
+
+
+def holdout_event(db, run_id, suffix, event_type):
+    ref = f"FOH-{run_id.hex}-{suffix}"
+    row = db.scalar(select(Event).filter_by(event_id=ref))
+    if row is None:
+        return None
+    body = _json(row.payload_json, {})
+    digest = body.pop("sha256", None) if isinstance(body, dict) else None
+    if (row.event_type != event_type or not digest or body.get("scope", {}).get("legacy_instance_id") != row.legacy_instance_id
+            or digest != artifact_digest(event_type, ref, body)):
+        raise HTTPException(409, "Holdout journal integrity failed")
+    return {**body, "sha256": digest}
+
+
+def record_holdout_event(db, run_id, suffix, event_type, scope, value):
+    ref = f"FOH-{run_id.hex}-{suffix}"
+    body = {"scope": scope, **value}
+    body["sha256"] = artifact_digest(event_type, ref, body)
+    _event(db, event_id=ref, legacy_instance_id=scope["legacy_instance_id"], event_type=event_type,
+           message=suffix, payload=body)
+    commit(db)
+    return body
+
+
+@router.post("/{run_id}/economic-holdout",
+             dependencies=[Depends(require_prime_control_key), Depends(require_owner_mandate_key)])
+def freeze_operating_holdout(run_id: UUID, request: holdout.Plan, db: Session = Depends(get_db)):
+    guard(db)
+    scope = read_run(db, run_id)["mandate"]["scope"]
+    lesson = verify_operating_variance(db, scope, {"basis": "FOUNDRY_OPERATING_VARIANCE", "run_id": str(run_id),
+                                                   "sha256": request.training_outcome_sha256})
+    existing = holdout_event(db, run_id, "plan", holdout.PLAN)
+    if existing is not None:
+        if existing["request"] != request.model_dump(mode="json"):
+            raise HTTPException(409, "Holdout plan was already frozen")
+        return existing
+    plan = holdout.freeze(run_id, request, lesson)
+    return record_holdout_event(db, run_id, "plan", holdout.PLAN, scope, {
+        "request": request.model_dump(mode="json"), "plan": plan,
+    })
+
+
+@router.get("/{run_id}/economic-holdout/review-artifact", dependencies=[Depends(require_prime_control_key)])
+def holdout_review_artifact(run_id: UUID, db: Session = Depends(get_db), *, result: bool = False):
+    record = holdout_event(db, run_id, "result" if result else "plan", holdout.RESULT if result else holdout.PLAN)
+    if record is None:
+        raise HTTPException(404, "Holdout review evidence unavailable")
+    return {"artifact_type": "operating_holdout", "heimdall_reference_id": str(run_id), "raw_input": record,
+            "artifact_sha256": artifact_digest("operating_holdout", str(run_id), record)}
+
+
+@router.post("/{run_id}/economic-holdout/{review_id}", dependencies=[Depends(require_prime_control_key)])
+def observe_operating_holdout(run_id: UUID, review_id: UUID, request: holdout.Outcome, db: Session = Depends(get_db)):
+    from app.loki.models import LokiIndependentReceipt, LokiReview
+    from app.loki.review_service import verdict
+
+    guard(db)
+    artifact = holdout_review_artifact(run_id, db)
+    record = artifact["raw_input"]
+    if record["sha256"] != request.plan_sha256:
+        raise HTTPException(409, "Observation does not bind the frozen holdout")
+    verify_operating_variance(db, record["scope"], {"basis": "FOUNDRY_OPERATING_VARIANCE", "run_id": str(run_id),
+                              "sha256": record["plan"]["training_outcome_sha256"]})
+    review = db.get(LokiReview, review_id)
+    if review is None or review.artifact_sha256 != artifact["artifact_sha256"] or review.artifact_type != "operating_holdout":
+        raise HTTPException(409, "Independent review of the exact holdout plan is required")
+    decision = verdict(db, review)
+    if decision.result_severity == "critical":
+        raise HTTPException(409, "Independent Loki review rejected the holdout design")
+    peer = db.get(LokiIndependentReceipt, review_id)
+    reviewed_at = peer.created_at.replace(tzinfo=timezone.utc) if peer.created_at.tzinfo is None else peer.created_at
+    inputs = request.model_dump(mode="json")
+    existing = holdout_event(db, run_id, "result", holdout.RESULT)
+    if existing is not None:
+        if existing["observation"] != inputs or existing["loki_result_sha256"] != decision.result_sha256:
+            raise HTTPException(409, "A different holdout outcome was already recorded")
+        return existing
+    result = holdout.score(record["plan"], request, review_time=reviewed_at)
+    return record_holdout_event(db, run_id, "result", holdout.RESULT, record["scope"], {
+        **result, "plan_sha256": record["sha256"], "loki_result_sha256": decision.result_sha256,
+        "review_id": str(review_id), "observation": inputs,
+    })

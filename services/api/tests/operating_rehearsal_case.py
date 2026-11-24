@@ -1,5 +1,5 @@
 """Disposable continuation of the shared independently reviewed product fixture."""
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import hashlib
 import hmac
 import json
@@ -81,10 +81,31 @@ def run_operating_rehearsal(client, engine, monkeypatch, serve, owner, owner_ses
         return data
 
     if upstream:
+        from app.models.prime_specialist_schedule import PrimeScheduleTrigger, PrimeSpecialistSchedule
+
+        for model in (PrimeSpecialistSchedule, PrimeScheduleTrigger):
+            model.__table__.create(engine, checkfirst=True)
+        # Deliberately make cadence later than the outcome to prove event wake-up.
+        schedule_id = uuid4()
+        scheduled = client.post("/api/prime/specialist-schedules", headers=owner, json={
+            "schedule_id": str(schedule_id), "business_id": scope["business_id"], "cadence_seconds": 600,
+            "duration_seconds": 1800, "on_economic_reassessment": True,
+            "opportunity": {**upstream["scenario"], "independent_loki_review_id": None,
+                            "legacy": scope["legacy_instance_id"], "jurisdiction": scope["jurisdiction"],
+                            "engine_id": scope["engine_id"], "opportunity_id": "scheduled-variance",
+                            "specialist_inputs": {"proposed_internal_listing": {
+                                key: listing[key] for key in ("product_id", "artifact_id", "price_cents_cad")
+                            }}},
+        })
+        assert scheduled.status_code == 201, scheduled.text
+        with Session(engine) as db:
+            db.get(PrimeSpecialistSchedule, schedule_id).next_due_at += timedelta(minutes=10)
+            db.commit()
         with serve(client, app=app) as server:
             listing = source_chain(client, server, engine, monkeypatch, before, owner, upstream, worker, command,
                                    authorized_worker_env, source_root, today, owner_session, buyer_session)
         engine.dispose()
+
 
     def signed(http, suffix, doc, key, header):
         raw = json.dumps(doc, sort_keys=True).encode()
@@ -219,7 +240,8 @@ def run_operating_rehearsal(client, engine, monkeypatch, serve, owner, owner_ses
                 types = [x["actor"] for x in source_rows if x["actor"].startswith("OWNER")]
                 assert types[0] == "OWNER_INITIAL_AUTHORITY" and types[-1] == "OWNER_FINAL_MANDATE"
                 assert types[1:-1] and set(types[1:-1]) == {"OWNER_MATERIAL_DISPOSITION"}
-                approved = [(method, path, status) for method, path, status in upstream["owner_http"] if status < 300]
+                approved = [(method, path, status) for method, path, status in upstream["owner_http"]
+                            if status < 300]
                 assert approved[-1][1].endswith("/mandate")
                 assert sum(path.endswith("/disposition") for _, path, _ in approved) == len(types) - 2
                 assert sum(path.endswith("/mandate") for _, path, _ in approved if "/source-rehearsal/" in path) == 1
@@ -249,7 +271,9 @@ def run_operating_rehearsal(client, engine, monkeypatch, serve, owner, owner_ses
                 root_eval = "/api/completion/phase3/universal-opportunity/evaluate"
                 ordinary = client.post(root_eval, json={"opportunities": [followup], "shadow_mode": True})
                 assert ordinary.status_code == 200, ordinary.text
-                assert ordinary.json()["evaluations"][0]["final_decision"] in {"proceed", "research_more"}
+                automatic = ordinary.json()["evaluations"][0]
+                assert automatic["final_decision"] == "hold"
+                assert automatic["operating_learning"]["verified_variance_receipts"] == [receipts[-1]["sha256"]]
                 followup["specialist_inputs"]["mimir_outcome_claims"] = [variance_claim]
                 reviewed = client.post(root_eval, json={"opportunities": [followup], "shadow_mode": True})
                 assert reviewed.status_code == 200, reviewed.text
@@ -273,6 +297,30 @@ def run_operating_rehearsal(client, engine, monkeypatch, serve, owner, owner_ses
                 receipt = client.post(f"/loki/worker/reviews/{review_id}/result", headers=reviewer,
                                       json=signed_review.model_dump(mode="json"))
                 assert receipt.status_code == 201 and receipt.json()["result_sha256"]
+                from app.routers.prime_specialist_schedules import run_due_schedule
+                from app.services.specialist_triggers import enqueue_prime, outcome_scope_key
+
+                engine.dispose()
+                with Session(engine) as restarted:
+                    for _ in range(12):
+                        tick = run_due_schedule(restarted)
+                        event_row = restarted.query(LegacyOrchestrationEvent).filter_by(
+                            event_id=tick.get("report_event_id"),
+                        ).one_or_none()
+                        if event_row and json.loads(event_row.payload_json).get("trigger") == "OPERATING_LESSON":
+                            break
+                    else:
+                        raise AssertionError("Operating lesson reassessment did not run")
+                    lesson_report = json.loads(event_row.payload_json)
+                    assert lesson_report["operating_lesson"]["sha256"] == variance_claim["sha256"]
+                    assert lesson_report["recommendation"]["heimdall_decision"] == "HOLD"
+                    enqueue_prime(restarted, outcome_scope_key(scope), f"FOL-{run_id.hex}",
+                                  datetime.now(timezone.utc).replace(tzinfo=None), subscription="on_economic_reassessment")
+                    restarted.commit()
+                    replayed = run_due_schedule(restarted)
+                    assert replayed == {"status": "replayed", "report_event_id": tick["report_event_id"]}
+                exercise_prospective_holdout(client, engine, monkeypatch, owner, reviewer, root, run_id,
+                                             prediction, variance_claim)
                 with Session(engine) as db:
                     with pytest.raises(HTTPException, match="intact scoped evidence"):
                         verify_mimir_claims(db, {**scope, "business_id": "foreign-scope"}, [variance_claim])
@@ -280,6 +328,23 @@ def run_operating_rehearsal(client, engine, monkeypatch, serve, owner, owner_ses
                         verify_mimir_claims(db, scope, [{**variance_claim, "sha256": "0" * 64}])
                     with pytest.raises(HTTPException, match="Repeated Mimir claim"):
                         verify_mimir_claims(db, scope, [variance_claim, variance_claim])
+                    from app.models.foundry_evidence import FoundryEvidence
+
+                    source_row = db.get(FoundryEvidence, UUID(source["job_id"]))
+                    source_row.revoked = True
+                    db.commit()
+                    with pytest.raises(HTTPException):
+                        verify_mimir_claims(db, scope, [variance_claim])
+                    source_row.revoked = False
+                    db.commit()
+                revoke = client.post(root + "/learning-revocation", headers=owner)
+                assert revoke.status_code == 200 and revoke.json()["revoked"]
+                with Session(engine) as db:
+                    with pytest.raises(HTTPException, match="revoked"):
+                        verify_mimir_claims(db, scope, [variance_claim])
+                del followup["specialist_inputs"]["mimir_outcome_claims"]
+                after = client.post(root_eval, json={"opportunities": [followup], "shadow_mode": True})
+                assert after.status_code == 200 and "operating_learning" not in after.json()["evaluations"][0]
             with Session(engine) as db:
                 assert db.query(FoundryRehearsalOrder).count() == 1
                 assert db.query(FoundryRehearsalPayment).count() == db.query(FoundryFixtureSettlement).count() == 2
@@ -464,3 +529,83 @@ def source_chain(client, network, engine, monkeypatch, authority, owner, upstrea
         return decision["evidence"]["listing"]
     finally:
         publisher.close()
+
+
+def exercise_prospective_holdout(client, engine, monkeypatch, owner, reviewer, root, run_id, prediction, variance_claim):
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+
+    from app.loki.analyst import challenge
+    from app.loki.evidence import artifact_digest
+    from app.services.foundry_holdout import Outcome, observation_message, score
+
+    signer = Ed25519PrivateKey.generate()
+    route = root + "/economic-holdout"
+    strategy = "Use refund-adjusted contribution and pause when the estimate cannot absorb a full refund."
+    baseline = artifact_digest("foundry_playbook_baseline", str(run_id), prediction)
+    cases = [str(uuid4()) for _ in range(3)]
+    plan = {"training_outcome_sha256": variance_claim["sha256"], "original_version": baseline,
+            "revised_version": artifact_digest("foundry_playbook_revision", baseline, {"strategy": strategy}),
+            "revised_strategy": strategy, "cohort_id": str(uuid4()), "case_ids": cases,
+            "observation_deadline": (datetime.now(timezone.utc) + timedelta(minutes=10)).isoformat(),
+            "maximum_loss_per_case_minor": 200}
+    assert client.post(route, json=plan, headers=owner).status_code == 503
+    monkeypatch.setenv("VALHALLA_OPERATING_HOLDOUT_OBSERVER_PUBLIC_KEY", signer.public_key().public_bytes_raw().hex())
+    assert client.post(route, json={**plan, "cohort_id": str(run_id)}, headers=owner).status_code == 409
+    response = client.post(route, json=plan, headers=owner)
+    assert response.status_code == 200, response.text
+    frozen = response.json()
+    assert client.post(route, json=plan, headers=owner).json() == frozen
+    assert client.post(route, json={**plan, "maximum_loss_per_case_minor": 201}, headers=owner).status_code == 409
+    artifact = client.get(route + "/review-artifact").json()
+    reviewed = client.post("/loki/reviews", json={**artifact, "input_source": "prospective-economic-fixture"})
+    assert reviewed.status_code == 201, reviewed.text
+    review_id = reviewed.json()["id"]
+    queue = client.get("/loki/worker/reviews", headers=reviewer, params={"artifact_type": "operating_holdout"})
+    decision = challenge(next(row for row in queue.json() if row["review_id"] == review_id))
+    assert any(f.category == "holdout_selection_and_cost" for f in decision.findings)
+    response = client.post(f"/loki/worker/reviews/{review_id}/result", headers=reviewer,
+                           json=decision.model_dump(mode="json"))
+    assert response.status_code == 201, response.text
+    observations = {
+        "cohort_id": plan["cohort_id"], "plan_sha256": frozen["sha256"],
+        "cases": [{"case_id": case, "observed_at": datetime.now(timezone.utc).isoformat(),
+                   "original": {"gross_minor": 2500, "refund_minor": refund, "execution_cost_minor": 175},
+                   "revised": {"gross_minor": 2500, "refund_minor": modified, "execution_cost_minor": 160}}
+                  for case, refund, modified in zip(cases, (0, 2500, 1200), (0, 2500, 1000), strict=True)],
+    }
+
+    def signed(doc):
+        canonical = Outcome.model_validate({**doc, "signature": "0" * 128}).model_dump(mode="json", exclude={"signature"})
+        return {**doc, "signature": signer.sign(observation_message(canonical)).hex()}
+
+    submit = route + "/" + review_id
+    assert client.post(submit, json={**observations, "signature": "0" * 128}).status_code == 409
+    early = [{**case, "observed_at": frozen["plan"]["frozen_at"]} for case in observations["cases"]]
+    assert client.post(submit, json=signed({**observations, "cases": early})).status_code == 409
+    contaminated = [observations["cases"][0], *observations["cases"][:2]]
+    assert client.post(submit, json=signed({**observations, "cases": contaminated})).status_code == 409
+    worse = [{**case, "revised": {**case["revised"], "execution_cost_minor": 450}}
+             for case in observations["cases"]]
+    assessment = score(frozen["plan"], Outcome.model_validate(signed({**observations, "cases": worse})),
+                       review_time=datetime.fromisoformat(frozen["plan"]["frozen_at"]))
+    assert assessment["promotion"] == "REJECTED_ECONOMICS"
+    engine.dispose()
+    outcome = client.post(submit, json=signed(observations))
+    assert outcome.status_code == 200, outcome.text
+    result = outcome.json()
+    assert result["fixture_assessment"] == "BETTER_ON_FIXTURE"
+    assert result["promotion"] == "REJECTED_NO_VERIFIED_REAL_OUTCOMES"
+    assert result["metrics"]["original"]["contribution_minor"] == 3275
+    assert result["metrics"]["revised"]["contribution_minor"] == 3520
+    assert client.post(submit, json=signed(observations)).json() == result
+    assert client.post(submit, json=signed({**observations, "cases": list(reversed(observations["cases"]))})).status_code == 409
+    scored_artifact = client.get(route + "/review-artifact", params={"result": True}).json()
+    queued = client.post("/loki/reviews", json={**scored_artifact, "input_source": "scored-holdout-fixture"})
+    assert queued.status_code == 201, queued.text
+    scored_id = queued.json()["id"]
+    queue = client.get("/loki/worker/reviews", headers=reviewer, params={"artifact_type": "operating_holdout"})
+    challenge_result = challenge(next(row for row in queue.json() if row["review_id"] == scored_id))
+    assert any(f.category == "holdout_apparent_improvement" for f in challenge_result.findings)
+    audited = client.post(f"/loki/worker/reviews/{scored_id}/result", headers=reviewer,
+                          json=challenge_result.model_dump(mode="json"))
+    assert audited.status_code == 201

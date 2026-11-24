@@ -2692,14 +2692,29 @@ def phase3_engine_audit(db: Session = Depends(get_db)):
     }
 
 
-def _loki_artifact(opportunity: UniversalOpportunityIn) -> dict:
-    return opportunity.model_dump(mode="json", exclude={"independent_loki_review_id", "persist_decision"})
+def _automatic_operating_lessons(db, opportunity):
+    from app.routers.foundry_operating_rehearsal import current_operating_lessons
+
+    inputs = opportunity.specialist_inputs
+    if opportunity.replay_partition is not None or not inputs.get("proposed_internal_listing"):
+        return ()
+    return current_operating_lessons(db, {
+        "legacy_instance_id": opportunity.legacy, "jurisdiction": opportunity.jurisdiction,
+        "engine_id": opportunity.engine_id, "business_id": inputs.get("business_id"),
+    }, inputs["proposed_internal_listing"])
+
+
+def _loki_artifact(opportunity: UniversalOpportunityIn, db: Session | None = None) -> dict:
+    body = opportunity.model_dump(mode="json", exclude={"independent_loki_review_id", "persist_decision"})
+    if db is not None and (lessons := _automatic_operating_lessons(db, opportunity)):
+        body["automatic_operating_lesson_refs"] = list(lessons)
+    return body
 
 
 @router.post("/phase3/universal-opportunity/review-artifact")
-def universal_review_artifact(opportunity: UniversalOpportunityIn):
+def universal_review_artifact(opportunity: UniversalOpportunityIn, db: Session = Depends(get_db)):
     artifact_type = "universal_opportunity"
-    content = _loki_artifact(opportunity)
+    content = _loki_artifact(opportunity, db)
     return {
         "artifact_type": artifact_type, "heimdall_reference_id": opportunity.opportunity_id, "raw_input": content,
         "artifact_sha256": artifact_digest(artifact_type, opportunity.opportunity_id, content),
@@ -2714,7 +2729,7 @@ def _require_independent_review(db: Session, opportunity: UniversalOpportunityIn
     review = db.get(LokiReview, review_id)
     if review is None:
         raise HTTPException(status_code=409, detail="Independent Loki review not found")
-    expected = artifact_digest("universal_opportunity", opportunity.opportunity_id, _loki_artifact(opportunity))
+    expected = artifact_digest("universal_opportunity", opportunity.opportunity_id, _loki_artifact(opportunity, db))
     if review.artifact_sha256 != expected:
         raise HTTPException(status_code=409, detail="A material change requires a new independent review")
     decision = independent_loki_verdict(db, review)
@@ -2790,6 +2805,7 @@ def evaluate_opportunity_batch(payload: UniversalOpportunityBatchIn, db: Session
     for index, opp in enumerate(payload.opportunities):
         try:
             listing = opp.specialist_inputs.get("proposed_internal_listing")
+            automatic = () if payload.replay_mode else _automatic_operating_lessons(db, opp)
             losses = tuple(proof["sha256"] for proof in checked_mimir.get(index, ())
                 if proof.get("basis") == "FOUNDRY_OPERATING_VARIANCE"
                 and proof["variance"]["classification"] == "BELOW_EXPECTATION"
@@ -2804,7 +2820,7 @@ def evaluate_opportunity_batch(payload: UniversalOpportunityBatchIn, db: Session
                     reveal_historical_outcomes=payload.reveal_historical_outcomes,
                     outcome_class=outcome_class,
                     independent_loki=checked_reviews.get(index),
-                    operating_lessons=losses,
+                    operating_lessons=tuple(dict.fromkeys((*automatic, *losses))),
                     durable=durable,
                 )
             )

@@ -101,7 +101,8 @@ def _describe(db: Session, row: PrimeSpecialistSchedule) -> dict:
     report = _report(db, row.id, row.last_report_event_id) if row.last_report_event_id else None
     economic = or_(PrimeScheduleTrigger.event_id.startswith("ECON-"),
                    PrimeScheduleTrigger.event_id.startswith(WITHDRAWAL_PREFIX),
-                   PrimeScheduleTrigger.event_id.startswith("DISCOVERY-"))
+                   PrimeScheduleTrigger.event_id.startswith("DISCOVERY-"),
+                   PrimeScheduleTrigger.event_id.startswith("FOL-"))
     queued = db.execute(select(economic, PrimeScheduleTrigger.failure_code, func.count()).where(
         PrimeScheduleTrigger.schedule_id == row.id,
     ).group_by(economic, PrimeScheduleTrigger.failure_code)).all()
@@ -283,8 +284,10 @@ def run_due_schedule(db: Session, *, now: datetime | None = None) -> dict:
     economic_id = event_id if queued is not None and event_id.startswith("ECON-") else None
     withdrawal_id = event_id if queued is not None and event_id.startswith(WITHDRAWAL_PREFIX) else None
     revision_id = event_id if queued is not None and event_id.startswith("DISCOVERY-") else None
-    outcome_id = None if (economic_id or withdrawal_id or revision_id) else event_id
+    learning_id = event_id if queued is not None and event_id.startswith("FOL-") else None
+    outcome_id = None if (economic_id or withdrawal_id or revision_id or learning_id) else event_id
     trigger_field = ("trigger_source_withdrawal_id" if withdrawal_id else
+                     "trigger_operating_lesson_id" if learning_id else
                      "trigger_source_revision_id" if revision_id else
                      "trigger_economic_event_id" if economic_id else "trigger_outcome_event_id")
     elapsed_slots = (now - row.next_due_at) // timedelta(seconds=row.cadence_seconds) if timed else 0
@@ -332,6 +335,8 @@ def run_due_schedule(db: Session, *, now: datetime | None = None) -> dict:
         report.update(trigger="FOUNDRY_SOURCE_WITHDRAWN", trigger_source_withdrawal_id=withdrawal_id)
     if revision_id:
         report.update(trigger="FOUNDRY_SOURCE_REVISED", trigger_source_revision_id=revision_id)
+    if learning_id:
+        report.update(trigger="OPERATING_LESSON", trigger_operating_lesson_id=learning_id)
     try:
         _check_legacy(db, **scope)
         if withdrawal_id and (not payload.on_economic_reassessment or not verify_withdrawal(db, scope, withdrawal_id)):
@@ -348,6 +353,12 @@ def run_due_schedule(db: Session, *, now: datetime | None = None) -> dict:
             if not payload.on_economic_reassessment:
                 raise HTTPException(409, "Source reassessment is not enrolled")
             report["source_revision"] = source_revision(db, revision_id, scope, now.date())
+        if learning_id:
+            from app.routers.foundry_operating_rehearsal import verify_operating_trigger
+
+            if not payload.on_economic_reassessment:
+                raise HTTPException(409, "Operating learning reassessment is not enrolled")
+            report["operating_lesson"] = verify_operating_trigger(db, scope, learning_id)
         outcomes = verified_internal_outcomes(db, **scope, trigger_event_id=outcome_id)
         if outcome_id and not any(item["outcome_event_id"] == outcome_id for item in outcomes):
             raise HTTPException(status_code=409, detail="Trigger outcome evidence failed revalidation")

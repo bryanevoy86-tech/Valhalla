@@ -134,6 +134,9 @@ def challenge(item: dict) -> IndependentReviewIn:
                                           for row in claims):
             findings.append(_finding("operating_forecast_assumption", "specialist_inputs/mimir_outcome_claims",
                                      "Reconcile refund timing, retained revenue and cost assumptions with the original forecast. A single fixture cannot establish a population refund rate or prove the revised strategy."))
+        if proposal.get("automatic_operating_lesson_refs"):
+            findings.append(_finding("automatic_lesson_applicability", "automatic_operating_lesson_refs",
+                                     "Verify product version, price and scope match. Check for sample selection, unrelated failures and missing economic costs."))
         if isinstance(specialist, dict) and "public_market_context" in specialist:
             context = specialist["public_market_context"]
             if (not isinstance(context, dict) or context.get("basis") != "PUBLIC_SECONDARY_CONTEXT"
@@ -172,6 +175,18 @@ def challenge(item: dict) -> IndependentReviewIn:
             "source_verification_required", "specialist_inputs",
             "Local coherence checks do not verify underlying source evidence. Reconsider the provenance and any material assumptions.",
         ))
+    elif kind == "operating_holdout":
+        plan = proposal.get("plan", {})
+        if "observation" in proposal and proposal.get("commercial_promotion_authorized") is False:
+            findings.append(_finding("holdout_apparent_improvement", "metrics",
+                                     "Check whether selection, missing costs, changed delivery effort or fixture construction explain the difference. Require independent real outcomes before commercial reliance."))
+        elif (plan.get("dataset") != "INDEPENDENTLY_SIGNED_DISPOSABLE_PAIRED_HOLDOUT"
+                or plan.get("promotion_rule") != "FIXTURE_NEVER_PROMOTES_PRODUCTION"):
+            findings.append(_finding("holdout_authority_conflict", "plan",
+                                     "Disposable evidence cannot establish commercial superiority.", critical=True))
+        else:
+            findings.append(_finding("holdout_selection_and_cost", "plan",
+                                     "Check that related training cases and hindsight are excluded, both arms include refunds and fully loaded costs, and any apparent edge survives adverse cases."))
     elif kind == "customer_research":
         counts = [proposal.get(key) for key in ("stated_interest", "qualified", "completed", "enrolled", "withdrawn")]
         if (proposal.get("basis") != "DISPOSABLE_RESEARCH_FIXTURE"

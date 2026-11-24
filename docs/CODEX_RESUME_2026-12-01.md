@@ -8,6 +8,12 @@ DO NOT restart the project, regenerate completed packs, or treat API presence as
 
 Use the current head of draft PR #4 and confirm the latest required CI run. Use the current workstream index, integration matrix and latest ledger verification to choose unfinished work. Dated checkpoints and original prompts are historical records. The same index supersedes earlier execution orders in the root start page and the finish passes. There are 50 acceptance contracts, 53 task entries and seven construction packages.
 
+## Prospective operating holdout and automatic lesson retrieval — November 24
+
+The existing Foundry operating rehearsal now freezes one prospective, paired economic holdout per training run. It pins the forecast and revised strategy digests, an independent observer public key, cohort and case IDs, deadline, comparison rule and downside ceiling before scoring. Loki independently challenges the exact plan and can challenge the result. A signed comparison that exceeds the fixture threshold still rejects production promotion. The authenticated observer is disposable and the records are scoped to this rehearsal.
+
+Prime automatically retrieves current shortfalls from completed Foundry runs with exact Legacy, business, jurisdiction, engine, product, artifact and price. Authenticated review artifacts include the derived lesson references. A scoped completion wakes subscribed Prime schedules, whose existing journal handles replay. Explicit revocation, source withdrawal, a changed offer or expired lesson cannot grant commercial authority. See the [dependency register](../ops/VALHALLA_OPERATIONAL_DEPENDENCY_REGISTER.md#prospective-economic-holdout-and-automatic-reuse) for tests and commissioning gaps.
+
 ## Verified operating variance and source revision — November 24
 
 The existing 31-receipt disposable source-to-outcome run now pins a CAD point forecast, full-refund alternative, declared cost, uncertainty and deadline in its mandate. The outcome compares the forecast with signed payment and bank fixtures and records the Norns error in a separate disposable cohort. Prime can cite that exact Mimir receipt through the existing claims path. A verified shortfall holds a repeat of the same product, artifact and price. Loki separately challenges refund and cost assumptions. No fixture result can approve a playbook revision. The next proof is a version-bound revised playbook tested against an independent prospective holdout in the same economic target, keeping genuine and disposable evidence distinct.

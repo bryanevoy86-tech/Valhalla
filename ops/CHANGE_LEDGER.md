@@ -1287,3 +1287,9 @@ The acceptance matrix retains 13 P0 and 39 total criteria requiring internal cod
 
 - Connected signed source refreshes to exact earlier decision references and scoped Prime reassessment. Preserved original evidence and verdicts.
 - Extended existing disposable operating receipts with pre-execution predictions and verified contribution error. A current scope-bound Mimir claim causes Prime to hold the same shortfall-producing playbook and routes the assumption through independent Loki. A separate economic playbook holdout remains open.
+
+
+## November 24 prospective economic holdout and automatic reuse
+
+- Added a frozen paired economic holdout to the existing operating journal, independently reviewed by Loki and observed by a separate disposable signing key. Better fixture economics cannot promote a production playbook.
+- Added automatic exact-scope Mimir recall, prior-snapshot dispatch hold and an event-driven Prime reassessment with restart and replay verification. Kept all 31 operating receipts and all commercial holds.

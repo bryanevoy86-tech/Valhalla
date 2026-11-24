@@ -392,7 +392,7 @@ def _listing_asset(db: Session, artifact_id: UUID, work: Any, product_id: str, *
     return artifact_reference(asset)
 
 
-def _bound_prime_decision(db: Session, verdict_id: UUID, work: Any, listing: dict) -> dict:
+def _bound_prime_decision(db: Session, verdict_id: UUID, work: Any, listing: dict, *, check_new_lessons=True) -> dict:
     asset = listing.get("product_asset")
     if not isinstance(asset, dict):
         raise HTTPException(status_code=422, detail="A governed listing requires an exact product asset")
@@ -442,6 +442,10 @@ def _bound_prime_decision(db: Session, verdict_id: UUID, work: Any, listing: dic
 
     scope = {key: getattr(work, key) for key in ("legacy_instance_id", "business_id", "engine_id", "jurisdiction")}
     require_current_candidate(db, proposal, scope, datetime.now(timezone.utc).date())
+    from app.routers.foundry_operating_rehearsal import current_operating_lessons
+
+    if check_new_lessons and current_operating_lessons(db, scope, expected):
+        raise HTTPException(409, "An exact operating forecast shortfall holds this draft")
     reference = {
         "verdict_id": str(verdict_id), "review_id": str(review.id),
         "proposal_sha256": decision.artifact_sha256, "result_sha256": decision.result_sha256,
