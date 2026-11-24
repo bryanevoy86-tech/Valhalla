@@ -8,6 +8,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.core.db import get_db
+from app.models.auth_revocations import RevokedAccessToken
 from app.routers import auth_weweb
 from app.users.models import AccountSettings, UserProfile
 
@@ -31,6 +32,7 @@ def weweb_client(monkeypatch: pytest.MonkeyPatch):
 
     UserProfile.__table__.create(bind=engine, checkfirst=True)
     AccountSettings.__table__.create(bind=engine, checkfirst=True)
+    RevokedAccessToken.__table__.create(bind=engine, checkfirst=True)
 
     db = SessionLocal()
     try:
@@ -70,6 +72,7 @@ def _login_token(client: TestClient) -> str:
         json={"email": "owner@example.com", "password": "OwnerPass!1"},
     )
     assert resp.status_code == 200
+    assert resp.headers["cache-control"] == "no-store"
     return resp.json()["access_token"]
 
 
@@ -122,3 +125,14 @@ def test_logout_expired_token_is_denied(weweb_client):
 
     logout = client.post("/api/weweb/logout", headers={"Authorization": f"Bearer {expired}"})
     assert logout.status_code == 401
+
+
+def test_refresh_returns_uncacheable_token_and_revokes_original(weweb_client):
+    client, _, _ = weweb_client
+    original = {"Authorization": f"Bearer {_login_token(client)}"}
+    refresh = client.post("/api/weweb/refresh", headers=original)
+    assert refresh.status_code == 200
+    assert refresh.headers["cache-control"] == "no-store"
+    replacement = {"Authorization": f"Bearer {refresh.json()['access_token']}"}
+    assert client.get("/api/weweb/me", headers=original).status_code == 401
+    assert client.get("/api/weweb/me", headers=replacement).status_code == 200

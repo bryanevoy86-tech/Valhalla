@@ -1,8 +1,9 @@
 """Telemetry Hooks (Integrity Ledger) router"""
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 from app.core.db import get_db
+from app.core.dependencies import require_builder_key
 from app.telemetry.service import TelemetryService
 from app.telemetry.schemas import TelemetryIn, TelemetryOut, TelemetryQuery
 from typing import Optional
@@ -10,7 +11,7 @@ from typing import Optional
 router = APIRouter(prefix='/telemetry', tags=['telemetry'])
 
 
-@router.post('/', response_model=TelemetryOut)
+@router.post('/', response_model=TelemetryOut, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_builder_key)])
 async def post_event(body: TelemetryIn, db: Session = Depends(get_db)):
     return TelemetryService(db).write(body)
 

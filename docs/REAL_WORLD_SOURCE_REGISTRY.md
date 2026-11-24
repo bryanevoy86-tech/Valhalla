@@ -84,3 +84,11 @@ Rule applied: when rights/commercial status cannot be independently proven from 
 ## Notes
 - No REALTOR.ca scraping is used in this implementation.
 - Rehearsal endpoint uses read-only public API pulls and stores provenance/citation metadata.
+
+## November 24 — Discovery exports and public context
+
+Operator-reported demand and procurement exports require an active and authorized practice-scope source with approved governance, an explicit permission and compatible licence status, an HTTPS rights reference, and the existing enrolled Ed25519 publisher key. Existing simulator records retain their test behavior. A current signed export is checked when queued, processed and used. A previously accepted external envelope whose source rights or signing identity fail verification remains historical and cannot supply a new research candidate.
+
+Use `python scripts/foundry_public_source.py awards` or `python scripts/foundry_public_source.py contract-history` from an authorized network for a bounded, attributed catalogue-metadata snapshot with an exact response digest. The command neither follows redirects nor downloads award rows, reads secrets, enrolls a publisher, or writes to the Foundry. The executor DNS attempt did not complete; successful native endpoint readback remains open. The official public catalogue pages were reviewed separately.
+
+Use published category statistics, price sheets, guidance or public award data as secondary context, with attribution and any limits. A `public_market_context` envelope can enter the existing independent Loki artifact lane. Prime refuses to score it as a buyer opportunity. Primary buyer observations need separate permission, actual aggregation and first-party proof. Never convert public metrics into signed buyer sample counts.

@@ -3,7 +3,7 @@ PACK AD: SaaS Access Engine Models
 """
 
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Float, ForeignKey
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Float, ForeignKey, JSON, Uuid
 from sqlalchemy.orm import relationship
 from app.models.base import Base
 
@@ -62,3 +62,15 @@ class Subscription(Base):
     cancelled_at = Column(DateTime, nullable=True)
 
     plan = relationship("SaaSPlan", back_populates="subscriptions")
+
+
+class SaaSTenantEntitlement(Base):
+    __tablename__ = "saas_tenant_entitlements"
+
+    id = Column(Uuid(), primary_key=True)
+    tenant_id = Column(Uuid(), nullable=False, index=True)
+    subject_id = Column(Integer(), ForeignKey("user_profiles.user_id"), nullable=False)
+    plan_id = Column(Integer, ForeignKey("saas_plans.id"), nullable=False)
+    expires_at = Column(DateTime(), nullable=False)
+    revoked_at = Column(DateTime())
+    modules = Column(JSON(), nullable=False)

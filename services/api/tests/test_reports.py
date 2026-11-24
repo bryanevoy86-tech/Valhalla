@@ -2,15 +2,13 @@
 Smoke tests for reports endpoints.
 """
 
-import os
-import httpx
-
-API = os.getenv("API_BASE", "http://localhost:4000")
 
 
-def test_reports_summary():
+
+def test_reports_summary(legacy_http_client):
+    client, _ = legacy_http_client
     """Test the reports summary endpoint returns expected structure"""
-    r = httpx.get(f"{API}/reports/summary", timeout=10)
+    r = client.get("/reports/summary")
     assert r.status_code == 200
     
     j = r.json()

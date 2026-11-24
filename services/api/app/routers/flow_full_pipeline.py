@@ -5,12 +5,15 @@ from __future__ import annotations
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
+from app.core.dependencies import require_prime_control_key
 from app.leads import service as lead_service  # Pack 31 lead service
 from app.models.match import Buyer, DealBrief
-from app.models.deal import Deal  # Backend Deal model
+from app.models.deal import Deal, DealBriefLink
+from app.models.freeze_events import FreezeEvent
 from app.schemas.flows_lead_to_deal import (
     LeadFlowResult,
     DealFlowResult,
@@ -26,7 +29,6 @@ from app.schemas.underwriting_engine import (
     UnderwriteDealRequest,
     UnderwritingDealInput,
 )
-from app.services.freeze_events import log_freeze_event
 from app.services.underwriting_engine import run_underwriting
 from app.routers.flow_lead_to_deal import _score_buyer_for_deal  # reuse matcher
 
@@ -39,6 +41,7 @@ router = APIRouter(
 
 @router.post(
     "/full_deal_pipeline",
+    dependencies=[Depends(require_prime_control_key)],
     response_model=FullDealPipelineResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Full deal pipeline: lead + deal + underwriting + buyer match",
@@ -56,27 +59,32 @@ def run_full_deal_pipeline(
     payload: FullDealPipelineRequest,
     db: Session = Depends(get_db),
 ) -> FullDealPipelineResponse:
+    result = build_full_deal_pipeline(payload, db)
+    db.commit()
+    return result
+
+
+def build_full_deal_pipeline(payload: FullDealPipelineRequest, db: Session) -> FullDealPipelineResponse:
+    """Stage internal pipeline records in the caller's transaction."""
     # --------- 1. Create Lead (Pack 31) ---------
-    lead_in = LeadCreate(
-        name=payload.lead.name,
-        email=payload.lead.email,
-        phone=payload.lead.phone,
-        source=payload.lead.source,
-        status="new",
-    )
-    lead_obj = lead_service.create_lead(db, lead_in)
-    if not lead_obj:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to create lead.",
+    try:
+        lead_in = LeadCreate(
+            lead_name=payload.lead.name,
+            lead_email=payload.lead.email,
+            lead_phone=payload.lead.phone,
+            source=payload.lead.source or "pipeline",
+            property_address=payload.lead.address,
         )
+        lead_obj = lead_service.create_lead(db, lead_in, commit=False)
+    except (ValueError, ValidationError):
+        raise HTTPException(status_code=422, detail="Valid lead name, email and phone are required") from None
 
     lead_result = LeadFlowResult(
         id=lead_obj.id,
-        name=lead_obj.name,
-        email=getattr(lead_obj, "email", None),
-        phone=getattr(lead_obj, "phone", None),
-        source=getattr(lead_obj, "source", None),
+        name=lead_obj.lead_name,
+        email=lead_obj.lead_email,
+        phone=lead_obj.lead_phone,
+        source=lead_obj.source,
     )
 
     # --------- 2. Create DealBrief (match system) ---------
@@ -92,8 +100,7 @@ def run_full_deal_pipeline(
     )
     deal_brief_obj = DealBrief(**deal_in.model_dump())
     db.add(deal_brief_obj)
-    db.commit()
-    db.refresh(deal_brief_obj)
+    db.flush()
 
     deal_result = DealFlowResult(
         id=deal_brief_obj.id,
@@ -105,36 +112,25 @@ def run_full_deal_pipeline(
     )
 
     # --------- 3. Create backend Deal ---------
-    org_id = getattr(lead_obj, "org_id", None)
-    if org_id is None:
-        org_id = payload.lead.org_id
-
-    if org_id is None:
-        org_id = 0  # fallback; adjust to your multi-tenant strategy
-
     backend_deal = Deal(
-        org_id=org_id,
-        legacy_id=None,
-        status="draft",
-        city=None,
-        state=None,
-        price=float(payload.deal.price) if payload.deal.price is not None else None,
         lead_id=lead_obj.id,
-        arv=float(payload.deal.arv) if payload.deal.arv is not None else 0.0,
-        repairs=float(payload.deal.repairs) if payload.deal.repairs is not None else 0.0,
-        offer=float(payload.underwriting.purchase_price),
-        mao=float(payload.deal.mao) if payload.deal.mao is not None else 0.0,
-        roi_note=payload.deal.roi_note or "",
+        title=deal_brief_obj.headline,
+        stage="draft",
+        status="active",
+        arv=payload.underwriting.arv,
+        estimated_repair_cost=payload.underwriting.repairs,
+        max_allowable_offer=payload.deal.mao,
+        notes=payload.deal.roi_note,
     )
     db.add(backend_deal)
-    db.commit()
-    db.refresh(backend_deal)
+    db.flush()
+    db.add(DealBriefLink(deal_id=backend_deal.id, brief_id=deal_brief_obj.id))
 
     # --------- 4. Run underwriting ---------
     uw = payload.underwriting
     uw_deal_input = UnderwritingDealInput(
         deal_id=backend_deal.id,
-        org_id=org_id,
+        org_id=payload.lead.org_id or 0,
         arv=uw.arv,
         purchase_price=uw.purchase_price,
         repairs=uw.repairs,
@@ -153,19 +149,6 @@ def run_full_deal_pipeline(
     )
     underwriting_result = run_underwriting(uw_request)
 
-    # Update backend deal summary fields based on underwriting
-    backend_deal.arv = float(uw.arv)
-    backend_deal.repairs = float(uw.repairs)
-    backend_deal.offer = float(uw.purchase_price)
-    backend_deal.mao = float(underwriting_result.metrics.total_project_cost)
-    backend_deal.roi_note = (
-        underwriting_result.flags.notes
-        or f"Recommendation: {underwriting_result.recommendation}"
-    )
-    db.add(backend_deal)
-    db.commit()
-    db.refresh(backend_deal)
-
     # --------- 5. Log freeze_event if policy breached ---------
     freeze_created = False
     flags = underwriting_result.flags
@@ -179,28 +162,12 @@ def run_full_deal_pipeline(
             reason_parts.append("Equity below policy.")
         reason = " ".join(reason_parts) or "Underwriting policy violation."
 
-        severity = "critical" if flags.breach_ltv and flags.breach_roi else "warn"
-
-        log_freeze_event(
-            db,
-            source="full_deal_pipeline",
+        db.add(FreezeEvent(
+            deal_id=str(backend_deal.id),
             event_type="underwriting_policy_violation",
-            severity=severity,
-            reason=reason,
-            payload={
-                "backend_deal_id": backend_deal.id,
-                "deal_brief_id": deal_brief_obj.id,
-                "lead_id": lead_obj.id,
-                "metrics": {
-                    "ltv": str(underwriting_result.metrics.ltv),
-                    "roi": str(underwriting_result.metrics.roi),
-                    "equity_percent_of_arv": str(
-                        underwriting_result.metrics.equity_percent_of_arv
-                    ),
-                },
-            },
-            notes="Auto-created by full_deal_pipeline.",
-        )
+            event_name="full_deal_pipeline",
+            notes=reason,
+        ))
         freeze_created = True
 
     # --------- 6. Buyer matching ---------

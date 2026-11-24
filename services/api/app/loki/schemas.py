@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any, Literal, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -87,9 +87,37 @@ class LokiReviewListItem(BaseModel):
 
 
 class LokiVerdict(BaseModel):
+    artifact_sha256: str | None = None
+    result_sha256: str | None = None
+    reconsideration_sha256: str | None = None
+    reconsideration_status: str | None = None
+    external_effects_authorized: Literal[False] = False
     """Final verdict schema from Loki analysis."""
     result_severity: str
     headline: str
     ok_to_proceed: bool
     requires_human_review: bool
     key_risks: list[str] = []
+
+
+class IndependentFinding(BaseModel):
+    category: str = Field(min_length=1, max_length=100)
+    severity: Literal["warn", "critical"]
+    material: bool
+    message: str = Field(min_length=1, max_length=4000)
+    evidence_ref: str = Field(min_length=1, max_length=400)
+    suggested_fix: str | None = Field(default=None, max_length=4000)
+
+
+class IndependentReviewIn(BaseModel):
+    artifact_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    analysis_ref: str = Field(min_length=1, max_length=200)
+    summary: str = Field(min_length=1, max_length=4000)
+    findings: list[IndependentFinding] = Field(max_length=100)
+
+
+class OwnerReconsiderationIn(BaseModel):
+    artifact_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    material_finding_ids: set[UUID]
+    disposition: Literal["accept_risk", "revise", "reject"]
+    reason: str = Field(min_length=1, max_length=4000)

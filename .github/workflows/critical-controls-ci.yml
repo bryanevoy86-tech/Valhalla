@@ -1,0 +1,322 @@
+name: Prime operational safety and integration gates
+
+on:
+  pull_request:
+    paths:
+      - 'services/api/app/**'
+      - 'capital/banking/**'
+      - 'services/api/tests/**'
+      - 'services/api/requirements.txt'
+      - 'services/api/main.py'
+      - 'pytest.ini'
+      - 'services/api/tools/cron/**'
+      - 'alembic/versions/**'
+      - 'tests/test_*.py'
+      - 'scripts/prime_system_preflight.py'
+      - 'scripts/builder_materialize_review.py'
+      - 'scripts/builder_test_review.py'
+      - 'scripts/builder_assignment_worker.py'
+      - 'scripts/prime_runtime_route_probe.py'
+      - 'scripts/january_core_readiness.py'
+      - 'scripts/local_browser_acceptance.py'
+      - 'scripts/launch_heimdall_demo.py'
+      - 'scripts/heimdall_demo/**'
+      - 'tests/run_heimdall_owner_demo.py'
+      - 'tests/browser-acceptance/**'
+      - 'scripts/staging_preflight.py'
+      - 'scripts/foundry_public_source.py'
+      - 'scripts/staging_workers.sh'
+      - 'web/weweb-widgets/owner-*.mjs'
+      - 'tests/test-weweb-owner-*.test.mjs'
+      - 'web/weweb-widgets/subscriber-*.mjs'
+      - 'tests/test-weweb-subscriber-*.test.mjs'
+      - 'ops/prime_system_integration_matrix.json'
+      - '.github/workflows/critical-controls-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify owner voice, attention and conversation preview contracts
+        run: node --test web/weweb-widgets/owner-driving-voice.test.mjs tests/test-weweb-owner-attention.test.mjs tests/test-weweb-owner-conversations.test.mjs tests/test-weweb-owner-documents.test.mjs tests/test-weweb-owner-review-portal.test.mjs tests/test-weweb-owner-startup.test.mjs tests/test-weweb-owner-pantheon.test.mjs tests/test-weweb-owner-operating-scope.test.mjs tests/test-weweb-subscriber-paid-product.test.mjs tests/test-weweb-owner-allocation-acquisition.test.mjs tests/test-weweb-subscriber-stripe-subscription.test.mjs
+      - name: Compile all touched safety and Business Factory modules
+        run: |
+          python -m py_compile \
+            services/api/app/scheduler/runner.py \
+            services/api/app/workers/outbox_dispatcher.py \
+            services/api/app/cron/daily_ops.py \
+            services/api/app/jobs/runner.py \
+            services/api/app/heimdall/readiness.py \
+            services/api/app/services/prime_business_execution.py \
+            services/api/app/routers/prime_business_factory.py \
+            services/api/app/routers/prime_specialist_schedules.py \
+            services/api/tools/cron/specialist_schedule_worker.py \
+            services/api/app/core/builder_path_policy.py \
+            services/api/app/core/route_integrity.py \
+            services/api/app/core/autonomy_governor.py \
+            services/api/app/core/dependencies.py \
+            services/api/app/main.py \
+            services/api/app/routers/builder.py \
+            services/api/app/providers/stripe_adapter.py \
+            services/api/app/webhooks/stripe.py \
+            services/api/app/integrations/stripe/payouts.py \
+            services/api/app/services/media_engine.py \
+            services/api/app/services/marketing_service.py \
+            services/api/app/routers/media_engine.py \
+            services/api/app/routers/marketing.py \
+            services/api/tools/cron/business_factory_tick.py \
+            services/api/tools/cron/daily_email_ping.py \
+            alembic/versions/20261119_factory_legacy_work_schema.py \
+            scripts/prime_system_preflight.py \
+            scripts/prime_runtime_route_probe.py \
+            tests/test_fail_closed_smoke.py \
+            tests/test_business_factory_cron.py \
+            tests/test_business_factory_pilot.py \
+            tests/test_factory_migration.py \
+            tests/test_builder_path_security.py \
+            tests/test_prime_finance_safety.py \
+            tests/test_prime_publication_safety.py \
+            tests/test_prime_system_preflight.py \
+            tests/test_route_integrity.py \
+            tests/test_core_auth_contracts.py \
+            tests/test_prime_runtime_route_probe.py \
+            tests/test_autonomy_governor.py \
+            tests/test_owner_reset_auth.py \
+            tests/test_factory_postgres.py \
+            services/api/app/routers/auth_weweb.py \
+            services/api/app/core/db.py \
+            services/api/app/security/token_revocation.py \
+            services/api/app/models/auth_revocations.py \
+            alembic/versions/20261119_persistent_auth_revocation.py \
+            tests/test_weweb_revocation.py \
+            tests/test_auth_revocation_migration.py \
+            tests/test_postgres_migration_chain.py \
+            tests/test_db_fail_closed.py \
+            capital/banking/executor.py \
+            tests/test_banking_transfer_fail_closed.py
+      - name: No-dependency guardrail tests and source matrix
+        run: |
+          python -m unittest discover -s tests -p test_fail_closed_smoke.py -v
+          python -m unittest discover -s tests -p test_business_factory_cron.py -v
+          python -m unittest discover -s tests -p test_builder_path_security.py -v
+          python -m unittest discover -s tests -p test_builder_materialize_review.py -v
+          python -m unittest discover -s tests -p test_prime_system_preflight.py -v
+          python -m unittest discover -s tests -p test_staging_preflight.py -v
+          python -m unittest discover -s tests -p test_foundry_public_source.py -v
+          bash -n scripts/staging_workers.sh
+          python -m unittest discover -s tests -p test_route_integrity.py -v
+          python -m unittest discover -s tests -p test_prime_runtime_route_probe.py -v
+          python -m unittest discover -s tests -p test_autonomy_governor.py -v
+          python scripts/prime_system_preflight.py --json > prime-preflight.json
+          cat prime-preflight.json
+      - name: Run Builder candidate tests in a network-disabled container
+        run: |
+          mkdir -p "$RUNNER_TEMP/builder-offline-image"
+          docker build -t valhalla-builder-ci:offline -f - "$RUNNER_TEMP/builder-offline-image" <<'DOCKERFILE'
+          FROM python:3.11-slim
+          RUN python -m pip install --no-cache-dir pytest==8.3.3
+          DOCKERFILE
+          export BUILDER_OFFLINE_TEST_IMAGE="$(docker image inspect --format '{{.Id}}' valhalla-builder-ci:offline)"
+          test -n "$BUILDER_OFFLINE_TEST_IMAGE"
+          python -m unittest discover -s tests -p test_builder_offline_runner.py -v
+      - name: Archive read-only system preflight
+        uses: actions/upload-artifact@v4
+        with:
+          name: prime-static-preflight
+          path: prime-preflight.json
+
+  factory-integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install isolated integration dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install \
+            "fastapi==0.115.0" \
+            "sqlalchemy==2.0.35" \
+            "pydantic==2.9.2" \
+            "pydantic-settings==2.4.0" \
+            "httpx==0.27.2" \
+            "alembic==1.13.2"
+      - name: Run real SQLite API/ORM and provider-boundary tests
+        env:
+          DATABASE_URL: "sqlite://"
+          VALHALLA_JWT_SECRET: "ci-only-not-a-live-secret"
+        run: |
+          python -m unittest discover -s tests -p test_business_factory_pilot.py -v
+          python -m unittest discover -s tests -p test_factory_migration.py -v
+          python -m unittest discover -s tests -p test_prime_finance_safety.py -v
+          python -m unittest discover -s tests -p test_prime_publication_safety.py -v
+          python -m unittest discover -s tests -p test_core_auth_contracts.py -v
+          python -m unittest discover -s tests -p test_builder_review_boundary.py -v
+          python -m unittest discover -s tests -p test_owner_reset_auth.py -v
+          python -m unittest discover -s tests -p test_weweb_revocation.py -v
+          python -m unittest discover -s tests -p test_auth_revocation_migration.py -v
+          python -m unittest discover -s tests -p test_db_fail_closed.py -v
+          python -m unittest discover -s tests -p test_banking_transfer_fail_closed.py -v
+
+
+  factory-postgres:
+    name: Disposable PostgreSQL concurrency and receipt checks
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: valhalla_factory_ci
+          POSTGRES_USER: factory_ci
+          POSTGRES_PASSWORD: local_ci_test_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U factory_ci -d valhalla_factory_ci"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install isolated PostgreSQL integration dependencies
+        run: |
+          sed '/^win32_setctime/d' services/api/requirements.txt > prime-release-requirements.txt
+          python -m pip install -r prime-release-requirements.txt
+      - name: Real PostgreSQL receipt and two-worker concurrency proof
+        env:
+          DATABASE_URL: postgresql+psycopg2://factory_ci:local_ci_test_only@127.0.0.1:5432/valhalla_factory_ci
+          FACTORY_TEST_POSTGRES_URL: postgresql+psycopg2://factory_ci:local_ci_test_only@127.0.0.1:5432/valhalla_factory_ci
+          VALHALLA_JWT_SECRET: ci-test-only-not-a-secret
+        run: |
+          python -m unittest discover -s tests -p test_factory_postgres.py -v
+          python -m unittest discover -s tests -p test_postgres_migration_chain.py -v
+      - name: Rehearse the canonical Alembic release and PostgreSQL snapshot restore
+        env:
+          FACTORY_TEST_POSTGRES_URL: postgresql+psycopg2://factory_ci:local_ci_test_only@127.0.0.1:5432/valhalla_factory_ci
+        run: |
+          python -m unittest discover -s tests -p test_january_release_restore.py -v
+
+
+  full-app-diagnostic:
+    name: Required canonical FastAPI import, route contracts and Pantheon
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install canonical backend requirements (exclude Windows-only dependency)
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          source = Path("services/api/requirements.txt").read_text(encoding="utf-8-sig")
+          lines = [line for line in source.splitlines() if not line.startswith("win32_setctime")]
+          Path("prime-runtime-requirements.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")
+          PY
+          python -m pip install -r prime-runtime-requirements.txt
+      - name: Import actual FastAPI app and report missing routes
+        env:
+          DATABASE_URL: sqlite://
+          VALHALLA_JWT_SECRET: ci-standalone-jwt-secret-not-production
+          VALHALLA_OWNER_USERNAME: ci-owner
+          VALHALLA_OWNER_PASSWORD: ci-test-only-no-real-credentials
+          ENV: dev
+          APP_ENV: dev
+          RESET_OWNER_PASSWORD: "false"
+          VALHALLA_EMERGENCY_STOP: "true"
+        run: |
+          python scripts/prime_runtime_route_probe.py --import-app --output prime-route-diagnostic.json
+          cat prime-route-diagnostic.json
+      - name: Require complete backend test collection
+        env:
+          DATABASE_URL: sqlite://
+          VALHALLA_JWT_SECRET: ci-test-only-not-production
+          VALHALLA_OWNER_USERNAME: ci-owner
+          VALHALLA_OWNER_PASSWORD: ci-test-only-not-production
+          ENV: dev
+          APP_ENV: dev
+          VALHALLA_EMERGENCY_STOP: "true"
+        run: |
+          python -m pip install "pytest==8.3.3" "respx==0.21.1"
+          set +e
+          python -m pytest --collect-only -q services/api/tests > backend-test-collection.log 2>&1
+          result=$?
+          set -e
+          echo "Collection exit code: $result"
+          tail -n 75 backend-test-collection.log
+          exit "$result"
+      - name: Require full backend regression execution
+        env:
+          DATABASE_URL: sqlite://
+          VALHALLA_JWT_SECRET: ci-governance-test-only
+          VALHALLA_OWNER_USERNAME: ci-owner
+          VALHALLA_OWNER_PASSWORD: ci-not-real
+          ENV: dev
+          APP_ENV: dev
+          VALHALLA_EMERGENCY_STOP: "true"
+        run: |
+          python -m pytest -q services/api/tests
+      - name: Run the disposable Chromium acceptance client
+        run: |
+          npm install --prefix "$RUNNER_TEMP/valhalla-browser" --ignore-scripts playwright@1.55.1 @sparticuz/chromium@140.0.0
+          export NODE_PATH="$RUNNER_TEMP/valhalla-browser/node_modules"
+          VALHALLA_BROWSER_EXECUTABLE="$(node -e 'require("@sparticuz/chromium").executablePath().then(console.log).catch(error => { console.error(error); process.exitCode = 1; })')"
+          test -x "$VALHALLA_BROWSER_EXECUTABLE"
+          export VALHALLA_BROWSER_EXECUTABLE
+          python scripts/local_browser_acceptance.py \
+            --report local-browser-acceptance.json
+          if ! command -v pg_config || ! test -x "$(pg_config --bindir)/initdb"; then
+            sudo apt-get update
+            sudo apt-get install -y postgresql
+          fi
+          python tests/run_heimdall_owner_demo.py --pg-bin "$(pg_config --bindir)" --report heimdall-owner-demo.json
+      - name: Archive owner demonstration evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: heimdall-owner-demo
+          path: heimdall-owner-demo.json
+          if-no-files-found: ignore
+      - name: Archive disposable browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: local-browser-acceptance
+          path: local-browser-acceptance.json
+          if-no-files-found: ignore
+      - name: Run the executable January core operating rehearsal
+        run: python scripts/january_core_readiness.py --report january-core-readiness.json
+      - name: Archive the January core operating rehearsal
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: january-core-readiness
+          path: january-core-readiness.json
+          if-no-files-found: ignore
+      - name: Archive backend test collection report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-collection-diagnostic
+          path: backend-test-collection.log
+          if-no-files-found: ignore
+      - name: Archive import and route diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: canonical-api-import-diagnostic
+          path: prime-route-diagnostic.json
+          if-no-files-found: ignore

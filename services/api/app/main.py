@@ -15,8 +15,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.routers.system_boot import router as system_boot_router
 from app.routers.test_email import router as test_email_router
-from app.routers import jarvis
 from app.services.post_boot_init import run_post_boot_init
+from app.core.route_integrity import compute_router_integrity
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
@@ -87,6 +87,8 @@ def _autoload_router_modules(app: FastAPI) -> int:
     that exposes a variable named `router`.
     """
     loaded = 0
+    loaded_names: set[str] = set()
+    import_failures: dict[str, str] = {}
     routers_pkg = "app.routers"
 
     package = importlib.import_module(routers_pkg)
@@ -115,14 +117,19 @@ def _autoload_router_modules(app: FastAPI) -> int:
             if router is not None:
                 app.include_router(router)
                 loaded += 1
+                loaded_names.add(mod_name)
                 log.info("Autoloaded router: %s", full_name)
                 
                 # Special logging for auth_weweb
                 if mod_name == "auth_weweb":
                     log.info("✅ auth_weweb router loaded - /api/weweb/* endpoints available")
         except Exception as e:
+            import_failures[mod_name] = type(e).__name__
             log.exception("Failed loading router module %s: %s", full_name, e)
 
+    app.state.router_integrity = compute_router_integrity(loaded_names, import_failures)
+    if not app.state.router_integrity["ready"]:
+        log.error("CRITICAL ROUTER INTEGRITY FAILURE: %s", app.state.router_integrity)
     return loaded
 
 
@@ -151,8 +158,6 @@ app.include_router(system_boot_router)
 app.include_router(test_email_router)
 app.include_router(test_email_router, prefix="/api")
 
-# Register Heimdall/Jarvis router
-app.include_router(jarvis.router)
 
 # Import all models upfront to register them with Base.metadata ONCE
 # This prevents duplicate table registration when routers import models
@@ -160,6 +165,36 @@ from app import models  # noqa: F401
 
 # Auto-load all other routers from app/routers
 loaded_router_count = _autoload_router_modules(app)
+
+# Preserve versioned public paths for the existing calculation routes.
+# The same route objects handle both paths.
+for _calculation_router in ("flow_funfunds_planner", "flow_funfunds_presets", "underwriting_engine", "flow_tax_snapshot", "portfolio_dashboard", "flow_lead_to_deal", "deal_lifecycle"):
+    _module = importlib.import_module(f"app.routers.{_calculation_router}")
+    app.include_router(_module.router, prefix="/api")
+
+# Keep the established contract and buyer URLs while sharing canonical records.
+for _contract_router in ("contracts", "contract_engine", "buyer_match", "intake", "notify", "buyers", "deals", "match"):
+    _module = importlib.import_module(f"app.routers.{_contract_router}")
+    app.include_router(_module.router, prefix="/api")
+
+# The original Pantheon implementations use /governance/... paths while
+# historical callers and their own orchestrator request /api/governance/....
+# Keep existing routes for compatibility, and explicitly register a
+# namespaced alias so all five independent gods and war table are callable.
+# These modules are critical; import/registration failure must fail startup.
+for _god_router in (
+    "governance_king",
+    "governance_queen",
+    "governance_odin",
+    "governance_loki",
+    "governance_tyr",
+    "governance_orchestrator",
+    "governance_policy",
+    "flow_governance_gate",
+):
+    _pantheon_module = importlib.import_module(f"app.routers.{_god_router}")
+    app.include_router(_pantheon_module.router, prefix="/api")
+log.info("Pantheon /api/governance aliases registered.")
 log.info("Valhalla startup complete. Loaded %s router modules.", loaded_router_count)
 
 # ============================================================================
@@ -167,14 +202,15 @@ log.info("Valhalla startup complete. Loaded %s router modules.", loaded_router_c
 # ============================================================================
 from app.core.settings import settings
 
-# Add CORS middleware - use configured origins or wildcard if not configured
-cors_origins = settings.cors_allowed_origins if settings.cors_allowed_origins else ["*"]
+# Browser requests require explicitly approved origins.
+cors_origins = settings.cors_allowed_origins
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["X-Delivery-Grant", "Content-Disposition"],
 )
 log.info("CORS enabled for origins: %s", cors_origins)
 
@@ -182,13 +218,16 @@ log.info("CORS enabled for origins: %s", cors_origins)
 # Health/Status Endpoints
 # ============================================================================
 
+@app.get("/api/health")
 @app.get("/health")
 def health():
     """Quick health check - always responds immediately."""
+    router_state = app.state.router_integrity
     return {
-        "ok": True,
-        "status": "ok",
-        "heimdall": "online",
+        "ok": True,  # only the HTTP process is alive
+        "status": "ok" if router_state["ready"] else "degraded",
+        "heimdall": "api_process_only",
+        "critical_routers": router_state,
         "routers_loaded": loaded_router_count,
     }
 
@@ -214,18 +253,24 @@ def readyz():
     max_age = int((cfg.get("health", {}) or {}).get("ready_heartbeat_max_age_seconds", 45))
     hb_ok = hb["present"] and hb["age_seconds"] is not None and hb["age_seconds"] <= max_age
 
-    db_ok = True
-    require_db = bool((cfg.get("health", {}) or {}).get("ready_require_db", False))
+    # Runtime readiness differs from shallow HTTP liveness. Require a DB
+    # and a current worker heartbeat unless explicitly disabled by policy.
+    require_db = bool((cfg.get("health", {}) or {}).get("ready_require_db", True))
+    db_ok = not require_db
 
     if require_db and os.getenv("DATABASE_URL"):
         try:
+            from sqlalchemy import text
             from app.core.db import engine
             with engine.connect() as conn:
-                conn.execute("SELECT 1")
+                conn.execute(text("SELECT 1"))
+            db_ok = True
         except Exception:
             db_ok = False
 
-    ok = db_ok and (hb_ok or not require_db)
+    router_state = app.state.router_integrity
+    router_ok = router_state["ready"]
+    ok = db_ok and (hb_ok or not require_db) and router_ok
     status = 200 if ok else 503
 
     return JSONResponse(
@@ -234,6 +279,7 @@ def readyz():
             "worker_heartbeat_ok": hb_ok,
             "worker_heartbeat_age_seconds": hb.get("age_seconds"),
             "db_ok": db_ok,
+            "critical_routers": router_state,
             "queue": _queue_counts(cfg),
             "routers_loaded": loaded_router_count,
         },

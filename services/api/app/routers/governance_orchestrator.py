@@ -5,13 +5,13 @@ from __future__ import annotations
 from typing import Dict, List
 
 from fastapi import APIRouter, HTTPException, status
-from fastapi.testclient import TestClient
 
 from app.schemas.governance import (
     GovernanceAggregateDecision,
     GovernanceCheckResult,
     GovernanceEvaluationRequest,
     KingDecision,
+    KingEvaluationContext,
 )
 
 router = APIRouter(
@@ -48,12 +48,20 @@ def _severity_rank(severity: str) -> int:
     ),
 )
 def evaluate_all(payload: GovernanceEvaluationRequest) -> GovernanceAggregateDecision:
-    # Import here to avoid circular imports
-    from app.main import app
-    
-    client = TestClient(app)
-    
-    gods: List[str] = payload.gods or ["king", "queen", "odin", "loki", "tyr"]
+    # Invoke actual specialist functions in-process, so worker execution
+    # does not depend on an HTTP test client or recursively boot the API.
+    from app.routers.governance_king import evaluate_king
+    from app.routers.governance_queen import evaluate_queen
+    from app.routers.governance_odin import evaluate_odin
+    from app.routers.governance_loki import evaluate_loki
+    from app.routers.governance_tyr import evaluate_tyr
+
+    evaluators = {
+        "king": evaluate_king, "queen": evaluate_queen, "odin": evaluate_odin,
+        "loki": evaluate_loki, "tyr": evaluate_tyr,
+    }
+    gods = list(dict.fromkeys(payload.gods or list(evaluators)))
+    full_coverage = set(gods) == set(evaluators)
 
     checks: List[GovernanceCheckResult] = []
     worst_severity = "info"
@@ -61,28 +69,19 @@ def evaluate_all(payload: GovernanceEvaluationRequest) -> GovernanceAggregateDec
     blocked_by: List[str] = []
 
     for god_name in gods:
-        endpoint = GOD_ENDPOINTS.get(god_name)
-        if not endpoint:
+        evaluator = evaluators.get(god_name)
+        if evaluator is None:
+            raise HTTPException(status_code=400, detail="Unknown specialist")
+        try:
+            decision = KingDecision.model_validate(evaluator(
+                KingEvaluationContext(context_type=payload.context_type, data=payload.data)
+            ))
+        except Exception as exc:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Unknown god '{god_name}'. Allowed: {list(GOD_ENDPOINTS.keys())}",
-            )
-
-        # Reuse the KingEvaluationContext payload shape
-        body = {
-            "context_type": payload.context_type,
-            "data": payload.data,
-        }
-
-        resp = client.post(endpoint, json=body)
-        if resp.status_code != 200:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Governance endpoint {endpoint} failed: {resp.status_code} {resp.text}",
-            )
-
-        decision_raw: dict = resp.json()
-        decision = KingDecision.model_validate(decision_raw)
+                status_code=503, detail=f"Specialist {god_name} unavailable"
+            ) from exc
+        if decision.severity not in {"info", "warn", "critical"}:
+            raise HTTPException(status_code=503, detail=f"Invalid specialist result: {god_name}")
 
         checks.append(
             GovernanceCheckResult(
@@ -99,7 +98,7 @@ def evaluate_all(payload: GovernanceEvaluationRequest) -> GovernanceAggregateDec
             worst_severity = decision.severity
 
         # Any critical denial forces overall_allowed=False
-        if not decision.allowed and decision.severity.lower() == "critical":
+        if decision.severity.lower() == "critical" or (not decision.allowed and decision.severity.lower() == "info"):
             overall_allowed = False
             blocked_by.append(god_name)
 
@@ -123,4 +122,7 @@ def evaluate_all(payload: GovernanceEvaluationRequest) -> GovernanceAggregateDec
         blocked_by=blocked_by,
         checks=checks,
         summary=summary,
+        full_coverage=full_coverage,
+        evaluation_only=True,
+        external_effects_authorized=False,
     )

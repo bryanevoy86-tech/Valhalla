@@ -5,28 +5,27 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import Any, Dict, Optional
 
-from fastapi import APIRouter, HTTPException, status
-from fastapi.testclient import TestClient
+from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import Field
+from sqlalchemy.orm import Session
+
+from app.core.db import get_db
+from app.core.dependencies import require_prime_control_key
+from app.models.audit_log import AuditLog
+from app.routers.flow_full_pipeline import build_full_deal_pipeline
+from app.routers.governance_orchestrator import evaluate_all
+from app.schemas.flow_full_pipeline import FullDealPipelineRequest
+from app.schemas.governance import GovernanceEvaluationRequest
 
 router = APIRouter(
     prefix="/flow",
     tags=["Flow", "Governance"],
+    dependencies=[Depends(require_prime_control_key)],
 )
 
 
-def _get_client():
-    """Get a fresh TestClient for the app. Import here to avoid circular imports."""
-    from app.main import app
-    return TestClient(app)
-
-
-def _dec(val: Any) -> Optional[Decimal]:
-    if val is None:
-        return None
-    try:
-        return Decimal(str(val))
-    except Exception:
-        return None
+class GovernedDealRequest(FullDealPipelineRequest):
+    governance: dict[str, Any] = Field(default_factory=dict)
 
 
 @router.post(
@@ -39,44 +38,22 @@ def _dec(val: Any) -> Optional[Decimal]:
         "governance details and does NOT create/modify any deals."
     ),
 )
-def full_deal_with_governance(payload: Dict[str, Any]):
-    """
-    Wraps the existing full_deal_pipeline endpoint with the governance layer.
-
-    Expected payload:
-    - Same fields as /flow/full_deal_pipeline (lead, deal, match_settings, underwriting, ...)
-    - Optional 'governance' key for extra flags (e.g., tax_evasion=True, exploits_vulnerable=True).
-    """
-    client = _get_client()
-    
-    deal = payload.get("deal", {}) or {}
-    underwriting = payload.get("underwriting", {}) or {}
-    governance_flags = payload.get("governance", {}) or {}
-
-    # Extract core financials
-    price = underwriting.get("purchase_price") or deal.get("price")
-    repairs = underwriting.get("repairs") or deal.get("repairs")
-    arv = underwriting.get("arv") or deal.get("arv")
-
-    price_dec = _dec(price)
-    repairs_dec = _dec(repairs) or Decimal("0")
-    arv_dec = _dec(arv)
-
-    roi_dec: Optional[Decimal] = None
-    if price_dec and arv_dec:
-        try:
-            roi_dec = (arv_dec - price_dec - repairs_dec) / price_dec
-        except Exception:
-            roi_dec = None
+def full_deal_with_governance(payload: GovernedDealRequest, db: Session = Depends(get_db)):
+    """Run all five advisory specialists before writing internal deal records."""
+    governance_flags = payload.governance
+    price = payload.underwriting.purchase_price
+    repairs = payload.underwriting.repairs
+    arv = payload.underwriting.arv
+    roi = (arv - price - repairs) / price if price > 0 else Decimal("0")
 
     # Build shared governance data
     gov_data: Dict[str, Any] = {
         # King-ish
-        "purchase_price": str(price_dec) if price_dec is not None else "0",
-        "repairs": str(repairs_dec) if repairs_dec is not None else "0",
-        "arv": str(arv_dec) if arv_dec is not None else "0",
-        "roi": str(roi_dec) if roi_dec is not None else "0",
-        "predatory": "False",
+        "purchase_price": str(price),
+        "repairs": str(repairs),
+        "arv": str(arv),
+        "roi": str(roi),
+        "predatory": str(governance_flags.get("predatory", False)),
         # Queen-ish (use safe defaults; you can override via payload['governance'])
         "hours_per_week": str(governance_flags.get("hours_per_week", 40)),
         "parallel_projects": str(governance_flags.get("parallel_projects", 1)),
@@ -111,48 +88,22 @@ def full_deal_with_governance(payload: Dict[str, Any]):
         "missing_disclosures": str(governance_flags.get("missing_disclosures", False)),
     }
 
-    # Merge/override with explicit governance flags if provided, converting all to strings
-    for key, val in governance_flags.items():
-        if key not in gov_data:
-            gov_data[key] = str(val)
-        else:
-            gov_data[key] = str(val)
-
-    # 1) Call governance orchestrator
-    gov_body = {
-        "context_type": "deal",
-        "data": gov_data,
-        "gods": None,  # evaluate all by default
-    }
-
-    gov_resp = client.post("/api/governance/evaluate_all", json=gov_body)
-    if gov_resp.status_code != 200:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"governance/evaluate_all failed: {gov_resp.status_code} {gov_resp.text}",
-        )
-
-    governance_decision = gov_resp.json()
-
-    if not governance_decision.get("overall_allowed", False):
-        # Governance blocked the plan – do not call full_deal_pipeline
+    decision = evaluate_all(GovernanceEvaluationRequest(context_type="deal", data=gov_data))
+    if not decision.overall_allowed or not decision.full_coverage:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail={
-                "message": "Governance blocked this deal pipeline execution.",
-                "governance": governance_decision,
+                "message": "Governance blocked internal deal intake.",
+                "governance": decision.model_dump(mode="json"),
             },
         )
-
-    # 2) Governance OK – call the real pipeline
-    pipeline_resp = client.post("/api/flow/full_deal_pipeline", json=payload)
-    if pipeline_resp.status_code not in (200, 201):
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"full_deal_pipeline failed: {pipeline_resp.status_code} {pipeline_resp.text}",
-        )
-
-    pipeline_data = pipeline_resp.json()
-    # Attach governance snapshot for traceability
-    pipeline_data["_governance"] = governance_decision
-    return pipeline_data
+    pipeline = build_full_deal_pipeline(payload, db)
+    db.add(AuditLog(
+        deal_id=pipeline.backend_deal_id,
+        event_type="internal_deal_governance",
+        event_source="system",
+        message="Five-specialist evaluation recorded for internal intake",
+        event_data=decision.model_dump_json(),
+    ))
+    db.commit()
+    return {**pipeline.model_dump(mode="json"), "_governance": decision.model_dump(mode="json")}

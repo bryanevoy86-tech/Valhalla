@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
+from app.core.dependencies import require_prime_control_key
 from app.models.deal import Deal  # backend Deal model
 from app.schemas.underwriting_engine import (
     UnderwriteDealRequest,
@@ -17,6 +18,7 @@ from app.services.underwriting_engine import run_underwriting
 router = APIRouter(
     prefix="/flow",
     tags=["Flow", "Underwriting"],
+    dependencies=[Depends(require_prime_control_key)],
 )
 
 
@@ -35,6 +37,12 @@ def underwrite_deal(
     payload: UnderwriteDealRequest,
     db: Session = Depends(get_db),
 ) -> UnderwriteDealResponse:
+    result = apply_underwriting(payload, db)
+    db.commit()
+    return result
+
+
+def apply_underwriting(payload: UnderwriteDealRequest, db: Session) -> UnderwriteDealResponse:
     # 1. Run core underwriting logic
     result = run_underwriting(payload)
 
@@ -43,20 +51,12 @@ def underwrite_deal(
 
     # 2. Optionally update backend Deal with summary numbers
     if deal_id is not None:
-        deal_obj = db.query(Deal).filter(Deal.id == deal_id).first()
-        if deal_obj is not None:
-            # Only overwrite if values look sane
-            deal_obj.arv = float(payload.deal.arv)
-            deal_obj.repairs = float(payload.deal.repairs)
-            deal_obj.offer = float(payload.deal.purchase_price)
-            deal_obj.mao = float(result.metrics.total_project_cost)
-            deal_obj.roi_note = (
-                result.flags.notes
-                or f"Recommendation: {result.recommendation}"
-            )
-            db.add(deal_obj)
-            db.commit()
-            db.refresh(deal_obj)
+        deal_obj = db.get(Deal, deal_id, with_for_update=True)
+        if deal_obj is None:
+            raise HTTPException(status_code=404, detail="Deal not found")
+        deal_obj.arv = payload.deal.arv
+        deal_obj.estimated_repair_cost = payload.deal.repairs
+        deal_obj.notes = result.flags.notes or f"Recommendation: {result.recommendation}"
 
     # 3. Log freeze_event if we breached policy
     freeze_created = False
@@ -99,6 +99,7 @@ def underwrite_deal(
                 },
             },
             notes="Auto-created by underwriting_engine.",
+            commit=False,
         )
         freeze_created = True
 

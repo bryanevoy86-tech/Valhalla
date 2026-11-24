@@ -9,12 +9,15 @@ from pathlib import Path
 from datetime import date, datetime, timedelta, timezone
 from typing import Any, Literal
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
-from sqlalchemy.exc import SQLAlchemyError, UnsupportedCompilationError
+from sqlalchemy import inspect
 
 from app.core.db import get_db
+from app.core.dependencies import require_prime_control_key
+from app.loki.models import LokiReview
+from app.loki.review_service import artifact_digest, reviewer_identity, verdict as independent_loki_verdict
 from app.models.completion_registry import (
     DatasetRegistryItem,
     EngineRegistryItem,
@@ -39,6 +42,14 @@ from app.models.completion_registry import (
 )
 from app.services.data_safety import DatasetSafetyInput, evaluate_dataset_safety
 from app.services.scenario_safety import ScenarioSafetyInput, evaluate_scenario_safety
+from app.services.prime_business_execution import (
+    _check_legacy,
+    _emergency_stop_active,
+    require_current_legacy_policy,
+    require_owner_mandate_key,
+    verified_internal_outcomes,
+    verify_mimir_claims,
+)
 from app.services.universal_opportunity_evaluator import (
     LookaheadLeakageBlocked,
     best_option_or_abstain as svc_best_option_or_abstain,
@@ -49,7 +60,7 @@ from app.god.models import GodCaseOutcome, GodCaseStatus, GodReviewCase, GodRevi
 from app.models.god_verdicts import GodVerdict
 from app.models.governance_decision import GovernanceDecision
 
-router = APIRouter(prefix="/api/completion", tags=["completion-registry"])
+router = APIRouter(prefix="/api/completion", tags=["completion-registry"], dependencies=[Depends(require_prime_control_key)])
 
 ALLOWED_TERMINAL_STATES = {
     RegistryStates.ACTIVE_AND_VERIFIED,
@@ -924,6 +935,9 @@ class LegacyFailoverRequest(BaseModel):
 class LegacyRecoveryRequest(BaseModel):
     legacy_instance_id: str
     synchronize_policy: bool = True
+    recovery_event_id: str | None = Field(default=None, min_length=1, max_length=80)
+    expected_policy_id: str | None = Field(default=None, min_length=1, max_length=80)
+    expected_policy_version: str | None = Field(default=None, min_length=1, max_length=40)
 
 
 ALLOWED_LEGACY_STATUSES = {"PASS", "PARTIAL", "FAIL", "EXTERNAL_OWNER_ACTION_REQUIRED"}
@@ -1156,6 +1170,7 @@ PHASE3_OPPORTUNITY_STATUSES = {
 
 class UniversalOpportunityIn(BaseModel):
     opportunity_id: str
+    independent_loki_review_id: uuid.UUID | None = None
     engine_id: str
     legacy: str = "Legacy"
     jurisdiction: str | None = None
@@ -1801,11 +1816,10 @@ def _decision_rank_value(final_decision: str, underwriting: dict[str, Any], buye
 
 
 def _ensure_pantheon_tables(db: Session) -> None:
-    bind = db.get_bind()
-    GodReviewCase.__table__.create(bind=bind, checkfirst=True)
-    GodReviewEvent.__table__.create(bind=bind, checkfirst=True)
-    GodVerdict.__table__.create(bind=bind, checkfirst=True)
-    GovernanceDecision.__table__.create(bind=bind, checkfirst=True)
+    checker = inspect(db.connection())
+    models = (GodReviewCase, GodReviewEvent, GodVerdict, GovernanceDecision)
+    if any(not checker.has_table(model.__tablename__) for model in models):
+        raise HTTPException(status_code=503, detail="Pantheon decision schema is not available")
 
 
 def _persist_pantheon_snapshot(
@@ -1816,20 +1830,7 @@ def _persist_pantheon_snapshot(
     loki_objections: list[dict[str, Any]],
     owner_envelope: dict[str, Any],
 ) -> dict[str, Any]:
-    try:
-        _ensure_pantheon_tables(db)
-    except (UnsupportedCompilationError, SQLAlchemyError):
-        # SQLite test harness cannot materialize PostgreSQL JSONB/UUID columns.
-        # Return synthetic IDs so contract-level behavior remains testable.
-        synthetic_subject = int(hashlib.sha1(payload.request_id.encode("utf-8")).hexdigest()[:8], 16)
-        return {
-            "god_review_case_id": str(uuid.uuid4()),
-            "god_verdict_id": str(uuid.uuid4()),
-            "governance_subject_id": synthetic_subject,
-            "owner_approval_required": owner_envelope["owner_approval_required"],
-            "approval_state": owner_envelope["approval_state"],
-            "persistence_mode": "sqlite_test_fallback",
-        }
+    _ensure_pantheon_tables(db)
 
     subject_ref = hashlib.sha1(result["property_identity"]["location_key"].encode("utf-8")).hexdigest()[:20]
     case = GodReviewCase(
@@ -1903,7 +1904,7 @@ def _persist_pantheon_snapshot(
     )
     db.add(verdict)
 
-    subject_int = int(hashlib.sha1(payload.request_id.encode("utf-8")).hexdigest()[:8], 16)
+    subject_int = (int(hashlib.sha1(payload.request_id.encode("utf-8")).hexdigest()[:8], 16) & 0x7FFFFFFF) or 1
     role_to_action = {
         "odin": "approve" if role_blocks["odin"].get("allowed") else "flag",
         "loki": "deny" if role_blocks["loki"].get("severity") == "critical" else "flag",
@@ -2199,19 +2200,9 @@ def _persist_universal_pantheon_snapshot(
     result: dict[str, Any],
     loki_objections: list[dict[str, Any]],
     owner_envelope: dict[str, Any],
+    durable: bool = True,
 ) -> dict[str, Any]:
-    try:
-        _ensure_pantheon_tables(db)
-    except (UnsupportedCompilationError, SQLAlchemyError):
-        synthetic_subject = int(hashlib.sha1(payload.opportunity_id.encode("utf-8")).hexdigest()[:8], 16)
-        return {
-            "god_review_case_id": str(uuid.uuid4()),
-            "god_verdict_id": str(uuid.uuid4()),
-            "governance_subject_id": synthetic_subject,
-            "owner_approval_required": owner_envelope["owner_approval_required"],
-            "approval_state": owner_envelope["approval_state"],
-            "persistence_mode": "sqlite_test_fallback",
-        }
+    _ensure_pantheon_tables(db)
 
     subject_ref = hashlib.sha1(payload.opportunity_id.encode("utf-8")).hexdigest()[:20]
     case = GodReviewCase(
@@ -2257,12 +2248,19 @@ def _persist_universal_pantheon_snapshot(
             "opportunity_id": payload.opportunity_id,
             "engine_id": payload.engine_id,
             "owner_approval_envelope": owner_envelope,
-            "shadow_mode": True,
+            "shadow_mode": "independent_loki" not in owner_envelope,
+            "internal_draft_eligible": result["final_decision"] in {"proceed", "research_more"}
+            and result["capital_risk_exit_analysis"]["hard_decision_rule_pass"] is True
+            and result["outcome_contract"]["outcome_class"] == "VALHALLA_OUTCOME",
+            "external_effects_authorized": False,
         },
     )
+    source = payload.specialist_inputs.get("foundry_evidence")
+    if "independent_loki" in owner_envelope and isinstance(source, dict):
+        verdict.metadata_json.update(foundry_evidence_id=source["id"], foundry_evidence_sha256=source["sha256"])
     db.add(verdict)
 
-    subject_int = int(hashlib.sha1(payload.opportunity_id.encode("utf-8")).hexdigest()[:8], 16)
+    subject_int = (int(hashlib.sha1(payload.opportunity_id.encode("utf-8")).hexdigest()[:8], 16) & 0x7FFFFFFF) or 1
     role_to_action = {
         "odin": "approve" if role_blocks["odin"].get("allowed") else "flag",
         "loki": "deny" if role_blocks["loki"].get("severity") == "critical" else "flag",
@@ -2284,7 +2282,7 @@ def _persist_universal_pantheon_snapshot(
             )
         )
 
-    db.commit()
+    db.commit() if durable else db.flush()
     db.refresh(case)
     db.refresh(verdict)
     return {
@@ -2304,11 +2302,16 @@ def _evaluate_universal_opportunity(
     decision_model: str,
     reveal_historical_outcomes: bool,
     outcome_class: str,
+    independent_loki: dict | None = None,
+    operating_lessons: tuple = (),
+    durable: bool = True,
 ) -> dict[str, Any]:
     _validate_phase3_opportunity(payload)
-    mimir_context = _build_mimir_context(db, payload)
+    mimir_context = _build_mimir_context(db, payload, outcome_class)
 
     if svc_engine_routing_key(payload.engine_id) == "real_estate" and payload.specialist_inputs.get("real_estate_payload"):
+        if operating_lessons:
+            raise HTTPException(409, "Resolve the exact operating forecast shortfall before evaluation")
         real_payload = RealEstateIntelligenceIn(**payload.specialist_inputs["real_estate_payload"])
         real_payload.persist_decision = persist_decision
         real_result, real_loki, real_owner = _compose_real_estate_intelligence_result(real_payload)
@@ -2326,6 +2329,8 @@ def _evaluate_universal_opportunity(
         }
         rank_value = float(real_result["decision_rank_value"])
         persistence = None
+        if independent_loki is not None:
+            real_owner["independent_loki"] = independent_loki
         if persist_decision:
             persistence = _persist_pantheon_snapshot(db, payload=real_payload, result=real_result, loki_objections=real_loki, owner_envelope=real_owner)
         return {
@@ -2501,8 +2506,20 @@ def _evaluate_universal_opportunity(
         decision_model=decision_model,
         reveal_historical_outcomes=reveal_historical_outcomes,
         expected_outcome_class=outcome_class,
+        operating_lessons=operating_lessons,
     )
 
+    if operating_lessons:
+        result["operating_learning"] = {
+            "decision_effect": "HOLD_OR_PRESERVE_STRONGER_RESTRICTION",
+            "verified_variance_receipts": list(operating_lessons),
+            "next_validation": "TEST_REFUND_ADJUSTED_SCENARIO_ON_PROSPECTIVE_HOLDOUT",
+            "commercial_promotion_authorized": False,
+        }
+
+    if independent_loki is not None:
+        result["independent_loki"] = independent_loki
+        result["approval_envelope"]["independent_loki"] = independent_loki
     if persist_decision:
         result["persistence"] = _persist_universal_pantheon_snapshot(
             db,
@@ -2510,6 +2527,7 @@ def _evaluate_universal_opportunity(
             result=result,
             loki_objections=result["loki_objections"]["items"],
             owner_envelope=result["approval_envelope"],
+            durable=durable,
         )
         if result.get("outcome_contract"):
             result["outcome_contract"]["pantheon_snapshot_id"] = result["persistence"]["god_verdict_id"]
@@ -2536,35 +2554,62 @@ def _resolve_phase3_outcome_class(payload: UniversalOpportunityBatchIn) -> str:
     return "VALHALLA_OUTCOME"
 
 
-def _build_mimir_context(db: Session, payload: UniversalOpportunityIn) -> dict[str, Any]:
+def _build_mimir_context(db: Session, payload: UniversalOpportunityIn, outcome_class: str = "SHADOW_OUTCOME") -> dict[str, Any]:
     refs: list[dict[str, Any]] = []
     prior_successes = 0
     prior_failures = 0
     recurring_failure_modes: list[str] = []
 
+    # Replay remains blind to current outcomes. Live advisory references may
+    # include independently re-read internal receipts in the same scope.
+    if outcome_class != "SHADOW_OUTCOME":
+        business_id = payload.specialist_inputs.get("business_id")
+        if outcome_class == "VALHALLA_OUTCOME" and isinstance(business_id, str) and payload.jurisdiction:
+            refs = [
+                {"type": "verified_internal_outcome", "id": item["outcome_event_id"], **item}
+                for item in verified_internal_outcomes(
+                    db, legacy_instance_id=payload.legacy, business_id=business_id,
+                    engine_id=payload.engine_id, jurisdiction=payload.jurisdiction,
+                )
+            ]
+        return {
+            "prior_successes": 0,
+            "prior_failures": 0,
+            "superseded_doctrine_hits": 0,
+            "recurring_failure_modes": [],
+            "source_references": refs,
+        }
+
+    # Shadow lessons are scoped by engine, legacy and jurisdiction, and
+    # remain simulated observations. A missing score is not a failure.
     fb_rows = (
         db.query(LearningFeedbackRecord)
+        .filter(
+            LearningFeedbackRecord.domain == payload.engine_id,
+            LearningFeedbackRecord.business_scope == payload.legacy,
+            LearningFeedbackRecord.jurisdiction == payload.jurisdiction,
+            LearningFeedbackRecord.outcome_class.in_(["SHADOW_OUTCOME", "SHADOW_FAILURE"]),
+        )
         .order_by(LearningFeedbackRecord.created_at.desc())
         .limit(200)
         .all()
     )
     for row in fb_rows:
-        score = float(row.operational_score or 0.0)
+        score = row.operational_score
         oc = str(row.outcome_class or "").upper()
-        if oc in {"VALHALLA_OUTCOME", "VERIFIED_REAL_OUTCOME", "LIVE_KPI"} or score >= 0.7:
-            prior_successes += 1
-        if row.high_impact or score <= 0.35 or oc in {"FAILURE", "SHADOW_FAILURE"}:
+        if oc == "SHADOW_FAILURE" or (score is not None and 0 <= score <= 0.35):
             prior_failures += 1
             if row.notes:
                 recurring_failure_modes.append(str(row.notes)[:120])
-        refs.append(
-            {
-                "type": "learning_feedback",
-                "id": row.feedback_id,
-                "outcome_class": row.outcome_class,
-                "created_at": row.created_at.isoformat() if row.created_at else None,
-            }
-        )
+        elif score is not None and 0.7 <= score <= 1:
+            prior_successes += 1
+        refs.append({
+            "type": "learning_feedback",
+            "id": row.feedback_id,
+            "outcome_class": row.outcome_class,
+            "evidence_scope": "SHADOW_ONLY",
+            "created_at": row.created_at.isoformat() if row.created_at else None,
+        })
 
     knowledge_rows = (
         db.query(KnowledgeRegistryItem)
@@ -2608,6 +2653,17 @@ def _build_mimir_context(db: Session, payload: UniversalOpportunityIn) -> dict[s
     }
 
 
+@router.get("/learning/verified-internal-outcomes")
+def read_verified_mimir_outcomes(
+    legacy_instance_id: str, business_id: str, engine_id: str, jurisdiction: str,
+    db: Session = Depends(get_db),
+):
+    return {"outcomes": verified_internal_outcomes(
+        db, legacy_instance_id=legacy_instance_id, business_id=business_id,
+        engine_id=engine_id, jurisdiction=jurisdiction,
+    )}
+
+
 @router.get("/phase3/universal-opportunity/engine-audit")
 def phase3_engine_audit(db: Session = Depends(get_db)):
     _ensure_registry_tables(db)
@@ -2636,8 +2692,84 @@ def phase3_engine_audit(db: Session = Depends(get_db)):
     }
 
 
+def _automatic_operating_lessons(db, opportunity):
+    from app.routers.foundry_operating_rehearsal import current_operating_lessons
+
+    inputs = opportunity.specialist_inputs
+    if opportunity.replay_partition is not None or not inputs.get("proposed_internal_listing"):
+        return ()
+    return current_operating_lessons(db, {
+        "legacy_instance_id": opportunity.legacy, "jurisdiction": opportunity.jurisdiction,
+        "engine_id": opportunity.engine_id, "business_id": inputs.get("business_id"),
+    }, inputs["proposed_internal_listing"])
+
+
+def _loki_artifact(opportunity: UniversalOpportunityIn, db: Session | None = None) -> dict:
+    body = opportunity.model_dump(mode="json", exclude={"independent_loki_review_id", "persist_decision"})
+    if db is not None and (lessons := _automatic_operating_lessons(db, opportunity)):
+        body["automatic_operating_lesson_refs"] = list(lessons)
+    return body
+
+
+@router.post("/phase3/universal-opportunity/review-artifact")
+def universal_review_artifact(opportunity: UniversalOpportunityIn, db: Session = Depends(get_db)):
+    artifact_type = "universal_opportunity"
+    content = _loki_artifact(opportunity, db)
+    return {
+        "artifact_type": artifact_type, "heimdall_reference_id": opportunity.opportunity_id, "raw_input": content,
+        "artifact_sha256": artifact_digest(artifact_type, opportunity.opportunity_id, content),
+    }
+
+
+def _require_independent_review(db: Session, opportunity: UniversalOpportunityIn) -> dict:
+    review_id = opportunity.independent_loki_review_id
+    if review_id is None:
+        raise HTTPException(status_code=409, detail="Independent Loki review required before persisting this decision")
+    reviewer_identity()
+    review = db.get(LokiReview, review_id)
+    if review is None:
+        raise HTTPException(status_code=409, detail="Independent Loki review not found")
+    expected = artifact_digest("universal_opportunity", opportunity.opportunity_id, _loki_artifact(opportunity, db))
+    if review.artifact_sha256 != expected:
+        raise HTTPException(status_code=409, detail="A material change requires a new independent review")
+    decision = independent_loki_verdict(db, review)
+    if not decision.ok_to_proceed:
+        raise HTTPException(status_code=409, detail={
+            "message": "Independent Loki findings require reconsideration",
+            "verdict": decision.model_dump(mode="json"),
+        })
+    result = {"review_id": str(review_id), **decision.model_dump(mode="json")}
+    from app.services.foundry_discovery import require_current_candidate
+
+    require_current_candidate(db, _loki_artifact(opportunity), {
+        "legacy_instance_id": opportunity.legacy, "jurisdiction": opportunity.jurisdiction,
+        "engine_id": opportunity.engine_id, "business_id": opportunity.specialist_inputs.get("business_id"),
+    }, datetime.now(timezone.utc).date())
+    if "consumer_research" in opportunity.specialist_inputs:
+        from app.services.consumer_evidence import reviewed_summary
+
+        result["reviewed_consumer_research"] = reviewed_summary(opportunity.specialist_inputs["consumer_research"])
+    if "pantheon_report_ids" in opportunity.specialist_inputs:
+        from app.loki.specialist_review import require_reviewed_reports
+
+        result["reviewed_specialist_reports"] = require_reviewed_reports(
+            db, opportunity.specialist_inputs["pantheon_report_ids"], {
+                "legacy_instance_id": opportunity.legacy, "jurisdiction": opportunity.jurisdiction,
+                "engine_id": opportunity.engine_id, "business_id": opportunity.specialist_inputs.get("business_id"),
+            },
+        )
+    return result
+
+
 @router.post("/phase3/universal-opportunity/evaluate")
 def evaluate_universal_opportunities(payload: UniversalOpportunityBatchIn, db: Session = Depends(get_db)):
+    return evaluate_opportunity_batch(payload, db)
+
+
+def evaluate_opportunity_batch(payload: UniversalOpportunityBatchIn, db: Session, *, durable=True):
+    if any("public_market_context" in opportunity.specialist_inputs for opportunity in payload.opportunities):
+        raise HTTPException(409, "Public market context can be independently reviewed but cannot enter scored opportunity evaluation")
+
     if payload.decision_model == "CHALLENGER" and not payload.shadow_mode:
         raise HTTPException(status_code=409, detail="challenger model is shadow-only and cannot execute outside shadow_mode")
 
@@ -2650,10 +2782,36 @@ def evaluate_universal_opportunities(payload: UniversalOpportunityBatchIn, db: S
             )
 
     outcome_class = _resolve_phase3_outcome_class(payload)
+    checked_mimir = {}
+    for index, opportunity in enumerate(payload.opportunities):
+        inputs = opportunity.specialist_inputs
+        if "mimir_outcome_claims" not in inputs:
+            continue
+        if payload.replay_mode or opportunity.replay_partition is not None:
+            raise HTTPException(409, "Current Mimir outcome claims are unavailable in historical replay")
+        checked_mimir[index] = verify_mimir_claims(db, {
+            "legacy_instance_id": opportunity.legacy, "jurisdiction": opportunity.jurisdiction,
+            "engine_id": opportunity.engine_id, "business_id": inputs.get("business_id"),
+        }, inputs["mimir_outcome_claims"])
+    checked_reviews = {
+        index: _require_independent_review(db, opp)
+        for index, opp in enumerate(payload.opportunities)
+        if not payload.shadow_mode and not payload.replay_mode and payload.persist_decision and opp.persist_decision
+    }
+    for index, evidence in checked_mimir.items():
+        if index in checked_reviews:
+            checked_reviews[index]["reviewed_mimir_outcomes"] = evidence
     evaluated: list[dict[str, Any]] = []
-    for opp in payload.opportunities:
+    for index, opp in enumerate(payload.opportunities):
         try:
-            evaluated.append(
+            listing = opp.specialist_inputs.get("proposed_internal_listing")
+            automatic = () if payload.replay_mode else _automatic_operating_lessons(db, opp)
+            losses = tuple(proof["sha256"] for proof in checked_mimir.get(index, ())
+                if proof.get("basis") == "FOUNDRY_OPERATING_VARIANCE"
+                and proof["variance"]["classification"] == "BELOW_EXPECTATION"
+                and isinstance(listing, dict)
+                and all(listing.get(key) == value for key, value in proof["prediction"]["playbook"].items()))
+            row = (
                 _evaluate_universal_opportunity(
                     opp,
                     db,
@@ -2661,8 +2819,16 @@ def evaluate_universal_opportunities(payload: UniversalOpportunityBatchIn, db: S
                     decision_model=payload.decision_model,
                     reveal_historical_outcomes=payload.reveal_historical_outcomes,
                     outcome_class=outcome_class,
+                    independent_loki=checked_reviews.get(index),
+                    operating_lessons=tuple(dict.fromkeys((*automatic, *losses))),
+                    durable=durable,
                 )
             )
+            if index in checked_reviews:
+                row["independent_loki"] = checked_reviews[index]
+            if index in checked_mimir:
+                row["verified_mimir_claims"] = checked_mimir[index]
+            evaluated.append(row)
         except LookaheadLeakageBlocked as exc:
             raise HTTPException(status_code=409, detail=exc.detail)
     ranked = sorted(evaluated, key=lambda r: float(r.get("rank_value") or 0.0), reverse=True)
@@ -3330,10 +3496,14 @@ def upsert_legacy_instance(payload: LegacyInstanceRegistryIn, db: Session = Depe
 
     row = db.query(LegacyInstanceRegistryItem).filter(
         LegacyInstanceRegistryItem.legacy_instance_id == payload.legacy_instance_id
-    ).first()
+    ).with_for_update().first()
     if row is None:
         row = LegacyInstanceRegistryItem(legacy_instance_id=payload.legacy_instance_id)
         db.add(row)
+    elif row.failover_state in {"FAILED", "RECOVERED"} or db.query(LegacyInstancePolicyState).filter_by(
+        legacy_instance_id=row.legacy_instance_id,
+    ).first() is not None:
+        raise HTTPException(409, "Use scoped orchestration for a managed or recovering Legacy")
 
     row.display_name = payload.display_name
     row.parent_instance_id = payload.parent_instance_id
@@ -3373,7 +3543,7 @@ def _orchestration_event(
     message: str,
     severity: str = "info",
     payload: dict[str, Any] | None = None,
-) -> None:
+) -> str:
     stamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S%f")
     event_id = f"LEGACY-EVT-{event_type}-{stamp}"
     db.add(
@@ -3386,6 +3556,7 @@ def _orchestration_event(
             payload_json=json.dumps(payload or {}),
         )
     )
+    return event_id
 
 
 def _get_active_policy_or_404(db: Session, policy_id: str) -> LegacyGovernancePolicy:
@@ -3447,10 +3618,11 @@ def provision_legacy_instance(payload: LegacyProvisionRequest, db: Session = Dep
 
     row = db.query(LegacyInstanceRegistryItem).filter(
         LegacyInstanceRegistryItem.legacy_instance_id == payload.legacy_instance_id
-    ).first()
-    if row is None:
-        row = LegacyInstanceRegistryItem(legacy_instance_id=payload.legacy_instance_id)
-        db.add(row)
+    ).with_for_update().first()
+    if row is not None:
+        raise HTTPException(409, "Legacy already exists. Use scoped policy and recovery operations.")
+    row = LegacyInstanceRegistryItem(legacy_instance_id=payload.legacy_instance_id)
+    db.add(row)
 
     row.display_name = payload.display_name
     row.parent_instance_id = payload.parent_instance_id
@@ -3516,17 +3688,23 @@ def provision_legacy_instance(payload: LegacyProvisionRequest, db: Session = Dep
 @router.post("/legacy-orchestration/policies/propagate")
 def propagate_legacy_policy(payload: LegacyPolicyPropagationRequest, db: Session = Depends(get_db)):
     _ensure_registry_tables(db)
-    policy = _get_active_policy_or_404(db, payload.policy_id)
     q = db.query(LegacyInstanceRegistryItem)
     if payload.target_instances:
         q = q.filter(LegacyInstanceRegistryItem.legacy_instance_id.in_(payload.target_instances))
-    rows = q.all()
+    rows = q.order_by(LegacyInstanceRegistryItem.legacy_instance_id).with_for_update().all()
+    policy = _get_active_policy_or_404(db, payload.policy_id)
 
     propagated = 0
     blocked: list[str] = []
     for row in rows:
         integrations = _loads(row.integrations_json, {})
-        if bool(integrations.get("policy_propagation_blocked", False)):
+        local = _loads(row.local_knowledge_context_json, {})
+        current_governance = local.get("governance", {})
+        recovering_policy_change = (
+            row.failover_state in {"FAILED", "RECOVERED"}
+            and current_governance.get("policy_id") not in (None, policy.policy_id)
+        )
+        if bool(integrations.get("policy_propagation_blocked", False)) or recovering_policy_change:
             row.synchronization_status = "BLOCKED"
             blocked.append(row.legacy_instance_id)
             state = db.query(LegacyInstancePolicyState).filter(
@@ -3534,7 +3712,10 @@ def propagate_legacy_policy(payload: LegacyPolicyPropagationRequest, db: Session
             ).first()
             if state is not None:
                 state.sync_status = "DIVERGED"
-                state.divergence_reason = "propagation blocked by integration profile"
+                state.divergence_reason = (
+                    "recovering Legacy cannot switch policy identity" if recovering_policy_change
+                    else "propagation blocked by integration profile"
+                )
             _orchestration_event(
                 db,
                 legacy_instance_id=row.legacy_instance_id,
@@ -3559,7 +3740,6 @@ def propagate_legacy_policy(payload: LegacyPolicyPropagationRequest, db: Session
         row.synchronization_status = "SYNCED"
         propagated += 1
 
-        local = _loads(row.local_knowledge_context_json, {})
         local["governance"] = {"policy_id": policy.policy_id, "policy_version": policy.policy_version}
         row.local_knowledge_context_json = json.dumps(local)
 
@@ -3669,7 +3849,7 @@ def assign_legacy_work(payload: LegacyWorkAssignRequest, db: Session = Depends(g
     _ensure_registry_tables(db)
     row = db.query(LegacyInstanceRegistryItem).filter(
         LegacyInstanceRegistryItem.legacy_instance_id == payload.legacy_instance_id
-    ).first()
+    ).with_for_update().first()
     if row is None:
         raise HTTPException(status_code=404, detail="legacy instance not found")
 
@@ -3695,12 +3875,20 @@ def assign_legacy_work(payload: LegacyWorkAssignRequest, db: Session = Depends(g
             "duplicate": True,
         }
 
+    if _emergency_stop_active(db):
+        raise HTTPException(409, "EMERGENCY_STOP_ACTIVE")
+    scope = {
+        "legacy_instance_id": payload.legacy_instance_id, "business_id": payload.business_id,
+        "engine_id": payload.engine_id, "jurisdiction": payload.jurisdiction,
+    }
+    _check_legacy(db, **scope)
     local = _loads(row.local_knowledge_context_json, {})
-    if local.get("jurisdiction") != payload.jurisdiction:
-        raise HTTPException(status_code=409, detail="requested jurisdiction does not match legacy context; re-verification required")
+    if local.get("data_namespace") and local["data_namespace"] != payload.data_namespace:
+        raise HTTPException(409, "requested namespace does not match legacy context")
 
-    if payload.engine_id not in set(_loads(row.engines_json, [])):
-        raise HTTPException(status_code=409, detail="requested engine is not assigned to this legacy instance")
+    from app.services.economic_control import require_no_containment
+
+    require_no_containment(db, scope)
 
     item = LegacyInstanceWorkItem(
         action_id=payload.action_id,
@@ -3731,12 +3919,24 @@ def assign_legacy_work(payload: LegacyWorkAssignRequest, db: Session = Depends(g
 
 @router.post("/legacy-orchestration/failover")
 def failover_legacy_instance(payload: LegacyFailoverRequest, db: Session = Depends(get_db)):
+    from app.services.economic_control import require_no_containment
+
     _ensure_registry_tables(db)
-    failed = db.query(LegacyInstanceRegistryItem).filter(
-        LegacyInstanceRegistryItem.legacy_instance_id == payload.failed_instance_id
-    ).first()
+    if payload.recovery_instance_id == payload.failed_instance_id:
+        raise HTTPException(409, "Recovery must use a different legacy instance")
+    instance_ids = {payload.failed_instance_id}
+    if payload.recovery_instance_id:
+        instance_ids.add(payload.recovery_instance_id)
+    registry = LegacyInstanceRegistryItem
+    rows = {item.legacy_instance_id: item for item in db.query(registry).filter(
+        registry.legacy_instance_id.in_(instance_ids),
+    ).order_by(registry.legacy_instance_id).with_for_update().all()}
+    failed = rows.get(payload.failed_instance_id)
     if failed is None:
-        raise HTTPException(status_code=404, detail="failed instance not found")
+        raise HTTPException(404, "failed instance not found")
+    recovery = rows.get(payload.recovery_instance_id)
+    if payload.recovery_instance_id and recovery is None:
+        raise HTTPException(404, "recovery instance not found")
 
     failed.failover_state = "FAILED"
     failed.synchronization_status = "BLOCKED"
@@ -3744,35 +3944,69 @@ def failover_legacy_instance(payload: LegacyFailoverRequest, db: Session = Depen
 
     reassigned = 0
     paused = 0
-    if payload.recovery_instance_id:
-        recovery = db.query(LegacyInstanceRegistryItem).filter(
-            LegacyInstanceRegistryItem.legacy_instance_id == payload.recovery_instance_id
-        ).first()
-        if recovery is None:
-            raise HTTPException(status_code=404, detail="recovery instance not found")
-
-        failed_businesses = set(_loads(failed.assigned_businesses_json, []))
-        recovery_businesses = set(_loads(recovery.assigned_businesses_json, []))
+    containment_paused = 0
+    scope_paused = 0
+    if recovery is not None:
+        failed_businesses = _loads(failed.assigned_businesses_json, [])
+        recovery_businesses = _loads(recovery.assigned_businesses_json, [])
+        recovery_engines = _loads(recovery.engines_json, [])
+        recovery_jurisdictions = _loads(recovery.assigned_jurisdictions_json, [])
+        context = _loads(recovery.local_knowledge_context_json, {})
+        namespace = context.get("data_namespace") if isinstance(context, dict) else None
+        recovery_ready = (
+            recovery.status in {"PASS", "PARTIAL"} and recovery.isolation_state == "ISOLATED"
+            and recovery.synchronization_status == "SYNCED" and recovery.failover_state == "NOT_TRIGGERED"
+            and isinstance(namespace, str) and bool(namespace)
+            and all(isinstance(value, list) for value in (
+                failed_businesses, recovery_businesses, recovery_engines, recovery_jurisdictions,
+            ))
+        )
 
         q = db.query(LegacyInstanceWorkItem).filter(
             LegacyInstanceWorkItem.legacy_instance_id == payload.failed_instance_id,
             LegacyInstanceWorkItem.status.in_(["queued", "in_progress"]),
         )
-        for item in q.all():
-            if item.business_id in recovery_businesses and item.business_id in failed_businesses:
+        for item in q.order_by(LegacyInstanceWorkItem.id).with_for_update().all():
+            if (recovery_ready and item.business_id in recovery_businesses and item.business_id in failed_businesses
+                    and item.engine_id in recovery_engines and item.jurisdiction in recovery_jurisdictions
+                    and not item.action_id.startswith("bfd_")):
+                scope = {key: getattr(item, key) for key in (
+                    "legacy_instance_id", "business_id", "engine_id", "jurisdiction",
+                )}
+                try:
+                    require_current_legacy_policy(db, recovery, item.jurisdiction)
+                except HTTPException as exc:
+                    if exc.status_code != 409:
+                        raise
+                    item.status = "paused"
+                    scope_paused += 1
+                    paused += 1
+                    continue
+                try:
+                    require_no_containment(db, scope)
+                    require_no_containment(db, {**scope, "legacy_instance_id": recovery.legacy_instance_id})
+                except HTTPException as exc:
+                    if exc.status_code not in (409, 503):
+                        raise
+                    item.status = "paused"
+                    containment_paused += 1
+                    paused += 1
+                    continue
                 item.reassigned_from_instance_id = payload.failed_instance_id
                 item.legacy_instance_id = payload.recovery_instance_id
+                item.namespace = namespace
                 item.status = "queued"
                 reassigned += 1
             else:
                 item.status = "paused"
                 paused += 1
+                scope_paused += 1
     else:
         q = db.query(LegacyInstanceWorkItem).filter(
             LegacyInstanceWorkItem.legacy_instance_id == payload.failed_instance_id,
             LegacyInstanceWorkItem.status.in_(["queued", "in_progress"]),
         )
-        for item in q.all():
+        for item in q.order_by(LegacyInstanceWorkItem.id).with_for_update().all():
             item.status = "paused"
             paused += 1
 
@@ -3787,6 +4021,8 @@ def failover_legacy_instance(payload: LegacyFailoverRequest, db: Session = Depen
             "recovery_instance": payload.recovery_instance_id,
             "reassigned": reassigned,
             "paused": paused,
+            "containment_paused": containment_paused,
+            "scope_paused": scope_paused,
         },
     )
 
@@ -3796,37 +4032,104 @@ def failover_legacy_instance(payload: LegacyFailoverRequest, db: Session = Depen
         "recovery_instance_id": payload.recovery_instance_id,
         "reassigned": reassigned,
         "paused": paused,
+        "containment_paused": containment_paused,
+        "scope_paused": scope_paused,
     }
 
 
 @router.post("/legacy-orchestration/recover")
-def recover_legacy_instance(payload: LegacyRecoveryRequest, db: Session = Depends(get_db)):
+def recover_legacy_instance(
+    payload: LegacyRecoveryRequest,
+    db: Session = Depends(get_db),
+    owner_key: str | None = Header(default=None, alias="X-Owner-Mandate-Key"),
+):
+    from app.services.economic_control import require_no_containment
+
+    reactivation_fields = (payload.recovery_event_id, payload.expected_policy_id, payload.expected_policy_version)
+    reactivating = any(reactivation_fields)
+    if reactivating:
+        require_owner_mandate_key(owner_key)
+        if not all(reactivation_fields) or not payload.synchronize_policy:
+            raise HTTPException(422, "Reactivation requires a recovery receipt and the synchronized policy identity")
+
     _ensure_registry_tables(db)
-    row = db.query(LegacyInstanceRegistryItem).filter(
-        LegacyInstanceRegistryItem.legacy_instance_id == payload.legacy_instance_id
-    ).first()
-    if row is None:
-        raise HTTPException(status_code=404, detail="legacy instance not found")
-
-    row.failover_state = "RECOVERED"
-    row.synchronization_status = "SYNCED"
-    if payload.synchronize_policy:
-        policy_state = db.query(LegacyInstancePolicyState).filter(
-            LegacyInstancePolicyState.legacy_instance_id == payload.legacy_instance_id
-        ).first()
-        if policy_state is not None:
-            policy_state.sync_status = "SYNCED"
-            policy_state.divergence_reason = None
-            policy_state.propagated_at = datetime.utcnow()
-
-    _orchestration_event(
-        db,
+    row = db.query(LegacyInstanceRegistryItem).filter_by(
         legacy_instance_id=payload.legacy_instance_id,
-        event_type="FAILOVER_RECOVERED",
-        message="Legacy instance recovered and synchronized",
+    ).with_for_update().first()
+    if row is None:
+        raise HTTPException(404, "legacy instance not found")
+
+    latest = db.query(LegacyOrchestrationEvent).filter(
+        LegacyOrchestrationEvent.legacy_instance_id == row.legacy_instance_id,
+        LegacyOrchestrationEvent.event_type.in_(("FAILOVER_TRIGGERED", "FAILOVER_RECOVERED", "FAILOVER_REACTIVATED")),
+    ).order_by(LegacyOrchestrationEvent.id.desc()).first()
+    if not reactivating:
+        if row.failover_state == "RECOVERED" and latest and latest.event_type == "FAILOVER_RECOVERED":
+            event_id = latest.event_id
+        elif row.failover_state in {"FAILED", "RECOVERED"}:
+            # Existing RECOVERED rows may predate the reviewed reactivation contract.
+            row.failover_state = "RECOVERED"
+            row.synchronization_status = "BLOCKED"
+            event_id = _orchestration_event(
+                db, legacy_instance_id=row.legacy_instance_id, event_type="FAILOVER_RECOVERED",
+                message="Recovery prepared. Execution remains blocked pending separate owner reactivation.",
+                payload={"execution_unblocked": False},
+            )
+        else:
+            raise HTTPException(409, "Legacy has no failed operation to recover")
+        db.commit()
+        return {"legacy_instance_id": payload.legacy_instance_id, "status": "RECOVERED",
+                "recovery_event_id": event_id, "execution_unblocked": False}
+
+    approval = {
+        "recovery_event_id": payload.recovery_event_id, "policy_id": payload.expected_policy_id,
+        "policy_version": payload.expected_policy_version,
+    }
+    if (latest and latest.event_type == "FAILOVER_REACTIVATED" and _loads(latest.payload_json, {}) == approval
+            and row.failover_state == "NOT_TRIGGERED"):
+        return {"legacy_instance_id": row.legacy_instance_id, "status": "REACTIVATED",
+                "reactivation_event_id": latest.event_id, "replayed": True}
+    if (row.failover_state != "RECOVERED" or not latest or latest.event_type != "FAILOVER_RECOVERED"
+            or latest.event_id != payload.recovery_event_id):
+        raise HTTPException(409, "Current Legacy recovery receipt does not match")
+    if _emergency_stop_active(db):
+        raise HTTPException(409, "EMERGENCY_STOP_ACTIVE")
+
+    context = _loads(row.local_knowledge_context_json, {})
+    integrations = _loads(row.integrations_json, None)
+    engines = _loads(row.engines_json, None)
+    if (row.status not in {"PASS", "PARTIAL"} or row.isolation_state != "ISOLATED"
+            or not isinstance(context, dict) or not isinstance(integrations, dict)
+            or integrations.get("policy_propagation_blocked") or not isinstance(engines, list)
+            or not engines or any(not isinstance(engine, str) or not engine.strip() for engine in engines)
+            or any(not isinstance(context.get(key), str) or not context[key].strip()
+                   for key in ("business_id", "jurisdiction", "data_namespace"))):
+        raise HTTPException(409, "Legacy recovery scope or integration is not eligible")
+
+    policy = db.query(LegacyGovernancePolicy).filter_by(
+        policy_id=payload.expected_policy_id, active=True,
+    ).with_for_update().first()
+    state = db.query(LegacyInstancePolicyState).filter_by(legacy_instance_id=row.legacy_instance_id).first()
+    if (policy is None or policy.policy_version != payload.expected_policy_version or state is None
+            or state.policy_id != policy.policy_id or state.policy_version != policy.policy_version
+            or state.sync_status != "SYNCED" or context.get("governance") != {
+                "policy_id": policy.policy_id, "policy_version": policy.policy_version,
+            }):
+        raise HTTPException(409, "Current active policy must be propagated before reactivation")
+    row.failover_state = "NOT_TRIGGERED"
+    row.synchronization_status = "SYNCED"
+    for engine_id in sorted(set(engines)):
+        scope = {"legacy_instance_id": row.legacy_instance_id, "business_id": context["business_id"],
+                 "jurisdiction": context["jurisdiction"], "engine_id": engine_id}
+        _check_legacy(db, **scope)
+        require_no_containment(db, scope)
+    event_id = _orchestration_event(
+        db, legacy_instance_id=row.legacy_instance_id, event_type="FAILOVER_REACTIVATED",
+        message="Owner reactivated Legacy under its existing scope. Paused tasks remain paused.", payload=approval,
     )
     db.commit()
-    return {"legacy_instance_id": payload.legacy_instance_id, "status": "RECOVERED"}
+    return {"legacy_instance_id": payload.legacy_instance_id, "status": "REACTIVATED",
+            "reactivation_event_id": event_id, "replayed": False}
 
 
 @router.get("/legacy-orchestration/health")
@@ -4655,6 +4958,16 @@ def compare_scenario_result(execution_id: str, db: Session = Depends(get_db)):
 @router.post("/knowledge/retrieve", response_model=KnowledgeRetrieveOut)
 def retrieve_knowledge(payload: KnowledgeRetrieveIn, db: Session = Depends(get_db)):
     _ensure_registry_tables(db)
+    return _retrieve_knowledge(payload, db)
+
+
+def _retrieve_knowledge(payload: KnowledgeRetrieveIn, db: Session, *, scope_owner_sources: bool = False):
+    if scope_owner_sources:
+        from sqlalchemy import inspect
+
+        schema = inspect(db.connection())
+        if any(not schema.has_table(table) for table in (KnowledgeRegistryItem.__tablename__, SourceRegistryItem.__tablename__)):
+            raise HTTPException(503, "Private knowledge registry schema unavailable")
     mode = _normalize_mode(payload.mode)
 
     q = db.query(KnowledgeRegistryItem).filter(KnowledgeRegistryItem.excluded.is_(False))
@@ -4672,9 +4985,32 @@ def retrieve_knowledge(payload: KnowledgeRetrieveIn, db: Session = Depends(get_d
     grouped_titles: dict[str, list[dict[str, Any]]] = {}
     high_impact = str(payload.risk_level or "").strip().lower() in {"high", "critical"}
 
+    today = datetime.now(timezone.utc).date()
     for row in rows:
+        if row.superseded_by or (row.expires_date and row.expires_date < today) or (
+            row.effective_date and row.effective_date > today
+        ):
+            blocked_sources.append({"source_id": row.source, "reason": "Knowledge version is no longer current"})
+            continue
+        if _permission_or_license_blocked(row.permission_status, row.license_status):
+            blocked_sources.append({"source_id": row.source, "reason": "Knowledge use is restricted"})
+            continue
         source = db.query(SourceRegistryItem).filter(SourceRegistryItem.source_id == row.source).first()
+        if scope_owner_sources:
+            allowed_systems = _loads(row.allowed_systems_json, [])
+            if (
+                source is None or not source.active
+                or not isinstance(allowed_systems, list)
+                or not {str(name).strip().lower() for name in allowed_systems} & {"heimdall", "heimdall_prime", "prime"}
+                or (row.jurisdiction and row.jurisdiction != payload.jurisdiction)
+                or (source.jurisdiction and source.jurisdiction != payload.jurisdiction)
+            ):
+                blocked_sources.append({"source_id": row.source, "reason": "Knowledge is outside the owner briefing scope"})
+                continue
         if source is not None:
+            if not source.active or _permission_or_license_blocked(source.permission_status, source.license_status):
+                blocked_sources.append({"source_id": row.source, "reason": "Registered source is inactive or restricted"})
+                continue
             allowlist_raw = _loads(source.mode_allowlist_json, [])
             if allowlist_raw:
                 allowed_modes = {m for m in (_normalize_mode(v) for v in allowlist_raw)}
@@ -4726,6 +5062,13 @@ def retrieve_knowledge(payload: KnowledgeRetrieveIn, db: Session = Depends(get_d
             "source_trust_rank": _source_trust_rank(row.source_type),
             "source_type": row.source_type,
         }
+        if scope_owner_sources:
+            entry["source_data_class"] = source.data_class
+            if (str(source.data_class or "").lower() != "live" or freshness != "fresh"
+                    or row.review_date > today or source.terminal_state != "ACTIVE_AND_VERIFIED"
+                    or row.terminal_state != "ACTIVE_AND_VERIFIED"):
+                assumptions.append(entry)
+                continue
         quality_ok = (row.quality_score or 0) >= 0.7 and effective_confidence >= 0.7
         reviewed_ok = str(row.review_status or "").lower() in {"approved", "verified"}
         citation_ok = bool((row.citation_ref or "").strip())

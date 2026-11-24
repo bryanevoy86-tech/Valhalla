@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import math
 import json
 from datetime import date, datetime, timezone
 from typing import Any, Literal
@@ -201,6 +202,32 @@ def universal_loki_objections(payload: dict[str, Any], specialist: dict[str, Any
                 "impact_on_recommendation": "PROCEED->RESEARCH_MORE",
             }
         )
+
+    # Independently recompute simple cross-field consistency from the
+    # proposal's inputs, not its optimistic specialist fit score.
+    # This is a deterministic challenge, never an independent AI audit.
+    for low_key, high_key, label in (
+        ("expected_margin_low", "expected_margin_high", "margin range"),
+        ("required_capital", "maximum_capital_exposure", "capital requirement"),
+    ):
+        low, high = payload.get(low_key), payload.get(high_key)
+        if low is None or high is None:
+            continue
+        try:
+            low, high = float(low), float(high)
+        except (ValueError, TypeError, OverflowError):
+            low, high = float("nan"), float("nan")
+        if not math.isfinite(low) or not math.isfinite(high) or low > high:
+            objections.append({
+                "objection_id": f"LOKI-U-{payload.get('opportunity_id')}-CONSISTENCY-{low_key}",
+                "claim_challenged": f"{label} is internally consistent",
+                "objection_evidence": f"{low_key} must not exceed {high_key}; both must be finite",
+                "severity": "critical",
+                "materiality": "high",
+                "resolved": False,
+                "impact_on_recommendation": "PROCEED->REJECT",
+            })
+
     return objections
 
 
@@ -510,6 +537,7 @@ def evaluate_generic_opportunity(
     decision_model: str,
     reveal_historical_outcomes: bool,
     expected_outcome_class: str,
+    operating_lessons: tuple = (),
 ) -> dict[str, Any]:
     specialist = specialist_analysis(payload)
     loki_objections = universal_loki_objections(payload, specialist)
@@ -549,8 +577,8 @@ def evaluate_generic_opportunity(
             "severity": "critical" if unresolved_critical else ("warn" if loki_objections else "info"),
             "reasons": [o["objection_evidence"] for o in loki_objections],
         },
-        "tyr": {"allowed": True, "severity": "info", "reasons": []},
-        "forseti": {"allowed": True, "severity": "info", "reasons": []},
+        "tyr": {"allowed": False, "severity": "warn", "reasons": ["Independent legal review not verified"], "verification_status": "NOT_VERIFIED"},
+        "forseti": {"allowed": False, "severity": "warn", "reasons": ["Independent contradiction review not verified"], "verification_status": "NOT_VERIFIED"},
         "vidar": {
             "allowed": float(payload.get("downside_exposure") or 0.4) <= 0.7,
             "severity": "warn" if float(payload.get("downside_exposure") or 0.4) > 0.7 else "info",
@@ -596,32 +624,6 @@ def evaluate_generic_opportunity(
     }
 
     lookahead = apply_lookahead_protection(payload, reveal_historical_outcomes)
-    snapshot = build_prediction_snapshot(
-        payload,
-        decision_model=decision_model,
-        final_decision=final_decision,
-        expected=expected,
-        previous_snapshot_id=payload.get("previous_prediction_snapshot_id"),
-        correction_reason=payload.get("correction_reason"),
-    )
-
-    decision_id = f"UO-{payload.get('opportunity_id')}-{snapshot['prediction_snapshot_id'][:10]}"
-    observability = str(payload.get("outcome_observability_state") or "LOW").upper()
-    if observability not in {"HIGH", "MEDIUM", "LOW", "OUTCOME_OBSERVABILITY_LOW"}:
-        observability = "OUTCOME_OBSERVABILITY_LOW"
-
-    outcome_contract = build_outcome_contract(
-        payload,
-        decision_id=decision_id,
-        pantheon_snapshot_id=None,
-        evidence_snapshot_id=snapshot["prediction_snapshot_id"],
-        final_decision=final_decision,
-        norns=norns,
-        expected=expected,
-        outcome_class=expected_outcome_class,
-        observability_state=observability,
-    )
-
     point_of_no_return = _normalize_point_of_no_return(payload)
     blast_radius = str(payload.get("blast_radius") or "MEDIUM").upper()
     current_exit_level = _infer_exit_level(payload, final_decision, point_of_no_return, blast_radius)
@@ -696,10 +698,49 @@ def evaluate_generic_opportunity(
         if point_of_no_return_missing:
             final_decision = "research_more"
 
+    if operating_lessons:
+        hard_gate_reasons.append("REVIEW_SCOPED_OPERATING_FORECAST_SHORTFALL")
+        if final_decision in {"proceed", "research_more"}:
+            final_decision = "hold"
+
     current_exit_level = _infer_exit_level(payload, final_decision, point_of_no_return, blast_radius)
     recovery_exit_protocol["current_level"] = current_exit_level
 
     owner_envelope = universal_owner_envelope(payload, final_decision)
+
+    # Lock the final recommendation only AFTER all hard gates have run.
+    # Previously the prediction and learning contract could say PROCEED
+    # even though the returned recommendation was HOLD.
+    pantheon["overall_allowed"] = False  # legal/independent contradiction review not verified
+    pantheon["evaluation_only"] = True
+    pantheon["external_effects_authorized"] = False
+    pantheon["independent_audit_verified"] = False
+    capital_risk_exit_analysis["hard_decision_rule_pass"] = not hard_gate_reasons
+    snapshot = build_prediction_snapshot(
+        payload,
+        decision_model=decision_model,
+        final_decision=final_decision,
+        expected=expected,
+        previous_snapshot_id=payload.get("previous_prediction_snapshot_id"),
+        correction_reason=payload.get("correction_reason"),
+    )
+
+    decision_id = f"UO-{payload.get('opportunity_id')}-{snapshot['prediction_snapshot_id'][:10]}"
+    observability = str(payload.get("outcome_observability_state") or "LOW").upper()
+    if observability not in {"HIGH", "MEDIUM", "LOW", "OUTCOME_OBSERVABILITY_LOW"}:
+        observability = "OUTCOME_OBSERVABILITY_LOW"
+
+    outcome_contract = build_outcome_contract(
+        payload,
+        decision_id=decision_id,
+        pantheon_snapshot_id=None,
+        evidence_snapshot_id=snapshot["prediction_snapshot_id"],
+        final_decision=final_decision,
+        norns=norns,
+        expected=expected,
+        outcome_class=expected_outcome_class,
+        observability_state=observability,
+    )
 
     if expected_outcome_class == "HISTORICAL_OUTCOME" and not lookahead.get("valid", True):
         raise LookaheadLeakageBlocked(
@@ -832,3 +873,43 @@ def best_option_or_abstain(ranked: list[dict[str, Any]]) -> dict[str, Any]:
             "lower_dimensions": [k for k, v in second["normalized_dimensions"].items() if v < top["normalized_dimensions"].get(k, 0.0)][:5],
         },
     }
+
+
+def rank_economic_options(options: list[dict], available_minor: int) -> list[dict]:
+    """Deterministic forward comparison of same-currency research scenarios."""
+    ranked = []
+    for option in options:
+        cost = option["required_capital"]
+        downside = option["maximum_downside"]
+        net = option["projected_annual_net"]
+        delay = option["time_to_revenue_days"]
+        demand = option["demand_bp"]
+        independence = option["operational_independence_bp"]
+        uncertainty = option["uncertainty_bp"]
+        usable_days = max(0, 365 - delay)
+        adjusted_net = min(0, net) + max(0, net) * usable_days * demand * (10000 - uncertainty) // (365 * 10000**2)
+        # A labor-dependent option ties up more of the declared capital than one that can operate independently.
+        dependency_bp = max(10000 - independence, option["human_hours_weekly"] * 10000 // 168)
+        capital_charge = (cost * dependency_bp + downside * uncertainty) // 10000
+        blocked = list(option["blockers"])
+        if cost > available_minor:
+            blocked.append("UNAVAILABLE_CAPITAL")
+        if adjusted_net - capital_charge <= 0:
+            blocked.append("NONPOSITIVE_FORWARD_VALUE")
+        ranked.append({
+            **option, "blockers": blocked, "eligible": not blocked,
+            "adjusted_forward_value_minor": adjusted_net - capital_charge,
+            "ranking_basis": {
+                "horizon_days": 365,
+                "days_after_estimated_first_revenue": usable_days,
+                "risk_adjusted_operating_net_minor": adjusted_net,
+                "capital_and_downside_charge_minor": capital_charge,
+                "verified_monthly_owner_income_minor": None,
+            },
+        })
+    ranked.sort(key=lambda item: (not item["eligible"], -item["adjusted_forward_value_minor"], item["opportunity_key"]))
+    eligible = [item for item in ranked if item["eligible"]]
+    best_value = eligible[0]["adjusted_forward_value_minor"] if eligible else None
+    for item in ranked:
+        item["foregone_best_alternative_minor"] = max(0, best_value - item["adjusted_forward_value_minor"]) if best_value is not None else None
+    return ranked

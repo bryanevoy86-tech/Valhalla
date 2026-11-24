@@ -6,17 +6,19 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.pool import StaticPool
 
 from app.main import app
 from app.core.db import get_db
-from app.models.base import Base
+from app.models.saas_access import SaaSPlan, SaaSPlanModule, Subscription
 
 
 @pytest.fixture
 def db():
     """In-memory SQLite database for testing"""
-    engine = create_engine("sqlite:///:memory:")
-    Base.metadata.create_all(engine)
+    engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
+    for model in (SaaSPlan, SaaSPlanModule, Subscription):
+        model.__table__.create(engine)
     TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     db = TestingSessionLocal()
     yield db
@@ -24,12 +26,14 @@ def db():
 
 
 @pytest.fixture
-def client(db: Session):
+def client(db: Session, monkeypatch):
     """FastAPI test client with in-memory database"""
+    monkeypatch.setenv("VALHALLA_PRIME_CONTROL_KEY", "legacy-saas-admin-test")
+    monkeypatch.setenv("VALHALLA_OWNER_MANDATE_KEY", "legacy-saas-owner-test")
     def override_get_db():
         yield db
     app.dependency_overrides[get_db] = override_get_db
-    yield TestClient(app)
+    yield TestClient(app, headers={"X-Prime-Control-Key": "legacy-saas-admin-test", "X-Owner-Mandate-Key": "legacy-saas-owner-test"})
     app.dependency_overrides.clear()
 
 
@@ -146,7 +150,7 @@ def test_create_subscription(client):
     assert res.status_code == 200
     data = res.json()
     assert data["user_id"] == 1
-    assert data["status"] == "active"
+    assert data["status"] == "pending_verification"
 
 
 def test_update_subscription_status(client):

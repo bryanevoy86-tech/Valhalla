@@ -11,7 +11,7 @@ from app.models.offer_evidence import OfferEvidence
 from app.services.kpi import emit_kpi
 
 
-def _get_policy(db: Session, province: str, market: str) -> OfferPolicy:
+def _get_policy(db: Session, province: str, market: str, *, commit: bool = True) -> OfferPolicy:
     province = province.strip().upper()
     market = (market or "ALL").strip().upper()
 
@@ -22,13 +22,16 @@ def _get_policy(db: Session, province: str, market: str) -> OfferPolicy:
         # Safe default: disabled until configured
         row = OfferPolicy(province=province, market="ALL", enabled=False)
         db.add(row)
-        db.commit()
-        db.refresh(row)
+        if commit:
+            db.commit()
+            db.refresh(row)
+        else:
+            db.flush()
     return row
 
 
-def compute_offer(db: Session, province: str, market: str, arv: float, repairs: float, comps: Dict[str, Any] | None, assumptions: Dict[str, Any] | None, correlation_id: str | None) -> Dict[str, Any]:
-    pol = _get_policy(db, province, market)
+def compute_offer(db: Session, province: str, market: str, arv: float, repairs: float, comps: Dict[str, Any] | None, assumptions: Dict[str, Any] | None, correlation_id: str | None, *, commit: bool = True) -> Dict[str, Any]:
+    pol = _get_policy(db, province, market, commit=commit)
     if not pol.enabled:
         raise RuntimeError("OfferPolicy disabled for this market")
 
@@ -53,10 +56,13 @@ def compute_offer(db: Session, province: str, market: str, arv: float, repairs: 
         created_at=datetime.utcnow(),
     )
     db.add(ev)
-    db.commit()
-    db.refresh(ev)
+    if commit:
+        db.commit()
+        db.refresh(ev)
+    else:
+        db.flush()
 
-    emit_kpi(db, "WHOLESALE", "offer_generated", success=True, correlation_id=correlation_id, detail={"evidence_id": ev.id, "province": ev.province, "market": ev.market})
+    emit_kpi(db, "WHOLESALE", "offer_generated", success=True, correlation_id=correlation_id, detail={"evidence_id": ev.id, "province": ev.province, "market": ev.market}, commit=commit)
     return {
         "policy": {"max_arv_multiplier": pol.max_arv_multiplier, "fees_buffer": pol.default_fees_buffer, "assignment_fee": pol.default_assignment_fee},
         "calc": {"arv": arv, "repairs": repairs, "fees_buffer": fees, "mao": mao, "recommended_offer": recommended_offer},

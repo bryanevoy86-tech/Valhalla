@@ -15,6 +15,7 @@ class NotificationPreferenceCreate(BaseModel):
     event_type: str = Field(..., description="event type key, e.g. 'deal_status_changed'")
     channel_key: str = Field(..., description="email, sms, in_app, etc.")
     template_key: str = Field(..., description="notification template key")
+    is_enabled: bool = True
 
 
 class NotificationPreferenceUpdate(BaseModel):

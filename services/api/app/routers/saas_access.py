@@ -8,6 +8,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
+from app.core.dependencies import require_prime_control_key
+from app.services.prime_business_execution import require_owner_mandate_key
 from app.schemas.saas_access import (
     SaaSPlanCreate,
     SaaSPlanUpdate,
@@ -28,10 +30,11 @@ from app.services.saas_access import (
     user_has_access,
 )
 
-router = APIRouter(prefix="/saas", tags=["SaaS"])
+router = APIRouter(prefix="/saas", tags=["SaaS"], dependencies=[Depends(require_prime_control_key)])
+owner = [Depends(require_owner_mandate_key)]
 
 
-@router.post("/plans", response_model=SaaSPlanOut)
+@router.post("/plans", response_model=SaaSPlanOut, dependencies=owner)
 def create_plan_endpoint(
     payload: SaaSPlanCreate,
     db: Session = Depends(get_db),
@@ -58,7 +61,7 @@ def get_plan_endpoint(
     return plan
 
 
-@router.patch("/plans/{plan_id}", response_model=SaaSPlanOut)
+@router.patch("/plans/{plan_id}", response_model=SaaSPlanOut, dependencies=owner)
 def update_plan_endpoint(
     plan_id: int,
     payload: SaaSPlanUpdate,
@@ -71,7 +74,7 @@ def update_plan_endpoint(
     return plan
 
 
-@router.post("/subscriptions", response_model=SubscriptionOut)
+@router.post("/subscriptions", response_model=SubscriptionOut, dependencies=owner)
 def create_subscription_endpoint(
     payload: SubscriptionCreate,
     db: Session = Depends(get_db),
@@ -80,7 +83,7 @@ def create_subscription_endpoint(
     return create_subscription(db, payload)
 
 
-@router.patch("/subscriptions/{subscription_id}", response_model=SubscriptionOut)
+@router.patch("/subscriptions/{subscription_id}", response_model=SubscriptionOut, dependencies=owner)
 def update_subscription_endpoint(
     subscription_id: int,
     payload: SubscriptionUpdate,

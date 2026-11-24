@@ -2,29 +2,44 @@ from __future__ import annotations
 
 import json
 from typing import List, Optional
+from urllib.parse import urlsplit
 
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 def _parse_origins(raw: str | None) -> List[str]:
-    if not raw:
+    if not raw or not raw.strip():
         return []
-    s = raw.strip()
-    if not s:
-        return []
-
-    # Try JSON list first: ["https://a","https://b"]
-    if s.startswith("["):
+    value = raw.strip()
+    if value.startswith("["):
         try:
-            v = json.loads(s)
-            if isinstance(v, list):
-                return [str(x).strip() for x in v if str(x).strip()]
-        except Exception:
-            pass
+            entries = json.loads(value)
+        except ValueError:
+            return []
+        if not isinstance(entries, list):
+            return []
+    else:
+        entries = value.split(",")
 
-    # Fallback: comma-separated: https://a,https://b
-    return [p.strip() for p in s.split(",") if p.strip()]
+    origins = []
+    for entry in entries:
+        if not isinstance(entry, str):
+            continue
+        origin = entry.strip()
+        if not origin or any(character in origin for character in "*?#\\") or any(c.isspace() for c in origin):
+            continue
+        try:
+            parsed = urlsplit(origin)
+            host, port = parsed.hostname, parsed.port
+        except ValueError:
+            continue
+        if (not host or parsed.path or parsed.username is not None or parsed.password is not None
+                or "%" in host or port == 0):
+            continue
+        if parsed.scheme == "https" or (parsed.scheme == "http" and host in {"localhost", "127.0.0.1", "::1"}):
+            origins.append(origin)
+    return list(dict.fromkeys(origins))
 
 
 class Settings(BaseSettings):

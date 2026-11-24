@@ -4,196 +4,19 @@ from __future__ import annotations
 
 from typing import Any, Dict, List
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
-from app.models.deal import Deal
-from app.models.match import DealBrief, Buyer
-from app.models.freeze_events import FreezeEvent
-from app.schemas.closing_context import (
-    ClosingContext,
-    DealSummary,
-    FreezeSummary,
-    LeadSummary,
-    UnderwritingSummary,
-)
-from app.schemas.flows_lead_to_deal import BuyerMatchCandidate
-from app.routers.flow_lead_to_deal import _score_buyer_for_deal  # reuse matcher
+from app.core.dependencies import require_prime_control_key
+from app.routers.flow_prepare_closing import get_closing_context
+from app.schemas.closing_context import ClosingContext
 
 router = APIRouter(
     prefix="/flow",
     tags=["Flow", "ClosingPlaybook"],
+    dependencies=[Depends(require_prime_control_key)],
 )
-
-
-def _get_latest_freeze_for_deal(
-    db: Session,
-    backend_deal_id: int,
-) -> FreezeSummary:
-    try:
-        events: List[FreezeEvent] = (
-            db.query(FreezeEvent)
-            .filter(
-                FreezeEvent.payload["backend_deal_id"].as_integer()
-                == backend_deal_id
-            )
-            .order_by(FreezeEvent.created_at.desc())
-            .all()
-        )
-    except Exception:
-        events = []
-
-    if not events:
-        return FreezeSummary(
-            has_freeze=False,
-            severity=None,
-            reason=None,
-            count=0,
-        )
-
-    latest = events[0]
-    return FreezeSummary(
-        has_freeze=True,
-        severity=latest.severity,
-        reason=latest.reason,
-        count=len(events),
-    )
-
-
-def _build_lead_summary_from_deal(deal: Deal) -> LeadSummary:
-    lead_obj = getattr(deal, "lead", None)
-    if lead_obj is None:
-        return LeadSummary(
-            id=0,
-            name="Unknown Lead",
-            email=None,
-            phone=None,
-            source=None,
-            address=None,
-            tags=None,
-        )
-
-    return LeadSummary(
-        id=lead_obj.id,
-        name=getattr(lead_obj, "name", "") or "Unknown Lead",
-        email=getattr(lead_obj, "email", None),
-        phone=getattr(lead_obj, "phone", None),
-        source=getattr(lead_obj, "source", None),
-        address=getattr(lead_obj, "address", None),
-        tags=getattr(lead_obj, "tags", None),
-    )
-
-
-def _find_deal_brief(db: Session, backend_deal_id: int) -> DealBrief | None:
-    return (
-        db.query(DealBrief)
-        .filter(DealBrief.id == backend_deal_id)
-        .first()
-    )
-
-
-def _build_deal_summary(
-    backend_deal: Deal,
-    deal_brief: DealBrief | None,
-) -> DealSummary:
-    from decimal import Decimal
-
-    headline = getattr(deal_brief, "headline", None) if deal_brief else None
-    region = getattr(deal_brief, "region", None) if deal_brief else None
-    property_type = getattr(deal_brief, "property_type", None) if deal_brief else None
-    notes = getattr(deal_brief, "notes", None) if deal_brief else None
-
-    price = getattr(backend_deal, "price", None)
-    arv = getattr(backend_deal, "arv", None)
-    repairs = getattr(backend_deal, "repairs", None)
-    offer = getattr(backend_deal, "offer", None)
-    mao = getattr(backend_deal, "mao", None)
-
-    def _d(val: Any | None) -> Decimal | None:
-        if val is None:
-            return None
-        try:
-            return Decimal(str(val))
-        except Exception:
-            return None
-
-    return DealSummary(
-        backend_deal_id=backend_deal.id,
-        deal_brief_id=deal_brief.id if deal_brief else None,
-        status=backend_deal.status,
-        headline=headline,
-        region=region,
-        property_type=property_type,
-        price=_d(price),
-        arv=_d(arv),
-        repairs=_d(repairs),
-        offer=_d(offer),
-        mao=_d(mao),
-        notes=notes,
-    )
-
-
-def _estimate_underwriting_summary(
-    backend_deal: Deal,
-) -> UnderwritingSummary:
-    from decimal import Decimal
-
-    arv = getattr(backend_deal, "arv", None)
-    offer = getattr(backend_deal, "offer", None)
-    mao = getattr(backend_deal, "mao", None)
-    roi_note = getattr(backend_deal, "roi_note", None)
-
-    ltv = None
-    equity_pct = None
-
-    try:
-        if arv and offer:
-            arv_dec = Decimal(str(arv))
-            offer_dec = Decimal(str(offer))
-            if arv_dec > 0:
-                ltv = offer_dec / arv_dec
-        if arv and mao:
-            arv_dec = Decimal(str(arv))
-            mao_dec = Decimal(str(mao))
-            equity = arv_dec - mao_dec
-            if arv_dec > 0:
-                equity_pct = equity / arv_dec
-    except Exception:
-        pass
-
-    return UnderwritingSummary(
-        recommendation=None,
-        ltv=ltv,
-        roi=None,
-        equity_percent_of_arv=equity_pct,
-        notes=roi_note,
-        raw=None,
-    )
-
-
-def _find_top_buyers(
-    db: Session,
-    deal_brief: DealBrief | None,
-    min_score: float = 0.5,
-    max_results: int = 10,
-) -> List[BuyerMatchCandidate]:
-    if deal_brief is None:
-        return []
-
-    buyers = db.query(Buyer).filter(Buyer.active.is_(True)).all()
-    candidates: List[BuyerMatchCandidate] = []
-
-    for buyer in buyers:
-        candidate = _score_buyer_for_deal(buyer, deal_brief)
-        if candidate is None:
-            continue
-        if candidate.score < min_score:
-            continue
-        candidates.append(candidate)
-
-    candidates.sort(key=lambda c: c.score, reverse=True)
-    return candidates[:max_results]
 
 
 def _build_script(context: ClosingContext) -> Dict[str, Any]:
@@ -300,45 +123,7 @@ def get_closing_playbook(
     backend_deal_id: int,
     db: Session = Depends(get_db),
 ) -> Dict[str, Any]:
-    # 1. Load backend deal
-    deal = db.query(Deal).filter(Deal.id == backend_deal_id).first()
-    if deal is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Deal with id {backend_deal_id} not found.",
-        )
-
-    # 2. Build pieces of the context (basically replicate closing_context but inline)
-    lead_summary = _build_lead_summary_from_deal(deal)
-    deal_brief = _find_deal_brief(db, backend_deal_id)
-    deal_summary = _build_deal_summary(deal, deal_brief)
-    freeze_summary = _get_latest_freeze_for_deal(db, backend_deal_id)
-    uw_summary = _estimate_underwriting_summary(deal)
-    buyers = _find_top_buyers(db, deal_brief)
-
-    # 3. Suggested opening (reused logic)
-    if freeze_summary.has_freeze:
-        suggested_opening = (
-            "This deal currently has risk flags from underwriting. Start by "
-            "clarifying the seller's expectations and timeline, then carefully "
-            "walk through repairs and pricing."
-        )
-    else:
-        suggested_opening = (
-            "This looks like a viable deal. Start by building rapport, confirm "
-            "the seller's motivation and timeline, then move into numbers with "
-            "confidence based on your underwriting."
-        )
-
-    context = ClosingContext(
-        lead=lead_summary,
-        deal=deal_summary,
-        buyers=buyers,
-        freeze=freeze_summary,
-        underwriting=uw_summary,
-        suggested_opening=suggested_opening,
-    )
-
+    context = get_closing_context(backend_deal_id, db)
     script = _build_script(context)
 
     return {

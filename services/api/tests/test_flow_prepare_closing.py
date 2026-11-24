@@ -2,15 +2,9 @@
 
 from __future__ import annotations
 
-from fastapi.testclient import TestClient
-
-# Adjust this import if your app is exposed differently
-from app.main import app  # or: from valhalla.services.api.main import app
-
-client = TestClient(app)
 
 
-def _create_pipeline_deal() -> int:
+def _create_pipeline_deal(client) -> int:
     """
     Helper: runs the full pipeline once and returns backend_deal_id.
     Assumes /flow/full_deal_pipeline is wired correctly.
@@ -19,7 +13,7 @@ def _create_pipeline_deal() -> int:
         "lead": {
             "name": "Context Seller",
             "email": "context@example.com",
-            "phone": "555-7777",
+            "phone": "555-010-7777",
             "source": "PPC",
             "address": "456 Pipeline St, Winnipeg, MB",
             "tags": "test,closing_context",
@@ -69,8 +63,9 @@ def _create_pipeline_deal() -> int:
     return backend_deal_id
 
 
-def test_closing_context_basic():
-    backend_deal_id = _create_pipeline_deal()
+def test_closing_context_basic(deal_client):
+    client, _ = deal_client
+    backend_deal_id = _create_pipeline_deal(client)
 
     response = client.get(f"/flow/closing_context/{backend_deal_id}")
     assert response.status_code == 200, response.text

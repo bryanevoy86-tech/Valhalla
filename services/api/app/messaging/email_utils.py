@@ -8,8 +8,11 @@ from typing import Dict
 from app.core.settings import settings
 from app.core.engines.dispatch_guard import guard_outreach
 
+from app.services.launch_readiness import require_channel_release
+
 
 def send_email(subject: str, recipient_email: str, body: str, html: bool = False) -> Dict[str, str]:
+    require_channel_release("customer_acquisition_and_sales")
     guard_outreach()
     msg = MIMEMultipart()
     msg['From'] = settings.SMTP_FROM or 'noreply@valhalla.local'

@@ -1,0 +1,229 @@
+import {ownerAttentionSession} from "./owner-attention.mjs";
+import {escapeOwnerReviewText} from "./owner-review-portal.mjs";
+
+const scopeKeys = ["legacy_instance_id", "business_id", "engine_id", "jurisdiction"];
+const purposes = {BUSINESS: "Business treasury", HOUSEHOLD: "Household budget", OPERATING_RESERVE: "Protected operating reserves"};
+
+function amount(value, currency) {
+    if (value === null) return "Unavailable";
+    if (!Number.isSafeInteger(value)) throw new Error("Invalid fixture amount");
+    return new Intl.NumberFormat("en-CA", {style:"currency", currency, currencyDisplay:"code"}).format(value / 100);
+}
+
+function formatOperatingScope(body, scope) {
+    if (body?.execution_authorized !== false || body.actual_accessible_funds_minor !== null
+        || !scopeKeys.every(key => body.scope?.[key] === scope[key])) throw new Error("Invalid scope receipt");
+    const lines = [body.legacy.display_name + " · " + body.legacy.status, "Treasury planning · Fixture measures"];
+    const capital = body.capital_fixture;
+    if (capital === null) {
+        lines.push("No economic mandate is enrolled for this scope.");
+    } else {
+        if (capital.basis !== "RECONCILIATION_FIXTURE") throw new Error("Invalid capital evidence");
+        lines.push("Economic decision · " + capital.suggested_action,
+            "Period net · " + amount(capital.period_net_minor, capital.currency),
+            "Recorded loss · " + amount(capital.cumulative_loss_minor, capital.currency),
+            "Open obligations · " + amount(capital.open_obligations_minor, capital.currency),
+            "Simulated exposure headroom · " + amount(capital.new_exposure_available_minor, capital.currency),
+            ...capital.blockers.map(code => "Hold · " + code));
+    }
+    const recurring = body.recurring_paid_periods;
+    if (recurring != null) {
+        const counts = ["verified_current_periods", "verified_adjacent_renewals", "scheduled_cancellations", "held_agreements"];
+        if (!["STRIPE_TEST_PAID_PERIODS", "STRIPE_LIVE_PAID_PERIODS"].includes(recurring.basis)
+            || !["OBSERVED", "REVIEW_REQUIRED"].includes(recurring.status)
+            || recurring.external_authority !== false || recurring.available_cash_minor !== null
+            || recurring.recognized_revenue_minor !== null
+            || !counts.every(key => Number.isSafeInteger(recurring[key]) && recurring[key] >= 0)) {
+            throw new Error("Invalid recurring evidence");
+        }
+        lines.push("", recurring.basis === "STRIPE_TEST_PAID_PERIODS" ? "Test subscription evidence" : "Verified paid periods");
+        if (recurring.status === "REVIEW_REQUIRED") lines.push("Subscription evidence requires review.");
+        lines.push("Current paid periods · " + recurring.verified_current_periods,
+            "Adjacent paid renewals · " + recurring.verified_adjacent_renewals,
+            "Scheduled cancellations · " + recurring.scheduled_cancellations,
+            "Agreements held · " + recurring.held_agreements,
+            "Available cash · Unverified");
+    }
+    const service = body.recurring_service_settlement;
+    if (service != null) {
+        const live = service.basis === "VERIFIED_CAD_SERVICE_RECEIPTS";
+        const countFields = ["paid_receipt_count", "bank_batch_member_count", "acknowledged_count",
+            "liability_release_count", "held_count"];
+        if ((!live && service.basis !== "SYNTHETIC_CAD_SERVICE_RECEIPTS")
+            || service.available_cash_minor !== null || service.execution_authorized !== false
+            || typeof service.scope_truncated !== "boolean"
+            || !countFields.every(key => Number.isSafeInteger(service[key]) && service[key] >= 0 && service[key] <= 100)
+            || countFields.slice(1).some(key => service[key] > service.paid_receipt_count)
+            || service.liability_release_count > Math.min(service.acknowledged_count, service.bank_batch_member_count)
+            || (service.recognized_unheld_minor !== null && (!live || service.held_count || service.scope_truncated
+                || !service.liability_release_count || !Number.isSafeInteger(service.recognized_unheld_minor)
+                || service.recognized_unheld_minor < 0))) {
+            throw new Error("Invalid recurring settlement evidence");
+        }
+        lines.push("", live ? "Recurring service receipts" : "Recurring service rehearsal",
+            "Checked paid receipts · " + service.paid_receipt_count,
+            "Matched bank batch members · " + service.bank_batch_member_count,
+            "Acknowledged periods · " + service.acknowledged_count,
+            "Intact liability releases · " + service.liability_release_count,
+            "Receipts held for correction or review · " + service.held_count,
+            "Recognized on intact receipts · " + amount(service.recognized_unheld_minor, "CAD"));
+        if (service.scope_truncated) lines.push("Showing a bounded receipt sample.");
+    }
+    for (const [key, label] of Object.entries(purposes)) {
+        const sample = body.statement_fixtures[key];
+        if (sample.actual_accessible_funds_minor !== null) throw new Error("Unexpected funds claim");
+        lines.push("", label);
+        if (sample.status === "UNAVAILABLE") {
+            lines.push("Fixture storage unavailable.");
+            continue;
+        }
+        if (!Array.isArray(sample.accounts) || sample.accounts.length > 20) throw new Error("Invalid statement results");
+        if (!sample.accounts.length) lines.push("No scoped statement fixtures.");
+        for (const account of sample.accounts) {
+            if (account.status === "EVIDENCE_CONFLICT") {
+                lines.push("Statement integrity hold");
+                continue;
+            }
+            if (account.status !== "MATCHED_FIXTURE") throw new Error("Unexpected statement status");
+            const currency = account.currency;
+            lines.push(account.statement_id, "Closing fixture balance · " + amount(account.closing_minor, currency),
+                "Liabilities · " + amount(account.outstanding_liabilities_minor, currency),
+                "Expenses · " + amount(account.expense_minor, currency),
+                "Budget variance · " + amount(account.budget_variance_minor, currency),
+                "Protected balance · " + amount(account.protected_balance_minor, currency));
+        }
+        if (sample.truncated) lines.push("More fixture statements exist in this scope.");
+    }
+    return lines.map(escapeOwnerReviewText).join("\n");
+}
+
+export async function runOwnerOperatingScope(input, transport = fetch) {
+    const session = ownerAttentionSession(input.bearer);
+    if (!session) return {status: "signed_out"};
+    const result = (status, data = {}) => ({status, session, ...data});
+    if (input.isOwner !== true) return result("denied");
+    let endpoint;
+    try {
+        const api = new URL(input.apiBase);
+        const approved = new URL(input.previewOrigin);
+        if (api.protocol !== "https:" || api.username || api.password || approved.origin !== input.previewOrigin
+            || approved.origin !== api.origin) return result("unconfigured");
+        endpoint = approved.origin + "/api/weweb/owner-operating-scope";
+    } catch {
+        return result("unconfigured");
+    }
+    const scope = Object.fromEntries(scopeKeys.map(key => [key, input.scope?.[key]?.trim() ?? ""]));
+    if (!scopeKeys.every(key => scope[key].length >= (key === "jurisdiction" ? 2 : 3)
+        && scope[key].length <= (key === "business_id" ? 120 : 80))) return result("invalid_scope");
+    try {
+        const response = await transport(endpoint, {
+            method:"POST", headers:{Authorization:"Bearer "+input.bearer,"Content-Type":"application/json"},
+            body:JSON.stringify(scope), cache:"no-store", credentials:"omit", redirect:"error",
+            signal:AbortSignal.timeout(15000),
+        });
+        if (response.status === 401) return result("signed_out");
+        if (response.status === 403) return result("denied");
+        if (response.status === 409) return result("scope_held");
+        if (response.status === 422) return result("invalid_scope");
+        if (!response.ok) return result("unavailable");
+        return result("ready", {text:formatOperatingScope(await response.json(), scope)});
+    } catch {
+        return result("unavailable");
+    }
+}
+
+export async function runOwnerStripeOrder(input, transport = fetch) {
+    const session = ownerAttentionSession(input.bearer);
+    if (!session) return {status: "signed_out"};
+    const result = (status, data = {}) => ({status, session, ...data});
+    if (input.isOwner !== true) return result("denied");
+    const orderId = typeof input.orderId === "string" ? input.orderId.trim().toLowerCase() : "";
+    if (!/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(orderId)) return result("invalid_scope");
+    let endpoint;
+    try {
+        const api = new URL(input.apiBase);
+        const approved = new URL(input.previewOrigin);
+        if (api.protocol !== "https:" || api.username || api.password || approved.origin !== input.previewOrigin
+            || approved.origin !== api.origin) return result("unconfigured");
+        endpoint = approved.origin + "/api/weweb/owner-stripe-orders/" + orderId;
+    } catch {
+        return result("unconfigured");
+    }
+    try {
+        const response = await transport(endpoint, {
+            method:"GET", headers:{Authorization:"Bearer "+input.bearer}, cache:"no-store", credentials:"omit",
+            redirect:"error", signal:AbortSignal.timeout(15000),
+        });
+        if (response.status === 401) return result("signed_out");
+        if (response.status === 403) return result("denied");
+        if (response.status === 409) return result("scope_held");
+        if (!response.ok) return result("unavailable");
+        const body = await response.json();
+        if (body?.order?.order_id !== orderId || typeof body.order.livemode !== "boolean" || body.available_cash_minor !== null
+            || body.bank_settlement_verified !== false || body.fulfillment_authorized !== false
+            || body.entitlement_granted !== false) return result("unavailable");
+        const labels = {
+            AWAITING_PROCESSOR_EVIDENCE: "Awaiting processor evidence",
+            REFUND_REVIEW_REQUIRED: "Refund review required",
+            MATCHED_PROCESSOR_EVIDENCE: "Processor evidence matched",
+        };
+        if (!Object.hasOwn(labels, body.status)) return result("unavailable");
+        const rows = [labels[body.status], body.order.livemode === false ? "Test order" : "Live order",
+            "Available cash · Unverified"];
+        const proof = body.processor_evidence;
+        if (body.status === "MATCHED_PROCESSOR_EVIDENCE") {
+            const expected = body.order.livemode === false
+                ? "STRIPE_TEST_PROCESSOR_BALANCE" : "STRIPE_LIVE_PROCESSOR_BALANCE";
+            if (!proof || proof.basis !== expected || proof.bank_settlement_verified !== false
+                || proof.ledger_posting_created !== false || proof.entitlement_granted !== false
+                || proof.currency !== body.order.currency || proof.gross_minor !== body.order.amount_minor) {
+                return result("unavailable");
+            }
+            const currency = proof.currency.toUpperCase();
+            rows.push("Gross · " + amount(proof.gross_minor, currency), "Processor fee · " + amount(proof.fee_minor, currency),
+                "Processor net · " + amount(proof.net_minor, currency));
+        } else if (proof !== null) {
+            return result("unavailable");
+        }
+        const bank = body.bank_batch;
+        if (bank == null) {
+            rows.push("Bank settlement outstanding");
+        } else {
+            const isTest = !body.order.livemode;
+            if (bank.basis !== (isTest ? "SYNTHETIC_BANK_REHEARSAL" : "INDEPENDENT_CAD_BANK_READBACK")
+                || !["RECONCILIATION_RECORDED", "CORRECTION_REVIEW_REQUIRED"].includes(bank.status)
+                || bank.currency !== "CAD" || bank.available_cash_minor !== null
+                || (isTest ? bank.ledger_entry_id !== null : !Number.isSafeInteger(bank.ledger_entry_id))
+                || !Number.isSafeInteger(bank.order_contribution_minor) || bank.order_contribution_minor < 0
+                || !Number.isSafeInteger(bank.batch_minor) || bank.batch_minor < bank.order_contribution_minor) {
+                return result("unavailable");
+            }
+            rows.push(bank.status === "CORRECTION_REVIEW_REQUIRED" ? "Correction review required"
+                : isTest ? "Bank reconciliation rehearsal recorded" : "Bank reconciliation recorded",
+                "Entire payout batch · " + amount(bank.batch_minor, bank.currency),
+                "This order’s contribution · " + amount(bank.order_contribution_minor, bank.currency));
+        }
+        const delivery = body.delivery_evidence;
+        if (delivery != null) {
+            const testOrder = !body.order.livemode;
+            const stages = {
+                DELIVERY_AUTHORIZED: "Delivery authorized",
+                BUYER_ACKNOWLEDGED: "Buyer acknowledged delivery",
+                DELIVERY_REVIEW_REQUIRED: "Delivery held for review",
+                LIABILITY_RELEASE_RECORDED: "Delivery liability release recorded",
+                LIABILITY_RELEASE_REHEARSED: "Delivery liability release rehearsed",
+            };
+            const recorded = delivery.status === "LIABILITY_RELEASE_RECORDED";
+            if (!Object.hasOwn(stages, delivery.status) || delivery.available_cash_minor !== null
+                || delivery.basis !== (testOrder ? "SYNTHETIC_DELIVERY_REHEARSAL" : "PAID_ONE_TIME_PRODUCT")
+                || (recorded ? testOrder || delivery.recognized_revenue_minor !== body.order.amount_minor
+                    : delivery.recognized_revenue_minor !== null)
+                || (!testOrder && delivery.status === "LIABILITY_RELEASE_REHEARSED")) return result("unavailable");
+            rows.push(stages[delivery.status]);
+            if (recorded) rows.push("Recognized revenue · " + amount(delivery.recognized_revenue_minor, "CAD"));
+        }
+        return result("ready", {text:rows.map(escapeOwnerReviewText).join("\n")});
+    } catch {
+        return result("unavailable");
+    }
+}

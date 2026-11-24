@@ -1,13 +1,19 @@
 from __future__ import annotations
 
+import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
 
-client = TestClient(app)
+@pytest.fixture
+def client(monkeypatch):
+    from app.routers.governance_king import KING_POLICY
+    monkeypatch.setattr(KING_POLICY, "__dict__", KING_POLICY.model_copy(deep=True).__dict__)
+    monkeypatch.setenv("VALHALLA_PRIME_CONTROL_KEY", "isolated-policy-test-prime")
+    return TestClient(app, headers={"X-Prime-Control-Key": "isolated-policy-test-prime"})
 
 
-def test_get_all_policies():
+def test_get_all_policies(client):
     resp = client.get("/api/governance/policies")
     assert resp.status_code == 200, resp.text
 
@@ -24,7 +30,7 @@ def test_get_all_policies():
     assert "energy" in data["queen"]
 
 
-def test_get_single_policy():
+def test_get_single_policy(client):
     resp = client.get("/api/governance/policies/king")
     assert resp.status_code == 200, resp.text
 
@@ -34,7 +40,7 @@ def test_get_single_policy():
     assert "values" in data
 
 
-def test_patch_policy_for_king():
+def test_patch_policy_for_king(client):
     """
     Adjust king risk tolerance, ensure it takes effect.
     """
@@ -50,6 +56,7 @@ def test_patch_policy_for_king():
             "min_expected_roi": "0.20",  # Send as string, Decimal will parse it
         }
     }
+    assert client.patch("/api/governance/policies/king", json=patch_payload, headers={"X-Prime-Control-Key": "wrong"}).status_code == 401
     resp_patch = client.patch("/api/governance/policies/king", json=patch_payload)
     assert resp_patch.status_code == 200, resp_patch.text
     patched = resp_patch.json()
@@ -68,7 +75,7 @@ def test_patch_policy_for_king():
         assert after["risk"]["min_expected_roi"] != old_min_roi
 
 
-def test_patch_rejects_invalid_data():
+def test_patch_rejects_invalid_data(client):
     """
     Send clearly invalid patch and ensure we get 422.
     """

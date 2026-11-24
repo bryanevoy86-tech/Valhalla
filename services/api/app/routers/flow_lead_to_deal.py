@@ -6,13 +6,16 @@ from decimal import Decimal
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
+from app.core.dependencies import require_prime_control_key
 from app.core.geo import infer_province_market
 from app.leads import service as lead_service  # Pack 31 service layer
 from app.models.match import Buyer, DealBrief
-from app.models.deal import Deal  # Backend Deal model
+from app.models.deal import Deal, DealBriefLink
+from app.services.buyer_liquidity import liquidity_score
 from app.schemas.flows_lead_to_deal import (
     BuyerMatchCandidate,
     DealFlowResult,
@@ -24,12 +27,12 @@ from app.leads.schemas import LeadCreate  # Pack 31 create schema
 from app.schemas.match import DealBriefIn  # Match system deal brief schema
 from app.services.kpi import emit_kpi
 from app.services.followup_ladder import create_ladder
-from app.services.buyer_liquidity import liquidity_score, record_feedback
 from app.services.offer_strategy import compute_offer
 
 router = APIRouter(
     prefix="/flow",
     tags=["Flow", "LeadToDeal"],
+    dependencies=[Depends(require_prime_control_key)],
 )
 
 
@@ -162,54 +165,27 @@ def create_lead_and_deal_flow(
     payload: LeadToDealRequest,
     db: Session = Depends(get_db),
 ) -> LeadToDealResponse:
-    # --------- 1. Create Lead (Pack 31) ---------
-    lead_in = LeadCreate(
-        name=payload.lead.name,
-        email=payload.lead.email,
-        phone=payload.lead.phone,
-        source=payload.lead.source,
-        status="new",  # default for new flow
-    )
-    lead_obj = lead_service.create_lead(db, lead_in)
-
-    if not lead_obj:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to create lead.",
+    try:
+        lead_in = LeadCreate(
+            lead_name=payload.lead.name, lead_email=payload.lead.email,
+            lead_phone=payload.lead.phone, source=payload.lead.source or "pipeline",
+            property_address=payload.lead.address,
         )
+        lead_obj = lead_service.create_lead(db, lead_in, commit=False)
+    except ValueError:
+        raise HTTPException(status_code=422, detail="Valid lead name, email and phone are required") from None
 
-    # --- Province/Market inference (for Canada-wide routing) ---
     province, market = infer_province_market(payload.deal.region, None)
     corr_id = f"leadflow:{lead_obj.id}"
-
     emit_kpi(
-        db, "WHOLESALE", "lead_created",
-        success=True,
-        actor="system",
-        correlation_id=corr_id,
-        detail={"lead_id": lead_obj.id, "province": province, "market": market, "source": payload.lead.source},
+        db, "WHOLESALE", "lead_created", success=True, actor="system",
+        correlation_id=corr_id, detail={"lead_id": lead_obj.id, "province": province, "market": market},
+        commit=False,
     )
-
-    # --- Create Follow-up Ladder automatically (speed-to-lead enforcement) ---
-    try:
-        create_ladder(
-            db=db,
-            lead_id=str(lead_obj.id),
-            province=province,
-            market=market,
-            owner="system",
-            correlation_id=corr_id,
-        )
-    except Exception:
-        # Non-blocking: if ladder fails, continue flow
-        pass
-
+    create_ladder(db, str(lead_obj.id), province, market, "system", corr_id, commit=False)
     lead_result = LeadFlowResult(
-        id=lead_obj.id,
-        name=lead_obj.name,
-        email=getattr(lead_obj, "email", None),
-        phone=getattr(lead_obj, "phone", None),
-        source=getattr(lead_obj, "source", None),
+        id=lead_obj.id, name=lead_obj.lead_name, email=lead_obj.lead_email,
+        phone=lead_obj.lead_phone, source=lead_obj.source,
     )
 
     # --------- 2. Create DealBrief (match system) ---------
@@ -226,8 +202,7 @@ def create_lead_and_deal_flow(
     deal_brief_obj = DealBrief(**deal_brief_in.model_dump())
 
     db.add(deal_brief_obj)
-    db.commit()
-    db.refresh(deal_brief_obj)
+    db.flush()
 
     # --- Emit KPI: DealBrief created ---
     emit_kpi(
@@ -236,66 +211,35 @@ def create_lead_and_deal_flow(
         actor="system",
         correlation_id=corr_id,
         detail={"deal_brief_id": deal_brief_obj.id, "lead_id": lead_obj.id},
+        commit=False,
     )
 
-    # --------- 3. Create backend Deal ---------
-    # org_id is required in backend Deal; we use lead.org_id if present.
-    org_id = getattr(lead_obj, "org_id", None)
-    if org_id is None and payload.lead.org_id is not None:
-        org_id = payload.lead.org_id
-
-    if org_id is None:
-        # If still None, you may want to enforce this in your model / flow.
-        org_id = 0  # fallback; adjust to your multi-tenant strategy
-
-    # --- Auto-compute offer if missing (fail-closed policy enforcement) ---
-    offer_val = float(payload.deal.offer) if payload.deal.offer is not None else 0.0
-    mao_val = float(payload.deal.mao) if payload.deal.mao is not None else 0.0
-    arv_val = float(payload.deal.arv) if payload.deal.arv is not None else 0.0
-    repairs_val = float(payload.deal.repairs) if payload.deal.repairs is not None else 0.0
-
-    if (offer_val <= 0.0 or mao_val <= 0.0) and arv_val > 0.0:
+    mao = payload.deal.mao
+    offer_evidence_id = None
+    if mao is None and province and payload.deal.arv and payload.deal.repairs is not None:
         try:
-            offer_result = compute_offer(
-                db=db,
-                province=province or "ON",
-                market=market or "ALL",
-                arv=arv_val,
-                repairs=repairs_val,
-                holding_cost=0.0,
-            )
-            offer_val = offer_result.get("calc", {}).get("recommended_offer", offer_val)
-            mao_val = offer_result.get("calc", {}).get("mao", mao_val)
-        except Exception:
-            # Non-blocking: if offer computation fails, continue with defaults (fail-closed)
+            with db.begin_nested():
+                calculation = compute_offer(
+                    db, province, market or "ALL", float(payload.deal.arv),
+                    float(payload.deal.repairs), None, None, corr_id, commit=False,
+                )
+                mao = calculation["calc"]["mao"]
+                offer_evidence_id = calculation["evidence_id"]
+        except (RuntimeError, SQLAlchemyError):
+            # Unavailable policy leaves the draft without a calculated offer.
             pass
-
     backend_deal = Deal(
-        org_id=org_id,
-        legacy_id=None,
-        status="draft",
-        city=None,
-        state=None,
-        price=float(payload.deal.price) if payload.deal.price is not None else None,
-        lead_id=lead_obj.id,
-        arv=arv_val,
-        repairs=repairs_val,
-        offer=offer_val,
-        mao=mao_val,
-        roi_note=payload.deal.roi_note or "",
+        lead_id=lead_obj.id, title=deal_brief_obj.headline, stage="draft", status="active",
+        arv=payload.deal.arv, estimated_repair_cost=payload.deal.repairs, max_allowable_offer=mao,
+        notes=payload.deal.roi_note,
     )
-
     db.add(backend_deal)
-    db.commit()
-    db.refresh(backend_deal)
-
-    # --- Emit KPI: backend Deal created ---
+    db.flush()
+    db.add(DealBriefLink(deal_id=backend_deal.id, brief_id=deal_brief_obj.id))
     emit_kpi(
-        db, "WHOLESALE", "backend_deal_created",
-        success=True,
-        actor="system",
-        correlation_id=corr_id,
-        detail={"deal_id": backend_deal.id, "offer": offer_val, "mao": mao_val},
+        db, "WHOLESALE", "backend_deal_created", success=True, actor="system",
+        correlation_id=corr_id, detail={"deal_id": backend_deal.id, "offer_evidence_id": offer_evidence_id},
+        commit=False,
     )
 
     deal_result = DealFlowResult(
@@ -307,29 +251,15 @@ def create_lead_and_deal_flow(
         status=deal_brief_obj.status,
     )
 
-    # --------- 4. Buyer matching (real, not stubbed) ---------
-    # --- Fetch liquidity score before matching ---
-    liq_score = None
-    if province:
-        try:
-            liq_score = liquidity_score(
-                db=db,
-                province=province,
-                market=market or "ALL",
-                property_type=deal_brief_obj.property_type,
-            )
-        except Exception:
-            # Non-blocking: if liquidity fetch fails, proceed
-            pass
+    liquidity = None
+    if province and payload.match_settings.match_buyers:
+        liquidity = liquidity_score(db, province, market or "ALL", deal_brief_obj.property_type, create=False)
 
-    # --- Emit KPI: Match attempt ---
-    emit_kpi(
-        db, "BUYER_MATCH", "match_attempt",
-        success=True,
-        actor="system",
-        correlation_id=corr_id,
-        detail={"deal_brief_id": deal_brief_obj.id, "liquidity_score": liq_score},
-    )
+    if payload.match_settings.match_buyers:
+        emit_kpi(
+            db, "BUYER_MATCH", "match_attempt", success=True, actor="system",
+            correlation_id=corr_id, detail={"deal_brief_id": deal_brief_obj.id}, commit=False,
+        )
 
     matched_candidates: List[BuyerMatchCandidate] = []
     if payload.match_settings.match_buyers:
@@ -348,31 +278,11 @@ def create_lead_and_deal_flow(
         matched_candidates.sort(key=lambda c: c.score, reverse=True)
         matched_candidates = matched_candidates[: payload.match_settings.max_results]
 
-    # --- Record buyer feedback if match found (liquidity signal) ---
-    if province and matched_candidates:
-        try:
-            record_feedback(
-                db=db,
-                province=province,
-                market=market or "ALL",
-                property_type=deal_brief_obj.property_type,
-                signal_type="RESPONDED",
-                buyer_id=str(matched_candidates[0].buyer_id),
-                correlation_id=corr_id,
-                note="auto_signal_from_match_flow",
-            )
-        except Exception:
-            # Non-blocking: if feedback recording fails, continue
-            pass
-
-    # --- Emit KPI: Match result ---
-    emit_kpi(
-        db, "BUYER_MATCH", "match_result",
-        success=True,
-        actor="system",
-        correlation_id=corr_id,
-        detail={"matched_count": len(matched_candidates), "liquidity_score": liq_score},
-    )
+    if payload.match_settings.match_buyers:
+        emit_kpi(
+            db, "BUYER_MATCH", "match_result", success=True, actor="system",
+            correlation_id=corr_id, detail={"matched_count": len(matched_candidates)}, commit=False,
+        )
 
     notes_parts: List[str] = []
     if matched_candidates:
@@ -396,13 +306,16 @@ def create_lead_and_deal_flow(
         "max_results": payload.match_settings.max_results,
         "province": province,
         "market": market,
-        "liquidity_score": liq_score,
+        "liquidity_score": liquidity,
+        "offer_evidence_id": offer_evidence_id,
     }
 
-    return LeadToDealResponse(
+    response = LeadToDealResponse(
         lead=lead_result,
         deal=deal_result,
         matched_buyers=matched_candidates,
         notes=" ".join(notes_parts) if notes_parts else None,
         metadata=metadata,
     )
+    db.commit()
+    return response

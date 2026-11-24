@@ -3,7 +3,6 @@ PACK AG: Notification Orchestrator Service
 """
 
 from typing import List, Optional
-from datetime import datetime
 from sqlalchemy.orm import Session
 
 from app.models.notification_orchestrator import (
@@ -117,10 +116,10 @@ def send_notification(
     body = render_template(tmpl.body, payload.context)
     subject = render_template(tmpl.subject or "", payload.context) if tmpl.subject else None
 
-    # Here you would call your real provider (email/SMS/etc.)
-    # For now, treat as successfully "sent".
-    status = "sent"
-    error_message = None
+    # This legacy template lane has no transport acknowledgement.
+    # Retain the rendered attempt for diagnostics without inventing delivery.
+    status = "failed"
+    error_message = "Notification transport is not configured"
 
     log = NotificationLog(
         channel_key=channel_key,
@@ -130,7 +129,7 @@ def send_notification(
         body=body,
         status=status,
         error_message=error_message,
-        sent_at=datetime.utcnow(),
+        sent_at=None,
     )
     db.add(log)
     db.commit()

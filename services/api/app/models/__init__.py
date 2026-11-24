@@ -1,5 +1,7 @@
 # Models module - Import all models here to ensure proper initialization order
 
+from app.core.db import Base  # canonical metadata for legacy imports
+
 # Core professional models
 from app.models.pro_scorecard import Professional, InteractionLog, Scorecard
 
@@ -96,6 +98,7 @@ from app.models.va_approval_queue import VAApprovalQueue
 from app.models.va_audit_log import VAAuditLog
 
 __all__ = [
+    "Base",
     "Professional",
     "InteractionLog",
     "Scorecard",

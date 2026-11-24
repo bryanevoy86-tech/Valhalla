@@ -2,19 +2,15 @@
 Test suite for metrics, capital intake, and telemetry endpoints.
 """
 
-import os
-import httpx
 import pytest
 
-API_BASE = os.getenv("API_BASE", "http://localhost:4000")
-API_KEY = os.getenv("HEIMDALL_BUILDER_API_KEY", "test123")
-TIMEOUT = 10.0
 
 
-def test_metrics_ok():
+def test_metrics_ok(legacy_http_client):
+    client, _ = legacy_http_client
     """Test /metrics endpoint returns expected structure"""
-    url = f"{API_BASE}/metrics"
-    resp = httpx.get(url, timeout=TIMEOUT)
+    url = "/metrics"
+    resp = client.get(url)
     
     assert resp.status_code == 200, f"Expected 200, got {resp.status_code}: {resp.text}"
     
@@ -31,19 +27,19 @@ def test_metrics_ok():
         assert isinstance(data[key], int), f"Key {key} should be int"
 
 
-def test_capital_roundtrip():
+def test_capital_roundtrip(legacy_http_client):
+    client, _ = legacy_http_client
     """Test capital intake create and list endpoints"""
     # Create a capital intake record
-    create_url = f"{API_BASE}/capital/intake"
+    create_url = "/capital/intake"
     payload = {
         "source": "test_wholesaling",
         "currency": "CAD",
         "amount": 5000.00,
         "note": "Test intake from pytest"
     }
-    headers = {"X-API-Key": API_KEY}
     
-    create_resp = httpx.post(create_url, json=payload, headers=headers, timeout=TIMEOUT)
+    create_resp = client.post(create_url, json=payload)
     assert create_resp.status_code == 201, f"Expected 201, got {create_resp.status_code}: {create_resp.text}"
     
     created = create_resp.json()
@@ -53,8 +49,8 @@ def test_capital_roundtrip():
     intake_id = created["id"]
     
     # List capital intake records and verify our record is present
-    list_url = f"{API_BASE}/capital/intake"
-    list_resp = httpx.get(list_url, headers=headers, timeout=TIMEOUT)
+    list_url = "/capital/intake"
+    list_resp = client.get(list_url)
     assert list_resp.status_code == 200, f"Expected 200, got {list_resp.status_code}: {list_resp.text}"
     
     records = list_resp.json()
@@ -65,24 +61,17 @@ def test_capital_roundtrip():
     assert found, f"Capital intake ID {intake_id} not found in list"
 
 
-def test_telemetry_create():
-    """Test telemetry event logging"""
-    url = f"{API_BASE}/telemetry"
-    payload = {
-        "kind": "test",
-        "message": "Test telemetry event from pytest",
-        "meta_json": '{"test": true}'
-    }
-    headers = {"X-API-Key": API_KEY}
-    
-    resp = httpx.post(url, json=payload, headers=headers, timeout=TIMEOUT)
-    assert resp.status_code == 201, f"Expected 201, got {resp.status_code}: {resp.text}"
-    
-    data = resp.json()
-    assert data.get("ok") is True
-    assert "id" in data
-    assert data["kind"] == "test"
+def test_telemetry_create(legacy_http_client):
+    client, engine = legacy_http_client
+    from sqlalchemy.orm import Session
+    from app.models.telemetry import IntegrityEvent
 
-
-if __name__ == "__main__":
-    pytest.main([__file__, "-v"])
+    response = client.post("/telemetry/", json={
+        "event": "test", "actor": "pytest", "meta": {"test": True},
+    })
+    assert response.status_code == 201, response.text
+    event = response.json()
+    assert event["event"] == "test"
+    assert event["meta"] == {"test": True}
+    with Session(engine) as db:
+        assert db.get(IntegrityEvent, event["id"]).source == "pytest"

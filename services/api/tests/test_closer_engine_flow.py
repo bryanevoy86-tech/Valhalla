@@ -2,15 +2,12 @@
 
 from __future__ import annotations
 
-from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
 
-# Adjust this import if your app is exposed differently
-from app.main import app  # or: from valhalla.services.api.main import app
-
-client = TestClient(app)
+from app.models.closer_session import CloserSession
 
 
-def _create_pipeline_deal_for_closer() -> int:
+def _create_pipeline_deal_for_closer(client) -> int:
     """
     Create a deal via the full pipeline so the closer has something real to work on.
     """
@@ -18,7 +15,7 @@ def _create_pipeline_deal_for_closer() -> int:
         "lead": {
             "name": "Closer Seller",
             "email": "closer-seller@example.com",
-            "phone": "555-9999",
+            "phone": "555-010-9999",
             "source": "PPC",
             "address": "111 Closer St, Winnipeg, MB",
             "tags": "test,closer",
@@ -68,8 +65,10 @@ def _create_pipeline_deal_for_closer() -> int:
     return backend_deal_id
 
 
-def test_closer_start_and_next_blocks_and_feedback():
-    backend_deal_id = _create_pipeline_deal_for_closer()
+def test_closer_start_and_next_blocks_and_feedback(deal_client):
+    client, engine = deal_client
+    CloserSession.__table__.create(engine)
+    backend_deal_id = _create_pipeline_deal_for_closer(client)
 
     # Start session
     start_payload = {
@@ -125,4 +124,9 @@ def test_closer_start_and_next_blocks_and_feedback():
     tx_data = resp_tx.json()
     assert tx_data["session_id"] == session_id
     assert tx_data["backend_deal_id"] == backend_deal_id
-    assert tx_data["status"] == "stub"
+    assert tx_data["status"] == "notes_only"
+    assert tx_data["sections"] == [{"section": "rapport", "outcome": "Seller is open to talking."}]
+    with Session(engine) as db:
+        session = db.get(CloserSession, session_id)
+        assert session.last_section == "diagnostic"
+        assert session.feedback["disposition"] == "maybe"

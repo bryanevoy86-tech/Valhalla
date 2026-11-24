@@ -90,7 +90,7 @@ def validate_lead_data(lead_data: dict) -> tuple[bool, str | None]:
     return True, None
 
 
-def create_lead(db: Session, lead: LeadCreate) -> Lead:
+def create_lead(db: Session, lead: LeadCreate, *, commit: bool = True) -> Lead:
     """
     Create a new lead with contact and property information.
     Includes input sanitization and validation.
@@ -150,13 +150,16 @@ def create_lead(db: Session, lead: LeadCreate) -> Lead:
             source=sanitized_data["source"],
             lead_status=sanitized_data["lead_status"],
             notes=sanitized_data["notes"],
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow(),
+            created_ts=datetime.utcnow(),
+            updated_ts=datetime.utcnow(),
         )
         
         db.add(db_lead)
-        db.commit()
-        db.refresh(db_lead)
+        if commit:
+            db.commit()
+            db.refresh(db_lead)
+        else:
+            db.flush()
         
         logger.info(f"Lead created successfully with id: {db_lead.id}")
         return db_lead

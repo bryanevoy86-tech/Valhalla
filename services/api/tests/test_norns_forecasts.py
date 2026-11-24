@@ -1,0 +1,196 @@
+from datetime import timedelta
+from uuid import UUID, uuid4
+
+from sqlalchemy.orm import Session
+
+from app.models.completion_registry import LegacyInstanceRegistryItem, LegacyInstanceWorkItem, LegacyOrchestrationEvent
+from app.models.media_engine import MediaContent
+from app.models.norns_forecast import NornsForecast, NornsHoldout
+from app.models.specialist_assignment import SpecialistAssignment, SpecialistTrigger
+from app.pantheon.monitor import run_assignment
+from app.routers import norns_forecasts
+
+
+def test_norns_requires_pre_execution_forecast_and_scores_only_observed_outcomes(deal_client, monkeypatch):
+    client, engine = deal_client
+    factory = {"X-Business-Factory-Key": "fixture-norns-factory"}
+    owner = {**factory, "X-Owner-Mandate-Key": "fixture-norns-owner"}
+    monkeypatch.setenv("VALHALLA_FACTORY_KEY", factory["X-Business-Factory-Key"])
+    monkeypatch.setenv("VALHALLA_OWNER_MANDATE_KEY", owner["X-Owner-Mandate-Key"])
+    monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "false")
+    for model in (LegacyInstanceRegistryItem, LegacyInstanceWorkItem, LegacyOrchestrationEvent, MediaContent, NornsForecast, NornsHoldout, SpecialistAssignment, SpecialistTrigger):
+        model.__table__.create(engine)
+    with Session(engine) as db:
+        db.add(LegacyInstanceRegistryItem(
+            legacy_instance_id="cal-legacy", display_name="Calibration fixture", synchronization_status="SYNCED",
+            assigned_businesses_json='["internal-product"]', assigned_jurisdictions_json='["CA-MB"]',
+            local_knowledge_context_json='{"business_id":"internal-product","jurisdiction":"CA-MB"}',
+            engines_json='["micro_saas"]', status="PASS",
+        ))
+        db.commit()
+
+    base = "/api/prime/norns"
+    forecasts = f"{base}/forecasts"
+    factory_root = "/api/business-factory"
+    assert client.get(f"{base}/calibration").json()["brier_score"] is None
+
+    def queue(key):
+        listing = client.post(f"{factory_root}/listing-drafts", headers=factory, json={
+            "legacy_instance_id": "cal-legacy", "business_id": "internal-product", "jurisdiction": "CA-MB",
+            "engine_id": "micro_saas", "industry": "digital goods", "product_id": "calibration-test",
+            "title": "Calibration draft fixture", "description": "A private internal draft for measuring resolution timing.",
+            "price_cents_cad": 700, "request_key": key,
+        })
+        assert listing.status_code == 200, listing.text
+        return listing.json()["action_id"]
+
+    def forecast(action_id, bp):
+        return {"forecast_id": str(uuid4()), "action_id": action_id, "probability_bp": bp, "horizon_seconds": 120}
+
+    action_id = queue("forecast-completion")
+    estimate = forecast(action_id, 8000)
+    assert client.post(forecasts, json=estimate).status_code == 401
+    initial = client.post(forecasts, headers=owner, json=estimate)
+    assert initial.status_code == 201, initial.text
+    assert initial.json()["estimate_source"] == "OWNER_ESTIMATE"
+    assert initial.json()["observed_outcome"] is None
+    assert client.post(forecasts, headers=owner, json={**estimate, "forecast_id": str(uuid4())}).status_code == 409
+    resolve = f"{forecasts}/{estimate['forecast_id']}/resolve"
+    assert client.post(resolve).status_code == 409
+
+    approval = client.post(f"{factory_root}/actions/{action_id}/approve", headers=owner,
+                           json={"confirmation": "APPROVE_INTERNAL_DRAFT"})
+    assert approval.status_code == 200, approval.text
+    result = client.post(f"{factory_root}/actions/run-once", headers=factory)
+    assert result.json()["status"] == "completed"
+    assert client.post(forecasts, headers=owner, json=forecast(action_id, 3000)).status_code == 409
+    observation = client.post(resolve)
+    assert observation.status_code == 200, observation.text
+    assert observation.json()["observed_outcome"] == 1
+    assert observation.json()["evidence_ref"].startswith("BF-RECEIPT-")
+    assert client.post(resolve).json() == observation.json()
+
+    pending = forecast(queue("forecast-deadline"), 3000)
+    assert client.post(forecasts, headers=owner, json=pending).status_code == 201
+    simulated_clock = norns_forecasts._now() + timedelta(minutes=3)
+    monkeypatch.setattr(norns_forecasts, "_now", lambda: simulated_clock)
+    missed = client.post(f"{forecasts}/{pending['forecast_id']}/resolve")
+    assert missed.status_code == 200, missed.text
+    assert missed.json()["observed_outcome"] == 0
+    assert "NO_RECEIPT" in missed.json()["evidence_ref"]
+    stats = client.get(f"{base}/calibration").json()
+    assert stats["resolved_sample_count"] == 2
+    assert stats["brier_score"] == 0.065
+    assert stats["accuracy_claim"] == "OBSERVED_INTERNAL_SAMPLE"
+    assert stats["probability_buckets"] == [
+        {"lower_bp": 3000, "upper_bp": 3999, "resolved_sample_count": 1,
+         "mean_probability": 0.3, "observed_frequency": 0.0},
+        {"lower_bp": 8000, "upper_bp": 8999, "resolved_sample_count": 1,
+         "mean_probability": 0.8, "observed_frequency": 1.0},
+    ]
+    matching = client.get(f"{base}/calibration", params={"horizon_seconds": 120}).json()
+    assert matching["horizon_seconds"] == 120
+    assert matching["probability_buckets"] == stats["probability_buckets"]
+    unmatched = client.get(f"{base}/calibration", params={"horizon_seconds": 60}).json()
+    assert unmatched["brier_score"] is None and unmatched["probability_buckets"] == []
+    assert client.get(f"{base}/calibration", params={"horizon_seconds": 29}).status_code == 422
+
+    third = forecast(queue("another-missed-deadline"), 4000)
+    assert client.post(forecasts, headers=owner, json=third).status_code == 201
+    later = simulated_clock + timedelta(minutes=3)
+    monkeypatch.setattr(norns_forecasts, "_now", lambda: later)
+    assert client.post(f"{forecasts}/{third['forecast_id']}/resolve").json()["observed_outcome"] == 0
+    candidate = queue("prospective-norns-worker")
+    assigned = client.post("/api/prime/pantheon/assignments", headers=owner, json={
+        "assignment_id": str(uuid4()), "role": "NORNS", "cadence_seconds": 120, "duration_seconds": 1800,
+        "legacy_instance_id": "cal-legacy", "business_id": "internal-product", "jurisdiction": "CA-MB",
+        "engine_id": "micro_saas",
+    })
+    assert assigned.status_code == 201, assigned.text
+    with Session(engine) as db:
+        report_id = run_assignment(db, "NORNS", now=later + timedelta(seconds=1))["report_event_id"]
+    report = client.get(f"/api/prime/pantheon/reports/{report_id}").json()["observations"]
+    assert report["forecast_status"] == "ISSUED"
+    assert report["horizon_seconds"] == 120
+    assert report["action_id"] == candidate
+    assert report["probability"] == 0.4
+    estimate_id = report["forecast_id"]
+    monkeypatch.setattr(norns_forecasts, "_now", lambda: later + timedelta(seconds=2))
+    holdout = f"{forecasts}/{estimate_id}/holdout"
+    assert client.post(holdout, headers=owner).status_code == 201
+    assert client.post(f"{forecasts}/{estimate['forecast_id']}/holdout", headers=owner).status_code == 409
+    prospective = client.get(f"{forecasts}/{estimate_id}").json()
+    assert prospective["estimate_source"] == "SCOPED_HISTORICAL_RATE"
+    assert set(prospective["training_evidence"]["eligible_forecast_ids"]) == {
+        estimate["forecast_id"], pending["forecast_id"], third["forecast_id"],
+    }
+    assert prospective["observed_outcome"] is None
+    query = {"estimate_source": "SCOPED_HISTORICAL_RATE"}
+    assert client.get(f"{base}/calibration", params=query).json()["resolved_sample_count"] == 0
+    monkeypatch.setattr(norns_forecasts, "_now", lambda: later + timedelta(minutes=3))
+    assert client.post(f"{forecasts}/{estimate_id}/resolve").json()["observed_outcome"] == 0
+    assert client.get(f"{base}/calibration", params=query).json()["resolved_sample_count"] == 0
+    assert client.get(f"{base}/calibration", params={**query, "cohort": "HOLDOUT"}).json()["brier_score"] == 0.16
+    newer_action = queue("never-train-on-holdout")
+    with Session(engine) as db:
+        newer_report_id = run_assignment(db, "NORNS", now=later + timedelta(minutes=5))["report_event_id"]
+    newer = client.get(f"/api/prime/pantheon/reports/{newer_report_id}").json()["observations"]
+    assert newer["action_id"] == newer_action
+    assert newer["training_count"] == 3
+    assert newer["probability"] == 0.4
+    assert client.get(f"{base}/calibration").json()["resolved_sample_count"] == 3
+
+    # A previously resolved label must agree with the original artifact timing.
+    with Session(engine) as db:
+        db.get(NornsForecast, UUID(estimate["forecast_id"])).observed_outcome = 0
+        db.commit()
+    assert client.get(f"{forecasts}/{estimate['forecast_id']}").status_code == 409
+    assert client.post(resolve).status_code == 409
+    contradictory = client.get(f"{base}/calibration").json()
+    assert contradictory["resolved_sample_count"] == 2
+    assert contradictory["evidence_excluded_count"] == 1
+    after = later + timedelta(minutes=8)
+    queue("post-contradiction-prospective-check")
+    with Session(engine) as db:
+        exclusion_id = run_assignment(db, "NORNS", now=after)["report_event_id"]
+    excluded = client.get(f"/api/prime/pantheon/reports/{exclusion_id}").json()["observations"]
+    assert excluded["forecast_status"] == "INSUFFICIENT_SCOPED_HISTORY"
+    assert excluded["training_count"] == 2
+    assert excluded["outcome_resolution"]["resolved_ids"] == [newer["forecast_id"]]
+    assert excluded["evidence_excluded_count"] == 1
+    assert client.get(f"{base}/calibration", params={**query, "cohort": "HOLDOUT"}).json()["brier_score"] == 0.16
+
+    # A holdout marker altered after prospective enrollment must not enter either cohort.
+    with Session(engine) as db:
+        saved = db.get(NornsForecast, UUID(estimate_id))
+        marker = db.get(NornsHoldout, UUID(estimate_id))
+        marker.enrolled_at = saved.deadline_at
+        db.commit()
+    invalid = client.get(f"{base}/calibration", params={**query, "cohort": "HOLDOUT"}).json()
+    assert invalid["resolved_sample_count"] == 0 and invalid["evidence_excluded_count"] == 1
+    assert invalid["probability_buckets"] == [] and invalid["brier_score"] is None
+    assert client.get(f"{base}/calibration", params=query).json()["resolved_sample_count"] == 0
+
+    # A receipt with contradictory evidence is left pending for review.
+    corrupt = forecast(queue("auto-resolve-conflicting-receipt"), 4500)
+    assert client.post(forecasts, headers=owner, json=corrupt).status_code == 201
+    with Session(engine) as db:
+        db.add(LegacyOrchestrationEvent(
+            event_id=f"BF-RECEIPT-{corrupt['action_id']}", legacy_instance_id="cal-legacy",
+            event_type="FACTORY_ARTIFACT_VERIFIED", message="Intentionally invalid fixture", payload_json="{}",
+        ))
+        db.commit()
+        auto_at = later + timedelta(minutes=11)
+        result = run_assignment(db, "NORNS", now=auto_at)
+        assert run_assignment(db, "NORNS", now=auto_at) == {"status": "idle"}
+    auto_report = client.get(f"/api/prime/pantheon/reports/{result['report_event_id']}").json()["observations"]
+    assert auto_report["outcome_resolution"] == {
+        "resolved_ids": [], "unverified_ids": [corrupt["forecast_id"]],
+        "deferred_count": 0, "next_after": None,
+    }
+    monkeypatch.setattr(norns_forecasts, "_now", lambda: auto_at)
+    saved = client.get(f"{forecasts}/{newer['forecast_id']}").json()
+    assert saved["observed_outcome"] == 0
+    assert client.post(f"{forecasts}/{newer['forecast_id']}/resolve").json() == saved
+    assert client.get(f"{forecasts}/{corrupt['forecast_id']}").json()["observed_outcome"] is None
+    assert client.get(f"{base}/calibration", params=query).json()["brier_score"] == 0.16

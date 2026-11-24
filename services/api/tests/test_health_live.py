@@ -1,10 +1,8 @@
-import os, requests, pytest
+import pytest
 
-pytestmark = pytest.mark.integration
 
-API = os.environ.get('API')
-
-@pytest.mark.skipif(not API, reason='API not set')
-def test_health_live():
-    r = requests.get(API.rstrip('/') + '/healthz', timeout=3)
-    assert r.status_code == 200
+@pytest.mark.integration
+def test_health_live(loopback_api):
+    response = loopback_api.get("/healthz")
+    assert response.status_code == 200, response.text
+    assert response.json()["ok"] is True

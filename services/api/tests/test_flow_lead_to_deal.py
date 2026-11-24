@@ -4,14 +4,12 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from main import app  # FastAPI instance
-from app.core.db import get_db
 from app.models.match import Buyer
-
-client = TestClient(app)
+from app.models.buyer_liquidity import BuyerFeedbackEvent
+from app.models.deal import DealBriefLink
+from app.models.followup_task import FollowupTask
 
 
 def _seed_test_buyer(db: Session) -> Buyer:
@@ -19,7 +17,7 @@ def _seed_test_buyer(db: Session) -> Buyer:
     buyer = Buyer(
         name="Test Buyer",
         email="buyer@example.com",
-        phone="555-9999",
+        phone="555-010-9999",
         regions="winnipeg, brandon",
         property_types="sfh, duplex",
         min_price=Decimal("200000"),
@@ -35,20 +33,19 @@ def _seed_test_buyer(db: Session) -> Buyer:
     return buyer
 
 
-def test_flow_lead_to_deal_basic():
+def test_flow_lead_to_deal_basic(deal_client):
     """Test the complete lead-to-deal flow with buyer matching."""
-    # Get a DB session from the app dependency
-    db_gen = get_db()
-    db = next(db_gen)
+    client, engine = deal_client
 
     # Seed at least one buyer that should match the test deal
-    test_buyer = _seed_test_buyer(db)
+    with Session(engine) as db:
+        buyer_id = _seed_test_buyer(db).id
 
     payload = {
         "lead": {
             "name": "John Seller",
             "email": "john@example.com",
-            "phone": "555-1234",
+            "phone": "555-010-1234",
             "source": "Facebook",
             "address": "123 Main St, Winnipeg, MB",
             "tags": "motivated,sfh",
@@ -102,28 +99,27 @@ def test_flow_lead_to_deal_basic():
     # With our seeded buyer, we expect at least one match
     assert len(matches) >= 1, "Expected at least one buyer match"
     assert matches[0]["score"] >= 0.7, "Expected score >= 0.7"
-    assert matches[0]["buyer_id"] == test_buyer.id
+    assert matches[0]["buyer_id"] == buyer_id
 
-    # Cleanup
-    db.delete(test_buyer)
-    db.commit()
+    with Session(engine) as db:
+        assert db.get(DealBriefLink, meta["backend_deal_id"]).brief_id == meta["deal_brief_id"]
+        assert db.query(FollowupTask).count() == 6
+        assert db.query(BuyerFeedbackEvent).count() == 0
 
     print(f"✅ Flow test passed: Created lead {meta['lead_id']}, "
           f"deal brief {meta['deal_brief_id']}, backend deal {meta['backend_deal_id']}, "
           f"matched {len(matches)} buyers")
 
 
-def test_flow_lead_to_deal_no_buyers():
+def test_flow_lead_to_deal_no_buyers(deal_client):
     """Test flow when no buyers match."""
-    # Get a DB session
-    db_gen = get_db()
-    db = next(db_gen)
+    client, engine = deal_client
 
     payload = {
         "lead": {
             "name": "Jane Seller",
             "email": "jane@example.com",
-            "phone": "555-5678",
+            "phone": "555-010-5678",
             "source": "Referral",
             "org_id": 1,
         },
@@ -160,13 +156,14 @@ def test_flow_lead_to_deal_no_buyers():
     print("✅ No-match test passed")
 
 
-def test_flow_lead_to_deal_matching_disabled():
+def test_flow_lead_to_deal_matching_disabled(deal_client):
     """Test flow when buyer matching is disabled."""
+    client, engine = deal_client
     payload = {
         "lead": {
             "name": "Bob Seller",
             "email": "bob@example.com",
-            "phone": "555-9876",
+            "phone": "555-010-9876",
             "source": "LinkedIn",
             "org_id": 1,
         },
@@ -201,11 +198,3 @@ def test_flow_lead_to_deal_matching_disabled():
     assert "matching was disabled" in data["notes"]
 
     print("✅ Matching-disabled test passed")
-
-
-if __name__ == "__main__":
-    print("Running flow_lead_to_deal tests...")
-    test_flow_lead_to_deal_basic()
-    test_flow_lead_to_deal_no_buyers()
-    test_flow_lead_to_deal_matching_disabled()
-    print("\n✅ All tests passed!")

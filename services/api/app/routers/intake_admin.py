@@ -6,6 +6,7 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
+from app.services.launch_readiness import require_channel_release
 from ..core.db import get_db
 from ..security.auth import require_owner
 from ..models.intake import LeadIntake
@@ -31,7 +32,8 @@ def promote_lead(
     _: dict = Depends(require_owner)
 ):
     """Promote a quarantined lead to deal status."""
-    return {"id": lead_id, "status": "promoted"}
+    require_channel_release("customer_acquisition_and_sales")
+    raise HTTPException(503, "Scoped CRM promotion adapter unavailable")
 
 
 @router.post("/reject/{lead_id}", response_model=dict)

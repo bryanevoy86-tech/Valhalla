@@ -1,26 +1,58 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from fastapi import APIRouter, Depends, HTTPException, Response
+from sqlalchemy import inspect, select
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
+from app.core.dependencies import require_prime_control_key
+from app.services.prime_business_execution import _emergency_stop_active, require_owner_mandate_key
+from app.services.tax_opinion_provenance import (
+    PROVENANCE_KEY, RELIANCE_KEY, current_provenance, reliance_entries, verify_provenance, verify_reliance,
+)
 from app.models.tax_interpretations import TaxOpinion
 from app.schemas.tax_interpretations import (
     TaxOpinionCreate,
     TaxOpinionRead,
+    TaxOpinionProvenanceIn,
+    TaxOpinionRelianceIn,
+    TaxOpinionRelianceRevoke,
+    TaxOpinionRelianceScope,
 )
 
-router = APIRouter(prefix="/tax-bridge", tags=["Tax Interpretation Engine"])
+def _intake_flags(flags):
+    public_flags = {key: value for key, value in (flags or {}).items()
+                    if key not in {PROVENANCE_KEY, RELIANCE_KEY, "professional_opinion_provenance"}}
+    return {**public_flags, "professional_signoff_verified": False, "reliance_authorized": False}
 
 
-@router.post("/opinions", response_model=TaxOpinionRead)
+def _opinion_read(db, opinion):
+    flags = _intake_flags(opinion.flags)
+    provenance = current_provenance(db, opinion)
+    if provenance:
+        flags["professional_opinion_provenance"] = provenance
+    return TaxOpinionRead.model_validate(opinion).model_copy(update={"flags": flags})
+
+
+def require_opinion_schema(db: Session = Depends(get_db)):
+    if not inspect(db.connection()).has_table(TaxOpinion.__tablename__):
+        raise HTTPException(503, "Tax opinion storage unavailable")
+
+
+router = APIRouter(prefix="/tax-bridge", tags=["Tax Interpretation Engine"],
+                   dependencies=[Depends(require_prime_control_key), Depends(require_opinion_schema)])
+
+
+@router.post("/opinions", response_model=TaxOpinionRead, dependencies=[Depends(require_owner_mandate_key)])
 def create_tax_opinion(
     payload: TaxOpinionCreate,
+    response: Response,
     db: Session = Depends(get_db),
 ):
+    response.headers["Cache-Control"] = "no-store"
     opinion = TaxOpinion(
         jurisdiction=payload.jurisdiction,
         tax_year=payload.tax_year,
@@ -30,7 +62,7 @@ def create_tax_opinion(
         summary=payload.summary,
         details=payload.details,
         risk_level=payload.risk_level,
-        flags=payload.flags,
+        flags=_intake_flags(payload.flags),
     )
 
     db.add(opinion)
@@ -50,25 +82,117 @@ def create_tax_opinion(
                 "jurisdiction": payload.jurisdiction,
                 "tax_year": payload.tax_year,
                 "risk_level": payload.risk_level,
-                "flags": payload.flags,
+                "flags": opinion.flags,
             },
         )
         db.add(event)
 
     db.commit()
     db.refresh(opinion)
-    return opinion
+    return _opinion_read(db, opinion)
 
 
 @router.get("/opinions/{opinion_id}", response_model=TaxOpinionRead)
 def get_tax_opinion(
     opinion_id: UUID,
+    response: Response,
     db: Session = Depends(get_db),
 ):
+    response.headers["Cache-Control"] = "no-store"
     result = db.execute(
         select(TaxOpinion).where(TaxOpinion.id == opinion_id)
     )
     opinion = result.scalar_one_or_none()
     if not opinion:
         raise HTTPException(status_code=404, detail="Tax opinion not found")
+    return _opinion_read(db, opinion)
+
+
+
+@router.post("/opinions/{opinion_id}/provenance", response_model=TaxOpinionRead,
+             dependencies=[Depends(require_owner_mandate_key)])
+def record_opinion_provenance(opinion_id: UUID, payload: TaxOpinionProvenanceIn, response: Response,
+                              db: Session = Depends(get_db)):
+    response.headers["Cache-Control"] = "no-store"
+    opinion = db.get(TaxOpinion, opinion_id, with_for_update=True)
+    if opinion is None:
+        raise HTTPException(404, "Tax opinion not found")
+    verify_provenance(db, opinion, payload, lock=True)
+    packet = payload.model_dump(mode="json")
+    existing = (opinion.flags or {}).get(PROVENANCE_KEY)
+    if existing is not None and existing != packet:
+        raise HTTPException(409, "Opinion already has different provenance. Create a new superseding opinion.")
+    if existing is None:
+        opinion.flags = {**_intake_flags(opinion.flags), PROVENANCE_KEY: packet}
+        db.commit()
+        db.refresh(opinion)
+    return _opinion_read(db, opinion)
+
+
+
+def _reliance_opinion(db, opinion_id, response, *, lock=False):
+    response.headers["Cache-Control"] = "no-store"
+    opinion = db.get(TaxOpinion, opinion_id, with_for_update=lock)
+    if opinion is None:
+        raise HTTPException(404, "Tax opinion not found")
     return opinion
+
+
+@router.post("/opinions/{opinion_id}/reliance", dependencies=[Depends(require_owner_mandate_key)])
+def approve_reliance(opinion_id: UUID, payload: TaxOpinionRelianceIn, response: Response,
+                     db: Session = Depends(get_db)):
+    opinion = _reliance_opinion(db, opinion_id, response, lock=True)
+    if _emergency_stop_active(db):
+        raise HTTPException(503, "Reliance approval paused by emergency stop")
+    entries = reliance_entries(opinion)
+    key = str(payload.approval_id)
+    grant = payload.model_dump(mode="json")
+    existing = entries.get(key)
+    if existing is not None and (existing["grant"] != grant or existing.get("revoked_at")):
+        raise HTTPException(409, "Approval ID is already used or revoked")
+    verify_reliance(db, opinion, payload, lock=True)
+    if existing is None:
+        entries = {**entries, key: {"grant": grant, "approved_at": datetime.now(timezone.utc).isoformat()}}
+        opinion.flags = {**opinion.flags, RELIANCE_KEY: entries}
+        db.commit()
+    return {"approval_id": key, "status": "APPROVED_FOR_SCOPED_INTERNAL_RELIANCE",
+            "decision_reference": payload.decision_reference, "purpose": payload.purpose,
+            "execution_authorized": False}
+
+
+@router.post("/opinions/{opinion_id}/reliance/{approval_id}/check")
+def check_reliance(opinion_id: UUID, approval_id: UUID, payload: TaxOpinionRelianceScope, response: Response,
+                   db: Session = Depends(get_db)):
+    opinion = _reliance_opinion(db, opinion_id, response)
+    if _emergency_stop_active(db):
+        raise HTTPException(503, "Reliance paused by emergency stop")
+    entry = reliance_entries(opinion).get(str(approval_id))
+    if not entry or entry.get("revoked_at"):
+        raise HTTPException(409, "Current reliance grant is unavailable")
+    grant = TaxOpinionRelianceIn.model_validate(entry["grant"])
+    if (grant.approval_id, grant.decision_reference, grant.purpose) != (
+        approval_id, payload.decision_reference, payload.purpose,
+    ):
+        raise HTTPException(409, "Reliance grant does not match the requested decision and purpose")
+    verify_reliance(db, opinion, grant)
+    return {"approval_id": approval_id, "reliance_authorized": True, "execution_authorized": False,
+            "provenance_sha256": grant.expected_provenance_sha256}
+
+
+@router.post("/opinions/{opinion_id}/reliance/{approval_id}/revoke", dependencies=[Depends(require_owner_mandate_key)])
+def revoke_reliance(opinion_id: UUID, approval_id: UUID, payload: TaxOpinionRelianceRevoke, response: Response,
+                    db: Session = Depends(get_db)):
+    opinion = _reliance_opinion(db, opinion_id, response, lock=True)
+    entries = reliance_entries(opinion)
+    key = str(approval_id)
+    entry = entries.get(key)
+    if entry is None:
+        raise HTTPException(404, "Reliance approval not found")
+    if entry.get("revoked_at"):
+        if entry["revocation_reason"] != payload.reason:
+            raise HTTPException(409, "This approval already has a recorded revocation")
+    else:
+        entry = {**entry, "revoked_at": datetime.now(timezone.utc).isoformat(), "revocation_reason": payload.reason}
+        opinion.flags = {**opinion.flags, RELIANCE_KEY: {**entries, key: entry}}
+        db.commit()
+    return {"approval_id": approval_id, "status": "REVOKED", "revoked_at": entry["revoked_at"]}

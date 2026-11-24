@@ -19,7 +19,7 @@ DEFAULT_LADDER = [
 ]
 
 
-def create_ladder(db: Session, lead_id: str | None, province: str | None, market: str | None, owner: str | None, correlation_id: str | None) -> List[FollowupTask]:
+def create_ladder(db: Session, lead_id: str | None, province: str | None, market: str | None, owner: str | None, correlation_id: str | None, *, commit: bool = True) -> List[FollowupTask]:
     now = datetime.utcnow()
     tasks: List[FollowupTask] = []
     for step, delay_min, channel in DEFAULT_LADDER:
@@ -35,11 +35,7 @@ def create_ladder(db: Session, lead_id: str | None, province: str | None, market
         )
         db.add(t)
         tasks.append(t)
-    db.commit()
-    for t in tasks:
-        db.refresh(t)
-
-    emit_kpi(db, "WHOLESALE", "ladder_created", success=True, actor=owner, correlation_id=correlation_id, detail={"tasks": len(tasks)})
+    emit_kpi(db, "WHOLESALE", "ladder_created", success=True, actor=owner, correlation_id=correlation_id, detail={"tasks": len(tasks)}, commit=commit)
     return tasks
 
 

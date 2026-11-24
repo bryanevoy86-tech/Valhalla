@@ -5,8 +5,11 @@ from typing import Dict
 from app.core.settings import settings
 from app.core.engines.dispatch_guard import guard_outreach
 
+from app.services.launch_readiness import require_channel_release
+
 
 def send_sms(recipient_phone: str, message: str) -> Dict[str, str]:
+    require_channel_release("customer_acquisition_and_sales")
     guard_outreach()
     try:
         if not (settings.TWILIO_ACCOUNT_SID and settings.TWILIO_AUTH_TOKEN and settings.TWILIO_PHONE_NUMBER):
