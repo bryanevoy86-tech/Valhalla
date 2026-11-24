@@ -1433,7 +1433,7 @@ def test_authenticated_research_participant_browser_and_retention(economic_clien
                 timeout=60, input=json.dumps({"origin": str(network.base_url), "round": round_id,
                                              "email": emails["browser"], "password": password}))
         assert result.returncode == 0, result.stderr
-        print("RESEARCH_BROWSER " + result.stdout.strip())
+        print("\nRESEARCH_BROWSER " + result.stdout.strip())
 
     monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "true")
     assert client.get(root, headers=headers).json()["status"] == "PAUSED"
