@@ -8,6 +8,7 @@ from uuid import UUID, uuid4
 
 from fastapi import HTTPException
 import pytest
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.god.models import GodReviewCase, GodReviewEvent
@@ -1230,6 +1231,15 @@ def rehearse_checkout(client, engine, monkeypatch, owner, action_id, price, scop
     assert apply(refund, "evt_fixture_duplicate_total", price // 2).status_code == 409
     assert apply(refund, "evt_fixture_over_refund", price + 1).status_code == 409
     support = f"{root}/orders/{order_id}/support-resolution"
+    automatic_support = f"{root}/orders/{order_id}/routine-support"
+    monkeypatch.delenv("VALHALLA_ROUTINE_SUPPORT_REHEARSAL", raising=False)
+    assert client.post(automatic_support, json=scope).status_code == 503
+    monkeypatch.setenv("VALHALLA_ROUTINE_SUPPORT_REHEARSAL", "1")
+    assert client.post(automatic_support, json=scope).status_code == 409
+    assert client.post(automatic_support, json=scope, headers={"X-Prime-Control-Key": "wrong-key"}).status_code == 401
+    with monkeypatch.context() as hosted:
+        hosted.setenv("APP_ENV", "staging")
+        assert client.post(automatic_support, json=scope).status_code == 503
     resolution = {"expected_refunded_minor": price // 2, "resolution": "Reviewed the partial refund fixture."}
     assert client.post(support, json=resolution).status_code == 401
     closed = client.post(support, headers=owner, json=resolution)
@@ -1249,11 +1259,20 @@ def rehearse_checkout(client, engine, monkeypatch, owner, action_id, price, scop
     assert final["support_resolution"] is None
     assert client.post(support, headers=owner, json=resolution).status_code == 409
     monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "true")
-    final_closed = client.post(support, headers=owner, json={**resolution, "expected_refunded_minor": price})
+    assert client.post(automatic_support, json=scope).status_code == 503
     monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "false")
+    assert client.post(automatic_support, json={**scope, "business_id": "unrelated"}).status_code == 404
+    final_closed = client.post(automatic_support, json=scope)
     assert final_closed.status_code == 200, final_closed.text
     assert final_closed.json()["owner_followup_required"] is False
     assert final_closed.json()["support_resolution"]["event_id"] != closed.json()["support_resolution"]["event_id"]
+    assert final_closed.json()["support_resolution"]["external_customer_action_verified"] is False
+    assert client.post(automatic_support, json=scope).json() == final_closed.json()
+    with Session(engine) as db:
+        event = db.scalar(select(LegacyOrchestrationEvent).filter_by(
+            event_id=final_closed.json()["support_resolution"]["event_id"],
+        ))
+        assert json.loads(event.payload_json)["resolution_actor"] == "PRIME_ROUTINE_FIXTURE"
 
     assert summary()["rehearsed_net_minor"] == 0
     assert summary()["rehearsed_contribution_minor"] == -175

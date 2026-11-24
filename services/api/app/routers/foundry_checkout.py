@@ -16,12 +16,14 @@ from sqlalchemy.orm import Session
 
 from app.core.db import get_db
 from app.core.dependencies import require_prime_control_key
+from app.heimdall.authority import is_live
 from app.loki.evidence import artifact_digest
 from app.models.completion_registry import LegacyInstanceWorkItem, LegacyOrchestrationEvent
 from app.models.foundry_checkout import FoundryCampaignVisit, FoundryFixtureSettlement, FoundryRehearsalOrder, FoundryRehearsalPayment
 from app.models.treasury_reconciliation import StatementEntry, StatementImport
 from app.models.marketing import MarketingCampaign
 from app.providers.stripe_adapter import verify_stripe_signature
+from app.schemas.market_intelligence import MarketScope
 from app.services.acquisition_rehearsal import (
     AcquisitionPlanIn, CONSENT_TYPE, CUSTOMER_TYPE, EVENT_TYPE as ACQUISITION_PLAN_EVENT,
     SUPPRESSION_TYPE, consent_event_id, consent_receipt, customer_reference, journal_event,
@@ -195,17 +197,30 @@ def resolve_refund_support(order_id: UUID, payload: SupportResolutionIn, db: Ses
         raise HTTPException(404, "Rehearsal order not found")
     if order.refunded_minor != payload.expected_refunded_minor:
         raise HTTPException(409, "A reconciled refund at the reviewed total is required")
+    return _record_support_resolution(db, order, payload.resolution)
+
+
+def _record_support_resolution(
+    db: Session, order: FoundryRehearsalOrder, resolution: str, *, routine_scope: dict | None = None,
+):
     work = db.scalar(select(LegacyInstanceWorkItem).filter_by(action_id=order.action_id))
     if work is None:
         raise HTTPException(409, "Rehearsal order scope unavailable")
     scope = {key: getattr(work, key) for key in ("legacy_instance_id", "business_id", "engine_id", "jurisdiction")}
+    if routine_scope is not None and scope != routine_scope:
+        raise HTTPException(404, "Rehearsal order not found in this scope")
     _check_legacy(db, **scope)
-    # This records historical review and can run during economic containment or emergency stop.
     result = _view(db, order)
+    if routine_scope is not None:
+        require_no_containment(db, scope)
+        exception = result["fulfillment_exception"]
+        if (result["checkout_state"] != "REFUNDED" or order.captured_minor != order.amount_minor
+                or (exception and exception["status"] == "HELD")):
+            raise HTTPException(409, "Support exception requires a scoped representative")
     event_id = _support_event_id(order)
     if result["support_resolution"] is not None:
         event = db.scalar(select(LegacyOrchestrationEvent).filter_by(event_id=event_id))
-        if _json(event.payload_json, {}).get("resolution") != payload.resolution:
+        if routine_scope is None and _json(event.payload_json, {}).get("resolution") != resolution:
             raise HTTPException(409, "The reviewed refund already has a different support resolution")
         return result
     if not inspect(db.connection()).has_table(LegacyOrchestrationEvent.__tablename__):
@@ -213,15 +228,35 @@ def resolve_refund_support(order_id: UUID, payload: SupportResolutionIn, db: Ses
     evidence = {
         "order_id": str(order.id), "action_id": order.action_id, "refunded_minor": order.refunded_minor,
         "listing_sha256": order.listing_sha256, "artifact_sha256": order.artifact_sha256,
-        "resolution": payload.resolution, "evidence_scope": "INTERNAL_REHEARSAL_ONLY",
+        "resolution": resolution, "evidence_scope": "INTERNAL_REHEARSAL_ONLY",
     }
+    message = "Owner recorded support resolution for reconciled rehearsal refund"
+    if routine_scope is not None:
+        evidence["resolution_actor"] = "PRIME_ROUTINE_FIXTURE"
+        message = "Prime recorded routine support resolution for reconciled rehearsal refund"
     evidence["sha256"] = artifact_digest("foundry_support", event_id, evidence)
     _event(db, event_id=event_id, legacy_instance_id=work.legacy_instance_id, event_type=SUPPORT_EVENT,
-           message="Owner recorded support resolution for reconciled rehearsal refund", payload=evidence)
+           message=message, payload=evidence)
     db.flush()
     result = _view(db, order)
     db.commit()
     return result
+
+
+@router.post("/orders/{order_id}/routine-support")
+def reconcile_routine_refund_support(order_id: UUID, scope: MarketScope, db: Session = Depends(get_db)):
+    if (is_live() or os.getenv("VALHALLA_ROUTINE_SUPPORT_REHEARSAL") != "1"
+            or os.getenv("APP_ENV", "").lower() not in {"dev", "test", "sandbox"}
+            or os.getenv("ENV", "").lower() not in {"", "dev", "test", "sandbox"}):
+        raise HTTPException(503, "Routine support rehearsal disabled")
+    if _emergency_stop_active(db):
+        raise HTTPException(503, "Routine support rehearsal stopped")
+    order = db.get(FoundryRehearsalOrder, order_id, with_for_update=True)
+    if order is None:
+        raise HTTPException(404, "Rehearsal order not found")
+    return _record_support_resolution(
+        db, order, "Reconciled full signed refund in the disposable checkout.", routine_scope=scope.model_dump(),
+    )
 
 
 FULFILLMENT_EVENT = "FOUNDRY_FULFILLMENT_EXCEPTION"

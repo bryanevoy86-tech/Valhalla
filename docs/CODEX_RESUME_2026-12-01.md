@@ -8,6 +8,10 @@ DO NOT restart the project, regenerate completed packs, or treat API presence as
 
 Use the current head of draft PR #4 and confirm the latest required CI run. Use the current workstream index, integration matrix and latest ledger verification to choose unfinished work. Dated checkpoints and original prompts are historical records. The same index supersedes earlier execution orders in the root start page and the finish passes. There are 50 acceptance contracts, 53 task entries and seven construction packages.
 
+## Operational autonomy audit — November 24
+
+Use the [owner report](VALHALLA_AUTONOMY_OPERATIONAL_AUDIT.md) and [50-contract dependency register](../ops/VALHALLA_OPERATIONAL_DEPENDENCY_REGISTER.md). All five Legacy scopes lack a signed activation mandate. The connected fixture can now record the Prime actor for full-refund support closeout without a separate owner key. Genuine hosted acceptance and all provider holds remain in place. The next internal task is to join consent-bound acquisition, paid-order/fulfillment and routine support dispatch through the existing receipts, then assert exact tenant scope, stop, recovery, and no owner routine events in one disposable run. The latest tested revision and commands are in the [change ledger](../ops/CHANGE_LEDGER.md#november-24-operational-autonomy-audit).
+
 ## Participant research preview — November 24
 
 The prepared WeWeb-compatible widget and disposable browser harness exercise authenticated participant consent, interview branching, withdrawal and sign-out. One dual-authorized round grants Prime scoped fixture admission and capped invitations. Participant calls use the existing bearer session. Server-only pseudonymous identity binding, suppression, persisted consent, stale-review denial and timed purge apply to the identity-bound lane. Hosted Preview and real commercial research remain separate commissioning gates. Use the [participant checklist](AUTONOMOUS_CUSTOMER_RESEARCH_COMMISSIONING.md#participant-interface-and-retention-acceptance).
