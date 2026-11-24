@@ -1233,3 +1233,5 @@ The acceptance matrix retains 13 P0 and 39 total criteria requiring internal cod
 - November 24 external evidence. Explicit approval, licence and signed publisher provenance required for outside Foundry exports. Added bounded CanadaBuys metadata retrieval and review-only public context for four comparative lanes. Companion mock/negative tests pass; live CanadaBuys API and buyer evidence remain open. No acceptance contracts closed.
 
 - November 24 autonomous research. Scoped disposable Heimdall interview orchestration, independent Loki review and evidence-bound abstention. Routine local worker actions require no additional owner key. Consent withdrawal invalidates prior review for future reliance. No live outreach, external transport or real customer enrollment.
+
+- November 24 research preview. Authenticated WeWeb-compatible participant facade and local Chromium proof for voluntary consent, scoped interview, protected credentials and withdrawal. Persistent consent, stable scoped suppression, independent review invalidation and scheduled purge are exercised with disposable evidence. Hosted, provider and genuine evidence gates remain open.

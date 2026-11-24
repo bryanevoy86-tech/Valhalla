@@ -20,7 +20,7 @@ def tick(client, round_id, scope):
     data = reply.json()
     if data.get("sent") is False and data.get("route") == "VOLUNTARY_INBOUND_FIXTURE":
         return {"status": "invitation_prepared", "sent": False}
-    if data.get("status") in {"WAITING_FOR_VOLUNTARY_ANSWERS", "WAITING_FOR_INDEPENDENT_REVIEW"}:
+    if data.get("status") in {"WAITING_FOR_VOLUNTARY_ANSWERS", "WAITING_FOR_INDEPENDENT_REVIEW", "RESEARCH_DATA_PURGED"}:
         return {"status": data["status"]}
     if data.get("review_id") and data.get("evidence", {}).get("basis") == "DISPOSABLE_RESEARCH_FIXTURE":
         return {"status": "independent_review_queued", "artifact_sha256": data["artifact_sha256"]}

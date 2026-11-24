@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; connect-src 'self'; form-action 'none'; base-uri 'none'">
+  <title>Heimdall research rehearsal</title>
+  <style>
+    [hidden]{display:none!important}
+    body{margin:0;background:#f1f5f4;color:#15262b;font:16px/1.55 system-ui}
+    main{box-sizing:border-box;max-width:46rem;margin:3rem auto;padding:2rem;background:#fff;border:1px solid #cedcd9;border-radius:1rem}
+    h1{font-size:1.65rem;margin:0} h2{font-size:1.2rem} p{max-width:55ch}
+    form{display:grid;gap:.55rem;max-width:26rem} input:not([type=checkbox]){display:block;width:100%;box-sizing:border-box;padding:.6rem}
+    button{padding:.55rem .8rem;margin:.3rem .3rem .1rem 0;border:1px solid #214a48;border-radius:.4rem;background:#214a48;color:white;font:inherit}
+    button:disabled{opacity:.55} button:focus-visible,input:focus-visible{outline:3px solid #308c78;outline-offset:2px}
+    section{border-top:1px solid #cedcd9;margin-top:1.4rem;padding-top:.4rem}
+    @media(max-width:36rem){main{margin:0;border:0;border-radius:0;padding:1.25rem}}
+  </style>
+</head>
+<body>
+<main>
+  <h1>Heimdall research rehearsal</h1>
+  <p>Private test with disposable identities.</p>
+  <form><label>Fixture email<input type="email" name="email" required></label>
+    <label>Fixture password<input type="password" name="password" required></label>
+    <button type="submit">Sign in</button></form>
+  <button type="button" id="signout" hidden>Sign out</button>
+  <p role="status" id="login-status"></p>
+  <section id="research" aria-label="Research interview" aria-live="polite"></section>
+</main>
+<script type="module" src="research.mjs"></script>
+</body>
+</html>

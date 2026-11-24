@@ -139,6 +139,11 @@ def loopback_api(legacy_http_client):
 
 
 @pytest.fixture
+def disposable_http_server():
+    return _serve_loopback
+
+
+@pytest.fixture
 def loopback_contract_api(contract_client):
     client, _ = contract_client
     with _serve_loopback(client) as network:

@@ -35,6 +35,7 @@ class Start(Scoped):
     duration_hours: int = Field(strict=True, ge=1, le=336)
     max_enrollments: int = Field(strict=True, ge=1, le=24)
     reference_price_minor: int = Field(strict=True, gt=0, le=1_000_000)
+    identity_bound: StrictBool = False
 
 
 class Enrollment(Scoped):
@@ -68,6 +69,8 @@ def guarded(db, request, *, withdrawal=False):
 def current(db, request, round_id, *, write=False, withdrawal=False):
     scope = guarded(db, request, withdrawal=withdrawal)
     row, state = research.load(db, round_id, scope, lock=write)
+    if state.get("purged"):
+        raise HTTPException(410, "Research data expired")
     if not withdrawal and research.now().isoformat() >= state["expires_at"]:
         raise HTTPException(409, "Research round expired")
     return row, state
@@ -99,7 +102,7 @@ def open_round(request: Start, db: Session = Depends(get_db)):
         commit(db)
     else:
         _, state = research.load(db, request.round_id, scope)
-        if state["design"] != request.model_dump(mode="json"):
+        if {"identity_bound": False, **state["design"]} != request.model_dump(mode="json"):
             raise HTTPException(409, "Research round parameters differ")
     return private_owner_response(research.summary(state))
 
@@ -119,8 +122,17 @@ def enroll(round_id: UUID, request: Enrollment, db: Session = Depends(get_db)):
     if not request.consent:
         raise HTTPException(422, "Affirmative research consent required")
     row, state = current(db, request, round_id, write=True)
+    fixture_lane(state)
+    return enroll_participant(db, row, state, participant_key(state, request))
+
+
+def fixture_lane(state):
+    if state["design"].get("identity_bound"):
+        raise HTTPException(409, "This round requires a participant session")
+
+
+def enroll_participant(db, row, state, key, notice_version=research.NOTICE, notice_digest=None):
     participants = state["participants"]
-    key = participant_key(state, request)
     suppressed = db.scalar(select(Event.id).filter_by(event_id=research.suppression_key(key)))
     if not state["invitation_prepared"] or suppressed or participants.get(key, {}).get("withdrawn"):
         raise HTTPException(409, "Enrollment unavailable")
@@ -130,7 +142,8 @@ def enroll(round_id: UUID, request: Enrollment, db: Session = Depends(get_db)):
         enrollment_id = f"research-join-{key}"
         if db.scalar(select(Event.id).filter_by(event_id=enrollment_id)) is not None:
             raise HTTPException(409, "Research token already used")
-        participants[key] = {"notice_version": research.NOTICE, "consented_at": research.now().isoformat(),
+        participants[key] = {"notice_version": notice_version, "notice_sha256": notice_digest,
+                             "consented_at": research.now().isoformat(),
                              "withdrawn": False, "answers": {}}
         _event(db, event_id=enrollment_id, legacy_instance_id=state["scope"]["legacy_instance_id"],
                event_type="CUSTOMER_RESEARCH_JOIN_FIXTURE", message="Research token consumed", payload={})
@@ -141,17 +154,21 @@ def enroll(round_id: UUID, request: Enrollment, db: Session = Depends(get_db)):
 @router.post("/{round_id}/answer")
 def answer(round_id: UUID, request: Answer, db: Session = Depends(get_db)):
     row, state = current(db, request, round_id, write=True)
-    key = participant_key(state, request)
+    fixture_lane(state)
+    return answer_participant(db, row, state, participant_key(state, request), request.step, request.answer)
+
+
+def answer_participant(db, row, state, key, step, answer):
     participant = state["participants"].get(key)
     if not participant or participant["withdrawn"] or db.scalar(select(Event.id).filter_by(
         event_id=research.suppression_key(key)
     )):
         raise HTTPException(409, "Current research consent required")
     answers = participant["answers"]
-    if answers.get(request.step) != request.answer:
-        if (request.step != research.next_step(answers) or request.answer not in research.QUESTIONS[request.step][1]):
+    if answers.get(step) != answer:
+        if step != research.next_step(answers) or answer not in research.QUESTIONS[step][1]:
             raise HTTPException(409, "Answer does not match the current interview step")
-        answers[request.step] = request.answer
+        answers[step] = answer
         save(db, row, state)
     return private_owner_response(research.prompt(answers, state["design"]))
 
@@ -159,7 +176,11 @@ def answer(round_id: UUID, request: Answer, db: Session = Depends(get_db)):
 @router.post("/{round_id}/withdraw")
 def withdraw(round_id: UUID, request: Participant, db: Session = Depends(get_db)):
     row, state = current(db, request, round_id, write=True, withdrawal=True)
-    key = participant_key(state, request)
+    fixture_lane(state)
+    return withdraw_participant(db, row, state, participant_key(state, request))
+
+
+def withdraw_participant(db, row, state, key):
     participant = state["participants"].get(key)
     if not participant:
         raise HTTPException(404, "Enrollment unavailable")
@@ -219,6 +240,12 @@ def next_decision(round_id: UUID, request: Scoped, db: Session = Depends(get_db)
 @router.post("/{round_id}/advance")
 def advance(round_id: UUID, request: Scoped, db: Session = Depends(get_db)):
     """Prime's bounded polling entry point for invitations, review and abstention."""
+    from app.routers.research_participant import purge_if_due
+
+    scope = guarded(db, request, withdrawal=True)
+    row, stored = research.load(db, round_id, scope, lock=True)
+    if stored.get("purged") or purge_if_due(db, row, stored):
+        return private_owner_response({"status": "RESEARCH_DATA_PURGED"})
     _, state = current(db, request, round_id, write=True)
     if not state["invitation_prepared"]:
         return prepare_invitation(round_id, request, db)

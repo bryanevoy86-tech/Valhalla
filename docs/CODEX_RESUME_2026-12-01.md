@@ -8,6 +8,10 @@ DO NOT restart the project, regenerate completed packs, or treat API presence as
 
 Use the current head of draft PR #4 and confirm the latest required CI run. Use the current workstream index, integration matrix and latest ledger verification to choose unfinished work. Dated checkpoints and original prompts are historical records. The same index supersedes earlier execution orders in the root start page and the finish passes. There are 50 acceptance contracts, 53 task entries and seven construction packages.
 
+## Participant research preview — November 24
+
+The prepared WeWeb-compatible widget and disposable browser harness exercise authenticated participant consent, interview branching, withdrawal and sign-out. One dual-authorized round grants Prime scoped fixture admission and capped invitations. Participant calls use the existing bearer session. Server-only pseudonymous identity binding, suppression, persisted consent, stale-review denial and timed purge apply to the identity-bound lane. Hosted Preview and real commercial research remain separate commissioning gates. Use the [participant checklist](AUTONOMOUS_CUSTOMER_RESEARCH_COMMISSIONING.md#participant-interface-and-retention-acceptance).
+
 ## Autonomous customer research — November 24
 
 The owner supervises authority, channel, scope and spend. Heimdall is responsible for routine consent-based customer research and acquisition within delegated authority. The previous manual interviewer recommendation is superseded. Use the [commissioning procedure and runtime audit](AUTONOMOUS_CUSTOMER_RESEARCH_COMMISSIONING.md).

@@ -16,6 +16,7 @@ from app.services.specialist_triggers import outcome_scope_key
 ROUND = "CUSTOMER_RESEARCH_FIXTURE"
 TYPE = "customer_research"
 NOTICE = "heimdall-structured-research-v1"
+PARTICIPANT_NOTICE = "heimdall-participant-research-v1"
 ROLES = {"ODIN", "FREYJA", "NORNS", "NJORD", "TYR", "FORSETI", "MIMIR", "HEIMDALL"}
 DISCLOSURE = (
     "Heimdall is Valhalla's automated research interviewer. Participation is optional. "
@@ -139,7 +140,8 @@ def summary(state):
     qualified = [answers for answers in completed if answers.get("authority") == "yes"]
     data = {
         "basis": "DISPOSABLE_RESEARCH_FIXTURE", "scope": state["scope"], "round_id": state["round_id"],
-        "expires_at": state["expires_at"], "notice_version": NOTICE,
+        "expires_at": state["expires_at"],
+        "notice_version": PARTICIPANT_NOTICE if state["design"].get("identity_bound") else NOTICE,
         "reference_price_minor": state["design"]["reference_price_minor"],
         "topic": state["design"]["topic"],
         "sample_source": "VOLUNTARY_SINGLE_CHANNEL", "enrolled": len(participants),

@@ -1327,3 +1327,146 @@ def test_autonomous_customer_research_fixture(economic_client, loopback_api, mon
                for finding in rejected.findings)
     print("RESEARCH_REHEARSAL " + json.dumps({"initial_review": receipt, "decision": decision,
                                              "withdrawal_recheck": updated["artifact_sha256"]}))
+
+
+@pytest.mark.parametrize("deal_client", ["disk"], indirect=True)
+def test_authenticated_research_participant_browser_and_retention(economic_client, disposable_http_server, monkeypatch):
+    import os
+    from pathlib import Path
+    import runpy
+    import subprocess
+
+    from starlette.applications import Starlette
+    from starlette.routing import Mount
+    from starlette.staticfiles import StaticFiles
+    from app.models.auth_revocations import RevokedAccessToken
+    from app.routers.auth_weweb import _auth_runtime
+    from app.services import customer_research
+    from app.users.models import AccountSettings, UserProfile
+
+    client, engine = economic_client
+    for model in (UserProfile, AccountSettings, RevokedAccessToken):
+        model.__table__.create(engine, checkfirst=True)
+    for key, value in {
+        "APP_ENV": "test", "ENV": "test", "VALHALLA_CUSTOMER_RESEARCH_REHEARSAL": "1",
+        "VALHALLA_RESEARCH_IDENTITY_HMAC": "local-fixture-identity-pseudonymization-only",
+    }.items():
+        monkeypatch.setenv(key, value)
+    password = "disposable-research-account"
+    ids = {}
+    emails = {key: f"research-{key}@example.invalid" for key in ("participant", "browser", "outsider")}
+    with Session(engine) as db:
+        for key, email in emails.items():
+            profile = UserProfile(first_name="Synthetic", last_name="Research", email=email)
+            db.add(profile)
+            db.flush()
+            ids[key] = profile.user_id
+            db.add(AccountSettings(user_id=profile.user_id, email_verified=True, account_locked=False,
+                                   password_hash=_auth_runtime().pbkdf2_hash_password(password)))
+        db.commit()
+
+    round_id = str(uuid4())
+    prime = "/api/prime/customer-research/rehearsal"
+    root = f"/api/weweb/customer-research/{round_id}"
+    data = {"scope": SCOPE, "round_id": round_id, "topic": "fleet_records", "duration_hours": 1,
+            "max_enrollments": 2, "reference_price_minor": 19900, "identity_bound": True}
+    scope = {"scope": SCOPE}
+    opened = client.post(f"{prime}/rounds", json=data, headers=OWNER)
+    assert opened.status_code == 200, opened.text
+    assert client.post(f"{prime}/{round_id}/advance", json=scope).json()["sent"] is False
+    for user in ("participant", "browser"):
+        assert client.post(f"{root}/grant", json={**scope, "user_id": ids[user]}, headers=OWNER).status_code == 200
+    assert client.post(f"{root}/grant", json={**scope, "user_id": ids["outsider"]}, headers=OWNER).status_code == 409
+
+    def login(which):
+        res = client.post("/api/weweb/login", json={"email": emails[which], "password": password})
+        assert res.status_code == 200, res.text
+        return {"Authorization": "Bearer " + res.json()["access_token"]}
+
+    headers = login("participant")
+    outsider = login("outsider")
+    assert client.get(root).status_code == 401
+    assert client.get(root, headers=outsider).status_code == 404
+    assert client.post(root + "/grant", json={**scope, "user_id": ids["outsider"]},
+                       headers={**outsider, "X-Prime-Control-Key": ""}).status_code == 401
+    disclosure = client.get(root, headers=headers)
+    assert disclosure.headers["cache-control"] == "no-store"
+    notice = disclosure.json()
+    assert notice["status"] == "CONSENT_REQUIRED"
+    consent = {"consent": True, "notice_version": notice["notice"]["version"], "notice_sha256": notice["notice_sha256"]}
+    assert client.post(root + "/enroll", headers=headers, json={**consent, "consent": False}).status_code == 422
+    assert client.post(root + "/enroll", headers=headers, json={**consent, "notice_sha256": "0" * 64}).status_code == 422
+    assert client.post(root + "/enroll", headers=headers, json={**consent, "user_id": ids["outsider"]}).status_code == 422
+    assert client.post(f"{prime}/{round_id}/enroll", json={**scope, "token": str(uuid4()), "consent": True,
+                       "notice_version": customer_research.NOTICE}).status_code == 409
+    assert client.post(root + "/answer", headers=headers, json={"step": "problem", "answer": "yes"}).status_code == 409
+    assert client.post(root + "/enroll", headers=headers, json=consent).json()["step"] == "problem"
+    assert client.post(root + "/enroll", headers=headers, json=consent).json()["step"] == "problem"
+    assert client.post(root + "/answer", headers=headers, json={"step": "interest", "answer": "yes"}).status_code == 409
+    assert client.post(root + "/answer", headers=headers, json={"step": "problem", "answer": "yes"}).json()["step"] == "authority"
+
+    # Reopen the disposable database through a new connection and loopback server.
+    engine.dispose()
+    with disposable_http_server(client) as network:
+        assert network.get(root, headers=headers).json()["step"] == "authority"
+        assert network.post(root + "/answer", headers=headers, json={"step": "authority", "answer": "no"}).json()["status"] == "COMPLETED"
+        cron = Path(__file__).resolve().parents[1] / "tools" / "cron"
+        monkeypatch.syspath_prepend(str(cron))
+        loki = runpy.run_path(str(cron / "loki_analyst_worker.py"))["tick"]
+        queued = client.post(f"{prime}/{round_id}/advance", json=scope).json()
+        network.headers.clear()
+        network.headers.update(REVIEWER)
+        receipt = loki(network, "customer_research", "economic-independent-fixture")
+        assert receipt["verified"] and receipt["artifact_sha256"] == queued["artifact_sha256"]
+    assert client.post(f"{prime}/{round_id}/advance", json=scope).json()["decision"] == "ABSTAIN_PENDING_GENUINE_EVIDENCE"
+
+    if os.environ.get("VALHALLA_BROWSER_ACCEPTANCE") == "1":
+        repo = Path(__file__).resolve().parents[3]
+        static = repo / "tests" / "browser-acceptance"
+        app = Starlette(routes=[
+            Mount("/__acceptance", app=StaticFiles(directory=static, html=True)),
+            Mount("/__widgets", app=StaticFiles(directory=repo / "web" / "weweb-widgets")),
+            Mount("/", app=client.app),
+        ])
+        with disposable_http_server(client, app=app) as network:
+            result = subprocess.run(["node", str(static / "research.cjs")], text=True, capture_output=True,
+                timeout=60, input=json.dumps({"origin": str(network.base_url), "round": round_id,
+                                             "email": emails["browser"], "password": password}))
+        assert result.returncode == 0, result.stderr
+        print("RESEARCH_BROWSER " + result.stdout.strip())
+
+    monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "true")
+    assert client.get(root, headers=headers).json()["status"] == "PAUSED"
+    assert client.post(root + "/answer", headers=headers, json={"step": "authority", "answer": "no"}).status_code == 503
+    assert client.post(root + "/withdraw", headers=headers).json()["answers_removed"]
+    assert client.get(root, headers=headers).json()["status"] == "WITHDRAWN"
+    assert client.post("/api/weweb/logout", headers=headers).status_code == 200
+    assert client.get(root, headers=headers).status_code == 401
+    headers = login("participant")
+    monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "false")
+    assert client.post(root + "/enroll", headers=headers, json=consent).status_code == 409
+    assert client.post(f"{prime}/{round_id}/decision", json=scope).status_code == 409
+
+    new_round = str(uuid4())
+    assert client.post(f"{prime}/rounds", json={**data, "round_id": new_round}, headers=OWNER).status_code == 200
+    assert client.post(f"/api/weweb/customer-research/{new_round}/grant",
+                       json={**scope, "user_id": ids["participant"]}, headers=OWNER).status_code == 409
+    with monkeypatch.context() as rotated:
+        rotated.setenv("VALHALLA_RESEARCH_IDENTITY_HMAC", "changed-fixture-identity-secret-must-hold")
+        assert client.post(f"/api/weweb/customer-research/{new_round}/grant",
+                           json={**scope, "user_id": ids["participant"]}, headers=OWNER).status_code == 503
+    with Session(engine) as db:
+        row, state = customer_research.load(db, round_id, SCOPE)
+        assert emails["participant"] not in row.payload_json
+        assert state["participants"] and all(not p["answers"] for p in state["participants"].values())
+    future = datetime.now(timezone.utc) + timedelta(hours=26)
+    monkeypatch.setattr(customer_research, "now", lambda: future)
+    monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "true")
+    assert client.post(f"{prime}/{round_id}/advance", json=scope).json()["status"] == "RESEARCH_DATA_PURGED"
+    assert client.post(f"{prime}/{round_id}/advance", json=scope).json()["status"] == "RESEARCH_DATA_PURGED"
+    assert client.get(root, headers=headers).status_code == 404
+    with Session(engine) as db:
+        _, state = customer_research.load(db, round_id, SCOPE)
+        assert state["purged"] and state["participants"] == {} and state["participant_grants"] == []
+        assert db.query(LegacyOrchestrationEvent).filter_by(event_type="CUSTOMER_RESEARCH_JOIN_FIXTURE").count() == 0
+        assert db.query(LegacyOrchestrationEvent).filter_by(event_type="CUSTOMER_RESEARCH_SUPPRESSION_FIXTURE").count() >= 1

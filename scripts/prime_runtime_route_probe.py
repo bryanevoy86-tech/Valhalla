@@ -19,6 +19,10 @@ API_ROOT = REPO_ROOT / "services/api"
 # Exact backend API contracts as authored in the working branch. These
 # checks establish registration, NOT successful execution or authorization.
 MANDATORY_ENDPOINTS = {
+    "customer_research_participant_status": ("GET", "/api/weweb/customer-research/{round_id}"),
+    "customer_research_participant_enroll": ("POST", "/api/weweb/customer-research/{round_id}/enroll"),
+    "customer_research_participant_answer": ("POST", "/api/weweb/customer-research/{round_id}/answer"),
+    "customer_research_participant_withdraw": ("POST", "/api/weweb/customer-research/{round_id}/withdraw"),
     "customer_research_round": ("POST", "/api/prime/customer-research/rehearsal/rounds"),
     "customer_research_advance": ("POST", "/api/prime/customer-research/rehearsal/{round_id}/advance"),
     "customer_research_withdraw": ("POST", "/api/prime/customer-research/rehearsal/{round_id}/withdraw"),
