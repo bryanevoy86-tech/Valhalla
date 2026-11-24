@@ -4,6 +4,10 @@
 **Development review:** https://github.com/bryanevoy86-tech/Valhalla/pull/4
 **Cross-reference:** ops/prime_system_integration_matrix.json, ops/CHANGE_LEDGER.md, docs/HEIMDALL_DEFINITION_OF_DONE.md.
 
+## Owner Go Live readiness
+
+The [current readiness dossier](../docs/VALHALLA_FULL_GO_LIVE_READINESS.md) maps each registered Pantheon role, conditionally activated capability and professional boundary. The [reconciled contract register](VALHALLA_OPERATIONAL_DEPENDENCY_REGISTER.md) retains the actual internal/external evidence, duty and acceptance for every existing contract.
+
 ## Why this exists
 
 Valhalla must not be reduced to a SaaS Product Foundry or the last issue we tested. The agreed scope includes private Heimdall Prime, Pantheon specialists, governed five-legacy operations, future expansion, financial and succession structures, future international residency options, protection and learning. A historical "Pack complete" or a model/route filename is **not** proof of running software, real money, an established legal entity, or lawful residency.

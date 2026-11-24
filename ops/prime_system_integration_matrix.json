@@ -96,7 +96,7 @@
       "owner_external_authorization_required": false,
       "continuation": {
         "next_implementation": "Extend hard gates to remaining operating routes and rehearse recovery after governance denial.",
-        "existing_test_evidence": "See POSTGRES_INTEGRATION_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md. The alternate-root rehearsal rejects a cross-currency reservation reviewed before a hold and refuses a newly reviewed proposal while that hold remains. A new accounting identity cannot book opening commitments to evade it.",
+        "existing_test_evidence": "See POSTGRES_INTEGRATION_TESTED and source observations above, with exact releases in ops/CHANGE_LEDGER.md. The alternate-root rehearsal rejects a cross-currency reservation reviewed before a hold and refuses a newly reviewed proposal while that hold remains. A new accounting identity cannot book opening commitments to evade it. Private owner briefing and scoped owner operating readbacks expose hard-held channel requirements and emergency stop without granting external authority or inferring actual performance or available cash.",
         "owner_action": "Internal continuation is authorized under the standing development scope.",
         "required_acceptance_evidence_field": "acceptance_test",
         "remaining": {

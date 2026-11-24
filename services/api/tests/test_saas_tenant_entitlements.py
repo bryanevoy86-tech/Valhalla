@@ -234,6 +234,9 @@ def test_trial_is_bound_to_authenticated_subscriber_and_tenant(deal_client, monk
     assert owned.headers["cache-control"] == "no-store"
     assert owned.json()["execution_authorized"] is False
     assert owned.json()["evidence"]["integrity"]["fail_safe_state"]["active"] is True
+    release = owned.json()["launch_readiness"]
+    assert release["external_authority"] is False and release["actual_spend_minor"] is None
+    assert all(item["status"] == "HELD" for item in release["channels"].values())
     [prime_alert] = owned.json()["evidence"]["operating_evidence"]["latest_prime_advisory_alerts"]
     assert prime_alert["report_event_id"] == report_id and prime_alert["execution_authorized"] is False
     with Session(engine) as db:

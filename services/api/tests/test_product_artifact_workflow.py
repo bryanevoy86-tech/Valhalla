@@ -754,6 +754,18 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(
         assert operating.status_code == 200 and operating.headers["cache-control"] == "no-store"
         view = operating.json()
         assert view["execution_authorized"] is False and view["actual_accessible_funds_minor"] is None
+        gates = view["launch_readiness"]
+        assert gates["emergency_stop"] == "CLEAR"
+        assert gates["external_authority"] is False
+        assert gates["actual_spend_minor"] is gates["verified_business_performance"] is None
+        assert gates["global_blockers"] == ["OPERATIONAL_RELEASE_EVIDENCE_NOT_CONNECTED"]
+        assert all(channel["status"] == "HELD" for channel in gates["channels"].values())
+        assert "INDEPENDENT_BANK_MATCH" in gates["channels"]["accounting_and_bank"]["requirements"]
+        owner_fixture.setenv("VALHALLA_EMERGENCY_STOP", "true")
+        stopped_scope = client.post(owner_operating_route, headers=owner_session, json=scope)
+        assert stopped_scope.status_code == 200, stopped_scope.text
+        assert "EMERGENCY_STOP_NOT_CLEAR" in stopped_scope.json()["launch_readiness"]["global_blockers"]
+        owner_fixture.setenv("VALHALLA_EMERGENCY_STOP", "false")
         assert view["recurring_paid_periods"] is None
         assert view["capital_fixture"]["period_net_minor"] == -175
         assert view["statement_fixtures"]["BUSINESS"]["accounts"][0]["status"] == "MATCHED_FIXTURE"

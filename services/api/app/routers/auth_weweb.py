@@ -493,7 +493,10 @@ def owner_briefing(mode: Literal["standard", "driving"] = "standard", db: Sessio
         )
         return private_owner_response({"reply": spoken, "attention": attention, "emergency_stop": stop_active,
                                        "mode": mode, "execution_authorized": False})
-    return private_owner_response({"reply": reply, "evidence": evidence, "execution_authorized": False})
+    from app.services.launch_readiness import capability_release_holds
+
+    return private_owner_response({"reply": reply, "evidence": evidence, "execution_authorized": False,
+                                   "launch_readiness": capability_release_holds(db)})
 
 
 @router.get("/owner-conversations", dependencies=[Depends(require_owner_session)])

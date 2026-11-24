@@ -184,6 +184,7 @@ def owner_operating_scope(payload: MarketScope, db: Session = Depends(get_db)):
     from app.models.completion_registry import LegacyInstanceRegistryItem
     from app.routers.economic_control import assess, require_schema
     from app.services.prime_business_execution import _check_legacy
+    from app.services.launch_readiness import capability_release_holds
     from app.services.stripe_recurring import scoped_subscription_outcomes
     from app.services.stripe_subscription_delivery import scoped_service_settlement
     from app.services.treasury_reconciliation import observe_statement_heads
@@ -206,6 +207,7 @@ def owner_operating_scope(payload: MarketScope, db: Session = Depends(get_db)):
             "suggested_action",
         )}
     return private_owner_response({
+        "launch_readiness": capability_release_holds(db),
         "scope": scope, "legacy": {"display_name": legacy.display_name, "status": legacy.status},
         "capital_fixture": capital, "statement_fixtures": {
             purpose: observe_statement_heads(db, scope, purpose=purpose, detailed=True)

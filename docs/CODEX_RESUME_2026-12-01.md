@@ -8,6 +8,10 @@ DO NOT restart the project, regenerate completed packs, or treat API presence as
 
 Use the current head of draft PR #4 and confirm the latest required CI run. Use the current workstream index, integration matrix and latest ledger verification to choose unfinished work. Dated checkpoints and original prompts are historical records. The same index supersedes earlier execution orders in the root start page and the finish passes. There are 50 acceptance contracts, 53 task entries and seven construction packages.
 
+## Full capability and Go Live reconciliation — November 24
+
+Use the [readiness dossier](VALHALLA_FULL_GO_LIVE_READINESS.md) and the [50-contract register](../ops/VALHALLA_OPERATIONAL_DEPENDENCY_REGISTER.md). They map the 21 registered roles, exact duties, real-world evidence gaps, professional and delegated-operator boundaries, and release order. The private owner briefing and scoped operating view now show channel-specific holds. The global Go Live check still requires unconnected operational release evidence. No external channel becomes eligible from a test result or global flag. Continue with independent Preview-origin and staged-scope evidence when authorized.
+
 ## Commercial commissioning preparation — November 24
 
 Use the [consolidated commissioning sheet](VALHALLA_COMMERCIAL_COMMISSIONING_SHEET.md). Read-only account inventory confirmed both WeWeb projects are Free and unpublished, and no isolated Render stack was visible. Workspace quota, the actual Preview origin and approval are pending. The [refund and bank commissioning contract](VALHALLA_REFUND_BANK_COMMISSIONING.md) adds the guarded one-attempt sandbox writer and independent callback/readback gate. No paid, hosted, provider, bank or commercial acceptance has been performed.

@@ -1258,3 +1258,9 @@ The acceptance matrix retains 13 P0 and 39 total criteria requiring internal cod
 
 - Added an off-by-default one-attempt native Stripe sandbox refund writer, separate from the API and reviewer. An expiring exact-scope intent binds the independently checked capture, current listing and CAD amount. The attempt is durable before transport. Independent readback verifies a unique Refund, signed callback and clearing evidence with no delivery, cash, banking or ledger effect.
 - Updated account inventory and prepared the [commissioning sheet](../docs/VALHALLA_COMMERCIAL_COMMISSIONING_SHEET.md), private WeWeb origin proof, 24-hour hosted acceptance and an inbound opt-in research path. No external provider resources or entitlement changed. Banking and all hosted and commercial gates are open.
+
+
+## November 24 full capability and Go Live reconciliation
+
+- Added the [dossier](../docs/VALHALLA_FULL_GO_LIVE_READINESS.md) and explicit duty and fallback for every original acceptance contract. Cross-checked the 21 runtime roles and retained the complete doctrine, activation dependencies and exact acceptance text.
+- Added channel hold visibility to the existing private owner briefing and scoped operating view. These projections grant no execution or release authority and expose no unverified spend, outcome or accessible cash. Existing supported local, staging and professional boundaries remain in force.
