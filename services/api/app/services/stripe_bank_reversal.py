@@ -8,6 +8,7 @@ from fastapi import HTTPException
 from sqlalchemy import inspect, select
 from sqlalchemy.exc import IntegrityError
 
+from app.services.launch_readiness import require_channel_release
 from app.accounting.models import Account, JournalEntry, JournalLine
 from app.banking.plaid_transactions import configured_bank_debit
 from app.loki.evidence import artifact_digest
@@ -63,6 +64,7 @@ def _book_reversal(db, original, key, scope, booked_bank, amount, posted):
 
 
 def record_bank_reversal(db, request, *, live, client, account, destination, bank_debit=configured_bank_debit):
+    require_channel_release("accounting_and_bank", live=live)
     if not all(stripe_id(item, "po") for item in (request.payout_id, request.reversal_id)) or request.payout_id == request.reversal_id:
         raise HTTPException(422, "Two distinct native payout identities are required")
     if not inspect(db.connection()).has_table(LegacyOrchestrationEvent.__tablename__):
@@ -151,6 +153,7 @@ def record_bank_reversal(db, request, *, live, client, account, destination, ban
 
 
 def configured_bank_reversal(db, request, *, live):
+    require_channel_release("accounting_and_bank", live=live)
     with stripe_readback_client(live=live) as (client, account):
         return record_bank_reversal(db, request, live=live, client=client, account=account,
                                     destination=os.getenv("VALHALLA_STRIPE_PAYOUT_DESTINATION_ID"))

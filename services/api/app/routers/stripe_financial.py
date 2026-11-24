@@ -106,6 +106,7 @@ def reconcile_scoped_cash_close(request: CashPositionRequest, db: Session = Depe
     from app.models.stripe_finance import StripeFinancialEvent
     from app.routers.economic_control import context, require_schema
     from app.services.economic_control import require_no_containment
+    from app.services.launch_readiness import channel_release_blocker
     from app.services.prime_business_execution import _emergency_stop_active
     from app.services.specialist_triggers import outcome_scope_key
 
@@ -121,6 +122,8 @@ def reconcile_scoped_cash_close(request: CashPositionRequest, db: Session = Depe
     if _emergency_stop_active(db):
         blockers.add("EMERGENCY_STOP")
     if live:
+        if blocker := channel_release_blocker("accounting_and_bank"):
+            blockers.add(blocker)
         schema = inspect(db.connection())
         if any(not schema.has_table(model.__tablename__) for model in (LegacyOrchestrationEvent, StripeFinancialEvent)):
             raise HTTPException(503, "Current settlement and correction journal unavailable")

@@ -9,6 +9,7 @@ from datetime import datetime, timedelta, timezone
 import json
 import os
 from pathlib import Path
+import subprocess
 import sys
 import threading
 import types
@@ -63,6 +64,49 @@ TABLES = [
 
 @unittest.skipUnless(url, "Disposable Postgres database is not configured")
 class FactoryPostgresTests(unittest.TestCase):
+    def test_distinct_specialist_credentials_survive_worker_restart(self):
+        from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+        from unittest.mock import patch
+        from app.pantheon import identity
+        from app.pantheon.monitor import verified_report
+
+        registrar, odin, njord = (Ed25519PrivateKey.generate() for _ in range(3))
+        public = registrar.public_key().public_bytes_raw().hex()
+        scope = {key: self.payload[key] for key in ("legacy_instance_id", "business_id", "engine_id", "jurisdiction")}
+        when = identity.now()
+        with patch.dict(os.environ, {
+            "VALHALLA_PANTHEON_ENROLLMENT_PRIVATE_KEY": registrar.private_bytes_raw().hex(),
+            "VALHALLA_PANTHEON_ENROLLMENT_PUBLIC_KEY": public,
+        }), self.sessions.begin() as db:
+            for role, worker_key in (("ODIN", odin), ("NJORD", njord)):
+                row = SpecialistAssignment(id=uuid4(), role=role, scope=scope, scope_key=outcome_scope_key(scope),
+                    next_due_at=when, expires_at=when + timedelta(hours=1), state="active", cadence_seconds=300)
+                db.add(row)
+                identity.enroll(db, row, worker_key.public_key().public_bytes_raw().hex(), when + timedelta(minutes=10))
+
+        def worker(role, sign):
+            env = {"PATH": os.environ["PATH"], "DATABASE_URL": url, "VALHALLA_JWT_SECRET": "worker-postgres-fixture",
+                   "VALHALLA_PANTHEON_WORKER_ENABLED": "1", "VALHALLA_PANTHEON_ENROLLMENT_PUBLIC_KEY": public,
+                   "VALHALLA_PANTHEON_WORKER_PRIVATE_KEY": sign.private_bytes_raw().hex(), "PYTHON_DOTENV_DISABLED": "1"}
+            process = subprocess.run([sys.executable, str(ROOT / "services/api/tools/cron/pantheon_worker.py"),
+                "--role", role, "--once"], env=env, capture_output=True, text=True, timeout=20)
+            return process.returncode, json.loads(process.stdout)
+
+        self.assertEqual(worker("NJORD", odin)[0], 2)
+        for role, key in (("ODIN", odin), ("NJORD", njord)):
+            code, result = worker(role, key)
+            self.assertEqual((code, result["status"]), (0, "observed"))
+            self.assertEqual(worker(role, key), (0, {"status": "idle"}))
+            with patch.dict(os.environ, {"VALHALLA_PANTHEON_ENROLLMENT_PUBLIC_KEY": public}), self.sessions() as db:
+                report = verified_report(db, result["report_event_id"])
+                self.assertEqual((report["role"], report["scope"], report["worker_identity_id"]), (
+                    role, scope, identity.key_id(key.public_key().public_bytes_raw().hex()),
+                ))
+                identity.revoke(db, report["worker_identity_id"])
+                db.commit()
+                with self.assertRaisesRegex(Exception, "revoked"):
+                    identity.verify_signature(db, report, current=True)
+
     def test_startup_checkpoint_survives_reconnect_and_ignores_other_conversations(self):
         from app.models.owner_conversation import OwnerConversation, OwnerTurn
         from app.services.startup_walkthrough import walkthrough

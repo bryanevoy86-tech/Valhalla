@@ -20,6 +20,7 @@ from app.models.completion_registry import LegacyOrchestrationEvent as Event
 from app.models.foundry_evidence import FoundryEvidence
 from app.models.foundry_intake import FoundryIntakeJob
 from app.models.specialist_assignment import SpecialistAssignment
+from app.pantheon import identity
 from app.pantheon.monitor import SCHEDULED_WORKER, run_assignment, trigger_report_id, utc_now, verified_report
 from app.routers import foundry_checkout as checkout
 from app.routers import foundry_operating_rehearsal as operating
@@ -263,6 +264,11 @@ def queue_assessments(db, policy, scope, source, report_rows):
 def ready_for_decision(db, chain, source, scope, bundle):
     require_current_candidate(db, bundle["proposal"], scope, utc_now().date())
     source_evidence(db, source, scope)
+    if chain["authority"]["evidence"].get("require_scheduled_specialists"):
+        for assignment in assignments(db, chain["authority"]["evidence"]["assignment_ids"], scope):
+            report = scheduled_source_report(db, assignment, f"DISCOVERY-{UUID(source['job_id'])}")
+            if report is None or report["report_event_id"] != assignment.last_report_event_id:
+                raise HTTPException(409, "Scheduled specialist evidence is missing or superseded")
     brief = review_brief(db, bundle["reviews"])
     check_review_actors(chain, brief)
     return brief
@@ -285,6 +291,7 @@ def scheduled_source_report(db, assignment, trigger):
             SCHEDULED_WORKER, str(assignment.id), assignment.role, assignment.scope,
             "SOURCE_DISCOVERY", trigger, "observed"):
         raise HTTPException(409, "Scheduled specialist evidence does not match the authorized source assignment")
+    identity.verify_signature(db, report, current=True)
     return report
 
 
@@ -337,6 +344,7 @@ def advance(run_id: UUID, db: Session = Depends(get_db)):
                 "role": assignment.role, "assignment_id": assignment.id, "report_id": report["report_event_id"],
                 "report_sha256": report["report_sha256"], "source_sha256": row.digest,
                 "execution_path": report.get("execution_path", "HISTORICAL_UNATTRIBUTED"),
+                "worker_identity_id": report.get("worker_identity_id"),
             }))
         report_rows.append(chain[name])
     name = stage(source, "review")
@@ -437,6 +445,10 @@ def verify_handoff(db, run_id, digest):
     decision = chain.get(stage(source, "decision"))
     if not decision or decision["sha256"] != handoff["evidence"]["decision_sha256"]:
         raise HTTPException(409, "Operating decision no longer matches its handoff")
+    if chain["authority"]["evidence"].get("require_scheduled_specialists"):
+        for assignment in assignments(db, chain["authority"]["evidence"]["assignment_ids"], handoff["scope"]):
+            if scheduled_source_report(db, assignment, f"DISCOVERY-{UUID(source['job_id'])}") is None:
+                raise HTTPException(409, "Scheduled specialist evidence is missing")
 
 
 @router.get("/{run_id}", dependencies=PRIME)

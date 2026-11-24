@@ -244,10 +244,26 @@ def run_operating_rehearsal(client, engine, monkeypatch, serve, owner, owner_ses
 
 def source_chain(client, network, engine, monkeypatch, authority, owner, upstream, worker, command, env, root, today,
                  owner_session, buyer_session):
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
     from app.models.foundry_evidence import FoundryEvidence
     from app.pantheon.monitor import SCHEDULED_WORKER, run_scheduled_assignment, trigger_report_id
     from app.services.foundry_intake import source_signature_message
 
+    signers = {role: Ed25519PrivateKey.generate() for role in ("ODIN", "NJORD")}
+    registrar = Ed25519PrivateKey.generate()
+    monkeypatch.setenv("VALHALLA_PANTHEON_ENROLLMENT_PRIVATE_KEY", registrar.private_bytes_raw().hex())
+    monkeypatch.setenv("VALHALLA_PANTHEON_ENROLLMENT_PUBLIC_KEY", registrar.public_key().public_bytes_raw().hex())
+    signer_ids = {}
+    for role, assignment_id in zip(signers, upstream["assignment_ids"], strict=True):
+        enrollment = f"/api/prime/pantheon/assignments/{assignment_id}/worker-identities"
+        body = {"public_key": signers[role].public_key().public_bytes_raw().hex(), "duration_seconds": 300}
+        prime_only = {key: value for key, value in owner.items() if key != "X-Owner-Mandate-Key"}
+        assert client.post(enrollment, headers=prime_only, json=body).status_code == 401
+        result = client.post(enrollment, headers=owner, json=body)
+        assert result.status_code == 201, result.text
+        assert client.post(enrollment, headers=owner, json=body).status_code == 409
+        signer_ids[role] = result.json()["identity_id"]
+    assert len(set(signer_ids.values())) == 2
     start = client.post(root + "/authority", headers=owner, json=authority)
     assert start.status_code == 200, start.text
     worker(network, "waiting", "SIGNED_SOURCE")
@@ -288,7 +304,7 @@ def source_chain(client, network, engine, monkeypatch, authority, owner, upstrea
             expected_report = trigger_report_id(assignment_id, f"DISCOVERY-{UUID(job)}")
             for _ in range(10):
                 with Session(engine) as specialist_db:
-                    result = run_scheduled_assignment(specialist_db, role)
+                    result = run_scheduled_assignment(specialist_db, role, signing_key=signers[role])
                 assert result["status"] == "observed", result
                 if result["report_event_id"] == expected_report:
                     break
@@ -298,6 +314,8 @@ def source_chain(client, network, engine, monkeypatch, authority, owner, upstrea
         source_receipts = network.get(root).json()["source_receipts"]
         assert [row["evidence"]["execution_path"] for row in source_receipts
                 if row["action_id"].endswith((f"rodin-{job}", f"rnjord-{job}"))] == [SCHEDULED_WORKER] * 2
+        assert [row["evidence"]["worker_identity_id"] for row in source_receipts
+                if row["action_id"].endswith((f"rodin-{job}", f"rnjord-{job}"))] == list(signer_ids.values())
         with monkeypatch.context() as missing:
             missing.delenv("VALHALLA_LOKI_REVIEWER_KEY")
             worker(network, "blocked", None, code=2)

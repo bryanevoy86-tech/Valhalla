@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from app.core.db import get_db
 from app.core.dependencies import require_prime_control_key
 from app.models.specialist_assignment import SpecialistAssignment, SpecialistTrigger
+from app.pantheon import identity
 from app.pantheon.monitor import assignment_schema, utc_now, verified_report
 from app.pantheon.roles import LENSES, Role
 from app.services.prime_business_execution import _check_legacy, require_owner_mandate_key
@@ -41,6 +42,12 @@ class AssignmentIn(Timing):
     business_id: str = Field(min_length=3, max_length=120)
     jurisdiction: str = Field(min_length=2, max_length=80)
     engine_id: str = Field(min_length=3, max_length=80)
+
+
+class WorkerIdentityIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    public_key: str = Field(pattern=r"^[a-f0-9]{64}$")
+    duration_seconds: int = Field(ge=60, le=2592000, strict=True)
 
 
 def info(row, db):
@@ -125,6 +132,26 @@ def revoke(assignment_id: UUID, db: Session = Depends(get_db)):
 def read_report(event_id: str, db: Session = Depends(get_db)):
     return verified_report(db, event_id)
 
+
+@router.post("/assignments/{assignment_id}/worker-identities", status_code=201, dependencies=owner)
+def enroll_worker(assignment_id: UUID, payload: WorkerIdentityIn, db: Session = Depends(get_db)):
+    assignment = get_assignment(db, assignment_id, lock=True)
+    _check_legacy(db, **assignment.scope)
+    expires = identity.now() + timedelta(seconds=payload.duration_seconds)
+    result = identity.enroll(db, assignment, payload.public_key, expires)
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(409, "Specialist credential was already enrolled") from None
+    return result
+
+
+@router.delete("/worker-identities/{identity_id}", dependencies=owner)
+def revoke_worker(identity_id: str, db: Session = Depends(get_db)):
+    result = identity.revoke(db, identity_id)
+    db.commit()
+    return result
 
 @router.post("/reports/{event_id}/challenge", status_code=201)
 def challenge_report(event_id: str, db: Session = Depends(get_db)):

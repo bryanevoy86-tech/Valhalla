@@ -1,5 +1,6 @@
 """Stripe integration client."""
 from app.core.runtime_flags import is_live
+from app.services.launch_readiness import require_channel_release
 
 
 def create_payment_intent(amount_cents, currency="usd"):
@@ -10,11 +11,8 @@ def create_payment_intent(amount_cents, currency="usd"):
             "status": "sandbox"
         }
 
-    # REAL STRIPE SDK CALL HERE
-    return {
-        "id": "pi_live",
-        "status": "requires_confirmation"
-    }
+    require_channel_release("commerce_and_fulfillment")
+    raise RuntimeError("Live payment intent adapter unavailable")
 
 
 def confirm_payment(payment_intent_id):
@@ -22,12 +20,13 @@ def confirm_payment(payment_intent_id):
     if not is_live():
         return {"status": "sandbox", "confirmed": True}
     
-    return {"status": "succeeded"}
+    require_channel_release("commerce_and_fulfillment")
+    raise RuntimeError("Live confirmation adapter unavailable")
 
 
 def get_payment_status(payment_intent_id):
     """Get status of a payment intent."""
     return {
         "id": payment_intent_id,
-        "status": "succeeded" if is_live() else "sandbox"
+        "status": "unverified" if is_live() else "sandbox"
     }

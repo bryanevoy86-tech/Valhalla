@@ -11,11 +11,20 @@ from sqlalchemy.orm import Session
 from app.loki.models import LokiReview, LokiReviewStatus
 from app.loki.review_service import verdict
 from app.models.specialist_assignment import SpecialistAssignment
-from app.pantheon.monitor import report_matches_assignment, utc_now, verified_report
+from app.pantheon import identity
+from app.pantheon.monitor import SCHEDULED_WORKER, report_matches_assignment, utc_now, verified_report
+
+
+def _require_worker_authority(db, report):
+    if report.get("worker_identity_id") or (
+        report.get("execution_path") == SCHEDULED_WORKER and report.get("role") in identity.SIGNED_ROLES
+    ):
+        identity.verify_signature(db, report, current=True)
 
 
 def enqueue_report(db: Session, event_id: str, *, durable=True) -> LokiReview:
     report = verified_report(db, event_id)
+    _require_worker_authority(db, report)
     digest = report.pop("report_sha256")
     prior = db.scalar(select(LokiReview).filter_by(artifact_sha256=digest))
     if prior is not None:
@@ -58,6 +67,7 @@ def require_reviewed_reports(db: Session, ids, scope: dict) -> list[dict]:
                 or report.get("status") != "observed" or assignment.state != "active" or assignment.expires_at <= now
                 or not 0 <= (now - observed).total_seconds() <= 2 * assignment.cadence_seconds):
             raise HTTPException(409, "Specialist report is stale, revoked or outside decision scope")
+        _require_worker_authority(db, report)
         review = db.scalar(select(LokiReview).filter_by(
             artifact_type="pantheon_report", artifact_sha256=report["report_sha256"], heimdall_reference_id=event_id,
         ))

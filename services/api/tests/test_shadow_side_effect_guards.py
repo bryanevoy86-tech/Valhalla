@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from fastapi import HTTPException
+import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
@@ -12,6 +13,42 @@ from app.models.go_live_state import GoLiveState
 from app.models.notify import Outbox
 from app.services.contracts.service import ContractPipeline
 from app.services.launch_readiness import capability_release_holds
+
+
+def test_uncommissioned_effect_boundaries_reject_before_context_or_provider_use(monkeypatch):
+    from app.integrations.stripe import client as payment
+    from app.legal import legal_send_service
+    from app.messaging import email_utils, sms_utils
+    from app.routers.intake_admin import promote_lead
+    from app.services import stripe_bank_booking, stripe_fulfillment, stripe_recurring, stripe_revenue_release
+
+    monkeypatch.setattr(payment, "is_live", lambda: True)
+    boundaries = [
+        ("customer_acquisition_and_sales", lambda: email_utils.send_email("x", "fixture@example.invalid", "x")),
+        ("customer_acquisition_and_sales", lambda: sms_utils.send_sms("fixture", "x")),
+        ("customer_acquisition_and_sales", lambda: promote_lead(1, None, {})),
+        ("agreements_and_signatures", lambda: legal_send_service.send_queued_email(
+            "fixture", "example.invalid", 0, "", "", "fixture@example.invalid",
+        )),
+        ("commerce_and_fulfillment", lambda: payment.create_payment_intent(100)),
+        ("commerce_and_fulfillment", lambda: payment.confirm_payment("fixture")),
+        ("commerce_and_fulfillment", lambda: stripe_fulfillment.configured_delivery(None, None, None, live=True)),
+        ("commerce_and_fulfillment", lambda: stripe_fulfillment.delivery_access(None, None, None, None, live=True)),
+        ("recurring_service", lambda: stripe_recurring.start_checkout(
+            None, None, None, None, live=True, reader=None, writer=None, success_url=None, cancel_url=None,
+        )),
+        ("recurring_service", lambda: stripe_recurring.schedule_cancellation(
+            None, None, None, None, live=True, reader=None, writer=None,
+        )),
+        ("accounting_and_bank", lambda: stripe_bank_booking.configured_bank_batch(None, None, live=True)),
+        ("accounting_and_bank", lambda: stripe_revenue_release.recognize_delivery(None, None, None, live=True)),
+    ]
+    for channel, perform in boundaries:
+        with pytest.raises(HTTPException) as held:
+            perform()
+        assert held.value.status_code == 412
+        assert held.value.detail["channel"] == channel
+    assert payment.get_payment_status("fixture")["status"] == "unverified"
 
 
 def test_acquisition_release_hold_preserves_outbox_even_with_historical_live_state(monkeypatch):

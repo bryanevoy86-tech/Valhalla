@@ -1,4 +1,5 @@
 """Read-only owner projection of capability-specific release gates."""
+from fastapi import HTTPException
 from sqlalchemy import inspect
 
 from app.models.go_live_state import GoLiveState
@@ -27,6 +28,12 @@ def channel_release_blocker(channel: str) -> str | None:
     if channel not in CHANNEL_REQUIREMENTS:
         raise ValueError("Unknown external action channel")
     return RELEASE_EVIDENCE_BLOCKER
+
+
+def require_channel_release(channel: str, *, live: bool = True) -> None:
+    """Require independently verified authority before real effects."""
+    if live and (blocker := channel_release_blocker(channel)):
+        raise HTTPException(412, detail={"channel": channel, "reason": blocker})
 
 
 def capability_release_holds(db):

@@ -13,6 +13,7 @@ from app.models.completion_registry import EngineRegistryItem, LegacyInstanceWor
 from app.models.norns_forecast import NornsForecast, NornsHoldout
 from app.models.specialist_assignment import SpecialistAssignment, SpecialistTrigger
 from app.pantheon.roles import LENSES
+from app.pantheon import identity
 from app.pantheon.forecasts import calibration_measurements, issue_scoped_estimate, sweep_scoped_outcomes
 from app.services.foundry_discovery import DISCOVERY_ROLES, WITHDRAWAL_PREFIX, discover, verify_withdrawal
 from app.services.foundry_intake import verify_intake_trigger
@@ -94,8 +95,16 @@ def observations(db: Session, lens: str, scope: dict, outcomes: list[dict], now,
                              "basis": "AGE_SINCE_LAST_RECORDED_WORK_UPDATE"}}
 
 
-def run_scheduled_assignment(db: Session, role: str) -> dict:
-    return run_assignment(db, role, execution_path=SCHEDULED_WORKER)
+def run_scheduled_assignment(db: Session, role: str, *, signing_key=None) -> dict:
+    if signing_key is None:
+        if role in identity.SIGNED_ROLES:
+            raise HTTPException(409, "This specialist role requires an enrolled signing identity")
+        return run_assignment(db, role, execution_path=SCHEDULED_WORKER)
+    signer, record = identity.worker_enrollment(db, signing_key)
+    if record["role"] != role:
+        raise HTTPException(409, "Specialist identity is not enrolled for this role")
+    return run_assignment(db, role, assignment_id=UUID(record["assignment_id"]),
+                          execution_path=SCHEDULED_WORKER, signing_key=signing_key, signer=signer)
 
 
 def trigger_report_id(assignment_id, trigger: str) -> str:
@@ -103,7 +112,7 @@ def trigger_report_id(assignment_id, trigger: str) -> str:
 
 
 def run_assignment(db: Session, role: str, *, now=None, assignment_id=None, exact_trigger=None, durable=True,
-                   execution_path="IN_PROCESS") -> dict:
+                   execution_path="IN_PROCESS", signing_key=None, signer=None) -> dict:
     if role not in LENSES:
         raise ValueError("Unknown specialist role")
     assignment_schema(db)
@@ -125,6 +134,8 @@ def run_assignment(db: Session, role: str, *, now=None, assignment_id=None, exac
         .with_for_update(skip_locked=True, key_share=True).limit(1))
     if assignment is None:
         return {"status": "idle"}
+    if signer is not None:
+        identity.authorize(db, signer, assignment.id, role, assignment.scope, current=True, observed=now)
     legacy_event = assignment.pending_event_id if exact_trigger is None else None
     queued = db.scalar(select(SpecialistTrigger).where(
         SpecialistTrigger.assignment_id == assignment.id, SpecialistTrigger.failure_code.is_(None),
@@ -264,6 +275,9 @@ def run_assignment(db: Session, role: str, *, now=None, assignment_id=None, exac
         report.update(status="observed", observations=facts)
     except HTTPException as exc:
         report.update(status="blocked", reason=exc.detail)
+    if signing_key is not None:
+        report["worker_identity_id"] = signer
+        report["worker_signature"] = signing_key.sign(identity.message(report)).hex()
     report["report_sha256"] = artifact_digest("pantheon_report", event_id, report)
     _event(db, event_id=event_id, legacy_instance_id=assignment.scope["legacy_instance_id"],
            event_type=REPORT_EVENT, message="Local specialist assignment observed", payload=report)
@@ -290,7 +304,10 @@ def verified_report(db: Session, event_id: str) -> dict:
             raise ValueError
     except (ValueError, TypeError, KeyError, AttributeError):
         raise HTTPException(409, "Specialist report integrity check failed") from None
-    return {**report, "report_sha256": digest}
+    report["report_sha256"] = digest
+    if "worker_identity_id" in report or "worker_signature" in report:
+        identity.verify_signature(db, report)
+    return report
 
 
 def report_matches_assignment(assignment: SpecialistAssignment | None, report: dict) -> bool:

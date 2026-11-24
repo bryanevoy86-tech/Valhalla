@@ -7,6 +7,7 @@ from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
+from app.services.launch_readiness import require_channel_release
 from app.accounting.models import Account, JournalEntry, JournalLine
 from app.integrations.stripe import ACTIVE_DISPUTE_STATUSES
 from app.loki.evidence import artifact_digest
@@ -75,6 +76,7 @@ def _debit_transaction(client, txn, dispute_id, charge_id, disputed, now):
 
 
 def configured_chargeback(db, order_id, request, *, live):
+    require_channel_release("accounting_and_bank", live=live)
     with stripe_readback_client(live=live) as (client, account):
         _, binding = _locked_order(db, order_id, live)
         if not stripe_id(request.signed_event_id, "evt"):
@@ -176,6 +178,7 @@ def _record_chargeback(db, key, value, bank, release_key, release, *, captured_m
 
 
 def configured_subscription_chargeback(db, local_id, invoice_id, request, *, live):
+    require_channel_release("accounting_and_bank", live=live)
     from app.models.stripe_recurring import StripePaidPeriod
     from app.services.stripe_bank_booking import invoice_bank_summary
     from app.services.stripe_recurring import _binding, _period_value

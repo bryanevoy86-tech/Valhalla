@@ -12,6 +12,7 @@ from pydantic import Field, field_validator
 from sqlalchemy import inspect, select
 from sqlalchemy.exc import IntegrityError
 
+from app.services.launch_readiness import require_channel_release
 from app.integrations.stripe import CHARGE_CORRECTION_EVENTS
 from app.loki.evidence import artifact_digest
 from app.models.completion_registry import LegacyOrchestrationEvent
@@ -226,6 +227,7 @@ def _checkout_matches(row, data, response):
 
 
 def start_checkout(db, local_id, tenant_id, principal, *, live, reader, writer, success_url, cancel_url):
+    require_channel_release("recurring_service", live=live)
     row, data, local = _binding(db, local_id, live, lock=True)
     _subscriber(db, data, tenant_id, principal)
     if row.checkout_session_id is not None:
@@ -251,6 +253,10 @@ def start_checkout(db, local_id, tenant_id, principal, *, live, reader, writer, 
         if identity:
             checkout = _provider_object(reader, f"/v1/checkout/sessions/{identity}", identity, "checkout.session")
         else:
+            if _emergency_stop_active(db):
+                raise HTTPException(503, "Subscription checkout is paused")
+            _check_legacy(db, **data["scope"])
+            require_no_containment(db, data["scope"])
             if not timedelta(0) <= now - _aware(row.checkout_started_at) < timedelta(hours=23):
                 raise HTTPException(409, "Unconfirmed checkout left the safe retry window; reconcile the native session")
             terms = _metadata(row)
@@ -560,6 +566,7 @@ def subscriber_recurring_list(db, tenant_id, principal, *, live, before=None):
 
 
 def schedule_cancellation(db, local_id, tenant_id, principal, *, live, reader, writer):
+    require_channel_release("recurring_service", live=live)
     row, data, _ = _binding(db, local_id, live, lock=True)
     _subscriber(db, data, tenant_id, principal)
     subscription_id = row.provider_subscription_id
@@ -568,6 +575,8 @@ def schedule_cancellation(db, local_id, tenant_id, principal, *, live, reader, w
     _provider_object(reader, "/v1/account", data["stripe_account_id"], "account")
     existing = _native_subscription(reader, subscription_id, row, data)
     if existing.get("cancel_at_period_end") is not True and existing.get("status") != "canceled":
+        if _emergency_stop_active(db):
+            raise HTTPException(503, "Subscription cancellation transport is paused")
         changed = _posted(writer, f"/v1/subscriptions/{subscription_id}", {"cancel_at_period_end": "true"},
                           "valhalla-saas-cancel-" + row.binding_sha256)
         if changed.get("id") != subscription_id or changed.get("cancel_at_period_end") is not True:
@@ -583,6 +592,7 @@ def schedule_cancellation(db, local_id, tenant_id, principal, *, live, reader, w
 @contextmanager
 def recurring_clients(*, live, write=False):
     if write:
+        require_channel_release("recurring_service", live=live)
         mode = "live" if live else "test"
         key = os.getenv("VALHALLA_STRIPE_RECURRING_WRITE_KEY", "")
         if os.getenv("VALHALLA_STRIPE_RECURRING_WRITE_MODE") != mode or not key.startswith(f"rk_{mode}_"):

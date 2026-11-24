@@ -8,6 +8,7 @@ from pydantic import Field
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
+from app.services.launch_readiness import require_channel_release
 from app.accounting.models import Account, JournalEntry, JournalLine, Period
 from app.loki.evidence import artifact_digest
 from app.schemas.market_intelligence import StrictModel
@@ -63,6 +64,7 @@ def _release_posting(db, key, scope, posted_on, bank, gross, *, served_from=None
 
 
 def recognize_delivery(db, order_id, request, *, live):
+    require_channel_release("accounting_and_bank", live=live)
     _, binding = _locked_order(db, order_id, live)
     scope = binding["scope"]
     grant = _read_record(db, f"STRIPE-DELIVERY-{order_id}", GRANT, scope)

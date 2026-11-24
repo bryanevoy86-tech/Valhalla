@@ -817,12 +817,13 @@ def test_sandbox_refund_attempt_is_single_and_callback_requires_separate_readbac
     from urllib.parse import parse_qs
 
     from app.models.go_live_state import GoLiveState
+    from app.models.completion_registry import LegacyInstanceRegistryItem
     from app.services import stripe_sandbox_refund as refund_trial
     from app.services.specialist_triggers import outcome_scope_key
 
     client, engine = deal_client
     for model in (StripeFinancialEvent, StripeBalanceEvidence, StripeOrderBinding, LegacyOrchestrationEvent,
-                  GoLiveState, Account, Period, JournalEntry, JournalLine):
+                  GoLiveState, LegacyInstanceRegistryItem, Account, Period, JournalEntry, JournalLine):
         model.__table__.create(engine, checkfirst=True)
     monkeypatch.setattr(database, "SessionLocal", lambda: Session(engine))
     monkeypatch.setattr("app.webhooks.stripe.is_live", lambda: False)
@@ -846,6 +847,15 @@ def test_sandbox_refund_attempt_is_single_and_callback_requires_separate_readbac
     order_id = uuid4()
     with Session(engine) as db:
         db.add(GoLiveState(id=1, go_live_enabled=False, kill_switch_engaged=False))
+        db.add(LegacyInstanceRegistryItem(
+            legacy_instance_id=scope["legacy_instance_id"], display_name="Disposable refund scope",
+            assigned_businesses_json=json.dumps([scope["business_id"]]),
+            assigned_jurisdictions_json=json.dumps([scope["jurisdiction"]]),
+            engines_json=json.dumps([scope["engine_id"]]),
+            local_knowledge_context_json=json.dumps({**scope, "data_namespace": "refund/fixture"}),
+            synchronization_status="SYNCED", isolation_state="ISOLATED",
+            failover_state="NOT_TRIGGERED", status="PARTIAL",
+        ))
         db.commit()
     owner = {"X-Owner-Mandate-Key": "refund-fixture-owner"}
     root = "/api/governance/floor/stripe-orders"
@@ -924,6 +934,18 @@ def test_sandbox_refund_attempt_is_single_and_callback_requires_separate_readbac
             with Session(engine) as db:
                 with pytest.raises(HTTPException, match="authority expired or changed"):
                     refund_trial.dispatch(db, order_id, reader)
+        assert writes == []
+        with monkeypatch.context() as revoked:
+            def revoke_during_read(request):
+                if request.url.path.startswith("/v1/charges/"):
+                    revoked.setenv("VALHALLA_STRIPE_SANDBOX_REFUND_SCOPE", "revoked")
+                return provider(request, writer=True)
+
+            with Session(engine) as db, httpx.Client(base_url="https://stripe-writer.invalid",
+                                                     transport=httpx.MockTransport(revoke_during_read)) as writer:
+                with pytest.raises(HTTPException, match="authority expired or changed"):
+                    refund_trial.dispatch(db, order_id, writer)
+                assert refund_trial.read(db, order_id, "attempt") is None
         assert writes == []
         for stopped in (True, False):
             monkeypatch.setenv("VALHALLA_EMERGENCY_STOP", "true" if stopped else "false")

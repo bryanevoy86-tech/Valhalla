@@ -11,6 +11,7 @@ from sqlalchemy import inspect, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.services.launch_readiness import require_channel_release
 from app.accounting.models import Account, JournalEntry, JournalLine, Period
 from app.banking.plaid_transactions import configured_bank_credit
 from app.loki.evidence import artifact_digest
@@ -129,6 +130,7 @@ def _payout_failed(db, payout_id, live):
 
 def reconcile_bank_batch(db: Session, request: BankBatchIn, *, client, account_id, destination, live,
                          bank_credit=configured_bank_credit):
+    require_channel_release("accounting_and_bank", live=live)
     for model in (StripeOrderBinding, LegacyOrchestrationEvent):
         if not inspect(db.connection()).has_table(model.__tablename__):
             raise HTTPException(503, "Stripe bank reconciliation schema unavailable")
@@ -271,6 +273,7 @@ def reconcile_bank_batch(db: Session, request: BankBatchIn, *, client, account_i
 
 
 def configured_bank_batch(db, request, *, live):
+    require_channel_release("accounting_and_bank", live=live)
     destination = os.getenv("VALHALLA_STRIPE_PAYOUT_DESTINATION_ID")
     with stripe_readback_client(live=live) as (client, account_id):
         return reconcile_bank_batch(db, request, client=client, account_id=account_id, destination=destination, live=live)

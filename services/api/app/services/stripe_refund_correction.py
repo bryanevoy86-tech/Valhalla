@@ -8,6 +8,7 @@ from pydantic import field_validator
 from sqlalchemy import or_, select
 from sqlalchemy.exc import IntegrityError
 
+from app.services.launch_readiness import require_channel_release
 from app.accounting.models import Account, JournalEntry, JournalLine
 from app.integrations.stripe import DISPUTE_EVENTS
 from app.loki.evidence import artifact_digest
@@ -120,6 +121,7 @@ def _post_correction(db, scope, key, posted, gross, bank, prior_release, *, fee=
 
 
 def record_refund_correction(db, order_id, request, *, client, account_id, live):
+    require_channel_release("accounting_and_bank", live=live)
     order, binding = _locked_order(db, order_id, live)
     scope = binding["scope"]
     event = db.get(StripeFinancialEvent, request.signed_event_id)
@@ -235,11 +237,13 @@ def _record_matched_refund(db, request, client, account_id, binding, event, bank
 
 
 def configured_refund_correction(db, order_id, request, *, live):
+    require_channel_release("accounting_and_bank", live=live)
     with stripe_readback_client(live=live) as (client, account_id):
         return record_refund_correction(db, order_id, request, client=client, account_id=account_id, live=live)
 
 
 def configured_subscription_refund(db, local_id, invoice_id, request, *, live):
+    require_channel_release("accounting_and_bank", live=live)
     from app.models.stripe_recurring import StripePaidPeriod
     from app.services.stripe_bank_booking import invoice_bank_summary
     from app.services.stripe_recurring import _binding, _period_value

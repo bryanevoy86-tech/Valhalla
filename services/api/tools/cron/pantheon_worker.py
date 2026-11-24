@@ -22,7 +22,17 @@ def main() -> int:
         parser.exit(2, "Specialist worker disabled or explicit PostgreSQL configuration missing.\n")
 
     from app.core.db import SessionLocal
+    from app.pantheon.identity import SIGNED_ROLES
     from app.pantheon.monitor import run_scheduled_assignment
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+
+    private_key = os.getenv("VALHALLA_PANTHEON_WORKER_PRIVATE_KEY")
+    try:
+        signer = Ed25519PrivateKey.from_private_bytes(bytes.fromhex(private_key)) if private_key else None
+    except ValueError:
+        parser.exit(2, "Specialist signing credential is invalid.\n")
+    if args.role in SIGNED_ROLES and signer is None:
+        parser.exit(2, "Specialist signing credential is required for this role.\n")
 
     stop = threading.Event()
     for sig in (signal.SIGINT, signal.SIGTERM):
@@ -30,7 +40,7 @@ def main() -> int:
 
     def tick() -> dict:
         with SessionLocal.session_factory() as db:
-            return run_scheduled_assignment(db, args.role)
+            return run_scheduled_assignment(db, args.role, signing_key=signer)
 
     return poll(tick, stop, args.poll_seconds, once=args.once)
 

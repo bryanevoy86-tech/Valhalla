@@ -63,7 +63,9 @@ def test_scheduled_handoff_rejects_inline_and_wrong_scope_reports(monkeypatch):
         source.scheduled_source_report(db, assignment, trigger)
     assert denied.value.status_code == 409
     report["scope"] = scope
-    assert source.scheduled_source_report(db, assignment, trigger) == report
+    with pytest.raises(HTTPException) as denied:
+        source.scheduled_source_report(db, assignment, trigger)
+    assert denied.value.status_code == 409
 
 
 @pytest.mark.parametrize("operating_loop", (False, True, "source"), ids=("product", "operating-loop", "source-to-outcome"))
@@ -1139,6 +1141,13 @@ def rehearse_bound_stripe_delivery(client, engine, monkeypatch, owner, owner_ses
                      "signed_event_id": event_id, "commercial_rights_reference": "january-isolated-fixture",
                      "attestation": "OWNER_AUTHORIZES_EXACT_PAID_PRODUCT_DELIVERY"}
     if live:
+        held = client.post(gate, headers=owner, json=authorization)
+        assert held.status_code == 412
+        assert held.json()["detail"]["channel"] == "commerce_and_fulfillment"
+        assert client.get(purchase, headers=buyer_session).status_code == 412
+        # Test the pre-existing scoped checks behind a hypothetical delivery release.
+        # All provider I/O for this case still uses the isolated readback above.
+        monkeypatch.setattr("app.services.stripe_fulfillment.require_channel_release", lambda *a, **kw: None)
         monkeypatch.delenv("VALHALLA_STRIPE_DELIVERY_ENABLED", raising=False)
         assert client.post(gate, headers=owner, json=authorization).status_code == 503
         monkeypatch.setenv("VALHALLA_STRIPE_DELIVERY_ENABLED", "1")
@@ -1181,7 +1190,7 @@ def rehearse_bound_stripe_delivery(client, engine, monkeypatch, owner, owner_ses
                              json={"grant_sha256": grant.json()["grant_sha256"]})
     assert acceptance.status_code == 200 and acceptance.json()["recognized_revenue_minor"] is None
     assert client.post(gate + "/release-liability", headers=owner,
-                       json={"acknowledgment_sha256": acceptance.json()["sha256"]}).status_code == 409
+                       json={"acknowledgment_sha256": acceptance.json()["sha256"]}).status_code == (412 if live else 409)
     if live:
         monkeypatch.setattr("app.heimdall.authority.is_live", lambda: True)
     review = client.get(f"/api/weweb/owner-stripe-orders/{order_id}", headers=owner_session)

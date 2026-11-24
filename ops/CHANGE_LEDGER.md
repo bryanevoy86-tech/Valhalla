@@ -1270,3 +1270,9 @@ The acceptance matrix retains 13 P0 and 39 total criteria requiring internal cod
 - Closed the legacy acquisition dispatch discrepancy. The owner briefing reason and outbox hold agree, even on a database containing a historical global live flag. The worker neither opens SMTP/HTTP nor consumes queued evidence.
 - Added a strict disposable Prime handoff from exact scheduled ODIN and NJORD reports to the existing independent Loki review. The original receipt chain remains the end-to-end regression, and the new provider/process boundaries still require independent staging proof.
 - Recorded bounded role coverage and cost assumptions for the five delegated duty areas in the existing operational register. No external effects or release authority were granted.
+
+## November 24 signed specialist identities and effect boundaries
+
+- Bound scoped scheduled ODIN and NJORD reports to separate worker signing identities and a pinned owner enrollment authority. The strict source regression retains Loki review, mandate and all existing receipt stages.
+- Applied the shared live hold to the identified direct transmission, provider checkout/cancellation, delivery and financial effects. Kept signed ingress and authorized observation available. Sandbox refund rechecks current scope and stop after readback, and preserves the single durable attempt on interruption.
+- Recorded provider gaps and exact tests in the dependency register. No providers were contacted and no release authority was granted.

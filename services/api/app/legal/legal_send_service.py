@@ -98,6 +98,9 @@ def send_queued_email(
     sender_email: str,
     use_tls: bool = True,
 ) -> dict[str, Any]:
+    from app.services.launch_readiness import require_channel_release
+
+    require_channel_release("agreements_and_signatures")
     path = _queue_path(approval_id)
     if not path.exists():
         raise FileNotFoundError(f"Approval item not found: {approval_id}")

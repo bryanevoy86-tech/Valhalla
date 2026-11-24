@@ -7,6 +7,7 @@ from pydantic import Field
 from sqlalchemy import inspect, select
 from sqlalchemy.exc import IntegrityError
 
+from app.services.launch_readiness import require_channel_release
 from app.accounting.models import JournalEntry
 from app.loki.evidence import artifact_digest
 from app.models.completion_registry import LegacyOrchestrationEvent
@@ -92,6 +93,7 @@ def acknowledge_service(db, tenant_id, local_id, invoice_id, request, principal,
 
 
 def recognize_service(db, local_id, invoice_id, request, *, live):
+    require_channel_release("accounting_and_bank", live=live)
     binding, period, verified, now = _exact_period(db, local_id, invoice_id, live)
     scope = binding["scope"]
     reference = artifact_digest(ACK, invoice_id, {"live": live})[:32]

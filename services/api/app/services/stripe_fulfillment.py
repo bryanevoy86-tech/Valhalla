@@ -8,6 +8,7 @@ from pydantic import Field, field_validator
 from sqlalchemy import inspect, select
 from sqlalchemy.exc import IntegrityError
 
+from app.services.launch_readiness import require_channel_release
 from app.loki.evidence import artifact_digest
 from app.models.completion_registry import LegacyOrchestrationEvent
 from app.models.stripe_finance import StripeFinancialEvent, StripeOrderBinding
@@ -146,6 +147,7 @@ def _check_capture(db, order, binding, event_id, customer, tenant_id, subscriber
 
 
 def authorize_delivery(db, order_id, request: FulfillmentIn, *, client, account_id, live):
+    require_channel_release("commerce_and_fulfillment", live=live)
     order, binding = _locked_order(db, order_id, live)
     scope = binding["scope"]
     _scope_active(db, scope, live=live)
@@ -168,11 +170,13 @@ def authorize_delivery(db, order_id, request: FulfillmentIn, *, client, account_
 
 
 def configured_delivery(db, order_id, request, *, live):
+    require_channel_release("commerce_and_fulfillment", live=live)
     with stripe_readback_client(live=live) as (client, account_id):
         return authorize_delivery(db, order_id, request, client=client, account_id=account_id, live=live)
 
 
 def delivery_access(db, tenant_id, order_id, principal, *, live):
+    require_channel_release("commerce_and_fulfillment", live=live)
     order, binding = _locked_order(db, order_id, live)
     scope = binding["scope"]
     grant = _read_record(db, _key(order_id), GRANT, scope)
@@ -200,6 +204,7 @@ def delivery_access(db, tenant_id, order_id, principal, *, live):
 
 
 def acknowledge_delivery(db, tenant_id, order_id, principal, request, *, live):
+    require_channel_release("commerce_and_fulfillment", live=live)
     _, grant = delivery_access(db, tenant_id, order_id, principal, live=live)
     if not live and any(os.getenv(name, "").strip().lower() == "staging" for name in ("APP_ENV", "ENV")):
         raise HTTPException(409, "Staging evidence does not acknowledge customer delivery")

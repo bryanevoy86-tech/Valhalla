@@ -17,7 +17,7 @@ from app.models.go_live_state import GoLiveState
 from app.models.stripe_finance import StripeFinancialEvent
 from app.schemas.market_intelligence import MarketScope, StrictModel
 from app.services.economic_control import require_no_containment
-from app.services.prime_business_execution import _bound_prime_decision, _emergency_stop_active, _event, _json
+from app.services.prime_business_execution import _bound_prime_decision, _check_legacy, _emergency_stop_active, _event, _json
 from app.services.specialist_triggers import outcome_scope_key
 from app.services.stripe_finance import (
     _event_receipt, _provider_object, provider_json, read_captured_charge, stripe_id, stripe_readback_client,
@@ -136,6 +136,17 @@ def lock_intent(db, order_id):
     return intent
 
 
+def require_current_dispatch_authority(db, intent):
+    guard(db, dispatch=True)
+    scope = intent["scope"]
+    if (now().timestamp() >= intent["expires_at"]
+            or intent["api_version"] != os.getenv("VALHALLA_STRIPE_SANDBOX_REFUND_API_VERSION")
+            or os.getenv("VALHALLA_STRIPE_SANDBOX_REFUND_SCOPE") != outcome_scope_key(scope)):
+        raise HTTPException(409, "Sandbox refund authority expired or changed")
+    _check_legacy(db, **scope)
+    require_no_containment(db, scope)
+
+
 def dispatch(db, order_id: UUID, writer):
     guard(db, dispatch=True)
     intent = lock_intent(db, order_id)
@@ -143,12 +154,8 @@ def dispatch(db, order_id: UUID, writer):
         db.rollback()
         return {"status": "READBACK_REQUIRED", "provider_write_attempted": False}
     scope = intent["scope"]
-    if (now().timestamp() >= intent["expires_at"]
-            or intent["api_version"] != os.getenv("VALHALLA_STRIPE_SANDBOX_REFUND_API_VERSION")
-            or os.getenv("VALHALLA_STRIPE_SANDBOX_REFUND_SCOPE") != outcome_scope_key(scope)):
-        raise HTTPException(409, "Sandbox refund authority expired or changed")
+    require_current_dispatch_authority(db, intent)
     view, order, evidence = capture(db, order_id, scope)
-    require_no_containment(db, scope)
     from app.routers.foundry_checkout import _listing
 
     listing, _, _, actual_scope = _listing(db, order["action_id"])
@@ -166,15 +173,16 @@ def dispatch(db, order_id: UUID, writer):
         raise HTTPException(409, "Original signed sandbox capture changed")
     _event_receipt(row, True)
     read_captured_charge(writer, order["stripe_account_id"], row.snapshot)
-    if _emergency_stop_active(db) or now().timestamp() >= intent["expires_at"]:
-        raise HTTPException(409, "Sandbox refund held before dispatch")
+    require_current_dispatch_authority(db, intent)
 
     # Persist the only permitted attempt before I/O. A restarted worker only reads.
     attempt = append(db, order_id, "attempt", scope, {
         "intent_sha256": intent["sha256"], "request_sha256": intent["request_sha256"],
         "idempotency_key": f"valhalla-{intent['request_sha256']}", "started_at": int(now().timestamp()),
     })
-    if _emergency_stop_active(db) or now().timestamp() >= intent["expires_at"]:
+    try:
+        require_current_dispatch_authority(db, intent)
+    except HTTPException:
         return {"status": "READBACK_REQUIRED", "provider_write_attempted": False}
     try:
         response = writer.post("/v1/refunds", data=intent["request"], headers={
