@@ -525,7 +525,8 @@ def test_internal_product_asset_stage_bind_verify_and_revoke(deal_client, monkey
     assert resolved.status_code == 200, resolved.text
     assert resolved.json()["observed_outcome"] == 1
     assert resolved.json()["evidence_ref"].startswith("BF-RECEIPT-")
-    closed_order = rehearse_checkout(client, engine, monkeypatch, owner, action_id, listing["price_cents_cad"], scope)
+    closed_order = rehearse_checkout(client, engine, monkeypatch, owner, action_id, listing["price_cents_cad"], scope,
+                                     posting_date=today)
     from app.models.stripe_finance import StripeBalanceEvidence, StripeFinancialEvent, StripeOrderBinding
 
     for model in (StripeFinancialEvent, StripeBalanceEvidence, StripeOrderBinding):
@@ -1041,7 +1042,7 @@ def rehearse_bound_stripe_delivery(client, engine, monkeypatch, owner, owner_ses
     assert client.get(purchase, headers=buyer_session).status_code == 409
 
 
-def rehearse_checkout(client, engine, monkeypatch, owner, action_id, price, scope):
+def rehearse_checkout(client, engine, monkeypatch, owner, action_id, price, scope, *, posting_date):
     import hmac
     import time
 
@@ -1225,7 +1226,7 @@ def rehearse_checkout(client, engine, monkeypatch, owner, action_id, price, scop
     for model in (StatementAccount, StatementEntry, StatementImport, FoundryFixtureSettlement):
         model.__table__.create(engine, checkfirst=True)
     statement_id = str(uuid4())
-    today = date.today().isoformat()
+    today = posting_date.isoformat()
     entries = [
         {"external_ref": "wrong-amount", "amount_minor": price + 1},
         {"external_ref": "capture-1", "amount_minor": price},
