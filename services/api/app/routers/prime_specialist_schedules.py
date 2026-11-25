@@ -28,6 +28,7 @@ from app.services.prime_business_execution import (
 )
 
 from app.services.foundry_discovery import WITHDRAWAL_PREFIX, verify_withdrawal
+from app.services.trade_learning import LESSON_PREFIX, lesson_for_trigger
 from app.services.specialist_triggers import outcome_scope_key
 
 
@@ -238,6 +239,14 @@ def attach_operating_reassessment(db, payload, scope, today, outcomes, report):
     if international:
         blockers.add("INDUSTRY_DEMAND_UNVERIFIED")
         blockers.update(international["international"]["blockers"])
+    if report.get("trigger_trade_outcome_id"):
+        if not payload.on_economic_reassessment:
+            raise HTTPException(409, "Trade outcome reassessment is not enrolled")
+        trade_lesson = lesson_for_trigger(capital or {}, report["trigger_trade_outcome_id"])
+        if trade_lesson["forecast"]["request"]["opportunity_key"] != opportunity.opportunity_id:
+            raise HTTPException(409, "Trade lesson belongs to a different opportunity")
+        blockers.update(trade_lesson["lesson"]["blockers"])
+        report["trade_learning"] = trade_lesson
     recommendation = report["recommendation"]
     if checkout or capital or source_assessment or treasury.get("accounts") or blockers or paid_outcomes or recurring:
         report["operating_reassessment"] = {
@@ -296,11 +305,13 @@ def run_due_schedule(db: Session, *, now: datetime | None = None) -> dict:
     revision_id = event_id if queued is not None and event_id.startswith("DISCOVERY-") else None
     learning_id = event_id if queued is not None and event_id.startswith("FOL-") else None
     industry_id = event_id if queued is not None and event_id.startswith(INDUSTRY_PREFIX) else None
+    trade_lesson_id = event_id if queued is not None and event_id.startswith(LESSON_PREFIX) else None
     international_id = event_id if queued is not None and event_id.startswith(INTERNATIONAL_PREFIX) else None
-    outcome_id = None if (economic_id or withdrawal_id or revision_id or learning_id or industry_id or international_id) else event_id
+    outcome_id = None if (economic_id or withdrawal_id or revision_id or learning_id or industry_id or international_id or trade_lesson_id) else event_id
     trigger_field = ("trigger_source_withdrawal_id" if withdrawal_id else
                      "trigger_operating_lesson_id" if learning_id else
                      "trigger_skilled_trade_id" if industry_id else
+                     "trigger_trade_outcome_id" if trade_lesson_id else
                      "trigger_international_id" if international_id else
                      "trigger_source_revision_id" if revision_id else
                      "trigger_economic_event_id" if economic_id else "trigger_outcome_event_id")
@@ -353,6 +364,8 @@ def run_due_schedule(db: Session, *, now: datetime | None = None) -> dict:
         report.update(trigger="OPERATING_LESSON", trigger_operating_lesson_id=learning_id)
     if industry_id:
         report.update(trigger="SKILLED_TRADE_REASSESSMENT", trigger_skilled_trade_id=industry_id)
+    if trade_lesson_id:
+        report.update(trigger="TRADE_OPERATING_OUTCOME", trigger_trade_outcome_id=trade_lesson_id)
     if international_id:
         report.update(trigger="INTERNATIONAL_REASSESSMENT", trigger_international_id=international_id)
     try:

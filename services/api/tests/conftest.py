@@ -1,6 +1,9 @@
 """Isolated database for HTTP tests that exercise canonical private deal routes."""
 
-from contextlib import contextmanager
+from contextlib import ExitStack, contextmanager
+import os
+from urllib.parse import urlsplit
+from uuid import uuid4
 from threading import Thread
 import socket
 import time
@@ -10,8 +13,36 @@ import uvicorn
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
+from sqlalchemy.engine import make_url
 from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
+
+
+@contextmanager
+def isolated_postgres_database():
+    url = os.environ.get("FACTORY_TEST_POSTGRES_URL")
+    if not url:
+        pytest.skip("Disposable PostgreSQL is not configured")
+    parsed = urlsplit(url)
+    if (parsed.scheme not in {"postgresql", "postgresql+psycopg2"}
+            or parsed.hostname != "127.0.0.1" or parsed.port != 5432
+            or parsed.path != "/valhalla_factory_ci" or parsed.query or parsed.fragment):
+        pytest.fail("PostgreSQL tests require the disposable loopback CI database")
+    connection_options = {"hostaddr": "127.0.0.1"}
+    administrator = create_engine(url, isolation_level="AUTOCOMMIT", connect_args=connection_options)
+    database = f"valhalla_trade_fixture_{uuid4().hex}"
+    try:
+        with administrator.connect() as connection:
+            connection.exec_driver_sql(f"CREATE DATABASE {database}")
+        engine = create_engine(make_url(url).set(database=database), connect_args=connection_options)
+        try:
+            yield engine
+        finally:
+            engine.dispose()
+            with administrator.connect() as connection:
+                connection.exec_driver_sql(f"DROP DATABASE {database}")
+    finally:
+        administrator.dispose()
 
 
 @pytest.fixture
@@ -32,23 +63,26 @@ def deal_client(monkeypatch, request, tmp_path):
 
     key = "historical-deal-test-prime-key"
     monkeypatch.setenv("VALHALLA_PRIME_CONTROL_KEY", key)
-    if getattr(request, "param", None) == "disk":
-        engine = create_engine(f"sqlite:///{tmp_path / 'valhalla-rehearsal.db'}")
-    else:
-        engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
-    for model in (Lead, Deal, DealBrief, DealBriefLink, Buyer, FreezeEvent, Offer, AuditLog, FollowupTask,
-                  KPIEvent, BuyerLiquidityNode, BuyerFeedbackEvent, OfferPolicy, OfferEvidence):
-        model.__table__.create(engine)
+    with ExitStack() as resources:
+        mode = getattr(request, "param", None)
+        if mode == "postgres":
+            engine = resources.enter_context(isolated_postgres_database())
+        else:
+            if mode == "disk":
+                engine = create_engine(f"sqlite:///{tmp_path / 'valhalla-rehearsal.db'}")
+            else:
+                engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
+            resources.callback(engine.dispose)
+        for model in (Lead, Deal, DealBrief, DealBriefLink, Buyer, FreezeEvent, Offer, AuditLog, FollowupTask,
+                      KPIEvent, BuyerLiquidityNode, BuyerFeedbackEvent, OfferPolicy, OfferEvidence):
+            model.__table__.create(engine)
 
-    def isolated_db():
-        with Session(engine) as db:
-            yield db
+        def isolated_db():
+            with Session(engine) as db:
+                yield db
 
-    monkeypatch.setitem(app.dependency_overrides, get_db, isolated_db)
-    try:
+        monkeypatch.setitem(app.dependency_overrides, get_db, isolated_db)
         yield TestClient(app, headers={"X-Prime-Control-Key": key}), engine
-    finally:
-        engine.dispose()
 
 
 @pytest.fixture

@@ -1529,7 +1529,158 @@ def test_stucco_planning_calculates_capacity_cash_and_refuses_unsupported_crew_s
         SkilledTradeStudy.model_validate(study)
 
 
-@pytest.mark.parametrize("trade", (False, True), ids=("fleet", "stucco"))
+def exercise_trade_learning(client, engine, monkeypatch, ids, before, today, review_id):
+    from copy import deepcopy
+    from app.loki.evidence import artifact_digest
+    from app.models.go_live_state import GoLiveState
+    from app.models.prime_specialist_schedule import PrimeScheduleTrigger
+    from app.routers.prime_specialist_schedules import run_due_schedule
+    from app.services.trade_learning import LESSON_EVENT
+
+    monkeypatch.setenv("APP_ENV", "test")
+    monkeypatch.setenv("ENV", "test")
+    monkeypatch.setenv("VALHALLA_FOUNDRY_OPERATING_REHEARSAL", "1")
+    GoLiveState.__table__.create(engine, checkfirst=True)
+    root = f"/api/prime/foundry/evidence/{ids[0]}"
+    forecast_input = {"scope": SCOPE, "horizon_days": 30, "opportunity_key": "stucco-crew",
+                      "independent_review_id": review_id}
+    assert client.post(root + "/trade-forecast", headers=OWNER, json={
+        **forecast_input, "independent_review_id": str(uuid4()),
+    }).status_code == 409
+    frozen = client.post(root + "/trade-forecast", headers=OWNER, json=forecast_input)
+    assert frozen.status_code == 201, frozen.text
+    forecast = frozen.json()
+    assert client.post(root + "/trade-forecast", headers=OWNER, json=forecast_input).json() == forecast
+    assert forecast["decision"]["operating_recommendation"] == before["operating_recommendation"]
+    assert forecast["opportunity_record_id"] == before["record_id"]
+    assert forecast["industry_sha256"] == before["industry_diligence"]["sha256"]
+    assert forecast["independent_challenge"]["review_id"] == review_id
+    assert len(forecast["independent_challenge"]["result_sha256"]) == 64
+    assert forecast["prediction"]["expected_contribution_minor"] == 1_728_200
+    for role in ("MIMIR", "NORNS"):
+        response = client.post("/api/prime/pantheon/assignments", headers=OWNER, json={
+            **SCOPE, "assignment_id": str(uuid4()), "role": role, "cadence_seconds": 600, "duration_seconds": 3600,
+        })
+        assert response.status_code == 201, response.text
+    other_schedule_id = str(uuid4())
+    sibling = client.post("/api/prime/specialist-schedules", headers=OWNER, json={
+        "schedule_id": other_schedule_id, "business_id": SCOPE["business_id"],
+        "cadence_seconds": 600, "duration_seconds": 3600, "on_economic_reassessment": True,
+        "opportunity": {"opportunity_id": "stucco-secondary", "title": "Other crew scenario",
+                        "engine_id": SCOPE["engine_id"], "summary": "An unrelated proposal in the same business.",
+                        "legacy": SCOPE["legacy_instance_id"], "jurisdiction": SCOPE["jurisdiction"],
+                        "specialist_inputs": {"business_id": SCOPE["business_id"]}},
+    })
+    assert sibling.status_code == 201, sibling.text
+    outcome = {
+        "scope": SCOPE, "forecast_sha256": forecast["sha256"], "source_ref": "fixture:stucco-month-close",
+        "completed_jobs": 1, "on_site_days_per_job": 10, "available_skilled_workers": 1,
+        "earned_revenue_minor": 2_100_000, "operating_cost_excluding_callbacks_minor": 2_300_000,
+        "callback_cost_minor": 300_000, "payment_days_after_delivery": 75, "uncommitted_cash_minor": 2_000_000,
+    }
+    route = root + "/trade-outcome"
+    assert client.post(route, json=outcome).status_code == 401
+    assert client.post(route, headers=OWNER, json={**outcome, "scope": MIRROR}).status_code == 409
+    different_business = {**SCOPE, "business_id": "another-business"}
+    assert client.post(route, headers=OWNER, json={**outcome, "scope": different_business}).status_code == 409
+    assert client.post(route, headers=OWNER, json={**outcome, "forecast_sha256": "0" * 64}).status_code == 409
+    with monkeypatch.context() as stopped:
+        stopped.setenv("VALHALLA_EMERGENCY_STOP", "true")
+        assert client.post(route, headers=OWNER, json=outcome).status_code == 503
+    if engine.dialect.name == "postgresql":
+        from concurrent.futures import ThreadPoolExecutor
+        from threading import Barrier
+
+        barrier = Barrier(2)
+
+        def submit(value):
+            barrier.wait(timeout=10)
+            return client.post(route, headers=OWNER, json=value)
+
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            first, competing = (pool.submit(submit, value) for value in (outcome, {
+                **outcome, "callback_cost_minor": 350_000,
+            }))
+            responses = [first.result(timeout=15), competing.result(timeout=15)]
+        assert sorted(response.status_code for response in responses) == [201, 409]
+        created = next(response for response in responses if response.status_code == 201)
+        # The general assessment assertions below use the exact modeled input selected by the race.
+        outcome = created.json()["outcome"]
+    else:
+        created = client.post(route, headers=OWNER, json=outcome)
+    assert created.status_code == 201, created.text
+    lesson = created.json()
+    with Session(engine) as db:
+        targets = db.query(PrimeScheduleTrigger).filter_by(event_id="TRADE-LESSON-" + ids[0]).all()
+        assert len(targets) == 1 and str(targets[0].schedule_id) != other_schedule_id
+    assert client.post(route, headers=OWNER, json=outcome).json() == lesson
+    assert client.post(route, headers=OWNER, json={**outcome, "callback_cost_minor": 1}).status_code == 409
+    after = {row["opportunity_key"]: row for row in post(client, "assessment", SCOPE, 200)["alternatives"]}
+    assert before["operating_recommendation"] == "VERIFY_DEMAND_AND_CAPACITY"
+    assert after["stucco-crew"]["operating_recommendation"] == "CONTAIN_AND_REESTIMATE"
+    assert after["stucco-crew"]["trade_learning"] == {"forecast": forecast, "lesson": lesson}
+    assert after["stucco-crew"]["projected_annual_net"] == before["projected_annual_net"]
+    assert "TRADE_WORKING_CAPITAL_SHORTFALL" in after["stucco-crew"]["blockers"]
+    assert after["stucco-secondary"]["operating_recommendation"] == "VERIFY_DEMAND_AND_CAPACITY"
+    assert "trade_learning" not in after["stucco-secondary"]
+    post(client, "mandates", mandate(today, scope=MIRROR))
+    post(client, "opportunities", option(today, "mirrored-trade", scope=MIRROR, origin="FOUNDRY",
+                                          foundry_evidence_id=ids[0]))
+    mirror_option = post(client, "assessment", MIRROR, 200)["alternatives"][0]
+    assert "FOUNDRY_SOURCE_UNAVAILABLE" in mirror_option["blockers"]
+    assert "trade_learning" not in mirror_option
+    with Session(engine) as db:
+        assert db.query(RevenueLedger).count() == 0
+        assert db.query(LegacyOrchestrationEvent).filter_by(event_type=LESSON_EVENT).count() == 1
+        for role in ("MIMIR", "NORNS"):
+            report_id = run_assignment(db, role)["report_event_id"]
+            report = client.get(f"/api/prime/pantheon/reports/{report_id}").json()
+            assert report["status"] == "observed" and report["trigger"] == "TRADE_OPERATING_OUTCOME", report
+            recalled = report["observations"]["economic_reassessment"]["trade_learning"][0]["lesson"]
+            assert recalled["sha256"] == lesson["sha256"]
+            assert recalled["variance"]["error_minor"] == -1_928_200 - outcome["callback_cost_minor"]
+            assert recalled["calibration"] == "INSUFFICIENT_SAMPLE_FOR_GENERALIZATION"
+    review = client.post(f"/api/prime/pantheon/reports/{report_id}/challenge")
+    assert review.status_code == 201, review.text
+    review_id = review.json()["review_id"]
+    queue = client.get("/loki/worker/reviews", headers=REVIEWER, params={"artifact_type": "pantheon_report"})
+    artifact = next(item for item in queue.json() if item["review_id"] == review_id)
+    critique = challenge(artifact).model_dump(mode="json")
+    assert any(item["category"] == "trade_learning_generalization" for item in critique["findings"])
+    assert client.post(f"/loki/worker/reviews/{review_id}/result", headers=REVIEWER, json=critique).status_code == 201
+    out_of_scope = deepcopy(artifact)
+    out_of_scope["raw_input"]["scope"] = MIRROR
+    out_of_scope["artifact_sha256"] = artifact_digest(
+        out_of_scope["artifact_type"], out_of_scope["reference"], out_of_scope["raw_input"],
+    )
+    assert any(item.category == "trade_learning_evidence_conflict" and item.severity == "critical"
+               for item in challenge(out_of_scope).findings)
+    altered = deepcopy(artifact)
+    altered["raw_input"]["observations"]["economic_reassessment"]["trade_learning"][0]["lesson"]["variance"]["error_minor"] = 0
+    altered["artifact_sha256"] = artifact_digest(altered["artifact_type"], altered["reference"], altered["raw_input"])
+    assert any(item.category == "trade_learning_evidence_conflict" and item.severity == "critical"
+               for item in challenge(altered).findings)
+    with Session(engine) as db:
+        queued = db.query(PrimeScheduleTrigger).count()
+        for _ in range(queued + 1):
+            tick = run_due_schedule(db)
+            row = db.query(LegacyOrchestrationEvent).filter_by(event_id=tick["report_event_id"]).one()
+            report = json.loads(row.payload_json)
+            if report["trigger"] == "TRADE_OPERATING_OUTCOME":
+                break
+        else:
+            pytest.fail("Prime did not process the trade lesson")
+        assert report["trade_learning"]["lesson"]["sha256"] == lesson["sha256"]
+        assert report["external_authority"] is False and report["independent_loki_cleared"] is False
+        assert report["recommendation"]["heimdall_decision"] == "HOLD"
+
+
+
+@pytest.mark.parametrize(("trade", "deal_client"), [
+    pytest.param(False, "memory", id="fleet"),
+    pytest.param(True, "memory", id="stucco"),
+    pytest.param(True, "postgres", id="stucco-postgres"),
+], indirect=["deal_client"])
 def test_industry_diligence_wakes_specialists_and_keeps_options_advisory(economic_client, trade, monkeypatch):
     from app.models.completion_registry import SourceRegistryItem
     from app.models.foundry_evidence import FoundryEvidence
@@ -1741,6 +1892,19 @@ def test_industry_diligence_wakes_specialists_and_keeps_options_advisory(economi
     assert client.get(candidate_url).status_code == 409
     after = post(client, "assessment", SCOPE, 200)
     assert all("FOUNDRY_SOURCE_UNAVAILABLE" in x["blockers"] for x in after["alternatives"])
+    if trade:
+        with Session(engine) as db:
+            db.query(SourceRegistryItem).filter_by(source_id=next(iter(references))).one().active = True
+            db.commit()
+        before = next(item for item in assessment["alternatives"] if item["opportunity_key"] == "stucco-crew")
+        exercise_trade_learning(client, engine, monkeypatch, ids, before, today, review_id)
+        with Session(engine) as db:
+            db.query(SourceRegistryItem).filter_by(source_id=next(iter(references))).one().active = False
+            db.commit()
+        withdrawn = post(client, "assessment", SCOPE, 200)["alternatives"]
+        assert all("FOUNDRY_SOURCE_UNAVAILABLE" in item["blockers"] and "trade_learning" not in item
+                   for item in withdrawn)
+
 
 
 def test_source_revision_wakes_prime_for_exact_prior_decision(economic_client):

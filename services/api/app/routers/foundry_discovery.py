@@ -1,5 +1,5 @@
 """Intake owner-authorized Foundry evidence and prepare research candidates."""
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -18,7 +18,7 @@ from app.services.foundry_discovery import (
     DISCOVERY_ROLES, EvidenceIn, SCOPE_FIELDS, candidate_fields, checked_evidence, withdrawal_trigger,
 )
 from app.services.foundry_intake import FoundryIntakeJob, Intake, current_time, intake_ready, job_view, key_for, source_for
-from app.services import foundry_industry
+from app.services import foundry_industry, trade_learning
 from app.services.prime_business_execution import _check_legacy, _event, _json, require_owner_mandate_key
 from app.services.consumer_evidence import ConsumerEvidence, EVENT, build_record, event_id, project, read_consumer_evidence
 from app.services.specialist_triggers import enqueue_prime, enqueue_research, outcome_scope_key
@@ -133,6 +133,125 @@ def record_industry(evidence_id: UUID, request: foundry_industry.IndustryDiligen
         db.rollback()
         raise HTTPException(409, "Concurrent industry diligence already recorded") from None
     return foundry_industry.project(result, evidence)
+
+
+def _trade_fixture(db, evidence_id, scope, today):
+    from app.models.go_live_state import GoLiveState
+    from app.routers.foundry_operating_rehearsal import enabled
+    from app.services.prime_business_execution import _emergency_stop_active
+
+    if (not enabled() or not inspect(db.connection()).has_table(GoLiveState.__tablename__)
+            or not inspect(db.connection()).has_table(LegacyOrchestrationEvent.__tablename__)
+            or _emergency_stop_active(db)):
+        raise HTTPException(503, "Disposable trade rehearsal is stopped or disabled")
+    release = db.get(GoLiveState, 1)
+    if release is not None and release.go_live_enabled:
+        raise HTTPException(503, "Disposable trade rehearsal cannot run with go-live enabled")
+    _check_legacy(db, **scope)
+    row = db.get(FoundryEvidence, evidence_id, with_for_update=True, populate_existing=True)
+    if row is None:
+        raise HTTPException(404, "Trade evidence not found")
+    evidence = checked_evidence(row, scope, today, db=db)
+    industry = foundry_industry.read_industry(db, row, evidence, scope, today, lock=True)
+    if evidence.currency != "CAD" or not (industry or {}).get("skilled_trade"):
+        raise HTTPException(409, "Trade rehearsal requires current CAD skilled-trade diligence")
+    return row, industry
+
+
+def _save_trade_event(db, reference, kind, content):
+    receipt = trade_learning.sealed(kind, reference, content)
+    _event(db, event_id=reference, legacy_instance_id=content["scope"]["legacy_instance_id"],
+           event_type=kind, message="Disposable trade learning evidence recorded", payload=receipt)
+    return receipt
+
+
+@router.post("/evidence/{evidence_id}/trade-forecast", status_code=201, dependencies=owner)
+def freeze_trade_forecast(evidence_id: UUID, request: trade_learning.ForecastRequest, db: Session = Depends(get_db)):
+    from app.loki.models import LokiReview
+    from app.loki.review_service import verdict
+    from app.routers.economic_control import assess, require_schema
+
+    now = current_time().replace(tzinfo=timezone.utc)
+    scope = request.scope.model_dump()
+    row, industry = _trade_fixture(db, evidence_id, scope, now.date())
+    reference = trade_learning.FORECAST_PREFIX + str(row.id)
+    prior = trade_learning.read_record(db, trade_learning.FORECAST_EVENT, reference)
+    if prior:
+        if (prior["request"] != request.model_dump(mode="json") or prior["evidence_sha256"] != row.digest
+                or prior["industry_sha256"] != industry["sha256"]):
+            raise HTTPException(409, "Trade forecast replay differs from frozen evidence")
+        return prior
+    review = db.get(LokiReview, request.independent_review_id)
+    if review is None or review.artifact_type != "pantheon_report":
+        raise HTTPException(409, "Trade forecast requires an independently reviewed specialist report")
+    report = verified_report(db, review.heimdall_reference_id)
+    if (report["scope"] != scope or report["role"] not in ("ODIN", "NJORD")
+            or report["report_sha256"] != review.artifact_sha256
+            or not any(signal.get("evidence_id") == str(row.id) and signal.get("industry_diligence") == industry
+                       for signal in report["observations"].get("foundry_signals", ()))):
+        raise HTTPException(409, "Trade forecast review must bind the current scoped diligence")
+    reviewed = verdict(db, review)
+    require_schema(db)
+    decision = assess(request.scope, db)
+    option = next((item for item in decision["alternatives"] if item["opportunity_key"] == request.opportunity_key
+                   and (item.get("foundry_source") or {}).get("evidence_id") == str(row.id)), None)
+    if option is None:
+        raise HTTPException(409, "Freeze a current scoped Prime trade assessment first")
+    trade = industry["skilled_trade"]
+    baseline = trade["scenarios"]["BASE"]
+    inputs = next(item for item in trade["inputs"]["scenarios"] if item["name"] == "BASE")
+    record = {
+        "scope": scope, "request": request.model_dump(mode="json"), "evidence_id": str(row.id),
+        "evidence_sha256": row.digest, "industry_sha256": industry["sha256"], "opportunity_record_id": option["record_id"],
+        "independent_challenge": {"review_id": str(review.id), "artifact_sha256": reviewed.artifact_sha256,
+                                  "result_sha256": reviewed.result_sha256, "clearance": reviewed.ok_to_proceed},
+        "issued_at": now.isoformat(), "prediction": {
+            "expected_contribution_minor": baseline["monthly_operating_contribution_minor"],
+            "alternative": {"contribution_minor": trade["scenarios"]["STRESS"]["monthly_operating_contribution_minor"]},
+            "deadline_at": (now + timedelta(days=request.horizon_days)).isoformat(),
+        },
+        "baseline": {
+            "completed_jobs": baseline["modeled_jobs_per_month"], "on_site_days_per_job": inputs["on_site_days"],
+            "available_skilled_workers": inputs["available_skilled_workers"],
+            "callback_cost_minor": inputs["callback_reserve_minor"] * baseline["modeled_jobs_per_month"],
+            "payment_days_after_delivery": inputs["payment_days_after_delivery"],
+            "required_cash_minor": baseline["startup_cash_reserve_proxy_minor"],
+        },
+        "decision": {"selection": decision["opportunity_selection"]["decision"],
+                     "operating_recommendation": option["operating_recommendation"], "blockers": option["blockers"]},
+        "external_authority": False,
+    }
+    receipt = _save_trade_event(db, reference, trade_learning.FORECAST_EVENT, record)
+    db.commit()
+    return receipt
+
+
+@router.post("/evidence/{evidence_id}/trade-outcome", status_code=201, dependencies=owner)
+def record_trade_outcome(evidence_id: UUID, request: trade_learning.OutcomeRequest, db: Session = Depends(get_db)):
+    now = current_time().replace(tzinfo=timezone.utc)
+    scope = request.scope.model_dump()
+    row, industry = _trade_fixture(db, evidence_id, scope, now.date())
+    forecast = trade_learning.read_record(db, trade_learning.FORECAST_EVENT, trade_learning.FORECAST_PREFIX + str(row.id))
+    if (forecast is None or forecast["scope"] != scope or forecast["sha256"] != request.forecast_sha256
+            or forecast["evidence_sha256"] != row.digest or forecast["industry_sha256"] != industry["sha256"]):
+        raise HTTPException(409, "Trade outcome requires the exact frozen forecast")
+    reference = trade_learning.LESSON_PREFIX + str(row.id)
+    prior = trade_learning.current_lesson(db, row, scope, industry, forecast["opportunity_record_id"], now.date())
+    outcome = request.model_dump(mode="json")
+    if prior:
+        if prior["lesson"]["outcome"] != outcome:
+            raise HTTPException(409, "Trade outcome replay differs from recorded observation")
+        return prior["lesson"]
+    if not datetime.fromisoformat(forecast["issued_at"]) <= now <= datetime.fromisoformat(forecast["prediction"]["deadline_at"]):
+        raise HTTPException(409, "Trade outcome is outside the frozen forecast window")
+    lesson = _save_trade_event(db, reference, trade_learning.LESSON_EVENT,
+                               trade_learning.project_lesson(forecast, outcome, now.isoformat()))
+    at = now.replace(tzinfo=None)
+    enqueue_research(db, row.scope_key, reference, at, roles=("MIMIR", "NORNS"))
+    enqueue_prime(db, row.scope_key, reference, at, subscription="on_economic_reassessment",
+                  opportunity_id=forecast["request"]["opportunity_key"])
+    db.commit()
+    return lesson
 
 
 @router.post("/evidence/{evidence_id}/consumer-research", status_code=201, dependencies=owner)

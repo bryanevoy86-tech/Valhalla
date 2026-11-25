@@ -258,6 +258,18 @@ def comparison(db, state, scope, currency, available, today, *, lock_sources=Fal
                         maximum_downside=max(assessed["maximum_downside"],
                                              -12 * stress["monthly_operating_contribution_minor"]),
                     )
+                    from app.services.trade_learning import current_lesson
+
+                    learning = current_lesson(db, row, scope, industry, item.id, today)
+                    data["operating_recommendation"] = "VERIFY_DEMAND_AND_CAPACITY"
+                    if learning:
+                        data["trade_learning"] = learning
+                        lesson = learning["lesson"]
+                        blockers.extend(lesson["blockers"])
+                        assessed["required_capital"] = max(assessed["required_capital"],
+                                                           lesson["cash_shortfall_minor"])
+                        if lesson["blockers"]:
+                            data["operating_recommendation"] = "CONTAIN_AND_REESTIMATE"
                 international = (industry or {}).get("international")
                 if international:
                     base, stress = (international[name] for name in ("base", "stress"))
@@ -486,6 +498,10 @@ def specialist_economics(db, role, scope, today):
              "downside_minor": item["maximum_downside"], "is_calibrated_probability": False}
             for item in report["alternatives"]
         ]
+    if role in {"MIMIR", "NORNS", "HEIMDALL"}:
+        lessons = [item["trade_learning"] for item in report["alternatives"] if item.get("trade_learning")]
+        if lessons:
+            common["trade_learning"] = lessons
     if role == "MIMIR":
         common["last_internal_decision"] = state.latest_decision
         common["recent_recovery_fixtures"] = state.recoveries[-5:]

@@ -158,8 +158,11 @@ def run_assignment(db: Session, role: str, *, now=None, assignment_id=None, exac
     economic_event = bool(event and event.startswith("ECON-"))
     discovery_event = bool(event and event.startswith("DISCOVERY-"))
     industry_event = bool(event and event.startswith("FOUNDRY-INDUSTRY-"))
+    from app.services.trade_learning import LESSON_PREFIX, lesson_for_trigger
+
+    trade_event = bool(event and event.startswith(LESSON_PREFIX))
     withdrawal_event = bool(event and event.startswith(WITHDRAWAL_PREFIX))
-    trigger_type = ("FOUNDRY_SOURCE_WITHDRAWN" if withdrawal_event else
+    trigger_type = ("TRADE_OPERATING_OUTCOME" if trade_event else "FOUNDRY_SOURCE_WITHDRAWN" if withdrawal_event else
                     "ECONOMIC_REASSESSMENT" if economic_event else "SOURCE_DISCOVERY" if discovery_event
                     else "INDUSTRY_DILIGENCE" if industry_event
                     else "VERIFIED_OUTCOME" if event else "CADENCE")
@@ -207,7 +210,7 @@ def run_assignment(db: Session, role: str, *, now=None, assignment_id=None, exac
     }
     try:
         _check_legacy(db, **assignment.scope)
-        outcome_trigger = event if not (withdrawal_event or economic_event or discovery_event or industry_event) else None
+        outcome_trigger = event if not (withdrawal_event or economic_event or discovery_event or industry_event or trade_event) else None
         outcomes = verified_internal_outcomes(db, **assignment.scope, trigger_event_id=outcome_trigger)
         if economic_event and (not economic_ready(db) or not verify_trigger(db, assignment.scope, event)):
             raise HTTPException(409, "Economic evidence trigger could not be revalidated")
@@ -273,7 +276,10 @@ def run_assignment(db: Session, role: str, *, now=None, assignment_id=None, exac
             from app.services.treasury_reconciliation import observe_statement_heads
 
             facts["treasury_statement_evidence"] = observe_statement_heads(db, assignment.scope)
-        facts.update(specialist_economics(db, role, assignment.scope, now.date()))
+        economic = specialist_economics(db, role, assignment.scope, now.date())
+        if trade_event:
+            lesson_for_trigger(economic.get("economic_reassessment", {}), event)
+        facts.update(economic)
         from app.services.customer_research import observe as research_observation
 
         research = research_observation(db, assignment.scope, role)

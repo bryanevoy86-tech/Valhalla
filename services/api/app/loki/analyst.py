@@ -79,6 +79,31 @@ def _industry_findings(research, field):
     return findings
 
 
+def _trade_learning_findings(item, field, scope):
+    from app.services.trade_learning import FORECAST_EVENT, FORECAST_PREFIX, LESSON_EVENT, LESSON_PREFIX, project_lesson, sealed
+
+    try:
+        forecast, lesson = item["forecast"], item["lesson"]
+        evidence_id = forecast["evidence_id"]
+        forecast_values = {key: value for key, value in forecast.items() if key != "sha256"}
+        valid = (
+            forecast["external_authority"] is False
+            and forecast["scope"] == scope
+            and forecast == sealed(FORECAST_EVENT, FORECAST_PREFIX + evidence_id, forecast_values)
+            and lesson["outcome"]["scope"] == forecast["scope"]
+            and lesson["outcome"]["forecast_sha256"] == forecast["sha256"]
+            and lesson == sealed(LESSON_EVENT, LESSON_PREFIX + evidence_id,
+                                 project_lesson(forecast, lesson["outcome"], lesson["observed_at"]))
+        )
+    except (KeyError, TypeError, ValueError, AttributeError):
+        valid = False
+    if not valid:
+        return [_finding("trade_learning_evidence_conflict", field,
+                         "Forecast identity, outcome, or calibration failed independent reconciliation.", critical=True)]
+    return [_finding("trade_learning_generalization", field,
+                     "One modeled outcome cannot calibrate a business or validate extrapolation to another crew, business or jurisdiction.")]
+
+
 def _commercial_findings(case):
     field = "specialist_inputs/commercial_validation"
     costs = ("labour_minor", "tools_and_fees_minor", "reserve_minor", "acquisition_minor")
@@ -239,6 +264,10 @@ def challenge(item: dict) -> IndependentReviewIn:
         plan, evidence = proposal["plan"], proposal["analysis"]
         if "opportunity_selection" in evidence:
             findings.extend(_opportunity_selection_findings(evidence))
+        for index, alternative in enumerate(evidence.get("alternatives", ())):
+            if isinstance(alternative, dict) and "trade_learning" in alternative:
+                findings.extend(_trade_learning_findings(alternative["trade_learning"],
+                                                         f"analysis/alternatives/{index}/trade_learning", evidence.get("scope")))
         checks = set(evidence["blockers"])
         if plan["past_spend_minor"]:
             findings.append(_finding("sunk_cost", "plan/past_spend_minor",
@@ -381,6 +410,13 @@ def challenge(item: dict) -> IndependentReviewIn:
                     "Reconcile the approval, artifact and learning receipts cited in this report.", critical=True,
                 ))
             economic = sources.get("economic_reassessment")
+            if isinstance(economic, dict) and "trade_learning" in economic:
+                learning = economic["trade_learning"]
+                if not isinstance(learning, list):
+                    findings.extend(_trade_learning_findings(None, "observations/economic_reassessment/trade_learning", proposal.get("scope")))
+                else:
+                    for index, lesson in enumerate(learning):
+                        findings.extend(_trade_learning_findings(lesson, f"observations/economic_reassessment/trade_learning/{index}", proposal.get("scope")))
             if isinstance(economic, dict) and "CHECKOUT_PERFORMANCE_EVIDENCE_CONFLICT" in economic.get("blockers", []):
                 findings.append(_finding(
                     "checkout_performance_conflict", "observations/economic_reassessment",

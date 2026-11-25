@@ -17,7 +17,8 @@ def outcome_scope_key(scope: dict) -> str:
     return hashlib.sha256(json.dumps(scope, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
 
 
-def enqueue_prime(db: Session, scope_key: str, event_id: str, now: datetime, *, subscription: str) -> None:
+def enqueue_prime(db: Session, scope_key: str, event_id: str, now: datetime, *, subscription: str,
+                  opportunity_id: str | None = None) -> None:
     schedule = PrimeSpecialistSchedule
     inspector = inspect(db.connection())
     if inspector.has_table(schedule.__tablename__):
@@ -27,6 +28,8 @@ def enqueue_prime(db: Session, scope_key: str, event_id: str, now: datetime, *, 
                 schedule.outcome_scope_key == scope_key, schedule.state == "active", schedule.expires_at > now,
                 schedule.request[subscription].as_boolean().is_(True),
             )
+            if opportunity_id is not None:
+                targets = targets.where(schedule.request["opportunity"]["opportunity_id"].as_string() == opportunity_id)
             store_triggers(db, PrimeScheduleTrigger, "schedule_id", targets)
 
 
