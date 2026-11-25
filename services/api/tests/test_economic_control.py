@@ -1472,7 +1472,65 @@ def test_authenticated_research_participant_browser_and_retention(economic_clien
         assert db.query(LegacyOrchestrationEvent).filter_by(event_type="CUSTOMER_RESEARCH_SUPPRESSION_FIXTURE").count() >= 1
 
 
-def test_industry_diligence_wakes_specialists_and_keeps_fleet_options_advisory(economic_client):
+def stucco_scenarios():
+    base = {
+        "price_minor": 2_100_000, "crew_count": 1, "crew_size": 3,
+        "available_skilled_workers": 2, "available_foremen": 1,
+        "hours_per_worker_week": 40, "days_per_week": 5, "wage_minor_per_hour": 4100,
+        "employer_burden_bps": 1500, "on_site_days": 6, "weather_delay_days": 0,
+        "mobilization_hours_per_crew": 2, "seasonal_utilization_bps": 9500,
+        "estimated_demand_jobs_per_month": 3, "materials_minor": 500_000,
+        "job_equipment_travel_minor": 60_000, "callback_reserve_minor": 20_000,
+        "monthly_overhead_minor": 200_000, "admin_mode": "OWNER",
+        "monthly_admin_hours": 45, "admin_minor_per_hour": 4000,
+        "setup_minor": 1_000_000, "payment_days_after_delivery": 30,
+        "duration_basis": "Synthetic productivity assumption for the comparison.",
+    }
+    return {"observed_crew_size": 3, "observed_on_site_days": 6, "scenarios": [
+        {**base, "name": "BASE"},
+        {**base, "name": "STRESS", "price_minor": 2_000_000, "crew_size": 2, "on_site_days": 9,
+         "weather_delay_days": 2, "mobilization_hours_per_crew": 5, "seasonal_utilization_bps": 7000,
+         "payment_days_after_delivery": 60,
+         "duration_basis": "Declared slower production with a smaller crew, not measured."},
+        {**base, "name": "EXPANSION", "crew_count": 2, "mobilization_hours_per_crew": 1,
+         "estimated_demand_jobs_per_month": 5, "admin_mode": "DELEGATED", "monthly_admin_hours": 80},
+    ]}
+
+
+def test_stucco_planning_calculates_capacity_cash_and_refuses_unsupported_crew_speed():
+    from app.services.skilled_trade_economics import SkilledTradeStudy, project_trade
+
+    study = stucco_scenarios()
+    result = project_trade(SkilledTradeStudy.model_validate(study))
+    base, stress, expansion = (result["scenarios"][name] for name in ("BASE", "STRESS", "EXPANSION"))
+    assert base["modeled_jobs_per_month"] == 3
+    assert base["paid_worker_hours_per_job"] == 150
+    assert base["estimated_job_direct_cost_minor"] == 1_287_250
+    assert base["monthly_payroll_minor"] == 2_451_800
+    assert base["receivables_proxy_minor"] == 6_300_000
+    assert base["monthly_operating_contribution_minor"] == 1_728_200
+    assert stress["monthly_operating_contribution_minor"] < 0
+    assert stress["collection_cycle_days"] > base["collection_cycle_days"]
+    assert stress["startup_cash_reserve_proxy_minor"] > base["startup_cash_reserve_proxy_minor"]
+    assert expansion["foreman_gap"] == 1 and expansion["skilled_worker_gap"] == 4
+    assert expansion["owner_admin_hours_per_month"] == 0 and expansion["monthly_admin_cost_minor"] == 320_000
+    assert "BASE_OR_DOWNSIDE_UNVIABLE" in result["expansion_blockers"]
+    baseline, _, extra_crew = study["scenarios"]
+    viable = {**study, "scenarios": [
+        {**baseline, "available_skilled_workers": 3},
+        {**baseline, "name": "STRESS", "price_minor": 2_050_000, "available_skilled_workers": 3},
+        {**extra_crew, "available_skilled_workers": 6, "available_foremen": 2},
+    ]}
+    opportunity = project_trade(SkilledTradeStudy.model_validate(viable))
+    assert opportunity["expansion_blockers"] == []
+    assert opportunity["external_authority"] is False
+    study["scenarios"][1]["on_site_days"] = 6
+    with pytest.raises(ValueError, match="smaller crew"):
+        SkilledTradeStudy.model_validate(study)
+
+
+@pytest.mark.parametrize("trade", (False, True), ids=("fleet", "stucco"))
+def test_industry_diligence_wakes_specialists_and_keeps_options_advisory(economic_client, trade, monkeypatch):
     from app.models.completion_registry import SourceRegistryItem
     from app.models.foundry_evidence import FoundryEvidence
     from app.services.foundry_discovery import require_current_candidate
@@ -1486,6 +1544,9 @@ def test_industry_diligence_wakes_specialists_and_keeps_fleet_options_advisory(e
         "fleetio-pricing": "https://www.fleetio.com/pricing",
         "mta-membership": "https://trucking.mb.ca/membership/member-categories/",
     }
+    if trade:
+        references = {"stucco-synthetic-observation": "https://fixtures.example.invalid/stucco-synthetic-observation",
+                      "offline-trades-reference": "https://fixtures.example.invalid/trades-context"}
     # Disposable source registry entries. No live connector, client or source account.
     with Session(engine) as db:
         for key, citation in references.items():
@@ -1514,15 +1575,52 @@ def test_industry_diligence_wakes_specialists_and_keeps_fleet_options_advisory(e
     study = {"scope": SCOPE, "execution_options": options, "findings": [
         {"facet": facet, "source_id": src, "citation": references[src], "observed_on": today.isoformat(),
          "valid_through": expires, "summary": summary}
-        for facet, src, summary in (
+        for facet, src, summary in (() if trade else (
             ("REGULATION", "mb-maintenance", "Manitoba describes scheduled vehicle maintenance and inspection records."),
             ("FAILURE_MODES", "mb-maintenance", "Incomplete repair or inspection records can leave audit evidence gaps."),
             ("COMPETITION", "fleetio-pricing", "An incumbent offers tiered per-asset subscriptions with annual commitment options."),
             ("DISTRIBUTION", "mta-membership", "Industry association categories include for-hire and private fleet operators."),
-        )
+        ))
     ]}
+    if trade:
+        study["skilled_trade"] = stucco_scenarios()
+        study["findings"] = [
+            {"facet": facet, "source_id": source, "citation": references[source], "observed_on": today.isoformat(),
+             "valid_through": expires, "summary": summary}
+            for facet, source, summary in (
+                ("COSTS", "stucco-synthetic-observation",
+                 "Synthetic prices and labour assumptions for deterministic testing."),
+                ("SALES", "stucco-synthetic-observation",
+                 "Synthetic channel and administrative workload assumptions."),
+                ("FAILURE_MODES", "stucco-synthetic-observation",
+                 "Synthetic case examines staffing and weather sensitivity."),
+                ("COMPETITION", "offline-trades-reference", "Synthetic reference for fixture scope; no measured competitor prices."),
+            )
+        ]
+    if trade:
+        from app.loki.evidence import artifact_digest
+        from app.models.completion_registry import KnowledgeRegistryItem, LearningFeedbackRecord
+        from app.models.media_engine import MediaContent
+        from app.models.prime_specialist_schedule import PrimeScheduleTrigger, PrimeSpecialistSchedule
+        from app.routers.prime_specialist_schedules import run_due_schedule
+        from app.services.specialist_triggers import enqueue_prime, outcome_scope_key
+        for model in (MediaContent, KnowledgeRegistryItem, LearningFeedbackRecord,
+                      PrimeSpecialistSchedule, PrimeScheduleTrigger):
+            model.__table__.create(engine, checkfirst=True)
+        schedule = client.post("/api/prime/specialist-schedules", headers=OWNER, json={
+            "schedule_id": str(uuid4()), "business_id": SCOPE["business_id"],
+            "cadence_seconds": 600, "duration_seconds": 3600, "on_economic_reassessment": True,
+            "opportunity": {"opportunity_id": "stucco-crew", "title": "Stucco crew", "engine_id": SCOPE["engine_id"],
+                "summary": "Reassess the exact scoped skilled-trade plan.",
+                "legacy": SCOPE["legacy_instance_id"], "jurisdiction": SCOPE["jurisdiction"],
+                "specialist_inputs": {"business_id": SCOPE["business_id"]}},
+        })
+        assert schedule.status_code == 201, schedule.text
     ids = []
-    for key, kind in (("managed-fleet-setup", "SERVICE"), ("fleet-audit-export", "SAAS")):
+    offers = (("stucco-crew", "SERVICE"), ("stucco-secondary", "SERVICE")) if trade else (
+        ("managed-fleet-setup", "SERVICE"), ("fleet-audit-export", "SAAS")
+    )
+    for key, kind in offers:
         evidence_id = str(uuid4())
         ids.append(evidence_id)
         evidence = {**SCOPE, "evidence_id": evidence_id, "kind": kind, "evidence_class": "OPERATOR_REPORTED",
@@ -1544,6 +1642,9 @@ def test_industry_diligence_wakes_specialists_and_keeps_fleet_options_advisory(e
         saved = client.post(route, headers=OWNER, json=study)
         assert saved.status_code == 201, saved.text
         result = saved.json()
+        if trade:
+            assert result["skilled_trade"]["decision"] == "HOLD_FOR_VERIFIED_EVIDENCE"
+            assert result["skilled_trade"]["scenarios"]["EXPANSION"]["skilled_worker_gap"] == 4
         assert result["research_status"] == "MORE_RESEARCH_REQUIRED"
         assert "CUSTOMER_NEEDS" in result["missing_facets"] and result["customer_demand_verified"] is False
         assert {x["kind"]: x["year_one_cost_minor"] for x in result["execution_options"]} == {"BUILD": 864000, "BUY": 220000}
@@ -1576,12 +1677,67 @@ def test_industry_diligence_wakes_specialists_and_keeps_fleet_options_advisory(e
     findings = challenge(digest_bound).model_dump(mode="json")
     receipt = client.post(f"/loki/worker/reviews/{review_id}/result", headers=REVIEWER, json=findings)
     assert receipt.status_code == 201 and any(f["category"] == "industry_execution_uncertainty" for f in findings["findings"])
+    if trade:
+        from copy import deepcopy
+        changed = deepcopy(digest_bound)
+        projection = changed["raw_input"]["observations"]["foundry_signals"][0]["industry_diligence"]["skilled_trade"]
+        projection["scenarios"]["BASE"]["monthly_operating_contribution_minor"] += 1
+        changed["artifact_sha256"] = artifact_digest(changed["artifact_type"], changed["reference"], changed["raw_input"])
+        assert any(f.category == "trade_projection_conflict" and f.severity == "critical"
+                   for f in challenge(changed).findings)
+        with Session(engine) as db:
+            assert db.query(PrimeScheduleTrigger).filter(
+                PrimeScheduleTrigger.event_id.startswith("FOUNDRY-INDUSTRY-")
+            ).count() == 2
+            queued = db.query(PrimeScheduleTrigger).count()
+            # Business opportunity records may enqueue economic events too. Drain those before the trade receipt.
+            for _ in range(queued):
+                attempt = run_due_schedule(db)
+                event = db.query(LegacyOrchestrationEvent).filter_by(event_id=attempt["report_event_id"]).one()
+                advisory = json.loads(event.payload_json)
+                if advisory["trigger"] == "SKILLED_TRADE_REASSESSMENT":
+                    break
+            else:
+                pytest.fail("No event-driven trade review was processed")
+        assert advisory["trade_reassessment"]["evidence_id"] == ids[0]
+        assert advisory["recommendation"]["heimdall_decision"] == "HOLD"
+        assert advisory["independent_loki_cleared"] is False
+        assert "SKILLED_WORKERS_UNAVAILABLE" in advisory["operating_reassessment"]["blockers"]
+        with Session(engine) as db:
+            enqueue_prime(db, outcome_scope_key(SCOPE), advisory["trigger_skilled_trade_id"],
+                          current_time().replace(tzinfo=None) - timedelta(minutes=1),
+                          subscription="on_economic_reassessment")
+            db.commit()
+        with Session(engine) as db:
+            assert run_due_schedule(db) == {"status": "replayed", "report_event_id": advisory["report_event_id"]}
+            queued = db.query(PrimeScheduleTrigger).count()
+            with monkeypatch.context() as stopped:
+                stopped.setenv("VALHALLA_EMERGENCY_STOP", "true")
+                assert run_due_schedule(db) == {"status": "blocked", "emergency_stop": True}
+            assert db.query(PrimeScheduleTrigger).count() == queued
     assessment = post(client, "assessment", SCOPE, 200)
+    if trade:
+        assert any(f["category"] == "trade_expansion_blocked" for f in findings["findings"])
+        assert all(x["projected_annual_net"] == 20_738_400 for x in assessment["alternatives"])
+        assert all("NONPOSITIVE_CONTRIBUTION" in x["blockers"] for x in assessment["alternatives"])
     assert assessment["opportunity_selection"]["decision"] == "ABSTAIN"
     assert all("INDUSTRY_DEMAND_UNVERIFIED" in x["blockers"] for x in assessment["alternatives"])
     with Session(engine) as db:
-        db.query(SourceRegistryItem).filter_by(source_id="mb-maintenance").one().active = False
+        db.query(SourceRegistryItem).filter_by(source_id=next(iter(references))).one().active = False
         db.commit()
+    if trade:
+        with Session(engine) as db:
+            remaining = db.query(PrimeScheduleTrigger).count()
+            for _ in range(remaining):
+                blocked = run_due_schedule(db)
+                event = db.query(LegacyOrchestrationEvent).filter_by(event_id=blocked["report_event_id"]).one()
+                expired_review = json.loads(event.payload_json)
+                if expired_review["trigger"] == "SKILLED_TRADE_REASSESSMENT":
+                    break
+            else:
+                pytest.fail("No outstanding trade review revalidated the withdrawn source")
+        assert expired_review["status"] == "blocked"
+        assert expired_review["external_authority"] is False
     assert client.get(candidate_url).status_code == 409
     after = post(client, "assessment", SCOPE, 200)
     assert all("FOUNDRY_SOURCE_UNAVAILABLE" in x["blockers"] for x in after["alternatives"])

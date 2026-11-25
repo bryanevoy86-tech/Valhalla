@@ -8,6 +8,16 @@ DO NOT restart the project, regenerate completed packs, or treat API presence as
 
 Use the current head of draft PR #4 and confirm the latest required CI run. Use the current workstream index, integration matrix and latest ledger verification to choose unfinished work. Dated checkpoints and original prompts are historical records. The same index supersedes earlier execution orders in the root start page and the finish passes. There are 50 acceptance contracts, 53 task entries and seven construction packages.
 
+## Skilled-trade Foundry checkpoint — separate offline review branch
+
+The existing scoped Foundry industry-diligence endpoint accepts an optional skilled-trade scenario for `SERVICE` evidence with an authorized, current `COSTS` source. One study persists baseline, stress and extra-crew assumptions in the existing digest-bound journal. An unchanged repeat returns the same receipt. A changed study requires a new Foundry version. Older non-trade receipts preserve their original payload and digest. No schema migration is required.
+
+Economic assessment uses the modeled operating contribution, stress downside and collection reserve proxy. The scoped scheduler wakes opted-in Prime schedules on accepted trade diligence and independently revalidates the source, scope and receipt before recording its advisory result. ODIN and NJORD receive the existing role-specific reports. Loki checks the calculation and challenges unsupported expansion. No report confers paid-demand evidence, releases funds or clears dispatch.
+
+The disposable stucco case uses fictional observations and modeled costs and delays. Its baseline shows positive modeled contribution with a staffing gap. A deliberately slower two-person stress case shows a loss and increased collection reserve. The extra crew remains held. Run the exact regression using `services/api/tests/test_economic_control.py -k 'stucco or industry_diligence'`.
+
+Next offline batch: attach a synthetic non-Canadian service or property case to the same evidence and review journal with explicit jurisdiction inputs, unresolved professional questions and FX costs. Then prove scoped Mimir/Norns follow-up to a trade outcome and compare start, buy, partner, expand and reject with worker-retention and owner-dependency evidence. Keep all five Legacy scopes, worker independence and all external approvals intact. The protected staging revision and hosted startup retry are separate.
+
 ## Isolated staging handoff — November 24
 
 Start with the [operator execution order](VALHALLA_COMMERCIAL_COMMISSIONING_SHEET.md#operator-execution-order) and [provisioning settings](VALHALLA_STAGING_PROVISIONING.md#exact-proposed-configuration). Keep commercial effects held. The next external receipt is the assigned isolated HTTPS origin pair, positive and negative credential-free CORS results and three disposable browser sign-ins on the reviewed commit. The authorized operator and reviewer custodian, WeWeb entitlement, assigned origins, actual resource IDs and pricing still need confirmation. Separate approvals apply to provider-native observations, the elapsed trial, real research and commercial operation.

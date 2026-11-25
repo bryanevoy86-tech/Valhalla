@@ -1,6 +1,7 @@
 """Version-bound operating diligence for the existing Foundry evidence journal."""
 from datetime import date
 from typing import Annotated, Literal
+from uuid import UUID
 
 from fastapi import HTTPException
 from pydantic import Field, model_validator
@@ -11,9 +12,11 @@ from app.models.completion_registry import LegacyOrchestrationEvent
 from app.schemas.market_intelligence import MarketScope, StrictModel
 from app.services.market_intelligence import authorized_source
 from app.services.prime_business_execution import _json
+from app.services.skilled_trade_economics import SkilledTradeStudy, project_trade
 
 
 EVENT = "FOUNDRY_INDUSTRY_DILIGENCE"
+EVENT_PREFIX = "FOUNDRY-INDUSTRY-"
 FACETS = (
     "CUSTOMER_NEEDS", "SALES", "COMPETITION", "COSTS", "REGULATION",
     "DISTRIBUTION", "AUTOMATION", "DEAL_TERMS", "FAILURE_MODES",
@@ -65,22 +68,28 @@ class IndustryDiligence(StrictModel):
     findings: list[Finding] = Field(min_length=1, max_length=18)
     execution_options: list[ExecutionOption] = Field(min_length=2, max_length=2)
 
+    skilled_trade: SkilledTradeStudy | None = None
+
     @model_validator(mode="after")
     def validate_comparison(self):
         if {item.kind for item in self.execution_options} != {"BUILD", "BUY"}:
             raise ValueError("Compare one build and one buy path")
         if len({(item.facet, item.source_id) for item in self.findings}) != len(self.findings):
             raise ValueError("Each source may support a facet once")
+        if self.skilled_trade and not any(item.facet == "COSTS" for item in self.findings):
+            raise ValueError("Skilled-trade assumptions require attributed cost evidence")
         return self
 
 
 def event_id(evidence_id):
-    return f"FOUNDRY-INDUSTRY-{evidence_id}"
+    return EVENT_PREFIX + str(evidence_id)
 
 
 def check_sources(db, study, evidence, scope, today, *, lock=False):
     if study.scope.model_dump() != scope or evidence.evidence_class == "SIMULATION":
         raise HTTPException(409, "Industry diligence requires current scoped research")
+    if study.skilled_trade and evidence.kind != "SERVICE":
+        raise HTTPException(409, "Skilled-trade economics require scoped service evidence")
     for finding in sorted(study.findings, key=lambda item: item.source_id):
         source = authorized_source(db, finding.source_id, scope["jurisdiction"], "OPERATOR_REPORTED", lock=lock)
         if (source.source_type != "INDUSTRY_REFERENCE" or source.governance_status != "approved"
@@ -95,6 +104,10 @@ def check_sources(db, study, evidence, scope, today, *, lock=False):
 def build_record(db, row, evidence, scope, study, today):
     check_sources(db, study, evidence, scope, today, lock=True)
     content = study.model_dump(mode="json")
+    if study.skilled_trade is None:
+        content.pop("skilled_trade")
+    else:
+        content["skilled_trade"]["scenarios"].sort(key=lambda item: item["name"])
     content["findings"].sort(key=lambda item: (item["facet"], item["source_id"]))
     content["execution_options"].sort(key=lambda item: item["kind"])
     body = {"evidence_sha256": row.digest, "industry": content}
@@ -114,7 +127,9 @@ def project(body, evidence):
             "source_ids": sources, "missing_facets": missing, "execution_options": options,
             "cost_basis": "DECLARED_ASSUMPTIONS_ONLY", "customer_demand_verified": False,
             "research_status": "MORE_RESEARCH_REQUIRED" if missing or len(sources) < 2 else "READY_FOR_CHALLENGE",
-            "external_authority": False}
+            "external_authority": False,
+            **({"skilled_trade": project_trade(SkilledTradeStudy.model_validate(content["skilled_trade"]))}
+               if "skilled_trade" in content else {})}
 
 
 def research_focus(role, industry):
@@ -143,3 +158,23 @@ def read_industry(db, row, evidence, scope, today, *, lock=False):
         raise HTTPException(409, "Industry diligence failed integrity verification") from None
     check_sources(db, study, evidence, scope, today, lock=lock)
     return project(body, evidence)
+
+
+def read_trade_reassessment(db, trigger_id, scope, today):
+    from app.models.foundry_evidence import FoundryEvidence
+    from app.services.foundry_discovery import checked_evidence
+
+    try:
+        evidence_id = UUID(trigger_id.removeprefix(EVENT_PREFIX))
+    except ValueError:
+        raise HTTPException(409, "Invalid industry reassessment reference") from None
+    row = db.get(FoundryEvidence, evidence_id, populate_existing=True)
+    if row is None or event_id(row.id) != trigger_id:
+        raise HTTPException(409, "Industry reassessment evidence unavailable")
+    evidence = checked_evidence(row, scope, today, db=db)
+    industry = read_industry(db, row, evidence, scope, today)
+    trade = (industry or {}).get("skilled_trade")
+    if not trade:
+        raise HTTPException(409, "Skilled-trade reassessment evidence unavailable")
+    return {"evidence_id": str(row.id), "evidence_sha256": row.digest,
+            "industry_sha256": industry["sha256"], "skilled_trade": trade}

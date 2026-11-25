@@ -120,7 +120,10 @@ def record_industry(evidence_id: UUID, request: foundry_industry.IndustryDiligen
         return foundry_industry.read_industry(db, row, evidence, scope, today)
     _event(db, event_id=reference, legacy_instance_id=scope["legacy_instance_id"], event_type=foundry_industry.EVENT,
            message="Operating research and execution alternatives recorded", payload=result)
-    enqueue_research(db, row.scope_key, reference, current_time().replace(tzinfo=None), roles=DISCOVERY_ROLES)
+    at = current_time().replace(tzinfo=None)
+    enqueue_research(db, row.scope_key, reference, at, roles=DISCOVERY_ROLES)
+    if request.skilled_trade is not None:
+        enqueue_prime(db, row.scope_key, reference, at, subscription="on_economic_reassessment")
     try:
         db.commit()
     except IntegrityError:

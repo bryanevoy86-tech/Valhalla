@@ -5,6 +5,7 @@ import re
 from app.loki.evidence import artifact_digest
 from app.loki.schemas import IndependentFinding, IndependentReviewIn
 from app.services.checkout_operating_signals import checkout_operating_blockers
+from app.services.skilled_trade_economics import SkilledTradeStudy, project_trade
 
 
 def _finding(category, field, message, *, critical=False):
@@ -43,8 +44,25 @@ def _industry_findings(research, field):
                    for item in options)
             or sorted(str(item.get("kind")) for item in options) != ["BUILD", "BUY"]):
         return [_finding("industry_cost_conflict", field, "Build and buy costs must reconcile independently.", critical=True)]
-    return [_finding("industry_execution_uncertainty", field,
-                     "Verify buyer behavior, labor estimates, provider terms, failure handling and uncovered operating facets before reliance.")]
+    findings = [_finding("industry_execution_uncertainty", field,
+                         "Verify buyer behavior, labor estimates, provider terms, failure handling and uncovered operating facets before reliance.")]
+    if "skilled_trade" in research:
+        trade = research["skilled_trade"]
+        field = f"{field}/skilled_trade"
+        try:
+            expected = project_trade(SkilledTradeStudy.model_validate(trade["inputs"]))
+        except (KeyError, TypeError, ValueError):
+            expected = None
+        if expected is None or trade != expected:
+            findings.append(_finding("trade_projection_conflict", field,
+                                     "Staffing, job economics or collection reserve do not reconcile.", critical=True))
+        else:
+            findings.append(_finding("trade_capacity_uncertainty", field,
+                                     "Verify crew productivity, staffing and payment lag. One operator observation cannot establish market demand."))
+            if trade["expansion_blockers"]:
+                findings.append(_finding("trade_expansion_blocked", f"{field}/expansion_blockers",
+                                         "The modeled downside, crew coverage or incremental contribution cannot support expansion."))
+    return findings
 
 
 def _commercial_findings(case):

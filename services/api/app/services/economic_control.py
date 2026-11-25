@@ -246,6 +246,18 @@ def comparison(db, state, scope, currency, available, today, *, lock_sources=Fal
                     "projected_annual_net": net * 12,
                     "maximum_downside": max(item.maximum_downside, -12 * downside),
                 }
+                trade = (industry or {}).get("skilled_trade")
+                if trade:
+                    base, stress = (trade["scenarios"][name] for name in ("BASE", "STRESS"))
+                    blockers.extend(base["blockers"])
+                    blockers.extend(stress["blockers"])
+                    assessed.update(
+                        required_capital=max(assessed["required_capital"], base["startup_cash_reserve_proxy_minor"],
+                                             stress["startup_cash_reserve_proxy_minor"]),
+                        projected_annual_net=12 * base["monthly_operating_contribution_minor"],
+                        maximum_downside=max(assessed["maximum_downside"],
+                                             -12 * stress["monthly_operating_contribution_minor"]),
+                    )
                 data["projection_differences"] = [
                     {"field": field, "declared_minor": data[field], "used_minor": amount}
                     for field, amount in assessed.items() if data[field] != amount
