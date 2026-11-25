@@ -1817,3 +1817,188 @@ def test_source_revision_wakes_prime_for_exact_prior_decision(economic_client):
     assert "PRIOR_DECISION_SOURCE_REVISED" in result["operating_reassessment"]["blockers"]
     assert result["recommendation"]["heimdall_decision"] == "HOLD"
     assert result["external_authority"] is False
+
+
+@pytest.mark.parametrize(
+    ("kind", "country", "region", "currency", "assumed_rate"),
+    [("SERVICE", "US", "TX", "USD", 1_500_000),
+     ("REAL_ESTATE", "JP", "13", "JPY", 900_000)],
+)
+def test_international_diligence_runs_scoped_specialists_loki_and_prime(
+    economic_client, kind, country, region, currency, assumed_rate, monkeypatch,
+):
+    from copy import deepcopy
+    from app.loki.evidence import artifact_digest
+    from app.models.completion_registry import KnowledgeRegistryItem, LearningFeedbackRecord, SourceRegistryItem
+    from app.models.foundry_evidence import FoundryEvidence
+    from app.models.media_engine import MediaContent
+    from app.models.prime_specialist_schedule import PrimeScheduleTrigger, PrimeSpecialistSchedule
+    from app.routers.prime_specialist_schedules import run_due_schedule
+    from app.services.foundry_discovery import require_current_candidate
+    from app.services.foundry_industry import INTERNATIONAL_PREFIX, read_industry_reassessment
+    from app.services.foundry_intake import current_time
+    from app.services.international_economics import COMMON_TOPICS
+    from app.services.specialist_triggers import enqueue_prime, outcome_scope_key
+
+    client, engine = economic_client
+    for model in (SourceRegistryItem, FoundryEvidence, MediaContent, KnowledgeRegistryItem,
+                  LearningFeedbackRecord, PrimeSpecialistSchedule, PrimeScheduleTrigger):
+        model.__table__.create(engine, checkfirst=True)
+    now = current_time()
+    today = now.date()
+    expires = (today + timedelta(days=7)).isoformat()
+    scope = {**SCOPE, "legacy_instance_id": "foreign-fixture", "jurisdiction": f"{country}-{region}"}
+    adjacent = {**scope, "business_id": "different-business"}
+    source = "offline-fx-scenario"
+    citation = "https://fixtures.example.invalid/illustrative-exchange-ratio"
+    with Session(engine) as db:
+        db.add(LegacyInstanceRegistryItem(
+            legacy_instance_id=scope["legacy_instance_id"], display_name="Foreign simulation", status="PASS",
+            synchronization_status="SYNCED", engines_json=json.dumps([scope["engine_id"]]),
+            assigned_businesses_json=json.dumps([scope["business_id"], adjacent["business_id"]]),
+            assigned_jurisdictions_json=json.dumps([scope["jurisdiction"]]), local_knowledge_context_json=json.dumps(scope),
+        ))
+        db.add(SourceRegistryItem(
+            source_id=source, canonical_name="Synthetic foreign FX assumption", source_type="INDUSTRY_REFERENCE",
+            data_class="live", jurisdiction=scope["jurisdiction"], citation_ref=citation, permission_status="authorized",
+            license_status="consented_internal_use", governance_status="approved", terminal_state="PASS",
+            mode_allowlist_json='["practice"]',
+        ))
+        db.commit()
+    post(client, "mandates", mandate(today, scope=scope))
+    for role in ("ODIN", "NJORD"):
+        enrolled = client.post("/api/prime/pantheon/assignments", headers=OWNER, json={
+            **scope, "assignment_id": str(uuid4()), "role": role, "cadence_seconds": 600, "duration_seconds": 3600,
+        })
+        assert enrolled.status_code == 201, enrolled.text
+    schedule_ids = {}
+    for enrolled_scope in (scope, MIRROR):
+        schedule_id = str(uuid4())
+        schedule_ids[enrolled_scope["business_id"], enrolled_scope["jurisdiction"]] = schedule_id
+        schedule = client.post("/api/prime/specialist-schedules", headers=OWNER, json={
+            "schedule_id": schedule_id, "business_id": enrolled_scope["business_id"],
+            "cadence_seconds": 600, "duration_seconds": 3600, "on_economic_reassessment": True,
+            "opportunity": {"opportunity_id": "foreign-pilot", "title": "Foreign scenario",
+                "engine_id": enrolled_scope["engine_id"], "summary": "Reassess a synthetic foreign investment.",
+                "legacy": enrolled_scope["legacy_instance_id"], "jurisdiction": enrolled_scope["jurisdiction"],
+                "specialist_inputs": {"business_id": enrolled_scope["business_id"]}},
+        })
+        assert schedule.status_code == 201, schedule.text
+
+    with Session(engine) as db:
+        for scheduled_row in db.query(PrimeSpecialistSchedule).all():
+            scheduled_row.next_due_at = now.replace(tzinfo=None) + timedelta(minutes=10)
+        db.commit()
+
+    evidence_id = str(uuid4())
+    evidence = {**scope, "evidence_id": evidence_id, "kind": kind, "evidence_class": "OPERATOR_REPORTED",
+                "title": "Foreign opportunity scenario", "source_ref": "fixture:foreign-diligence",
+                "observed_on": today.isoformat(), "expires_on": expires, "currency": "CAD",
+                "unit_price": 1000, "variable_cost_per_unit": 100, "acquisition_cost_per_unit": 50,
+                "monthly_fixed_cost": 100, "monthly_units": 5, "startup_capital": 1000, "test_cost": 0,
+                "rights_attestation": "AUTHORIZED_INTERNAL_RESEARCH"}
+    root = "/api/prime/foundry"
+    assert client.post(root + "/evidence", headers=OWNER, json=evidence).status_code == 201
+    route = f"{root}/evidence/{evidence_id}/industry-diligence"
+    topics = COMMON_TOPICS | ({"PROPERTY_USE"} if kind == "REAL_ESTATE" else set())
+    international = {
+        "kind": kind, "country": country, "region": region, "local_currency": currency,
+        "cad_cents_per_local_minor_ppm": assumed_rate, "fx_source_id": source, "fx_observed_on": today.isoformat(),
+        "fx_stress_bps": 2000, "conversion_fee_bps": 100, "monthly_revenue_local_minor": 100_000,
+        "revenue_stress_bps": 2000, "labour_local_minor": 15_000, "property_management_local_minor": 7000,
+        "local_operator_local_minor": 8000, "other_monthly_expenses_local_minor": 20_000,
+        "tax_reserve_local_minor": 10_000, "debt_service_local_minor": 10_000,
+        "acquisition_and_setup_local_minor": 500_000, "financing_principal_local_minor": 200_000,
+        "working_capital_local_minor": 100_000, "cross_border_setup_cad_cents": 5000,
+        "local_operator_required": True, "local_operator_status": "HYPOTHETICAL",
+        "professional_questions": [{"topic": topic, "question": "Confirm local requirements before relying on this case.",
+                                   "status": "UNRESOLVED"} for topic in sorted(topics)],
+    }
+    study = {"scope": scope, "international": international, "findings": [
+        {"facet": "COSTS", "source_id": source, "citation": citation, "observed_on": today.isoformat(),
+         "valid_through": expires, "summary": "Declared exchange-ratio fixture. No live exchange or market data."}
+    ], "execution_options": [
+        {"kind": k, "setup_minor": 100, "monthly_minor": 10, "setup_hours": 0,
+         "monthly_hours": 0, "loaded_hour_minor": 0, "dependencies": ["Professional review"],
+         "estimate_basis": "Declared estimates for comparative testing."} for k in ("BUILD", "BUY")
+    ]}
+    assert client.post(route, json=study).status_code == 401
+    assert client.post(route, headers=OWNER, json={**study, "scope": adjacent}).status_code == 409
+    wrong_jurisdiction = {**study, "international": {**international, "region": "OTHER"}}
+    assert client.post(route, headers=OWNER, json=wrong_jurisdiction).status_code == 409
+    unsupported_fx = {**study, "international": {**international, "fx_source_id": "missing-rate"}}
+    assert client.post(route, headers=OWNER, json=unsupported_fx).status_code == 422
+    response = client.post(route, headers=OWNER, json=study)
+    assert response.status_code == 201, response.text
+    result = response.json()
+    assert client.post(route, headers=OWNER, json=study).json() == result
+    projection = result["international"]
+    assert projection["base"]["monthly_net_cad_cents"] > 0 > projection["stress"]["monthly_net_cad_cents"]
+    assert projection["base"]["monthly_receipts_cad_cents"] == 100_000 * assumed_rate * 99 // 100_000_000
+    assert projection["stress"]["required_cash_cad_cents"] > projection["base"]["required_cash_cad_cents"]
+    assert projection["external_authority"] is False
+    trigger = INTERNATIONAL_PREFIX + evidence_id
+    with Session(engine) as db:
+        queued = db.query(PrimeScheduleTrigger).filter_by(event_id=trigger).one()
+        assert str(queued.schedule_id) == schedule_ids[scope["business_id"], scope["jurisdiction"]]
+        with monkeypatch.context() as stopped:
+            stopped.setenv("VALHALLA_EMERGENCY_STOP", "true")
+            assert run_due_schedule(db) == {"status": "blocked", "emergency_stop": True}
+        assert db.query(PrimeScheduleTrigger).filter_by(event_id=trigger).count() == 1
+    # New worker session after the stop. It consumes the durable trigger only once.
+    with Session(engine) as db:
+        scheduled = run_due_schedule(db)
+        event = db.query(LegacyOrchestrationEvent).filter_by(event_id=scheduled["report_event_id"]).one()
+        advisory = json.loads(event.payload_json)
+        assert advisory["trigger"] == "INTERNATIONAL_REASSESSMENT"
+        assert advisory["international_reassessment"]["international"] == projection
+        assert advisory["recommendation"]["heimdall_decision"] == "HOLD"
+        assert advisory["external_authority"] is False and advisory["independent_loki_cleared"] is False
+        with pytest.raises(HTTPException):
+            read_industry_reassessment(db, trigger, adjacent, today, international=True)
+        enqueue_prime(db, outcome_scope_key(scope), trigger, now.replace(tzinfo=None),
+                      subscription="on_economic_reassessment")
+        db.commit()
+    with Session(engine) as db:
+        assert run_due_schedule(db) == {"status": "replayed", "report_event_id": advisory["report_event_id"]}
+    specialist_ids = set()
+    for role in ("ODIN", "NJORD"):
+        with Session(engine) as db:
+            report_id = run_assignment(db, role)["report_event_id"]
+        specialist_ids.add(report_id)
+        report = client.get(f"/api/prime/pantheon/reports/{report_id}").json()
+        assert report["role"] == role
+        assert report["observations"]["foundry_signals"][0]["industry_diligence"]["international"] == projection
+    assert len(specialist_ids) == 2
+    review = client.post(f"/api/prime/pantheon/reports/{report_id}/challenge")
+    assert review.status_code == 201, review.text
+    review_id = review.json()["review_id"]
+    queue = client.get("/loki/worker/reviews", headers=REVIEWER, params={"artifact_type": "pantheon_report"})
+    item = next(entry for entry in queue.json() if entry["review_id"] == review_id)
+    findings = challenge(item).model_dump(mode="json")
+    assert any(row["category"] == "international_professional_diligence" for row in findings["findings"])
+    assert client.post(f"/loki/worker/reviews/{review_id}/result", headers=REVIEWER, json=findings).status_code == 201
+    forged = deepcopy(item)
+    forged["raw_input"]["observations"]["foundry_signals"][0]["industry_diligence"]["international"]["external_authority"] = True
+    forged["artifact_sha256"] = artifact_digest(forged["artifact_type"], forged["reference"], forged["raw_input"])
+    assert any(row.category == "international_projection_conflict" and row.severity == "critical"
+               for row in challenge(forged).findings)
+    candidate_url = f"{root}/reports/{report_id}/candidate/{evidence_id}"
+    candidate = client.get(candidate_url).json()["proposal"]
+    with Session(engine) as db:
+        with pytest.raises(HTTPException, match="separately verified"):
+            require_current_candidate(db, candidate, scope, today)
+    post(client, "opportunities", option(today, "foreign-pilot", scope=scope, origin="FOUNDRY",
+                                          foundry_evidence_id=evidence_id))
+    assessment = post(client, "assessment", scope, 200)
+    examined = assessment["alternatives"][0]
+    assert assessment["opportunity_selection"]["decision"] == "ABSTAIN"
+    assert "INTERNATIONAL_PROFESSIONAL_DILIGENCE_UNRESOLVED" in examined["blockers"]
+    assert examined["required_capital"] == projection["stress"]["required_cash_cad_cents"]
+    assert examined["projected_annual_net"] == 12 * projection["base"]["monthly_net_cad_cents"]
+    with Session(engine) as db:
+        db.query(SourceRegistryItem).filter_by(source_id=source).one().active = False
+        db.commit()
+        with pytest.raises(HTTPException):
+            read_industry_reassessment(db, trigger, scope, today, international=True)
+    assert client.get(candidate_url).status_code == 409

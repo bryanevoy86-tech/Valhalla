@@ -21,7 +21,7 @@ from app.routers.completion_registry import (
     evaluate_universal_opportunities,
 )
 from app.routers.prime_business_factory import require_factory_schema
-from app.services.foundry_industry import EVENT_PREFIX as INDUSTRY_PREFIX, read_trade_reassessment
+from app.services.foundry_industry import EVENT_PREFIX as INDUSTRY_PREFIX, INTERNATIONAL_PREFIX, read_industry_reassessment
 from app.services.prime_business_execution import (
     _check_legacy, _emergency_stop_active, _event, require_owner_mandate_key,
     scoped_factory_findings, verified_internal_outcomes,
@@ -234,6 +234,10 @@ def attach_operating_reassessment(db, payload, scope, today, outcomes, report):
         blockers.add("INDUSTRY_DEMAND_UNVERIFIED")
         for name in ("BASE", "STRESS"):
             blockers.update(trade["skilled_trade"]["scenarios"][name]["blockers"])
+    international = report.get("international_reassessment")
+    if international:
+        blockers.add("INDUSTRY_DEMAND_UNVERIFIED")
+        blockers.update(international["international"]["blockers"])
     recommendation = report["recommendation"]
     if checkout or capital or source_assessment or treasury.get("accounts") or blockers or paid_outcomes or recurring:
         report["operating_reassessment"] = {
@@ -292,10 +296,12 @@ def run_due_schedule(db: Session, *, now: datetime | None = None) -> dict:
     revision_id = event_id if queued is not None and event_id.startswith("DISCOVERY-") else None
     learning_id = event_id if queued is not None and event_id.startswith("FOL-") else None
     industry_id = event_id if queued is not None and event_id.startswith(INDUSTRY_PREFIX) else None
-    outcome_id = None if (economic_id or withdrawal_id or revision_id or learning_id or industry_id) else event_id
+    international_id = event_id if queued is not None and event_id.startswith(INTERNATIONAL_PREFIX) else None
+    outcome_id = None if (economic_id or withdrawal_id or revision_id or learning_id or industry_id or international_id) else event_id
     trigger_field = ("trigger_source_withdrawal_id" if withdrawal_id else
                      "trigger_operating_lesson_id" if learning_id else
                      "trigger_skilled_trade_id" if industry_id else
+                     "trigger_international_id" if international_id else
                      "trigger_source_revision_id" if revision_id else
                      "trigger_economic_event_id" if economic_id else "trigger_outcome_event_id")
     elapsed_slots = (now - row.next_due_at) // timedelta(seconds=row.cadence_seconds) if timed else 0
@@ -347,12 +353,19 @@ def run_due_schedule(db: Session, *, now: datetime | None = None) -> dict:
         report.update(trigger="OPERATING_LESSON", trigger_operating_lesson_id=learning_id)
     if industry_id:
         report.update(trigger="SKILLED_TRADE_REASSESSMENT", trigger_skilled_trade_id=industry_id)
+    if international_id:
+        report.update(trigger="INTERNATIONAL_REASSESSMENT", trigger_international_id=international_id)
     try:
         _check_legacy(db, **scope)
-        if industry_id:
+        if industry_id or international_id:
             if not payload.on_economic_reassessment:
-                raise HTTPException(409, "Skilled-trade reassessment is not enrolled")
-            report["trade_reassessment"] = read_trade_reassessment(db, industry_id, scope, now.date())
+                raise HTTPException(409, "Industry reassessment is not enrolled")
+            if international_id:
+                report["international_reassessment"] = read_industry_reassessment(
+                    db, international_id, scope, now.date(), international=True,
+                )
+            else:
+                report["trade_reassessment"] = read_industry_reassessment(db, industry_id, scope, now.date())
         if withdrawal_id and (not payload.on_economic_reassessment or not verify_withdrawal(db, scope, withdrawal_id)):
             raise HTTPException(409, "Foundry source withdrawal could not be revalidated")
         if economic_id:

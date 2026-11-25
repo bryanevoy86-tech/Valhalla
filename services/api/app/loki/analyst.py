@@ -5,6 +5,7 @@ import re
 from app.loki.evidence import artifact_digest
 from app.loki.schemas import IndependentFinding, IndependentReviewIn
 from app.services.checkout_operating_signals import checkout_operating_blockers
+from app.services.international_economics import InternationalStudy, project_international
 from app.services.skilled_trade_economics import SkilledTradeStudy, project_trade
 
 
@@ -48,20 +49,33 @@ def _industry_findings(research, field):
                          "Verify buyer behavior, labor estimates, provider terms, failure handling and uncovered operating facets before reliance.")]
     if "skilled_trade" in research:
         trade = research["skilled_trade"]
-        field = f"{field}/skilled_trade"
+        trade_field = f"{field}/skilled_trade"
         try:
             expected = project_trade(SkilledTradeStudy.model_validate(trade["inputs"]))
         except (KeyError, TypeError, ValueError):
             expected = None
         if expected is None or trade != expected:
-            findings.append(_finding("trade_projection_conflict", field,
+            findings.append(_finding("trade_projection_conflict", trade_field,
                                      "Staffing, job economics or collection reserve do not reconcile.", critical=True))
         else:
-            findings.append(_finding("trade_capacity_uncertainty", field,
+            findings.append(_finding("trade_capacity_uncertainty", trade_field,
                                      "Verify crew productivity, staffing and payment lag. One operator observation cannot establish market demand."))
             if trade["expansion_blockers"]:
-                findings.append(_finding("trade_expansion_blocked", f"{field}/expansion_blockers",
+                findings.append(_finding("trade_expansion_blocked", f"{trade_field}/expansion_blockers",
                                          "The modeled downside, crew coverage or incremental contribution cannot support expansion."))
+    if "international" in research:
+        international = research["international"]
+        international_field = f"{field}/international"
+        try:
+            expected = project_international(InternationalStudy.model_validate(international["inputs"]))
+        except (KeyError, TypeError, ValueError):
+            expected = None
+        if expected is None or expected != international:
+            findings.append(_finding("international_projection_conflict", international_field,
+                                     "FX, operating cash, authority or diligence do not reconcile.", critical=True))
+        else:
+            findings.append(_finding("international_professional_diligence", international_field,
+                                     "Verify FX, local staffing, ownership and professional requirements before relying on this scenario."))
     return findings
 
 

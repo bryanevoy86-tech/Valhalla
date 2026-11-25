@@ -124,6 +124,9 @@ def record_industry(evidence_id: UUID, request: foundry_industry.IndustryDiligen
     enqueue_research(db, row.scope_key, reference, at, roles=DISCOVERY_ROLES)
     if request.skilled_trade is not None:
         enqueue_prime(db, row.scope_key, reference, at, subscription="on_economic_reassessment")
+    if request.international is not None:
+        enqueue_prime(db, row.scope_key, foundry_industry.INTERNATIONAL_PREFIX + str(row.id), at,
+                      subscription="on_economic_reassessment")
     try:
         db.commit()
     except IntegrityError:

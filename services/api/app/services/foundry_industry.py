@@ -10,6 +10,7 @@ from sqlalchemy import inspect, select
 from app.loki.evidence import artifact_digest
 from app.models.completion_registry import LegacyOrchestrationEvent
 from app.schemas.market_intelligence import MarketScope, StrictModel
+from app.services.international_economics import InternationalStudy, project_international
 from app.services.market_intelligence import authorized_source
 from app.services.prime_business_execution import _json
 from app.services.skilled_trade_economics import SkilledTradeStudy, project_trade
@@ -17,6 +18,7 @@ from app.services.skilled_trade_economics import SkilledTradeStudy, project_trad
 
 EVENT = "FOUNDRY_INDUSTRY_DILIGENCE"
 EVENT_PREFIX = "FOUNDRY-INDUSTRY-"
+INTERNATIONAL_PREFIX = "FOUNDRY-INTERNATIONAL-"
 FACETS = (
     "CUSTOMER_NEEDS", "SALES", "COMPETITION", "COSTS", "REGULATION",
     "DISTRIBUTION", "AUTOMATION", "DEAL_TERMS", "FAILURE_MODES",
@@ -69,6 +71,7 @@ class IndustryDiligence(StrictModel):
     execution_options: list[ExecutionOption] = Field(min_length=2, max_length=2)
 
     skilled_trade: SkilledTradeStudy | None = None
+    international: InternationalStudy | None = None
 
     @model_validator(mode="after")
     def validate_comparison(self):
@@ -78,6 +81,13 @@ class IndustryDiligence(StrictModel):
             raise ValueError("Each source may support a facet once")
         if self.skilled_trade and not any(item.facet == "COSTS" for item in self.findings):
             raise ValueError("Skilled-trade assumptions require attributed cost evidence")
+        if self.international:
+            if self.skilled_trade:
+                raise ValueError("Attach one operating model per industry study")
+            model = self.international
+            if not any(item.facet == "COSTS" and item.source_id == model.fx_source_id
+                       and item.observed_on == model.fx_observed_on for item in self.findings):
+                raise ValueError("FX needs a dated, attributed cost finding")
         return self
 
 
@@ -90,6 +100,11 @@ def check_sources(db, study, evidence, scope, today, *, lock=False):
         raise HTTPException(409, "Industry diligence requires current scoped research")
     if study.skilled_trade and evidence.kind != "SERVICE":
         raise HTTPException(409, "Skilled-trade economics require scoped service evidence")
+    if study.international:
+        model = study.international
+        if (model.kind != evidence.kind or evidence.currency != "CAD"
+                or scope["jurisdiction"] != f"{model.country}-{model.region}"):
+            raise HTTPException(409, "International scenario kind, CAD reporting or regional scope mismatch")
     for finding in sorted(study.findings, key=lambda item: item.source_id):
         source = authorized_source(db, finding.source_id, scope["jurisdiction"], "OPERATOR_REPORTED", lock=lock)
         if (source.source_type != "INDUSTRY_REFERENCE" or source.governance_status != "approved"
@@ -108,6 +123,10 @@ def build_record(db, row, evidence, scope, study, today):
         content.pop("skilled_trade")
     else:
         content["skilled_trade"]["scenarios"].sort(key=lambda item: item["name"])
+    if study.international is None:
+        content.pop("international")
+    else:
+        content["international"]["professional_questions"].sort(key=lambda item: item["topic"])
     content["findings"].sort(key=lambda item: (item["facet"], item["source_id"]))
     content["execution_options"].sort(key=lambda item: item["kind"])
     body = {"evidence_sha256": row.digest, "industry": content}
@@ -129,7 +148,9 @@ def project(body, evidence):
             "research_status": "MORE_RESEARCH_REQUIRED" if missing or len(sources) < 2 else "READY_FOR_CHALLENGE",
             "external_authority": False,
             **({"skilled_trade": project_trade(SkilledTradeStudy.model_validate(content["skilled_trade"]))}
-               if "skilled_trade" in content else {})}
+               if "skilled_trade" in content else {}),
+            **({"international": project_international(InternationalStudy.model_validate(content["international"]))}
+               if "international" in content else {})}
 
 
 def research_focus(role, industry):
@@ -160,21 +181,22 @@ def read_industry(db, row, evidence, scope, today, *, lock=False):
     return project(body, evidence)
 
 
-def read_trade_reassessment(db, trigger_id, scope, today):
+def read_industry_reassessment(db, trigger_id, scope, today, *, international=False):
     from app.models.foundry_evidence import FoundryEvidence
     from app.services.foundry_discovery import checked_evidence
 
+    prefix, field = (INTERNATIONAL_PREFIX, "international") if international else (EVENT_PREFIX, "skilled_trade")
     try:
-        evidence_id = UUID(trigger_id.removeprefix(EVENT_PREFIX))
+        evidence_id = UUID(trigger_id.removeprefix(prefix))
     except ValueError:
         raise HTTPException(409, "Invalid industry reassessment reference") from None
     row = db.get(FoundryEvidence, evidence_id, populate_existing=True)
-    if row is None or event_id(row.id) != trigger_id:
+    if row is None or prefix + str(row.id) != trigger_id:
         raise HTTPException(409, "Industry reassessment evidence unavailable")
     evidence = checked_evidence(row, scope, today, db=db)
     industry = read_industry(db, row, evidence, scope, today)
-    trade = (industry or {}).get("skilled_trade")
-    if not trade:
-        raise HTTPException(409, "Skilled-trade reassessment evidence unavailable")
+    projection = (industry or {}).get(field)
+    if not projection:
+        raise HTTPException(409, "Industry reassessment projection unavailable")
     return {"evidence_id": str(row.id), "evidence_sha256": row.digest,
-            "industry_sha256": industry["sha256"], "skilled_trade": trade}
+            "industry_sha256": industry["sha256"], field: projection}

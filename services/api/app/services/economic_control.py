@@ -258,6 +258,15 @@ def comparison(db, state, scope, currency, available, today, *, lock_sources=Fal
                         maximum_downside=max(assessed["maximum_downside"],
                                              -12 * stress["monthly_operating_contribution_minor"]),
                     )
+                international = (industry or {}).get("international")
+                if international:
+                    base, stress = (international[name] for name in ("base", "stress"))
+                    blockers.extend(international["blockers"])
+                    assessed.update(
+                        required_capital=max(assessed["required_capital"], stress["required_cash_cad_cents"]),
+                        projected_annual_net=12 * base["monthly_net_cad_cents"],
+                        maximum_downside=max(assessed["maximum_downside"], -12 * stress["monthly_net_cad_cents"]),
+                    )
                 data["projection_differences"] = [
                     {"field": field, "declared_minor": data[field], "used_minor": amount}
                     for field, amount in assessed.items() if data[field] != amount
