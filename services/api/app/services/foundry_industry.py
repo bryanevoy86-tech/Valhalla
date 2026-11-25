@@ -113,12 +113,19 @@ def check_sources(db, study, evidence, scope, today, *, lock=False):
         if (evidence.currency != "CAD" or not evidence.source_ref.startswith("fixture:")
                 or not evidence_matches(study.business_strategies, [item.model_dump() for item in study.findings])):
             raise HTTPException(409, "Business strategy inputs require attributed, scoped CAD fixture evidence")
+    capacity = [candidate for candidate in (study.business_strategies.candidates if study.business_strategies else ())
+                if candidate.verified_capacity is not None]
     for finding in sorted(study.findings, key=lambda item: item.source_id):
         source = authorized_source(db, finding.source_id, scope["jurisdiction"], "OPERATOR_REPORTED", lock=lock)
         if (source.source_type != "INDUSTRY_REFERENCE" or source.governance_status != "approved"
                 or source.permission_status not in {"public", "licensed", "authorized"}
                 or source.license_status not in {"government_open_data", "open", "licensed", "consented_internal_use"}
                 or source.citation_ref != finding.citation
+                or any(
+                    (candidate.human_review_source == finding.source_id and source.owner != candidate.verified_capacity.human_reviewer)
+                    or (candidate.available_source == finding.source_id and source.owner != candidate.verified_capacity.issuer)
+                    for candidate in capacity
+                )
                 or not finding.observed_on <= today <= finding.valid_through <= evidence.expires_on
                 or (finding.valid_through - finding.observed_on).days > 90):
             raise HTTPException(409, "Industry source approval, citation or validity changed")
@@ -140,7 +147,12 @@ def build_record(db, row, evidence, scope, study, today):
     else:
         content["business_strategies"]["cases"].sort(key=lambda item: item["kind"])
         content["business_strategies"]["candidates"].sort(key=lambda item: item["candidate_id"])
+        for candidate in content["business_strategies"]["candidates"]:
+            if candidate["verified_capacity"] is None:
+                candidate.pop("verified_capacity")
         for case in content["business_strategies"]["cases"]:
+            if case["work_window"] is None:
+                case.pop("work_window")
             case["candidate_ids"].sort()
             case["unresolved_requirements"].sort()
     for finding in content["findings"]:

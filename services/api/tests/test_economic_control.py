@@ -1772,6 +1772,202 @@ def test_business_strategy_advisory_comparison(economic_client, monkeypatch, sce
     assert "business_strategies" not in held and "FOUNDRY_SOURCE_UNAVAILABLE" in held["blockers"]
 
 
+@pytest.mark.parametrize("deal_client", ["postgres"], indirect=True)
+def test_workforce_reservations_are_durable_exclusive_and_scoped(economic_client, monkeypatch):
+    from concurrent.futures import ThreadPoolExecutor
+    from copy import deepcopy
+    from threading import Barrier
+
+    from app.loki.evidence import artifact_digest
+    from app.models.completion_registry import SourceRegistryItem
+    from app.models.foundry_evidence import FoundryEvidence
+    from app.services import workforce_capacity as capacity
+
+    client, engine = economic_client
+    for model in (SourceRegistryItem, FoundryEvidence):
+        model.__table__.create(engine)
+    at = capacity.now().replace(microsecond=0)
+    today = at.date()
+    starts = at + timedelta(days=1)
+    ends = starts + timedelta(hours=6)
+    expires = (today + timedelta(days=10)).isoformat()
+    inputs, findings = strategy_fixture(engine, monkeypatch, SCOPE, today, expires, "LEARNING")
+    fund_strategy_fixture(client, today)
+    _, mirror_findings = strategy_fixture(engine, monkeypatch, MIRROR, today, expires, "LEARNING")
+    post(client, "mandates", mandate(today, scope=MIRROR, max_exposure=2_500_000, max_additional_funding=2_400_000))
+    post(client, "performance", performance(today, scope=MIRROR, uncommitted_local_cash=2_100_000))
+    with Session(engine) as db:
+        for jurisdiction in ("CA-MB", "CA-ON"):
+            for label in ("available", "human"):
+                db.query(SourceRegistryItem).filter_by(source_id=f"strategy-{label}-{jurisdiction}").one().owner = f"fixture:{label}"
+        db.commit()
+
+    for candidate in inputs["candidates"]:
+        candidate["verified_capacity"] = {
+            "issuer": "fixture:available", "human_reviewer": "fixture:human",
+            "checked_at": (at - timedelta(hours=1)).isoformat(),
+            "expires_at": (ends + timedelta(days=2)).isoformat(),
+            "verification": "VERIFIED_IN_FIXTURE", "privacy_basis": "SYNTHETIC_NO_PERSONAL_DATA",
+            "availability": [{"starts_at": (starts - timedelta(hours=1)).isoformat(),
+                              "ends_at": (ends + timedelta(hours=1)).isoformat()}],
+        }
+    for case in inputs["cases"]:
+        case["work_window"] = {"starts_at": starts.isoformat(), "ends_at": ends.isoformat(),
+                               "travel_minutes": 30, "delay_minutes": 30}
+
+    from app.services.foundry_strategies import StrategyStudy
+
+    mirror_inputs = json.loads(json.dumps(inputs).replace("CA-MB", "CA-ON"))
+    bindings = StrategyStudy.model_validate(mirror_inputs).source_requirements()
+    for finding in mirror_findings:
+        finding["fixture_bindings"] = sorted(bindings.get(finding["source_id"], ()))
+
+    def register(key, *, strategy_inputs=inputs, replaces_id=None, scope=SCOPE):
+        evidence_id = str(uuid4())
+        root = "/api/prime/foundry"
+        created = client.post(root + "/evidence", headers=OWNER, json={
+            **scope, "evidence_id": evidence_id, "kind": "SERVICE", "evidence_class": "OPERATOR_REPORTED",
+            "title": "Scoped synthetic crew planning", "source_ref": f"fixture:crew-capacity-{evidence_id}",
+            "observed_on": today.isoformat(), "expires_on": expires, "currency": "CAD",
+            "unit_price": 15_000, "variable_cost_per_unit": 4000, "acquisition_cost_per_unit": 2000,
+            "monthly_fixed_cost": 2000, "monthly_units": 4, "startup_capital": 15000,
+            "test_cost": 0, "rights_attestation": "AUTHORIZED_INTERNAL_RESEARCH",
+        })
+        assert created.status_code == 201, created.text
+        study = {"scope": scope, "findings": findings if scope == SCOPE else mirror_findings, "business_strategies": strategy_inputs, "execution_options": [
+            {"kind": kind, "setup_minor": 100, "monthly_minor": 10, "setup_hours": 0, "monthly_hours": 0,
+             "loaded_hour_minor": 0, "dependencies": ["Crew fixture"], "estimate_basis": "Synthetic cost assumptions."}
+            for kind in ("BUILD", "BUY")
+        ]}
+        saved = client.post(f"{root}/evidence/{evidence_id}/industry-diligence", headers=OWNER, json=study)
+        assert saved.status_code == 201, saved.text
+        record = option(today, key, scope=scope, origin="FOUNDRY", foundry_evidence_id=evidence_id, replaces_id=replaces_id)
+        post(client, "opportunities", record)
+        return record
+
+    def comparison(key, scope=SCOPE):
+        alternatives = post(client, "assessment", scope, 200)["alternatives"]
+        return next(row for row in alternatives if row["opportunity_key"] == key)
+
+    def approved(key, scope=SCOPE):
+        request = {"id": str(uuid4()), "scope": scope, "opportunity_key": key}
+        artifact = post(client, "capacity/review-artifact", request, 200)
+        queued = client.post("/loki/reviews", json=artifact)
+        assert queued.status_code == 201, queued.text
+        review_id = queued.json()["id"]
+        queued_items = client.get("/loki/worker/reviews", headers=REVIEWER, params={"artifact_type": "economic_advice"})
+        item = next(row for row in queued_items.json() if row["review_id"] == review_id)
+        forged = deepcopy(item)
+        forged["raw_input"]["capacity_strategy"]["assigned_candidate_ids"] = ["fixture:wrong"]
+        forged["artifact_sha256"] = artifact_digest(forged["artifact_type"], forged["reference"], forged["raw_input"])
+        assert any(row.category == "capacity_reservation_conflict" for row in challenge(forged).findings)
+        review = challenge(item)
+        receipt = client.post(f"/loki/worker/reviews/{review_id}/result", headers=REVIEWER, json=review.model_dump(mode="json"))
+        assert receipt.status_code == 201, receipt.text
+        findings = client.get(f"/loki/reviews/{review_id}/findings").json()
+        accepted = client.post(f"/loki/reviews/{review_id}/reconsider", headers=OWNER, json={
+            "artifact_sha256": artifact["artifact_sha256"], "disposition": "accept_risk",
+            "material_finding_ids": [row["id"] for row in findings],
+            "reason": "Approve only the disposable planning lease without operating authority.",
+        })
+        assert accepted.status_code == 200, accepted.text
+        return {**request, "independent_review_id": review_id, "expected_artifact_sha256": artifact["artifact_sha256"]}
+
+    incomplete = deepcopy(inputs)
+    incomplete["candidates"][0]["verified_capacity"]["verification"] = "WITHDRAWN"
+    first = register("crew-rehearsal-a", strategy_inputs=incomplete)
+    assert comparison("crew-rehearsal-a")["business_strategies"]["preferred_internal_proposal"] == "HOLD"
+    improved = register("crew-rehearsal-a", replaces_id=first["id"])
+    mirror_record = register("crew-rehearsal-b", strategy_inputs=mirror_inputs, scope=MIRROR)
+    assert comparison("crew-rehearsal-a")["business_strategies"]["preferred_internal_proposal"] == "EXPAND"
+    buy = deepcopy(inputs)
+    next(case for case in buy["cases"] if case["kind"] == "EXPAND")["monthly_receipts"] = 145_000
+    prior_buy = register("crew-acquisition", strategy_inputs=buy)
+    assert comparison("crew-acquisition")["business_strategies"]["preferred_internal_proposal"] == "BUY"
+    buy["candidates"][0]["verified_capacity"]["verification"] = "WITHDRAWN"
+    register("crew-acquisition", strategy_inputs=buy, replaces_id=prior_buy["id"])
+    assert comparison("crew-acquisition")["business_strategies"]["preferred_internal_proposal"] == "HOLD"
+
+    partner = deepcopy(inputs)
+    next(case for case in partner["cases"] if case["kind"] == "PARTNER")["monthly_receipts"] = 490_000
+    partner["candidates"][0]["verified_capacity"]["existing_assignments"] = [{
+        "starts_at": (starts - timedelta(minutes=15)).isoformat(), "ends_at": starts.isoformat(),
+    }]
+    prior_partner = register("crew-partnership", strategy_inputs=partner)
+    assert comparison("crew-partnership")["business_strategies"]["preferred_internal_proposal"] == "HOLD"
+    partner["candidates"][0]["verified_capacity"]["existing_assignments"] = []
+    register("crew-partnership", strategy_inputs=partner, replaces_id=prior_partner["id"])
+    assert comparison("crew-partnership")["business_strategies"]["preferred_internal_proposal"] == "PARTNER"
+    payloads = [approved("crew-rehearsal-a"), approved("crew-rehearsal-b", MIRROR)]
+    route = f"{ROOT}/capacity/reservations"
+    with monkeypatch.context() as stopped:
+        stopped.setenv("VALHALLA_EMERGENCY_STOP", "true")
+        assert client.post(route, headers=OWNER, json=payloads[0]).status_code == 503
+
+    def interrupt(db):
+        db.flush()
+        raise HTTPException(503, "Disposable test interruption before commit")
+
+    with monkeypatch.context() as interrupted:
+        interrupted.setattr(economic_control, "commit", interrupt)
+        assert client.post(route, headers=OWNER, json=payloads[0]).status_code == 503
+    with Session(engine) as db:
+        assert capacity.active_reservations(db, at) == []
+
+    barrier = Barrier(2)
+
+    def reserve(payload):
+        barrier.wait(timeout=10)
+        return client.post(route, headers=OWNER, json=payload)
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        calls = [pool.submit(reserve, value) for value in payloads]
+        responses = [call.result(timeout=25) for call in calls]
+    assert sorted(result.status_code for result in responses) == [201, 409], [r.text for r in responses]
+    index = next(i for i, response in enumerate(responses) if response.status_code == 201)
+    winner, loser = payloads[index], payloads[1 - index]
+    journal = responses[index].json()
+    assert journal["external_authority"] is False and journal["candidate_ids"] == ["fixture:foreman", "fixture:installer"]
+    assert client.post(route, headers=OWNER, json=winner).json() == journal
+    assert client.post(route, headers=OWNER, json={**winner, "opportunity_key": loser["opportunity_key"]}).status_code == 409
+    other = comparison(loser["opportunity_key"], loser["scope"])["business_strategies"]
+    assert other["preferred_internal_proposal"] == "HOLD"
+    assert all(row["timed_capacity"]["fixture:foreman"] == "CAPACITY_ALREADY_RESERVED" for row in other["alternatives"])
+    release_route = f"{route}/{winner['id']}/release"
+    assert client.post(release_route, headers=OWNER, json={"scope": loser["scope"]}).status_code == 404
+    with Session(engine) as db:
+        assert len(capacity.active_reservations(db, at)) == 1
+        assert capacity.active_reservations(db, at + timedelta(minutes=31)) == []
+        assert db.query(RevenueLedger).count() == 0
+        from app.services.economic_control import specialist_economics
+
+        for scope, expected in ((winner["scope"], 1), (loser["scope"], 0)):
+            memory = specialist_economics(db, "MIMIR", scope, today)["economic_reassessment"]
+            assert len(memory["synthetic_capacity_history"]) == expected
+        norns = specialist_economics(db, "NORNS", loser["scope"], today)["economic_reassessment"]
+        assert norns["business_strategy_assessments"][0]["preferred_internal_proposal"] == "HOLD"
+
+    if winner["opportunity_key"] == "crew-rehearsal-a":
+        incumbent = improved
+    else:
+        incumbent = mirror_record
+    post(client, "opportunities", {**incumbent, "id": str(uuid4()), "replaces_id": incumbent["id"], "status": "REJECTED"})
+    with Session(engine) as db:
+        assert capacity.active_reservations(db, at) == []
+        assert capacity.receipt(db, capacity.RELEASE, winner["id"])["reason"] == "OPPORTUNITY_REVISED"
+    assert comparison(loser["opportunity_key"], loser["scope"])["business_strategies"]["preferred_internal_proposal"] == "EXPAND"
+    with monkeypatch.context() as expired:
+        expired.setattr(capacity, "now", lambda: ends + timedelta(days=3))
+        assert comparison(loser["opportunity_key"], loser["scope"])["business_strategies"]["preferred_internal_proposal"] == "HOLD"
+
+    # An existing availability attestation can be withdrawn without changing fixture history.
+    with Session(engine) as db:
+        db.query(SourceRegistryItem).filter_by(source_id=f"strategy-available-{loser['scope']['jurisdiction']}").one().active = False
+        db.commit()
+    held = comparison(loser["opportunity_key"], loser["scope"])
+    assert "business_strategies" not in held and "FOUNDRY_SOURCE_UNAVAILABLE" in held["blockers"]
+
+
 def exercise_trade_learning(client, engine, monkeypatch, ids, before, today, review_id):
     from copy import deepcopy
     from app.loki.evidence import artifact_digest
@@ -2359,6 +2555,10 @@ def test_international_diligence_runs_scoped_specialists_loki_and_prime(
     unsupported_fx = {**study, "international": {**international, "fx_source_id": "missing-rate"}}
     assert client.post(route, headers=OWNER, json=unsupported_fx).status_code == 422
     strategy, strategy_findings = strategy_fixture(engine, monkeypatch, scope, today, expires)
+    for case in strategy["cases"]:
+        starts = now.replace(tzinfo=timezone.utc) + timedelta(days=1)
+        case["work_window"] = {"starts_at": starts.isoformat(), "ends_at": (starts + timedelta(hours=6)).isoformat(),
+                               "travel_minutes": 30, "delay_minutes": 30}
     study["business_strategies"] = strategy
     study["findings"].extend(strategy_findings)
     response = client.post(route, headers=OWNER, json=study)

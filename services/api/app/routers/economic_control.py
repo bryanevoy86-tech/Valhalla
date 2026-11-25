@@ -19,6 +19,8 @@ from app.services.economic_control import (
     lock_pool, operation_key, pool_liquidity, ready,
     store_record, trigger_reassessment, verified_payload, verify_checkout_performance,
 )
+from app.services import workforce_capacity as capacity
+from app.services.workforce_capacity import CapacityRequest, ReleaseCapacity, ReviewedCapacity
 from app.services.prime_business_execution import _check_legacy, _emergency_stop_active, require_owner_mandate_key
 
 
@@ -280,7 +282,14 @@ def opportunity(request: Opportunity, db: Session = Depends(get_db)):
         raise HTTPException(409, "Opportunity revision must bind the current record")
     if len(state.opportunities) >= 40 and previous is None:
         raise HTTPException(409, "Scoped comparison is full")
-    return store(db, operation, "OPPORTUNITY", request)
+    stored = store(db, operation, "OPPORTUNITY", request, durable=False)
+    if previous and operation.currency == "CAD" and inspect(db.connection()).has_table("legacy_orchestration_events"):
+        for hold in capacity.active_reservations(db, capacity.now()):
+            if hold["scope"] == operation.scope and hold["opportunity_record_id"] == str(previous.id):
+                capacity.store(db, capacity.RELEASE, hold["reservation_id"], operation.scope,
+                               reason="OPPORTUNITY_REVISED", released_at=capacity.now().isoformat())
+    commit(db)
+    return stored
 
 
 @router.get("/portfolio-exposure", dependencies=owner)
@@ -324,6 +333,88 @@ def prepare(db, operation, state, pool, plan, *, lock_sources=False):
     digest = artifact_digest(ADVICE_TYPE, str(plan.id), preview)
     return {"artifact_type": ADVICE_TYPE, "input_source": "prime-economic-control",
             "heimdall_reference_id": str(plan.id), "artifact_sha256": digest, "raw_input": preview}
+
+
+def capacity_artifact(db, operation, state, pool, request, *, lock_sources=False):
+    from app.services.workforce_capacity import now as capacity_now
+    from app.services.foundry_strategies import rehearsal_allowed
+
+    if db.bind.dialect.name != "postgresql" or operation.currency != "CAD" or not rehearsal_allowed(db):
+        raise HTTPException(503, "Synthetic capacity reservations require a running disposable CAD PostgreSQL rehearsal")
+    analysis = assessment(db, operation, state, pool, now().date(), lock_sources=lock_sources)
+    option = next((row for row in analysis["alternatives"] if row["opportunity_key"] == request.opportunity_key), None)
+    comparison = (option or {}).get("business_strategies", {})
+    strategy = next((row for row in comparison.get("alternatives", ())
+                     if row["strategy"] == comparison["preferred_internal_proposal"] and row.get("assigned_candidate_ids")), None)
+    # Research-only holds remain permanent. All other scope and option holds block the reservation.
+    fixture_only = {"INDUSTRY_DEMAND_UNVERIFIED", "BUSINESS_STRATEGIES_FIXTURE_ONLY"}
+    if (analysis["blockers"] or strategy is None or set(option["blockers"]) - fixture_only
+            or datetime.fromisoformat(strategy["occupied_from"]) <= capacity_now()):
+        raise HTTPException(409, "A current untied, time-verified strategy is required")
+    plan = Plan(id=request.id, scope=request.scope, action="SUSPEND", requested_additional_minor=0,
+                past_spend_minor=0, assets=[], rationale="Review a time-bounded synthetic crew reservation only.")
+    raw_input = {"plan": plan.model_dump(mode="json"), "analysis": analysis, "execution_authorized": False,
+                 "actual_recovered_capital_minor": None, "capacity_request": request.model_dump(mode="json"),
+                 "capacity_strategy": strategy, "capacity_opportunity_record_id": option["record_id"]}
+    return {"artifact_type": ADVICE_TYPE, "input_source": "prime-economic-capacity",
+            "heimdall_reference_id": str(request.id), "raw_input": raw_input,
+            "artifact_sha256": artifact_digest(ADVICE_TYPE, str(request.id), raw_input)}
+
+
+@router.post("/capacity/review-artifact", dependencies=owner)
+def review_capacity(request: CapacityRequest, db: Session = Depends(get_db)):
+    operation, state, pool = context(db, request.scope, lock=False)
+    return capacity_artifact(db, operation, state, pool, request)
+
+
+@router.post("/capacity/reservations", status_code=201, dependencies=owner)
+def reserve_capacity(request: ReviewedCapacity, db: Session = Depends(get_db)):
+    # Every eligible capacity writer shares the CAD pool lock, across Legacy scopes.
+    operation, state, pool = context(db, request.scope)
+    past = capacity.receipt(db, capacity.RESERVE, request.id)
+    content = request.model_dump(mode="json")
+    if past:
+        if past["request"] != content:
+            raise HTTPException(409, "Capacity reservation identity already used")
+        return past
+    proposed = CapacityRequest.model_validate(request.model_dump(include={"id", "scope", "opportunity_key"}))
+    artifact = capacity_artifact(db, operation, state, pool, proposed, lock_sources=True)
+    digest = artifact["artifact_sha256"]
+    if digest != request.expected_artifact_sha256:
+        raise HTTPException(409, "Capacity evidence has changed or is already reserved")
+    reviewer_identity()
+    review = db.get(LokiReview, request.independent_review_id, with_for_update=True)
+    if (review is None or review.artifact_type != ADVICE_TYPE or review.heimdall_reference_id != str(request.id)
+            or review.artifact_sha256 != digest or not verdict(db, review).ok_to_proceed):
+        raise HTTPException(409, "Exact independent capacity review and reconsideration are required")
+    from app.services.foundry_strategies import rehearsal_allowed
+
+    if not rehearsal_allowed(db, lock=True):
+        raise HTTPException(503, "Synthetic capacity reservation is stopped")
+    strategy = artifact["raw_input"]["capacity_strategy"]
+    recorded = capacity.store(
+        db, capacity.RESERVE, request.id, operation.scope, request=content,
+        candidate_ids=strategy["assigned_candidate_ids"], occupied_from=strategy["occupied_from"],
+        occupied_until=strategy["occupied_until"], lease_expires_at=(capacity.now() + capacity.LEASE).isoformat(),
+        opportunity_record_id=artifact["raw_input"]["capacity_opportunity_record_id"],
+        strategy=strategy["strategy"],
+    )
+    commit(db)
+    return recorded
+
+
+@router.post("/capacity/reservations/{reservation_id}/release", dependencies=owner)
+def release_capacity(reservation_id: UUID, request: ReleaseCapacity, db: Session = Depends(get_db)):
+    operation, _, _ = context(db, request.scope)
+    past = capacity.receipt(db, capacity.RESERVE, reservation_id)
+    if past is None or past["scope"] != operation.scope:
+        raise HTTPException(404, "Scoped reservation not found")
+    released = capacity.receipt(db, capacity.RELEASE, reservation_id)
+    if released is None:
+        released = capacity.store(db, capacity.RELEASE, reservation_id, operation.scope,
+                                  reason="CANCELLED", released_at=capacity.now().isoformat())
+        commit(db)
+    return released
 
 
 @router.post("/review-artifact")

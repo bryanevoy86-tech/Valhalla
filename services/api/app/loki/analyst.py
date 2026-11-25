@@ -31,7 +31,7 @@ def _consumer_findings(research, field):
                      "Check cohort selection, transparent terms, pricing uncertainty, and transfer to this market before reliance.")]
 
 
-def _strategy_findings(research, comparison, field, scope, *, available=None, learning=None, require_budget=False):
+def _strategy_findings(research, comparison, field, scope, *, available=None, learning=None, require_budget=False, calendar=None):
     from app.services.foundry_strategies import StrategyStudy, evidence_matches, project
 
     try:
@@ -42,8 +42,12 @@ def _strategy_findings(research, comparison, field, scope, *, available=None, le
         international = research.get("international")
         if international and international != project_international(InternationalStudy.model_validate(international["inputs"])):
             raise ValueError("International projection mismatch")
+        if calendar is not None:
+            validity = {row["source_id"]: row["valid_through"] for row in research["findings"]}
+            if calendar["source_validity"] != validity:
+                raise ValueError("Calendar source validity mismatch")
         expected = project(study, scope["jurisdiction"], available=available,
-                           international=international, learning=learning)
+                           international=international, learning=learning, calendar=calendar)
         if expected != comparison:
             raise ValueError("Strategy projection mismatch")
     except (KeyError, TypeError, ValueError, AttributeError):
@@ -298,8 +302,23 @@ def challenge(item: dict) -> IndependentReviewIn:
                     alternative.get("industry_diligence"), alternative["business_strategies"],
                     f"analysis/alternatives/{index}/business_strategies", evidence.get("scope"),
                     available=evidence.get("comparison_budget_minor"), require_budget=True,
+                    calendar=alternative.get("workforce_calendar"),
                     learning=learning.get("sha256") if learning.get("blockers") else None,
                 ))
+        if "capacity_request" in proposal:
+            requested = proposal["capacity_request"]
+            requested = requested if isinstance(requested, dict) else {}
+            selected = next((row for row in evidence.get("alternatives", ())
+                             if row["opportunity_key"] == requested.get("opportunity_key")), {})
+            strategy = selected.get("business_strategies", {})
+            offered = next((row for row in strategy.get("alternatives", ())
+                            if row["strategy"] == strategy["preferred_internal_proposal"]), None)
+            if (requested.get("scope") != evidence.get("scope") or requested.get("id") != plan.get("id")
+                    or selected.get("record_id") != proposal.get("capacity_opportunity_record_id")
+                    or offered is None or offered != proposal.get("capacity_strategy")
+                    or not offered.get("assigned_candidate_ids") or offered.get("coverage_gaps")):
+                findings.append(_finding("capacity_reservation_conflict", "capacity_strategy",
+                                         "The held crew does not match the reviewed scoped strategy.", critical=True))
         checks = set(evidence["blockers"])
         if plan["past_spend_minor"]:
             findings.append(_finding("sunk_cost", "plan/past_spend_minor",

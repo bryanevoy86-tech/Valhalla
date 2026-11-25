@@ -207,6 +207,7 @@ def usable_cash(state, pool, liquidity, today):
 
 def comparison(db, state, scope, currency, available, today, *, lock_sources=False):
     options = []
+    reservations = None
     for item in state.opportunities.values():
         blockers = []
         data = item.model_dump(mode="json", include={
@@ -286,8 +287,18 @@ def comparison(db, state, scope, currency, available, today, *, lock_sources=Fal
                     # Keep modeled proposals outside economic execution eligibility.
                     blockers.append("BUSINESS_STRATEGIES_FIXTURE_ONLY")
                     if rehearsal_allowed(db):
+                        from app.services.workforce_capacity import active_reservations, calendar, now
+
+                        study = StrategyStudy.model_validate(industry["strategy_inputs"])
+                        capacity = None
+                        if any(case.work_window for case in study.cases):
+                            at = now()
+                            if reservations is None:
+                                reservations = active_reservations(db, at)
+                            capacity = calendar(study, industry["findings"], reservations, at)
+                            data["workforce_calendar"] = capacity
                         data["business_strategies"] = project(
-                            StrategyStudy.model_validate(industry["strategy_inputs"]), scope["jurisdiction"],
+                            study, scope["jurisdiction"], calendar=capacity,
                             available=available, international=international,
                             learning=learning["lesson"]["sha256"] if learning and learning["lesson"]["blockers"] else None,
                         )
@@ -521,6 +532,15 @@ def specialist_economics(db, role, scope, today):
         if lessons:
             common["trade_learning"] = lessons
     if role == "MIMIR":
+        scoped_capacity = [{"opportunity_key": item["opportunity_key"],
+                            "alternatives": [row for row in item["business_strategies"]["alternatives"]
+                                             if "timed_capacity" in row]}
+                           for item in report["alternatives"] if "workforce_calendar" in item]
+        if scoped_capacity:
+            from app.services.workforce_capacity import recent_scope_events
+
+            common["synthetic_capacity_observations"] = scoped_capacity
+            common["synthetic_capacity_history"] = recent_scope_events(db, scope)
         common["last_internal_decision"] = state.latest_decision
         common["recent_recovery_fixtures"] = state.recoveries[-5:]
         common["verified_real_world_outcome"] = False

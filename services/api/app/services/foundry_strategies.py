@@ -8,24 +8,25 @@ from sqlalchemy import inspect
 from app.models.go_live_state import GoLiveState
 from app.schemas.market_intelligence import StrictModel
 from app.services.foundry_discovery import AcquisitionTerms, Cents
+from app.services.workforce_capacity import VerifiedCapacity, WorkWindow, qualification as capacity_qualification
 
 Strategy = Literal["BUILD", "BUY", "PARTNER", "EXPAND"]
-Role = Literal["INSTALLER", "FOREMAN", "PROPERTY_MANAGER", "SERVICE_OPERATOR", "LOCAL_OPERATOR", "LICENSED_PROFESSIONAL"]
+Role = Literal["INSTALLER", "FOREMAN", "PROPERTY_MANAGER", "SERVICE_OPERATOR", "LOCAL_OPERATOR", "LICENSED_PROFESSIONAL", "SPECIALIZED_CONTRACTOR", "REGIONAL_MANAGER"]
 Count = Annotated[int, Field(strict=True, ge=0, le=50)]
 Bps = Annotated[int, Field(strict=True, ge=0, le=10_000)]
 SourceId = Annotated[str, Field(min_length=3, max_length=80)]
 STRATEGIES = ("BUILD", "BUY", "PARTNER", "EXPAND")
 
 
-def rehearsal_allowed(db):
+def rehearsal_allowed(db, *, lock=False):
     from app.routers.foundry_operating_rehearsal import enabled
     from app.services.prime_business_execution import _emergency_stop_active
 
     if (not enabled() or not inspect(db.connection()).has_table(GoLiveState.__tablename__)
             or _emergency_stop_active(db)):
         return False
-    release = db.get(GoLiveState, 1, populate_existing=True)
-    return release is None or not release.go_live_enabled
+    release = db.get(GoLiveState, 1, populate_existing=True, with_for_update=lock)
+    return release is None or (not release.go_live_enabled and not release.kill_switch_engaged)
 
 
 class WorkforceCandidate(StrictModel):
@@ -38,6 +39,7 @@ class WorkforceCandidate(StrictModel):
     human_review_source: SourceId | None = None
     license_source: SourceId | None = None
     available_source: SourceId | None = None
+    verified_capacity: VerifiedCapacity | None = None
     monthly_compensation: Cents
     retention_risk: Literal["LOW", "HIGH", "UNKNOWN"]
 
@@ -89,6 +91,7 @@ class StrategyCase(StrictModel):
     unresolved_requirements: list[Annotated[str, Field(min_length=5, max_length=160)]] = Field(max_length=12)
     required_roles: dict[Role, Count] = Field(min_length=1, max_length=6)
     candidate_ids: list[str] = Field(max_length=50)
+    work_window: WorkWindow | None = None
     acquisition: AcquisitionTerms | None = None
     partner: PartnerTerms | None = None
 
@@ -113,6 +116,8 @@ class StrategyStudy(StrictModel):
         ids = {candidate.candidate_id for candidate in self.candidates}
         if len(ids) != len(self.candidates) or {case.kind for case in self.cases} != set(STRATEGIES):
             raise ValueError("Provide four distinct strategies and distinct fixture candidates")
+        if len({case.work_window is not None for case in self.cases}) != 1:
+            raise ValueError("When using scheduled capacity, declare a work window for all strategies")
         if any(set(case.candidate_ids) - ids for case in self.cases):
             raise ValueError("Strategies can reference only candidates in this scoped study")
         return self
@@ -140,7 +145,7 @@ def evidence_matches(study, findings):
     return all(required <= available.get(source, set()) for source, required in study.source_requirements().items())
 
 
-def project(study, jurisdiction, *, available=None, international=None, learning=None):
+def project(study, jurisdiction, *, available=None, international=None, learning=None, calendar=None):
     cash = study.cash_ceiling_cad_cents if available is None else min(available, study.cash_ceiling_cad_cents)
     candidates = {item.candidate_id: item for item in study.candidates}
     qualifications = {key: item.qualification(jurisdiction) for key, item in candidates.items()}
@@ -152,6 +157,14 @@ def project(study, jurisdiction, *, available=None, international=None, learning
         if international and international["inputs"]["local_operator_required"]:
             role = "PROPERTY_MANAGER" if international["inputs"]["kind"] == "REAL_ESTATE" else "LOCAL_OPERATOR"
             required[role] = max(required.get(role, 0), 1)
+        timed = {}
+        if case.work_window:
+            timed = {item.candidate_id: capacity_qualification(item, case.work_window, calendar, case.kind)
+                     for item in selected}
+            selected = [item for item in selected if timed[item.candidate_id] == "CAPACITY_VERIFIED_IN_FIXTURE"]
+            selected = [item for role, count in sorted(required.items())
+                        for item in sorted((person for person in selected if person.role == role),
+                                           key=lambda person: person.candidate_id)[:count]]
         gaps = {role: count - sum(item.role == role for item in selected)
                 for role, count in required.items() if count > sum(item.role == role for item in selected)}
         staff_cost = sum(item.monthly_compensation for item in selected)
@@ -205,6 +218,9 @@ def project(study, jurisdiction, *, available=None, international=None, learning
             "recurring_receipts_bp": case.recurring_receipts_bp, "monthly_staff_cost_minor": staff_cost,
             "annual_opportunity_cost_minor": opportunity_cost, "conservative_annual_value_minor": conservative_value,
             "coverage_gaps": gaps, "blockers": blockers, "eligible_internal_proposal": not blockers,
+            **({"timed_capacity": timed, "assigned_candidate_ids": [item.candidate_id for item in selected],
+                "occupied_from": case.work_window.occupied_from.isoformat(),
+                "occupied_until": case.work_window.occupied_until.isoformat()} if case.work_window else {}),
         })
     rows.sort(key=lambda row: (not row["eligible_internal_proposal"], -row["conservative_annual_value_minor"],
                                row["required_cash_minor"], row["strategy"]))
