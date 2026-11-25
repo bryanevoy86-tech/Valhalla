@@ -106,6 +106,8 @@ def record_industry(evidence_id: UUID, request: foundry_industry.IndustryDiligen
     _check_legacy(db, **scope)
     if not inspect(db.connection()).has_table(LegacyOrchestrationEvent.__tablename__):
         raise HTTPException(503, "Industry diligence journal unavailable")
+    if request.business_strategies:
+        _guard_disposable_diligence(db)
     row = db.get(FoundryEvidence, evidence_id, with_for_update=True)
     if row is None:
         raise HTTPException(404, "Foundry evidence not found")
@@ -127,6 +129,9 @@ def record_industry(evidence_id: UUID, request: foundry_industry.IndustryDiligen
     if request.international is not None:
         enqueue_prime(db, row.scope_key, foundry_industry.INTERNATIONAL_PREFIX + str(row.id), at,
                       subscription="on_economic_reassessment")
+    if request.business_strategies and not (request.skilled_trade or request.international):
+        enqueue_prime(db, row.scope_key, foundry_industry.STRATEGY_PREFIX + str(row.id), at,
+                      subscription="on_economic_reassessment")
     try:
         db.commit()
     except IntegrityError:
@@ -135,18 +140,16 @@ def record_industry(evidence_id: UUID, request: foundry_industry.IndustryDiligen
     return foundry_industry.project(result, evidence)
 
 
-def _trade_fixture(db, evidence_id, scope, today):
-    from app.models.go_live_state import GoLiveState
-    from app.routers.foundry_operating_rehearsal import enabled
-    from app.services.prime_business_execution import _emergency_stop_active
+def _guard_disposable_diligence(db):
+    from app.services.foundry_strategies import rehearsal_allowed
 
-    if (not enabled() or not inspect(db.connection()).has_table(GoLiveState.__tablename__)
-            or not inspect(db.connection()).has_table(LegacyOrchestrationEvent.__tablename__)
-            or _emergency_stop_active(db)):
-        raise HTTPException(503, "Disposable trade rehearsal is stopped or disabled")
-    release = db.get(GoLiveState, 1)
-    if release is not None and release.go_live_enabled:
-        raise HTTPException(503, "Disposable trade rehearsal cannot run with go-live enabled")
+    if (not rehearsal_allowed(db)
+            or not inspect(db.connection()).has_table(LegacyOrchestrationEvent.__tablename__)):
+        raise HTTPException(503, "Disposable diligence is stopped or disabled")
+
+
+def _trade_fixture(db, evidence_id, scope, today):
+    _guard_disposable_diligence(db)
     _check_legacy(db, **scope)
     row = db.get(FoundryEvidence, evidence_id, with_for_update=True, populate_existing=True)
     if row is None:

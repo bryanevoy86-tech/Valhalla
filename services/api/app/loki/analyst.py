@@ -31,7 +31,29 @@ def _consumer_findings(research, field):
                      "Check cohort selection, transparent terms, pricing uncertainty, and transfer to this market before reliance.")]
 
 
-def _industry_findings(research, field):
+def _strategy_findings(research, comparison, field, scope, *, available=None, learning=None, require_budget=False):
+    from app.services.foundry_strategies import StrategyStudy, evidence_matches, project
+
+    try:
+        study = StrategyStudy.model_validate(research["strategy_inputs"])
+        if (research["strategy_scope"] != scope or not evidence_matches(study, research["findings"])
+                or (require_budget and (type(available) is not int or available < 0))):
+            raise ValueError("Evidence scope mismatch")
+        international = research.get("international")
+        if international and international != project_international(InternationalStudy.model_validate(international["inputs"])):
+            raise ValueError("International projection mismatch")
+        expected = project(study, scope["jurisdiction"], available=available,
+                           international=international, learning=learning)
+        if expected != comparison:
+            raise ValueError("Strategy projection mismatch")
+    except (KeyError, TypeError, ValueError, AttributeError):
+        return [_finding("strategy_projection_conflict", field,
+                         "Strategy ranking, workforce evidence, cash, or jurisdiction fails reconciliation.", critical=True)]
+    return [_finding("strategy_transfer_and_workforce_uncertainty", field,
+                     "Independently verify customer transfer, seller dependence, worker retention and availability, and stressed cash before relying on this fixture.")]
+
+
+def _industry_findings(research, field, scope=None):
     if (not isinstance(research, dict) or research.get("cost_basis") != "DECLARED_ASSUMPTIONS_ONLY"
             or research.get("external_authority") is not False or research.get("customer_demand_verified") is not False):
         return [_finding("industry_claim_overreach", field,
@@ -76,6 +98,8 @@ def _industry_findings(research, field):
         else:
             findings.append(_finding("international_professional_diligence", international_field,
                                      "Verify FX, local staffing, ownership and professional requirements before relying on this scenario."))
+    if "business_strategies" in research:
+        findings.extend(_strategy_findings(research, research["business_strategies"], f"{field}/business_strategies", scope))
     return findings
 
 
@@ -268,6 +292,14 @@ def challenge(item: dict) -> IndependentReviewIn:
             if isinstance(alternative, dict) and "trade_learning" in alternative:
                 findings.extend(_trade_learning_findings(alternative["trade_learning"],
                                                          f"analysis/alternatives/{index}/trade_learning", evidence.get("scope")))
+            if isinstance(alternative, dict) and "business_strategies" in alternative:
+                learning = (alternative.get("trade_learning") or {}).get("lesson", {})
+                findings.extend(_strategy_findings(
+                    alternative.get("industry_diligence"), alternative["business_strategies"],
+                    f"analysis/alternatives/{index}/business_strategies", evidence.get("scope"),
+                    available=evidence.get("comparison_budget_minor"), require_budget=True,
+                    learning=learning.get("sha256") if learning.get("blockers") else None,
+                ))
         checks = set(evidence["blockers"])
         if plan["past_spend_minor"]:
             findings.append(_finding("sunk_cost", "plan/past_spend_minor",
@@ -353,7 +385,7 @@ def challenge(item: dict) -> IndependentReviewIn:
                                                            f"observations/foundry_signals/{index}/consumer_research"))
                     if isinstance(signal, dict) and "industry_diligence" in signal:
                         findings.extend(_industry_findings(signal["industry_diligence"],
-                                                          f"observations/foundry_signals/{index}/industry_diligence"))
+                                                          f"observations/foundry_signals/{index}/industry_diligence", proposal.get("scope")))
             acquisition = sources.get("acquisition_rehearsal")
             if isinstance(acquisition, list) and any(
                 isinstance(item, dict) and (item.get("basis") == "EVIDENCE_HOLD"

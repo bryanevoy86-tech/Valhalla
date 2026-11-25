@@ -10,6 +10,7 @@ from sqlalchemy import inspect, select
 from app.loki.evidence import artifact_digest
 from app.models.completion_registry import LegacyOrchestrationEvent
 from app.schemas.market_intelligence import MarketScope, StrictModel
+from app.services.foundry_strategies import StrategyStudy, evidence_matches, project as project_strategies
 from app.services.international_economics import InternationalStudy, project_international
 from app.services.market_intelligence import authorized_source
 from app.services.prime_business_execution import _json
@@ -19,6 +20,7 @@ from app.services.skilled_trade_economics import SkilledTradeStudy, project_trad
 EVENT = "FOUNDRY_INDUSTRY_DILIGENCE"
 EVENT_PREFIX = "FOUNDRY-INDUSTRY-"
 INTERNATIONAL_PREFIX = "FOUNDRY-INTERNATIONAL-"
+STRATEGY_PREFIX = "FOUNDRY-STRATEGY-"
 FACETS = (
     "CUSTOMER_NEEDS", "SALES", "COMPETITION", "COSTS", "REGULATION",
     "DISTRIBUTION", "AUTOMATION", "DEAL_TERMS", "FAILURE_MODES",
@@ -46,6 +48,7 @@ class Finding(StrictModel):
     observed_on: date
     valid_through: date
     summary: str = Field(min_length=12, max_length=500)
+    fixture_bindings: list[Annotated[str, Field(min_length=3, max_length=180)]] = Field(default_factory=list, max_length=64)
 
 
 class ExecutionOption(StrictModel):
@@ -72,6 +75,7 @@ class IndustryDiligence(StrictModel):
 
     skilled_trade: SkilledTradeStudy | None = None
     international: InternationalStudy | None = None
+    business_strategies: StrategyStudy | None = None
 
     @model_validator(mode="after")
     def validate_comparison(self):
@@ -105,6 +109,10 @@ def check_sources(db, study, evidence, scope, today, *, lock=False):
         if (model.kind != evidence.kind or evidence.currency != "CAD"
                 or scope["jurisdiction"] != f"{model.country}-{model.region}"):
             raise HTTPException(409, "International scenario kind, CAD reporting or regional scope mismatch")
+    if study.business_strategies:
+        if (evidence.currency != "CAD" or not evidence.source_ref.startswith("fixture:")
+                or not evidence_matches(study.business_strategies, [item.model_dump() for item in study.findings])):
+            raise HTTPException(409, "Business strategy inputs require attributed, scoped CAD fixture evidence")
     for finding in sorted(study.findings, key=lambda item: item.source_id):
         source = authorized_source(db, finding.source_id, scope["jurisdiction"], "OPERATOR_REPORTED", lock=lock)
         if (source.source_type != "INDUSTRY_REFERENCE" or source.governance_status != "approved"
@@ -127,6 +135,19 @@ def build_record(db, row, evidence, scope, study, today):
         content.pop("international")
     else:
         content["international"]["professional_questions"].sort(key=lambda item: item["topic"])
+    if study.business_strategies is None:
+        content.pop("business_strategies")
+    else:
+        content["business_strategies"]["cases"].sort(key=lambda item: item["kind"])
+        content["business_strategies"]["candidates"].sort(key=lambda item: item["candidate_id"])
+        for case in content["business_strategies"]["cases"]:
+            case["candidate_ids"].sort()
+            case["unresolved_requirements"].sort()
+    for finding in content["findings"]:
+        if finding["fixture_bindings"]:
+            finding["fixture_bindings"].sort()
+        else:
+            finding.pop("fixture_bindings")
     content["findings"].sort(key=lambda item: (item["facet"], item["source_id"]))
     content["execution_options"].sort(key=lambda item: item["kind"])
     body = {"evidence_sha256": row.digest, "industry": content}
@@ -142,6 +163,10 @@ def project(body, evidence):
         option["setup_minor"] + 12 * option["monthly_minor"]
         + (option["setup_hours"] + 12 * option["monthly_hours"]) * option["loaded_hour_minor"]
     )} for option in content["execution_options"]]
+    international = (project_international(InternationalStudy.model_validate(content["international"]))
+                     if "international" in content else None)
+    strategy = content.get("business_strategies")
+    scope = content["scope"]
     return {"sha256": body["sha256"], "currency": evidence.currency, "findings": findings,
             "source_ids": sources, "missing_facets": missing, "execution_options": options,
             "cost_basis": "DECLARED_ASSUMPTIONS_ONLY", "customer_demand_verified": False,
@@ -149,8 +174,10 @@ def project(body, evidence):
             "external_authority": False,
             **({"skilled_trade": project_trade(SkilledTradeStudy.model_validate(content["skilled_trade"]))}
                if "skilled_trade" in content else {}),
-            **({"international": project_international(InternationalStudy.model_validate(content["international"]))}
-               if "international" in content else {})}
+            **({"international": international} if international else {}),
+            **({"strategy_inputs": strategy, "strategy_scope": scope, "business_strategies": project_strategies(
+                StrategyStudy.model_validate(strategy), scope["jurisdiction"], international=international,
+            )} if strategy else {})}
 
 
 def research_focus(role, industry):
@@ -181,11 +208,15 @@ def read_industry(db, row, evidence, scope, today, *, lock=False):
     return project(body, evidence)
 
 
-def read_industry_reassessment(db, trigger_id, scope, today, *, international=False):
+def read_industry_reassessment(db, trigger_id, scope, today, *, international=False, strategies=False):
     from app.models.foundry_evidence import FoundryEvidence
     from app.services.foundry_discovery import checked_evidence
 
-    prefix, field = (INTERNATIONAL_PREFIX, "international") if international else (EVENT_PREFIX, "skilled_trade")
+    prefix, field = {
+        "international": (INTERNATIONAL_PREFIX, "international"),
+        "strategies": (STRATEGY_PREFIX, "business_strategies"),
+        "trade": (EVENT_PREFIX, "skilled_trade"),
+    }["international" if international else "strategies" if strategies else "trade"]
     try:
         evidence_id = UUID(trigger_id.removeprefix(prefix))
     except ValueError:

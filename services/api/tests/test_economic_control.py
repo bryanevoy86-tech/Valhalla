@@ -1529,6 +1529,249 @@ def test_stucco_planning_calculates_capacity_cash_and_refuses_unsupported_crew_s
         SkilledTradeStudy.model_validate(study)
 
 
+def strategy_fixture(engine, monkeypatch, scope, today, expires, scenario="A"):
+    from app.models.completion_registry import SourceRegistryItem
+    from app.models.go_live_state import GoLiveState
+
+    GoLiveState.__table__.create(engine, checkfirst=True)
+    monkeypatch.setenv("APP_ENV", "test")
+    monkeypatch.setenv("ENV", "test")
+    monkeypatch.setenv("VALHALLA_FOUNDRY_OPERATING_REHEARSAL", "1")
+    findings = []
+    with Session(engine) as db:
+        for label in ("demand", "valuation", "transfer", "reference", "practical", "human", "available", "license", "control"):
+            source_id = f"strategy-{label}-{scope['jurisdiction']}"
+            citation = f"https://fixtures.example.invalid/strategy/{scope['jurisdiction']}/{label}"
+            db.add(SourceRegistryItem(
+                source_id=source_id, canonical_name=f"Fixture {label}", source_type="INDUSTRY_REFERENCE",
+                data_class="live", jurisdiction=scope["jurisdiction"], citation_ref=citation, permission_status="authorized",
+                license_status="consented_internal_use", governance_status="approved", terminal_state="PASS",
+                mode_allowlist_json='["practice"]',
+            ))
+            findings.append({"facet": "DEAL_TERMS", "source_id": source_id, "citation": citation,
+                             "observed_on": today.isoformat(), "valid_through": expires,
+                             "summary": f"Separate disposable record representing a job-related {label} check."})
+        db.commit()
+
+    def source(label):
+        return f"strategy-{label}-{scope['jurisdiction']}"
+
+    def candidate(label, role="FOREMAN", **values):
+        candidate = {"candidate_id": f"fixture:{label}", "role": role, "jurisdiction": scope["jurisdiction"],
+                     "claims_experience": True, "reference_source": source("reference"), "practical_source": source("practical"),
+                     "human_review_source": source("human"), "available_source": source("available"),
+                     "monthly_compensation": 20_000, "retention_risk": "LOW"}
+        return {**candidate, **values}
+
+    candidates = [
+        candidate("foreman", retention_risk="HIGH" if scenario == "B" else "LOW"),
+        candidate("installer", "INSTALLER", practical_source=None if scenario in {"B", "C"} else source("practical")),
+        candidate("claimant", reference_source=None), candidate("unverified", claims_experience=False, reference_source=None),
+        candidate("practical-only", human_review_source=None),
+        candidate("licensed-no-license", "LICENSED_PROFESSIONAL"),
+        candidate("foreign-manager", "PROPERTY_MANAGER", jurisdiction="CA-MB" if scope != SCOPE else "US-TX"),
+        candidate("foreign-operator", "LOCAL_OPERATOR", jurisdiction="CA-MB" if scope != SCOPE else "US-TX"),
+    ]
+    cases = []
+    for kind, revenue in (("BUILD", 120_000), ("BUY", 280_000), ("PARTNER", 145_000), ("EXPAND", 145_000)):
+        row = {"kind": kind, "setup_cost": 100_000, "working_capital": 50_000, "runway_months": 2,
+               "monthly_receipts": revenue, "monthly_cost_before_staff": 35_000, "customer_concentration_bp": 1000,
+               "recurring_receipts_bp": 6000, "owner_dependence_bp": 1000,
+               "downside_receipt_reduction_bp": 1500, "downside_additional_cost": 8000,
+               "demand_source": None if scenario == "E" else source("demand"),
+               "unresolved_requirements": [], "required_roles": {"FOREMAN": 1, "INSTALLER": 1},
+               "candidate_ids": ["fixture:foreman", "fixture:installer", "fixture:foreign-manager", "fixture:foreign-operator"]}
+        if kind == "BUY":
+            row.update(acquisition={"purchase_price": 900_000, "closing_and_transition_cost": 50_000,
+                       "funded_working_reserve": 100_000, "financed_principal": 300_000, "monthly_debt_service": 20_000},
+                       transfer_source=None if scenario == "B" else source("transfer"),
+                       valuation_source=source("valuation"), valuation_ceiling_minor=1_000_000, owner_dependence_bp=7000 if scenario == "B" else 1000)
+        if kind == "PARTNER":
+            row["control_source"] = source("control")
+            row["partner"] = {"revenue_share_bp": 1500, "guaranteed_monthly_compensation": 5000,
+                              "control": "DEFINED_IN_FIXTURE"}
+            if scenario == "D":
+                row.update(monthly_receipts=350_000, setup_cost=40_000)
+        if kind == "EXPAND" and scenario == "LEARNING":
+            row["monthly_receipts"] = 390_000
+        if scenario == "C" and kind == "EXPAND":
+            row["setup_cost"] = 3_000_000
+        cases.append(row)
+    from app.services.foundry_strategies import StrategyStudy
+
+    inputs = {"basis": "DISPOSABLE_STRATEGY_FIXTURE", "cases": cases, "candidates": candidates,
+              "cash_ceiling_cad_cents": 2_000_000, "capital_hurdle_bp": 1200}
+    references = StrategyStudy.model_validate(inputs).source_requirements()
+    for finding in findings:
+        finding["fixture_bindings"] = sorted(references.get(finding["source_id"], ()))
+    return inputs, findings
+
+
+def fund_strategy_fixture(client, today, scope=SCOPE):
+    post(client, "mandates", mandate(today, scope=scope, max_exposure=2_500_000, max_additional_funding=2_400_000))
+    post(client, "performance", performance(today, scope=scope, uncommitted_local_cash=2_100_000))
+    post(client, "liquidity", liquidity(today, scope=scope, unrestricted_pool_minor=2_100_000))
+
+
+@pytest.mark.parametrize(("scenario", "preferred", "deal_client"), [
+    ("A", "BUY", "memory"), ("B", "HOLD", "memory"), ("C", "HOLD", "memory"),
+    ("D", "PARTNER", "memory"), ("E", "HOLD", "memory"), ("A", "BUY", "postgres"),
+], indirect=["deal_client"])
+def test_business_strategy_advisory_comparison(economic_client, monkeypatch, scenario, preferred):
+    from app.models.completion_registry import SourceRegistryItem
+    from app.models.foundry_evidence import FoundryEvidence
+    from app.services.foundry_intake import current_time
+    from app.loki.evidence import artifact_digest
+
+    client, engine = economic_client
+    for model in (SourceRegistryItem, FoundryEvidence):
+        model.__table__.create(engine)
+    today = current_time().date()
+    expires = (today + timedelta(days=10)).isoformat()
+    inputs, findings = strategy_fixture(engine, monkeypatch, SCOPE, today, expires, scenario)
+    fund_strategy_fixture(client, today)
+    evidence_id = str(uuid4())
+    evidence = {**SCOPE, "evidence_id": evidence_id, "kind": "SERVICE", "evidence_class": "OPERATOR_REPORTED",
+                "title": "Contractor business strategy", "source_ref": "fixture:strategy-comparison",
+                "observed_on": today.isoformat(), "expires_on": expires, "currency": "CAD",
+                "unit_price": 15000, "variable_cost_per_unit": 4000, "acquisition_cost_per_unit": 2000,
+                "monthly_fixed_cost": 2000, "monthly_units": 4, "startup_capital": 15000,
+                "test_cost": 0, "rights_attestation": "AUTHORIZED_INTERNAL_RESEARCH"}
+    root = "/api/prime/foundry"
+    assert client.post(root + "/evidence", json=evidence, headers=OWNER).status_code == 201
+    if scenario == "A":
+        from app.models.completion_registry import KnowledgeRegistryItem, LearningFeedbackRecord
+        from app.models.media_engine import MediaContent
+        from app.models.prime_specialist_schedule import PrimeScheduleTrigger, PrimeSpecialistSchedule
+        from app.routers.prime_specialist_schedules import run_due_schedule
+
+        for model in (MediaContent, KnowledgeRegistryItem, LearningFeedbackRecord,
+                      PrimeSpecialistSchedule, PrimeScheduleTrigger):
+            model.__table__.create(engine, checkfirst=True)
+        scheduled = client.post("/api/prime/specialist-schedules", headers=OWNER, json={
+            "schedule_id": str(uuid4()), "business_id": SCOPE["business_id"], "cadence_seconds": 600,
+            "duration_seconds": 3600, "on_economic_reassessment": True,
+            "opportunity": {"opportunity_id": "contractor-strategies", "title": "Contractor strategy",
+                "engine_id": SCOPE["engine_id"], "summary": "Review durable contractor strategies.",
+                "legacy": SCOPE["legacy_instance_id"], "jurisdiction": SCOPE["jurisdiction"],
+                "specialist_inputs": {"business_id": SCOPE["business_id"]}},
+        })
+        assert scheduled.status_code == 201, scheduled.text
+    route = f"{root}/evidence/{evidence_id}/industry-diligence"
+    study = {"scope": SCOPE, "findings": findings, "business_strategies": inputs, "execution_options": [
+        {"kind": kind, "setup_minor": 100, "monthly_minor": 10, "setup_hours": 0, "monthly_hours": 0,
+         "loaded_hour_minor": 0, "dependencies": ["Fixture diligence"], "estimate_basis": "Synthetic cost assumptions."}
+        for kind in ("BUILD", "BUY")
+    ]}
+    assert client.post(route, json=study).status_code == 401
+    assert client.post(route, headers=OWNER, json={**study, "scope": MIRROR}).status_code == 409
+    with monkeypatch.context() as stopped:
+        stopped.setenv("VALHALLA_EMERGENCY_STOP", "true")
+        assert client.post(route, headers=OWNER, json=study).status_code == 503
+    unbound = {**study, "findings": [{**finding, "fixture_bindings": []} for finding in findings]}
+    assert client.post(route, headers=OWNER, json=unbound).status_code == 409
+    if engine.dialect.name == "postgresql":
+        from concurrent.futures import ThreadPoolExecutor
+        from threading import Barrier
+
+        barrier = Barrier(2)
+
+        def submit():
+            barrier.wait(timeout=10)
+            return client.post(route, headers=OWNER, json=study)
+
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            calls = [pool.submit(submit) for _ in range(2)]
+            result, replay = [call.result(timeout=20) for call in calls]
+        assert result.status_code == replay.status_code == 201
+        assert result.json() == replay.json()
+        with Session(engine) as db:
+            assert db.query(LegacyOrchestrationEvent).filter_by(event_id="FOUNDRY-INDUSTRY-" + evidence_id).count() == 1
+    else:
+        result = client.post(route, headers=OWNER, json=study)
+    assert result.status_code == 201, result.text
+    reversed_study = {**study, "business_strategies": {**inputs, "cases": inputs["cases"][::-1]}}
+    assert client.post(route, headers=OWNER, json=reversed_study).json() == result.json()
+    changed = {**study, "business_strategies": {**inputs, "capital_hurdle_bp": 1300}}
+    assert client.post(route, headers=OWNER, json=changed).status_code == 409
+    post(client, "opportunities", option(today, "contractor-strategies", origin="FOUNDRY", foundry_evidence_id=evidence_id))
+    alternative = post(client, "assessment", SCOPE, 200)["alternatives"][0]
+    result = alternative["business_strategies"]
+    assert result["preferred_internal_proposal"] == preferred
+    assert alternative["eligible"] is False and result["external_authority"] is False
+    with monkeypatch.context() as stopped:
+        stopped.setenv("VALHALLA_EMERGENCY_STOP", "true")
+        blocked = post(client, "assessment", SCOPE, 200)["alternatives"][0]
+        assert "business_strategies" not in blocked and blocked["eligible"] is False
+    rows = {row["strategy"]: row for row in result["alternatives"]}
+    assert set(rows) == {"BUY", "BUILD", "EXPAND", "PARTNER"}
+    people = result["qualifications"]
+    assert people["fixture:unverified"] == "UNVERIFIED" and people["fixture:claimant"] == "CLAIMED_EXPERIENCE"
+    assert people["fixture:practical-only"] == people["fixture:licensed-no-license"] == "PRACTICAL_ASSESSMENT_RECORDED"
+    assert people["fixture:foreign-manager"] == "WRONG_JURISDICTION"
+    if scenario == "A":
+        assert rows["BUY"]["conservative_annual_value_minor"] > rows["BUILD"]["conservative_annual_value_minor"] > 0
+        assert people["fixture:foreman"] == "QUALIFIED_AND_AVAILABLE_IN_FIXTURE"
+        with Session(engine) as db:
+            tick = run_due_schedule(db)
+            event = db.query(LegacyOrchestrationEvent).filter_by(event_id=tick["report_event_id"]).one()
+            report = json.loads(event.payload_json)
+            assert report["trigger"] == "BUSINESS_STRATEGY_REASSESSMENT"
+            assert report["business_strategy_proposal"]["preferred_internal_proposal"] == "BUY"
+            assert report["recommendation"]["heimdall_decision"] == "HOLD"
+        with Session(engine) as db:
+            assert db.query(PrimeScheduleTrigger).filter_by(event_id=report["trigger_strategy_id"]).count() == 0
+            assert db.query(LegacyOrchestrationEvent).filter_by(event_id=tick["report_event_id"]).count() == 1
+    if scenario == "B":
+        assert rows["BUY"]["monthly_contribution_minor"] > 0
+        assert {"CUSTOMER_OR_OWNER_TRANSFER_UNSUPPORTED", "QUALIFIED_COVERAGE_MISSING"} <= set(rows["BUY"]["blockers"])
+        assert people["fixture:foreman"] == "QUALIFIED_BUT_UNAVAILABLE"
+    if scenario == "C":
+        assert {"QUALIFIED_COVERAGE_MISSING", "INSUFFICIENT_CASH_AND_RUNWAY"} <= set(rows["EXPAND"]["blockers"])
+        assert people["fixture:installer"] == "REFERENCE_OR_CREDENTIAL_CHECKED"
+    if scenario == "E":
+        assert all("DEMAND_UNCORROBORATED" in row["blockers"] for row in rows.values())
+
+    artifact = post(client, "review-artifact", plan(action="SUSPEND", requested_additional_minor=0), 200)
+    queued = client.post("/loki/reviews", json=artifact)
+    assert queued.status_code == 201, queued.text
+    review_id = queued.json()["id"]
+    queue = client.get("/loki/worker/reviews", headers=REVIEWER, params={"artifact_type": "economic_advice"})
+    item = next(entry for entry in queue.json() if entry["review_id"] == review_id)
+    review = challenge(item)
+    assert any(f.category == "strategy_transfer_and_workforce_uncertainty" for f in review.findings)
+    result_route = f"/loki/worker/reviews/{review_id}/result"
+    assert client.post(result_route, headers=OWNER, json=review.model_dump(mode="json")).status_code in {401, 403}
+    published = client.post(result_route, headers=REVIEWER, json=review.model_dump(mode="json"))
+    assert published.status_code == 201, published.text
+    item["raw_input"]["analysis"]["alternatives"][0]["business_strategies"]["preferred_internal_proposal"] = (
+        "BUILD" if preferred != "BUILD" else "BUY"
+    )
+    item["artifact_sha256"] = artifact_digest(item["artifact_type"], item["reference"], item["raw_input"])
+    assert any(f.category == "strategy_projection_conflict" and f.severity == "critical" for f in challenge(item).findings)
+    if scenario == "A":
+        # Even BUY remains advisory. Persist only a separately reviewed zero-reservation hold.
+        findings = client.get(f"/loki/reviews/{review_id}/findings").json()
+        response = client.post(f"/loki/reviews/{review_id}/reconsider", headers=OWNER, json={
+            "artifact_sha256": artifact["artifact_sha256"], "disposition": "accept_risk",
+            "material_finding_ids": [row["id"] for row in findings],
+            "reason": "Accept fixture uncertainty only to record a zero-cost advisory hold.",
+        })
+        assert response.status_code == 200, response.text
+        decision = {"plan": artifact["raw_input"]["plan"], "independent_review_id": review_id,
+                    "expected_artifact_sha256": artifact["artifact_sha256"]}
+        recorded = post(client, "decisions", decision)
+        assert recorded["reserved_simulation_minor"] == 0 and recorded["execution_authorized"] is False
+        assert recorded["observed"]["alternatives"][0]["business_strategies"] == result
+        assert post(client, "decisions", decision) == recorded
+    with Session(engine) as db:
+        assert db.query(RevenueLedger).count() == 0
+        db.query(SourceRegistryItem).filter_by(source_id="strategy-available-CA-MB").one().active = False
+        db.commit()
+    held = post(client, "assessment", SCOPE, 200)["alternatives"][0]
+    assert "business_strategies" not in held and "FOUNDRY_SOURCE_UNAVAILABLE" in held["blockers"]
+
+
 def exercise_trade_learning(client, engine, monkeypatch, ids, before, today, review_id):
     from copy import deepcopy
     from app.loki.evidence import artifact_digest
@@ -1617,6 +1860,10 @@ def exercise_trade_learning(client, engine, monkeypatch, ids, before, today, rev
     assert client.post(route, headers=OWNER, json={**outcome, "callback_cost_minor": 1}).status_code == 409
     after = {row["opportunity_key"]: row for row in post(client, "assessment", SCOPE, 200)["alternatives"]}
     assert before["operating_recommendation"] == "VERIFY_DEMAND_AND_CAPACITY"
+    assert before["business_strategies"]["preferred_internal_proposal"] == "EXPAND"
+    assert after["stucco-crew"]["business_strategies"]["preferred_internal_proposal"] == "BUILD"
+    assert after["stucco-crew"]["business_strategies"]["learning_sha256"] == lesson["sha256"]
+    assert after["stucco-secondary"]["business_strategies"]["preferred_internal_proposal"] == "EXPAND"
     assert after["stucco-crew"]["operating_recommendation"] == "CONTAIN_AND_REESTIMATE"
     assert after["stucco-crew"]["trade_learning"] == {"forecast": forecast, "lesson": lesson}
     assert after["stucco-crew"]["projected_annual_net"] == before["projected_annual_net"]
@@ -1640,6 +1887,10 @@ def exercise_trade_learning(client, engine, monkeypatch, ids, before, today, rev
             assert recalled["sha256"] == lesson["sha256"]
             assert recalled["variance"]["error_minor"] == -1_928_200 - outcome["callback_cost_minor"]
             assert recalled["calibration"] == "INSUFFICIENT_SAMPLE_FOR_GENERALIZATION"
+            if role == "NORNS":
+                strategy = next(item for item in report["observations"]["economic_reassessment"]["business_strategy_assessments"]
+                                if item["opportunity_key"] == "stucco-crew")
+                assert strategy["preferred_internal_proposal"] == "BUILD"
     review = client.post(f"/api/prime/pantheon/reports/{report_id}/challenge")
     assert review.status_code == 201, review.text
     review_id = review.json()["review_id"]
@@ -1671,6 +1922,7 @@ def exercise_trade_learning(client, engine, monkeypatch, ids, before, today, rev
         else:
             pytest.fail("Prime did not process the trade lesson")
         assert report["trade_learning"]["lesson"]["sha256"] == lesson["sha256"]
+        assert report["business_strategy_proposal"]["preferred_internal_proposal"] == "BUILD"
         assert report["external_authority"] is False and report["independent_loki_cleared"] is False
         assert report["recommendation"]["heimdall_decision"] == "HOLD"
 
@@ -1709,7 +1961,9 @@ def test_industry_diligence_wakes_specialists_and_keeps_options_advisory(economi
     today = current_time().date()
     expires = (today + timedelta(days=15)).isoformat()
     root = "/api/prime/foundry"
-    post(client, "mandates", mandate(today))
+    post(client, "mandates", mandate(today, **(
+        {"max_exposure": 2_500_000, "max_additional_funding": 2_400_000} if trade else {}
+    )))
     for role in ("ODIN", "NJORD"):
         enrollment = client.post("/api/prime/pantheon/assignments", headers=OWNER, json={
             **SCOPE, "assignment_id": str(uuid4()), "role": role, "cadence_seconds": 600, "duration_seconds": 3600,
@@ -1734,6 +1988,10 @@ def test_industry_diligence_wakes_specialists_and_keeps_options_advisory(economi
         ))
     ]}
     if trade:
+        strategy, strategy_findings = strategy_fixture(engine, monkeypatch, SCOPE, today, expires, "LEARNING")
+        post(client, "performance", performance(today, uncommitted_local_cash=2_100_000))
+        post(client, "liquidity", liquidity(today, unrestricted_pool_minor=2_100_000))
+        study["business_strategies"] = strategy
         study["skilled_trade"] = stucco_scenarios()
         study["findings"] = [
             {"facet": facet, "source_id": source, "citation": references[source], "observed_on": today.isoformat(),
@@ -1747,7 +2005,7 @@ def test_industry_diligence_wakes_specialists_and_keeps_options_advisory(economi
                  "Synthetic case examines staffing and weather sensitivity."),
                 ("COMPETITION", "offline-trades-reference", "Synthetic reference for fixture scope; no measured competitor prices."),
             )
-        ]
+        ] + strategy_findings
     if trade:
         from app.loki.evidence import artifact_digest
         from app.models.completion_registry import KnowledgeRegistryItem, LearningFeedbackRecord
@@ -1775,7 +2033,8 @@ def test_industry_diligence_wakes_specialists_and_keeps_options_advisory(economi
         evidence_id = str(uuid4())
         ids.append(evidence_id)
         evidence = {**SCOPE, "evidence_id": evidence_id, "kind": kind, "evidence_class": "OPERATOR_REPORTED",
-                    "title": key, "source_ref": key, "observed_on": today.isoformat(), "expires_on": expires,
+                    "title": key, "source_ref": f"fixture:{key}" if trade else key,
+                    "observed_on": today.isoformat(), "expires_on": expires,
                     "currency": "CAD", "unit_price": 15000, "variable_cost_per_unit": 4000,
                     "acquisition_cost_per_unit": 2000, "monthly_fixed_cost": 2000, "monthly_units": 4,
                     "startup_capital": 15000, "test_cost": 0, "rights_attestation": "AUTHORIZED_INTERNAL_RESEARCH"}
@@ -1808,12 +2067,19 @@ def test_industry_diligence_wakes_specialists_and_keeps_options_advisory(economi
     with Session(engine) as db:
         assert db.query(SpecialistTrigger).filter(SpecialistTrigger.event_id.startswith("FOUNDRY-INDUSTRY-")).count() == 4
         for role in ("ODIN", "NJORD"):
-            report_id = run_assignment(db, role)["report_event_id"]
-            report = client.get(f"/api/prime/pantheon/reports/{report_id}").json()
-            assert report["trigger"] == "INDUSTRY_DILIGENCE"
+            for _ in range(5):
+                report_id = run_assignment(db, role)["report_event_id"]
+                report = client.get(f"/api/prime/pantheon/reports/{report_id}").json()
+                if report["trigger"] == "INDUSTRY_DILIGENCE":
+                    break
+            else:
+                pytest.fail("No specialist industry report was produced")
             assert {s["evidence_id"] for s in report["observations"]["foundry_signals"]} == set(ids)
             focus = report["observations"]["foundry_signals"][0]["industry_research_focus"]
             assert ("COMPETITION" if role == "ODIN" else "FAILURE_MODES") in focus["review_facets"]
+            if trade:
+                choices = report["observations"]["economic_reassessment"]["business_strategy_assessments"]
+                assert {item["preferred_internal_proposal"] for item in choices} == {"EXPAND"}
     candidate_url = f"{root}/reports/{report_id}/candidate/{ids[0]}"
     candidate = client.get(candidate_url).json()["proposal"]
     with Session(engine) as db:
@@ -2092,15 +2358,27 @@ def test_international_diligence_runs_scoped_specialists_loki_and_prime(
     assert client.post(route, headers=OWNER, json=wrong_jurisdiction).status_code == 409
     unsupported_fx = {**study, "international": {**international, "fx_source_id": "missing-rate"}}
     assert client.post(route, headers=OWNER, json=unsupported_fx).status_code == 422
+    strategy, strategy_findings = strategy_fixture(engine, monkeypatch, scope, today, expires)
+    study["business_strategies"] = strategy
+    study["findings"].extend(strategy_findings)
     response = client.post(route, headers=OWNER, json=study)
     assert response.status_code == 201, response.text
     result = response.json()
     assert client.post(route, headers=OWNER, json=study).json() == result
+    cross_border = result["business_strategies"]
+    assert cross_border["preferred_internal_proposal"] == "HOLD"
+    missing_role = "LOCAL_OPERATOR" if kind == "SERVICE" else "PROPERTY_MANAGER"
+    assert cross_border["qualifications"]["fixture:foreign-operator"] == "WRONG_JURISDICTION"
+    assert all(row["coverage_gaps"][missing_role] == 1
+               and "INTERNATIONAL_PROFESSIONAL_DILIGENCE_UNRESOLVED" in row["blockers"]
+               for row in cross_border["alternatives"])
     projection = result["international"]
     assert projection["base"]["monthly_net_cad_cents"] > 0 > projection["stress"]["monthly_net_cad_cents"]
     assert projection["base"]["monthly_receipts_cad_cents"] == 100_000 * assumed_rate * 99 // 100_000_000
     assert projection["stress"]["required_cash_cad_cents"] > projection["base"]["required_cash_cad_cents"]
     assert projection["external_authority"] is False
+    post(client, "opportunities", option(today, "foreign-pilot", scope=scope, origin="FOUNDRY",
+                                          foundry_evidence_id=evidence_id))
     trigger = INTERNATIONAL_PREFIX + evidence_id
     with Session(engine) as db:
         queued = db.query(PrimeScheduleTrigger).filter_by(event_id=trigger).one()
@@ -2116,6 +2394,7 @@ def test_international_diligence_runs_scoped_specialists_loki_and_prime(
         advisory = json.loads(event.payload_json)
         assert advisory["trigger"] == "INTERNATIONAL_REASSESSMENT"
         assert advisory["international_reassessment"]["international"] == projection
+        assert advisory["business_strategy_proposal"]["preferred_internal_proposal"] == "HOLD"
         assert advisory["recommendation"]["heimdall_decision"] == "HOLD"
         assert advisory["external_authority"] is False and advisory["independent_loki_cleared"] is False
         with pytest.raises(HTTPException):
@@ -2125,6 +2404,11 @@ def test_international_diligence_runs_scoped_specialists_loki_and_prime(
         db.commit()
     with Session(engine) as db:
         assert run_due_schedule(db) == {"status": "replayed", "report_event_id": advisory["report_event_id"]}
+    assessment = post(client, "assessment", scope, 200)["alternatives"][0]
+    assert assessment["business_strategies"]["preferred_internal_proposal"] == "HOLD"
+    assert all(row["required_cash_minor"] >= projection["stress"]["required_cash_cad_cents"]
+               and row["stressed_monthly_contribution_minor"] <= projection["stress"]["monthly_net_cad_cents"]
+               for row in assessment["business_strategies"]["alternatives"])
     specialist_ids = set()
     for role in ("ODIN", "NJORD"):
         with Session(engine) as db:
@@ -2140,7 +2424,9 @@ def test_international_diligence_runs_scoped_specialists_loki_and_prime(
     queue = client.get("/loki/worker/reviews", headers=REVIEWER, params={"artifact_type": "pantheon_report"})
     item = next(entry for entry in queue.json() if entry["review_id"] == review_id)
     findings = challenge(item).model_dump(mode="json")
-    assert any(row["category"] == "international_professional_diligence" for row in findings["findings"])
+    assert {"international_professional_diligence", "strategy_transfer_and_workforce_uncertainty"} <= {
+        row["category"] for row in findings["findings"]
+    }
     assert client.post(f"/loki/worker/reviews/{review_id}/result", headers=REVIEWER, json=findings).status_code == 201
     forged = deepcopy(item)
     forged["raw_input"]["observations"]["foundry_signals"][0]["industry_diligence"]["international"]["external_authority"] = True
@@ -2152,8 +2438,6 @@ def test_international_diligence_runs_scoped_specialists_loki_and_prime(
     with Session(engine) as db:
         with pytest.raises(HTTPException, match="separately verified"):
             require_current_candidate(db, candidate, scope, today)
-    post(client, "opportunities", option(today, "foreign-pilot", scope=scope, origin="FOUNDRY",
-                                          foundry_evidence_id=evidence_id))
     assessment = post(client, "assessment", scope, 200)
     examined = assessment["alternatives"][0]
     assert assessment["opportunity_selection"]["decision"] == "ABSTAIN"

@@ -246,6 +246,7 @@ def comparison(db, state, scope, currency, available, today, *, lock_sources=Fal
                     "projected_annual_net": net * 12,
                     "maximum_downside": max(item.maximum_downside, -12 * downside),
                 }
+                learning = None
                 trade = (industry or {}).get("skilled_trade")
                 if trade:
                     base, stress = (trade["scenarios"][name] for name in ("BASE", "STRESS"))
@@ -279,6 +280,17 @@ def comparison(db, state, scope, currency, available, today, *, lock_sources=Fal
                         projected_annual_net=12 * base["monthly_net_cad_cents"],
                         maximum_downside=max(assessed["maximum_downside"], -12 * stress["monthly_net_cad_cents"]),
                     )
+                if (industry or {}).get("strategy_inputs"):
+                    from app.services.foundry_strategies import StrategyStudy, project, rehearsal_allowed
+
+                    # Keep modeled proposals outside economic execution eligibility.
+                    blockers.append("BUSINESS_STRATEGIES_FIXTURE_ONLY")
+                    if rehearsal_allowed(db):
+                        data["business_strategies"] = project(
+                            StrategyStudy.model_validate(industry["strategy_inputs"]), scope["jurisdiction"],
+                            available=available, international=international,
+                            learning=learning["lesson"]["sha256"] if learning and learning["lesson"]["blockers"] else None,
+                        )
                 data["projection_differences"] = [
                     {"field": field, "declared_minor": data[field], "used_minor": amount}
                     for field, amount in assessed.items() if data[field] != amount
@@ -491,6 +503,12 @@ def specialist_economics(db, role, scope, today):
         claim = {"basis": "ECONOMIC_PERFORMANCE_FIXTURE", "record_id": str(state.performance.id),
                  "sha256": row.digest, "period_net_minor": report["period_net_minor"]}
         common["verified_performance_claim"] = verify_performance_claim(db, scope, claim)
+    if role in {"ODIN", "NJORD", "NORNS", "HEIMDALL"}:
+        strategies = [{"opportunity_key": item["opportunity_key"], "evidence_id": item["foundry_source"]["evidence_id"],
+                       **item["business_strategies"]}
+                      for item in report["alternatives"] if "business_strategies" in item]
+        if strategies:
+            common["business_strategy_assessments"] = strategies
     if role == "NORNS":
         common["forward_recovery"] = [
             {"opportunity_key": item["opportunity_key"], "declared_uncertainty_bp": item["uncertainty_bp"],

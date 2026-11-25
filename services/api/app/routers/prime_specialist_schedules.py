@@ -21,7 +21,9 @@ from app.routers.completion_registry import (
     evaluate_universal_opportunities,
 )
 from app.routers.prime_business_factory import require_factory_schema
-from app.services.foundry_industry import EVENT_PREFIX as INDUSTRY_PREFIX, INTERNATIONAL_PREFIX, read_industry_reassessment
+from app.services.foundry_industry import (
+    EVENT_PREFIX as INDUSTRY_PREFIX, INTERNATIONAL_PREFIX, STRATEGY_PREFIX, read_industry_reassessment,
+)
 from app.services.prime_business_execution import (
     _check_legacy, _emergency_stop_active, _event, require_owner_mandate_key,
     scoped_factory_findings, verified_internal_outcomes,
@@ -247,6 +249,14 @@ def attach_operating_reassessment(db, payload, scope, today, outcomes, report):
             raise HTTPException(409, "Trade lesson belongs to a different opportunity")
         blockers.update(trade_lesson["lesson"]["blockers"])
         report["trade_learning"] = trade_lesson
+    strategies = next((item for item in (capital or {}).get("business_strategy_assessments", ())
+                       if item["opportunity_key"] == opportunity.opportunity_id), None)
+    trigger_strategy = report.get("strategy_reassessment")
+    if trigger_strategy and (not strategies or strategies["evidence_id"] != trigger_strategy["evidence_id"]):
+        raise HTTPException(409, "Strategy trigger lacks a current comparison for this scheduled opportunity")
+    if strategies is not None:
+        report["business_strategy_proposal"] = strategies
+        blockers.add("STRATEGY_PROPOSAL_REQUIRES_INDEPENDENT_REVIEW_AND_AUTHORITY")
     recommendation = report["recommendation"]
     if checkout or capital or source_assessment or treasury.get("accounts") or blockers or paid_outcomes or recurring:
         report["operating_reassessment"] = {
@@ -307,12 +317,15 @@ def run_due_schedule(db: Session, *, now: datetime | None = None) -> dict:
     industry_id = event_id if queued is not None and event_id.startswith(INDUSTRY_PREFIX) else None
     trade_lesson_id = event_id if queued is not None and event_id.startswith(LESSON_PREFIX) else None
     international_id = event_id if queued is not None and event_id.startswith(INTERNATIONAL_PREFIX) else None
-    outcome_id = None if (economic_id or withdrawal_id or revision_id or learning_id or industry_id or international_id or trade_lesson_id) else event_id
+    strategy_id = event_id if queued is not None and event_id.startswith(STRATEGY_PREFIX) else None
+    outcome_id = None if any((economic_id, withdrawal_id, revision_id, learning_id, industry_id, international_id,
+                              trade_lesson_id, strategy_id)) else event_id
     trigger_field = ("trigger_source_withdrawal_id" if withdrawal_id else
                      "trigger_operating_lesson_id" if learning_id else
                      "trigger_skilled_trade_id" if industry_id else
                      "trigger_trade_outcome_id" if trade_lesson_id else
                      "trigger_international_id" if international_id else
+                     "trigger_strategy_id" if strategy_id else
                      "trigger_source_revision_id" if revision_id else
                      "trigger_economic_event_id" if economic_id else "trigger_outcome_event_id")
     elapsed_slots = (now - row.next_due_at) // timedelta(seconds=row.cadence_seconds) if timed else 0
@@ -368,8 +381,14 @@ def run_due_schedule(db: Session, *, now: datetime | None = None) -> dict:
         report.update(trigger="TRADE_OPERATING_OUTCOME", trigger_trade_outcome_id=trade_lesson_id)
     if international_id:
         report.update(trigger="INTERNATIONAL_REASSESSMENT", trigger_international_id=international_id)
+    if strategy_id:
+        report.update(trigger="BUSINESS_STRATEGY_REASSESSMENT", trigger_strategy_id=strategy_id)
     try:
         _check_legacy(db, **scope)
+        if strategy_id:
+            if not payload.on_economic_reassessment:
+                raise HTTPException(409, "Business strategy reassessment is not enrolled")
+            report["strategy_reassessment"] = read_industry_reassessment(db, strategy_id, scope, now.date(), strategies=True)
         if industry_id or international_id:
             if not payload.on_economic_reassessment:
                 raise HTTPException(409, "Industry reassessment is not enrolled")
